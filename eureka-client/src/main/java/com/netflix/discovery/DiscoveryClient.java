@@ -615,7 +615,12 @@ public class DiscoveryClient implements LookupService {
         response = makeRemoteCall(Action.Refresh);
         logger.info("Getting all instance registry info from the eureka server");
         Applications apps = response.getEntity(Applications.class);
-        applications.set(this.filterAndShuffle(apps));
+        if (apps == null) {
+            logger.error("The application is null for some reason. Not storing this information");
+        }
+        else {
+            applications.set(this.filterAndShuffle(apps));
+        }
         logger.info("The response status is {}", response.getStatus());
         return response;
     }

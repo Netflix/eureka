@@ -92,7 +92,7 @@ MessageBodyReader {
             return getSerializer(serializableClass).read(inputStream,
                     serializableClass, mediaType);
         } catch (Throwable th) {
-            LOGGER.warn("Cannot read the object for :" + serializableClass, th);
+            new IOException("Cannot read the object for :" + serializableClass, th);
         }
         return null;
     }
@@ -141,7 +141,7 @@ MessageBodyReader {
             ISerializer serializer = getSerializer(serializableClass);
             serializer.write(serializableObject, outputStream, mediaType);
         } catch (Throwable th) {
-            LOGGER.warn("Cannot write the object for :" + serializableClass, th);
+            throw new IOException("Cannot write the object for :" + serializableClass, th);
         }
     }
 
