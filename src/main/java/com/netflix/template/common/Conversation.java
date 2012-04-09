@@ -15,7 +15,7 @@ public interface Conversation {
 
     /**
      * End the conversation.
-     * @return
+     * @return Sentence containing far-ends response
      */
     Sentence farewell();
 }

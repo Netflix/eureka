@@ -26,7 +26,7 @@ public class Sentence {
 
     /**
      * whole getter.
-     * @return
+     * @return Concatination of the sentence as a single string
      */
     @XmlElement
     public String getWhole() {
