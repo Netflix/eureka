@@ -1,7 +1,7 @@
 // Establish version and status
 ext.releaseVersion = '1.1.3' // TEMPLATE: Set to latest release
 ext.githubProjectName = name // TEMPLATE: change to match github project, if it doesn't match project name
-group = 'com.netflix.osstemplate' // TEMPLATE: Set to organization of project
+group = "com.netflix.${githubProjectName}" // TEMPLATE: Set to organization of project
 
 buildscript {
     repositories { mavenCentral() }
