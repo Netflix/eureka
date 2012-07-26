@@ -1,0 +1,63 @@
+package appinfo;
+
+option java_package = "com.netflix.appinfo";
+option java_outer_classname = "AppInfoProtos";
+
+message Property {
+  required string key = 1;
+  required string value = 2;
+}
+
+message Instance {
+  
+  enum Status {
+    UP = 0;
+    DOWN = 1;
+    STARTING = 2;
+  }
+
+  message DataCenter {    
+    enum Name {
+      NETFLIX = 0;
+      AMAZON = 1;
+    }
+    required Name name = 1 [default = NETFLIX];
+    repeated Property property = 2;
+  }
+
+  message Lease {
+    required int32 renewalIntervalInSecs = 1 [default = 30];
+    required int32 durationInSecs = 2 [default = 90];
+    optional int64 registrationTimestamp = 3;
+    optional int64 lastRenewalTimestamp = 4;
+    optional int64 evictionTimestamp = 5;
+    optional int64 clock = 6;     
+  }
+
+  required string app = 1;
+  required string hostName = 2;
+  required string ipAddr = 3;
+  required Status status = 4;
+  required DataCenter dataCenter = 5;
+  optional int32  port = 6;
+  optional string version = 7;
+  optional string sourceVersion = 8;
+  optional string sid = 9;
+  optional Lease lease = 10;
+  optional int32 securePort = 11;
+  optional boolean isSecurePortEnabled = 12;
+  optional boolean isUnsecurePortEnabled = 13;
+  optional int32 countryId = 14;
+  
+  repeated Property property = 15;
+}
+
+message Application {
+  required string name = 1;
+
+  repeated Instance instance = 2;
+}
+
+message Applications {
+  repeated Application application = 1;
+}

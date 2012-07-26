@@ -1,0 +1,20 @@
+<ivy-module version="2.0" xmlns:e="http://ant.apache.org/ivy/extra">
+    <info organisation="netflix" module="eureka-client">
+  </info>
+    <configurations>
+        <include file="${ivy.settings.dir}/ivy-configurations.xml"/>
+        <conf name="test" visibility="public" extends="runtime"/>
+    </configurations>
+    <publications defaultconf="master">
+        <artifact name="eureka-cient" type="jar" ext="jar"/>
+        <artifact name="eureka-client" type="javadoc" e:classifier="javadoc" ext="jar" conf="javadoc"/>
+    </publications>
+    <dependencies>
+  	  <dependency org="com.thoughtworks.xstream" name="xstream" rev="1.3" conf="compile"/>
+      <dependency org="com.netflix.archaius" name="archaius-core" rev="latest.${input.status}" conf="compile,sources"/>
+       <dependency org="javax.ws.rs" name="jsr311-api" rev="1.1.1" conf="compile"/>
+       <dependency org="com.netflix.servo" name="servo-core" rev="latest.${input.status}" conf="compile,sources"/>
+         <dependency org="com.sun.jersey" name="jersey-bundle" rev="latest.${input.status}" conf="compile"/>
+		<dependency org="com.sun.jersey.contribs" name="jersey-apache-client" rev="latest.${input.status}" conf="compile" /> 
+  	</dependencies>
+</ivy-module>
