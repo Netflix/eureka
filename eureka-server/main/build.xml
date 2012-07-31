@@ -1,3 +1,0 @@
-<project name="discovery" default="help">
-    <import file="../../../Tools/build/webapplication.xml"/>
-</project>
