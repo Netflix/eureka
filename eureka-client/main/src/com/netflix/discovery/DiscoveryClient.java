@@ -1,11 +1,3 @@
-/*
- * DiscoveryClient.java
- *
- * $Header: $
- * $DateTime: $
- *
- * Copyright (c) 2009 Netflix, Inc.  All rights reserved.
- */
 package com.netflix.discovery;
 
 import java.util.ArrayList;
@@ -37,6 +29,7 @@ import com.netflix.appinfo.HealthCheckCallback;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
+import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DynamicBooleanProperty;
 import com.netflix.config.DynamicIntProperty;
 import com.netflix.config.DynamicPropertyFactory;
@@ -53,104 +46,50 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
-import com.sun.jersey.client.apache.config.DefaultApacheHttpClientConfig;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
+import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
 
-
-/**
- * {@link DiscoveryClient} handles all communication w/ the discovery service
- * including registration, heartbeats, and queries
- * 
- * @author kranganathan,gkim
- */
 public class DiscoveryClient implements LookupService{
-
-    private static final com.netflix.servo.monitor.Timer GET_SERVICE_URLS_DNS_TIMER = Monitors.newTimer("DiscoveryClient:GetServiceUrlsFromDNS");
-
-    private static final String DNS_PROVIDER_URL = "dns:";
-
-    private static final String DNS_NAMING_FACTORY = "com.sun.jndi.dns.DnsContextFactory";
-
-    private static final String JAVA_NAMING_FACTORY_INITIAL = "java.naming.factory.initial";
-    
-    private static final String JAVA_NAMING_PROVIDER_URL = "java.naming.provider.url";
-
-    private static final String DNS_RECORD_TYPE = "TXT";
-
-    private static final com.netflix.config.DynamicBooleanProperty PREFER_SAME_ZONE = DynamicPropertyFactory.getInstance().getBooleanProperty("netflix.discovery.preferSameZone", true);
-
-    private static final String PROP_DISCOVERY_CONTEXT = "netflix.discovery.context";
-
-    private static final String PROP_DISCOVERY_PORT = "netflix.discovery.port";
-
-    private static final String PROP_DISCOVERY_DOMAIN_NAME = "netflix.discovery.domainName";
-
-    private static final DynamicIntProperty SERVICE_URL_GET_INTERVAL_MS = DynamicPropertyFactory.getInstance().getIntProperty("netflix.discovery.dnsPollIntervalMs",5*60*1000);
-
-    private static final String PROP_SHOULD_USE_DNS = "netflix.discovery.shouldUseDns";
-
-    private static final DynamicIntProperty PROP_DIFF_ALLOWED_IN_DELTA_VERSIONS = DynamicPropertyFactory.getInstance().getIntProperty(
-            "netflix.discovery.diffAllowedInDeltaVersions", 4);
-
-    private static final String VALUE_DELIMITER = ",";
-
-    private static final String PROP_REGION = "EC2_REGION";
-
-    private static final String DEFAULT_REGION = "us-east-1";
-    private static final String PROXY_HOST_CONF = "netflix.discovery.restclient.proxyHost";
-    private static final String PROXY_PORT_CONF = "netflix.discovery.restclient.proxyPort";
-
     // Tracer name constants
     private final static String PREFIX = "DiscoveryClient: ";
-    private final static String TRACER_REGISTER = PREFIX + "Register";
-
-    private static final com.netflix.servo.monitor.Timer REGISTER_TIMER = Monitors.newTimer(TRACER_REGISTER);
-    private final static String TRACER_REFRESH = PREFIX + "Refresh";
-
-    private static final com.netflix.servo.monitor.Timer REFRESH_TIMER = Monitors.newTimer(TRACER_REFRESH);
-    private final static String TRACER_REFRESH_DELTA = PREFIX + "RefreshDelta";
-
-    private static final com.netflix.servo.monitor.Timer REFRESH_DELTA_TIMER = Monitors.newTimer(TRACER_REFRESH_DELTA);
-    
-    private final static String TRACER_RENEW = PREFIX + "Renew";
-
-    private static final com.netflix.servo.monitor.Timer RENEW_TIMER = Monitors.newTimer(TRACER_RENEW);
-    private final static String TRACER_CANCEL = PREFIX + "Cancel";
-
-    private static final com.netflix.servo.monitor.Timer CANCEL_TIMER = Monitors.newTimer(TRACER_CANCEL);
-    private final static String TRACER_FETCH_REGISTRY = PREFIX
-            + "FetchRegistry";
-
-    private static final com.netflix.servo.monitor.Timer FETCH_REGISTRY_TIMER = Monitors.newTimer(TRACER_FETCH_REGISTRY);
-    private final static String COUNTER_RETRY = PREFIX + "Retry: ";
-
-    private static final Counter SERVER_RETRY_COUNTER = Monitors.newCounter(COUNTER_RETRY);
-    private final static String COUNTER_FAILED = PREFIX + "Failed: ";
-
-    private static final Counter ALL_SERVER_FAILURE_COUNT = Monitors.newCounter(COUNTER_FAILED);
-    private final static String COUNTER_REREGISTER = PREFIX + "Reregister: ";
-    private static final Counter REREGISTER_COUNTER = Monitors.newCounter(COUNTER_REREGISTER);
+    private static final com.netflix.servo.monitor.Timer GET_SERVICE_URLS_DNS_TIMER = Monitors.newTimer("DiscoveryClient:GetServiceUrlsFromDNS");
+    private static final com.netflix.servo.monitor.Timer REGISTER_TIMER = Monitors.newTimer(PREFIX + "Register");;
+    private static final com.netflix.servo.monitor.Timer REFRESH_TIMER = Monitors.newTimer( PREFIX + "Refresh");
+    private static final com.netflix.servo.monitor.Timer REFRESH_DELTA_TIMER = Monitors.newTimer(PREFIX + "RefreshDelta");
+    private static final com.netflix.servo.monitor.Timer RENEW_TIMER = Monitors.newTimer(PREFIX + "Renew");
+    private static final com.netflix.servo.monitor.Timer CANCEL_TIMER = Monitors.newTimer(PREFIX + "Cancel");
+    private static final com.netflix.servo.monitor.Timer FETCH_REGISTRY_TIMER = Monitors.newTimer(PREFIX + "FetchRegistry");
+    private static final Counter SERVER_RETRY_COUNTER = Monitors.newCounter(PREFIX + "Retry");
+    private static final Counter ALL_SERVER_FAILURE_COUNT = Monitors.newCounter(PREFIX + "Failed");
+    private static final Counter REREGISTER_COUNTER = Monitors.newCounter(PREFIX + "Reregister");
 
     // Constant strings
+    private static final String DNS_PROVIDER_URL = "dns:";
+    private static final String DNS_NAMING_FACTORY = "com.sun.jndi.dns.DnsContextFactory";
+    private static final String JAVA_NAMING_FACTORY_INITIAL = "java.naming.factory.initial";
+    private static final String JAVA_NAMING_PROVIDER_URL = "java.naming.provider.url";
+    private static final String DNS_RECORD_TYPE = "TXT";
+    private static final String VALUE_DELIMITER = ",";
     private static final String COMMA_STRING = VALUE_DELIMITER;
     private static final String DISCOVERY_APPID = "DISCOVERY";
     private static final String UNKNOWN = "UNKNOWN";
 
     // Defaults
-    private static final int DEFAULT_REFRESH_DELAY = 30;
-    private static final int DEFAULT_INSTANCEINFO_REPLICATION_INTERVAL = 30;
-
+    private static final int GET_REGISTRY_INTERVAL = DynamicPropertyFactory.getInstance().getIntProperty(
+            "netflix.discovery.client.refresh.interval", 30000).get();
+    private static final int INSTANCEINFO_REPLICATION_INTERVAL = DynamicPropertyFactory.getInstance().getIntProperty("netflix.discovery.appinfo.replicate.interval", 30000).get();
+   private static final String PROXY_HOST_CONF = "netflix.discovery.restclient.proxyHost";
+    private static final String PROXY_PORT_CONF = "netflix.discovery.restclient.proxyPort";
+    private static final String PROP_DISCOVERY_CONTEXT = "netflix.discovery.context";
+    private static final String PROP_DISCOVERY_PORT = "netflix.discovery.port";
+    private static final String PROP_DISCOVERY_DOMAIN_NAME = "netflix.discovery.domainName";
+    private static final DynamicIntProperty SERVICE_URL_GET_INTERVAL_MS = DynamicPropertyFactory.getInstance().getIntProperty("netflix.discovery.dnsPollIntervalMs",5*60*1000);
+    private static final String PROP_SHOULD_USE_DNS = "netflix.discovery.shouldUseDns";
+    private static final DynamicIntProperty PROP_DIFF_ALLOWED_IN_DELTA_VERSIONS = DynamicPropertyFactory.getInstance().getIntProperty(
+            "netflix.discovery.diffAllowedInDeltaVersions", 4);
     private static final String PROP_SERVICE_URL_PREFIX = "netflix.discovery.serviceUrl.";
-    private static final String PROP_CLIENT_REFRESH_INTERVAL = "netflix.discovery.client.refresh.interval";
     private static final String PROP_CLIENT_REGISTRATION_ENABLED = "netflix.discovery.registration.enabled";
-    private static final String PROP_INSTANCEINFO_REPLICATION_INTERVAL = "netflix.discovery.appinfo.replicate.interval";
-
-    private static final String US_EAST_ZONES[] = { "us-east-1a", "us-east-1b",
-            "us-east-1c", "us-east-1d" };
-
-    // for backward compatibility reasons for now
-    @Deprecated
-    public static final String ZONES[] = US_EAST_ZONES;
+   private static final com.netflix.config.DynamicBooleanProperty PREFER_SAME_ZONE = DynamicPropertyFactory.getInstance().getBooleanProperty("netflix.discovery.preferSameZone", true);
 
     private enum Action {
         Register, Cancel, Renew, Refresh, Refresh_Delta
@@ -234,9 +173,8 @@ public class DiscoveryClient implements LookupService{
             String proxyPort = DynamicPropertyFactory.getInstance().getStringProperty(PROXY_PORT_CONF, null).get();
             int connectTimeout = DynamicPropertyFactory.getInstance().getIntProperty("netflix.discovery.restclient.niws.client.ConnectTimeout", 5000).get();
             int readTimeout = DynamicPropertyFactory.getInstance().getIntProperty("netflix.discovery.restclient.niws.client.ReadTimeout", 8000).get();
-            int waitTimeout = 2000;
-            connectTimeout = 10000;
-            discoveryJerseyClient = DiscoveryJerseyClient.createJerseyClient(connectTimeout, readTimeout, waitTimeout, 2, 2);
+            
+            discoveryJerseyClient = DiscoveryJerseyClient.createJerseyClient(connectTimeout, readTimeout, 50, 200);
             //discoveryJerseyClient = DiscoveryJerseyClient.createJerseyClient(5000, 8000, 1, 1, 1);
             
             _client = discoveryJerseyClient.getClient();
@@ -249,15 +187,31 @@ public class DiscoveryClient implements LookupService{
                 _client.addFilter(new GZIPContentEncodingFilter(false));
             }
             if (proxyHost != null && proxyPort != null) {
-                cc.getProperties().put(DefaultApacheHttpClientConfig.PROPERTY_PROXY_URI, "http://" + proxyHost + ":" + proxyPort);
+                cc.getProperties().put(DefaultApacheHttpClient4Config.PROPERTY_PROXY_URI, "http://" + proxyHost + ":" + proxyPort);
             }
     
-        initExecutors();
-        fetchRegistry();
         
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize DiscoveryClient!",
                     e);
+        }
+
+        initExecutors();
+        if (!fetchRegistry()) {
+            String backupRegistry = DynamicPropertyFactory.getInstance().getStringProperty("netflix.discovery.backupregistry", null).get();
+            if (backupRegistry != null) {
+                try {
+                    BackupRegistry backupRegistryInstance = ((BackupRegistry)Class.forName(backupRegistry).newInstance());
+                    Applications apps = backupRegistryInstance.fetchRegistry();
+                    if (apps != null) {
+                        _apps.set(apps);
+                        logTotalInstances();
+                        s_logger.info("Fetched registry successfully from the backup");
+                    }
+                } catch (Throwable e) {
+                    s_logger.warn("Cannot fetch applications from apps although backup registry was specified", e);
+                }
+            }
         }
     }
 
@@ -538,7 +492,7 @@ public class DiscoveryClient implements LookupService{
         }
     }
 
-    private void fetchRegistry() {
+    private boolean fetchRegistry() {
         ClientResponse response = null;
         Stopwatch tracer = FETCH_REGISTRY_TIMER.start();
         
@@ -613,14 +567,7 @@ public class DiscoveryClient implements LookupService{
 
                     }
                 }
-                int totInstances = 0;
-                for (Application application : getApplications()
-                        .getRegisteredApplications()) {
-                    totInstances += application.getInstances().size();
-                }
-                s_logger.info(
-                        "The total number of instances in the client now is {}",
-                        totInstances);
+                logTotalInstances();
             }
 
             s_logger.debug(PREFIX + _appAndIdPath + " -  refresh status: "
@@ -630,6 +577,7 @@ public class DiscoveryClient implements LookupService{
                     PREFIX + _appAndIdPath
                             + " - was unable to refresh it's cache! status = "
                             + e.getMessage(), e);
+            return false;
 
         } finally {
             if (tracer != null) {
@@ -637,6 +585,19 @@ public class DiscoveryClient implements LookupService{
             }
             closeResponse(response);
         }
+        return true;
+    }
+
+
+    private void logTotalInstances() {
+        int totInstances = 0;
+        for (Application application : getApplications()
+                .getRegisteredApplications()) {
+            totInstances += application.getInstances().size();
+        }
+        s_logger.info(
+                "The total number of instances in the client now is {}",
+                totInstances);
     }
 
     private ClientResponse reconcileAndLogDifference(ClientResponse response,
@@ -826,10 +787,8 @@ public class DiscoveryClient implements LookupService{
 
     private void initExecutors() {
         // Schedule refreshes
-        int refreshDelay = DynamicPropertyFactory.getInstance().getIntProperty(
-                PROP_CLIENT_REFRESH_INTERVAL, DEFAULT_REFRESH_DELAY).get();
-        _scheduledCacheRefreshExecutor.schedule(new CacheRefreshThread(),
-                refreshDelay * 1000, refreshDelay * 1000);
+       _scheduledCacheRefreshExecutor.schedule(new CacheRefreshThread(),
+                GET_REGISTRY_INTERVAL , GET_REGISTRY_INTERVAL);
 
         if (shouldRegister(_myInfo)) {
             s_logger.info("Starting heartbeat executor: "
@@ -841,13 +800,9 @@ public class DiscoveryClient implements LookupService{
                     .getLeaseInfo().getRenewalIntervalInSecs() * 1000);
 
             // Schedule refreshes
-            int instanceInfoReplicationInterval = DynamicPropertyFactory.getInstance().getIntProperty(
-                            PROP_INSTANCEINFO_REPLICATION_INTERVAL,
-                            DEFAULT_INSTANCEINFO_REPLICATION_INTERVAL).get();
-
-            _instanceInfoReplicator.schedule(new InstanceInfoReplicator(),
-                    (10 * 1000) + instanceInfoReplicationInterval * 1000,
-                    instanceInfoReplicationInterval * 1000);
+           _instanceInfoReplicator.schedule(new InstanceInfoReplicator(),
+                    (10 * 1000) + INSTANCEINFO_REPLICATION_INTERVAL,
+                    INSTANCEINFO_REPLICATION_INTERVAL);
             
         }
     }
@@ -1071,7 +1026,10 @@ public class DiscoveryClient implements LookupService{
      */
     @Deprecated
     public static String[] getServiceUrls(InstanceInfo myInfo) {
-        String instanceZone = US_EAST_ZONES[0];
+        String availZones[] = DynamicPropertyFactory.getInstance().getStringProperty(
+                "netflix.discovery." + getRegion() + ".availabilityZones", "").get().split(VALUE_DELIMITER);
+      
+        String instanceZone = availZones[0];
         LinkedHashSet<String> orderedUrls = new LinkedHashSet<String>();
         if (myInfo != null
                 && myInfo.getDataCenterInfo().getName() == Name.Amazon) {
@@ -1081,18 +1039,18 @@ public class DiscoveryClient implements LookupService{
         }
         int myZoneOffset = getZoneOffset(instanceZone, !myInfo.getAppName()
                 .equalsIgnoreCase("DISCOVERY"),
-                US_EAST_ZONES);
-        orderedUrls.addAll(Arrays.asList(DynamicPropertyFactory.getInstance().getStringProperty(PROP_SERVICE_URL_PREFIX + US_EAST_ZONES[myZoneOffset], "").get()
+                availZones);
+        orderedUrls.addAll(Arrays.asList(DynamicPropertyFactory.getInstance().getStringProperty(PROP_SERVICE_URL_PREFIX + availZones[myZoneOffset], "").get()
                 .split(COMMA_STRING)));
-        int currentOffset = myZoneOffset == (US_EAST_ZONES.length - 1) ? 0
+        int currentOffset = myZoneOffset == (availZones.length - 1) ? 0
                 : (myZoneOffset + 1);
         while (currentOffset != myZoneOffset) {
             orderedUrls.addAll(
                     Arrays.asList(DynamicPropertyFactory.getInstance().getStringProperty(PROP_SERVICE_URL_PREFIX
-                            + US_EAST_ZONES[currentOffset], "").get()
+                            + availZones[currentOffset], "").get()
                             .split(COMMA_STRING)));
                     
-            if (currentOffset == (US_EAST_ZONES.length - 1)) {
+            if (currentOffset == (availZones.length - 1)) {
                 currentOffset = 0;
             } else {
                 currentOffset++;
@@ -1278,14 +1236,16 @@ public class DiscoveryClient implements LookupService{
      * @return - The zone in which the particular instance belongs to
      */
     public static String getZone(InstanceInfo myInfo) {
-        String instanceZone = US_EAST_ZONES[0];
+        String availZones[] = DynamicPropertyFactory.getInstance().getStringProperty(
+                "netflix.discovery." + getRegion() + ".availabilityZones", "").get().split(VALUE_DELIMITER);
+        String instanceZone = availZones[0];
             if (myInfo != null
                     && myInfo.getDataCenterInfo().getName() == Name.Amazon) {
                 instanceZone = ((AmazonInfo) myInfo.getDataCenterInfo())
                         .get(MetaDataKey.availabilityZone);
             }
         if (instanceZone == null) {
-            instanceZone = US_EAST_ZONES[0];
+            instanceZone = availZones[0];
             s_logger.warn("The instance zone is null, so settting it to {}", instanceZone);
         }
         return instanceZone;
@@ -1296,8 +1256,7 @@ public class DiscoveryClient implements LookupService{
      * @return - The region in which the particular instance belongs to
      */
     public static String getRegion() {
-       
-        String region = DynamicPropertyFactory.getInstance().getStringProperty(PROP_REGION, DEFAULT_REGION).get();
+        String region = ConfigurationManager.getDeploymentContext().getDeploymentRegion();
         region = region.trim().toLowerCase();
         return region;
     }

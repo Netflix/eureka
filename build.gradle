@@ -39,7 +39,7 @@ subprojects {
 project(':eureka-client') {
     dependencies {
         compile 'com.thoughtworks.xstream:xstream:1.3'
-        compile 'com.netflix.archaius:archaius-core:0.1.4'
+        compile 'com.netflix.archaius:archaius-core:0.2.2'
 	compile 'javax.ws.rs:jsr311-api:1.1.1'
 	compile 'com.netflix.servo:servo-core:0.1.0'
 	compile 'com.sun.jersey:jersey-bundle:1.9.1'

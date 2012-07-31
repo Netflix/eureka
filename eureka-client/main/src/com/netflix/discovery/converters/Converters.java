@@ -1,8 +1,8 @@
 /*
  * Converters.java
  *
- * $Header: //depot/commonlibraries/eureka-client/main/src/com/netflix/discovery/converters/Converters.java#2 $
- * $DateTime: 2012/07/16 17:00:42 $
+ * $Header: //depot/commonlibraries/eureka-client/main/src/com/netflix/discovery/converters/Converters.java#3 $
+ * $DateTime: 2012/07/29 11:24:24 $
  *
  * Copyright (c) 2009 Netflix, Inc.  All rights reserved.
  */

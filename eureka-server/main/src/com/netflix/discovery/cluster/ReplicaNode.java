@@ -95,7 +95,7 @@ public class ReplicaNode {
             
             if (_client == null) {
                 try {
-                    jerseyClient = DiscoveryJerseyClient.createJerseyClient(this.connectTimeout.get(), this.readTimeout.get(), this.connectionManagerTimeout.get(), this.maxConnectionPerHost.get(), this.maxTotalHttpConnections.get());
+                    jerseyClient = DiscoveryJerseyClient.createJerseyClient(this.connectTimeout.get(), this.readTimeout.get(), this.maxConnectionPerHost.get(), this.maxTotalHttpConnections.get());
                 } catch (Throwable e) {
                     throw new RuntimeException(
                             "Cannot create new Rest client for :"

@@ -12,9 +12,8 @@ import java.util.Map;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.config.ConfigurationManager;
+import com.netflix.discovery.provider.Serializer;
 
-import com.netflix.niws.IPayload;
-import com.netflix.niws.PayloadConverter;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 
@@ -23,9 +22,9 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
  * 
  * @author gkim
  */
-@PayloadConverter("com.netflix.discovery.converters.EntityBodyConverter")
+@Serializer("com.netflix.discovery.converters.EntityBodyConverter")
 @XStreamAlias("status")
-public class StatusInfo implements IPayload {
+public class StatusInfo {
     private final static String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss Z";
     
     public static final class Builder {

@@ -1,46 +1,45 @@
 /*
  * EntityBodyConverter.java
  *  
- * $Header: //depot/commonlibraries/eureka-client/main/src/com/netflix/discovery/converters/EntityBodyConverter.java#1 $ 
- * $DateTime: 2012/07/16 11:58:15 $
+ * $Header: //depot/commonlibraries/eureka-client/main/src/com/netflix/discovery/converters/EntityBodyConverter.java#2 $ 
+ * $DateTime: 2012/07/29 11:24:24 $
  *
  * Copyright (c) 2009 Netflix, Inc.  All rights reserved.
  */
 package com.netflix.discovery.converters;
 
-import com.netflix.niws.IPayload;
-import com.netflix.niws.IPayloadObjectConverter;
-import com.thoughtworks.xstream.XStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+
 import javax.ws.rs.core.MediaType;
+
+import com.netflix.discovery.provider.ISerializer;
+import com.thoughtworks.xstream.XStream;
 
 /**
  * Custom entity body serialization/de-serialization for discovery related objects
  *  
  * @author gkim
  */
-public class EntityBodyConverter implements IPayloadObjectConverter {
+public class EntityBodyConverter implements ISerializer {
 
     /**
      * {@inheritDoc}
      */
-    public IPayload read(InputStream is, Class<IPayload> type, String contentType)
+    public Object read(InputStream is, Class type, MediaType mediaType)
             throws IOException {
         XStream xstream = null;
-        String singleContentType = (contentType != null) ? 
-                contentType.split(",")[0] : null;
-        
-        if(MediaType.APPLICATION_JSON.equals(singleContentType)){
+         
+        if(MediaType.APPLICATION_JSON_TYPE.equals(mediaType)){
             xstream = JsonXStream.getInstance();
-        }else if(MediaType.APPLICATION_XML.equals(singleContentType)){
+        }else if(MediaType.APPLICATION_XML_TYPE.equals(mediaType)){
             xstream = XmlXStream.getInstance();
         }
         if(xstream != null) {
-            return (IPayload)xstream.fromXML(is);
+            return xstream.fromXML(is);
         }else {
-            throw new IllegalArgumentException("Content-type: " + singleContentType + 
+            throw new IllegalArgumentException("Content-type: " + mediaType.getType() + 
                     " is currently not supported for " + type.getName());
         }
     }
@@ -48,20 +47,18 @@ public class EntityBodyConverter implements IPayloadObjectConverter {
     /**
      * {@inheritDoc}
      */
-    public void write(Object object, OutputStream os, String contentType) 
+    public void write(Object object, OutputStream os, MediaType mediaType) 
         throws IOException {
         XStream xstream = null;
-        String singleContentType = (contentType != null) ? 
-                contentType.split(",")[0] : null;
-        if(MediaType.APPLICATION_JSON.equals(singleContentType)){
+        if(MediaType.APPLICATION_JSON_TYPE.equals(mediaType)){
             xstream = JsonXStream.getInstance();
-        }else if(MediaType.APPLICATION_XML.equals(singleContentType)){
+        }else if(MediaType.APPLICATION_XML_TYPE.equals(mediaType)){
             xstream = XmlXStream.getInstance();
         }
         if(xstream != null) {
             xstream.toXML(object, os);
         }else {
-            throw new IllegalArgumentException("Content-type: " + singleContentType + 
+            throw new IllegalArgumentException("Content-type: " + mediaType.getType() + 
                     " is currently not supported for " + object.getClass().getName());
         }
     }

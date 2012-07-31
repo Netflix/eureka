@@ -9,7 +9,6 @@
 package com.netflix.discovery.shared;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -18,8 +17,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.niws.IPayload;
-import com.netflix.niws.PayloadConverter;
+import com.netflix.discovery.provider.Serializer;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamImplicit;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
@@ -29,9 +27,9 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
  * 
  * @author gkim
  */
-@PayloadConverter("com.netflix.discovery.converters.EntityBodyConverter")
+@Serializer("com.netflix.discovery.converters.EntityBodyConverter")
 @XStreamAlias("application")
-public class Application implements IPayload {
+public class Application {
     
     private String name;
     

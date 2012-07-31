@@ -8,20 +8,19 @@
  */
 package com.netflix.appinfo;
 
-import com.netflix.appinfo.AmazonInfo.MetaDataKey;
-import com.netflix.appinfo.DataCenterInfo.Name;
-import com.netflix.appinfo.InstanceInfo.Builder;
-import com.netflix.config.DynamicPropertyFactory;
-import com.netflix.discovery.DiscoveryClient;
-import com.netflix.discovery.converters.Auto;
-import com.netflix.niws.IPayload;
-import com.netflix.niws.PayloadConverter;
+import static com.netflix.appinfo.ApplicationInfoManager.DEFAULT_HEALTHCHECK_URLPATH;
+import static com.netflix.appinfo.ApplicationInfoManager.DEFAULT_HOMEPAGE_URLPATH;
+import static com.netflix.appinfo.ApplicationInfoManager.DEFAULT_STATUSPAGE_URLPATH;
+import static com.netflix.appinfo.ApplicationInfoManager.PROP_HEALTHCHECK_URL;
+import static com.netflix.appinfo.ApplicationInfoManager.PROP_HEALTHCHECK_URLPATH;
+import static com.netflix.appinfo.ApplicationInfoManager.PROP_HOMEPAGE_URL;
+import static com.netflix.appinfo.ApplicationInfoManager.PROP_HOMEPAGE_URLPATH;
+import static com.netflix.appinfo.ApplicationInfoManager.PROP_SECURE_HEALTHCHECK_URL;
+import static com.netflix.appinfo.ApplicationInfoManager.PROP_SECURE_VIP_ADDRESS;
+import static com.netflix.appinfo.ApplicationInfoManager.PROP_STATUSPAGE_URL;
+import static com.netflix.appinfo.ApplicationInfoManager.PROP_STATUSPAGE_URLPATH;
+import static com.netflix.appinfo.ApplicationInfoManager.PROP_VIP_ADDRESS;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.thoughtworks.xstream.annotations.XStreamAlias;
-import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -31,16 +30,26 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.netflix.appinfo.ApplicationInfoManager.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.netflix.appinfo.AmazonInfo.MetaDataKey;
+import com.netflix.appinfo.DataCenterInfo.Name;
+import com.netflix.config.DynamicPropertyFactory;
+import com.netflix.discovery.DiscoveryClient;
+import com.netflix.discovery.converters.Auto;
+import com.netflix.discovery.provider.Serializer;
+import com.thoughtworks.xstream.annotations.XStreamAlias;
+import com.thoughtworks.xstream.annotations.XStreamOmitField;
 
 /**
  * Information about the running application instance
  *
  * @author gkim
  */
-@PayloadConverter("com.netflix.discovery.converters.EntityBodyConverter")
+@Serializer("com.netflix.discovery.converters.EntityBodyConverter")
 @XStreamAlias("instance")
-public class InstanceInfo implements IPayload {
+public class InstanceInfo {
 
     private static final Pattern VIP_ATTRIBUTES_PATTERN = Pattern.compile("\\$\\{(.*?)\\}");
     

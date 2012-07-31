@@ -26,7 +26,9 @@
          <dependency org="org.codehaus.jettison" name="jettison" rev="latest.${input.status}" conf="runtime" />
         <!--  test deps -->
         <dependency org="junit" name="junit-dep" rev="4.4" conf="test"/>
-        
+        		<dependency org="com.sun.jersey.contribs" name="jersey-apache-client4" rev="latest.${input.status}" conf="compile" /> 
+		 <dependency org="org.apache.httpcomponents" name="httpclient" rev="4.1.2" conf="compile"/>
+  
         <!-- exclusion list - remove any unnecessary transitive deps -->
         <exclude org="netflix" module="SRWrapper"/>
         <exclude org="com.oracle" />

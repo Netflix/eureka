@@ -15,6 +15,8 @@
        <dependency org="javax.ws.rs" name="jsr311-api" rev="1.1.1" conf="compile"/>
        <dependency org="com.netflix.servo" name="servo-core" rev="latest.${input.status}" conf="compile,sources"/>
          <dependency org="com.sun.jersey" name="jersey-bundle" rev="latest.${input.status}" conf="compile"/>
-		<dependency org="com.sun.jersey.contribs" name="jersey-apache-client" rev="latest.${input.status}" conf="compile" /> 
+		<dependency org="com.sun.jersey.contribs" name="jersey-apache-client4" rev="latest.${input.status}" conf="compile" /> 
+		 <dependency org="org.apache.httpcomponents" name="httpclient" rev="4.1.2" conf="compile"/>
+     
   	</dependencies>
 </ivy-module>

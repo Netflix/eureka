@@ -19,7 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.discovery.DiscoveryClient;
-import com.netflix.niws.NIWSProvider;
+import com.netflix.discovery.provider.DiscoveryJerseyProvider;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
@@ -35,8 +35,8 @@ public class DiscoveryJerseyClient {
 
 
   
-    public static JerseyClient createJerseyClient(int connectionTimeout, int readTimeout, int waitTimeout, int maxConnectionsPerHost, int maxTotalConnections) {
-        return new JerseyClient(connectionTimeout, readTimeout, waitTimeout, maxConnectionsPerHost, maxTotalConnections);
+    public static JerseyClient createJerseyClient(int connectionTimeout, int readTimeout,int maxConnectionsPerHost, int maxTotalConnections) {
+        return new JerseyClient(connectionTimeout, readTimeout, maxConnectionsPerHost, maxTotalConnections);
     }
      
     
@@ -71,17 +71,15 @@ public class DiscoveryJerseyClient {
         }
         
         
-        public JerseyClient (int connectionTimeout, int readTimeout, int waitTimeout, int maxConnectionsPerHost, int maxTotalConnections) {
+        public JerseyClient (int connectionTimeout, int readTimeout, int maxConnectionsPerHost, int maxTotalConnections) {
            cc = new CustomApacheHttpClientConfig(maxConnectionsPerHost, maxTotalConnections);
-            cc.getClasses().add(NIWSProvider.class);
+            cc.getClasses().add(DiscoveryJerseyProvider.class);
        _client = ApacheHttpClient4.create(cc);
        HttpParams params = _client.getClientHandler().getHttpClient().getParams();
        
        HttpConnectionParams.setConnectionTimeout(params, connectionTimeout);
        HttpConnectionParams.setSoTimeout(params, readTimeout);
-       //params.setIntParameter(ClientPNames.C, waitTimeout);
-       params.setIntParameter("http.connection-manager.timeout", waitTimeout);
-       //_client.getClientHandler().getHttpClient().getParams().setIntParameter(HttpClientParams.CONNECTION_MANAGER_TIMEOUT, waitTimeout);
+     //_client.getClientHandler().getHttpClient().getParams().setIntParameter(HttpClientParams.CONNECTION_MANAGER_TIMEOUT, waitTimeout);
       // _client.setConnectTimeout(connectionTimeout);
       // _client.setReadTimeout(readTimeout);
        

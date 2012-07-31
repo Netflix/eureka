@@ -21,8 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
-import com.netflix.niws.IPayload;
-import com.netflix.niws.PayloadConverter;
+import com.netflix.discovery.provider.Serializer;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamImplicit;
 
@@ -31,9 +30,9 @@ import com.thoughtworks.xstream.annotations.XStreamImplicit;
  * 
  * @author gkim
  */
-@PayloadConverter("com.netflix.discovery.converters.EntityBodyConverter")
+@Serializer("com.netflix.discovery.converters.EntityBodyConverter")
 @XStreamAlias("applications")
-public class Applications implements IPayload {
+public class Applications {
     private static final String APP_INSTANCEID_DELIMITER = "$$";
 
     private static final String STATUS_DELIMITER = "_";
