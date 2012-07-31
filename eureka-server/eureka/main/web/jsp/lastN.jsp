@@ -1,0 +1,66 @@
+<%@ page language="java" import="java.util.*,java.io.*,com.netflix.discovery.*,com.netflix.discovery.util.*" pageEncoding="UTF-8" %>
+<%
+    String path = request.getContextPath();
+    String basePath = request.getScheme() + "://"
+            + request.getServerName() + ":" + request.getServerPort()
+            + path + "/";
+%>
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<%@page import="com.netflix.discovery.shared.Pair"%><html>
+  <head>
+    <base href="<%=basePath%>">
+    
+    <title>Discovery - <%=ContainerContext.VERSION%> - Last N events</title>
+    <link rel="stylesheet" type="text/css" href="./css/main.css">
+    <link type="text/css" href="./css/jquery-ui-1.7.2.custom.css" rel="Stylesheet" />  
+    <script type="text/javascript" src="./js/jquery-1.3.2.js" ></script>
+    <script type="text/javascript" src="./js/jquery-ui-1.7.2.custom.min.js"></script>
+    <script type="text/javascript" >
+       $(document).ready(function() {
+           $('table.stripeable tr:odd').addClass('odd');
+           $('table.stripeable tr:even').addClass('even');
+           $("#tabs").tabs();
+           });
+    </script>
+  </head>
+  
+  <body id="three">
+    <jsp:include page="header.jsp" />
+    <jsp:include page="navbar.jsp" />
+    <div id="content">
+	<div id="tabs">
+	<ul>
+	    <li><a href="#tabs-1">Last 1000 canceled leases</a></li>
+	    <li><a href="#tabs-2">Last 1000 newly registered leases</a></li>
+	</ul>
+    <div id="tabs-1">
+      <%
+      ReplicaAwareInstanceRegistry registery = ReplicaAwareInstanceRegistry.getInstance();
+      List<Pair<Long, String>> list = registery.getLastNCanceledInstances();
+      out.print("<table id=\'lastNCanceled\' class=\"stripeable\">");
+      out.print("<tr><th>Timestamp</th><th>Lease</th></tr>");
+      for (Pair<Long, String> entry : list) {
+          out.print("<tr><td>" + (new Date(entry.first().longValue()))
+                  + "</td><td>" + entry.second() + "</td></tr>");
+      }
+      out.println("</table>");
+     %>
+    </div>
+    <div id="tabs-2">
+      <%
+      list = registery.getLastNRegisteredInstances();
+      out.print("<table id=\'lastNRegistered\' class=\"stripeable\">");
+      out.print("<tr><th>Timestamp</th><th>Lease</th></tr>");
+      for (Pair<Long, String> entry : list) {
+          out.print("<tr><td>" + (new Date(entry.first().longValue()))
+                  + "</td><td>" + entry.second() + "</td></tr>");
+      }
+      out.println("</table>");
+     %>
+    </div>
+  </div>
+  </div>
+  </body>
+</html>
