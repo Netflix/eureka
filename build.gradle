@@ -5,6 +5,7 @@ group = "com.netflix.${githubProjectName}" // TEMPLATE: Set to organization of p
 
 buildscript {
     repositories { mavenCentral() }
+    apply from: file('gradle/buildscript.gradle'), to: buildscript 
 }
 
 allprojects {
@@ -15,7 +16,7 @@ allprojects {
 apply from: file('gradle/convention.gradle')
 apply from: file('gradle/maven.gradle')
 apply from: file('gradle/check.gradle')
-//apply from: file('gradle/license.gradle') // Waiting for re-release
+apply from: file('gradle/license.gradle')
 
 // Closure to configure all the POM with extra info, common to all projects
 pom {
