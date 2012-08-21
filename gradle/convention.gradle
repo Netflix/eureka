@@ -1,15 +1,9 @@
-
-ext.performingRelease = project.hasProperty('release') && Boolean.parseBoolean(project.release)
-def versionPostfix = performingRelease?'':'-SNAPSHOT'
-
 apply plugin: 'java' // Plugin as major conventions
-
-version = "${releaseVersion}${versionPostfix}"
 
 sourceCompatibility = 1.6
 
 // GRADLE-2087 workaround, perform after java plugin
-status = performingRelease?'release':'snapshot'
+status = version.contains('-SNAPSHOT')?'snapshot':'release'
 
 task sourcesJar(type: Jar, dependsOn:classes) {
     classifier = 'sources'
