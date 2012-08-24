@@ -1,0 +1,154 @@
+body {
+  margin-top: 0;
+  font-size: 13px;
+  font-family: arial, helvetica, sans-serif;
+}
+
+div#content {
+  margin-top: 30px;
+  padding-top: 20px;
+}
+
+#header {
+  margin: auto;
+  background-color: #224499;
+  color: white;
+  padding: 5px;
+  text-align: center;
+}
+
+#navcontainer {
+  margin: 0;
+}
+
+#navcontainer ul {
+  padding-left: 0;
+  margin: 0;
+  background-color: #D4E6FC;
+  border-color: #224499;
+  border: solid 1px #224499;
+  color: White;
+  float: left;
+  width: 100%;
+  font-family: arial, helvetica, sans-serif;
+}
+
+#navcontainer ul li { display: inline; }
+
+#navcontainer ul li a {
+  padding: 0.2em 1em;
+  background-color: #D4E6FC;
+  color: #224499;
+  text-decoration: none;
+  float: left;
+  border-right: 1px solid #fff;
+  font-weight: bold;
+}
+
+#navcontainer ul li a:hover {
+  background-color: #369;
+  color: #fff;
+  font-weight: bold;
+}
+
+.sectionTitle {
+ font-size: 1.1em;
+ font-weight: bold;
+ color: #224499;
+ padding-bottom: 7px;
+}
+
+#one li.one a, #two li.two a, #three li.three a, #four li.four a {
+  background-color: #224499;
+  color: #fff;
+  font-weight: bold;
+  background-position:bottom;
+}
+
+table {
+ margin-bottom: 10px;
+ font-size: 1.0em;
+   width: 100%;
+}
+
+table th {
+ font-size: 10pt;
+ background-color: #D4E6FC;
+}
+
+table td {
+ padding: 5px;
+}
+
+table#keyDef {
+  border: solid 1px #224499;
+}
+
+table#authPolicy {
+  border: solid 1px #224499;
+}
+
+table#generalStats td {
+  color:green;
+  text-align: center;
+}
+
+table#errorStats td {
+  color:red;
+  text-align: center;
+}
+
+table#deniedAuthorization {
+  width: 70%;
+  border: solid 1px #224499;
+}
+
+table#errorCode {
+  border: solid 1px #224499;
+}
+
+table#categoryStats {
+  border: solid 1px #224499;
+}
+
+h3 {
+ margin: 0;
+}
+
+h4#uptime {
+ margin: 0;
+ color: yellow;
+}
+
+dl dt {
+ font-weight: bold;
+}
+dl dd {
+ padding-bottom: 5px;
+}
+
+tr.even {
+  background-color: #fff;
+}
+
+tr.odd {
+  background-color: #ffffcc;
+}
+
+#keyDef {
+  width: 450px;
+}
+
+.stripeable {
+  width: 850px;
+}
+
+span.hlist {
+  padding-right: 10px;
+  margin-right: 10px;
+  #background-color: #ffffcc;
+  border-right: solid 2px #224499;
+}
+
+#categoryStats {
+}

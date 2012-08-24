@@ -1,0 +1,131 @@
+ext.releaseVersion = '1.0'
+ext.githubProjectName = 'eureka'
+group = 'com.netflix.eureka'
+
+buildscript {
+    repositories { mavenCentral() }
+}
+
+allprojects {
+    repositories { mavenCentral() }
+}
+
+//apply from: file('gradle/release.gradle') // Not fully tested
+apply from: file('gradle/convention.gradle')
+apply from: file('gradle/maven.gradle')
+apply from: file('gradle/check.gradle')
+//apply from: file('gradle/license.gradle') // Waiting for re-release
+
+subprojects {
+    // Closure to configure all the POM with extra info, common to all projects
+    pom {
+      project {
+        url "https://github.com/Netflix/${githubProjectName}"
+        scm {
+            connection "scm:git:git@github.com:Netflix/${githubProjectName}.git"
+            url "scm:git:git@github.com:Netflix/${githubProjectName}.git"
+            developerConnection "scm:git:git@github.com:Netflix/${githubProjectName}.git"
+        }
+        issueManagement {
+            system 'github'
+            url "https://github.com/Netflix/${githubProjectName}/issues"
+        }
+      }
+   }
+    group = "com.netflix.${githubProjectName}" // TEMPLATE: Set to organization of project
+}
+
+
+project(':eureka-client') {
+jar {
+ manifest {
+        attributes("Implementation-Title": "eureka-client", "Implementation-Version": version,'Build-Time-ISO-8601': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"))
+    }
+}
+
+
+    dependencies {
+        compile 'com.thoughtworks.xstream:xstream:1.4.2'
+        compile 'com.netflix.archaius:archaius-core:0.2.2'
+	compile 'javax.ws.rs:jsr311-api:1.1.1'
+	compile 'com.netflix.servo:servo-core:0.4.13'
+	compile 'com.sun.jersey:jersey-bundle:1.9.1'
+	compile 'com.sun.jersey.contribs:jersey-apache-client4:1.8'
+	compile 'org.apache.httpcomponents:httpclient:4.1.2'
+	
+    }
+}
+
+project(':eureka-core') {
+
+jar {
+ manifest {
+        attributes("Implementation-Title": "eureka-core", "Implementation-Version": version,'Build-Time-ISO-8601': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"))
+    }
+ }
+
+
+    dependencies {
+	compile project(':eureka-client')
+	compile 'amazon:aws-java-sdk:1.3.4.1'
+	compile 'javax.servlet:servlet-api:2.4'
+        compile 'com.thoughtworks.xstream:xstream:1.4.2'
+        compile 'com.netflix.archaius:archaius-core:0.2.2'
+	compile 'javax.ws.rs:jsr311-api:1.1.1'
+	compile 'com.netflix.servo:servo-core:0.4.13'
+	compile 'com.sun.jersey:jersey-bundle:1.9.1'
+	compile 'com.sun.jersey.contribs:jersey-apache-client4:1.8'
+	compile 'org.apache.httpcomponents:httpclient:4.1.2'
+	
+    }
+}
+
+project(':eureka-resources') {
+
+
+task copy(type: Copy) {
+   from '*'
+}
+
+
+jar {
+ manifest {
+        attributes("Implementation-Title": "eureka-resources", "Implementation-Version": version,'Build-Time-ISO-8601': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"))
+    }
+ }
+}
+
+
+project(':eureka-server') {
+   apply plugin: 'war'
+
+sourceSets {
+    main {
+        java {
+            srcDir 'test/java'
+        }
+ }
+
+task taskX(dependsOn: ':eureka-resources:copy') << {
+        println 'Copying resources from eureka-resources'
+    }
+
+  
+war {
+    from '*' // adds a file-set to the root of the archive
+     webXml = file('WEB-INF/web.xml') // copies a file to WEB-INF/web.xml
+}
+  dependencies {
+	compile project(':eureka-client')
+	compile project(':eureka-core')
+	compile project(':eureka-resources')
+	providedCompile 'javax.servlet:servlet-api:2.4'
+		
+    }
+
+}
+
+
+
+
+
