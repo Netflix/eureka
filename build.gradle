@@ -46,13 +46,12 @@ jar {
 
     dependencies {
         compile 'com.thoughtworks.xstream:xstream:1.4.2'
-        compile 'com.netflix.archaius:archaius-core:0.2.2'
+        compile 'com.netflix.archaius:archaius-core:0.3.3'
 	compile 'javax.ws.rs:jsr311-api:1.1.1'
 	compile 'com.netflix.servo:servo-core:0.4.13'
 	compile 'com.sun.jersey:jersey-bundle:1.9.1'
 	compile 'com.sun.jersey.contribs:jersey-apache-client4:1.8'
 	compile 'org.apache.httpcomponents:httpclient:4.1.2'
-	
     }
 }
 
@@ -70,7 +69,7 @@ jar {
 	compile 'amazon:aws-java-sdk:1.3.4.1'
 	compile 'javax.servlet:servlet-api:2.4'
         compile 'com.thoughtworks.xstream:xstream:1.4.2'
-        compile 'com.netflix.archaius:archaius-core:0.2.2'
+        compile 'com.netflix.archaius:archaius-core:0.3.3'
 	compile 'javax.ws.rs:jsr311-api:1.1.1'
 	compile 'com.netflix.servo:servo-core:0.4.13'
 	compile 'com.sun.jersey:jersey-bundle:1.9.1'
@@ -81,11 +80,6 @@ jar {
 }
 
 project(':eureka-resources') {
-
-
-task copy(type: Copy) {
-   from '*'
-}
 
 
 jar {
@@ -105,26 +99,41 @@ sourceSets {
             srcDir 'test/java'
         }
  }
-
-task taskX(dependsOn: ':eureka-resources:copy') << {
-        println 'Copying resources from eureka-resources'
-    }
+}
 
   
 war {
-    from '*' // adds a file-set to the root of the archive
-     webXml = file('WEB-INF/web.xml') // copies a file to WEB-INF/web.xml
-}
+    
+	from('conf')  {
+		include 'eureka-server*'
+		include 'eureka-client*'
+		include 'log4j.properties'
+                into 'WEB-INF/classes/'
+        }
+	from (project(':eureka-resources').file('build/resources/main'))
+         webXml = file('WEB-INF/web.xml') // copies a file to WEB-INF/web.xml
+  
+    }
+	
+ 
   dependencies {
 	compile project(':eureka-client')
 	compile project(':eureka-core')
-	compile project(':eureka-resources')
+        runtime 'xerces:xercesImpl:2.4.0'
+     	runtime 'asm:asm:3.1' 
+	compile 'org.slf4j:slf4j-log4j12:1.6.1'
+        runtime 'org.codehaus.jettison:jettison:1.2' 
 	providedCompile 'javax.servlet:servlet-api:2.4'
 		
     }
 
+delete 'testlibs'
+copy { 
+    from zipTree('build/libs/'+ war.archiveName)
+    into 'testlibs' 
+    include 'WEB-INF/lib/'
 }
-
+}
 
 
 

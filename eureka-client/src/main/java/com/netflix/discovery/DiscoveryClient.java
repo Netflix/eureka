@@ -355,7 +355,7 @@ public class DiscoveryClient implements LookupService {
      * com.netflix.discovery.shared.LookupService#getNextServerFromEureka(java
      * .lang.String, boolean)
      */
-    public String getNextServerFromEureka(String virtualHostname, boolean secure) {
+    public InstanceInfo getNextServerFromEureka(String virtualHostname, boolean secure) {
         List<InstanceInfo> instanceInfoList = this.getInstancesByVipAddress(
                 virtualHostname, secure);
         if (instanceInfoList == null || instanceInfoList.isEmpty()) {
@@ -366,7 +366,7 @@ public class DiscoveryClient implements LookupService {
         int index = (int) (apps.getNextIndex(virtualHostname.toUpperCase(),
                 secure).incrementAndGet() % instanceInfoList.size());
         InstanceInfo instanceInfo = instanceInfoList.get(index);
-        return instanceInfo.getHostName();
+        return instanceInfo;
     }
 
     /**

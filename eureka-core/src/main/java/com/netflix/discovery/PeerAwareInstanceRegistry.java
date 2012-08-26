@@ -548,7 +548,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
     }
 
     @Override
-    public String getNextServerFromEureka(String virtualHostname, boolean secure) {
+    public InstanceInfo getNextServerFromEureka(String virtualHostname, boolean secure) {
         // TODO Auto-generated method stub
         return null;
     }

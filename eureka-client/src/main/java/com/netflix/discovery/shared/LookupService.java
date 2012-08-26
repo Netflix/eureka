@@ -22,7 +22,6 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.EurekaClientConfig;
 
-
 /**
  * Lookup service for finding active instances.
  * 
@@ -30,38 +29,36 @@ import com.netflix.discovery.EurekaClientConfig;
  */
 public interface LookupService<T> {
 
-  
-    
     /**
-     * Returns the corresponding {@link Application} object which is basically
-     * a container of all registered <code>appName</code> {@link InstanceInfo}s.
-     *
-     * @param appName 
-     * @return a {@link Application} or null
-     *  if we couldn't locate any app of the requested appName
+     * Returns the corresponding {@link Application} object which is basically a
+     * container of all registered <code>appName</code> {@link InstanceInfo}s.
+     * 
+     * @param appName
+     * @return a {@link Application} or null if we couldn't locate any app of
+     *         the requested appName
      */
     Application getApplication(String appName);
-    
+
     /**
      * Returns the {@link Applications} object which is basically a container of
      * all currently registered {@link Application}s.
      * 
-     * @param appName 
+     * @param appName
      * @return {@link Applications}
      */
     Applications getApplications();
-    
-    
+
     /**
-     * Returns the {@link List} of {@link InstanceInfo}s matching the the passed in
-     * id.  A single {@link InstanceInfo} can possibly be registered w/ more than one
-     * {@link Application}s
+     * Returns the {@link List} of {@link InstanceInfo}s matching the the passed
+     * in id. A single {@link InstanceInfo} can possibly be registered w/ more
+     * than one {@link Application}s
      * 
      * @param id
-     * @return {@link List} of {@link InstanceInfo}s or {@link Collections#emptyList()}
+     * @return {@link List} of {@link InstanceInfo}s or
+     *         {@link Collections#emptyList()}
      */
     List<InstanceInfo> getInstancesById(String id);
-    
+
     /**
      * Gets the next possible server to process the requests from the registry
      * information received from eureka.
@@ -81,8 +78,10 @@ public interface LookupService<T> {
      * @param secure
      *            indicates whether this is a HTTP or a HTTPS request - secure
      *            means HTTPS.
-     * @return the public host name of the next server in line to process the
-     *         request based on the round-robin algorithm.
+     * @return the {@link InstanceInfo} information which contains the public
+     *         host name of the next server in line to process the request based
+     *         on the round-robin algorithm.
      */
-    public String getNextServerFromEureka(String virtualHostname, boolean secure);
+    public InstanceInfo getNextServerFromEureka(String virtualHostname,
+            boolean secure);
 }
