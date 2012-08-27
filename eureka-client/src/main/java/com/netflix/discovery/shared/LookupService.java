@@ -26,9 +26,10 @@ import com.netflix.discovery.EurekaClientConfig;
  * Lookup service for finding active instances.
  * 
  * @author Karthik Ranganathan, Greg Kim.
+ * @param <T> for backward compatibility
 
  */
-public interface LookupService {
+public interface LookupService<T> {
 
     /**
      * Returns the corresponding {@link Application} object which is basically a
