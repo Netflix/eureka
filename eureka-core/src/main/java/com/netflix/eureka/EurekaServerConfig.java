@@ -56,6 +56,10 @@ public interface EurekaServerConfig {
      * Gets the number of times the server should try to bind to the candidate
      * EIP.
      * 
+     * <p>
+     * <em>The changes are effective at runtime.</em>
+     * </p>
+     * 
      * @return the number of times the server should try to bind to the
      *         candidate EIP.
      */
@@ -64,6 +68,9 @@ public interface EurekaServerConfig {
     /**
      * Gets the interval with which the server should check if the EIP is bound
      * and should try to bind in the case if it is already not bound.
+     * <p>
+     * <em>The changes are effective at runtime.</em>
+     * </p>
      * 
      * @return the time in milliseconds.
      */
@@ -79,6 +86,9 @@ public interface EurekaServerConfig {
      * {@link #getRenewalPercentThreshold()}, the server turns off expirations
      * to avert danger.This will help the server in maintaining the registry
      * information in case of network problems between client and the server.
+     * <p>
+     * <em>The changes are effective at runtime.</em>
+     * </p>
      * 
      * @return true to enable self preservation, false otherwise.
      */
@@ -86,9 +96,13 @@ public interface EurekaServerConfig {
 
     /**
      * The minimum percentage of renewals that is expected from the clients in
-     * the period specified by {@link #getRenewalThresholdUpdateIntervalMs()}. If
-     * the renewals drop below the threshold, the expirations are disabled if
+     * the period specified by {@link #getRenewalThresholdUpdateIntervalMs()}.
+     * If the renewals drop below the threshold, the expirations are disabled if
      * the {@link #shouldEnableSelfPreservation()} is enabled.
+     * 
+     * <p>
+     * <em>The changes are effective at runtime.</em>
+     * </p>
      * 
      * @return value between 0 and 1 indicating the percentage. For example,
      *         <code>85%</code> will be specified as <code>0.85</code>.
@@ -108,6 +122,9 @@ public interface EurekaServerConfig {
      * nodes is updated. The user can use the DNS mechanism or dynamic
      * configuration provided by {@link https://github.com/Netflix/archaius} to
      * change the information dynamically.
+     * <p>
+     * <em>The changes are effective at runtime.</em>
+     * </p>
      * 
      * @return timer in milliseconds indicating the interval.
      */
@@ -116,6 +133,9 @@ public interface EurekaServerConfig {
     /**
      * Get the number of times the replication events should be retried with
      * peers.
+     * <p>
+     * <em>The changes are effective at runtime.</em>
+     * </p>
      * 
      * @return the number of retries.
      */
@@ -132,6 +152,9 @@ public interface EurekaServerConfig {
      * file descriptors in an AWS environment because of the way the AWS
      * firewall works.
      * </p>
+     * <p>
+     * <em>The changes are effective at runtime.</em>
+     * </p>
      * 
      * @return true to replicate if the peer node's status is
      *         {@link InstanceStatus#UP}, false otherwise.
@@ -141,6 +164,9 @@ public interface EurekaServerConfig {
     /**
      * Gets the interval with which the status information about peer nodes is
      * updated.
+     * <p>
+     * <em>The changes are effective at runtime.</em>
+     * </p>
      * 
      * @return time in milliseconds indicating the interval.
      */
@@ -209,6 +235,9 @@ public interface EurekaServerConfig {
      * This is specially important if the status is updated by the external
      * process.
      * </p>
+     * <p>
+     * <em>The changes are effective at runtime.</em>
+     * </p>
      * 
      * @return true, to retry indefinitely, false otherwise.
      */
@@ -272,6 +301,9 @@ public interface EurekaServerConfig {
 
     /**
      * Checks to see if the delta information can be served to client or not.
+     * <p>
+     * <em>The changes are effective at runtime.</em>
+     * </p>
      * 
      * @return true if the delta information is allowed to be served, false
      *         otherwise.
@@ -350,6 +382,9 @@ public interface EurekaServerConfig {
 
     /**
      * Checks whether to synchronize instances when timestamp differs.
+     * <p>
+     * <em>The changes are effective at runtime.</em>
+     * </p>
      * 
      * @return true, to synchronize, false otherwise.
      */
