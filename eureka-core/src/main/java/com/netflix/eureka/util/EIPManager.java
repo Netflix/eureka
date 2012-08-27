@@ -200,7 +200,7 @@ public class EIPManager {
         // Look for unused EIPs
         InstanceInfo instanceInfo = ApplicationInfoManager.getInstance()
         .getInfo();
-        Application app = PeerAwareInstanceRegistry.getInstance()
+        Application app = DiscoveryManager.getInstance().getDiscoveryClient()
         .getApplication(instanceInfo.getAppName());
 
         if (app != null) {
