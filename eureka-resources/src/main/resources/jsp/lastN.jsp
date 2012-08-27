@@ -1,4 +1,4 @@
-<%@ page language="java" import="java.util.*,java.io.*,com.netflix.discovery.*,com.netflix.discovery.util.*" pageEncoding="UTF-8" %>
+<%@ page language="java" import="java.util.*,java.io.*,com.netflix.eureka.*,com.netflix.eureka.util.*" pageEncoding="UTF-8" %>
 <%
     String path = request.getContextPath();
     String basePath = request.getScheme() + "://"

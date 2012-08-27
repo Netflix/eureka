@@ -1,5 +1,5 @@
 <%@ page language="java" 
-  import="java.util.*,java.net.*,com.netflix.config.*, com.netflix.discovery.*,com.netflix.discovery.resources.*,com.netflix.discovery.cluster.*,com.netflix.appinfo.*" pageEncoding="UTF-8" %>
+  import="java.util.*,java.net.*,com.netflix.config.*, com.netflix.eureka.*,com.netflix.eureka.resources.*,com.netflix.eureka.cluster.*,com.netflix.appinfo.*" pageEncoding="UTF-8" %>
 <div id="navcontainer">
 <ul id="navlist">
 <li class="one"><a href="jsp/status.jsp">Home</a></li>

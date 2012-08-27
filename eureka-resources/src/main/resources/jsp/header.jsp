@@ -1,5 +1,5 @@
 <%@ page language="java" 
-  import="java.util.*,com.netflix.config.*, com.netflix.discovery.*,com.netflix.discovery.resources.*,com.netflix.appinfo.*,com.netflix.discovery.util.*" pageEncoding="UTF-8" %>
+  import="java.util.*,com.netflix.config.*, com.netflix.eureka.*,com.netflix.eureka.resources.*,com.netflix.appinfo.*,com.netflix.eureka.util.*" pageEncoding="UTF-8" %>
 
 <%@page import="com.netflix.appinfo.AmazonInfo.MetaDataKey"%>
 <div id="header">
