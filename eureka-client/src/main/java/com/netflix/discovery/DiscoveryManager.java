@@ -59,6 +59,7 @@ public class DiscoveryManager {
      * @param config
      *            the instance info configuration that will be used for
      *            registration with Eureka.
+     * @param eurekaConfig the eureka client configuration of the instance.
      */
     public void initComponent(EurekaInstanceConfig config,
             EurekaClientConfig eurekaConfig) {
@@ -91,6 +92,7 @@ public class DiscoveryManager {
 
     /**
      * Get the {@link DiscoveryClient}
+     * @return the client that is used to talk to eureka.
      */
     public DiscoveryClient getDiscoveryClient() {
         return discoveryClient;

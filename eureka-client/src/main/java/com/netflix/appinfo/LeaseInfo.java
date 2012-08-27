@@ -33,6 +33,19 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
  */
 public class LeaseInfo {
 
+    public static final int DEFAULT_LEASE_RENEWAL_INTERVAL = 30;
+    public static final int DEFAULT_LEASE_DURATION = 90;
+
+    // Client settings
+    private int renewalIntervalInSecs = DEFAULT_LEASE_RENEWAL_INTERVAL;
+    private int durationInSecs = DEFAULT_LEASE_DURATION;
+
+    // Server populated
+    private long registrationTimestamp;
+    private long lastRenewalTimestamp;
+    private long evictionTimestamp;
+    private long clock;
+
     public static final class Builder {
 
         @XStreamOmitField
@@ -48,6 +61,10 @@ public class LeaseInfo {
 
         /**
          * Sets the registration timestamp
+         * 
+         * @param ts
+         *            time when the lease was first registered.
+         * @return the {@link LeaseInfo} builder.
          */
         public Builder setRegistrationTimestamp(long ts) {
             result.registrationTimestamp = ts;
@@ -56,6 +73,10 @@ public class LeaseInfo {
 
         /**
          * Sets the last renewal timestamp of lease
+         * 
+         * @param ts
+         *            time when the lease was last renewed.
+         * @return the {@link LeaseInfo} builder.
          */
         public Builder setRenewalTimestamp(long ts) {
             result.lastRenewalTimestamp = ts;
@@ -64,6 +85,10 @@ public class LeaseInfo {
 
         /**
          * Sets the de-registration timestamp
+         * 
+         * @param ts
+         *            time when the lease was removed.
+         * @return the {@link LeaseInfo} builder.
          */
         public Builder setEvictionTimestamp(long ts) {
             result.evictionTimestamp = ts;
@@ -72,7 +97,12 @@ public class LeaseInfo {
 
         /**
          * Sets the client specified setting for eviction (e.g. how long to wait
-         * w/o renewal event)
+         * without renewal event)
+         * 
+         * @param d
+         *            time in seconds after which the lease would expire without
+         *            renewa.
+         * @return the {@link LeaseInfo} builder.
          */
         public Builder setDurationInSecs(int d) {
             if (d <= 0) {
@@ -85,6 +115,10 @@ public class LeaseInfo {
 
         /**
          * Sets the client specified setting for renew interval
+         * 
+         * @param i
+         *            the time interval with which the renewals will be renewed.
+         * @return the {@link LeaseInfo} builder.
          */
         public Builder setRenewalIntervalInSecs(int i) {
             if (i <= 0) {
@@ -96,39 +130,23 @@ public class LeaseInfo {
         }
 
         /**
-         * Sets the logical clock
-         */
-        public Builder setClock(long clock) {
-            result.clock = clock;
-            return this;
-        }
-
-        /**
          * Build the {@link InstanceInfo}
+         * 
+         * @return the {@link LeaseInfo} information built based on the supplied
+         *         information.
          */
         public LeaseInfo build() {
             return result;
         }
     }
 
-    public static final int DEFAULT_LEASE_RENEWAL_INTERVAL = 30;
-    public static final int DEFAULT_LEASE_DURATION = 90;
-
-    // Client settings
-    private int renewalIntervalInSecs = DEFAULT_LEASE_RENEWAL_INTERVAL;
-    private int durationInSecs = DEFAULT_LEASE_DURATION;
-
-    // Server populated
-    private long registrationTimestamp;
-    private long lastRenewalTimestamp;
-    private long evictionTimestamp;
-    private long clock;
-
     private LeaseInfo() {
     }
 
     /**
      * Returns the registration timestamp
+     * 
+     * @return time in milliseconds since epoch.
      */
     public long getRegistrationTimestamp() {
         return registrationTimestamp;
@@ -136,6 +154,8 @@ public class LeaseInfo {
 
     /**
      * Returns the last renewal timestamp of lease
+     * 
+     * @return time in milliseconds since epoch.
      */
     public long getRenewalTimestamp() {
         return lastRenewalTimestamp;
@@ -143,6 +163,8 @@ public class LeaseInfo {
 
     /**
      * Returns the de-registration timestamp
+     * 
+     * @return time in milliseconds since epoch.
      */
     public long getEvictionTimestamp() {
         return evictionTimestamp;
@@ -150,6 +172,8 @@ public class LeaseInfo {
 
     /**
      * Returns client specified setting for renew interval
+     * 
+     * @return time in milliseconds since epoch.
      */
     public int getRenewalIntervalInSecs() {
         return renewalIntervalInSecs;
@@ -158,16 +182,11 @@ public class LeaseInfo {
     /**
      * Returns client specified setting for eviction (e.g. how long to wait w/o
      * renewal event)
+     * 
+     * @return time in milliseconds since epoch.
      */
     public int getDurationInSecs() {
         return durationInSecs;
-    }
-
-    /**
-     * Returns the logical clock
-     */
-    public long getClock() {
-        return clock;
     }
 
 }

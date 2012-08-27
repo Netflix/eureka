@@ -26,7 +26,6 @@ import org.apache.http.params.HttpParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.provider.DiscoveryJerseyProvider;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;

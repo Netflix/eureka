@@ -165,7 +165,7 @@ public interface EurekaClientConfig {
      * Gets the URL context to be used to construct the <em>service url</em> to
      * contact eureka server when the list of eureka servers come from the
      * DNS.This information is not required if the contract returns the service
-     * urls by implementing {@link #getEurekaServerServiceUrls()}.
+     * urls by implementing {@link #getEurekaServerServiceUrls(String)}.
      * 
      * <p>
      * The DNS mechanism is used when
@@ -187,7 +187,7 @@ public interface EurekaClientConfig {
      * Gets the port to be used to construct the <em>service url</em> to contact
      * eureka server when the list of eureka servers come from the DNS.This
      * information is not required if the contract returns the service urls by
-     * implementing {@link #getEurekaServerServiceUrls()}.
+     * implementing {@link #getEurekaServerServiceUrls(String)}.
      * 
      * <p>
      * The DNS mechanism is used when
@@ -208,7 +208,7 @@ public interface EurekaClientConfig {
     /**
      * Gets the DNS name to be queried to get the list of eureka servers.This
      * information is not required if the contract returns the service urls by
-     * implementing {@link #getEurekaServerServiceUrls()}.
+     * implementing {@link #getEurekaServerServiceUrls(String)}.
      * 
      * <p>
      * The DNS mechanism is used when
@@ -235,7 +235,7 @@ public interface EurekaClientConfig {
      * 
      * <p>
      * Alternatively, the service urls can be returned
-     * {@link #getEurekaServerServiceUrls()}, but the users should implement
+     * {@link #getEurekaServerServiceUrls(String)}, but the users should implement
      * their own mechanism to return the updated list in case of changes.
      * </p>
      * 
@@ -243,7 +243,7 @@ public interface EurekaClientConfig {
      * <em>The changes are effective at runtime.</em>
      * </p>
      * 
-     * @return
+     * @return true if the DNS mechanism should be used for fetching urls, false otherwise.
      */
     boolean shouldUseDnsForFetchingServiceUrls();
 
@@ -337,6 +337,7 @@ public interface EurekaClientConfig {
      * <p>
      * <em>The changes are effective at runtime at the next registry fetch cycle as specified by {@link #getRegistryFetchIntervalSeconds()}</em>
      * </p>
+     * @param region the region where this instance is deployed.
      * 
      * @return the list of available zones accessible by this instance.
      */
@@ -355,6 +356,7 @@ public interface EurekaClientConfig {
      * <p>
      * <em>The changes are effective at runtime at the next service url refresh cycle as specified by {@link #getEurekaServiceUrlPollIntervalSeconds()}</em>
      * </p>
+     * @param myZone the zone in which the instance is deployed.
      * 
      * @return the list of eureka server service urls for eureka clients to talk
      *         to.

@@ -5,12 +5,12 @@
 	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee 
 	http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
   <listener>
-  	<listener-class>com.netflix.discovery.EurekaBootStrap</listener-class>
+  	<listener-class>com.netflix.eureka.EurekaBootStrap</listener-class>
   </listener>
   
   <filter>
      <filter-name>statusFilter</filter-name>
-     <filter-class>com.netflix.discovery.StatusFilter</filter-class>
+     <filter-class>com.netflix.eureka.StatusFilter</filter-class>
   </filter>
   <filter>
      <filter-name>jersey</filter-name>

@@ -46,7 +46,9 @@ public interface HealthCheckCallback {
      * {@link InstanceInfo.InstanceStatus#DOWN} with eureka. If the instance was
      * already marked {@link InstanceInfo.InstanceStatus#DOWN} , returning true
      * here will mark the instance back to
-     * {@link InstanceInfo.InstanceStatus#UP}
+     * {@link InstanceInfo.InstanceStatus#UP}.
+     * 
+     * @return true if the call back returns healthy, false otherwise.
      */
     boolean isHealthy();
 }

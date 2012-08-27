@@ -17,6 +17,8 @@ package com.netflix.appinfo;
 
 import java.util.Map;
 
+import com.netflix.discovery.DiscoveryClient;
+
 /**
  * Configuration information required by the instance to register with Eureka
  * server. Once registered, users can look up information from
@@ -26,8 +28,8 @@ import java.util.Map;
  * 
  * 
  * <p>
- * Note that all configurations are not effective at runtime unless
- * and otherwise specified.
+ * Note that all configurations are not effective at runtime unless and
+ * otherwise specified.
  * </p>
  * 
  * @author Karthik Ranganathan
@@ -93,7 +95,7 @@ public interface EurekaInstanceConfig {
      * 
      * <p>
      * Note that the instance could still not take traffic if it implements
-     * {@link HealhCheckCallback} and then decides to make itself unavailable.
+     * {@link HealthCheckCallback} and then decides to make itself unavailable.
      * </p>
      * 
      * @return time in seconds
@@ -114,7 +116,7 @@ public interface EurekaInstanceConfig {
      * .
      * </p>
      * 
-     * @return
+     * @return value indicating time in seconds.
      */
     int getLeaseExpirationDurationInSeconds();
 
@@ -128,7 +130,8 @@ public interface EurekaInstanceConfig {
      * this instance.
      * </p>
      * 
-     * @return
+     * @return the string indicating the virtual host name which the clients use
+     *         to call this service.
      */
     String getVirtualHostName();
 
@@ -142,7 +145,8 @@ public interface EurekaInstanceConfig {
      * this instance.
      * </p>
      * 
-     * @return
+     * @return the string indicating the secure virtual host name which the clients use
+     *         to call this service.
      */
     String getSecureVirtualHostName();
 
@@ -160,7 +164,9 @@ public interface EurekaInstanceConfig {
      * Gets the hostname associated with this instance. This is the exact name
      * that would be used by other instances to make calls.
      * 
-     * @param refresh true if the information needs to be refetched, false otherwise.
+     * @param refresh
+     *            true if the information needs to be refetched, false
+     *            otherwise.
      * @return hostname of this instance which is identifiable by other
      *         instances for making remote calls.
      */
@@ -187,7 +193,7 @@ public interface EurekaInstanceConfig {
     /**
      * Get the IPAdress of the instance. This information is for academic
      * purposes only as the communication from other instances primarily happen
-     * using the information supplied in {@link #getHostName()}.
+     * using the information supplied in {@link #getHostName(boolean)}.
      * 
      * @return the ip address of this instance.
      */

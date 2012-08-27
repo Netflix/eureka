@@ -207,10 +207,9 @@ public class DiscoveryClient implements LookupService {
         }
     }
 
-    /**
+    /*
      * (non-Javadoc)
-     * 
-     * @see com.netflix.discovery.shared.LookupService#getApplication(T)
+     * @see com.netflix.discovery.shared.LookupService#getApplication(java.lang.String)
      */
     public Application getApplication(String appName) {
         return getApplications().getRegisteredApplications(appName);

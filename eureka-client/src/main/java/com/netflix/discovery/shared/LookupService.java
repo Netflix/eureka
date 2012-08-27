@@ -26,8 +26,9 @@ import com.netflix.discovery.EurekaClientConfig;
  * Lookup service for finding active instances.
  * 
  * @author Karthik Ranganathan, Greg Kim.
+
  */
-public interface LookupService<T> {
+public interface LookupService {
 
     /**
      * Returns the corresponding {@link Application} object which is basically a
@@ -43,7 +44,6 @@ public interface LookupService<T> {
      * Returns the {@link Applications} object which is basically a container of
      * all currently registered {@link Application}s.
      * 
-     * @param appName
      * @return {@link Applications}
      */
     Applications getApplications();

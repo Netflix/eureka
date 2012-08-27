@@ -101,7 +101,9 @@ public class AmazonInfo implements DataCenterInfo {
         }
 
         /**
-         * Build the {@link InstanceInfo}
+         * Build the {@link InstanceInfo} information.
+         * 
+         * @return AWS specific instance information.
          */
         public AmazonInfo build() {
             return result;

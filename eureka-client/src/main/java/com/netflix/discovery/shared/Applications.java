@@ -155,7 +155,7 @@ public class Applications {
      * Gets the list of secure <em>instances</em> associated to a virtual host
      * name.
      * 
-     * @param virtualHostName
+     * @param secureVirtualHostName
      *            the virtual hostname for which the secure instances need to be
      *            returned.
      * @return list of <em>instances</em>.
@@ -192,18 +192,18 @@ public class Applications {
 
     /**
      * Used by the eureka server. Not for external use.
-     * 
-     * @param hashCode
+     * @return the string indicating the hashcode based on the applications stored.
+     *
      */
     public String getAppsHashCode() {
         return this.appsHashCode;
     }
 
     /**
-     * Gets the hashcode for this <em>applications</em> instance. Used for
+     * Gets the hash code for this <em>applications</em> instance. Used for
      * comparison of instances between eureka server and eureka client.
      * 
-     * @return the internal hashcode representation indicating the information
+     * @return the internal hash code representation indicating the information
      *         about the instances.
      */
     public String getReconcileHashCode() {

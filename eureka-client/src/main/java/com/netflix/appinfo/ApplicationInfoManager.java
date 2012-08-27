@@ -115,9 +115,11 @@ public class ApplicationInfoManager {
     }
 
     /**
-     * Register user-specific instance metadata. Application can send any other
-     * additional metadata that need to be accessed for other reasons.The data
+     * Register user-specific instance meta data. Application can send any other
+     * additional meta data that need to be accessed for other reasons.The data
      * will be periodically sent to the eureka server.
+     * 
+     * @param appMetadata application specific meta data.
      */
     public void registerAppMetadata(Map<String, String> appMetadata) {
         instanceInfo.registerRuntimeMetadata(appMetadata);

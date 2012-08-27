@@ -21,10 +21,13 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import com.netflix.appinfo.InstanceInfo;
+import com.netflix.discovery.converters.Converters.InstanceInfoConverter;
+
 /**
  * A field annotation which helps in avoiding changes to
  * {@link InstanceInfoConverter} every time additional fields are added to
- * {@InstanceInfo}.
+ * {@link InstanceInfo}.
  * 
  * <p>
  * This annotation informs the {@link InstanceInfoConverter} to automatically

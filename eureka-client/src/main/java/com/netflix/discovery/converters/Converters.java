@@ -571,9 +571,6 @@ public final class Converters {
             writer.setValue(String.valueOf(info.getEvictionTimestamp()));
             writer.endNode();
 
-            writer.startNode(ELEM_CLOCK);
-            writer.setValue(String.valueOf(info.getClock()));
-            writer.endNode();
         }
 
         /*
@@ -606,9 +603,7 @@ public final class Converters {
                     continue;
                 }
 
-                if (ELEM_CLOCK.equals(nodeName)) {
-                    builder.setClock(longValue);
-                } else if (ELEM_DURATION.equals(nodeName)) {
+                if (ELEM_DURATION.equals(nodeName)) {
                     builder.setDurationInSecs((int) longValue);
                 } else if (ELEM_EVICTION_TIMESTAMP.equals(nodeName)) {
                     builder.setEvictionTimestamp(longValue);
