@@ -93,21 +93,11 @@ public class Applications {
      */
     public void addApplication(Application app) {
         appNameApplicationMap.put(app.getName().toUpperCase(), app);
-        // Check and add the instances to the their respective virtualhost name
-        // mappings
-        for (InstanceInfo info : app.getInstances()) {
-            String vipAddresses = info.getVIPAddress();
-            String secureVipAddresses = info.getSecureVipAddress();
-            if ((vipAddresses == null) && (secureVipAddresses == null)) {
-                continue;
-            }
-            addInstanceToMap(info, vipAddresses, virtualHostNameAppMap);
-            addInstanceToMap(info, secureVipAddresses,
-                    secureVirtualHostNameAppMap);
-        }
+        addInstancesToVIPMaps(app);
         applications.add(app);
     }
 
+   
     /**
      * Gets the list of all registered <em>applications</em> from eureka.
      * 
@@ -355,8 +345,11 @@ public class Applications {
     }
 
     public void shuffleInstances(boolean filterUpInstances) {
+        this.virtualHostNameAppMap.clear();
+        this.secureVirtualHostNameAppMap.clear();
         for (Application application : appNameApplicationMap.values()) {
             application.shuffleAndStoreInstances(filterUpInstances);
+            this.addInstancesToVIPMaps(application);
         }
         shuffleAndFilterInstances(this.virtualHostNameAppMap,
                 this.shuffleVirtualHostNameMap, virtualHostNameIndexMap,
@@ -399,12 +392,14 @@ public class Applications {
             AbstractQueue<InstanceInfo> instanceInfoQueue = entries.getValue();
             List<InstanceInfo> l = new ArrayList<InstanceInfo>(
                     instanceInfoQueue);
-            Iterator<InstanceInfo> it = l.iterator();
+            if (filterUpInstances) {
+                Iterator<InstanceInfo> it = l.iterator();
 
-            while (it.hasNext()) {
-                InstanceInfo instanceInfo = it.next();
-                if (!InstanceStatus.UP.equals(instanceInfo.getStatus())) {
-                    it.remove();
+                while (it.hasNext()) {
+                    InstanceInfo instanceInfo = it.next();
+                    if (!InstanceStatus.UP.equals(instanceInfo.getStatus())) {
+                        it.remove();
+                    }
                 }
             }
             Collections.shuffle(l);
@@ -439,6 +434,25 @@ public class Applications {
                 }
                 instanceInfoList.add(info);
             }
+        }
+    }
+    
+    /**
+     * Adds the instances to the internal vip address map.
+     * @param app - the applications for which the instances need to be added.
+     */
+    private void addInstancesToVIPMaps(Application app) {
+        // Check and add the instances to the their respective virtual host name
+        // mappings
+        for (InstanceInfo info : app.getInstances()) {
+            String vipAddresses = info.getVIPAddress();
+            String secureVipAddresses = info.getSecureVipAddress();
+            if ((vipAddresses == null) && (secureVipAddresses == null)) {
+                continue;
+            }
+            addInstanceToMap(info, vipAddresses, virtualHostNameAppMap);
+            addInstanceToMap(info, secureVipAddresses,
+                    secureVirtualHostNameAppMap);
         }
     }
 
