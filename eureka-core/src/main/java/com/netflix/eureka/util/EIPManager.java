@@ -231,7 +231,7 @@ public class EIPManager {
         if (availableEIPList == null || availableEIPList.isEmpty()) {
             throw new RuntimeException("Cannot find a free EIP to bind");
         }
-        return eipCandidates.iterator().next();
+        return availableEIPList.iterator().next();
     }
 
     /**

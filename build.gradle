@@ -1,4 +1,4 @@
-ext.releaseVersion = '1.1'
+ext.releaseVersion = '1.1.1'
 ext.githubProjectName = 'eureka'
 group = 'com.netflix.eureka'
 
