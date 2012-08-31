@@ -1,1 +1,16 @@
 apply from: 'http://artifacts.netflix.com/gradle-netflix-local/artifactory.gradle'
+rootProject {
+    afterProject { project ->
+        def compileConf = project.configurations.findByName('compile')
+        if (compileConf==null) {
+            return
+        }
+        def deps = compileConf.dependencies
+        def awsDep = deps.find { it.group == 'com.amazonaws' && it.name == 'aws-java-sdk' }
+        if (awsDep != null) {
+            def version = awsDep.version
+            deps.remove(awsDep)
+            project.dependencies.add('compile', "com.amazon:aws-java-sdk:${version}")
+        }
+    }
+}
