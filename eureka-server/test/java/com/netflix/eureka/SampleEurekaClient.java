@@ -33,10 +33,11 @@ import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.DiscoveryManager;
 
 /**
- * Sample Eureka client that discovers the service using Eureka and sends requests.
+ * Sample Eureka client that discovers the service using Eureka and sends
+ * requests.
  * 
  * @author Karthik Ranganathan
- *
+ * 
  */
 public class SampleEurekaClient {
     private static final DynamicPropertyFactory configInstance = com.netflix.config.DynamicPropertyFactory
@@ -65,14 +66,19 @@ public class SampleEurekaClient {
                     + nextServerInfo.getHostName() + " at port " + serverPort);
         }
         try {
+            System.out.println("Connected to server. Sending a sample request");
             PrintStream out = new PrintStream(s.getOutputStream());
-            out.println("The client trying to send request at " + new Date());
-            String str;
+            out.println("Sample request " + new Date());
+            String str = null;
+            System.out.println("Waiting for server response..");
             BufferedReader rd = new BufferedReader(new InputStreamReader(
                     s.getInputStream()));
             str = rd.readLine();
-            System.out.println("The client received the response :" + str);
-            System.out.println("Closing the channel");
+            if (str != null) {
+                System.out
+                        .println("Received response from server. Communication all fine using Eureka :");
+                System.out.println("Exiting the client. Demo over..");
+            }
             rd.close();
         } catch (IOException e) {
             e.printStackTrace();

@@ -197,13 +197,13 @@ public class AwsAsgUtil {
      * 
      * @param key
      *            - The name of the ASG for which the flag needs to be checked.
-     * @return - true, if the load balancer falg is not suspended, false
+     * @return - true, if the load balancer flag is not suspended, false
      *         otherwise.
      */
     private Boolean isASGEnabledinAWS(Object key) {
         String myKey = (String) key;
         try {
-            Stopwatch t = Monitors.newTimer("Discovery:loadASGInfo").start();
+            Stopwatch t = Monitors.newTimer("Eureka-loadASGInfo").start();
             boolean returnValue = !isAddToLoadBalancerSuspended(myKey);
             t.stop();
             return returnValue;

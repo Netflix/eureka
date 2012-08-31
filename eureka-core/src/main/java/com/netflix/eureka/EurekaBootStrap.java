@@ -65,6 +65,7 @@ public class EurekaBootStrap implements ServletContextListener {
     private static final String EUREKA_ENVIRONMENT = "eureka.environment";
 
     private static final String CLOUD = "cloud";
+    private static final String DEFAULT = "default";
 
     private static final String ARCHAIUS_DEPLOYMENT_DATACENTER = "archaius.deployment.datacenter";
 
@@ -114,6 +115,7 @@ public class EurekaBootStrap implements ServletContextListener {
             }
 
         } catch (Throwable e) {
+            logger.error("Cannot bootstrap eureka server :", e);
             throw new RuntimeException("Cannot bootstrap eureka server :", e);
         }
     }
@@ -130,9 +132,9 @@ public class EurekaBootStrap implements ServletContextListener {
         String dataCenter = ConfigurationManager.getConfigInstance()
         .getString(EUREKA_DATACENTER);
         if (dataCenter == null) {
-            logger.info("Eureka data center value eureka.datacenter is not set, defaulting to cloud");
+            logger.info("Eureka data center value eureka.datacenter is not set, defaulting to default");
             ConfigurationManager.getConfigInstance().setProperty(
-                    ARCHAIUS_DEPLOYMENT_DATACENTER, CLOUD);
+                    ARCHAIUS_DEPLOYMENT_DATACENTER, DEFAULT);
         } else {
             ConfigurationManager.getConfigInstance().setProperty(
                     ARCHAIUS_DEPLOYMENT_DATACENTER, dataCenter);
@@ -166,7 +168,7 @@ public class EurekaBootStrap implements ServletContextListener {
     public void contextDestroyed(ServletContextEvent event) {
         try {
             logger.info(new Date().toString()
-                    + " Shutting down Discovery service...");
+                    + " Shutting down Eureka Server..");
             InstanceInfo info = ApplicationInfoManager.getInstance().getInfo();
             // Unregister all MBeans associated w/ DSCounters
             EurekaMonitors.shutdown();

@@ -466,7 +466,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
             if (!isPeerAlive(serviceUrl)
                     && eurekaServerConfig.shouldReplicateOnlyIfUP()) {
                 logger.warn(
-                        "The discovery node {} seems to be down and hence not replicating it there",
+                        "The eureka peer node {} seems to be down and hence not replicating it there",
                         serviceUrl);
             }
 
@@ -766,7 +766,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                 // Do not retry
                 retryCounter = 0;
                 logger.warn(
-                        "The discovery node {} seems to be down and hence not replicating it there",
+                        "The peer eureka node {} seems to be down and hence not replicating it there",
                         serviceUrl);
                 // Clear the queue so that back log does not build up.
                 node.disableStatusReplication();
@@ -870,7 +870,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
      * @return - true if alive, false otherwise.
      */
     private boolean isPeerAlive(String serviceUrl) {
-        Stopwatch t = Monitors.newTimer("DISCOVERY:checkReplicaAlive").start();
+        Stopwatch t = Monitors.newTimer("Eureka-checkReplicaAlive").start();
         boolean isReplicaAlive = peerEurekaStatusMap.get(serviceUrl);
         try {
             if (!isReplicaAlive) {

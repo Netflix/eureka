@@ -65,7 +65,6 @@ import com.netflix.servo.monitor.Monitors;
  */
 public class EIPManager {
     private static final String US_EAST_1 = "us-east-1";
-    // private static final String PROP_EIP = "netflix.discovery.eip.";
     private static final Logger logger = LoggerFactory
     .getLogger(EIPManager.class);
     private EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager

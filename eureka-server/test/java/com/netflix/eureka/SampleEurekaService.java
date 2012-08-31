@@ -36,19 +36,24 @@ import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.DiscoveryManager;
 
 /**
- * Sample Eureka service that registers with Eureka to receive and process requests.
+ * Sample Eureka service that registers with Eureka to receive and process
+ * requests.
  * 
- * <p>This example just receives one request and exits once it receives the request after processing it.</p>
+ * <p>
+ * This example just receives one request and exits once it receives the request
+ * after processing it.
+ * </p>
  * 
  * @author Karthik Ranganathan
- *
+ * 
  */
 public class SampleEurekaService {
     private static final DynamicPropertyFactory configInstance = com.netflix.config.DynamicPropertyFactory
     .getInstance();
 
-    private static final Logger logger = LoggerFactory.getLogger(SampleEurekaService.class);
-    
+    private static final Logger logger = LoggerFactory
+    .getLogger(SampleEurekaService.class);
+
     public void registerWithEureka() {
         // Register with Eureka
         DiscoveryManager.getInstance().initComponent(
@@ -77,19 +82,22 @@ public class SampleEurekaService {
 
             }
         }
-        logger.info("Service started and ready to process requests..");
+        System.out.println("Service started and ready to process requests..");
 
         try {
             ServerSocket serverSocket = new ServerSocket(configInstance
                     .getIntProperty("eureka.port", 8010).get());
             final Socket s = serverSocket.accept();
-            logger.info("HANDLING CONNECTION FROM CLIENT");
+            System.out
+            .println("Client got connected..Processing request from the client");
             processRequest(s);
 
         } catch (IOException e) {
             e.printStackTrace();
         }
         this.unRegisterWithEureka();
+        System.out.println("Shutting down server.Demo over.");
+
     }
 
     public void unRegisterWithEureka() {
@@ -101,11 +109,14 @@ public class SampleEurekaService {
         try {
             BufferedReader rd = new BufferedReader(new InputStreamReader(
                     s.getInputStream()));
-            PrintStream out = new PrintStream(s.getOutputStream());
             String line = rd.readLine();
-            logger.info("SERVER RECEIVED LINE:" + line);
-            out.println("I received the line from the client:" + line + " at "
-                    + new Date());
+            if (line != null) {
+                System.out.println("Received the request from the client.");
+            }
+            PrintStream out = new PrintStream(s.getOutputStream());
+            System.out.println("Sending the response to the client...");
+
+            out.println("Reponse at " + new Date());
 
         } catch (Throwable e) {
             System.err.println("Error processing requests");
