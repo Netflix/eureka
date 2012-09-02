@@ -237,14 +237,25 @@ public class InstanceResource {
                             .getLastDirtyTimestamp()))) {
                 Object[] args = { id, appInfo.getLastDirtyTimestamp(),
                         lastDirtyTimestamp, isReplication };
-                logger.warn(
-                        "Time to sync, since the last dirty timestamp differs -"
-                                + " Instance id : {},Registry : {} Incoming: {} Replication: {}",
-                        args);
                 if (lastDirtyTimestamp > appInfo.getLastDirtyTimestamp()) {
+                    logger.warn(
+                            "Time to sync, since the last dirty timestamp differs -"
+                                    + " Instance id : {},Registry : {} Incoming: {} Replication: {}",
+                            args);
                     return Response.status(Status.NOT_FOUND).build();
                 } else if (appInfo.getLastDirtyTimestamp() > lastDirtyTimestamp) {
-                    return Response.ok(appInfo).build();
+                    // In the case of replication, send the current instance info in the registry for the
+                    // replicating node to sync itself with this one.
+                    if (isReplication) {
+                        logger.warn(
+                                "Time to sync, since the last dirty timestamp differs -"
+                                        + " Instance id : {},Registry : {} Incoming: {} Replication: {}",
+                                args);
+                        return Response.ok(appInfo).build();
+                    }
+                    else {
+                        return Response.ok().build();
+                    }
                 }
             }
 

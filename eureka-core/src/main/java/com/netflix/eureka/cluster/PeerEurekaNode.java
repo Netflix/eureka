@@ -224,7 +224,7 @@ public class PeerEurekaNode {
             .queryParam("lastDirtyTimestamp",
                     info.getLastDirtyTimestamp().toString());
             if (overriddenStatus != null) {
-                r.queryParam("overriddenstatus", overriddenStatus.name());
+                r = r.queryParam("overriddenstatus", overriddenStatus.name());
             }
             response = r.header(HEADER_REPLICATION, "true").put(
                     ClientResponse.class);
