@@ -66,7 +66,7 @@ import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
  * 
  * <p>
  * <tt>Eureka Client</tt> is responsible for a) <em>Registering</em> the
- * instance with <tt>Eureka Server</tt> b) <em>Renewal</em>of the lease with
+ * instance with <tt>Eureka Server</tt> b) <em>Renewal</em> of the lease with
  * <tt>Eureka Server</tt> c) <em>Cancellation</em> of the lease from
  * <tt>Eureka Server</tt> during shutdown
  * <p>
