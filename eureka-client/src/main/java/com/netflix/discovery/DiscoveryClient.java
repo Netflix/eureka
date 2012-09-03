@@ -65,15 +65,12 @@ import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
  * The class that is instrumental for interactions with <tt>Eureka Server</tt>.
  * 
  * <p>
- * <tt>Eureka Client</tt> is responsible for a) <em>Registering</em> the
- * instance with <tt>Eureka Server</tt> b) <em>Renewal</em> of the lease with
- * <tt>Eureka Server</tt> c) <em>Cancellation</em> of the lease from
- * <tt>Eureka Server</tt> during shutdown
- * <p>
- * d) <em>Querying</em> the list of services/instances registered with
- * <tt>Eureka Server</tt>
- * <p>
- * 
+ * <tt>Eureka Client</tt> is responsible for 
+ * a) <em>Registering</em> the instance with <tt>Eureka Server</tt> 
+ * b) <em>Renewal</em> of the lease with  <tt>Eureka Server</tt> 
+ * c) <em>Cancellation</em> of the lease from <tt>Eureka Server</tt> during shutdown
+ * d) <em>Querying</em> the list of services/instances registered with <tt>Eureka Server</tt>
+ * </p>
  * <p>
  * <tt>Eureka Client</tt> needs a configured list of <tt>Eureka Server</tt>
  * {@link URL}s to talk to.These {@link URL}s are typically amazon elastic eips
