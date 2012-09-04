@@ -248,39 +248,36 @@ public class PeerEurekaNode {
     }
 
     /**
-     * Synchronize {@link InstanceInfo} information if the timestamp between this node and the peer eureka nodes vary.
+     * Synchronize {@link InstanceInfo} information if the timestamp between
+     * this node and the peer eureka nodes vary.
      */
     private void syncInstancesIfTimestampDiffers(String id, InstanceInfo info,
             ClientResponse response) {
         try {
-            if (config.shouldSyncWhenTimestampDiffers()
-                    && response.hasEntity()) {
+            if (config.shouldSyncWhenTimestampDiffers() && response.hasEntity()) {
                 InstanceInfo infoFromPeer = response
                 .getEntity(InstanceInfo.class);
                 if (infoFromPeer != null) {
-                    Object[] args = {
-                            id,
-                            new Date(info.getLastDirtyTimestamp()),
-                            new Date(
-                                    infoFromPeer
-                                    .getLastDirtyTimestamp()) };
+                    Object[] args = { id, info.getLastDirtyTimestamp(),
+
+                            infoFromPeer.getLastDirtyTimestamp() };
 
                     logger.warn(
                             "Peer wants us to take the instance information from it, since the timestamp differs,Id : {} My Timestamp : {}, Peer's timestamp: {}",
                             args);
-                    Object[] args1 = { id, info.getOverriddenStatus(),
-                            infoFromPeer.getOverriddenStatus() };
-                    logger.warn(
-                            "Overridden Status info -id {}, mine {}, peer's {}",
-                            args1);
-                    if ((infoFromPeer.getStatus() != null)
-                            && !(InstanceStatus.UNKNOWN
-                                    .equals(infoFromPeer.getStatus())))
+                    if ((infoFromPeer.getOverriddenStatus() != null)
+                            && !(InstanceStatus.UNKNOWN.equals(infoFromPeer
+                                    .getOverriddenStatus()))) {
+                        Object[] args1 = { id, info.getOverriddenStatus(),
+                                infoFromPeer.getOverriddenStatus() };
+                        logger.warn(
+                                "Overridden Status info -id {}, mine {}, peer's {}",
+                                args1);
+
                         PeerAwareInstanceRegistry.getInstance()
-                        .storeOverriddenStatusIfRequired(
-                                id,
-                                infoFromPeer
-                                .getOverriddenStatus());
+                        .storeOverriddenStatusIfRequired(id,
+                                infoFromPeer.getOverriddenStatus());
+                    }
                     PeerAwareInstanceRegistry.getInstance().register(
                             infoFromPeer, true);
 
@@ -288,8 +285,7 @@ public class PeerEurekaNode {
 
             }
         } catch (Throwable e) {
-            logger.warn(
-                    "Exception when trying to get information from peer :",
+            logger.warn("Exception when trying to get information from peer :",
                     e);
         }
     }
