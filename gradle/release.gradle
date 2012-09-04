@@ -58,4 +58,5 @@ release {
     failOnPublishNeeded=true
     failOnUnversionedFiles=true
     failOnUpdateNeeded=true
+    requireBranch = null
 }
