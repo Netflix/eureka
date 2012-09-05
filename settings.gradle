@@ -1,2 +1,2 @@
-name 'gradle-template'
+rootProject.name='gradle-template-master'
 include 'template-client','template-server'
