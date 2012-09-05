@@ -1,1 +1,2 @@
+name 'gradle-template'
 include 'template-client','template-server'
