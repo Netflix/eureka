@@ -15,6 +15,9 @@ task javadocJar(type: Jar, dependsOn:javadoc) {
     from javadoc.destinationDir
 }
 
+// Ensure output is on a new line
+javadoc.doFirst { println "" }
+
 artifacts {
     archives sourcesJar
     archives javadocJar
