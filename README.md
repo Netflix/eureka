@@ -18,6 +18,11 @@ At Netflix, Eureka is used for the following purposes apart from playing a criti
 * For carrying other additional application specific metadata about services for various other reasons.
 
 
+Support
+----------
+[Eureka Google Group] (https://groups.google.com/forum/?fromgroups#!forum/eureka_netflix)
+
+
 Documentation
 --------------
 Please see [wiki] (https://github.com/Netflix/eureka/wiki) for detailed documentation.
