@@ -128,6 +128,20 @@ LookupService<String> {
                     gMap = gNewMap;
             }
             Lease<InstanceInfo> existingLease = gMap.get(r.getId());
+            // Retain the last dirty timestamp without overwriting it, if there
+            // is already a lease
+            if (existingLease != null && (existingLease.getHolder() != null)) {
+                Long existingLastDirtyTimestamp = existingLease.getHolder()
+                         .getLastDirtyTimestamp();
+                Long registrationLastDirtyTimestamp = r.getLastDirtyTimestamp();
+                if (existingLastDirtyTimestamp > registrationLastDirtyTimestamp) {
+                    logger.warn(
+                            "There is an existing lease and the existing lease's dirty timestamp {} is greater than the one that is being registered {}",
+                            existingLastDirtyTimestamp,
+                            registrationLastDirtyTimestamp);
+                    r.setLastDirtyTimestamp(existingLastDirtyTimestamp);
+                }
+            }
             Lease<InstanceInfo> lease = new Lease<InstanceInfo>(r,
                     leaseDuration);
             gMap.put(r.getId(), lease);
@@ -150,6 +164,7 @@ LookupService<String> {
                             r.getOverriddenStatus());
                 }
             }
+                
             // Set the status based on the overridden status rules
             r.setStatusWithoutDirty(getOverriddenInstanceStatus(r, existingLease,
                     isReplication));
@@ -312,14 +327,16 @@ LookupService<String> {
      *            the unique identifier of the instance.
      * @param newStatus
      *            the new {@link InstanceStatus}.
+     * @param lastDirtyTimestamp
+     *            last timestamp when this instance information was updated.
      * @param isReplication
      *            true if this is a replication event from other nodes, false
      *            otherwise.
      * @return true if the status was successfully updated, false otherwise.
      */
     public boolean statusUpdate(String appName, String id,
-            InstanceStatus newStatus, boolean isReplication) {
-
+            InstanceStatus newStatus, String lastDirtyTimestamp,
+            boolean isReplication) {
         try {
             read.lock();
             STATUS_UPDATE.increment(isReplication);
@@ -339,7 +356,19 @@ LookupService<String> {
                     // Set it for transfer of overridden status to replica on
                     // replica start up
                     info.setOverriddenStatus(newStatus);
-                    info.setStatus(newStatus);
+                    long replicaDirtyTimestamp = 0;
+                    if (lastDirtyTimestamp != null) {
+                        replicaDirtyTimestamp = Long.valueOf(lastDirtyTimestamp);
+                    }
+                    // If the repication's dirty timestamp is more than the existing one, just update
+                    // it to the replica's.
+                    if (replicaDirtyTimestamp > info.getLastDirtyTimestamp()) {
+                        info.setLastDirtyTimestamp(replicaDirtyTimestamp);
+                        info.setStatusWithoutDirty(newStatus);
+                    }
+                    else {
+                        info.setStatus(newStatus);
+                    }
                     if (info != null) {
                         info.setActionType(ActionType.MODIFIED);
                         recentlyChangedQueue

@@ -422,18 +422,16 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
         }
         return false;
     }
-
+     
     /*
      * (non-Javadoc)
-     * 
-     * @see
-     * com.netflix.eureka.InstanceRegistry#statusUpdate(java.lang.String,
-     * java.lang.String, com.netflix.appinfo.InstanceInfo.InstanceStatus, long,
-     * boolean)
+     * @see com.netflix.eureka.InstanceRegistry#statusUpdate(java.lang.String, java.lang.String, com.netflix.appinfo.InstanceInfo.InstanceStatus, java.lang.String, boolean)
      */
     public boolean statusUpdate(final String appName, final String id,
-            final InstanceStatus newStatus, final boolean isReplication) {
-        if (super.statusUpdate(appName, id, newStatus, isReplication)) {
+            final InstanceStatus newStatus, String lastDirtyTimestamp,
+            final boolean isReplication) {
+        if (super.statusUpdate(appName, id, newStatus, lastDirtyTimestamp,
+                isReplication)) {
             replicateToPeers(Action.StatusUpdate, appName, id, null, newStatus,
                     isReplication);
             return true;
@@ -792,16 +790,15 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                                     .getStatus().toString());
                     if (infoFromRegistry != null) {
                         node.register(infoFromRegistry);
-                    } else {
-                        logger.warn("ReplicaAwareInstanceRegistry: renew: missing entry!");
-                    }
-                }
+                    }                 }
                 break;
             case Register:
                 node.register(info);
                 break;
             case StatusUpdate:
-                node.statusUpdate(appName, id, newStatus);
+                infoFromRegistry = getInstanceByAppAndId(appName,
+                        id);
+                node.statusUpdate(appName, id, newStatus, infoFromRegistry);
                 break;
             }
         } catch (Throwable t) {

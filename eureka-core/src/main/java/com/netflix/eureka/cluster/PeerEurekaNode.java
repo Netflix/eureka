@@ -343,11 +343,14 @@ public class PeerEurekaNode {
      *            the unique identifier of the instance.
      * @param newStatus
      *            the new status of the instance.
+     * @param info
+     *            the instance information of the instance.
      * @return true if the udpate succeeded, false otherwise.
      * @throws Throwable
      */
     public boolean statusUpdate(final String appName, final String id,
-            final InstanceStatus newStatus) throws Throwable {
+            final InstanceStatus newStatus, final InstanceInfo info)
+    throws Throwable {
         statusReplicationPool.execute(new Runnable() {
 
             @Override
@@ -360,11 +363,14 @@ public class PeerEurekaNode {
                     try {
                         String urlPath = "apps/" + appName + "/" + id
                         + "/status";
-                        response = jerseyApacheClient.resource(serviceUrl)
+                        response = jerseyApacheClient
+                        .resource(serviceUrl)
                         .path(urlPath)
                         .queryParam("value", newStatus.name())
-                        .header(HEADER_REPLICATION, "true")
-                        .put(ClientResponse.class);
+                        .queryParam("lastDirtyTimestamp",
+                                info.getLastDirtyTimestamp().toString())
+                                .header(HEADER_REPLICATION, "true")
+                                .put(ClientResponse.class);
                         if (response.getStatus() != 200) {
                             logger.error(name + appName + "/" + id
                                     + " : statusUpdate:  failed!");

@@ -147,16 +147,19 @@ public class InstanceResource {
      * @param isReplication
      *            a header parameter containing information whether this is
      *            replicated from other nodes.
+     * @param lastDirtyTimestamp
+     *            last timestamp when this instance information was updated.
      * @return response indicating whether the operation was a success or
      *         failure.
      */
     @PUT
     @Path("status")
     public Response statusUpdate(@QueryParam("value") String newStatus,
-            @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication) {
+            @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication,
+            @QueryParam("lastDirtyTimestamp") String lastDirtyTimestamp) {
         try {
             boolean isSuccess = registry.statusUpdate(app.getName(), id,
-                    InstanceStatus.valueOf(newStatus),
+                    InstanceStatus.valueOf(newStatus), lastDirtyTimestamp,
                     "true".equals(isReplication));
 
             if (isSuccess) {
