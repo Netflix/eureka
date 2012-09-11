@@ -15,6 +15,7 @@
  */
 package com.netflix.appinfo;
 
+import java.net.URL;
 import java.util.Map;
 
 import com.netflix.discovery.DiscoveryClient;
@@ -145,8 +146,8 @@ public interface EurekaInstanceConfig {
      * this instance.
      * </p>
      * 
-     * @return the string indicating the secure virtual host name which the clients use
-     *         to call this service.
+     * @return the string indicating the secure virtual host name which the
+     *         clients use to call this service.
      */
     String getSecureVirtualHostName();
 
@@ -198,4 +199,142 @@ public interface EurekaInstanceConfig {
      * @return the ip address of this instance.
      */
     String getIpAddress();
+
+    /**
+     * Gets the relative status page {@link URL} <em>Path</em> for this
+     * instance. The status page URL is then constructed out of the
+     * {@link #getHostName(boolean)} and the type of communication - secure or
+     * unsecure as specified in {@link #getSecurePort()} and
+     * {@link #getNonSecurePort()}.
+     * 
+     * <p>
+     * It is normally used for informational purposes for other services to find
+     * about the status of this instance. Users can provide a simple
+     * <code>HTML</code> indicating what is the current status of the instance.
+     * </p>
+     * 
+     * @return - relative <code>URL</code> that specifies the status page.
+     */
+    String getStatusPageUrlPath();
+
+    /**
+     * Gets the absolute status page {@link URL} for this instance. The users
+     * can provide the {@link #getStatusPageUrlPath()} if the status page
+     * resides in the same instance talking to eureka, else in the cases where
+     * the instance is a proxy for some other server, users can provide the full
+     * {@link URL}. If the full {@link URL} is provided it takes precedence.
+     * 
+     * <p>
+     * * It is normally used for informational purposes for other services to
+     * find about the status of this instance. Users can provide a simple
+     * <code>HTML</code> indicating what is the current status of the instance.
+     * . The full {@link URL} should follow the format
+     * http://${eureka.hostname}:7001/ where the value ${eureka.hostname} is
+     * replaced at runtime.
+     * </p>
+     * 
+     * @return absolute status page URL of this instance.
+     */
+    String getStatusPageUrl();
+
+    /**
+     * Gets the relative home page {@link URL} <em>Path</em> for this instance.
+     * The home page URL is then constructed out of the
+     * {@link #getHostName(boolean)} and the type of communication - secure or
+     * unsecure as specified in {@link #getSecurePort()} and
+     * {@link #getNonSecurePort()}.
+     * 
+     * <p>
+     * It is normally used for informational purposes for other services to use
+     * it as a landing page.
+     * </p>
+     * 
+     * @return relative <code>URL</code> that specifies the home page.
+     */
+    String getHomePageUrlPath();
+
+    /**
+     * Gets the absolute home page {@link URL} for this instance. The users can
+     * provide the {@link #getHomePageUrlPath()} if the home page resides in the
+     * same instance talking to eureka, else in the cases where the instance is
+     * a proxy for some other server, users can provide the full {@link URL}. If
+     * the full {@link URL} is provided it takes precedence.
+     * 
+     * <p>
+     * It is normally used for informational purposes for other services to use
+     * it as a landing page. The full {@link URL} should follow the format
+     * http://${eureka.hostname}:7001/ where the value ${eureka.hostname} is
+     * replaced at runtime.
+     * </p>
+     * 
+     * @return absolute home page URL of this instance.
+     */
+    String getHomePageUrl();
+
+    /**
+     * Gets the relative health check {@link URL} <em>Path</em> for this
+     * instance. The health check page URL is then constructed out of the
+     * {@link #getHostName(boolean)} and the type of communication - secure or
+     * unsecure as specified in {@link #getSecurePort()} and
+     * {@link #getNonSecurePort()}.
+     * 
+     * <p>
+     * It is normally used for making educated decisions based on the health of
+     * the instance - for example, it can be used to determine whether to
+     * proceed deployments to an entire farm or stop the deployments without
+     * causing further damage.
+     * </p>
+     * 
+     * @return - relative <code>URL</code> that specifies the health check page.
+     */
+    String getHealthCheckUrlPath();
+
+    /**
+     * Gets the absolute health check page {@link URL} for this instance. The
+     * users can provide the {@link #getHealthCheckUrlPath()} if the health
+     * check page resides in the same instance talking to eureka, else in the
+     * cases where the instance is a proxy for some other server, users can
+     * provide the full {@link URL}. If the full {@link URL} is provided it
+     * takes precedence.
+     * 
+     * <p>
+     * It is normally used for making educated decisions based on the health of
+     * the instance - for example, it can be used to determine whether to
+     * proceed deployments to an entire farm or stop the deployments without
+     * causing further damage.. The full {@link URL} should follow the format
+     * http://${eureka.hostname}:7001/ where the value ${eureka.hostname} is
+     * replaced at runtime.
+     * </p>
+     * 
+     * @return absolute health check page URL of this instance.
+     */
+    String getHealthCheckUrl();
+
+    /**
+     * Gets the absolute secure health check page {@link URL} for this instance.
+     * The users can provide the {@link #getSecureHealthCheckUrl()} if the
+     * health check page resides in the same instance talking to eureka, else in
+     * the cases where the instance is a proxy for some other server, users can
+     * provide the full {@link URL}. If the full {@link URL} is provided it
+     * takes precedence.
+     * 
+     * <p>
+     * It is normally used for making educated decisions based on the health of
+     * the instance - for example, it can be used to determine whether to
+     * proceed deployments to an entire farm or stop the deployments without
+     * causing further damage. The full {@link URL} should follow the format
+     * http://${eureka.hostname}:7001/ where the value ${eureka.hostname} is
+     * replaced at runtime.
+     * </p>
+     * 
+     * @return absolute health check page URL of this instance.
+     */
+    String getSecureHealthCheckUrl();
+
+    /**
+     * Get the namespace used to find properties.
+     * @return the namespace used to find properties.
+     */
+    String getNamespace();
+
 }

@@ -114,7 +114,7 @@ public class InstanceInfo {
     @Auto
     private volatile String asgName;
     private String version = "unknown";
-
+    
     private InstanceInfo() {
     }
 
@@ -166,14 +166,14 @@ public class InstanceInfo {
     }
 
     public static final class Builder {
-
-        private static final String HOSTNAME_INTERPOLATION_EXPRESSION = "${netflix.appinfo.hostname}";
         private static final String COLON = ":";
         private static final String HTTPS_PROTOCOL = "https://";
         private static final String HTTP_PROTOCOL = "http://";
 
         @XStreamOmitField
         private InstanceInfo result;
+        
+        private String namespace;
 
         private Builder() {
             result = new InstanceInfo();
@@ -345,9 +345,10 @@ public class InstanceInfo {
          * @return the instance builder.
          */
         public Builder setHomePageUrl(String relativeUrl, String explicitUrl) {
+            String hostNameInterpolationExpression = "${" + namespace + "hostname}";
             if (explicitUrl != null) {
                 result.homePageUrl = explicitUrl.replace(
-                        HOSTNAME_INTERPOLATION_EXPRESSION, result.hostName);
+                        hostNameInterpolationExpression, result.hostName);
             } else if (relativeUrl != null) {
                 result.homePageUrl = HTTP_PROTOCOL + result.hostName + COLON
                 + result.port + relativeUrl;
@@ -376,11 +377,12 @@ public class InstanceInfo {
          * @return - Builder instance
          */
         public Builder setStatusPageUrl(String relativeUrl, String explicitUrl) {
+            String hostNameInterpolationExpression = "${" + namespace + "hostname}";
             result.statusPageRelativeUrl = relativeUrl;
             result.statusPageExplicitUrl = explicitUrl;
             if (explicitUrl != null) {
                 result.statusPageUrl = explicitUrl.replace(
-                        HOSTNAME_INTERPOLATION_EXPRESSION, result.hostName);
+                        hostNameInterpolationExpression, result.hostName);
             } else if (relativeUrl != null) {
                 result.statusPageUrl = HTTP_PROTOCOL + result.hostName + COLON
                 + result.port + relativeUrl;
@@ -408,17 +410,18 @@ public class InstanceInfo {
          * @param explicitUrl
          *            - The full {@link URL} for the healthcheck page.
          * @param secureExplicitUrl
-         *            the full secure explicit url of ht healthcheck page.
+         *            the full secure explicit url of the healthcheck page.
          * @return the instance builder
          */
         public Builder setHealthCheckUrls(String relativeUrl,
                 String explicitUrl, String secureExplicitUrl) {
+            String hostNameInterpolationExpression = "${" + namespace + "hostname}";
             result.healthCheckRelativeUrl = relativeUrl;
             result.healthCheckExplicitUrl = explicitUrl;
             result.healthCheckSecureExplicitUrl = secureExplicitUrl;
             if (explicitUrl != null) {
                 result.healthCheckUrl = explicitUrl.replace(
-                        HOSTNAME_INTERPOLATION_EXPRESSION, result.hostName);
+                        hostNameInterpolationExpression, result.hostName);
             } else if (result.isUnsecurePortEnabled) {
                 result.healthCheckUrl = HTTP_PROTOCOL + result.hostName + COLON
                 + result.port + relativeUrl;
@@ -426,7 +429,7 @@ public class InstanceInfo {
 
             if (secureExplicitUrl != null) {
                 result.secureHealthCheckUrl = secureExplicitUrl.replace(
-                        HOSTNAME_INTERPOLATION_EXPRESSION, result.hostName);
+                        hostNameInterpolationExpression, result.hostName);
             } else if (result.isSecurePortEnabled) {
                 result.secureHealthCheckUrl = HTTPS_PROTOCOL + result.hostName
                 + COLON + result.securePort + relativeUrl;
@@ -577,6 +580,10 @@ public class InstanceInfo {
             return this;
         }
 
+        public Builder setNamespace(String namespace) {
+                this.namespace = namespace;
+                return this;
+        }
     }
 
     /**

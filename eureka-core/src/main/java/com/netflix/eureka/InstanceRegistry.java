@@ -270,13 +270,11 @@ LookupService<String> {
             if (instanceInfo != null) {
                 // touchASGCache(instanceInfo.getASGName());
                 InstanceStatus overriddenInstanceStatus = this
-                .getOverriddenInstanceStatus(instanceInfo,
-                        leaseToRenew, isReplication);
+                        .getOverriddenInstanceStatus(instanceInfo,
+                                leaseToRenew, isReplication);
                 // InstanceStatus overriddenInstanceStatus =
                 // instanceInfo.getStatus();
-                if ((!isReplication)
-                        && (!instanceInfo.getStatus().equals(
-                                overriddenInstanceStatus))) {
+                if (!instanceInfo.getStatus().equals(overriddenInstanceStatus)) {
                     Object[] args = { instanceInfo.getStatus().name(),
                             instanceInfo.getOverriddenStatus().name(),
                             instanceInfo.getId() };

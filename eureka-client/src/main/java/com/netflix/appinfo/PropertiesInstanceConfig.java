@@ -63,6 +63,12 @@ implements EurekaInstanceConfig {
     private static final DynamicPropertyFactory INSTANCE = com.netflix.config.DynamicPropertyFactory
     .getInstance();
     private static final String UNKNOWN_APPLICATION = "unknown";
+
+    
+    private static final String DEFAULT_STATUSPAGE_URLPATH = "/Status";
+    private static final String DEFAULT_HOMEPAGE_URLPATH = "/";
+    private static final String DEFAULT_HEALTHCHECK_URLPATH = "/healthcheck";
+    
     private String propSecurePort = namespace + "securePort";
     private String propSecurePortEnabled = propSecurePort + ".enabled";
     private String propNonSecurePort;
@@ -256,6 +262,55 @@ implements EurekaInstanceConfig {
     public String getIpAddress() {
         return super.getIpAddress();
     }
+    
+
+    @Override
+    public String getStatusPageUrlPath() {
+                return INSTANCE.getStringProperty(namespace + "statusPageUrlPath",
+                        DEFAULT_STATUSPAGE_URLPATH).get();
+    }
+
+    @Override
+    public String getStatusPageUrl() {
+       return INSTANCE.getStringProperty(namespace + "statusPageUrl", null)
+        .get();
+    }
+
+
+    @Override
+    public String getHomePageUrlPath() {
+        return INSTANCE.getStringProperty(namespace + "homePageUrlPath",
+            DEFAULT_HOMEPAGE_URLPATH).get();
+    }
+ 
+    @Override
+    public String getHomePageUrl() {
+        return INSTANCE.getStringProperty(namespace + "homePageUrl", null)
+                .get();
+    }
+    @Override
+    public String getHealthCheckUrlPath() {
+        return INSTANCE.getStringProperty( namespace + "healthCheckUrlPath",
+                DEFAULT_HEALTHCHECK_URLPATH).get();
+    }
+    
+    @Override
+    public String getHealthCheckUrl() {
+        return INSTANCE.getStringProperty(namespace + "healthCheckUrl", null)
+        .get();
+     }
+   
+    @Override
+    public String getSecureHealthCheckUrl() {
+        return INSTANCE.getStringProperty(namespace + "secureHealthCheckUrl",
+                null).get(); 
+     }
+    
+    @Override
+    public String getNamespace() {
+        return this.namespace;
+    }
+   
 
     private void init(String namespace) {
         this.namespace = namespace;
@@ -286,5 +341,5 @@ implements EurekaInstanceConfig {
 
         }
     }
-
+  
 }

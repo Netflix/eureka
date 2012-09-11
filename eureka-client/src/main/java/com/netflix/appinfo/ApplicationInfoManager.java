@@ -30,9 +30,11 @@ import com.netflix.appinfo.InstanceInfo.PortType;
  * 
  * <p>
  * The information required for registration is provided by the user by passing
- * the configuration defined by the contract in {@InstanceConfig}.AWS clients can 
- * either use or extend {@CloudInstanceConfig}.Other non-AWS clients can use or 
- * extend either {@MyDataCenterInstanceConfig} or very basic {@AbstractInstanceConfig}.
+ * the configuration defined by the contract in {@InstanceConfig
+ * }.AWS clients can either use or extend {@CloudInstanceConfig
+ * }.Other non-AWS clients can use or extend either
+ * {@MyDataCenterInstanceConfig} or very basic
+ * {@AbstractInstanceConfig}.
  * </p>
  * 
  * 
@@ -41,7 +43,7 @@ import com.netflix.appinfo.InstanceInfo.PortType;
  */
 public class ApplicationInfoManager {
     private static final Logger logger = LoggerFactory
-            .getLogger(ApplicationInfoManager.class);
+    .getLogger(ApplicationInfoManager.class);
     private static final ApplicationInfoManager instance = new ApplicationInfoManager();
     private InstanceInfo instanceInfo;
     private EurekaInstanceConfig config;
@@ -59,9 +61,9 @@ public class ApplicationInfoManager {
             // Build the lease information to be passed to the server based
             // on config
             LeaseInfo.Builder leaseInfoBuilder = LeaseInfo.Builder
-                    .newBuilder()
-                    .setRenewalIntervalInSecs(
-                            config.getLeaseRenewalIntervalInSeconds())
+            .newBuilder()
+            .setRenewalIntervalInSecs(
+                    config.getLeaseRenewalIntervalInSeconds())
                     .setDurationInSecs(
                             config.getLeaseExpirationDurationInSeconds());
 
@@ -69,18 +71,26 @@ public class ApplicationInfoManager {
             // server
             InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder();
 
-            builder.setAppName(config.getAppname())
-                    .setDataCenterInfo(config.getDataCenterInfo())
-                    .setIPAddr(config.getIpAddress())
-                    .setHostName(config.getHostName(false))
-                    .setPort(config.getNonSecurePort())
-                    .enablePort(PortType.UNSECURE,
-                            config.isNonSecurePortEnabled())
-                    .setSecurePort(config.getSecurePort())
-                    .enablePort(PortType.SECURE, config.getSecurePortEnabled())
-                    .setVIPAddress(config.getVirtualHostName())
-                    .setSecureVIPAddress(config.getSecureVirtualHostName())
-                    .setASGName(config.getASGName());
+            builder.setNamespace(config.getNamespace())
+            .setAppName(config.getAppname())
+            .setDataCenterInfo(config.getDataCenterInfo())
+            .setIPAddr(config.getIpAddress())
+            .setHostName(config.getHostName(false))
+            .setPort(config.getNonSecurePort())
+            .enablePort(PortType.UNSECURE,
+                    config.isNonSecurePortEnabled())
+            .setSecurePort(config.getSecurePort())
+            .enablePort(PortType.SECURE, config.getSecurePortEnabled())
+            .setVIPAddress(config.getVirtualHostName())
+            .setSecureVIPAddress(config.getSecureVirtualHostName())
+            .setHomePageUrl(config.getHomePageUrlPath(),
+                            config.getHomePageUrl())
+            .setStatusPageUrl(config.getStatusPageUrlPath(),
+                              config.getStatusPageUrl())
+            .setHealthCheckUrls(config.getHealthCheckUrlPath(),
+                                config.getHealthCheckUrl(),
+                                config.getSecureHealthCheckUrl())
+            .setASGName(config.getASGName());
 
             // Start off with the STARTING state to avoid traffic
             if (!config.isInstanceEnabledOnit()) {
@@ -104,11 +114,9 @@ public class ApplicationInfoManager {
     }
 
     /**
-     * Gets the information about this instance that is registered with
-     * eureka.
+     * Gets the information about this instance that is registered with eureka.
      * 
-     * @return information about this instance that is registered with
-     *         eureka.
+     * @return information about this instance that is registered with eureka.
      */
     public InstanceInfo getInfo() {
         return instanceInfo;
@@ -119,7 +127,8 @@ public class ApplicationInfoManager {
      * additional meta data that need to be accessed for other reasons.The data
      * will be periodically sent to the eureka server.
      * 
-     * @param appMetadata application specific meta data.
+     * @param appMetadata
+     *            application specific meta data.
      */
     public void registerAppMetadata(Map<String, String> appMetadata) {
         instanceInfo.registerRuntimeMetadata(appMetadata);
