@@ -1,4 +1,2 @@
-include 'eureka-client'
-include 'eureka-server'
-include 'eureka-core'
-include 'eureka-resources'
+rootProject.name='eureka' // TEMPLATE: Change this
+include 'eureka-client','eureka-server','eureka-core','eureka-resources'

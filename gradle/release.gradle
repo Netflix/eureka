@@ -25,6 +25,8 @@ task uploadArtifactory(type: GradleBuild) {
     startParameter.getExcludedTaskNames().add('check')
     tasks = [ 'build', 'artifactoryPublish' ]
 }
+task releaseArtifactory(dependsOn: [checkSnapshotDependencies, uploadArtifactory])
+
 
 task buildWithArtifactory(type: GradleBuild) {
     startParameter = project.gradle.startParameter.newInstance()
@@ -34,11 +36,11 @@ task buildWithArtifactory(type: GradleBuild) {
 }
 
 // Ensure upload happens before taggging but after all pre-checks
-uploadArtifactory.dependsOn checkSnapshotDependencies
-createReleaseTag.dependsOn uploadArtifactory
+releaseArtifactory.dependsOn checkSnapshotDependencies
+createReleaseTag.dependsOn releaseArtifactory
 gradle.taskGraph.whenReady { taskGraph ->
-    if ( taskGraph.hasTask(uploadArtifactory) && !taskGraph.hasTask(':release') ) {
-        throw new GradleException('"release" task has to be run before uploading to Artifactory')
+    if ( taskGraph.hasTask(uploadArtifactory) && rootProject.status == 'release' && !taskGraph.hasTask(':release') ) {
+        throw new GradleException('"release" task has to be run before uploading a release to Artifactory')
     }
 }
 subprojects.each { project ->
@@ -57,8 +59,10 @@ ext.'gradle.release.useAutomaticVersion' = "true"
 
 release {
     // http://tellurianring.com/wiki/gradle/release
-    failOnCommitNeeded=false
-    failOnPublishNeeded=false
-    failOnUnversionedFiles=false
-    failOnUpdateNeeded=false
+    failOnCommitNeeded=true
+    failOnPublishNeeded=true
+    failOnUnversionedFiles=true
+    failOnUpdateNeeded=true
+    includeProjectNameInTag=true
+    requireBranch = null
 }
