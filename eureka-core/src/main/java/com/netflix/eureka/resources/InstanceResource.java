@@ -104,7 +104,7 @@ public class InstanceResource {
 
         // Not found in the registry, immediately ask for a register
         if (!isSuccess) {
-            logger.debug("Not Found (Renew): {} - {}", app.getName(), id);
+            logger.warn("Not Found (Renew): {} - {}", app.getName(), id);
             return Response.status(Status.NOT_FOUND).build();
         }
         // Check if we need to sync based on dirty time stamp, the client
@@ -123,7 +123,7 @@ public class InstanceResource {
                     && (overriddenStatus != null)
                     && !(InstanceStatus.UNKNOWN.equals(overriddenStatus))
                     && isFromReplicaNode) {
-                registry.storeOverriddenStatusIfRequired(overriddenStatus,
+                registry.storeOverriddenStatusIfRequired(id,
                         InstanceStatus.valueOf(overriddenStatus));
             }
             return response;

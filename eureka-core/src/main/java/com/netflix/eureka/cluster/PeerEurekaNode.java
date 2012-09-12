@@ -16,7 +16,6 @@
 
 package com.netflix.eureka.cluster;
 
-import java.util.Date;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -256,10 +255,9 @@ public class PeerEurekaNode {
         try {
             if (config.shouldSyncWhenTimestampDiffers() && response.hasEntity()) {
                 InstanceInfo infoFromPeer = response
-                .getEntity(InstanceInfo.class);
+                        .getEntity(InstanceInfo.class);
                 if (infoFromPeer != null) {
                     Object[] args = { id, info.getLastDirtyTimestamp(),
-
                             infoFromPeer.getLastDirtyTimestamp() };
 
                     logger.warn(
@@ -275,8 +273,8 @@ public class PeerEurekaNode {
                                 args1);
 
                         PeerAwareInstanceRegistry.getInstance()
-                        .storeOverriddenStatusIfRequired(id,
-                                infoFromPeer.getOverriddenStatus());
+                                .storeOverriddenStatusIfRequired(id,
+                                        infoFromPeer.getOverriddenStatus());
                     }
                     PeerAwareInstanceRegistry.getInstance().register(
                             infoFromPeer, true);

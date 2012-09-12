@@ -154,20 +154,21 @@ LookupService<String> {
             // happens
             if (!InstanceStatus.UNKNOWN.equals(r.getOverriddenStatus())) {
                 logger.debug(
-                        "Found overridden status {} for instance {}. Adding to the instance map",
+                        "Found overridden status {} for instance {}. Checking to see if needs to be add to the overrides",
                         r.getOverriddenStatus(), r.getId());
                 if (!overriddenInstanceStatusMap.containsKey(r.getId())) {
-                    logger.debug(
+                    logger.info(
                             "Not found overridden id {} and hence adding it",
                             r.getId());
                     overriddenInstanceStatusMap.put(r.getId(),
                             r.getOverriddenStatus());
                 }
             }
-                
+
             // Set the status based on the overridden status rules
-            r.setStatusWithoutDirty(getOverriddenInstanceStatus(r, existingLease,
-                    isReplication));
+            InstanceStatus overriddenInstanceStatus = getOverriddenInstanceStatus(
+                    r, existingLease, isReplication);
+            r.setStatusWithoutDirty(overriddenInstanceStatus);
 
             if (r != null) {
                 r.setActionType(ActionType.ADDED);
@@ -175,7 +176,7 @@ LookupService<String> {
                 r.setLastUpdatedTimestamp();
             }
             invalidateCache(r.getAppName());
-            logger.debug("Registered instance id {} with status {}", r.getId(),
+            logger.info("Registered instance id {} with status {}", r.getId(),
                     r.getStatus().toString());
             logger.debug("DS: Registry: registered " + r.getAppName() + " - "
                     + r.getId());
@@ -270,16 +271,16 @@ LookupService<String> {
             if (instanceInfo != null) {
                 // touchASGCache(instanceInfo.getASGName());
                 InstanceStatus overriddenInstanceStatus = this
-                        .getOverriddenInstanceStatus(instanceInfo,
-                                leaseToRenew, isReplication);
+                .getOverriddenInstanceStatus(instanceInfo,
+                        leaseToRenew, isReplication);
                 // InstanceStatus overriddenInstanceStatus =
                 // instanceInfo.getStatus();
                 if (!instanceInfo.getStatus().equals(overriddenInstanceStatus)) {
                     Object[] args = { instanceInfo.getStatus().name(),
                             instanceInfo.getOverriddenStatus().name(),
                             instanceInfo.getId() };
-                    logger.debug(
-                            "The overridden instance status {} is different from instance status {] for instance {}. Hence setting the status to overriddentstatus",
+                    logger.info(
+                            "The instance status {} is different from overridden instance status {] for instance {}. Hence setting the status to overridden status",
                             args);
                     instanceInfo.setStatus(overriddenInstanceStatus);
                 }
@@ -307,7 +308,7 @@ LookupService<String> {
             // We might not have the overridden status if the server got
             // restarted -this will help us maintain the overridden state
             // from the replica
-            logger.debug(
+            logger.info(
                     "Adding overridden status for instance id {} and the value is {}",
                     id, overriddenStatus.name());
             overriddenInstanceStatusMap.put(id, overriddenStatus);
