@@ -916,7 +916,7 @@ public class InstanceInfo {
 
     /**
      * Returns the type of action done on the instance in the server.Primarily
-     * used for updating deltas in the {@DiscoveryClient}
+     * used for updating deltas in the {@link DiscoveryClient}
      * instance.
      * 
      * @return action type done on the instance.

@@ -30,11 +30,11 @@ import com.netflix.appinfo.InstanceInfo.PortType;
  * 
  * <p>
  * The information required for registration is provided by the user by passing
- * the configuration defined by the contract in {@InstanceConfig
- * }.AWS clients can either use or extend {@CloudInstanceConfig
+ * the configuration defined by the contract in {@link EurekaInstanceConfig}
+ * }.AWS clients can either use or extend {@link CloudInstanceConfig
  * }.Other non-AWS clients can use or extend either
- * {@MyDataCenterInstanceConfig} or very basic
- * {@AbstractInstanceConfig}.
+ * {@link MyDataCenterInstanceConfig} or very basic
+ * {@link AbstractInstanceConfig}.
  * </p>
  * 
  * 

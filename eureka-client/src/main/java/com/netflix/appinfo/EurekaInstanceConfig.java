@@ -113,7 +113,7 @@ public interface EurekaInstanceConfig {
      * to the instance even though the instance is not alive. Setting this value
      * too small could mean, the instance may be taken out of traffic because of
      * temporary network glitches.This value to be set to atleast higher than
-     * the value specified in {@Link #getLeaseRenewalIntervalInSeconds()}
+     * the value specified in {@link #getLeaseRenewalIntervalInSeconds()}
      * .
      * </p>
      * 

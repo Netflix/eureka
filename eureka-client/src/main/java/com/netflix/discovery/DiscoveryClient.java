@@ -224,11 +224,9 @@ public class DiscoveryClient implements LookupService {
         return applications.get();
     }
 
-    /**
+    /*
      * (non-Javadoc)
-     * 
-     * @see com.netflix.discovery.shared.LookupService#getInstancesById(java.lang
-     *      .String)
+     * @see com.netflix.discovery.shared.LookupService#getInstancesById(java.lang.String)
      */
     public List<InstanceInfo> getInstancesById(String id) {
         List<InstanceInfo> instancesList = new ArrayList<InstanceInfo>();

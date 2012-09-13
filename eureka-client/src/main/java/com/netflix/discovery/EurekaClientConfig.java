@@ -20,6 +20,8 @@ import java.net.URI;
 import java.net.URL;
 import java.util.List;
 
+import org.apache.http.client.HttpClient;
+
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 
 /**
@@ -120,7 +122,7 @@ public interface EurekaClientConfig {
      * 
      * <p>
      * Note that the connections in the client are pooled by
-     * {@link org.apache.http.client} and this setting affects the actual
+     * {@link HttpClient} and this setting affects the actual
      * connection creation and also the wait time to get the connection from the
      * pool.
      * </p>
