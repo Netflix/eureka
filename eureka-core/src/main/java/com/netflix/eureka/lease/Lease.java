@@ -42,7 +42,8 @@ public class Lease<T> {
     private T holder;
     private long evictionTimestamp;
     private long registrationTimestamp;
-    private long lastUpdateTimestamp;
+    // Make it volatile so that the expiration task would see this quicker
+    private volatile long lastUpdateTimestamp;
     private long duration;
 
     public Lease(T r, int durationInSecs) {
