@@ -1,5 +1,6 @@
 // Establish version and status
 ext.githubProjectName = rootProject.name // Change if github project name is not the same as the root project's name
+group = "com.netflix.${githubProjectName}"
 
 buildscript {
     repositories { mavenCentral() }
@@ -15,22 +16,6 @@ apply from: file('gradle/maven.gradle')
 apply from: file('gradle/check.gradle')
 apply from: file('gradle/license.gradle')
 apply from: file('gradle/release.gradle')
-
-// Closure to configure all the POM with extra info, common to all projects
-pom {
-    project {
-        url "https://github.com/Netflix/${githubProjectName}"
-        scm {
-            connection "scm:git:git@github.com:Netflix/${githubProjectName}.git"
-            url "scm:git:git@github.com:Netflix/${githubProjectName}.git"
-            developerConnection "scm:git:git@github.com:Netflix/${githubProjectName}.git"
-        }
-        issueManagement {
-            system 'github'
-            url "https://github.com/Netflix/${githubProjectName}/issues"
-        }
-    }
-}
 
 apply plugin: 'war'
 apply plugin: 'jetty'
