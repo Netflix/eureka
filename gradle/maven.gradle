@@ -48,7 +48,6 @@ task uploadMavenCentral(type:Upload, dependsOn: signArchives) {
                         url "https://github.com/Netflix/${rootProject.githubProjectName}/issues"
                     }
                 }
-            }
         }
     }
 }
