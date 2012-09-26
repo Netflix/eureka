@@ -618,7 +618,12 @@ LookupService<String> {
 
     @com.netflix.servo.annotations.Monitor(name = "numOfRenewsInLastMin", description = "Number of total heartbeats received in the last minute", type = DataSourceType.GAUGE)
     public long getNumOfRenewsInLastMin() {
-        return renewsLastMin.getCount();
+        if (renewsLastMin != null) {
+            return renewsLastMin.getCount();
+        }
+        else {
+            return 0;
+        }
     }
 
     public List<Pair<Long, String>> getLastNRegisteredInstances() {

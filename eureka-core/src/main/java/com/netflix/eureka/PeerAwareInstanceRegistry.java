@@ -92,6 +92,10 @@ import com.netflix.servo.monitor.Stopwatch;
  * 
  */
 public class PeerAwareInstanceRegistry extends InstanceRegistry {
+    private static final int PRIME_PEER_NODES_RETRY_MS = 30000;
+
+    private static final int REGISTRY_SYNC_RETRY_MS = 30000;
+
     private static final Logger logger = LoggerFactory
     .getLogger(PeerAwareInstanceRegistry.class);
 
@@ -301,24 +305,38 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
      * operation fails over to other nodes until the list is exhausted if the
      * communication fails.
      */
-    public void syncUp() {
+    public int syncUp() {
         // Copy entire entry from neighboring DS node
         LookupService lookupService = DiscoveryManager.getInstance()
         .getLookupService();
-
-        Applications apps = lookupService.getApplications();
         int count = 0;
-        for (Application app : apps.getRegisteredApplications()) {
-            for (InstanceInfo instance : app.getInstances()) {
+
+        for (int i = 0; ((i < eurekaServerConfig.getRegistrySyncRetries()) && (count == 0)); i++) {
+            Applications apps = lookupService.getApplications();
+            for (Application app : apps.getRegisteredApplications()) {
+                for (InstanceInfo instance : app.getInstances()) {
+                    try {
+                        register(instance, -1, true);
+                        count++;
+                    } catch (Throwable t) {
+                        logger.error("During DS init copy", t);
+                    }
+                }
+            }
+            if (count == 0) {
                 try {
-                    register(instance, -1, true);
-                    count++;
-                } catch (Throwable t) {
-                    logger.error("During DS init copy", t);
+                    Thread.sleep(REGISTRY_SYNC_RETRY_MS);
+                } catch (InterruptedException e) {
+                    logger.warn("Interrupted during registry transfer..");
+                    break;
                 }
             }
         }
-        // Renewals happen every 30 seconds and for a minute it should be a
+        return count;
+    }
+    
+    public void openForTraffic(int count) {
+     // Renewals happen every 30 seconds and for a minute it should be a
         // factor of 2.
         numberOfRenewsPerMinThreshold = (int) ((count * 2) * eurekaServerConfig
                 .getRenewalPercentThreshold());
@@ -329,6 +347,43 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
         this.startupTime = System.currentTimeMillis();
         if (count > 0) {
             this.peerInstancesTransferEmptyOnStartup = false;
+        }
+        // Sometimes when the eureka servers comes up, AWS firewall may not allow the network connections immediately.
+        // This will cause the outbound connections to fail, but the inbound connections continue to work.
+        // What this means is the clients would have switched to this node (after EIP binding) and so the other eureka
+        // nodes will expire all instances that have been switched because of the lack of outgoing heartbeats from this instance.
+        
+        // The best protection in this scenario is to block and wait until we are able to ping all eureka nodes successfully atleast once.
+        // Until then we won't open up the traffic.
+        Application eurekaApps = this.getApplication(ApplicationInfoManager.getInstance().getInfo().getAppName());
+        boolean areAllPeerNodesPrimed = false;
+        while (!areAllPeerNodesPrimed) {
+            String peerHostName = null;
+            try {
+                for (PeerEurekaNode node : peerEurekaNodes.get()) {
+                    for (InstanceInfo peerInstanceInfo : eurekaApps
+                            .getInstances()) {
+                        peerHostName = peerInstanceInfo.getHostName();
+                        // Only try to contact the eureka nodes that are in this instance's registry - because
+                        // the other instances may be legitimately down
+                        if (peerHostName.equalsIgnoreCase(
+                                new URI(node.getServiceUrl()).getHost())) {
+                            node.heartbeat(peerInstanceInfo.getAppName(),
+                                    peerInstanceInfo.getId(), peerInstanceInfo,
+                                    null);
+                        }
+                    }
+                }
+                areAllPeerNodesPrimed = true;
+            } catch (Throwable e) {
+                logger.error("Could not contact " + peerHostName, e);
+                try {
+                    Thread.sleep(PRIME_PEER_NODES_RETRY_MS);
+                } catch (InterruptedException e1) {
+                   logger.warn("Interrupted while priming : ", e1);
+                   areAllPeerNodesPrimed = true;
+                }
+            }
         }
         ApplicationInfoManager.getInstance().setInstanceStatus(
                 InstanceStatus.UP);

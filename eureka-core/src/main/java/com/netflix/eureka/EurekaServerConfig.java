@@ -389,4 +389,12 @@ public interface EurekaServerConfig {
      * @return true, to synchronize, false otherwise.
      */
     boolean shouldSyncWhenTimestampDiffers();
+
+    /**
+     * Get the number of times that a eureka node would try to get the registry information from
+     * the peers during startup.
+     * 
+     * @return the number of retries
+     */
+    int getRegistrySyncRetries();
 }

@@ -101,7 +101,8 @@ public class EurekaBootStrap implements ServletContextListener {
             .getInstance();
 
             // Copy registry from neighboring eureka node
-            registry.syncUp();
+            int registryCount = registry.syncUp();
+            registry.openForTraffic(registryCount);
 
             // Only in AWS, enable the binding functionality
             if (Name.Amazon.equals(info.getDataCenterInfo().getName())) {

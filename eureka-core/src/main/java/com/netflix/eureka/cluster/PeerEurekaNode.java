@@ -78,9 +78,9 @@ public class PeerEurekaNode {
     .newTimer("InstanceStatusUpdate");
     private final String serviceUrl;
     private final String name;
-    private JerseyClient jerseyClient;
-    private ApacheHttpClient4 jerseyApacheClient;
-    private ThreadPoolExecutor statusReplicationPool;
+    private volatile JerseyClient jerseyClient;
+    private volatile ApacheHttpClient4 jerseyApacheClient;
+    private volatile ThreadPoolExecutor statusReplicationPool;
     private volatile boolean statusReplication = true;
 
     public PeerEurekaNode(String serviceUrl) {

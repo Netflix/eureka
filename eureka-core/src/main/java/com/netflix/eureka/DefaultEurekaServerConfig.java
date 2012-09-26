@@ -326,4 +326,10 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
         .getBooleanProperty(namespace + "syncWhenTimestampDiffers", true).get();
     }
 
+    @Override
+    public int getRegistrySyncRetries() {
+        return configInstance
+        .getIntProperty(namespace + "numberRegistrySyncRetries", 5).get();
+    }
+
 }
