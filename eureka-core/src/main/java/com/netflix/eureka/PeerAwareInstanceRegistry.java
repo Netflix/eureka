@@ -316,7 +316,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
             for (Application app : apps.getRegisteredApplications()) {
                 for (InstanceInfo instance : app.getInstances()) {
                     try {
-                        register(instance, -1, true);
+                        register(instance, instance.getLeaseInfo().getDurationInSecs(), true);
                         count++;
                     } catch (Throwable t) {
                         logger.error("During DS init copy", t);
