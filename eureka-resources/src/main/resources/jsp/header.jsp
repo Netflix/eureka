@@ -23,12 +23,12 @@
   %>
   <h4 id="uptime">Current time: <%=StatusResource.getCurrentTimeAsString() %>, Uptime: <%=StatusInfo.getUpTime()%></h4>
   <hr id="uptime">Lease expiration enabled: <%=registry.isLeaseExpirationEnabled() %>, Renews threshold: <%=registry.getNumOfRenewsPerMinThreshold() %>, Renews (last min):  <%=registry.getNumOfRenewsInLastMin() %></hr>
-  <% if (registry.getNumOfRenewsPerMinThreshold() > registry.getNumOfRenewsInLastMin()) {
+  <% if (registry.isBelowRenewThresold() == 1) {
  	  if (!registry.isSelfPreservationModeEnabled()) {
    %>
   <h4 id="uptime"><font size="+1" color="red"><b>RENEWALS ARE LESSER THAN THE THRESHOLD.THE SELF PRESERVATION MODE IS TURNED OFF.THIS MAY NOT PROTECT INSTANCE EXPIRY IN CASE OF NETWORK/OTHER PROBLEMS.</b></font></h4>
    <%} else {%>
- 	 <h4 id="uptime"><font size="+1" color="red"><b>EMERGENCY! SOMETHING'S REALLY BROKEN, DISCOVERY MAY BE INCORRECTLY CLAIMING INSTANCES ARE UP WHEN THEY'RE NOT. RENEWALS ARE LESSER THAN THRESHOLD AND HENCE THE INSTANCES ARE NOT BEING EXPIRED JUST TO BE SAFE.</b></font></h4>
+ 	 <h4 id="uptime"><font size="+1" color="red"><b>EMERGENCY! EUREKA MAY BE INCORRECTLY CLAIMING INSTANCES ARE UP WHEN THEY'RE NOT. RENEWALS ARE LESSER THAN THRESHOLD AND HENCE THE INSTANCES ARE NOT BEING EXPIRED JUST TO BE SAFE.</b></font></h4>
    <%} %>
    <%} else if (!registry.isSelfPreservationModeEnabled()) {
    	%>
