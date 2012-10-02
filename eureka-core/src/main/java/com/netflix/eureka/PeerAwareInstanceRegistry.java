@@ -47,6 +47,7 @@ import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
+import com.netflix.appinfo.LeaseInfo;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.shared.Application;
@@ -97,10 +98,10 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
     private static final int REGISTRY_SYNC_RETRY_MS = 30000;
 
     private static final Logger logger = LoggerFactory
-    .getLogger(PeerAwareInstanceRegistry.class);
+            .getLogger(PeerAwareInstanceRegistry.class);
 
     private static final EurekaServerConfig eurekaServerConfig = EurekaServerConfigurationManager
-    .getInstance().getConfiguration();
+            .getInstance().getConfiguration();
     private static final String DICOVERY_FAILED_REPLICATION_AFTER_RETRY = "FailedReplicationAfterRetry";
 
     private static final int REPL_RETRY_SLEEP_TIME_IN_MS = 40;
@@ -141,12 +142,12 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
     private Timer timer = new Timer(
             "ReplicaAwareInstanceRegistry - RenewalThresholdUpdater", true);
     private static final LoadingCache<String, Boolean> peerEurekaStatusCache = CacheBuilder
-    .newBuilder()
-    .initialCapacity(10)
-    .expireAfterWrite(
-            eurekaServerConfig
-            .getPeerEurekaStatusRefreshTimeIntervalMs(),
-            TimeUnit.MILLISECONDS)
+            .newBuilder()
+            .initialCapacity(10)
+            .expireAfterWrite(
+                    eurekaServerConfig
+                            .getPeerEurekaStatusRefreshTimeIntervalMs(),
+                    TimeUnit.MILLISECONDS)
             .<String, Boolean> build(new CacheLoader<String, Boolean>() {
                 public Boolean load(String serviceUrl) {
                     try {
@@ -176,7 +177,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
     private static final PeerAwareInstanceRegistry instance = new PeerAwareInstanceRegistry();
 
     private Counter failedReplicationAfterRetry = Monitors
-    .newCounter(DICOVERY_FAILED_REPLICATION_AFTER_RETRY);
+            .newCounter(DICOVERY_FAILED_REPLICATION_AFTER_RETRY);
 
     PeerAwareInstanceRegistry() {
         // Make it an atomic reference since this could be updated in the
@@ -191,8 +192,8 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                     e);
         }
         ThreadFactory threadFactory = new ThreadFactoryBuilder()
-        .setDaemon(false).setNameFormat("Eureka-Replication-Thread")
-        .build();
+                .setDaemon(false).setNameFormat("Eureka-Replication-Thread")
+                .build();
         // Thread pool used for replication
         replicationExecutorPool = new ThreadPoolExecutor(eurekaServerConfig
                 .getMinThreadsForReplication(), eurekaServerConfig
@@ -200,7 +201,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                 .getMaxIdleThreadAgeInMinutesForReplication(),
                 TimeUnit.MINUTES, new ArrayBlockingQueue<Runnable>(
                         eurekaServerConfig.getMaxElementsInReplicationPool()),
-                        threadFactory) {
+                threadFactory) {
         };
         init();
     }
@@ -235,7 +236,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
             }
 
         }, eurekaServerConfig.getRenewalThresholdUpdateIntervalMs(),
-        eurekaServerConfig.getRenewalThresholdUpdateIntervalMs());
+                eurekaServerConfig.getRenewalThresholdUpdateIntervalMs());
     }
 
     /**
@@ -258,7 +259,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
 
                 }
             }, eurekaServerConfig.getPeerEurekaNodesUpdateIntervalMs(),
-            eurekaServerConfig.getPeerEurekaNodesUpdateIntervalMs());
+                    eurekaServerConfig.getPeerEurekaNodesUpdateIntervalMs());
 
         } catch (Exception e) {
             throw new IllegalStateException(e);
@@ -271,8 +272,8 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
     private void updatePeerEurekaNodes() {
         InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
         List<String> replicaUrls = DiscoveryManager.getInstance()
-        .getDiscoveryClient()
-        .getDiscoveryServiceUrls(DiscoveryClient.getZone(myInfo));
+                .getDiscoveryClient()
+                .getDiscoveryServiceUrls(DiscoveryClient.getZone(myInfo));
         List<PeerEurekaNode> replicaNodes = new ArrayList<PeerEurekaNode>();
         for (String replicaUrl : replicaUrls) {
             if (!isThisMe(replicaUrl)) {
@@ -308,7 +309,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
     public int syncUp() {
         // Copy entire entry from neighboring DS node
         LookupService lookupService = DiscoveryManager.getInstance()
-        .getLookupService();
+                .getLookupService();
         int count = 0;
 
         for (int i = 0; ((i < eurekaServerConfig.getRegistrySyncRetries()) && (count == 0)); i++) {
@@ -316,7 +317,8 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
             for (Application app : apps.getRegisteredApplications()) {
                 for (InstanceInfo instance : app.getInstances()) {
                     try {
-                        register(instance, instance.getLeaseInfo().getDurationInSecs(), true);
+                        register(instance, instance.getLeaseInfo()
+                                .getDurationInSecs(), true);
                         count++;
                     } catch (Throwable t) {
                         logger.error("During DS init copy", t);
@@ -334,9 +336,9 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
         }
         return count;
     }
-    
+
     public void openForTraffic(int count) {
-     // Renewals happen every 30 seconds and for a minute it should be a
+        // Renewals happen every 30 seconds and for a minute it should be a
         // factor of 2.
         numberOfRenewsPerMinThreshold = (int) ((count * 2) * eurekaServerConfig
                 .getRenewalPercentThreshold());
@@ -348,12 +350,17 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
         if (count > 0) {
             this.peerInstancesTransferEmptyOnStartup = false;
         }
-        // Sometimes when the eureka servers comes up, AWS firewall may not allow the network connections immediately.
-        // This will cause the outbound connections to fail, but the inbound connections continue to work.
-        // What this means is the clients would have switched to this node (after EIP binding) and so the other eureka
-        // nodes will expire all instances that have been switched because of the lack of outgoing heartbeats from this instance.
-        
-        // The best protection in this scenario is to block and wait until we are able to ping all eureka nodes successfully atleast once.
+        // Sometimes when the eureka servers comes up, AWS firewall may not
+        // allow the network connections immediately.
+        // This will cause the outbound connections to fail, but the inbound
+        // connections continue to work.
+        // What this means is the clients would have switched to this node
+        // (after EIP binding) and so the other eureka
+        // nodes will expire all instances that have been switched because of
+        // the lack of outgoing heartbeats from this instance.
+
+        // The best protection in this scenario is to block and wait until we
+        // are able to ping all eureka nodes successfully atleast once.
         // Until then we won't open up the traffic.
         boolean areAllPeerNodesPrimed = false;
         while (!areAllPeerNodesPrimed) {
@@ -365,7 +372,17 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                 for (PeerEurekaNode node : peerEurekaNodes.get()) {
                     for (InstanceInfo peerInstanceInfo : eurekaApps
                             .getInstances()) {
+                        LeaseInfo leaseInfo = peerInstanceInfo.getLeaseInfo();
+                        // If the lease is expired - do not worry about priming
+                        if (System.currentTimeMillis() > (leaseInfo
+                                .getRenewalTimestamp() + (leaseInfo
+                                .getDurationInSecs() * 1000))) {
+                            continue;
+                        }
                         peerHostName = peerInstanceInfo.getHostName();
+                        logger.info(
+                                "Trying to send heartbeat for the eureka server at {} to make sure the network channels are open",
+                                peerHostName);
                         // Only try to contact the eureka nodes that are in this
                         // instance's registry - because
                         // the other instances may be legitimately down
@@ -623,7 +640,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
     private void updateRenewalThreshold() {
         try {
             LookupService lookupService = DiscoveryManager.getInstance()
-            .getLookupService();
+                    .getLookupService();
             Applications apps = lookupService.getApplications();
             int count = 0;
             for (Application app : apps.getRegisteredApplications()) {
@@ -779,7 +796,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                     replicationExecutorPool.execute(new Runnable() {
                         public void run() {
                             int retryCounter = eurekaServerConfig
-                            .getNumberOfReplicationRetries();
+                                    .getNumberOfReplicationRetries();
                             // If the url represents this host, do not replicate
                             // to yourself.
                             if (isThisMe(node.getServiceUrl())) {
@@ -841,7 +858,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                 break;
             case Heartbeat:
                 InstanceStatus overriddenStatus = overriddenInstanceStatusMap
-                .get(id);
+                        .get(id);
                 InstanceInfo infoFromRegistry = getInstanceByAppAndId(appName,
                         id);
                 if (!node.heartbeat(appName, id, infoFromRegistry,
@@ -849,7 +866,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                     logger.warn(
                             "Cannot find instance id {} and hence replicating the instance with status {}",
                             infoFromRegistry.getId(), infoFromRegistry
-                            .getStatus().toString());
+                                    .getStatus().toString());
                     if (infoFromRegistry != null) {
                         node.register(infoFromRegistry);
                     }
@@ -878,7 +895,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                         newStatus, node, retryCounter);
             } else {
                 failedReplicationAfterRetry = Monitors
-                .newCounter(DICOVERY_FAILED_REPLICATION_AFTER_RETRY);
+                        .newCounter(DICOVERY_FAILED_REPLICATION_AFTER_RETRY);
                 failedReplicationAfterRetry.increment();
                 Object[] args_1 = { action.name(), serviceUrl, id };
                 logger.error(
@@ -952,12 +969,12 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
      * @throws URISyntaxException
      */
     private static boolean isPeerAliveInMyRegistery(String serviceUrl)
-    throws URISyntaxException {
+            throws URISyntaxException {
         String myName = ApplicationInfoManager.getInstance().getInfo()
-        .getAppName();
+                .getAppName();
         URI uri = new URI(serviceUrl);
         Application app = PeerAwareInstanceRegistry.getInstance()
-        .getApplication(myName);
+                .getApplication(myName);
         List<InstanceInfo> instanceInfoList = app.getInstances();
         for (InstanceInfo instanceInfo : instanceInfoList) {
             if (((AmazonInfo) instanceInfo.getDataCenterInfo()).get(
