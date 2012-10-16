@@ -44,6 +44,7 @@ import com.google.common.collect.ComputationException;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
+import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
@@ -350,18 +351,32 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
         if (count > 0) {
             this.peerInstancesTransferEmptyOnStartup = false;
         }
-        // Sometimes when the eureka servers comes up, AWS firewall may not
-        // allow the network connections immediately.
-        // This will cause the outbound connections to fail, but the inbound
-        // connections continue to work.
-        // What this means is the clients would have switched to this node
-        // (after EIP binding) and so the other eureka
-        // nodes will expire all instances that have been switched because of
-        // the lack of outgoing heartbeats from this instance.
-
-        // The best protection in this scenario is to block and wait until we
-        // are able to ping all eureka nodes successfully atleast once.
-        // Until then we won't open up the traffic.
+        boolean isAws = (Name.Amazon.equals(ApplicationInfoManager
+                .getInstance().getInfo().getDataCenterInfo().getName()));
+        if (isAws) {
+            logger.info("Priming AWS connections for all replicas..");
+            primeAwsReplicas();
+        }
+    }
+ 
+    /**
+     * Prime connections for Aws replicas.
+     * <p>
+     * Sometimes when the eureka servers comes up, AWS firewall may not allow
+     * the network connections immediately. This will cause the outbound
+     * connections to fail, but the inbound connections continue to work. What
+     * this means is the clients would have switched to this node (after EIP
+     * binding) and so the other eureka nodes will expire all instances that
+     * have been switched because of the lack of outgoing heartbeats from this
+     * instance.
+     * </p>
+     * <p>
+     * The best protection in this scenario is to block and wait until we are
+     * able to ping all eureka nodes successfully atleast once. Until then we
+     * won't open up the traffic.
+     * </p>
+     */
+    private void primeAwsReplicas() {
         boolean areAllPeerNodesPrimed = false;
         while (!areAllPeerNodesPrimed) {
             String peerHostName = null;
@@ -369,6 +384,9 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                 Application eurekaApps = this
                         .getApplication(ApplicationInfoManager.getInstance()
                                 .getInfo().getAppName());
+                if (eurekaApps == null) {
+                    areAllPeerNodesPrimed = true;
+                }
                 for (PeerEurekaNode node : peerEurekaNodes.get()) {
                     for (InstanceInfo peerInstanceInfo : eurekaApps
                             .getInstances()) {
