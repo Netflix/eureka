@@ -345,7 +345,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                 .getRenewalPercentThreshold());
         logger.info("Got "
                 + count
-                + " instances from neighboring DS node.  Changing status to UP.");
+                + " instances from neighboring DS node");
         logger.info("Renew threshold is: " + numberOfRenewsPerMinThreshold);
         this.startupTime = System.currentTimeMillis();
         if (count > 0) {
@@ -357,6 +357,10 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
             logger.info("Priming AWS connections for all replicas..");
             primeAwsReplicas();
         }
+        logger.info("Changing status to UP");
+        ApplicationInfoManager.getInstance().setInstanceStatus(
+                InstanceStatus.UP);
+        super.postInit();
     }
  
     /**
@@ -423,9 +427,6 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                 }
             }
         }
-        ApplicationInfoManager.getInstance().setInstanceStatus(
-                InstanceStatus.UP);
-        super.postInit();
     }
 
     /**
@@ -995,8 +996,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                 .getApplication(myName);
         List<InstanceInfo> instanceInfoList = app.getInstances();
         for (InstanceInfo instanceInfo : instanceInfoList) {
-            if (((AmazonInfo) instanceInfo.getDataCenterInfo()).get(
-                    MetaDataKey.publicHostname).equalsIgnoreCase(uri.getHost())
+            if (instanceInfo.getHostName().equalsIgnoreCase(uri.getHost())
                     && (InstanceStatus.UP.equals(instanceInfo.getStatus()))) {
                 return true;
             }
