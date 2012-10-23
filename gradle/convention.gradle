@@ -6,22 +6,29 @@ sourceCompatibility = 1.6
 status = version.contains('-SNAPSHOT')?'snapshot':'release'
 
 task sourcesJar(type: Jar, dependsOn:classes) {
-    classifier = 'sources'
     from sourceSets.main.allSource
 }
 
 task javadocJar(type: Jar, dependsOn:javadoc) {
-    classifier = 'javadoc'
     from javadoc.destinationDir
+}
+
+configurations.add('sources')
+configurations.add('javadoc')
+
+artifacts {
+    sources(sourcesJar) {
+        type 'source'
+        classifier 'sources'
+    }
+    javadoc(javadocJar) {
+        type 'javadoc'
+        classifier 'javadoc'
+    }
 }
 
 // Ensure output is on a new line
 javadoc.doFirst { println "" }
-
-artifacts {
-    archives sourcesJar
-    archives javadocJar
-}
 
 // Generate wrapper, which is distributed as part of source to alleviate the need of installing gradle
 task createWrapper(type: Wrapper) {
