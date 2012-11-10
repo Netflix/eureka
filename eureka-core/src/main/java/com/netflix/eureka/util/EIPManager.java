@@ -34,6 +34,7 @@ import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.appinfo.LeaseInfo;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.shared.Application;
 import com.netflix.eureka.EurekaServerConfig;
@@ -220,7 +221,13 @@ public class EIPManager {
                 for (Iterator<String> it = availableEIPList.iterator(); it.hasNext(); ) {
                     String eip = it.next();
                     // if there is already an EIP association, remove it from the list
-                    if (eip.trim().equals(publicIP)) {
+                    if ((eip.trim().equals(publicIP))) {
+                        LeaseInfo leaseInfo = i.getLeaseInfo();
+                        if ((leaseInfo != null) && (System.currentTimeMillis() > (leaseInfo
+                                .getRenewalTimestamp() + (leaseInfo
+                                .getDurationInSecs() * 1000)))) {
+                            continue;
+                        }
                         logger.info("Removing the EIP {} as it is already used by instance {}", eip, instanceId);
                         it.remove();
                     }
