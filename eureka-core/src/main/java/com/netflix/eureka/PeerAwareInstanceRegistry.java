@@ -286,9 +286,10 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
             logger.warn("The replica size seems to be empty. Check the route 53 DNS Registry");
             return;
         }
-        if (!replicaNodes.equals(peerEurekaNodes.get())) {
+        List<PeerEurekaNode> existingReplicaNodes = peerEurekaNodes.get();
+        if (!replicaNodes.equals(existingReplicaNodes)) {
             List<String> previousServiceUrls = new ArrayList<String>();
-            for (PeerEurekaNode node : peerEurekaNodes.get()) {
+            for (PeerEurekaNode node : existingReplicaNodes) {
                 previousServiceUrls.add(node.getServiceUrl());
             }
             List<String> currentServiceUrls = new ArrayList<String>();
@@ -299,6 +300,14 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                     "Updating the replica nodes as they seem to have changed from {} to {} ",
                     previousServiceUrls, currentServiceUrls);
             peerEurekaNodes.set(replicaNodes);
+            for (PeerEurekaNode existingReplicaNode: existingReplicaNodes) {
+                existingReplicaNode.destroyResources();
+            }
+        }
+        else {
+            for (PeerEurekaNode replicaNode : replicaNodes) {
+                replicaNode.destroyResources();
+            }
         }
     }
 

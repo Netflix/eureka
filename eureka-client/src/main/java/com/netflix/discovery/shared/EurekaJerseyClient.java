@@ -119,6 +119,20 @@ public class EurekaJerseyClient {
                     HTTP_CONNECTION_CLEANER_INTERVAL_MS);
 
         }
-    }
+        
+        /**
+         * Clean up resources.
+         */
+        public void destroyResources() {
+            if (this.eurekaConnCleaner != null) {
+                this.eurekaConnCleaner.cancel();
+            }
+            if (this.apacheHttpClient != null) {
+                this.apacheHttpClient.destroy();
+            }
+        }
 
+    }
+    
+    
 }

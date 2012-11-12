@@ -467,5 +467,14 @@ public class PeerEurekaNode {
     public void enableStatusReplication() {
         this.statusReplication = true;
     }
+    
+    /**
+     * Destroy the resources created for communication with the Peer Eureka Server.
+     */
+    public void destroyResources () {
+        if (jerseyClient != null) {
+            jerseyClient.destroyResources();
+        }
+    }
 
 }
