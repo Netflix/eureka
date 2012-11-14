@@ -1,0 +1,28 @@
+<ivy-module version="2.0" xmlns:e="http://ant.apache.org/ivy/extra">
+    <info organisation="netflix" module="blitz4j">
+        <description>
+            Look here more how this works:
+            https://confluence.corp.netflix.com/display/PDCLOUD/Java+application+monitoring
+        </description>
+    </info>
+    <configurations>
+        <include file="${ivy.settings.dir}/ivy-configurations.xml"/>
+    </configurations>
+    <publications defaultconf="master">
+        <artifact name="blitz4j" type="jar" ext="jar"/>
+        <artifact name="blitz4j" type="javadoc" e:classifier="javadoc" ext="jar" conf="javadoc"/>
+        <artifact name="blitz4j" type="sources" e:classifier="sources" ext="jar" conf="sources"/>
+    </publications>
+    <dependencies>
+    
+       <dependency org="com.netflix.servo" name="servo-core" rev="latest.release" conf="compile"/>
+        <dependency org="com.netflix.archaius" name="archaius-core" rev="latest.release" conf="compile"/>
+        <dependency org="commons-configuration" name="commons-configuration" rev="1.5" conf="compile"/>
+        <dependency org="commons-beanutils" name="commons-beanutils" rev="1.6" conf="compile"/> <!-- since we excluded commons-beanutils-core -->
+        <dependency org="commons-collections" name="commons-collections" rev="3.2+" conf="compile"/>
+        <dependency org="org.slf4j" name="slf4j-api" rev="1.6.4" />
+        <dependency org="log4j" name="log4j" rev="1.2.17" conf="compile"/>
+        <dependency org="commons-logging" name="commons-logging" rev="1.1.1" conf="compile"/>
+        <dependency org="commons-lang" name="commons-lang" rev="2.5" conf="runtime"/>
+    </dependencies>
+</ivy-module>
