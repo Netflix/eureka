@@ -55,6 +55,9 @@ public class NFPatternParser extends PatternParser {
 		@Override
 		public String convert(LoggingEvent event) {
 		    LocationInfo locationInfo = LoggingContext.getInstance().getLocationInfo(event);
+		    if (locationInfo == null) {
+		        return "";
+		    }
 		    switch (type) {
 		    case 'M':
 		        return locationInfo.getMethodName();

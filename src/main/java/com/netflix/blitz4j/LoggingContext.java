@@ -67,11 +67,19 @@ public class LoggingContext {
     }
 
     public LocationInfo getLocationInfo(Class wrapperClassName) {
+        LocationInfo locationInfo = null;
+        
+        try {
         if (stackLocal.get() == null) {
         stackLocal.set(this.getStackTraceElement(wrapperClassName));
          }
-        LocationInfo locationInfo = new LocationInfo(stackLocal.get().getFileName(), stackLocal.get().getClassName(), 
+       
+        locationInfo = new LocationInfo(stackLocal.get().getFileName(), stackLocal.get().getClassName(), 
                 stackLocal.get().getMethodName(), stackLocal.get().getLineNumber() + "");
+        }
+        catch (Throwable e) {
+           // e.printStackTrace();
+        }
         return locationInfo;
     }
     
@@ -99,7 +107,9 @@ public class LoggingContext {
             locationInfo = (LocationInfo) LoggingContext.getInstance()
                     .getLocationInfo(
                             Class.forName(event.getFQNOfLoggerClass()));
-            MDC.put("locationInfo", locationInfo);
+            if (locationInfo != null) {
+                MDC.put("locationInfo", locationInfo);
+            }
         } catch (Throwable e) {
            e.printStackTrace();
            

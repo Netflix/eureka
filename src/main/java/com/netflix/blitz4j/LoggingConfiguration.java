@@ -86,6 +86,7 @@ public class LoggingConfiguration implements PropertyListener {
      * commons-logging call)
      */
     public void configure(Properties props) {
+        this.originalAsyncAppenderNameMap.clear();
         this.props = props;
         NFHierarchy nfHierarchy = null;
         if (lockFree.get()) {

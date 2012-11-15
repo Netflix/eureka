@@ -11,6 +11,9 @@ import org.apache.log4j.helpers.AppenderAttachableImpl;
 import org.apache.log4j.spi.AppenderAttachable;
 import org.apache.log4j.spi.LoggingEvent;
 
+import com.netflix.config.DynamicPropertyFactory;
+import com.netflix.config.DynamicStringProperty;
+
 /**
  * An AppenderAttacableImpl that overrides log4j to provide a lock free
  * implementation
@@ -21,7 +24,7 @@ import org.apache.log4j.spi.LoggingEvent;
 public class NFAppenderAttachableImpl extends AppenderAttachableImpl implements
 AppenderAttachable {
 
-    private static final String ASYNC_APPENDER_NAME = "com.netflix.blitz4j.AsyncAppender";
+    private static final DynamicStringProperty ASYNC_APPENDER_NAME = DynamicPropertyFactory.getInstance().getStringProperty("blitz4j.asyncAppenders", "com.netflix.blitz4j.AsyncAppender");
     protected AbstractQueue<Appender> appenderList = new ConcurrentLinkedQueue<Appender>();
 
     /*
@@ -146,11 +149,14 @@ AppenderAttachable {
             Iterator<Appender> it = appenderList.iterator();
             while (it.hasNext()) {
                 Appender a = (Appender) it.next();
+                String[] asyncAppenders = ASYNC_APPENDER_NAME.get().split(",");
                 // For AsyncAppender, we have a chance to not lose logging,as it
                 // can be batched
-                if (!(ASYNC_APPENDER_NAME.equals(a.getClass().getName()))) {
-                    a.close();
-                    it.remove();
+                for(String asyncAppender : asyncAppenders) {
+                    if (!(asyncAppender.equals(a.getClass().getName()))) {
+                        a.close();
+                        it.remove();
+                    }
                 }
           }
         }
