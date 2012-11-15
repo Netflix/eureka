@@ -193,8 +193,8 @@ public class LoggingConfiguration implements PropertyListener {
                     + PROP_LOG4J_ORIGINAL_APPENDER_NAME, originalAppenderName);
             // Set the batcher to reject the collector request instead of it
             // participating in processing
-            ((Configuration) DynamicPropertyFactory
-                    .getBackingConfigurationSource()).setProperty("batcher."
+            ConfigurationManager.getConfigInstance()
+           .setProperty("batcher."
                     + AsyncAppender.class.getName() + "."
                     + originalAppenderName + "."
                     + "threadPoolDefaultRejectionHandler", true);

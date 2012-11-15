@@ -240,7 +240,6 @@ public class AsyncAppender extends AppenderSkeleton implements
         }
         // If the buffer is full, then summarize the information
         if (shouldSummarizeOverflow && (!isBufferPutSuccessful)) {
-            System.out.println("Summarizing the overflow");
             DynamicCounter.increment(this.originalAppenderName
                     + "_summarizeEvent", null);
             Stopwatch t = putDiscardMapTimeTracer.start();
