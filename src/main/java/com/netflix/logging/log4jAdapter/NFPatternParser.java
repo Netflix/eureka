@@ -1,4 +1,4 @@
-package com.netflix.blitz4j;
+package com.netflix.logging.log4jAdapter;
 
 import java.util.Arrays;
 import java.util.List;
@@ -8,6 +8,8 @@ import org.apache.log4j.helpers.PatternConverter;
 import org.apache.log4j.helpers.PatternParser;
 import org.apache.log4j.spi.LocationInfo;
 import org.apache.log4j.spi.LoggingEvent;
+
+import com.netflix.blitz4j.LoggingContext;
 
 
 /**

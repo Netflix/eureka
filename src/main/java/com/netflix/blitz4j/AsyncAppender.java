@@ -76,6 +76,9 @@ public class AsyncAppender extends AppenderSkeleton implements
 
     private Timer putBufferTimeTracer;
     private Timer putDiscardMapTimeTracer;
+    private Timer locationInfoTimer;
+    private Timer saveThreadLocalTimer;
+     
     private DynamicBooleanProperty generatelocationInfo = DynamicPropertyFactory
             .getInstance().getBooleanProperty(
                     "netflix.blitz4j.generateLocationInfo", true);
@@ -222,6 +225,7 @@ public class AsyncAppender extends AppenderSkeleton implements
         boolean isBufferPutSuccessful = false;
         LocationInfo locationInfo = null;
         // Reject it when we have a fast property as these can be expensive
+        Stopwatch s = locationInfoTimer.start();
         if (this.shouldSummarizeOverflow) {
             if (generatelocationInfo.get()) {
                 locationInfo = LoggingContext.getInstance()
@@ -230,12 +234,15 @@ public class AsyncAppender extends AppenderSkeleton implements
                 locationInfo = event.getLocationInformation();
             }
         }
+        s.stop();
 
         if (isBufferSpaceAvailable) {
             // Save the thread local info in the event so that the
             // processing threads
             // can have access to the thread local of the arriving event
+            Stopwatch sThreadLocal = saveThreadLocalTimer.start();
             saveThreadLocalInfo(event);
+            sThreadLocal.stop();
             isBufferPutSuccessful = putInBuffer(event);
         }
         // If the buffer is full, then summarize the information
@@ -286,6 +293,11 @@ public class AsyncAppender extends AppenderSkeleton implements
                 TimeUnit.NANOSECONDS);
         this.putDiscardMapTimeTracer = Monitors.newTimer("putDiscardMap",
                 TimeUnit.NANOSECONDS);
+        this.locationInfoTimer =  Monitors.newTimer("locationInfo",
+                TimeUnit.NANOSECONDS);
+        this.saveThreadLocalTimer =  Monitors.newTimer("saveThreadLocal",
+                TimeUnit.NANOSECONDS);
+     
         this.discardMap = CacheBuilder
                 .newBuilder()
                 .initialCapacity(5000)

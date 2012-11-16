@@ -1,4 +1,4 @@
-package com.netflix.blitz4j;
+package com.netflix.logging.log4jAdapter;
 
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.helpers.PatternParser;
