@@ -18,6 +18,12 @@ public class LoggingContext {
     private Timer stackTraceTimer = Monitors.newTimer("getStacktraceElement", TimeUnit.NANOSECONDS);
 
     private LoggingContext() {
+        try {
+            Monitors.registerObject(this);
+        }
+        catch (Throwable e) {
+            
+        }
     }
 
    
