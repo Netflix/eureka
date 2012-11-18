@@ -1,3 +1,19 @@
+/*
+ * Copyright 2012 Netflix, Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package com.netflix.blitz4j;
 
 import java.text.MessageFormat;
@@ -15,13 +31,8 @@ import org.apache.log4j.helpers.AppenderAttachableImpl;
 import org.apache.log4j.spi.AppenderAttachable;
 import org.apache.log4j.spi.LocationInfo;
 import org.apache.log4j.spi.LoggingEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.cache.CacheBuilder;
-import com.netflix.config.DynamicBooleanProperty;
-import com.netflix.config.DynamicProperty;
-import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.logging.messaging.BatcherFactory;
 import com.netflix.logging.messaging.MessageBatcher;
 import com.netflix.logging.messaging.MessageProcessor;
@@ -35,9 +46,9 @@ import com.netflix.servo.monitor.Timer;
  * A log4j appender implementation that logs the events asynchronously after
  * storing the events in a buffer. The buffer implementation uses an instance of
  * {@link com.netflix.logging.messaging.MessageBatcher}.
- * 
- * Incoming events are first stored in a queue and then a single worker thread
- * takes the messages and writes it to the underlying appenders. This makes the
+ * <p>
+ * Incoming events are first stored in a queue and then worker thread(s) takes
+ * the messages and writes it to the underlying appenders. This makes the
  * logging of the messages efficient for the following reasons
  * 
  * 1) Logging threads do not block until the event is written to the
@@ -47,55 +58,39 @@ import com.netflix.servo.monitor.Timer;
  * 
  * 2) During log storms, the in-memory buffer overflows the message to another
  * structure which logs just the summary and not each log message
- * 
+ * </p>
+ * <p>
  * By default the buffer holds up to 10K messages and summary up to 5K entries.
  * Depending on the memory constraints and logging frequency, both these are
  * configurable. The summary also starts dropping its entries when it stays
  * there longer than 1 min which is configurable as well.
+ * </p>
  * 
- * @author kranganathan
+ * @author Karthik Ranganathan
  * 
  */
 public class AsyncAppender extends AppenderSkeleton implements
         AppenderAttachable {
 
+    private static final DefaultBlitz4jConfig CONFIGURATION = LoggingConfiguration
+            .getInstance().getConfiguration();
     private static final int SLEEP_TIME_MS = 1;
-    private static final int DEFAULT_DISCARD_ENTRY_EXPIRE_SECONDS = 60;
-    private static final int DEFAULT_DISCARD_MAP_SIZE = 10000;
     private static final String BATCHER_NAME_LIMITER = ".";
     private static final String APPENDER_NAME = "ASYNC";
     private MessageBatcher<LoggingEvent> batcher;
     private String originalAppenderName;
     private static final String LOGGER_ASYNC_APPENDER = "asyncAppenders";
-    private boolean shouldSummarizeOverflow;
-
     private AppenderAttachableImpl appenders = new AppenderAttachableImpl();
 
     // The Map to the summary events
-    private ConcurrentMap<String, DiscardSummary> discardMap = new ConcurrentHashMap<String, DiscardSummary>();
+    private ConcurrentMap<String, LogSummary> logSummaryMap = new ConcurrentHashMap<String, LogSummary>();
 
     private Timer putBufferTimeTracer;
     private Timer putDiscardMapTimeTracer;
     private Timer locationInfoTimer;
     private Timer saveThreadLocalTimer;
-     
-    private DynamicBooleanProperty generatelocationInfo = DynamicPropertyFactory
-            .getInstance().getBooleanProperty(
-                    "netflix.blitz4j.generateLocationInfo", true);
 
-    private boolean defaultLocationInfo = false;
-
-    public boolean getLocationInfo() {
-        return this.defaultLocationInfo;
-    }
-
-    public void setLocationInfo(boolean locationInfo) {
-        this.defaultLocationInfo = locationInfo;
-    }
-
-    private static final Logger logger = LoggerFactory
-            .getLogger(AsyncAppender.class);
-
+   
     public AsyncAppender() {
         this.name = APPENDER_NAME;
 
@@ -158,9 +153,9 @@ public class AsyncAppender extends AppenderSkeleton implements
      */
     private void processLoggingEvents(List<LoggingEvent> loggingEvents) {
         // Lazy initialization of the appender. This is needed because the
-        // original
-        // appenders configuration may be available only after the complete
-        // log4j initializaiton.
+        // original appenders configuration may be available only after the
+        // complete
+        // log4j initialization.
         while (appenders.getAllAppenders() == null) {
             if ((batcher == null) || (batcher.isPaused())) {
                 try {
@@ -185,18 +180,16 @@ public class AsyncAppender extends AppenderSkeleton implements
             }
             appenders.addAppender(originalAppender);
         }
-        // First take the overflown summary events and put it back in the
-        // queue
-        for (Iterator<Entry<String, DiscardSummary>> iter = discardMap
+        // First take the overflown summary events and put it back in the queue
+        for (Iterator<Entry<String, LogSummary>> iter = logSummaryMap
                 .entrySet().iterator(); iter.hasNext();) {
-            Entry<String, DiscardSummary> mapEntry = (Entry<String, DiscardSummary>) iter
+            Entry<String, LogSummary> mapEntry = (Entry<String, LogSummary>) iter
                     .next();
             // If the space is not available, then exit immediately
             if (batcher.isSpaceAvailable()) {
-                DiscardSummary discardSummary = mapEntry.getValue();
-                LoggingEvent event = discardSummary.createEvent();
-                // Put the event in the queue and remove the event from the
-                // summary
+                LogSummary logSummary = mapEntry.getValue();
+                LoggingEvent event = logSummary.createEvent();
+                // Put the event in the queue and remove the event from the summary
                 if (batcher.process(event)) {
                     iter.remove();
                 } else {
@@ -216,21 +209,22 @@ public class AsyncAppender extends AppenderSkeleton implements
 
     }
 
-    /**
-     * {@inheritDoc}
+    /*
+     * (non-Javadoc)
+     * @see org.apache.log4j.AppenderSkeleton#append(org.apache.log4j.spi.LoggingEvent)
      */
     public void append(final LoggingEvent event) {
-        boolean isBufferSpaceAvailable = (batcher.isSpaceAvailable() && (discardMap
+        boolean isBufferSpaceAvailable = (batcher.isSpaceAvailable() && (logSummaryMap
                 .size() == 0));
         boolean isBufferPutSuccessful = false;
         LocationInfo locationInfo = null;
         // Reject it when we have a fast property as these can be expensive
         Stopwatch s = locationInfoTimer.start();
-        if (this.shouldSummarizeOverflow) {
-            if (generatelocationInfo.get()) {
+        if (CONFIGURATION.getSummarizeOverflow(this.originalAppenderName)) {
+            if (CONFIGURATION.generateBlitz4jLocationInfo()) {
                 locationInfo = LoggingContext.getInstance()
                         .generateLocationInfo(event);
-            } else if (defaultLocationInfo) {
+            } else if (CONFIGURATION.generateLog4jLocationInfo()) {
                 locationInfo = event.getLocationInformation();
             }
         }
@@ -238,15 +232,14 @@ public class AsyncAppender extends AppenderSkeleton implements
 
         if (isBufferSpaceAvailable) {
             // Save the thread local info in the event so that the
-            // processing threads
-            // can have access to the thread local of the arriving event
+            // processing threads can have access to the thread local of the arriving event
             Stopwatch sThreadLocal = saveThreadLocalTimer.start();
             saveThreadLocalInfo(event);
             sThreadLocal.stop();
             isBufferPutSuccessful = putInBuffer(event);
         }
         // If the buffer is full, then summarize the information
-        if (shouldSummarizeOverflow && (!isBufferPutSuccessful)) {
+        if (CONFIGURATION.getSummarizeOverflow(this.originalAppenderName) && (!isBufferPutSuccessful)) {
             DynamicCounter.increment(this.originalAppenderName
                     + "_summarizeEvent", null);
             Stopwatch t = putDiscardMapTimeTracer.start();
@@ -256,21 +249,21 @@ public class AsyncAppender extends AppenderSkeleton implements
                         + locationInfo.getLineNumber();
             }
 
-            DiscardSummary summary = (DiscardSummary) discardMap.get(loggerKey);
+            LogSummary summary = (LogSummary) logSummaryMap.get(loggerKey);
             if (summary == null) {
                 // Saving the thread local info is needed only for the first
                 // time
                 // creation of the summary
                 saveThreadLocalInfo(event);
-                summary = new DiscardSummary(event);
-                discardMap.put(loggerKey, summary);
+                summary = new LogSummary(event);
+                logSummaryMap.put(loggerKey, summary);
             } else {
                 // The event summary is already there, just increment the
                 // count
                 summary.add(event);
             }
             t.stop();
-        } else if (!shouldSummarizeOverflow && (!isBufferPutSuccessful)) {
+        } else if (!CONFIGURATION.getSummarizeOverflow(this.originalAppenderName) && (!isBufferPutSuccessful)) {
             // Record the event that are not summarized and which are just
             // discarded
             DynamicCounter.increment(this.originalAppenderName
@@ -293,52 +286,29 @@ public class AsyncAppender extends AppenderSkeleton implements
                 TimeUnit.NANOSECONDS);
         this.putDiscardMapTimeTracer = Monitors.newTimer("putDiscardMap",
                 TimeUnit.NANOSECONDS);
-        this.locationInfoTimer =  Monitors.newTimer("locationInfo",
+        this.locationInfoTimer = Monitors.newTimer("locationInfo",
                 TimeUnit.NANOSECONDS);
-        this.saveThreadLocalTimer =  Monitors.newTimer("saveThreadLocal",
+        this.saveThreadLocalTimer = Monitors.newTimer("saveThreadLocal",
                 TimeUnit.NANOSECONDS);
-     
-        this.discardMap = CacheBuilder
+
+        this.logSummaryMap = CacheBuilder
                 .newBuilder()
                 .initialCapacity(5000)
                 .maximumSize(
-                        DynamicProperty.getInstance(
-                                "netflix.blitz4j." + this.originalAppenderName
-                                        + "maxDiscardMapSize").getInteger(
-                                DEFAULT_DISCARD_ENTRY_EXPIRE_SECONDS))
+                        CONFIGURATION.getDiscardMapSize(originalAppenderName))
                 .expireAfterWrite(
-                        DynamicProperty.getInstance(
-                                "netflix.blitz4j." + this.originalAppenderName
-                                        + "expireDiscardEntryInSeconds")
-                                .getInteger(DEFAULT_DISCARD_MAP_SIZE),
-                        TimeUnit.SECONDS).<String, DiscardSummary> build()
-                .asMap();
+                        CONFIGURATION
+                                .getDiscardEntryExpireSeconds(originalAppenderName),
+                        TimeUnit.SECONDS).<String, LogSummary> build().asMap();
         try {
             Monitors.registerObject(this.originalAppenderName, this);
         } catch (Throwable e) {
-            e.printStackTrace();
-            logger.error("Cannot register monitor for AsyncAppender", e);
+            if (CONFIGURATION.shouldPrintLoggingErrors()) {
+                System.err.println("Cannot register monitor for AsyncAppender "
+                        + this.originalAppenderName);
+                e.printStackTrace();
+            }
         }
-    }
-
-    /**
-     * Sets a flag to summarize the overflow information.
-     * 
-     * @param summarizeOverflow
-     *            - true to summarize, false to not
-     */
-    public void setSummarizeOverflow(boolean summarizeOverflow) {
-        this.shouldSummarizeOverflow = summarizeOverflow;
-    }
-
-    /**
-     * Checks if the events overflowing the buffer should be summarized.
-     * 
-     * @return - true, if the overflowing events need to be summarized, false
-     *         otherwise
-     */
-    public boolean isShouldSummarizeOverflow() {
-        return shouldSummarizeOverflow;
     }
 
     /**
@@ -365,8 +335,8 @@ public class AsyncAppender extends AppenderSkeleton implements
      * @return - true, if the put was successful, false otherwise
      */
     private boolean putInBuffer(final LoggingEvent event) {
-        DynamicCounter.increment(this.originalAppenderName
-                + "_putInBuffer", null);
+        DynamicCounter.increment(this.originalAppenderName + "_putInBuffer",
+                null);
         Stopwatch t = putBufferTimeTracer.start();
         boolean hasPut = false;
         if (batcher.process(event)) {
@@ -381,16 +351,9 @@ public class AsyncAppender extends AppenderSkeleton implements
     /**
      * Summary of discarded logging events for a logger.
      */
-    private static final class DiscardSummary {
-        /**
-         * First event of the highest severity.
-         */
-        private LoggingEvent maxEvent;
-
-        /**
-         * Total count of messages discarded.
-         */
-        private int count;
+    private static final class LogSummary {
+       private LoggingEvent event;
+       private int count;
 
         /**
          * Create new instance.
@@ -398,9 +361,9 @@ public class AsyncAppender extends AppenderSkeleton implements
          * @param event
          *            event, may not be null.
          */
-        public DiscardSummary(final LoggingEvent event) {
+        public LogSummary(final LoggingEvent event) {
             count = 1;
-            this.maxEvent = event;
+            this.event = event;
         }
 
         /**
@@ -420,16 +383,16 @@ public class AsyncAppender extends AppenderSkeleton implements
          */
         public LoggingEvent createEvent() {
             String msg = MessageFormat
-                    .format("{1}[Discarded {0} messages of this type due to buffer full condition]",
+                    .format("{1}[Summarized {0} messages of this type because the internal buffer was full]",
                             new Object[] { new Integer(count),
-                                    maxEvent.getMessage() });
-            LoggingEvent event = new LoggingEvent(
-                    maxEvent.getFQNOfLoggerClass(), maxEvent.getLogger(),
-                    maxEvent.getTimeStamp(), maxEvent.getLevel(), msg, Thread
+                                    event.getMessage() });
+            LoggingEvent loggingEvent = new LoggingEvent(
+                    event.getFQNOfLoggerClass(), event.getLogger(),
+                    event.getTimeStamp(), event.getLevel(), msg, Thread
                             .currentThread().getName(),
-                    maxEvent.getThrowableInformation(), null, null,
-                    maxEvent.getProperties());
-            return event;
+                    event.getThrowableInformation(), null, null,
+                    event.getProperties());
+            return loggingEvent;
         }
     }
 
@@ -549,7 +512,7 @@ public class AsyncAppender extends AppenderSkeleton implements
 
     @com.netflix.servo.annotations.Monitor(name = "discardMapSize", type = DataSourceType.GAUGE)
     public int getDiscadMapSize() {
-        return discardMap.size();
+        return logSummaryMap.size();
     }
 
 }

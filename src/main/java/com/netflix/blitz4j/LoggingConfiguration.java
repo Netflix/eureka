@@ -1,3 +1,19 @@
+/*
+ * Copyright 2012 Netflix, Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package com.netflix.blitz4j;
 
 import java.io.FileNotFoundException;
@@ -14,56 +30,63 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.event.ConfigurationEvent;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.spi.LoggerFactory;
 import org.slf4j.Logger;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.config.ConfigurationManager;
-import com.netflix.config.DynamicBooleanProperty;
-import com.netflix.config.DynamicPropertyFactory;
-import com.netflix.config.DynamicStringProperty;
 import com.netflix.config.ExpandedConfigurationListenerAdapter;
 import com.netflix.config.PropertyListener;
 import com.netflix.logging.messaging.BatcherFactory;
 import com.netflix.logging.messaging.MessageBatcher;
 
+/**
+ * The main configuration class that bootstraps the <em>blitz4j</em>
+ * implementation.
+ * 
+ * <p>
+ * The users can either use {@link #configure()} or
+ * {@link #configure(Properties)} to kick start the configuration. If the
+ * <code>log4j.configuration</code> is provided, the properties are additionally
+ * loaded from the provided {@link URL}.
+ * </p>
+ * 
+ * <p>
+ * The list of appenders to be automatically converted can be provided by the
+ * property <code>log4j.logger.asyncAppenders</code>. The configuration takes
+ * these appenders and automatically enables them for asynchronous logging.
+ * </p>
+ * 
+ * @author Karthik Ranganathan
+ * 
+ */
 public class LoggingConfiguration implements PropertyListener {
 
+    private static final String BLITZ_LOGGER_FACTORY = "com.netflix.blitz4j.NFCategoryFactory";
     private static final String PROP_LOG4J_CONFIGURATION = "log4j.configuration";
     private static final Object guard = new Object();
     private static final String PROP_LOG4J_LOGGER_FACTORY = "log4j.loggerFactory";
     private static final String LOG4J_FACTORY_IMPL = "com.netflix.logging.log4jAdapter.NFCategoryFactory";
 
     private static final String LOG4J_LOGGER_FACTORY = "log4j.loggerFactory";
-
-    private static final DynamicBooleanProperty lockFree = DynamicPropertyFactory
-            .getInstance().getBooleanProperty("netflix.blitz4j.lockfree", true);
+    private static final DefaultBlitz4jConfig blitz4jConfig = new DefaultBlitz4jConfig();
 
     private static final String PROP_LOG4J_ORIGINAL_APPENDER_NAME = "originalAppenderName";
-    private static final String LOGGER_ASYNC_APPENDER = "asyncAppenders";
-    private static final String PROP_LOG4J_ASYNC_APPENDERS = "log4j.logger."
-            + LOGGER_ASYNC_APPENDER;
     private static final String LOG4J_PREFIX = "log4j.logger";
     private static final String LOG4J_APPENDER_DELIMITER = ".";
     private static final String LOG4J_APPENDER_PREFIX = "log4j.appender";
     private static final String ASYNC_APPENDERNAME_SUFFIX = "_ASYNC";
-    private static final String CONFIGURABLE_ASYNC_APPENDERNAME_LIST_DELIMITER = ",";
     private static final String ROOT_CATEGORY = "rootCategory";
     private static final String ROOT_LOGGER = "rootLogger";
-
-    private static final DynamicStringProperty CONFIGURABLE_ASYNC_APPENDERNAME_LIST = DynamicPropertyFactory
-            .getInstance().getStringProperty(PROP_LOG4J_ASYNC_APPENDERS,
-                    "INFO,CONSOLE");
     private Map<String, String> originalAsyncAppenderNameMap = new HashMap<String, String>();
     private Properties props = new Properties();
     Properties updatedProps = new Properties();
     private final ExecutorService executorPool;
     private Logger logger;
     private static final int SLEEP_TIME_MS = 200;
+    private static final CharSequence PROP_LOG4J_ASYNC_APPENDERS = "log4j.logger.asyncAppenders";
 
     private static LoggingConfiguration instance = new LoggingConfiguration();
 
@@ -76,20 +99,26 @@ public class LoggingConfiguration implements PropertyListener {
     }
 
     /**
-     * Configure log4j with some default settings to control any extra logging
-     * by apache. This will control commons-logging calls only if there is no
-     * other commons-logging.properties apart from the one in the platform.To be
-     * explicit about using log4j, a system property
-     * org.apache.commons.logging.Log
-     * =org.apache.commons.logging.impl.Log4JLogger should be passed in before
-     * commons-logging initialization (which happens with the first
-     * commons-logging call)
+     * Kick start the blitz4j implementation
+     */
+    public void configure() {
+        this.configure(null);
+    }
+
+    /**
+     * Kick start the blitz4j implementation.
+     * 
+     * @param props
+     *            - The overriding <em>log4j</em> properties if any.
      */
     public void configure(Properties props) {
         this.originalAsyncAppenderNameMap.clear();
-        this.props = props;
+        if (props != null) {
+            this.props = props;
+        }
         NFHierarchy nfHierarchy = null;
-        if (lockFree.get()) {
+        // Make log4j use blitz4j implementations
+        if (blitz4jConfig.shouldUseLockFree()) {
             nfHierarchy = new NFHierarchy(new NFRootLogger(
                     org.apache.log4j.Level.INFO));
             org.apache.log4j.LogManager.setRepositorySelector(
@@ -98,10 +127,8 @@ public class LoggingConfiguration implements PropertyListener {
         String log4jLoggerFactory = System
                 .getProperty(PROP_LOG4J_LOGGER_FACTORY);
         if (log4jLoggerFactory != null) {
-            // This is needed for straight log4j calls which does not go
-            // through the NFLogger
-            props.setProperty(PROP_LOG4J_LOGGER_FACTORY, log4jLoggerFactory);
-            // This is needed for the NFHierarchy
+            this.props.setProperty(PROP_LOG4J_LOGGER_FACTORY,
+                    log4jLoggerFactory);
             if (nfHierarchy != null) {
                 try {
                     LoggerFactory loggerFactory = (LoggerFactory) Class
@@ -114,9 +141,9 @@ public class LoggingConfiguration implements PropertyListener {
                 }
             }
         } else {
-            if (lockFree.get()) {
-                props.setProperty(PROP_LOG4J_LOGGER_FACTORY,
-                        "com.netflix.blitz4j.NFCategoryFactory");
+            if (blitz4jConfig.shouldUseLockFree()) {
+                this.props.setProperty(PROP_LOG4J_LOGGER_FACTORY,
+                        BLITZ_LOGGER_FACTORY);
             }
         }
         String log4jConfigurationFile = System
@@ -127,7 +154,7 @@ public class LoggingConfiguration implements PropertyListener {
             try {
                 URL url = new URL(log4jConfigurationFile);
                 in = url.openStream();
-                props.load(in);
+                this.props.load(in);
             } catch (Throwable t) {
                 throw new RuntimeException(
                         "Cannot load log4 configuration file specified in "
@@ -144,9 +171,7 @@ public class LoggingConfiguration implements PropertyListener {
             }
 
         }
-        String asyncAppenderList = CONFIGURABLE_ASYNC_APPENDERNAME_LIST.get();
-        String[] asyncAppenderArray = asyncAppenderList
-                .split(CONFIGURABLE_ASYNC_APPENDERNAME_LIST_DELIMITER);
+        String[] asyncAppenderArray = blitz4jConfig.getAsyncAppenders();
         if (asyncAppenderArray == null) {
             return;
         }
@@ -161,12 +186,12 @@ public class LoggingConfiguration implements PropertyListener {
                     oneAsyncAppenderName);
         }
         try {
-            convertConfiguredAppendersToAsync(props);
+            convertConfiguredAppendersToAsync(this.props);
         } catch (Throwable e) {
             throw new RuntimeException("Could not configure async appenders ",
                     e);
         }
-        PropertyConfigurator.configure(props);
+        PropertyConfigurator.configure(this.props);
         this.logger = org.slf4j.LoggerFactory
                 .getLogger(LoggingConfiguration.class);
         ConfigurationManager.getConfigInstance().addConfigurationListener(
@@ -177,42 +202,94 @@ public class LoggingConfiguration implements PropertyListener {
         return instance;
     }
 
-    private void convertConfiguredAppendersToAsync(Properties props)
-            throws ConfigurationException, FileNotFoundException {
-        for (Map.Entry<String, String> originalAsyncAppenderMapEntry : originalAsyncAppenderNameMap
-                .entrySet()) {
-            String asyncAppenderName = originalAsyncAppenderMapEntry.getValue();
-            props.setProperty(LOG4J_APPENDER_PREFIX + LOG4J_APPENDER_DELIMITER
-                    + asyncAppenderName, AsyncAppender.class.getName());
-            // Set the original appender so that it can be fetched later after
-            // configuration
-            String originalAppenderName = originalAsyncAppenderMapEntry
-                    .getKey();
-            props.setProperty(LOG4J_APPENDER_PREFIX + LOG4J_APPENDER_DELIMITER
-                    + asyncAppenderName + LOG4J_APPENDER_DELIMITER
-                    + PROP_LOG4J_ORIGINAL_APPENDER_NAME, originalAppenderName);
-            // Set the batcher to reject the collector request instead of it
-            // participating in processing
-            ConfigurationManager.getConfigInstance()
-           .setProperty("batcher."
-                    + AsyncAppender.class.getName() + "."
-                    + originalAppenderName + "."
-                    + "threadPoolDefaultRejectionHandler", true);
-            for (Map.Entry mapEntry : props.entrySet()) {
-                String key = mapEntry.getKey().toString();
-                if ((key.contains(LOG4J_PREFIX) || key.contains(ROOT_CATEGORY) || key
-                        .contains(ROOT_LOGGER))
-                        && !key.contains(PROP_LOG4J_ASYNC_APPENDERS)
-                        && !key.contains(PROP_LOG4J_ORIGINAL_APPENDER_NAME)) {
-                    Object value = mapEntry.getValue();
-                    if (value != null && !((String)value).contains(asyncAppenderName)) {
-                    String convertedString = value.toString().replace(
-                            originalAppenderName, asyncAppenderName);
-                    mapEntry.setValue(convertedString);
-                    }
-                    
-                }
+    public DefaultBlitz4jConfig getConfiguration() {
+        return this.blitz4jConfig;
+    }
+
+    /**
+     * Shuts down blitz4j cleanly by flushing out all the async related
+     * messages.
+     */
+    public void stop() {
+        MessageBatcher batcher = null;
+        for (String originalAppenderName : originalAsyncAppenderNameMap
+                .keySet()) {
+            String batcherName = AsyncAppender.class.getName() + "."
+                    + originalAppenderName;
+            batcher = BatcherFactory.getBatcher(batcherName);
+            if (batcher == null) {
+                continue;
             }
+            batcher.stop();
+        }
+        for (String originalAppenderName : originalAsyncAppenderNameMap
+                .keySet()) {
+            String batcherName = AsyncAppender.class.getName() + "."
+                    + originalAppenderName;
+            batcher = BatcherFactory.getBatcher(batcherName);
+            if (batcher == null) {
+                continue;
+            }
+            BatcherFactory.removeBatcher(batcherName);
+        }
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.netflix.config.PropertyListener#addProperty(java.lang.Object,
+     * java.lang.String, java.lang.Object, boolean)
+     */
+    public void addProperty(Object source, String name, Object value,
+            boolean beforeUpdate) {
+        if (shouldProcessProperty(name, beforeUpdate)) {
+            updatedProps.put(name, value);
+            reConfigureAsynchronously();
+        }
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.netflix.config.PropertyListener#clear(java.lang.Object, boolean)
+     */
+    public void clear(Object source, boolean beforeUpdate) {
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.netflix.config.PropertyListener#clearProperty(java.lang.Object,
+     * java.lang.String, java.lang.Object, boolean)
+     */
+    public void clearProperty(Object source, String name, Object value,
+            boolean beforeUpdate) {
+        if (shouldProcessProperty(name, beforeUpdate)) {
+            updatedProps.remove(name);
+            reConfigureAsynchronously();
+        }
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * com.netflix.config.PropertyListener#configSourceLoaded(java.lang.Object)
+     */
+    public void configSourceLoaded(Object source) {
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.netflix.config.PropertyListener#setProperty(java.lang.Object,
+     * java.lang.String, java.lang.Object, boolean)
+     */
+    public void setProperty(Object source, String name, Object value,
+            boolean beforeUpdate) {
+        if (shouldProcessProperty(name, beforeUpdate)) {
+            updatedProps.put(name, value);
+            reConfigureAsynchronously();
         }
     }
 
@@ -249,13 +326,7 @@ public class LoggingConfiguration implements PropertyListener {
             }
             asyncBatcher.pause();
         }
-        // Pause the logging batchers so that tracers and counters are not sent
-        // during reconfiguration
-        String batcherName = "com.netflix.logging";
-        MessageBatcher loggingBatcher = BatcherFactory.getBatcher(batcherName);
-        if (loggingBatcher != null) {
-            loggingBatcher.pause();
-        }
+
         // Configure log4j using the new set of properties
         configureLog4j(consolidatedProps);
         // Resume all the batchers to continue logging
@@ -269,14 +340,20 @@ public class LoggingConfiguration implements PropertyListener {
             }
             asyncBatcher.resume();
         }
-        if (loggingBatcher != null) {
-            loggingBatcher.resume();
-        }
     }
 
+    /**
+     * Configure log4j with the given properties.
+     * 
+     * @param props
+     *            The properties that needs to be configured for log4j
+     * @throws ConfigurationException
+     * @throws FileNotFoundException
+     */
     private void configureLog4j(Properties props)
             throws ConfigurationException, FileNotFoundException {
-        if (lockFree.get() && (props.getProperty(LOG4J_LOGGER_FACTORY) == null)) {
+        if (blitz4jConfig.shouldUseLockFree()
+                && (props.getProperty(LOG4J_LOGGER_FACTORY) == null)) {
             props.setProperty(LOG4J_LOGGER_FACTORY, LOG4J_FACTORY_IMPL);
         }
         convertConfiguredAppendersToAsync(props);
@@ -284,91 +361,11 @@ public class LoggingConfiguration implements PropertyListener {
         PropertyConfigurator.configure(props);
     }
 
-    public void stop() {
-        MessageBatcher batcher = null;
-        for (String originalAppenderName : originalAsyncAppenderNameMap
-                .keySet()) {
-            String batcherName = AsyncAppender.class.getName() + "."
-                    + originalAppenderName;
-            batcher = BatcherFactory.getBatcher(batcherName);
-            if (batcher == null) {
-                continue;
-            }
-            batcher.stop();
-        }
-        for (String originalAppenderName : originalAsyncAppenderNameMap
-                .keySet()) {
-            String batcherName = AsyncAppender.class.getName() + "."
-                    + originalAppenderName;
-            batcher = BatcherFactory.getBatcher(batcherName);
-            if (batcher == null) {
-                continue;
-            }
-            BatcherFactory.removeBatcher(batcherName);
-        }
-    }
-
-    /*
-     * Handle log4j property additions (non-Javadoc)
-     * 
-     * @see
-     * com.netflix.config.NetflixConfigurationListener#addProperty(java.lang
-     * .Object, java.lang.String, java.lang.Object, boolean)
+    /**
+     * Asynchronously reconfigure <code>log4j</code>. This make sure there is
+     * only one configuration currently in progress and rejects multiple
+     * reconfigurations at the same time there by causing logging contentions.
      */
-    public void addProperty(Object source, String name, Object value,
-            boolean beforeUpdate) {
-        if (shouldProcessProperty(name, beforeUpdate)) {
-            updatedProps.put(name, value);
-            reConfigureAsynchronously();
-        }
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.netflix.config.NetflixConfigurationListener#clear(java.lang.Object,
-     * boolean)
-     */
-    public void clear(Object source, boolean beforeUpdate) {
-    }
-
-    /*
-     * Handle removal of log4j properties (non-Javadoc)
-     * 
-     * @see
-     * com.netflix.config.NetflixConfigurationListener#clearProperty(java.lang
-     * .Object, java.lang.String, java.lang.Object, boolean)
-     */
-    public void clearProperty(Object source, String name, Object value,
-            boolean beforeUpdate) {
-        if (shouldProcessProperty(name, beforeUpdate)) {
-            updatedProps.remove(name);
-            reConfigureAsynchronously();
-        }
-    }
-
-    public void configSourceLoaded(Object source) {
-    }
-
-    /*
-     * Handles update of log4j properties (non-Javadoc)
-     * 
-     * @see
-     * com.netflix.config.NetflixConfigurationListener#setProperty(java.lang
-     * .Object, java.lang.String, java.lang.Object, boolean)
-     */
-    public void setProperty(Object source, String name, Object value,
-            boolean beforeUpdate) {
-        if (shouldProcessProperty(name, beforeUpdate)) {
-            updatedProps.put(name, value);
-            reConfigureAsynchronously();
-        }
-    }
-
-    public void configurationChanged(ConfigurationEvent arg0) {
-    }
-
     private void reConfigureAsynchronously() {
         try {
             executorPool.submit(new Runnable() {
@@ -379,8 +376,7 @@ public class LoggingConfiguration implements PropertyListener {
                         logger.info("Configuring log4j dynamically");
                         reConfigure();
                     } catch (Throwable th) {
-                        logger.error("Cannot dynamically configure log4j :");
-                        th.printStackTrace();
+                        logger.error("Cannot dynamically configure log4j :", th);
                     }
                 }
             });
@@ -389,6 +385,20 @@ public class LoggingConfiguration implements PropertyListener {
         }
     }
 
+    /**
+     * Check if the property that is being changed is something that this
+     * configuration cares about.
+     * 
+     * The implementation only cares about changes related to <code>log4j</code>
+     * properties.
+     * 
+     * @param name
+     *            -The name of the property which should be checked.
+     * @param beforeUpdate
+     *            -true, if this call is made before the property has been
+     *            updated, false otherwise.
+     * @return
+     */
     private boolean shouldProcessProperty(String name, boolean beforeUpdate) {
         if (name == null) {
             logger.warn("The listener got a null value for name");
@@ -397,7 +407,57 @@ public class LoggingConfiguration implements PropertyListener {
         if (beforeUpdate) {
             return false;
         }
-        return name.startsWith("log4j") && (!name.contains(ROOT_LOGGER))
-                && (!name.contains(ROOT_CATEGORY));
+        return name.startsWith(LOG4J_PREFIX);
     }
+
+    /**
+     * Convert appenders specified by the property
+     * <code>log4j.logger.asyncAppender</code> to the blitz4j Asynchronous
+     * appenders.
+     * 
+     * @param props
+     *            - The properties that need to be passed into the log4j for
+     *            configuration.
+     * @throws ConfigurationException
+     * @throws FileNotFoundException
+     */
+    private void convertConfiguredAppendersToAsync(Properties props)
+            throws ConfigurationException, FileNotFoundException {
+        for (Map.Entry<String, String> originalAsyncAppenderMapEntry : originalAsyncAppenderNameMap
+                .entrySet()) {
+            String asyncAppenderName = originalAsyncAppenderMapEntry.getValue();
+            props.setProperty(LOG4J_APPENDER_PREFIX + LOG4J_APPENDER_DELIMITER
+                    + asyncAppenderName, AsyncAppender.class.getName());
+            // Set the original appender so that it can be fetched later after
+            // configuration
+            String originalAppenderName = originalAsyncAppenderMapEntry
+                    .getKey();
+            props.setProperty(LOG4J_APPENDER_PREFIX + LOG4J_APPENDER_DELIMITER
+                    + asyncAppenderName + LOG4J_APPENDER_DELIMITER
+                    + PROP_LOG4J_ORIGINAL_APPENDER_NAME, originalAppenderName);
+            // Set the batcher to reject the collector request instead of it
+            // participating in processing
+            ConfigurationManager.getConfigInstance().setProperty(
+                    "batcher." + AsyncAppender.class.getName() + "."
+                            + originalAppenderName + "."
+                            + "threadPoolDefaultRejectionHandler", true);
+            for (Map.Entry mapEntry : props.entrySet()) {
+                String key = mapEntry.getKey().toString();
+                if ((key.contains(LOG4J_PREFIX) || key.contains(ROOT_CATEGORY) || key
+                        .contains(ROOT_LOGGER))
+                        && !key.contains(PROP_LOG4J_ASYNC_APPENDERS)
+                        && !key.contains(PROP_LOG4J_ORIGINAL_APPENDER_NAME)) {
+                    Object value = mapEntry.getValue();
+                    if (value != null
+                            && !((String) value).contains(asyncAppenderName)) {
+                        String convertedString = value.toString().replace(
+                                originalAppenderName, asyncAppenderName);
+                        mapEntry.setValue(convertedString);
+                    }
+
+                }
+            }
+        }
+    }
+
 }

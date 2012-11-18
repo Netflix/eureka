@@ -1,3 +1,19 @@
+/*
+ * Copyright 2012 Netflix, Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package com.netflix.logging.messaging;
 
 import java.util.ArrayList;
@@ -12,12 +28,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.netflix.blitz4j.DefaultBlitz4jConfig;
+import com.netflix.blitz4j.LoggingConfiguration;
 import com.netflix.config.DynamicBooleanProperty;
-import com.netflix.config.DynamicIntProperty;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.annotations.Monitor;
@@ -44,28 +58,20 @@ import com.netflix.servo.monitor.Timer;
  * which passes the batch to the target stream.
  * 
  * The processor maintains a thread pool. If there's more work than threads, the
- * collector participates in processing, and consequently stops collecting more
- * batches.
+ * collector participates in processing by default, and consequently stops
+ * collecting more batches.
  * 
- * 
+ * @author Karthik Ranganathan
  */
 public class MessageBatcher<T> {
+
+    private static final DefaultBlitz4jConfig CONFIGURATION = LoggingConfiguration.getInstance().getConfiguration();
 
     private static final String DOT = ".";
 
     private static final String BATCHER_PREFIX = "batcher.";
 
     private static final String COLLECTOR_SUFFIX = ".collector";
-
-    private static final double BATCH_MAX_DELAY_SECONDS = 0.5;
-
-    private static final String BATCH_WAIT_TIME_MS = "waitTimeinMillis";
-
-    private static final String BATCH_MAX_DELAY = "batch.maxDelay";
-
-    private static final String BATCH_MAX_MESSAGES = "batch.maxMessages";
-
-    private static final String QUEUE_MAX_MESSAGES = "queue.maxMessages";
 
     private boolean shouldCollectorShutdown;
 
@@ -109,91 +115,46 @@ public class MessageBatcher<T> {
 
     private AtomicLong numberDropped = new AtomicLong();
 
-    private DynamicBooleanProperty blockingProperty;
+    private boolean blockingProperty;
 
     private boolean isCollectorPaused;
 
     private Counter processCount;
-
-    private static final Logger logger = LoggerFactory
-    .getLogger(MessageBatcher.class);
     public static final String POOL_MAX_THREADS = "maxThreads";
-    private static final int DEFAULT_POOL_MAX_THREADS = 20;
-
     public static final String POOL_MIN_THREADS = "minThreads";
-    private static final int DEFAULT_POOL_MIN_THREADS = 10;
     public static final String POOL_KEEP_ALIVE_TIME = "keepAliveTime";
-    private static final long DEFAULT_POOL_KEEP_ALIVE_TIME = 15 * 60L;
 
-    /** Get initial parameters from Netflix Configuration */
-    public MessageBatcher(String name, MessageProcessor target) {
+   public MessageBatcher(String name, MessageProcessor target) {
         this.name = BATCHER_PREFIX + name;
         this.target = target;
-        queue = new ArrayBlockingQueue(DynamicPropertyFactory.getInstance()
-                .getIntProperty(this.name + DOT + QUEUE_MAX_MESSAGES, 10000)
-                .get());
-        logger.info("Array size for batcher :" + name + ":"
-                + queue.remainingCapacity());
-        setBatchMaxMessages(DynamicPropertyFactory.getInstance()
-                .getIntProperty(this.name + DOT + BATCH_MAX_MESSAGES, 30).get());
-        batch = new ArrayList(maxMessages);
-        setBatchMaxDelay(DynamicPropertyFactory
-                .getInstance()
-                .getDoubleProperty(this.name + DOT + BATCH_MAX_DELAY,
-                        BATCH_MAX_DELAY_SECONDS).get());
+        queue = new ArrayBlockingQueue<T>(CONFIGURATION.getBatcherQueueMaxMessages(this.name));
+        setBatchMaxMessages(CONFIGURATION.getBatchSize(this.name));
+        batch = new ArrayList<Object>(maxMessages);
+        setBatchMaxDelay(CONFIGURATION
+                .getBatcherMaxDelay(this.name));
         collector = new Collector(this, this.name + COLLECTOR_SUFFIX);
         // Immediate Executor creates a factory that uses daemon threads
         createProcessor(this.name);
-        queueSizeTracer = Monitors.newTimer(this.name
-                + ".queue.size at offer [messages, not msec]");
-        batchSyncPutTracer = Monitors.newTimer(this.name + ".syncput");
-        avgBatchSizeTracer = Monitors.newTimer(this.name
-                + ".batch.size [messages, not msec]");
-        processCount = Monitors.newCounter(this.name + ".processCount");
+        queueSizeTracer = Monitors.newTimer("queue_size");
+        batchSyncPutTracer = Monitors.newTimer("waitTimeforBuffer");
+        avgBatchSizeTracer = Monitors.newTimer("batch_size");
+        processCount = Monitors.newCounter("messages_processed");
 
-        threadSubmitTracer = Monitors.newTimer(this.name + ".threadSubmitTime");
-        processTimeTracer = Monitors.newTimer(this.name + ".processTime");
-        queueOverflowCounter = Monitors.newCounter(this.name
-                + ".queue.overflow");
-        blockingProperty = DynamicPropertyFactory.getInstance()
-        .getBooleanProperty(this.name + DOT + "blocking", false);
+        threadSubmitTracer = Monitors.newTimer("thread_invocation_time");
+        processTimeTracer = Monitors.newTimer("message_processTime");
+        queueOverflowCounter = Monitors.newCounter("queue_overflow");
+        blockingProperty = CONFIGURATION
+                .shouldWaitWhenBatcherQueueNotEmpty(this.name);
         collector.setDaemon(true);
         collector.start();
         try {
             Monitors.registerObject(this.name, this);
         } catch (Throwable e) {
-            logger.warn("Cannot register the JMX monitor for the batcher :"
-                    + this.name, e);
+            if (CONFIGURATION
+                    .shouldPrintLoggingErrors()) {
+                e.printStackTrace();
+            }
         }
-    }
-
-    private void createProcessor(String name) {
-        DynamicIntProperty minThreads = DynamicPropertyFactory.getInstance()
-        .getIntProperty(name + DOT + POOL_MIN_THREADS, 1);
-        DynamicIntProperty maxThreads = DynamicPropertyFactory.getInstance()
-        .getIntProperty(name + DOT + POOL_MAX_THREADS, 3);
-        DynamicIntProperty keepAliveTime = DynamicPropertyFactory.getInstance()
-        .getIntProperty(name + DOT + POOL_KEEP_ALIVE_TIME, 15 * 60);
-        ThreadFactory threadFactory = new ThreadFactoryBuilder()
-        .setDaemon(false).setNameFormat(this.name + "-process").build();
-
-        this.processor = new ThreadPoolExecutor(minThreads.get(),
-                maxThreads.get(), keepAliveTime.get(), TimeUnit.SECONDS,
-                new SynchronousQueue(), threadFactory);
-        DynamicBooleanProperty shouldRejectWhenFull = DynamicPropertyFactory
-        .getInstance().getBooleanProperty(
-                name + DOT + "rejectWhenFull", false);
-        if (!shouldRejectWhenFull.get()) {
-            this.processor
-            .setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy() {
-                @Override
-                public void rejectedExecution(Runnable r,
-                        ThreadPoolExecutor e) {
-                    super.rejectedExecution(r, e);
-                }
-            });
-        }
-
     }
 
     /** Set the stream that will process each batch of messages. */
@@ -254,7 +215,7 @@ public class MessageBatcher<T> {
         try {
             queueSizeTracer.record(queue.size());
         } catch (Throwable ignored) {
-            
+
         }
         if (!queue.offer(message)) {
             numberDropped.incrementAndGet();
@@ -375,16 +336,10 @@ public class MessageBatcher<T> {
      */
     public void stop() {
 
-        DynamicIntProperty waitTimeinMillis = DynamicPropertyFactory
-        .getInstance().getIntProperty(name + "." + BATCH_WAIT_TIME_MS,
-                10000);
-        long timeToWait = waitTimeinMillis.get() + System.currentTimeMillis();
-        logger.info("Batcher size for : " + name + " is :" + queue.size());
-
+        int waitTimeinMillis = CONFIGURATION.getBatcherWaitTimeBeforeShutdown(this.name);
+        long timeToWait = waitTimeinMillis + System.currentTimeMillis();
         while ((queue.size() > 0 || batch.size() > 0)
                 && (System.currentTimeMillis() < timeToWait)) {
-            logger.info("Waiting for batched messages to be sent...");
-            logger.info("Batch size :" + queue.size());
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
@@ -392,9 +347,7 @@ public class MessageBatcher<T> {
             }
         }
         try {
-            logger.info("Shutting down collector");
             shouldCollectorShutdown = true;
-            logger.info("Shutting down processor");
             processor.shutdownNow();
             /*
              * processor.awaitTermination(10000, TimeUnit.SECONDS); if
@@ -410,7 +363,6 @@ public class MessageBatcher<T> {
          * the processor or collector to complete
          */
         isShutDown = true;
-        logger.info("Finished shutting down batcher " + name);
 
     }
 
@@ -418,7 +370,6 @@ public class MessageBatcher<T> {
      * The class that processes the messages in a batch by calling the
      * implementor of the MessageProcessor interface.
      * 
-     * @author kranganathan
      * 
      */
     private static class ProcessMessages implements Runnable {
@@ -471,7 +422,7 @@ public class MessageBatcher<T> {
             processTimeTracer = Monitors.newTimer(name + ".processTime");
             this.stream = stream;
             queueSizeTracer = Monitors.newTimer(name
-                    + ".queue.size at drain [messages, not msec]");
+                    + ".queue_size_at_drain");
         }
 
         private final MessageBatcher stream;
@@ -498,7 +449,7 @@ public class MessageBatcher<T> {
                             if (stream.queue.drainTo(batch, stream.maxMessages
                                     - batch.size()) <= 0) {
                                 long maxWait = firstTime + stream.maxDelay
-                                - now;
+                                        - now;
                                 if (maxWait <= 0) { // timed out
                                     break;
                                 }
@@ -542,7 +493,9 @@ public class MessageBatcher<T> {
                         batch = new ArrayList(stream.maxMessages);
                     }
                 } catch (Throwable e) {
+                    if (CONFIGURATION.shouldPrintLoggingErrors()) {
                     e.printStackTrace();
+                    }
                 }
             } // - while (!shutdownCollector)
         } // - run()
@@ -608,7 +561,36 @@ public class MessageBatcher<T> {
      */
     @Monitor(name = "blocking", type = DataSourceType.INFORMATIONAL)
     public boolean isBlocking() {
-        return blockingProperty.get();
+        return blockingProperty;
+    }
+
+
+    private void createProcessor(String name) {
+        int minThreads = CONFIGURATION
+                .getBatcherMinThreads(this.name);
+        int maxThreads = CONFIGURATION
+                .getBatcherMaxThreads(this.name);
+        int keepAliveTime = CONFIGURATION.getBatcherThreadKeepAliveTime(this.name);
+
+        ThreadFactory threadFactory = new ThreadFactoryBuilder()
+                .setDaemon(false).setNameFormat(this.name + "-process").build();
+
+        this.processor = new ThreadPoolExecutor(minThreads, maxThreads,
+                keepAliveTime, TimeUnit.SECONDS, new SynchronousQueue(),
+                threadFactory);
+        boolean shouldRejectWhenFull = CONFIGURATION
+                .shouldWaitWhenBatcherQueueNotEmpty(this.name);
+        if (!shouldRejectWhenFull) {
+            this.processor
+                    .setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy() {
+                        @Override
+                        public void rejectedExecution(Runnable r,
+                                ThreadPoolExecutor e) {
+                            super.rejectedExecution(r, e);
+                        }
+                    });
+        }
+
     }
 
 }

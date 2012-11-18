@@ -1,3 +1,19 @@
+/*
+ * Copyright 2012 Netflix, Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package com.netflix.blitz4j;
 
 import java.util.AbstractQueue;
@@ -15,16 +31,15 @@ import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.config.DynamicStringProperty;
 
 /**
- * An AppenderAttacableImpl that overrides log4j to provide a lock free
- * implementation
+ * This class overrides log4j implementation to provide appender with less
+ * multi-threaded contention.
  * 
- * @author kranganathan
+ * @author Karthik Ranganathan
  * 
  */
 public class NFAppenderAttachableImpl extends AppenderAttachableImpl implements
 AppenderAttachable {
 
-    private static final DynamicStringProperty ASYNC_APPENDER_NAME = DynamicPropertyFactory.getInstance().getStringProperty("blitz4j.asyncAppenders", "com.netflix.blitz4j.AsyncAppender");
     protected AbstractQueue<Appender> appenderList = new ConcurrentLinkedQueue<Appender>();
 
     /*
@@ -40,7 +55,9 @@ AppenderAttachable {
         if (newAppender == null) {
             return;
         }
-
+        // If the appender is already there, add this one to the end before
+        // removing the
+        // previous one
         boolean isAppenderPresent = appenderList.contains(newAppender);
         if (isAppenderPresent) {
             appenderList.add(newAppender);
@@ -93,7 +110,7 @@ AppenderAttachable {
             return new IteratorEnumeration(it);
         }
     }
-   
+
     /*
      * (non-Javadoc)
      * 
@@ -149,16 +166,19 @@ AppenderAttachable {
             Iterator<Appender> it = appenderList.iterator();
             while (it.hasNext()) {
                 Appender a = (Appender) it.next();
-                String[] asyncAppenders = ASYNC_APPENDER_NAME.get().split(",");
-                // For AsyncAppender, we have a chance to not lose logging,as it
-                // can be batched
-                for(String asyncAppender : asyncAppenders) {
+                String[] asyncAppenders = LoggingConfiguration.getInstance()
+                .getConfiguration()
+                .getAsyncAppenderImplementationNames();
+                // For AsyncAppenders, we won't remove appenders.
+                // This is call is primarily made during dynamic log4j
+                // reconfiguration .
+                for (String asyncAppender : asyncAppenders) {
                     if (!(asyncAppender.equals(a.getClass().getName()))) {
                         a.close();
                         it.remove();
                     }
                 }
-          }
+            }
         }
     }
 

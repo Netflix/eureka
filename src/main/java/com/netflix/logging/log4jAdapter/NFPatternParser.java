@@ -1,3 +1,19 @@
+/*
+ * Copyright 2012 Netflix, Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package com.netflix.logging.log4jAdapter;
 
 import java.util.Arrays;
@@ -13,13 +29,10 @@ import com.netflix.blitz4j.LoggingContext;
 
 
 /**
- * The Netflix custom pattern formatting class.
+ * A custom parser class that provides a better performing implementation than the one in log4j for finding location information such
+ * as class, line number etc.
  *
- * Gets the calling context information from the throwable if it is available or
- * gets it from the aspects if the aspects are available.
- *
- *
- * @author kranganathan
+ * @author Karthik Ranganathan
  *
  */
 public class NFPatternParser extends PatternParser {
@@ -36,7 +49,6 @@ public class NFPatternParser extends PatternParser {
 	}
 
 	protected void finalizeConverter(char c) {
-		// TODO : Complete for other formatting strings
 		if (contextCharList.contains(Character.valueOf(c))) {
 			PatternConverter pc = new NFPatternConverter(formattingInfo, c);
 			addConverter(pc);

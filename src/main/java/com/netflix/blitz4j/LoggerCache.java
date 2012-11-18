@@ -1,3 +1,19 @@
+/*
+ * Copyright 2012 Netflix, Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package com.netflix.blitz4j;
 
 import java.util.Map;
@@ -7,10 +23,13 @@ import org.apache.log4j.Logger;
 
 
 /**
- * A utility class that pre-caches loggers. This caching would be much more lock-free than log4j
- * caches as it uses a {@link java.util.concurrent.ConcurrentHashMap} instead of {@link java.util.Map}
+ * The class that caches log4j loggers.
  * 
- * @author kranganathan
+ * <p>
+ * This will be much more contention free than log4j caching since the the cache uses a {@link java.util.concurrent.ConcurrentHashMap} instead of {@link java.util.Map}
+ * </p>
+ * 
+ * @author Karthik Ranganathan
  *
  */
 public class LoggerCache {
@@ -19,15 +38,7 @@ public class LoggerCache {
     
   
   private LoggerCache() {
-      /*
-      appenderLoggerMap.put(RTAAppender.class.getName(), Logger.getLogger(RTAAppender.class));
-      appenderLoggerMap.put(RTARequestHandler.class.getName(), Logger.getLogger(RTARequestHandler.class));
-      appenderLoggerMap.put(RTARequestCache.class.getName(), Logger.getLogger(RTARequestCache.class));
-      appenderLoggerMap.put(LogEntry.class.getName(), Logger.getLogger(LogEntry.class));
-      appenderLoggerMap.put(NFLogger.class.getName(), Logger.getLogger(NFLogger.class));
-      appenderLoggerMap.put(AsyncAppender.class.getName(), Logger.getLogger(AsyncAppender.class));
-      appenderLoggerMap.put(Log4jLoggingAdapter.class.getName(), Logger.getLogger(Log4jLoggingAdapter.class));
-      */
+    
   }
   
   public static LoggerCache getInstance() {
