@@ -27,152 +27,196 @@ import com.netflix.config.DynamicPropertyFactory;
  * @author Karthik Ranganathan
  * 
  */
-public class DefaultBlitz4jConfig {
+public class DefaultBlitz4jConfig implements BlitzConfig {
 
-    /**
-     * Indicates whether blitz4j should use its less contended implementation.
-     * 
-     * @return
+    private static final DynamicPropertyFactory CONFIGURATION = DynamicPropertyFactory.getInstance();
+
+    /* (non-Javadoc)
+     * @see com.netflix.blitz4j.BlitzConfig#shouldUseLockFree()
      */
+    @Override
     public boolean shouldUseLockFree() {
-        return DynamicPropertyFactory.getInstance()
+        return CONFIGURATION
                 .getBooleanProperty("netflix.blitz4j.lockfree", true).get();
     }
 
-    /**
-     * Indicates whether blitz4j should print the errors during logging for
-     * debugging.
-     * 
-     * @return
+    /* (non-Javadoc)
+     * @see com.netflix.blitz4j.BlitzConfig#shouldPrintLoggingErrors()
      */
+    @Override
     public boolean shouldPrintLoggingErrors() {
-        return DynamicPropertyFactory
-                .getInstance()
+        return CONFIGURATION
                 .getBooleanProperty("netflix.blitz4j.printLoggingErrors", false)
                 .get();
     }
 
-    /**
-     * Get the list of asynchronous appenders. The configuration is specified similar to any log4j loging override
-     * (ie)log4j.logger.asyncAppenders=INFO,MYAPPENDER. The logging level in this definitions bears no specific significance
-     * and is only for completion.
-     * 
-     * @return
+    /* (non-Javadoc)
+     * @see com.netflix.blitz4j.BlitzConfig#getAsyncAppenders()
      */
+    @Override
     public String[] getAsyncAppenders() {
-        return DynamicPropertyFactory.getInstance()
+        return CONFIGURATION
                 .getStringProperty("log4j.logger.asyncAppenders", "OFF").get()
                 .split(",");
 
     }
 
-    public int getDiscardEntryExpireSeconds(String originalAppenderName) {
+    /* (non-Javadoc)
+     * @see com.netflix.blitz4j.BlitzConfig#getLogSummaryExpiry(java.lang.String)
+     */
+    @Override
+    public int getLogSummaryExpiry(String originalAppenderName) {
 
-        return DynamicPropertyFactory
-                .getInstance()
+        return CONFIGURATION
                 .getIntProperty(
                         "netflix.blitz4j." + originalAppenderName
                                 + ".discardEntryExpireSeconds", 60).get();
 
     }
 
-    public int getDiscardMapSize(String originalAppenderName) {
+    /* (non-Javadoc)
+     * @see com.netflix.blitz4j.BlitzConfig#getLogSummarySize(java.lang.String)
+     */
+    @Override
+    public int getLogSummarySize(String originalAppenderName) {
 
-        return DynamicPropertyFactory
-                .getInstance()
+        return CONFIGURATION
                 .getIntProperty(
                         "netflix.blitz4j." + originalAppenderName
                                 + ".discardMapSize", 10000).get();
 
     }
 
-    public boolean generateBlitz4jLocationInfo() {
-        return DynamicPropertyFactory
-                .getInstance()
+    /* (non-Javadoc)
+     * @see com.netflix.blitz4j.BlitzConfig#shouldGenerateBlitz4jLocationInfo()
+     */
+    @Override
+    public boolean shouldGenerateBlitz4jLocationInfo() {
+        return CONFIGURATION
                 .getBooleanProperty(
                         "netflix.blitz4j.generateBlitz4jLocationInfo", true)
                 .get();
 
     }
 
-    public boolean generateLog4jLocationInfo() {
-        return DynamicPropertyFactory
-                .getInstance()
+    /* (non-Javadoc)
+     * @see com.netflix.blitz4j.BlitzConfig#shouldGenerateLog4jLocationInfo()
+     */
+    @Override
+    public boolean shouldGenerateLog4jLocationInfo() {
+        return CONFIGURATION
                 .getBooleanProperty(
                         "netflix.blitz4j.generateLog4jLocationInfo", false)
                 .get();
 
     }
 
-    public boolean getSummarizeOverflow(String originalAppenderName) {
-        return DynamicPropertyFactory
-                .getInstance()
+    /* (non-Javadoc)
+     * @see com.netflix.blitz4j.BlitzConfig#shouldSummarizeOverflow(java.lang.String)
+     */
+    @Override
+    public boolean shouldSummarizeOverflow(String originalAppenderName) {
+        return CONFIGURATION
                 .getBooleanProperty(
                         "netflix.blitz4j" + originalAppenderName
                                 + ".summarizeOverflow", true).get();
     }
 
+    /* (non-Javadoc)
+     * @see com.netflix.blitz4j.BlitzConfig#getAsyncAppenderImplementationNames()
+     */
+    @Override
     public String[] getAsyncAppenderImplementationNames() {
-        return DynamicPropertyFactory
-                .getInstance()
+        return CONFIGURATION
                 .getStringProperty("blitz4j.asyncAppenders",
                         "com.netflix.blitz4j.AsyncAppender").get().split(",");
     }
 
+    /* (non-Javadoc)
+     * @see com.netflix.blitz4j.BlitzConfig#getBatcherQueueMaxMessages(java.lang.String)
+     */
+    @Override
     public int getBatcherQueueMaxMessages(String batcherName) {
-
-        return DynamicPropertyFactory.getInstance()
+        return CONFIGURATION
                 .getIntProperty(batcherName + "." + "queue.maxMessages", 10000)
                 .get();
     }
 
+    /* (non-Javadoc)
+     * @see com.netflix.blitz4j.BlitzConfig#getBatchSize(java.lang.String)
+     */
+    @Override
     public int getBatchSize(String batcherName) {
-        return DynamicPropertyFactory.getInstance()
+        return CONFIGURATION
                 .getIntProperty(batcherName + "." + "batch.maxMessages", 30)
                 .get();
     }
 
+    /* (non-Javadoc)
+     * @see com.netflix.blitz4j.BlitzConfig#getBatcherWaitTimeBeforeShutdown(java.lang.String)
+     */
+    @Override
     public int getBatcherWaitTimeBeforeShutdown(String batcherName) {
-        return DynamicPropertyFactory.getInstance()
+        return CONFIGURATION
                 .getIntProperty(batcherName + ".waitTimeinMillis", 10000).get();
     }
 
+    /* (non-Javadoc)
+     * @see com.netflix.blitz4j.BlitzConfig#getBatcherMaxDelay(java.lang.String)
+     */
+    @Override
     public double getBatcherMaxDelay(String batcherName) {
-        return DynamicPropertyFactory.getInstance()
+        return CONFIGURATION
                 .getDoubleProperty(batcherName + "." + "batch.maxDelay", 0.5)
                 .get();
     }
 
+    /* (non-Javadoc)
+     * @see com.netflix.blitz4j.BlitzConfig#shouldWaitWhenBatcherQueueNotEmpty(java.lang.String)
+     */
+    @Override
     public boolean shouldWaitWhenBatcherQueueNotEmpty(String batcherName) {
-
-        return DynamicPropertyFactory.getInstance()
+        return CONFIGURATION
                 .getBooleanProperty(batcherName + ".blocking", false).get();
 
     }
 
+    /* (non-Javadoc)
+     * @see com.netflix.blitz4j.BlitzConfig#getBatcherMinThreads(java.lang.String)
+     */
+    @Override
     public int getBatcherMinThreads(String batcherName) {
-
-        return DynamicPropertyFactory.getInstance()
+        return CONFIGURATION
                 .getIntProperty(batcherName + ".minThreads", 1).get();
 
     }
 
+    /* (non-Javadoc)
+     * @see com.netflix.blitz4j.BlitzConfig#getBatcherMaxThreads(java.lang.String)
+     */
+    @Override
     public int getBatcherMaxThreads(String batcherName) {
-
-        return DynamicPropertyFactory.getInstance()
+        return CONFIGURATION
                 .getIntProperty(batcherName + ".maxThreads", 3).get();
 
     }
 
+    /* (non-Javadoc)
+     * @see com.netflix.blitz4j.BlitzConfig#getBatcherThreadKeepAliveTime(java.lang.String)
+     */
+    @Override
     public int getBatcherThreadKeepAliveTime(String batcherName) {
-
-        return DynamicPropertyFactory.getInstance()
+        return CONFIGURATION
                 .getIntProperty(batcherName + ".keepAliveTime", 900).get();
 
     }
 
+    /* (non-Javadoc)
+     * @see com.netflix.blitz4j.BlitzConfig#shouldRejectWhenAllBatcherThreadsUsed(java.lang.String)
+     */
+    @Override
     public boolean shouldRejectWhenAllBatcherThreadsUsed(String batcherName) {
-        return DynamicPropertyFactory.getInstance()
+        return CONFIGURATION
                 .getBooleanProperty(batcherName + ".rejectWhenFull", false)
                 .get();
     }

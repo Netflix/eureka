@@ -42,7 +42,7 @@ import com.netflix.servo.monitor.Timer;
  */
 public class LoggingContext {
 
-    private static final DefaultBlitz4jConfig CONFIGURATION = LoggingConfiguration.getInstance().getConfiguration();
+    private static final BlitzConfig CONFIGURATION = LoggingConfiguration.getInstance().getConfiguration();
     private static final String LOCATION_INFO = "locationInfo";
     private ThreadLocal<StackTraceElement> stackLocal = new ThreadLocal<StackTraceElement>();
     private ThreadLocal<LoggingEvent> loggingEvent = new ThreadLocal<LoggingEvent>();

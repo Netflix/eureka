@@ -20,6 +20,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -71,7 +72,7 @@ public class LoggingConfiguration implements PropertyListener {
     private static final String LOG4J_FACTORY_IMPL = "com.netflix.logging.log4jAdapter.NFCategoryFactory";
 
     private static final String LOG4J_LOGGER_FACTORY = "log4j.loggerFactory";
-    private static final DefaultBlitz4jConfig blitz4jConfig = new DefaultBlitz4jConfig();
+    private static final BlitzConfig blitz4jConfig = new DefaultBlitz4jConfig();
 
     private static final String PROP_LOG4J_ORIGINAL_APPENDER_NAME = "originalAppenderName";
     private static final String LOG4J_PREFIX = "log4j.logger";
@@ -92,7 +93,7 @@ public class LoggingConfiguration implements PropertyListener {
 
     private LoggingConfiguration() {
         ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                .setDaemon(false).setNameFormat("DynamicLog4jListener").build();
+        .setDaemon(false).setNameFormat("DynamicLog4jListener").build();
 
         this.executorPool = new ThreadPoolExecutor(0, 1, 15 * 60,
                 TimeUnit.SECONDS, new SynchronousQueue(), threadFactory);
@@ -116,6 +117,12 @@ public class LoggingConfiguration implements PropertyListener {
         if (props != null) {
             this.props = props;
         }
+        Enumeration enumeration = props.propertyNames();
+
+        while (enumeration.hasMoreElements()) {
+          String key = (String) enumeration.nextElement();
+          ConfigurationManager.getConfigInstance().setProperty(key, props.getProperty(key));
+        }
         NFHierarchy nfHierarchy = null;
         // Make log4j use blitz4j implementations
         if (blitz4jConfig.shouldUseLockFree()) {
@@ -125,18 +132,18 @@ public class LoggingConfiguration implements PropertyListener {
                     new NFRepositorySelector(nfHierarchy), guard);
         }
         String log4jLoggerFactory = System
-                .getProperty(PROP_LOG4J_LOGGER_FACTORY);
+        .getProperty(PROP_LOG4J_LOGGER_FACTORY);
         if (log4jLoggerFactory != null) {
             this.props.setProperty(PROP_LOG4J_LOGGER_FACTORY,
                     log4jLoggerFactory);
             if (nfHierarchy != null) {
                 try {
                     LoggerFactory loggerFactory = (LoggerFactory) Class
-                            .forName(log4jLoggerFactory).newInstance();
+                    .forName(log4jLoggerFactory).newInstance();
                     nfHierarchy.setLoggerFactory(loggerFactory);
                 } catch (Throwable e) {
                     System.err
-                            .println("Cannot set the logger factory. Hence reverting to default.");
+                    .println("Cannot set the logger factory. Hence reverting to default.");
                     e.printStackTrace();
                 }
             }
@@ -147,7 +154,7 @@ public class LoggingConfiguration implements PropertyListener {
             }
         }
         String log4jConfigurationFile = System
-                .getProperty(PROP_LOG4J_CONFIGURATION);
+        .getProperty(PROP_LOG4J_CONFIGURATION);
 
         if (log4jConfigurationFile != null) {
             InputStream in = null;
@@ -158,7 +165,7 @@ public class LoggingConfiguration implements PropertyListener {
             } catch (Throwable t) {
                 throw new RuntimeException(
                         "Cannot load log4 configuration file specified in "
-                                + PROP_LOG4J_CONFIGURATION, t);
+                        + PROP_LOG4J_CONFIGURATION, t);
             } finally {
 
                 if (in != null) {
@@ -181,7 +188,7 @@ public class LoggingConfiguration implements PropertyListener {
                 continue;
             }
             String oneAsyncAppenderName = oneAppenderName
-                    + ASYNC_APPENDERNAME_SUFFIX;
+            + ASYNC_APPENDERNAME_SUFFIX;
             originalAsyncAppenderNameMap.put(oneAppenderName,
                     oneAsyncAppenderName);
         }
@@ -193,7 +200,7 @@ public class LoggingConfiguration implements PropertyListener {
         }
         PropertyConfigurator.configure(this.props);
         this.logger = org.slf4j.LoggerFactory
-                .getLogger(LoggingConfiguration.class);
+        .getLogger(LoggingConfiguration.class);
         ConfigurationManager.getConfigInstance().addConfigurationListener(
                 new ExpandedConfigurationListenerAdapter(this));
     }
@@ -202,7 +209,7 @@ public class LoggingConfiguration implements PropertyListener {
         return instance;
     }
 
-    public DefaultBlitz4jConfig getConfiguration() {
+    public BlitzConfig getConfiguration() {
         return this.blitz4jConfig;
     }
 
@@ -215,7 +222,7 @@ public class LoggingConfiguration implements PropertyListener {
         for (String originalAppenderName : originalAsyncAppenderNameMap
                 .keySet()) {
             String batcherName = AsyncAppender.class.getName() + "."
-                    + originalAppenderName;
+            + originalAppenderName;
             batcher = BatcherFactory.getBatcher(batcherName);
             if (batcher == null) {
                 continue;
@@ -225,7 +232,7 @@ public class LoggingConfiguration implements PropertyListener {
         for (String originalAppenderName : originalAsyncAppenderNameMap
                 .keySet()) {
             String batcherName = AsyncAppender.class.getName() + "."
-                    + originalAppenderName;
+            + originalAppenderName;
             batcher = BatcherFactory.getBatcher(batcherName);
             if (batcher == null) {
                 continue;
@@ -304,7 +311,7 @@ public class LoggingConfiguration implements PropertyListener {
      * @throws ConfigurationException
      */
     private void reConfigure() throws ConfigurationException,
-            FileNotFoundException {
+    FileNotFoundException {
 
         Properties consolidatedProps = new Properties();
         consolidatedProps.putAll(props);
@@ -319,8 +326,8 @@ public class LoggingConfiguration implements PropertyListener {
         for (String originalAppenderName : originalAsyncAppenderNameMap
                 .keySet()) {
             MessageBatcher asyncBatcher = BatcherFactory
-                    .getBatcher(AsyncAppender.class.getName() + "."
-                            + originalAppenderName);
+            .getBatcher(AsyncAppender.class.getName() + "."
+                    + originalAppenderName);
             if (asyncBatcher == null) {
                 continue;
             }
@@ -333,8 +340,8 @@ public class LoggingConfiguration implements PropertyListener {
         for (String originalAppenderName : originalAsyncAppenderNameMap
                 .keySet()) {
             MessageBatcher asyncBatcher = BatcherFactory
-                    .getBatcher(AsyncAppender.class.getName() + "."
-                            + originalAppenderName);
+            .getBatcher(AsyncAppender.class.getName() + "."
+                    + originalAppenderName);
             if (asyncBatcher == null) {
                 continue;
             }
@@ -351,7 +358,7 @@ public class LoggingConfiguration implements PropertyListener {
      * @throws FileNotFoundException
      */
     private void configureLog4j(Properties props)
-            throws ConfigurationException, FileNotFoundException {
+    throws ConfigurationException, FileNotFoundException {
         if (blitz4jConfig.shouldUseLockFree()
                 && (props.getProperty(LOG4J_LOGGER_FACTORY) == null)) {
             props.setProperty(LOG4J_LOGGER_FACTORY, LOG4J_FACTORY_IMPL);
@@ -422,7 +429,7 @@ public class LoggingConfiguration implements PropertyListener {
      * @throws FileNotFoundException
      */
     private void convertConfiguredAppendersToAsync(Properties props)
-            throws ConfigurationException, FileNotFoundException {
+    throws ConfigurationException, FileNotFoundException {
         for (Map.Entry<String, String> originalAsyncAppenderMapEntry : originalAsyncAppenderNameMap
                 .entrySet()) {
             String asyncAppenderName = originalAsyncAppenderMapEntry.getValue();
@@ -431,7 +438,7 @@ public class LoggingConfiguration implements PropertyListener {
             // Set the original appender so that it can be fetched later after
             // configuration
             String originalAppenderName = originalAsyncAppenderMapEntry
-                    .getKey();
+            .getKey();
             props.setProperty(LOG4J_APPENDER_PREFIX + LOG4J_APPENDER_DELIMITER
                     + asyncAppenderName + LOG4J_APPENDER_DELIMITER
                     + PROP_LOG4J_ORIGINAL_APPENDER_NAME, originalAppenderName);
@@ -439,8 +446,20 @@ public class LoggingConfiguration implements PropertyListener {
             // participating in processing
             ConfigurationManager.getConfigInstance().setProperty(
                     "batcher." + AsyncAppender.class.getName() + "."
-                            + originalAppenderName + "."
-                            + "threadPoolDefaultRejectionHandler", true);
+                    + originalAppenderName + "." + "rejectWhenFull",
+                    true);
+            // Set the default value of the processing max threads to 1, if a
+            // value is not specified
+            int maxThreads = ConfigurationManager.getConfigInstance().getInt(
+                    "batcher." + AsyncAppender.class.getName() + "."
+                    + originalAppenderName + "." + "maxThreads", 0);
+            if (maxThreads == 0) {
+                ConfigurationManager.getConfigInstance().setProperty(
+                        "batcher." + AsyncAppender.class.getName() + "."
+                        + originalAppenderName + "." + "maxThreads",
+                "1");
+            }
+
             for (Map.Entry mapEntry : props.entrySet()) {
                 String key = mapEntry.getKey().toString();
                 if ((key.contains(LOG4J_PREFIX) || key.contains(ROOT_CATEGORY) || key

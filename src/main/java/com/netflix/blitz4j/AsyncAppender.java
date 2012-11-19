@@ -72,7 +72,7 @@ import com.netflix.servo.monitor.Timer;
 public class AsyncAppender extends AppenderSkeleton implements
         AppenderAttachable {
 
-    private static final DefaultBlitz4jConfig CONFIGURATION = LoggingConfiguration
+    private static final BlitzConfig CONFIGURATION = LoggingConfiguration
             .getInstance().getConfiguration();
     private static final int SLEEP_TIME_MS = 1;
     private static final String BATCHER_NAME_LIMITER = ".";
@@ -220,11 +220,11 @@ public class AsyncAppender extends AppenderSkeleton implements
         LocationInfo locationInfo = null;
         // Reject it when we have a fast property as these can be expensive
         Stopwatch s = locationInfoTimer.start();
-        if (CONFIGURATION.getSummarizeOverflow(this.originalAppenderName)) {
-            if (CONFIGURATION.generateBlitz4jLocationInfo()) {
+        if (CONFIGURATION.shouldSummarizeOverflow(this.originalAppenderName)) {
+            if (CONFIGURATION.shouldGenerateBlitz4jLocationInfo()) {
                 locationInfo = LoggingContext.getInstance()
                         .generateLocationInfo(event);
-            } else if (CONFIGURATION.generateLog4jLocationInfo()) {
+            } else if (CONFIGURATION.shouldGenerateLog4jLocationInfo()) {
                 locationInfo = event.getLocationInformation();
             }
         }
@@ -239,7 +239,7 @@ public class AsyncAppender extends AppenderSkeleton implements
             isBufferPutSuccessful = putInBuffer(event);
         }
         // If the buffer is full, then summarize the information
-        if (CONFIGURATION.getSummarizeOverflow(this.originalAppenderName) && (!isBufferPutSuccessful)) {
+        if (CONFIGURATION.shouldSummarizeOverflow(this.originalAppenderName) && (!isBufferPutSuccessful)) {
             DynamicCounter.increment(this.originalAppenderName
                     + "_summarizeEvent", null);
             Stopwatch t = putDiscardMapTimeTracer.start();
@@ -263,7 +263,7 @@ public class AsyncAppender extends AppenderSkeleton implements
                 summary.add(event);
             }
             t.stop();
-        } else if (!CONFIGURATION.getSummarizeOverflow(this.originalAppenderName) && (!isBufferPutSuccessful)) {
+        } else if (!CONFIGURATION.shouldSummarizeOverflow(this.originalAppenderName) && (!isBufferPutSuccessful)) {
             // Record the event that are not summarized and which are just
             // discarded
             DynamicCounter.increment(this.originalAppenderName
@@ -295,10 +295,10 @@ public class AsyncAppender extends AppenderSkeleton implements
                 .newBuilder()
                 .initialCapacity(5000)
                 .maximumSize(
-                        CONFIGURATION.getDiscardMapSize(originalAppenderName))
+                        CONFIGURATION.getLogSummarySize(originalAppenderName))
                 .expireAfterWrite(
                         CONFIGURATION
-                                .getDiscardEntryExpireSeconds(originalAppenderName),
+                                .getLogSummaryExpiry(originalAppenderName),
                         TimeUnit.SECONDS).<String, LogSummary> build().asMap();
         try {
             Monitors.registerObject(this.originalAppenderName, this);

@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.netflix.blitz4j.DefaultBlitz4jConfig;
+import com.netflix.blitz4j.BlitzConfig;
 import com.netflix.blitz4j.LoggingConfiguration;
 import com.netflix.config.DynamicBooleanProperty;
 import com.netflix.config.DynamicPropertyFactory;
@@ -65,7 +65,7 @@ import com.netflix.servo.monitor.Timer;
  */
 public class MessageBatcher<T> {
 
-    private static final DefaultBlitz4jConfig CONFIGURATION = LoggingConfiguration.getInstance().getConfiguration();
+    private static final BlitzConfig CONFIGURATION = LoggingConfiguration.getInstance().getConfiguration();
 
     private static final String DOT = ".";
 
@@ -579,7 +579,7 @@ public class MessageBatcher<T> {
                 keepAliveTime, TimeUnit.SECONDS, new SynchronousQueue(),
                 threadFactory);
         boolean shouldRejectWhenFull = CONFIGURATION
-                .shouldWaitWhenBatcherQueueNotEmpty(this.name);
+                .shouldRejectWhenAllBatcherThreadsUsed(this.name);
         if (!shouldRejectWhenFull) {
             this.processor
                     .setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy() {
