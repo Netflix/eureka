@@ -117,11 +117,14 @@ public class LoggingConfiguration implements PropertyListener {
         if (props != null) {
             this.props = props;
         }
-        Enumeration enumeration = props.propertyNames();
+        if (this.props != null) {
+            Enumeration enumeration = this.props.propertyNames();
 
-        while (enumeration.hasMoreElements()) {
-          String key = (String) enumeration.nextElement();
-          ConfigurationManager.getConfigInstance().setProperty(key, props.getProperty(key));
+            while (enumeration.hasMoreElements()) {
+                String key = (String) enumeration.nextElement();
+                ConfigurationManager.getConfigInstance().setProperty(key,
+                        props.getProperty(key));
+            }
         }
         NFHierarchy nfHierarchy = null;
         // Make log4j use blitz4j implementations
