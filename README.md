@@ -7,8 +7,8 @@ At Netflix, Blitz4j is used to log billions of events for monitoring, business i
 bottlenecks and comes built with a highly scalable and customizable asynchronous framework. Blitz4j comes with the ability to convert the existing log4j appenders to use
 the asynchronous model without changing the existing log4j configurations.
 
-Blitz4j uses archaius (http://www.github.com/Netflix/archaius) that allows log4j dynamic configurations for a server or a group of servers. Blitz4j also tries to mitigate
-data loss and provides a way to summarize the log information during log storms.
+Blitz4j uses archaius (http://www.github.com/Netflix/archaius) to reconfigure log4j dynamically and servo (http://www.github.com/Netflix/servo) to track the performance metrics
+regarding logging. Blitz4j also tries to mitigate data loss and provides a way to summarize the log information during log storms.
 
 
 BUILD
@@ -20,7 +20,7 @@ BUILD
 
 Support
 ----------
-[Blitz4j Google Group] (https://groups.google.com/forum/?fromgroups#!forum/eureka_netflix)
+[Blitz4j Google Group] (https://groups.google.com/forum/?fromgroups#!forum/netflix_blitz4j)
 
 
 Documentation
