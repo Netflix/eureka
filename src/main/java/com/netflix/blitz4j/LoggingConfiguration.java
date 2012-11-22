@@ -32,6 +32,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration.ConfigurationException;
+import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.spi.LoggerFactory;
 import org.slf4j.Logger;
@@ -114,8 +115,39 @@ public class LoggingConfiguration implements PropertyListener {
      */
     public void configure(Properties props) {
         this.originalAsyncAppenderNameMap.clear();
+        // First try to load the log4j configuration file from the classpath
+        String log4jConfigurationFile = System
+        .getProperty(PROP_LOG4J_CONFIGURATION);
+
+        if (log4jConfigurationFile != null) {
+            InputStream in = null;
+            try {
+                URL url = new URL(log4jConfigurationFile);
+                in = url.openStream();
+                this.props.load(in);
+            } catch (Throwable t) {
+                throw new RuntimeException(
+                        "Cannot load log4 configuration file specified in "
+                        + PROP_LOG4J_CONFIGURATION, t);
+            } finally {
+
+                if (in != null) {
+                    try {
+                        in.close();
+                    } catch (IOException ignore) {
+
+                    }
+                }
+            }
+
+        }
         if (props != null) {
-            this.props = props;
+            Enumeration enumeration = props.propertyNames();
+            while (enumeration.hasMoreElements()) {
+                String key = (String) enumeration.nextElement();
+                this.props.setProperty(key ,
+                        props.getProperty(key));
+            }
         }
         if (this.props != null) {
             Enumeration enumeration = this.props.propertyNames();
@@ -128,7 +160,9 @@ public class LoggingConfiguration implements PropertyListener {
         }
         NFHierarchy nfHierarchy = null;
         // Make log4j use blitz4j implementations
-        if (blitz4jConfig.shouldUseLockFree()) {
+        if (blitz4jConfig.shouldUseLockFree()
+                && (!NFHierarchy.class.equals(LogManager.getLoggerRepository()
+                        .getClass()))) {
             nfHierarchy = new NFHierarchy(new NFRootLogger(
                     org.apache.log4j.Level.INFO));
             org.apache.log4j.LogManager.setRepositorySelector(
@@ -156,31 +190,7 @@ public class LoggingConfiguration implements PropertyListener {
                         BLITZ_LOGGER_FACTORY);
             }
         }
-        String log4jConfigurationFile = System
-        .getProperty(PROP_LOG4J_CONFIGURATION);
-
-        if (log4jConfigurationFile != null) {
-            InputStream in = null;
-            try {
-                URL url = new URL(log4jConfigurationFile);
-                in = url.openStream();
-                this.props.load(in);
-            } catch (Throwable t) {
-                throw new RuntimeException(
-                        "Cannot load log4 configuration file specified in "
-                        + PROP_LOG4J_CONFIGURATION, t);
-            } finally {
-
-                if (in != null) {
-                    try {
-                        in.close();
-                    } catch (IOException ignore) {
-
-                    }
-                }
-            }
-
-        }
+    
         String[] asyncAppenderArray = blitz4jConfig.getAsyncAppenders();
         if (asyncAppenderArray == null) {
             return;
