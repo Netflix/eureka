@@ -514,5 +514,9 @@ public class AsyncAppender extends AppenderSkeleton implements
     public int getDiscadMapSize() {
         return logSummaryMap.size();
     }
-
+ 
+    @Override
+    public void doAppend(LoggingEvent event) {
+        this.append(event); 
+    }
 }
