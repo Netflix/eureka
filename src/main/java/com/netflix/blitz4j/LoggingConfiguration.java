@@ -32,6 +32,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration.ConfigurationException;
+import org.apache.log4j.Appender;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.spi.LoggerFactory;
@@ -206,11 +207,14 @@ public class LoggingConfiguration implements PropertyListener {
                     e);
         }
         PropertyConfigurator.configure(this.props);
+        closeNonexistingAsyncAppenders();
         this.logger = org.slf4j.LoggerFactory
         .getLogger(LoggingConfiguration.class);
         ConfigurationManager.getConfigInstance().addConfigurationListener(
                 new ExpandedConfigurationListenerAdapter(this));
     }
+
+  
 
     public static LoggingConfiguration getInstance() {
         return instance;
@@ -482,6 +486,23 @@ public class LoggingConfiguration implements PropertyListener {
                     }
 
                 }
+            }
+        }
+    }
+    
+    /**
+     * Closes any asynchronous appenders that were not removed during configuration.
+     */
+    private void closeNonexistingAsyncAppenders() {
+        org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
+        if (NFLockFreeLogger.class.isInstance(rootLogger)) {
+            ((NFLockFreeLogger)rootLogger).reconcileAppenders();
+        }
+        Enumeration enums = LogManager.getCurrentLoggers();
+        while (enums.hasMoreElements()) {
+            Object myLogger = enums.nextElement();
+            if (NFLockFreeLogger.class.isInstance(myLogger)) {
+                ((NFLockFreeLogger)myLogger).reconcileAppenders();
             }
         }
     }

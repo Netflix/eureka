@@ -27,9 +27,6 @@ import org.apache.log4j.helpers.AppenderAttachableImpl;
 import org.apache.log4j.spi.AppenderAttachable;
 import org.apache.log4j.spi.LoggingEvent;
 
-import com.netflix.config.DynamicPropertyFactory;
-import com.netflix.config.DynamicStringProperty;
-
 /**
  * This class overrides log4j implementation to provide appender with less
  * multi-threaded contention.
@@ -41,6 +38,7 @@ public class NFAppenderAttachableImpl extends AppenderAttachableImpl implements
 AppenderAttachable {
 
     protected AbstractQueue<Appender> appenderList = new ConcurrentLinkedQueue<Appender>();
+    private AbstractQueue<String> configuredAppenderList = new ConcurrentLinkedQueue<String>();
 
     /*
      * (non-Javadoc)
@@ -72,6 +70,7 @@ AppenderAttachable {
         } else {
             appenderList.add(newAppender);
         }
+        configuredAppenderList.add(newAppender.getName());
     }
 
     /*
@@ -162,6 +161,7 @@ AppenderAttachable {
      */
     @Override
     public void removeAllAppenders() {
+        this.configuredAppenderList.clear();
         if (appenderList != null) {
             Iterator<Appender> it = appenderList.iterator();
             while (it.hasNext()) {
@@ -170,8 +170,8 @@ AppenderAttachable {
                 .getConfiguration()
                 .getAsyncAppenderImplementationNames();
                 // For AsyncAppenders, we won't remove appenders.
-                // This is call is primarily made during dynamic log4j
-                // reconfiguration .
+                // This call is primarily made during dynamic log4 reconfiguration and we will
+                // retain the ability to queue the messages.
                 for (String asyncAppender : asyncAppenders) {
                     if (!(asyncAppender.equals(a.getClass().getName()))) {
                         a.close();
@@ -194,6 +194,7 @@ AppenderAttachable {
         if (appender == null || appenderList == null)
             return;
         appenderList.remove(appender);
+        configuredAppenderList.remove(appender.getName());
     }
 
     /*
@@ -212,7 +213,23 @@ AppenderAttachable {
             Appender a = (Appender) it.next();
             if (name.equals(a.getName())) {
                 it.remove();
+                configuredAppenderList.remove(a.getName());
                 break;
+            }
+        }
+    }
+    
+    /**
+     * Reconciles the appender list after configuration to ensure that the asynchrnous
+     * appenders are not left over after the configuration.  This is needed because the
+     * appenders are not cleaned out completely during configuration for it to retain the
+     * ability to not messages.
+     */
+    public void reconcileAppenders() {
+        for (Appender appender : appenderList) {
+            if (!configuredAppenderList.contains(appender.getName())) {
+                appender.close();
+                appenderList.remove(appender);
             }
         }
     }

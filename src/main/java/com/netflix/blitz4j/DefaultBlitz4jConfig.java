@@ -118,7 +118,7 @@ public class DefaultBlitz4jConfig implements BlitzConfig {
     public boolean shouldSummarizeOverflow(String originalAppenderName) {
         return CONFIGURATION
                 .getBooleanProperty(
-                        "netflix.blitz4j" + originalAppenderName
+                        "netflix.blitz4j." + originalAppenderName
                                 + ".summarizeOverflow", true).get();
     }
 

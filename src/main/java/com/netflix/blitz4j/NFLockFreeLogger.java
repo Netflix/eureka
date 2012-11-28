@@ -188,6 +188,18 @@ public class NFLockFreeLogger extends Logger {
             fireRemoveAppenderEvent(appender);
         }
     }
+  
+    /**
+     * Reconciles the appender list after configuration to ensure that the asynchrnous
+     * appenders are not left over after the configuration.  This is needed because the
+     * appenders are not cleaned out completely during configuration for it to retain the
+     * ability to not messages.
+     */
+    public void reconcileAppenders() {
+        if (aai != null) {
+            ((NFAppenderAttachableImpl)aai).reconcileAppenders();
+        }
+    }
 
    
     private void fireRemoveAppenderEvent(final Appender appender) {
@@ -201,4 +213,5 @@ public class NFLockFreeLogger extends Logger {
             }
         }
     }
+   
 }
