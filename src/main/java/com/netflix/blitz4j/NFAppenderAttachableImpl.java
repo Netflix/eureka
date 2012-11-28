@@ -70,7 +70,7 @@ AppenderAttachable {
         } else {
             appenderList.add(newAppender);
         }
-        configuredAppenderList.add(newAppender.getName());
+        configuredAppenderList.add(newAppender.getName() != null ? newAppender.getName(): "default");
     }
 
     /*
