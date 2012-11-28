@@ -47,19 +47,25 @@ import com.netflix.servo.monitor.Timer;
  * maximum time a message waits to be combined with others in a batch and the
  * size of the pool of threads that process batches.
  * 
+ * <p>
  * The implementation aims to avoid congestion, by working more efficiently as
  * load increases. As messages arrive faster, the collector executes less code
  * and batch sizes increase (up to the configured maximum). It should be more
  * efficient to process a batch than to process the messages individually.
+ * </p>
  * 
- * Here's how it works. Arriving messages are added to the queue. The collector
+ * </p>
+ * The implementation works by adding the arriving messages to a queue. The collector
  * thread takes messages from the queue and collects them into batches. When a
  * batch is big enough or old enough, the collector passes it to the processor,
  * which passes the batch to the target stream.
+ * </p>
  * 
+ * <p>
  * The processor maintains a thread pool. If there's more work than threads, the
  * collector participates in processing by default, and consequently stops
  * collecting more batches.
+ * </p>
  * 
  * @author Karthik Ranganathan
  */
