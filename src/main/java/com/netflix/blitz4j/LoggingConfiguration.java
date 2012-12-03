@@ -32,7 +32,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration.ConfigurationException;
-import org.apache.log4j.Appender;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.spi.LoggerFactory;
@@ -146,13 +145,17 @@ public class LoggingConfiguration implements PropertyListener {
             Enumeration enumeration = props.propertyNames();
             while (enumeration.hasMoreElements()) {
                 String key = (String) enumeration.nextElement();
-                this.props.setProperty(key ,
-                        props.getProperty(key));
-                ConfigurationManager.getConfigInstance().setProperty(key,
-                        props.getProperty(key));
+                String propertyValue = props.getProperty(key);
+                this.props.setProperty(key, propertyValue);
+                Object configPropertyValue = ConfigurationManager.getConfigInstance().getProperty(key);
+                if (configPropertyValue == null || (!configPropertyValue
+                        .equals(propertyValue))) {
+                    ConfigurationManager.getConfigInstance().setProperty(key,
+                            propertyValue);
+                }
             }
         }
-        
+
         NFHierarchy nfHierarchy = null;
         // Make log4j use blitz4j implementations
         if (blitz4jConfig.shouldUseLockFree()
@@ -440,7 +443,7 @@ public class LoggingConfiguration implements PropertyListener {
      * @throws FileNotFoundException
      */
     private void convertConfiguredAppendersToAsync(Properties props)
-    throws ConfigurationException, FileNotFoundException {
+            throws ConfigurationException, FileNotFoundException {
         for (Map.Entry<String, String> originalAsyncAppenderMapEntry : originalAsyncAppenderNameMap
                 .entrySet()) {
             String asyncAppenderName = originalAsyncAppenderMapEntry.getValue();
@@ -449,7 +452,7 @@ public class LoggingConfiguration implements PropertyListener {
             // Set the original appender so that it can be fetched later after
             // configuration
             String originalAppenderName = originalAsyncAppenderMapEntry
-            .getKey();
+                    .getKey();
             props.setProperty(LOG4J_APPENDER_PREFIX + LOG4J_APPENDER_DELIMITER
                     + asyncAppenderName + LOG4J_APPENDER_DELIMITER
                     + PROP_LOG4J_ORIGINAL_APPENDER_NAME, originalAppenderName);
@@ -457,18 +460,18 @@ public class LoggingConfiguration implements PropertyListener {
             // participating in processing
             ConfigurationManager.getConfigInstance().setProperty(
                     "batcher." + AsyncAppender.class.getName() + "."
-                    + originalAppenderName + "." + "rejectWhenFull",
+                            + originalAppenderName + "." + "rejectWhenFull",
                     true);
             // Set the default value of the processing max threads to 1, if a
             // value is not specified
             int maxThreads = ConfigurationManager.getConfigInstance().getInt(
                     "batcher." + AsyncAppender.class.getName() + "."
-                    + originalAppenderName + "." + "maxThreads", 0);
+                            + originalAppenderName + "." + "maxThreads", 0);
             if (maxThreads == 0) {
                 ConfigurationManager.getConfigInstance().setProperty(
                         "batcher." + AsyncAppender.class.getName() + "."
-                        + originalAppenderName + "." + "maxThreads",
-                "1");
+                                + originalAppenderName + "." + "maxThreads",
+                        "1");
             }
 
             for (Map.Entry mapEntry : props.entrySet()) {
@@ -478,18 +481,28 @@ public class LoggingConfiguration implements PropertyListener {
                         && !key.contains(PROP_LOG4J_ASYNC_APPENDERS)
                         && !key.contains(PROP_LOG4J_ORIGINAL_APPENDER_NAME)) {
                     Object value = mapEntry.getValue();
-                    if (value != null
-                            && !((String) value).contains(asyncAppenderName)) {
-                        String convertedString = value.toString().replace(
-                                originalAppenderName, asyncAppenderName);
-                        mapEntry.setValue(convertedString);
+                    if (value != null) {
+                        String[] values = (String.class.cast(value)).split(",");
+                        String valueString = "";
+                        int ctr = 0;
+                        for (String oneValue : values) {
+                            ++ctr;
+                            if (originalAppenderName.equals(oneValue)) {
+                                oneValue = asyncAppenderName;
+                            }
+                            if (ctr != values.length) {
+                                valueString = valueString + oneValue + ",";
+                            } else {
+                                valueString = valueString + oneValue;
+                            }
+                        }
+                        mapEntry.setValue(valueString);
                     }
-
                 }
             }
         }
     }
-    
+
     /**
      * Closes any asynchronous appenders that were not removed during configuration.
      */
