@@ -73,8 +73,6 @@ public class LoggingConfiguration implements PropertyListener {
     private static final String LOG4J_FACTORY_IMPL = "com.netflix.logging.log4jAdapter.NFCategoryFactory";
 
     private static final String LOG4J_LOGGER_FACTORY = "log4j.loggerFactory";
-    private static final BlitzConfig blitz4jConfig = new DefaultBlitz4jConfig();
-
     private static final String PROP_LOG4J_ORIGINAL_APPENDER_NAME = "originalAppenderName";
     private static final String LOG4J_PREFIX = "log4j.logger";
     private static final String LOG4J_APPENDER_DELIMITER = ".";
@@ -82,7 +80,9 @@ public class LoggingConfiguration implements PropertyListener {
     private static final String ASYNC_APPENDERNAME_SUFFIX = "_ASYNC";
     private static final String ROOT_CATEGORY = "rootCategory";
     private static final String ROOT_LOGGER = "rootLogger";
+    
     private Map<String, String> originalAsyncAppenderNameMap = new HashMap<String, String>();
+    private BlitzConfig blitz4jConfig;
     private Properties props = new Properties();
     Properties updatedProps = new Properties();
     private final ExecutorService executorPool;
@@ -115,7 +115,7 @@ public class LoggingConfiguration implements PropertyListener {
      */
     public void configure(Properties props) {
         this.originalAsyncAppenderNameMap.clear();
-        // First try to load the log4j configuration file from the classpath
+       // First try to load the log4j configuration file from the classpath
         String log4jConfigurationFile = System
         .getProperty(PROP_LOG4J_CONFIGURATION);
 
@@ -147,15 +147,10 @@ public class LoggingConfiguration implements PropertyListener {
                 String key = (String) enumeration.nextElement();
                 String propertyValue = props.getProperty(key);
                 this.props.setProperty(key, propertyValue);
-                Object configPropertyValue = ConfigurationManager.getConfigInstance().getProperty(key);
-                if (configPropertyValue == null || (!configPropertyValue
-                        .equals(propertyValue))) {
-                    ConfigurationManager.getConfigInstance().setProperty(key,
-                            propertyValue);
-                }
             }
         }
-
+        this.blitz4jConfig = new DefaultBlitz4jConfig(this.props);
+        
         NFHierarchy nfHierarchy = null;
         // Make log4j use blitz4j implementations
         if (blitz4jConfig.shouldUseLockFree()
@@ -209,6 +204,9 @@ public class LoggingConfiguration implements PropertyListener {
             throw new RuntimeException("Could not configure async appenders ",
                     e);
         }
+        // Yes second time init required as properties would have been during async appender conversion
+        this.blitz4jConfig = new DefaultBlitz4jConfig(this.props);
+        
         PropertyConfigurator.configure(this.props);
         closeNonexistingAsyncAppenders();
         this.logger = org.slf4j.LoggerFactory
@@ -458,17 +456,17 @@ public class LoggingConfiguration implements PropertyListener {
                     + PROP_LOG4J_ORIGINAL_APPENDER_NAME, originalAppenderName);
             // Set the batcher to reject the collector request instead of it
             // participating in processing
-            ConfigurationManager.getConfigInstance().setProperty(
+            this.props.setProperty(
                     "batcher." + AsyncAppender.class.getName() + "."
                             + originalAppenderName + "." + "rejectWhenFull",
-                    true);
+                    "true");
             // Set the default value of the processing max threads to 1, if a
             // value is not specified
-            int maxThreads = ConfigurationManager.getConfigInstance().getInt(
+            String maxThreads = this.props.getProperty (
                     "batcher." + AsyncAppender.class.getName() + "."
-                            + originalAppenderName + "." + "maxThreads", 0);
-            if (maxThreads == 0) {
-                ConfigurationManager.getConfigInstance().setProperty(
+                            + originalAppenderName + "." + "maxThreads");
+            if (maxThreads == null) {
+                this.props.setProperty(
                         "batcher." + AsyncAppender.class.getName() + "."
                                 + originalAppenderName + "." + "maxThreads",
                         "1");
