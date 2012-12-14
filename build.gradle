@@ -42,6 +42,7 @@ project(':template-server') {
         compile 'com.sun.jersey:jersey-server:1.11'
         compile 'com.sun.jersey:jersey-servlet:1.11'
         compile project(':template-client')
+        provided 'javax.servlet:servlet-api:2.5'
     }
 }
 
