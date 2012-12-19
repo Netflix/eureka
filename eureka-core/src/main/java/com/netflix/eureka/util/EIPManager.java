@@ -308,8 +308,8 @@ public class EIPManager {
     private AmazonEC2 getEC2Service() {
         eurekaConfig = EurekaServerConfigurationManager.getInstance()
         .getConfiguration();
-        AmazonEC2 ec2Service = new AmazonEC2Client(new BasicAWSCredentials(
-                eurekaConfig.getAWSAccessId(), eurekaConfig.getAWSSecretKey()));
+        AmazonEC2 ec2Service = new AmazonEC2Client(
+            AWSCredentialsManager.getInstance().getCredentials());
 
         String region = DiscoveryManager.getInstance().getEurekaClientConfig()
         .getRegion();

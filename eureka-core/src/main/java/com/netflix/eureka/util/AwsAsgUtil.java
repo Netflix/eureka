@@ -65,8 +65,7 @@ public class AwsAsgUtil {
     private static final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
     .getInstance().getConfiguration();
     private static final AmazonAutoScaling client = new AmazonAutoScalingClient(
-            new BasicAWSCredentials(eurekaConfig.getAWSAccessId(),
-                    eurekaConfig.getAWSSecretKey()),
+            AWSCredentialsManager.getInstance().getCredentials(),
                     new ClientConfiguration().withConnectionTimeout(eurekaConfig
                             .getASGQueryTimeoutMs()));
     // Cache for the AWS ASG information
