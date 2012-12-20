@@ -95,9 +95,15 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
      */
     @Override
     public String getAWSAccessId() {
-        return configInstance
-        .getStringProperty(namespace + "awsAccessId", null).get()
-        .trim();
+        String aWSAccessId = configInstance
+        .getStringProperty(namespace + "awsAccessId", null).get();
+
+        if (null != aWSAccessId) {
+            return aWSAccessId.trim();
+        }
+        else {
+            return null;
+        }
     }
 
     /*
@@ -106,9 +112,15 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
      */
     @Override
     public String getAWSSecretKey() {
-        return configInstance
-        .getStringProperty(namespace + "awsSecretKey", null).get()
-        .trim();
+        String aWSSecretKey = configInstance
+        .getStringProperty(namespace + "awsSecretKey", null).get();
+
+        if (null != aWSSecretKey) {
+            return aWSSecretKey.trim();
+        }
+        else {
+            return null;
+        }
     }
 
     /*
