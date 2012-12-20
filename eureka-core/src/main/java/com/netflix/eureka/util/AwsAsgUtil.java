@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.services.autoscaling.AmazonAutoScaling;
 import com.amazonaws.services.autoscaling.AmazonAutoScalingClient;
 import com.amazonaws.services.autoscaling.model.AutoScalingGroup;
@@ -64,10 +65,7 @@ public class AwsAsgUtil {
     private static final String PROP_ADD_TO_LOAD_BALANCER = "AddToLoadBalancer";
     private static final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
     .getInstance().getConfiguration();
-    private static final AmazonAutoScaling client = new AmazonAutoScalingClient(
-            AWSCredentialsManager.getInstance().getCredentials(),
-                    new ClientConfiguration().withConnectionTimeout(eurekaConfig
-                            .getASGQueryTimeoutMs()));
+    private static final AmazonAutoScaling client = getAmazonAutoScalingClient();
     // Cache for the AWS ASG information
     private final LoadingCache<String, Boolean> asgCache = CacheBuilder
     .newBuilder().initialCapacity(500)
@@ -304,5 +302,25 @@ public class AwsAsgUtil {
         }
         return asgNames;
     }
-    
+
+    private static AmazonAutoScaling getAmazonAutoScalingClient() {
+        String aWSAccessId = eurekaConfig.getAWSAccessId();
+        String aWSSecretKey = eurekaConfig.getAWSSecretKey();
+        ClientConfiguration clientConfiguration = new ClientConfiguration()
+                .withConnectionTimeout(eurekaConfig.getASGQueryTimeoutMs());
+
+        if (null != aWSAccessId && !"".equals(aWSAccessId) &&
+                null != aWSSecretKey && !"".equals(aWSSecretKey)) {
+            return new AmazonAutoScalingClient(
+                    new BasicAWSCredentials(aWSAccessId, aWSSecretKey),
+                    clientConfiguration);
+        }
+        else
+        {
+            return new AmazonAutoScalingClient(
+                    new InstanceProfileCredentialsProvider(),
+                    clientConfiguration);
+        }
+    }
+   
 }
