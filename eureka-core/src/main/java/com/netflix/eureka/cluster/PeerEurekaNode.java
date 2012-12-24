@@ -570,7 +570,8 @@ public class PeerEurekaNode {
                 for (ReplicationTask task : tasks) {
                     boolean done = true;
                     do {
-                        try {
+                       done = true;
+                       try {
                             Object[] args = {
                                     task.getAppName(),
                                     task.getId(),
@@ -583,6 +584,7 @@ public class PeerEurekaNode {
                                 logger.warn(
                                         "Replication events older than the threshold. AppName : {}, Id: {}, Action : {}, Current Time : {}, Submit Time :{}",
                                         args);
+                                
                                 continue;
                             }
                             task.execute();
