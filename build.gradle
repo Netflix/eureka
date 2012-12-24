@@ -33,6 +33,6 @@ dependencies {
     compile 'org.slf4j:slf4j-api:1.6.4'
     compile 'commons-collections:commons-collections:3.2.1'
     testCompile 'junit:junit:4.10'
-    testCompile 'org.slf4j:slf4j-log4j12:1.6.1'
+    testCompile 'org.slf4j:slf4j-log4j12:1.6.4'
 }
 
