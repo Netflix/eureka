@@ -1354,6 +1354,10 @@ public class DiscoveryClient implements LookupService {
             txtRecord = attr.get().toString();
         }
 
+        if (txtRecord.startsWith("\"") && txtRecord.endsWith("\"")) {
+            txtRecord = txtRecord.substring(1, txtRecord.length() - 1);
+        }
+
         Set<String> cnamesSet = new TreeSet<String>();
         if ((txtRecord == null) || ("".equals(txtRecord.trim()))) {
             return cnamesSet;
