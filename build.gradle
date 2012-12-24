@@ -11,6 +11,7 @@ allprojects {
     repositories { mavenCentral() }
 }
 
+
 apply from: file('gradle/convention.gradle')
 apply from: file('gradle/maven.gradle')
 apply from: file('gradle/check.gradle')
@@ -20,6 +21,10 @@ apply from: file('gradle/release.gradle')
 //apply plugin: 'war'
 //apply plugin: 'jetty'
 
+test {
+ include 'com/netflix/blitz4j/**'
+}
+
 dependencies {
     compile 'com.netflix.servo:servo-core:0.4.26'
     compile 'com.netflix.archaius:archaius-core:0.4.1'
@@ -27,5 +32,7 @@ dependencies {
     compile 'log4j:log4j:1.2.17'
     compile 'org.slf4j:slf4j-api:1.6.4'
     compile 'commons-collections:commons-collections:3.2.1'
+    testCompile 'junit:junit:4.10'
+    testCompile 'org.slf4j:slf4j-log4j12:1.6.1'
 }
 
