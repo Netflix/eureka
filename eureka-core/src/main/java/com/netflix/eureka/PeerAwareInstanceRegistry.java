@@ -82,10 +82,10 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
     private static final int REGISTRY_SYNC_RETRY_MS = 30000;
 
     private static final Logger logger = LoggerFactory
-            .getLogger(PeerAwareInstanceRegistry.class);
+    .getLogger(PeerAwareInstanceRegistry.class);
 
     private static final EurekaServerConfig eurekaServerConfig = EurekaServerConfigurationManager
-            .getInstance().getConfiguration();
+    .getInstance().getConfiguration();
     private static final String DICOVERY_FAILED_REPLICATION_AFTER_RETRY = "FailedReplicationAfterRetry";
     private long startupTime = 0;
 
@@ -168,7 +168,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
             }
 
         }, eurekaServerConfig.getRenewalThresholdUpdateIntervalMs(),
-                eurekaServerConfig.getRenewalThresholdUpdateIntervalMs());
+        eurekaServerConfig.getRenewalThresholdUpdateIntervalMs());
     }
 
     /**
@@ -191,7 +191,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
 
                 }
             }, eurekaServerConfig.getPeerEurekaNodesUpdateIntervalMs(),
-                    eurekaServerConfig.getPeerEurekaNodesUpdateIntervalMs());
+            eurekaServerConfig.getPeerEurekaNodesUpdateIntervalMs());
 
         } catch (Exception e) {
             throw new IllegalStateException(e);
@@ -204,8 +204,8 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
     private void updatePeerEurekaNodes() {
         InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
         List<String> replicaUrls = DiscoveryManager.getInstance()
-                .getDiscoveryClient()
-                .getDiscoveryServiceUrls(DiscoveryClient.getZone(myInfo));
+        .getDiscoveryClient()
+        .getDiscoveryServiceUrls(DiscoveryClient.getZone(myInfo));
         List<PeerEurekaNode> replicaNodes = new ArrayList<PeerEurekaNode>();
         for (String replicaUrl : replicaUrls) {
             if (!isThisMe(replicaUrl)) {
@@ -249,7 +249,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
     public int syncUp() {
         // Copy entire entry from neighboring DS node
         LookupService lookupService = DiscoveryManager.getInstance()
-                .getLookupService();
+        .getLookupService();
         int count = 0;
 
         for (int i = 0; ((i < eurekaServerConfig.getRegistrySyncRetries()) && (count == 0)); i++) {
@@ -323,8 +323,8 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
             String peerHostName = null;
             try {
                 Application eurekaApps = this
-                        .getApplication(ApplicationInfoManager.getInstance()
-                                .getInfo().getAppName());
+                .getApplication(ApplicationInfoManager.getInstance()
+                        .getInfo().getAppName());
                 if (eurekaApps == null) {
                     areAllPeerNodesPrimed = true;
                 }
@@ -335,7 +335,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                         // If the lease is expired - do not worry about priming
                         if (System.currentTimeMillis() > (leaseInfo
                                 .getRenewalTimestamp() + (leaseInfo
-                                .getDurationInSecs() * 1000))) {
+                                        .getDurationInSecs() * 1000))) {
                             continue;
                         }
                         peerHostName = peerInstanceInfo.getHostName();
@@ -581,7 +581,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
     private void updateRenewalThreshold() {
         try {
             LookupService lookupService = DiscoveryManager.getInstance()
-                    .getLookupService();
+            .getLookupService();
             Applications apps = lookupService.getApplications();
             int count = 0;
             for (Application app : apps.getRegisteredApplications()) {
@@ -690,10 +690,9 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
      * traffic to this node.
      * 
      */
-    private void replicateToPeers(final Action action, final String appName,
-            final String id, final InstanceInfo info /* optional */,
-            final InstanceStatus newStatus /* optional */,
-            final boolean isReplication) {
+    private void replicateToPeers(Action action, String appName, String id,
+            InstanceInfo info /* optional */,
+            InstanceStatus newStatus /* optional */, boolean isReplication) {
         Stopwatch tracer = action.getTimer().start();
         try {
 
@@ -725,9 +724,9 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
      * replication traffic to this node.
      * 
      */
-    private void replicateInstanceActionsToPeers(final Action action,
-            final String appName, final String id, final InstanceInfo info,
-            final InstanceStatus newStatus, final PeerEurekaNode node) {
+    private void replicateInstanceActionsToPeers(Action action, String appName,
+            String id, InstanceInfo info, InstanceStatus newStatus,
+            PeerEurekaNode node) {
         try {
             InstanceInfo infoFromRegistry = null;
             CurrentRequestVersion.set(Version.V2);
@@ -737,10 +736,11 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                 break;
             case Heartbeat:
                 InstanceStatus overriddenStatus = overriddenInstanceStatusMap
-                        .get(id);
+                .get(id);
                 infoFromRegistry = getInstanceByAppAndId(appName, id);
                 node.heartbeat(appName, id, infoFromRegistry, overriddenStatus,
                         false);
+                break;
             case Register:
                 node.register(info);
                 break;
@@ -753,7 +753,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
         } catch (Throwable t) {
             logger.error(
                     "Cannot replicate information to " + node.getServiceUrl()
-                            + " for action " + action.name(), t);
+                    + " for action " + action.name(), t);
         }
     }
 
@@ -771,7 +771,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
         } catch (Throwable e) {
             logger.error(
                     "Cannot replicate ASG status information to "
-                            + node.getServiceUrl(), e);
+                    + node.getServiceUrl(), e);
         }
 
     }
