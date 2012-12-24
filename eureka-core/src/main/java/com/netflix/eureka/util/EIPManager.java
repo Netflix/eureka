@@ -57,8 +57,8 @@ import com.netflix.servo.monitor.Monitors;
  * This binding mechanism gravitates towards one eureka server per zone for
  * resilience.Atleast one elastic ip should be slotted for each eureka server in
  * a zone. If more than eureka server is launched per zone and there are not
- * enough elastic ips slotted, the ips keeps switching back and forth between
- * the eureka servers in the zone.
+ * enough elastic ips slotted, the server tries to pick a free EIP slotted for other
+ * zones and if it still cannot find a free EIP, waits and keeps trying.
  * </p>
  * 
  * @author Karthik Ranganathan, Greg Kim
@@ -93,8 +93,7 @@ public class EIPManager {
      * Binds an EIP to this instance. if an EIP is already bound to this
      * instance this method simply returns. Otherwise, this method tries to find
      * an unused EIP based on the registry information. If it cannot find any
-     * unused EIP this method simply picks an EIP of an instance with the
-     * earliest registration timestamp.
+     * unused EIP this method, it waits until a free EIP is available.
      * 
      */
     public void bindToEIP() {
@@ -159,8 +158,7 @@ public class EIPManager {
      * <p>
      * if an EIP is already bound to this instance this method simply returns.
      * Otherwise, this method tries to find an unused EIP based on the registry
-     * information. If it cannot find any unused EIP this method simply picks an
-     * EIP of an instance with the earliest registration timestamp.
+     * information. If it cannot find any unused EIP, it waits until a free EIP is available.
      * </p>
      * 
      * @param myInstanceId

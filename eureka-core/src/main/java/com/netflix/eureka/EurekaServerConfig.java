@@ -16,7 +16,6 @@
 
 package com.netflix.eureka;
 
-import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 
 /**
  * Configuration information required by the eureka server to operate.
@@ -140,27 +139,7 @@ public interface EurekaServerConfig {
      * @return the number of retries.
      */
     int getNumberOfReplicationRetries();
-
-    /**
-     * Checks whether the replication events should only be sent to peer eureka
-     * nodes if their status is {@link InstanceStatus#UP} in the instance's
-     * {@link InstanceRegistry}.
-     * 
-     * <p>
-     * This check will avoid unnecessary connection attempts to peer eureka
-     * nodes. The connection attempts for a non existent instance can build up
-     * file descriptors in an AWS environment because of the way the AWS
-     * firewall works.
-     * </p>
-     * <p>
-     * <em>The changes are effective at runtime.</em>
-     * </p>
-     * 
-     * @return true to replicate if the peer node's status is
-     *         {@link InstanceStatus#UP}, false otherwise.
-     */
-    boolean shouldReplicateOnlyIfUP();
-
+   
     /**
      * Gets the interval with which the status information about peer nodes is
      * updated.
@@ -226,22 +205,6 @@ public interface EurekaServerConfig {
      * @return idle time in seconds.
      */
     int getPeerNodeConnectionIdleTimeoutSeconds();
-
-    /**
-     * Check to see if the {@link InstanceStatus} status updates should be
-     * retried indefinitely in case of network problems.
-     * 
-     * <p>
-     * This is specially important if the status is updated by the external
-     * process.
-     * </p>
-     * <p>
-     * <em>The changes are effective at runtime.</em>
-     * </p>
-     * 
-     * @return true, to retry indefinitely, false otherwise.
-     */
-    boolean shouldRetryIndefinitelyToReplicateStatus();
 
     /**
      * Get the time for which the delta information should be cached for the
@@ -344,42 +307,7 @@ public interface EurekaServerConfig {
      *         back up.
      */
     int getMaxElementsInStatusReplicationPool();
-
-    /**
-     * Get the maximum number of replication events that can be allowed to back
-     * up in the replication pool. This replication pool is responsible for all
-     * events except status updates.
-     * <p>
-     * Depending on the memory allowed, timeout and the replication traffic,
-     * this value can vary.
-     * </p>
-     * 
-     * @return the maximum number of replication events that can be allowed to
-     *         back up.
-     */
-    int getMaxElementsInReplicationPool();
-
-    /**
-     * Get the idle time for which the replication threads can stay alive.
-     * 
-     * @return time in minutes.
-     */
-    long getMaxIdleThreadAgeInMinutesForReplication();
-
-    /**
-     * Get the minimum number of threads to be used for replication.
-     * 
-     * @return minimum number of threads to be used for replication.
-     */
-    int getMinThreadsForReplication();
-
-    /**
-     * Get the maximum number of threads to be used for replication.
-     * 
-     * @return maximum number of threads to be used for replication.
-     */
-    int getMaxThreadsForReplication();
-
+    
     /**
      * Checks whether to synchronize instances when timestamp differs.
      * <p>
@@ -397,4 +325,55 @@ public interface EurekaServerConfig {
      * @return the number of retries
      */
     int getRegistrySyncRetries();
+    
+    /**
+     * Get the maximum number of replication events that can be allowed to back
+     * up in the replication pool. This replication pool is responsible for all
+     * events except status updates.
+     * <p>
+     * Depending on the memory allowed, timeout and the replication traffic,
+     * this value can vary.
+     * </p>
+     * 
+     * @return the maximum number of replication events that can be allowed to
+     *         back up.
+     */
+    int getMaxElementsInPeerReplicationPool();
+
+    /**
+     * Get the idle time for which the replication threads can stay alive.
+     * 
+     * @return time in minutes.
+     */
+    long getMaxIdleThreadAgeInMinutesForPeerReplication();
+
+    /**
+     * Get the minimum number of threads to be used for replication.
+     * 
+     * @return minimum number of threads to be used for replication.
+     */
+    int getMinThreadsForPeerReplication();
+
+    /**
+     * Get the maximum number of threads to be used for replication.
+     * 
+     * @return maximum number of threads to be used for replication.
+     */
+    int getMaxThreadsForPeerReplication();
+    
+    /**
+     * Get the time in milliseconds to try to replicate before dropping replication events.
+     * 
+     * @return time in milliseconds
+     */
+    int getMaxTimeForReplication();
+
+    /**
+     * Checks whether the connections to replicas should be primed. In AWS, the firewall requires sometime to establish network connection
+     * for new nodes.
+     * 
+     * @return true, if connections should be primed, false otherwise.
+     */
+    boolean shouldPrimeAwsReplicaConnections();
+    
 }

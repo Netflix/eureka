@@ -81,13 +81,16 @@ public class AwsAsgUtil {
         }
     });
 
-    private static final Timer timer = new Timer("Eureka-ASGCacheRefresh", true);
+    private final Timer timer = new Timer("Eureka-ASGCacheRefresh", true);
+    private final com.netflix.servo.monitor.Timer loadASGInfoTimer = Monitors
+    .newTimer("Eureka-loadASGInfo");
 
     private static final AwsAsgUtil awsAsgUtil = new AwsAsgUtil();
 
     private AwsAsgUtil() {
-        String region = DiscoveryManager.getInstance().getEurekaClientConfig().getRegion();
-        client.setEndpoint("autoscaling."+ region + ".amazonaws.com");
+        String region = DiscoveryManager.getInstance().getEurekaClientConfig()
+        .getRegion();
+        client.setEndpoint("autoscaling." + region + ".amazonaws.com");
         timer.schedule(getASGUpdateTask(),
                 eurekaConfig.getASGUpdateIntervalMs(),
                 eurekaConfig.getASGUpdateIntervalMs());
@@ -203,7 +206,7 @@ public class AwsAsgUtil {
     private Boolean isASGEnabledinAWS(Object key) {
         String myKey = (String) key;
         try {
-            Stopwatch t = Monitors.newTimer("Eureka-loadASGInfo").start();
+            Stopwatch t = this.loadASGInfoTimer.start();
             boolean returnValue = !isAddToLoadBalancerSuspended(myKey);
             t.stop();
             return returnValue;
@@ -305,5 +308,5 @@ public class AwsAsgUtil {
         }
         return asgNames;
     }
-    
+
 }
