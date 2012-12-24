@@ -75,7 +75,7 @@ jar {
 	compile 'com.sun.jersey:jersey-bundle:1.9.1'
 	compile 'com.sun.jersey.contribs:jersey-apache-client4:1.8'
 	compile 'org.apache.httpcomponents:httpclient:4.1.2'
-        compile 'com.netflix.blitz4j:blitz4j:1.1.11'
+        compile 'com.netflix.blitz4j:blitz4j:1.11'
 	
     }
 }
