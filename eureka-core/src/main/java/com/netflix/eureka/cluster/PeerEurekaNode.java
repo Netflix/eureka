@@ -43,6 +43,7 @@ import com.netflix.eureka.resources.ASGResource.ASGStatus;
 import com.netflix.logging.messaging.BatcherFactory;
 import com.netflix.logging.messaging.MessageBatcher;
 import com.netflix.logging.messaging.MessageProcessor;
+import com.netflix.servo.monitor.DynamicCounter;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
@@ -118,7 +119,7 @@ public class PeerEurekaNode {
      */
     public void register(final InstanceInfo info) throws Exception {
         boolean success = registerBatcher.process(new ReplicationTask(info
-                .getAppName(), info.getId(), Action.Heartbeat) {
+                .getAppName(), info.getId(), Action.Register) {
             public void execute() {
                 CurrentRequestVersion.set(Version.V2);
                 String urlPath = "apps/" + info.getAppName();
@@ -597,7 +598,11 @@ public class PeerEurekaNode {
 
                             }
                             if ((isNetworkConnectException(e))) {
+                                DynamicCounter.increment(task.getAction().name() + "_retries", null);
                                 done = false;
+                            }
+                            else {
+                                logger.info( "Not re-trying this exception because it does not seem to be a network exception", e);
                             }
                         }
                     } while (!done);
