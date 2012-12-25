@@ -120,9 +120,9 @@ public class PeerEurekaNode {
         boolean success = registerBatcher.process(new ReplicationTask(info
                 .getAppName(), info.getId(), Action.Heartbeat) {
             public void execute() {
+                CurrentRequestVersion.set(Version.V2);
                 String urlPath = "apps/" + info.getAppName();
                 ClientResponse response = null;
-
                 try {
                     response = jerseyApacheClient.resource(serviceUrl)
                     .path(urlPath).header(HEADER_REPLICATION, "true")
@@ -292,9 +292,7 @@ public class PeerEurekaNode {
 
             @Override
             public void execute() {
-
                 CurrentRequestVersion.set(Version.V2);
-
                 ClientResponse response = null;
                 try {
                     String urlPath = "apps/" + appName + "/" + id + "/status";
