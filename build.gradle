@@ -19,7 +19,7 @@ subprojects {
     group = "com.netflix.${githubProjectName}"
     jar {
         manifest {
-            attributes("Implementation-Title": "eureka-client", "Implementation-Version": version,'Build-Time-ISO-8601': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"))
+            attributes("Implementation-Title": name, "Implementation-Version": version,'Build-Time-ISO-8601': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"))
         }
     }
 }
