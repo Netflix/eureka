@@ -12,22 +12,60 @@ subprojects { project ->
     status = rootProject.status
 
     task sourcesJar(type: Jar, dependsOn:classes) {
-        classifier = 'sources'
         from sourceSets.main.allSource
+        classifier 'sources'
+        extension 'jar'
     }
 
     task javadocJar(type: Jar, dependsOn:javadoc) {
-        classifier = 'javadoc'
         from javadoc.destinationDir
+        classifier 'javadoc'
+        extension 'jar'
+    }
+
+    configurations.add('sources')
+    configurations.add('javadoc')
+    configurations.archives {
+        extendsFrom configurations.sources
+        extendsFrom configurations.javadoc
+    }
+
+    // When outputing to an Ivy repo, we want to use the proper type field
+    gradle.taskGraph.whenReady {
+        def isNotMaven = !it.hasTask(project.uploadMavenCentral)
+        if (isNotMaven) {
+            def artifacts = project.configurations.sources.artifacts
+            def sourceArtifact = artifacts.iterator().next()
+            sourceArtifact.type = 'sources'
+        }
+    }
+
+    artifacts {
+        sources(sourcesJar) {
+            // Weird Gradle quirk where type will be used for the extension, but only for sources
+            type 'jar'
+        }
+        javadoc(javadocJar) {
+            type 'javadoc'
+        }
     }
 
     // Ensure output is on a new line
     javadoc.doFirst { println "" }
 
+    configurations {
+        provided {
+            description = 'much like compile, but indicates you expect the JDK or a container to provide it. It is only available on the compilation classpath, and is not transitive.'
+            transitive = false
+            visible = false
+        }
+    }
 
-    artifacts {
-        archives sourcesJar
-        archives javadocJar
+    project.sourceSets {
+        main.compileClasspath += project.configurations.provided
+        main.runtimeClasspath -= project.configurations.provided
+        test.compileClasspath += project.configurations.provided
+        test.runtimeClasspath += project.configurations.provided
     }
 }
 
