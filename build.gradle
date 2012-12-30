@@ -1,5 +1,4 @@
 ext.githubProjectName = 'eureka'
-group = 'com.netflix.eureka'
 
 buildscript {
     repositories { mavenCentral() }
@@ -17,124 +16,78 @@ apply from: file('gradle/license.gradle')
 apply from: file('gradle/release.gradle')
 
 subprojects {
-    // Closure to configure all the POM with extra info, common to all projects
-    pom {
-      project {
-        url "https://github.com/Netflix/${githubProjectName}"
-        scm {
-            connection "scm:git:git@github.com:Netflix/${githubProjectName}.git"
-            url "scm:git:git@github.com:Netflix/${githubProjectName}.git"
-            developerConnection "scm:git:git@github.com:Netflix/${githubProjectName}.git"
+    group = "com.netflix.${githubProjectName}"
+    jar {
+        manifest {
+            attributes("Implementation-Title": name, "Implementation-Version": version,'Build-Time-ISO-8601': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"))
         }
-        issueManagement {
-            system 'github'
-            url "https://github.com/Netflix/${githubProjectName}/issues"
-        }
-      }
-   }
-    group = "com.netflix.${githubProjectName}" // TEMPLATE: Set to organization of project
+    }
 }
 
 
 project(':eureka-client') {
-jar {
- manifest {
-        attributes("Implementation-Title": "eureka-client", "Implementation-Version": version,'Build-Time-ISO-8601': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"))
-    }
-}
-
-
     dependencies {
         compile 'com.thoughtworks.xstream:xstream:1.4.2'
         compile 'com.netflix.archaius:archaius-core:0.3.3'
-	compile 'javax.ws.rs:jsr311-api:1.1.1'
-	compile 'com.netflix.servo:servo-core:0.4.15'
-	compile 'com.sun.jersey:jersey-bundle:1.9.1'
-	compile 'com.sun.jersey.contribs:jersey-apache-client4:1.8'
-	compile 'org.apache.httpcomponents:httpclient:4.1.2'
+        compile 'javax.ws.rs:jsr311-api:1.1.1'
+        compile 'com.netflix.servo:servo-core:0.4.15'
+        compile 'com.sun.jersey:jersey-bundle:1.9.1'
+        compile 'com.sun.jersey.contribs:jersey-apache-client4:1.8'
+        compile 'org.apache.httpcomponents:httpclient:4.1.2'
     }
 }
 
 project(':eureka-core') {
-
-jar {
- manifest {
-        attributes("Implementation-Title": "eureka-core", "Implementation-Version": version,'Build-Time-ISO-8601': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"))
-    }
- }
-
-
     dependencies {
-	compile project(':eureka-client')
-	compile 'com.amazonaws:aws-java-sdk:1.3.11'
-	compile 'javax.servlet:servlet-api:2.4'
+        compile project(':eureka-client')
+        compile 'com.amazonaws:aws-java-sdk:1.3.11'
+        compile 'javax.servlet:servlet-api:2.4'
         compile 'com.thoughtworks.xstream:xstream:1.4.2'
         compile 'com.netflix.archaius:archaius-core:0.3.3'
-	compile 'javax.ws.rs:jsr311-api:1.1.1'
-	compile 'com.netflix.servo:servo-core:0.4.13'
-	compile 'com.sun.jersey:jersey-bundle:1.9.1'
-	compile 'com.sun.jersey.contribs:jersey-apache-client4:1.8'
-	compile 'org.apache.httpcomponents:httpclient:4.1.2'
-	
+        compile 'javax.ws.rs:jsr311-api:1.1.1'
+        compile 'com.netflix.servo:servo-core:0.4.13'
+        compile 'com.sun.jersey:jersey-bundle:1.9.1'
+        compile 'com.sun.jersey.contribs:jersey-apache-client4:1.8'
+        compile 'org.apache.httpcomponents:httpclient:4.1.2'
+        compile 'com.netflix.blitz4j:blitz4j:1.16'
     }
 }
 
 project(':eureka-resources') {
-
-
-jar {
- manifest {
-        attributes("Implementation-Title": "eureka-resources", "Implementation-Version": version,'Build-Time-ISO-8601': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"))
-    }
- }
 }
 
 
 project(':eureka-server') {
-   apply plugin: 'war'
+    apply plugin: 'war'
 
-sourceSets {
-    main {
-        java {
-            srcDir 'test/java'
-        }
- }
-}
-
+    sourceSets.main.java.srcDir 'test/java'
   
-war {
-    
-	from('conf')  {
-		include 'eureka-server*'
-		include 'eureka-client*'
-		include 'log4j.properties'
-                into 'WEB-INF/classes/'
+    war {
+        from('conf')  {
+            include 'eureka-server*'
+            include 'eureka-client*'
+            include 'log4j.properties'
+            into 'WEB-INF/classes/'
         }
-	from (project(':eureka-resources').file('build/resources/main'))
-         webXml = file('WEB-INF/web.xml') // copies a file to WEB-INF/web.xml
-  
+        from (project(':eureka-resources').file('build/resources/main'))
+        webXml = file('WEB-INF/web.xml') // copies a file to WEB-INF/web.xml
     }
 	
- 
-  dependencies {
-	compile project(':eureka-client')
-	compile project(':eureka-core')
+    dependencies {
+        compile project(':eureka-client')
+        compile project(':eureka-core')
         runtime 'xerces:xercesImpl:2.4.0'
-     	runtime 'asm:asm:3.1' 
-	compile 'org.slf4j:slf4j-log4j12:1.6.1'
+        runtime 'asm:asm:3.1' 
+        compile 'org.slf4j:slf4j-log4j12:1.6.1'
         runtime 'org.codehaus.jettison:jettison:1.2' 
-	providedCompile 'javax.servlet:servlet-api:2.4'
-		
+        providedCompile 'javax.servlet:servlet-api:2.4'
     }
 
-delete 'testlibs'
-copy { 
-    from zipTree('build/libs/'+ war.archiveName)
-    into 'testlibs' 
-    include 'WEB-INF/lib/'
+    delete 'testlibs'
+    copy { 
+        from zipTree('build/libs/'+ war.archiveName)
+        into 'testlibs' 
+        include 'WEB-INF/lib/'
+    }
 }
-}
-
-
-
 

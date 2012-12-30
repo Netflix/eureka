@@ -16,10 +16,11 @@
 
 package com.netflix.eureka.cluster;
 
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Date;
+import java.util.List;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
@@ -27,21 +28,23 @@ import javax.ws.rs.core.Response.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
+import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.shared.EurekaJerseyClient;
 import com.netflix.discovery.shared.EurekaJerseyClient.JerseyClient;
 import com.netflix.eureka.CurrentRequestVersion;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfigurationManager;
 import com.netflix.eureka.PeerAwareInstanceRegistry;
+import com.netflix.eureka.PeerAwareInstanceRegistry.Action;
 import com.netflix.eureka.Version;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;
-import com.netflix.servo.annotations.DataSourceType;
+import com.netflix.logging.messaging.BatcherFactory;
+import com.netflix.logging.messaging.MessageBatcher;
+import com.netflix.logging.messaging.MessageProcessor;
+import com.netflix.servo.monitor.DynamicCounter;
 import com.netflix.servo.monitor.Monitors;
-import com.netflix.servo.monitor.Stopwatch;
-import com.netflix.servo.monitor.Timer;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
@@ -62,44 +65,30 @@ import com.sun.jersey.client.apache4.ApacheHttpClient4;
 public class PeerEurekaNode {
 
     private static final Logger logger = LoggerFactory
-    .getLogger(PeerEurekaNode.class);
+            .getLogger(PeerEurekaNode.class);
 
     private static final int RETRY_SLEEP_TIME_MS = 100;
 
     public static final String HEADER_REPLICATION = "x-netflix-discovery-replication";
     private static final EurekaServerConfig config = EurekaServerConfigurationManager
-    .getInstance().getConfiguration();
-    private final Timer registerTimer = Monitors.newTimer("Register");
-    private final Timer cancelTimer = Monitors.newTimer("Cancel");
-    private final Timer renewTimer = Monitors.newTimer("Renew");
-    private final Timer asgStatusUpdateTimer = Monitors
-    .newTimer("ASGStatusUpdate");
-    private final Timer instanceStatusUpdateTimer = Monitors
-    .newTimer("InstanceStatusUpdate");
+            .getInstance().getConfiguration();
+
     private final String serviceUrl;
     private final String name;
     private volatile JerseyClient jerseyClient;
     private volatile ApacheHttpClient4 jerseyApacheClient;
-    private volatile ThreadPoolExecutor statusReplicationPool;
-    private volatile boolean statusReplication = true;
+    private MessageBatcher<ReplicationTask> heartBeatBatcher;
+    private MessageBatcher<ReplicationTask> statusBatcher;
+    private MessageBatcher<ReplicationTask> registerBatcher;
+    private MessageBatcher<ReplicationTask> cancelBatcher;
 
     public PeerEurekaNode(String serviceUrl) {
         this.serviceUrl = serviceUrl.intern();
         this.name = getClass().getSimpleName() + ": " + serviceUrl + "apps/: ";
-
-        ThreadFactory threadFactory = new ThreadFactoryBuilder()
-        .setDaemon(false)
-        .setNameFormat("Eureka-ReplicaNode-Thread-" + serviceUrl)
-        .build();
-
-        statusReplicationPool = new ThreadPoolExecutor(
-                config.getMinThreadsForStatusReplication(),
-                config.getMaxThreadsForStatusReplication(),
-                config.getMaxIdleThreadInMinutesAgeForStatusReplication(),
-                TimeUnit.MINUTES, new ArrayBlockingQueue<Runnable>(
-                        config.getMaxElementsInStatusReplicationPool()),
-                        threadFactory) {
-        };
+        this.heartBeatBatcher = getBatcher(serviceUrl, Action.Heartbeat);
+        this.statusBatcher = getBatcher(serviceUrl, Action.StatusUpdate);
+        this.registerBatcher = getBatcher(serviceUrl, Action.Register);
+        this.cancelBatcher = getBatcher(serviceUrl, Action.Cancel);
 
         synchronized (this.serviceUrl) {
 
@@ -119,15 +108,12 @@ public class PeerEurekaNode {
             }
         }
         try {
-
-            Monitors.registerObject(serviceUrl, this);
-
+            String serviceUrlHost = new URL(serviceUrl).getHost();
+            Monitors.registerObject(serviceUrlHost, this);
         } catch (Throwable e) {
-            logger.warn(
-                    "Cannot register the JMX monitor for the InstanceRegistry :",
-                    e);
+            logger.error("Cannot register monitors for Peer eureka node :"
+                    + serviceUrl, e);
         }
-
     }
 
     /**
@@ -139,25 +125,32 @@ public class PeerEurekaNode {
      *            that is send to this instance.
      * @throws Exception
      */
-    public void register(InstanceInfo info) throws Exception {
-        Stopwatch tracer = registerTimer.start();
-        String urlPath = "apps/" + info.getAppName();
-        ClientResponse response = null;
+    public void register(final InstanceInfo info) throws Exception {
+        boolean success = registerBatcher.process(new ReplicationTask(info
+                .getAppName(), info.getId(), Action.Register) {
+            public void execute() {
+                CurrentRequestVersion.set(Version.V2);
+                String urlPath = "apps/" + info.getAppName();
+                ClientResponse response = null;
+                try {
+                    response = jerseyApacheClient.resource(serviceUrl)
+                            .path(urlPath).header(HEADER_REPLICATION, "true")
+                            .type(MediaType.APPLICATION_JSON_TYPE)
+                            .post(ClientResponse.class, info);
 
-        try {
-            response = jerseyApacheClient.resource(serviceUrl).path(urlPath)
-            .header(HEADER_REPLICATION, "true")
-            .type(MediaType.APPLICATION_JSON_TYPE)
-            .post(ClientResponse.class, info);
-
-        } finally {
-            if (response != null) {
-                response.close();
+                } finally {
+                    if (response != null) {
+                        response.close();
+                    }
+                }
             }
-            if (tracer != null) {
-                tracer.stop();
-            }
+        });
+        if (!success) {
+            logger.error("Cannot find space in the replication pool for "
+                    + this.serviceUrl
+                    + ". Check the network connectivity or the traffic");
         }
+
     }
 
     /**
@@ -170,28 +163,35 @@ public class PeerEurekaNode {
      *            the unique identifier of the instance.
      * @throws Exception
      */
-    public void cancel(String appName, String id) throws Exception {
-        ClientResponse response = null;
-        Stopwatch tracer = cancelTimer.start();
+    public void cancel(final String appName, final String id) throws Exception {
+        boolean success = cancelBatcher.process(new ReplicationTask(appName,
+                id, Action.Cancel) {
+            @Override
+            public void execute() {
+                ClientResponse response = null;
+                try {
+                    String urlPath = "apps/" + appName + "/" + id;
+                    response = jerseyApacheClient.resource(serviceUrl)
+                            .path(urlPath).header(HEADER_REPLICATION, "true")
+                            .delete(ClientResponse.class);
+                    if (response.getStatus() == 404) {
+                        logger.warn(name + appName + "/" + id
+                                + " : delete: missing entry.");
+                    }
 
-        try {
-            String urlPath = "apps/" + appName + "/" + id;
-            response = jerseyApacheClient.resource(serviceUrl).path(urlPath)
-            .header(HEADER_REPLICATION, "true")
-            .delete(ClientResponse.class);
-            if (response.getStatus() == 404) {
-                logger.warn(name + appName + "/" + id
-                        + " : delete: missing entry.");
+                } finally {
+                    if (response != null) {
+                        response.close();
+                    }
+                }
             }
-
-        } finally {
-            if (response != null) {
-                response.close();
-            }
-            if (tracer != null) {
-                tracer.stop();
-            }
+        });
+        if (!success) {
+            logger.error("Cannot find space in the replication pool for "
+                    + this.serviceUrl
+                    + ". Check the network connectivity or the traffic");
         }
+
     }
 
     /**
@@ -208,20 +208,225 @@ public class PeerEurekaNode {
      * @param overriddenStatus
      *            the overridden status information if any of the instance.
      * @return true, if the instance exists in the peer node, false otherwise.
-     * @throws Exception
+     * @throws Throwable
      */
-    public boolean heartbeat(String appName, String id, InstanceInfo info,
-            InstanceStatus overriddenStatus) throws Exception {
+    public void heartbeat(final String appName, final String id,
+            final InstanceInfo info, final InstanceStatus overriddenStatus,
+            boolean primeConnection) throws Throwable {
+        if (primeConnection) {
+            sendHeartBeat(appName, id, info, overriddenStatus);
+            return;
+        }
+        boolean success = heartBeatBatcher.process(new ReplicationTask(appName,
+                id, Action.Heartbeat) {
+            @Override
+            public void execute() throws Throwable {
+                sendHeartBeat(appName, id, info, overriddenStatus);
+            }
+
+        });
+        if (!success) {
+            logger.error("Cannot find space in the replication pool for "
+                    + this.serviceUrl
+                    + ". Check the network connectivity or the traffic");
+        }
+
+    }
+
+    /**
+     * Send the status information of of the ASG represented by the instance.
+     * 
+     * <p>
+     * ASG (Autoscaling group) names are available for instances in AWS and the
+     * ASG information is used for determining if the instance should be
+     * registered as {@link InstanceStatus#DOWN} or {@link InstanceStatus#UP}.
+     * 
+     * @param asgName
+     *            the asg name if any of this instance.
+     * @param newStatus
+     *            the new status of the ASG.
+     */
+    public void statusUpdate(final String asgName, final ASGStatus newStatus) {
+        boolean success = statusBatcher.process(new ReplicationTask(asgName,
+                asgName, Action.StatusUpdate) {
+            public void execute() {
+                ClientResponse response = null;
+                try {
+                    String urlPath = "asg/" + asgName + "/status";
+                    response = jerseyApacheClient.resource(serviceUrl)
+                            .path(urlPath)
+                            .queryParam("value", newStatus.name())
+                            .header(HEADER_REPLICATION, "true")
+                            .put(ClientResponse.class);
+
+                    if (response.getStatus() != 200) {
+                        logger.error(name + asgName
+                                + " : statusUpdate:  failed!");
+                    }
+                } finally {
+                    if (response != null) {
+                        response.close();
+                    }
+                }
+
+            }
+        });
+        if (!success) {
+            logger.error("Cannot find space in the replication pool for "
+                    + this.serviceUrl
+                    + ". Check the network connectivity or the traffic");
+        }
+    }
+
+    /**
+     * 
+     * Send the status update of the instance.
+     * 
+     * @param appName
+     *            the application name of the instance.
+     * @param id
+     *            the unique identifier of the instance.
+     * @param newStatus
+     *            the new status of the instance.
+     * @param info
+     *            the instance information of the instance.
+     * @return true if the update succeeded, false otherwise.
+     */
+    public void statusUpdate(final String appName, final String id,
+            final InstanceStatus newStatus, final InstanceInfo info) {
+        boolean success = statusBatcher.process(new ReplicationTask(appName,
+                id, Action.StatusUpdate) {
+
+            @Override
+            public void execute() {
+                CurrentRequestVersion.set(Version.V2);
+                ClientResponse response = null;
+                try {
+                    String urlPath = "apps/" + appName + "/" + id + "/status";
+                    response = jerseyApacheClient
+                            .resource(serviceUrl)
+                            .path(urlPath)
+                            .queryParam("value", newStatus.name())
+                            .queryParam("lastDirtyTimestamp",
+                                    info.getLastDirtyTimestamp().toString())
+                            .header(HEADER_REPLICATION, "true")
+                            .put(ClientResponse.class);
+                    if (response.getStatus() != 200) {
+                        logger.error(name + appName + "/" + id
+                                + " : statusUpdate:  failed!");
+                    }
+                } finally {
+                    if (response != null) {
+                        response.close();
+                    }
+                }
+
+            }
+
+        });
+        if (!success) {
+            logger.error("Cannot find space in the replication pool for "
+                    + this.serviceUrl
+                    + ". Check the network connectivity or the traffic");
+        }
+    }
+
+    /**
+     * Get the service Url of the peer eureka node.
+     * 
+     * @return the service Url of the peer eureka node.
+     */
+    public String getServiceUrl() {
+        return serviceUrl;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result
+                + ((serviceUrl == null) ? 0 : serviceUrl.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        PeerEurekaNode other = (PeerEurekaNode) obj;
+        if (serviceUrl == null) {
+            if (other.serviceUrl != null)
+                return false;
+        } else if (!serviceUrl.equals(other.serviceUrl))
+            return false;
+        return true;
+    }
+
+    /**
+     * Destroy the resources created for communication with the Peer Eureka
+     * Server.
+     */
+    public void destroyResources() {
+        if (jerseyClient != null) {
+            try {
+                jerseyClient.destroyResources();
+            } catch (Throwable ignore) {
+
+            }
+        }
+
+    }
+
+    /**
+     * Shuts down all resources used for peer replication.
+     */
+    public void shutDown() {
+        if (this.heartBeatBatcher != null) {
+            this.heartBeatBatcher.stop();
+        }
+
+        if (this.registerBatcher != null) {
+            this.registerBatcher.stop();
+        }
+        if (this.cancelBatcher != null) {
+            this.cancelBatcher.stop();
+        }
+        if (this.statusBatcher != null) {
+            this.statusBatcher.stop();
+        }
+    }
+
+    /**
+     * Sends heartbeats to peer eureka nodes.
+     * 
+     * @param appName
+     *            - the application name for which the hearbeat needs to be
+     *            sent.
+     * @param id
+     *            - the unique identifier of the heartbeat.
+     * @param info
+     *            - the {@link InstanceInfo} of the instance for which the
+     *            heartbeat need to be sent.
+     * @param overriddenStatus
+     *            the overridden status of the instance.
+     * @throws Throwable
+     */
+    private void sendHeartBeat(final String appName, final String id,
+            final InstanceInfo info, final InstanceStatus overriddenStatus)
+            throws Throwable {
         ClientResponse response = null;
-        Stopwatch tracer = renewTimer.start();
         try {
             String urlPath = "apps/" + appName + "/" + id;
             WebResource r = jerseyApacheClient
-            .resource(serviceUrl)
-            .path(urlPath)
-            .queryParam("status", info.getStatus().toString())
-            .queryParam("lastDirtyTimestamp",
-                    info.getLastDirtyTimestamp().toString());
+                    .resource(serviceUrl)
+                    .path(urlPath)
+                    .queryParam("status", info.getStatus().toString())
+                    .queryParam("lastDirtyTimestamp",
+                            info.getLastDirtyTimestamp().toString());
             if (overriddenStatus != null) {
                 r = r.queryParam("overriddenstatus", overriddenStatus.name());
             }
@@ -231,7 +436,12 @@ public class PeerEurekaNode {
             if (response.getStatus() == 404) {
                 logger.warn(name + appName + "/" + id
                         + " : heartbeat: missing entry.");
-                return false;
+                if (info != null) {
+                    logger.warn(
+                            "Cannot find instance id {} and hence replicating the instance with status {}",
+                            info.getId(), info.getStatus().toString());
+                    register(info);
+                }
             } else if (response.getStatus() == Status.OK.getStatusCode()) {
                 syncInstancesIfTimestampDiffers(id, info, response);
             }
@@ -239,11 +449,59 @@ public class PeerEurekaNode {
             if (response != null) {
                 response.close();
             }
-            if (tracer != null) {
-                tracer.stop();
-            }
         }
-        return true;
+    }
+
+    /**
+     * Check if the exception is some sort of network timeout exception (ie)
+     * read,connect.
+     * 
+     * @param e
+     *            The exception for which the information needs to be found.
+     * @return true, if it is a network timeout, false otherwise.
+     */
+    private boolean isNetworkConnectException(Throwable e) {
+        while (e.getCause() != null) {
+            if (IOException.class.isInstance(e.getCause())) {
+                return true;
+            }
+            e = e.getCause();
+        }
+        return false;
+    }
+
+    /**
+     * Class that simply tracks the time the task was created.
+     */
+    private abstract class ReplicationTask {
+        private long submitTime = System.currentTimeMillis();
+        private String appName;
+        private String id;
+        private Action action;
+
+        public String getAppName() {
+            return appName;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public Action getAction() {
+            return action;
+        }
+
+        public long getSubmitTime() {
+            return this.submitTime;
+        }
+
+        public ReplicationTask(String appName, String id, Action action) {
+            this.appName = appName;
+            this.id = id;
+            this.action = action;
+        }
+
+        public abstract void execute() throws Throwable;
     }
 
     /**
@@ -289,192 +547,84 @@ public class PeerEurekaNode {
     }
 
     /**
-     * Send the status information of of the ASG represented by the instance.
+     * Get the batcher to process the replication events asynchronously.
      * 
-     * <p>
-     * ASG (Autoscaling group) names are available for instances in AWS and the
-     * ASG information is used for determining if the instance should be
-     * registered as {@link InstanceStatus#DOWN} or {@link InstanceStatus#UP}.
-     * 
-     * @param asgName
-     *            the asg name if any of this instance.
-     * @param newStatus
-     *            the new status of the ASG.
-     * @return true if the status update succeeds, false otherwise.
-     * @throws Exception
+     * @param serviceUrl
+     *            the serviceUrl for which the events needs to be replicated
+     * @param action
+     *            the action that indicates the type of replication event -
+     *            registrations, heartbeat etc
+     * @return The batcher instance
      */
-    public boolean statusUpdate(String asgName, ASGStatus newStatus)
-    throws Exception {
-        ClientResponse response = null;
-        Stopwatch tracer = asgStatusUpdateTimer.start();
+    private MessageBatcher getBatcher(String serviceUrl, Action action) {
+        String batcherName = null;
         try {
-            String urlPath = "asg/" + asgName + "/status";
-            response = jerseyApacheClient.resource(serviceUrl).path(urlPath)
-            .queryParam("value", newStatus.name())
-            .header(HEADER_REPLICATION, "true")
-            .put(ClientResponse.class);
-
-            if (response.getStatus() != 200) {
-                logger.error(name + asgName + " : statusUpdate:  failed!");
-            } else {
-                return true;
-            }
-            tracer.stop();
-            return false;
-        } finally {
-            if (response != null) {
-                response.close();
-            }
-            if (tracer != null) {
-                tracer.stop();
-            }
+            batcherName = new URL(serviceUrl).getHost();
+        } catch (MalformedURLException e1) {
+            batcherName = serviceUrl;
         }
-    }
+        String absoluteBatcherName = batcherName + "-" + action.name();
+        ConfigurationManager.getConfigInstance().setProperty(
+                "batcher." + absoluteBatcherName + ".queue.maxMessages",
+                config.getMaxElementsInPeerReplicationPool());
+        ConfigurationManager.getConfigInstance().setProperty(
+                "batcher." + absoluteBatcherName + ".keepAliveTime",
+                config.getMaxIdleThreadAgeInMinutesForPeerReplication() * 60);
+        ConfigurationManager.getConfigInstance().setProperty(
+                "batcher." + absoluteBatcherName + ".maxThreads",
+                config.getMaxThreadsForPeerReplication());
 
-    /**
-     * 
-     * Send the status update of the instance.
-     * 
-     * @param appName
-     *            the application name of the instance.
-     * @param id
-     *            the unique identifier of the instance.
-     * @param newStatus
-     *            the new status of the instance.
-     * @param info
-     *            the instance information of the instance.
-     * @return true if the udpate succeeded, false otherwise.
-     * @throws Throwable
-     */
-    public boolean statusUpdate(final String appName, final String id,
-            final InstanceStatus newStatus, final InstanceInfo info)
-    throws Throwable {
-        statusReplicationPool.execute(new Runnable() {
+        return BatcherFactory.createBatcher(absoluteBatcherName,
+                new MessageProcessor<ReplicationTask>() {
 
-            @Override
-            public void run() {
-                CurrentRequestVersion.set(Version.V2);
-                boolean success = false;
-                while (!success) {
-                    ClientResponse response = null;
-                    Stopwatch tracer = instanceStatusUpdateTimer.start();
-                    try {
-                        String urlPath = "apps/" + appName + "/" + id
-                        + "/status";
-                        response = jerseyApacheClient
-                        .resource(serviceUrl)
-                        .path(urlPath)
-                        .queryParam("value", newStatus.name())
-                        .queryParam("lastDirtyTimestamp",
-                                info.getLastDirtyTimestamp().toString())
-                                .header(HEADER_REPLICATION, "true")
-                                .put(ClientResponse.class);
-                        if (response.getStatus() != 200) {
-                            logger.error(name + appName + "/" + id
-                                    + " : statusUpdate:  failed!");
-                        }
-                        success = true;
-                    } catch (Throwable e) {
-                        logger.error(name + appName + "/" + id
-                                + " : statusUpdate:  failed!", e);
-                        try {
-                            Thread.sleep(RETRY_SLEEP_TIME_MS);
-                        } catch (InterruptedException e1) {
+                    @Override
+                    public void process(List<ReplicationTask> tasks) {
+                        for (ReplicationTask task : tasks) {
+                            boolean done = true;
+                            do {
+                                done = true;
+                                try {
+                                    Object[] args = {
+                                            task.getAppName(),
+                                            task.getId(),
+                                            task.getAction(),
+                                            new Date(System.currentTimeMillis()),
+                                            new Date(task.getSubmitTime()) };
+                                    if (System.currentTimeMillis()
+                                            - config.getMaxTimeForReplication() > task
+                                            .getSubmitTime()) {
+                                        logger.warn(
+                                                "Replication events older than the threshold. AppName : {}, Id: {}, Action : {}, Current Time : {}, Submit Time :{}",
+                                                args);
 
-                        }
-                        if ((!config.shouldRetryIndefinitelyToReplicateStatus())
-                                || (!statusReplication)) {
-                            success = true;
-                        }
+                                        continue;
+                                    }
+                                    task.execute();
+                                } catch (Throwable e) {
+                                    logger.error(
+                                            name + task.getAppName() + "/"
+                                                    + task.getId() + ":"
+                                                    + task.getAction(), e);
+                                    try {
+                                        Thread.sleep(RETRY_SLEEP_TIME_MS);
+                                    } catch (InterruptedException e1) {
 
-                    } finally {
-                        if (response != null) {
-                            response.close();
-                        }
-                        if (tracer != null) {
-                            tracer.stop();
+                                    }
+                                    if ((isNetworkConnectException(e))) {
+                                        DynamicCounter.increment(task
+                                                .getAction().name()
+                                                + "_retries", null);
+                                        done = false;
+                                    } else {
+                                        logger.info(
+                                                "Not re-trying this exception because it does not seem to be a network exception",
+                                                e);
+                                    }
+                                }
+                            } while (!done);
                         }
                     }
-
-                }
-
-            }
-
-        });
-        return true;
-    }
-
-    /**
-     * Get the service Url of the peer eureka node.
-     * 
-     * @return the service Url of the peer eureka node.
-     */
-    public String getServiceUrl() {
-        return serviceUrl;
-    }
-
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result
-        + ((serviceUrl == null) ? 0 : serviceUrl.hashCode());
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        PeerEurekaNode other = (PeerEurekaNode) obj;
-        if (serviceUrl == null) {
-            if (other.serviceUrl != null)
-                return false;
-        } else if (!serviceUrl.equals(other.serviceUrl))
-            return false;
-        return true;
-    }
-
-    /**
-     * Get the number of items in the replication pipeline yet to be replicated.
-     * 
-     * @return the long value representing the number of items in the
-     *         replication pipeline yet to be replicated..
-     */
-    @com.netflix.servo.annotations.Monitor(name = "itemsInReplicationPipeline", type = DataSourceType.GAUGE)
-    public long getNumOfItemsInReplicationPipeline() {
-        return statusReplicationPool.getQueue().size();
-    }
-
-    /**
-     * Disables the status replication and clears the internal queue.
-     */
-    public void disableStatusReplication() {
-        if (statusReplicationPool.getQueue().size() > 0) {
-            logger.info("Clearing the internal status queue for {}", serviceUrl);
-            statusReplicationPool.getQueue().clear();
-        }
-        this.statusReplication = false;
-    }
-
-    /**
-     * Enable the status replication.
-     */
-    public void enableStatusReplication() {
-        this.statusReplication = true;
-    }
-    
-    /**
-     * Destroy the resources created for communication with the Peer Eureka Server.
-     */
-    public void destroyResources () {
-        if (jerseyClient != null) {
-            jerseyClient.destroyResources();
-        }
+                });
     }
 
 }
