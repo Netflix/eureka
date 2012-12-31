@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
+import org.apache.log4j.helpers.Loader;
 import org.apache.log4j.spi.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -66,6 +67,7 @@ import com.netflix.logging.messaging.MessageBatcher;
  */
 public class LoggingConfiguration implements PropertyListener {
 
+    private static final String LOG4J_PROPERTIES = "log4j.properties";
     private static final String BLITZ_LOGGER_FACTORY = "com.netflix.blitz4j.NFCategoryFactory";
     private static final String PROP_LOG4J_CONFIGURATION = "log4j.configuration";
     private static final Object guard = new Object();
@@ -120,9 +122,13 @@ public class LoggingConfiguration implements PropertyListener {
         .getProperty(PROP_LOG4J_CONFIGURATION);
 
         if (log4jConfigurationFile != null) {
-            InputStream in = null;
+            loadLog4jConfigurationFile(log4jConfigurationFile);
+
+        }
+        else {
+           InputStream in = null;
             try {
-                URL url = new URL(log4jConfigurationFile);
+                URL url = Loader.getResource(LOG4J_PROPERTIES);
                 in = url.openStream();
                 this.props.load(in);
             } catch (Throwable t) {
@@ -139,7 +145,7 @@ public class LoggingConfiguration implements PropertyListener {
                     }
                 }
             }
-
+            
         }
         if (props != null) {
             Enumeration enumeration = props.propertyNames();
@@ -213,6 +219,28 @@ public class LoggingConfiguration implements PropertyListener {
         .getLogger(LoggingConfiguration.class);
         ConfigurationManager.getConfigInstance().addConfigurationListener(
                 new ExpandedConfigurationListenerAdapter(this));
+    }
+
+    private void loadLog4jConfigurationFile(String log4jConfigurationFile) {
+        InputStream in = null;
+        try {
+            URL url = new URL(log4jConfigurationFile);
+            in = url.openStream();
+            this.props.load(in);
+        } catch (Throwable t) {
+            throw new RuntimeException(
+                    "Cannot load log4 configuration file specified in "
+                    + PROP_LOG4J_CONFIGURATION, t);
+        } finally {
+
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (IOException ignore) {
+
+                }
+            }
+        }
     }
 
   
