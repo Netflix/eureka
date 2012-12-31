@@ -129,12 +129,12 @@ public class LoggingConfiguration implements PropertyListener {
            InputStream in = null;
             try {
                 URL url = Loader.getResource(LOG4J_PROPERTIES);
-                in = url.openStream();
-                this.props.load(in);
+                if (url != null) {
+                    in = url.openStream();
+                    this.props.load(in);
+                }
             } catch (Throwable t) {
-                throw new RuntimeException(
-                        "Cannot load log4 configuration file specified in "
-                        + PROP_LOG4J_CONFIGURATION, t);
+                
             } finally {
 
                 if (in != null) {
