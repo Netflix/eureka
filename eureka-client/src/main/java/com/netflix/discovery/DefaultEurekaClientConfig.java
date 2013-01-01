@@ -226,7 +226,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
      */
     @Override
     public String getEurekaServerURLContext() {
-        return configInstance.getStringProperty(namespace + "eurekaServer.context", null)
+        return configInstance.getStringProperty(namespace + "context", null)
                 .get();
     }
 
@@ -237,7 +237,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
      */
     @Override
     public String getEurekaServerPort() {
-        return configInstance.getStringProperty(namespace + "eurekaServer.port", null).get();
+        return configInstance.getStringProperty(namespace + "port", null).get();
     }
 
     /*
@@ -247,7 +247,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
      */
     @Override
     public String getEurekaServerDNSName() {
-        return configInstance.getStringProperty(namespace + "eurekaServer.domainName", null)
+        return configInstance.getStringProperty(namespace + "domainName", null)
                 .get();
     }
 

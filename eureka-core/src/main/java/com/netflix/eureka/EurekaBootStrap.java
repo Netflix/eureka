@@ -32,6 +32,7 @@ import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.MyDataCenterInstanceConfig;
+import com.netflix.blitz4j.LoggingConfiguration;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.DiscoveryManager;
@@ -126,6 +127,7 @@ public class EurekaBootStrap implements ServletContextListener {
      */
     protected void initEurekaEnvironment() {
         logger.info("Setting the eureka configuration..");
+        LoggingConfiguration.getInstance().configure();
         EurekaServerConfig eurekaServerConfig = new DefaultEurekaServerConfig();
         EurekaServerConfigurationManager.getInstance().setConfiguration(
                 eurekaServerConfig);
