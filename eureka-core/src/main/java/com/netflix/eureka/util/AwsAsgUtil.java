@@ -39,7 +39,10 @@ import com.amazonaws.services.autoscaling.model.SuspendedProcess;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.netflix.appinfo.AmazonInfo;
+import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
@@ -63,33 +66,33 @@ public class AwsAsgUtil {
     private final Logger logger = LoggerFactory.getLogger(AwsAsgUtil.class);
     private static final String PROP_ADD_TO_LOAD_BALANCER = "AddToLoadBalancer";
     private static final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
-    .getInstance().getConfiguration();
+            .getInstance().getConfiguration();
     private static final AmazonAutoScaling client = new AmazonAutoScalingClient(
             new BasicAWSCredentials(eurekaConfig.getAWSAccessId(),
                     eurekaConfig.getAWSSecretKey()),
-                    new ClientConfiguration().withConnectionTimeout(eurekaConfig
-                            .getASGQueryTimeoutMs()));
+            new ClientConfiguration().withConnectionTimeout(eurekaConfig
+                    .getASGQueryTimeoutMs()));
     // Cache for the AWS ASG information
     private final LoadingCache<String, Boolean> asgCache = CacheBuilder
-    .newBuilder().initialCapacity(500)
-    .expireAfterAccess(5, TimeUnit.MINUTES)
-    .build(new CacheLoader<String, Boolean>() {
+            .newBuilder().initialCapacity(500)
+            .expireAfterAccess(5, TimeUnit.MINUTES)
+            .build(new CacheLoader<String, Boolean>() {
 
-        @Override
-        public Boolean load(String key) throws Exception {
-            return isASGEnabledinAWS(key);
-        }
-    });
+                @Override
+                public Boolean load(String key) throws Exception {
+                    return isASGEnabledinAWS(key);
+                }
+            });
 
     private final Timer timer = new Timer("Eureka-ASGCacheRefresh", true);
     private final com.netflix.servo.monitor.Timer loadASGInfoTimer = Monitors
-    .newTimer("Eureka-loadASGInfo");
+            .newTimer("Eureka-loadASGInfo");
 
     private static final AwsAsgUtil awsAsgUtil = new AwsAsgUtil();
 
     private AwsAsgUtil() {
         String region = DiscoveryManager.getInstance().getEurekaClientConfig()
-        .getRegion();
+                .getRegion();
         client.setEndpoint("autoscaling." + region + ".amazonaws.com");
         timer.schedule(getASGUpdateTask(),
                 eurekaConfig.getASGUpdateIntervalMs(),
@@ -184,9 +187,9 @@ public class AwsAsgUtil {
     private AutoScalingGroup retrieveAutoScalingGroup(String asgName) {
         // You can pass one name or a list of names in the request
         DescribeAutoScalingGroupsRequest request = new DescribeAutoScalingGroupsRequest()
-        .withAutoScalingGroupNames(asgName);
+                .withAutoScalingGroupNames(asgName);
         DescribeAutoScalingGroupsResult result = client
-        .describeAutoScalingGroups(request);
+                .describeAutoScalingGroups(request);
         List<AutoScalingGroup> asgs = result.getAutoScalingGroups();
         if (asgs.isEmpty()) {
             return null;
@@ -296,13 +299,24 @@ public class AwsAsgUtil {
     private Set<String> getASGNames() {
         Set<String> asgNames = new HashSet<String>();
         Applications apps = PeerAwareInstanceRegistry.getInstance()
-        .getApplications();
+                .getApplications();
         for (Application app : apps.getRegisteredApplications()) {
             for (InstanceInfo instanceInfo : app.getInstances()) {
-                String asgName = instanceInfo.getASGName();
-                if (asgName != null) {
-                    asgNames.add(asgName);
+                if (AmazonInfo.class.isInstance(instanceInfo
+                        .getDataCenterInfo())) {
+                    if (AmazonInfo.class
+                            .cast(instanceInfo)
+                            .get(MetaDataKey.availabilityZone)
+                            .contains(
+                                    ConfigurationManager.getDeploymentContext()
+                                            .getDeploymentRegion())) {
+                        String asgName = instanceInfo.getASGName();
+                        if (asgName != null) {
+                            asgNames.add(asgName);
+                        }
+                    }
                 }
+
             }
 
         }

@@ -353,5 +353,64 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
                 true).get();
     }
     
+    @Override
+    public boolean shouldDisableDeltaForRemoteRegions() {
+        return configInstance
+        .getBooleanProperty(namespace + "disableDeltaForRemoteRegions", false).get();
+    }
 
+    @Override
+    public int getRemoteRegionConnectTimeoutMs() {
+        return configInstance
+        .getIntProperty(namespace + "remoteRegionConnectTimeoutMs", 1000).get();
+    }
+
+    @Override
+    public int getRemoteRegionReadTimeoutMs() {
+        return configInstance
+        .getIntProperty(namespace + "remoteRegionReadTimeoutMs", 1000).get();
+    }
+
+    @Override
+    public int getRemoteRegionTotalConnections() {
+        return configInstance
+        .getIntProperty(namespace + "remoteRegionTotalConnections", 1000).get();
+    }
+
+    @Override
+    public int getRemoteRegionTotalConnectionsPerHost() {
+        return configInstance
+        .getIntProperty(namespace + "remoteRegionTotalConnections", 500).get();
+    }
+
+    @Override
+    public int getRemoteRegionConnectionIdleTimeoutSeconds() {
+        return configInstance
+        .getIntProperty(namespace + "remoteRegionConnectionIdleTimeoutSeconds", 30).get();
+    }
+
+    @Override
+    public boolean shouldGZipContentFromRemoteRegion() {
+        return configInstance.getBooleanProperty(
+                namespace + "remoteRegion.gzipContent", true).get();
+    }
+
+    @Override
+    public String[] getRemoteRegionUrls() {
+        String remoteRegionUrlString= configInstance.getStringProperty(
+                namespace + "remoteRegionUrls", null).get();
+        String[] remoteRegionUrl = null;
+        if (remoteRegionUrlString != null) {
+            remoteRegionUrl = remoteRegionUrlString.split(",");
+        }
+        return remoteRegionUrl;
+    }
+
+    @Override
+    public int getRemoteRegionRegistryFetchInterval() {
+        return configInstance.getIntProperty(
+                namespace + "remoteRegion.registryFetchIntervalInSeconds", 30).get();
+    }
+
+    
 }

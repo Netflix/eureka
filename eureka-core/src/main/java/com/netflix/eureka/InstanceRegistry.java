@@ -26,6 +26,7 @@ import static com.netflix.eureka.util.EurekaMonitors.RENEW;
 import static com.netflix.eureka.util.EurekaMonitors.RENEW_NOT_FOUND;
 import static com.netflix.eureka.util.EurekaMonitors.STATUS_UPDATE;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -74,19 +75,19 @@ import com.netflix.servo.annotations.DataSourceType;
  * 
  */
 public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
-LookupService<String> {
+        LookupService<String> {
 
     private static final Logger logger = LoggerFactory
-    .getLogger(InstanceRegistry.class);
+            .getLogger(InstanceRegistry.class);
     private static final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
-    .getInstance().getConfiguration();
+            .getInstance().getConfiguration();
     private final ConcurrentHashMap<String, Map<String, Lease<InstanceInfo>>> _registry = new ConcurrentHashMap<String, Map<String, Lease<InstanceInfo>>>();
     private Timer evictionTimer = new Timer("Eureka-EvictionTimer", true);
     private volatile MeasuredRate renewsLastMin;
     protected ConcurrentMap<String, InstanceStatus> overriddenInstanceStatusMap = CacheBuilder
-    .newBuilder().initialCapacity(500)
-    .expireAfterAccess(5, TimeUnit.MINUTES)
-    .<String, InstanceStatus> build().asMap();
+            .newBuilder().initialCapacity(500)
+            .expireAfterAccess(5, TimeUnit.MINUTES)
+            .<String, InstanceStatus> build().asMap();
 
     // CircularQueues here for debugging/statistics purposes only
     private CircularQueue<Pair<Long, String>> recentRegisteredQueue;
@@ -97,6 +98,7 @@ LookupService<String> {
     private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     private final Lock read = readWriteLock.readLock();
     private final Lock write = readWriteLock.writeLock();
+    private List<RemoteRegionRegistry> remoteRegionRegistryList = new ArrayList<RemoteRegionRegistry>();
 
     protected InstanceRegistry() {
 
@@ -105,6 +107,18 @@ LookupService<String> {
         deltaRetentionTimer.schedule(getDeltaRetentionTask(),
                 eurekaConfig.getDeltaRetentionTimerIntervalInMs(),
                 eurekaConfig.getDeltaRetentionTimerIntervalInMs());
+        String[] remoteRegionUrls = eurekaConfig.getRemoteRegionUrls();
+        try {
+            if (remoteRegionUrls != null) {
+                for (String remoteRegionUrl : remoteRegionUrls) {
+                    RemoteRegionRegistry remoteRegionRegistry = new RemoteRegionRegistry(
+                            new URL(remoteRegionUrl));
+                    remoteRegionRegistryList.add(remoteRegionRegistry);
+                }
+            }
+        } catch (Throwable e) {
+            throw new RuntimeException ("Cannot initialize Remote Region Registry :", e);
+        }
 
     }
 
@@ -132,7 +146,7 @@ LookupService<String> {
             // is already a lease
             if (existingLease != null && (existingLease.getHolder() != null)) {
                 Long existingLastDirtyTimestamp = existingLease.getHolder()
-                         .getLastDirtyTimestamp();
+                        .getLastDirtyTimestamp();
                 Long registrationLastDirtyTimestamp = r.getLastDirtyTimestamp();
                 if (existingLastDirtyTimestamp > registrationLastDirtyTimestamp) {
                     logger.warn(
@@ -218,7 +232,7 @@ LookupService<String> {
                         + id + ")"));
             }
             InstanceStatus instanceStatus = overriddenInstanceStatusMap
-            .remove(id);
+                    .remove(id);
             if (instanceStatus != null) {
                 logger.debug(
                         "Removed instance id {} from the overridden map which has value {}",
@@ -271,8 +285,8 @@ LookupService<String> {
             if (instanceInfo != null) {
                 // touchASGCache(instanceInfo.getASGName());
                 InstanceStatus overriddenInstanceStatus = this
-                .getOverriddenInstanceStatus(instanceInfo,
-                        leaseToRenew, isReplication);
+                        .getOverriddenInstanceStatus(instanceInfo,
+                                leaseToRenew, isReplication);
                 // InstanceStatus overriddenInstanceStatus =
                 // instanceInfo.getStatus();
                 if (!instanceInfo.getStatus().equals(overriddenInstanceStatus)) {
@@ -357,21 +371,22 @@ LookupService<String> {
                     info.setOverriddenStatus(newStatus);
                     long replicaDirtyTimestamp = 0;
                     if (lastDirtyTimestamp != null) {
-                        replicaDirtyTimestamp = Long.valueOf(lastDirtyTimestamp);
+                        replicaDirtyTimestamp = Long
+                                .valueOf(lastDirtyTimestamp);
                     }
-                    // If the repication's dirty timestamp is more than the existing one, just update
+                    // If the repication's dirty timestamp is more than the
+                    // existing one, just update
                     // it to the replica's.
                     if (replicaDirtyTimestamp > info.getLastDirtyTimestamp()) {
                         info.setLastDirtyTimestamp(replicaDirtyTimestamp);
                         info.setStatusWithoutDirty(newStatus);
-                    }
-                    else {
+                    } else {
                         info.setStatus(newStatus);
                     }
                     if (info != null) {
                         info.setActionType(ActionType.MODIFIED);
                         recentlyChangedQueue
-                        .add(new RecentlyChangedItem(lease));
+                                .add(new RecentlyChangedItem(lease));
                         info.setLastUpdatedTimestamp();
                     }
                     invalidateCache(appName);
@@ -398,14 +413,14 @@ LookupService<String> {
         for (Iterator<Entry<String, Map<String, Lease<InstanceInfo>>>> iter = _registry
                 .entrySet().iterator(); iter.hasNext();) {
             Entry<String, Map<String, Lease<InstanceInfo>>> groupEntry = iter
-            .next();
+                    .next();
 
             Map<String, Lease<InstanceInfo>> leaseMap = groupEntry.getValue();
             if (leaseMap != null) {
                 for (Iterator<Entry<String, Lease<InstanceInfo>>> subIter = leaseMap
                         .entrySet().iterator(); subIter.hasNext();) {
                     Entry<String, Lease<InstanceInfo>> leaseEntry = subIter
-                    .next();
+                            .next();
                     Lease<InstanceInfo> lease = leaseEntry.getValue();
                     if (lease.isExpired() && lease.getHolder() != null) {
                         String appName = lease.getHolder().getAppName();
@@ -424,8 +439,7 @@ LookupService<String> {
      * (non-Javadoc)
      * 
      * @see
-     * com.netflix.eureka.shared.LookupService#getApplication(java.lang.String
-     * )
+     * com.netflix.eureka.shared.LookupService#getApplication(java.lang.String )
      */
     public Application getApplication(String appName) {
         Application app = null;
@@ -437,17 +451,20 @@ LookupService<String> {
                     .entrySet().iterator(); iter.hasNext();) {
                 Entry<String, Lease<InstanceInfo>> entry = iter.next();
 
-                if (isLeaseExpirationEnabled() && entry.getValue().isExpired()) {
-                    continue;
-                }
-
                 if (app == null) {
                     app = new Application(appName);
                 }
                 app.addInstance(decorateInstanceInfo(entry.getValue()));
             }
         }
-
+        else {
+            for (RemoteRegionRegistry remoteRegistry : this.remoteRegionRegistryList) {
+                Application application = remoteRegistry.getApplication(appName);
+                if (application != null) {
+                  return application;
+                }
+            }
+        }
         return app;
     }
 
@@ -483,6 +500,15 @@ LookupService<String> {
                 apps.addApplication(app);
             }
         }
+        for (RemoteRegionRegistry remoteRegistry : this.remoteRegionRegistryList) {
+            Applications applications = remoteRegistry.getApplications();
+            for (Application application : applications.getRegisteredApplications()) {
+                Application appInLocalRegistry = apps.getRegisteredApplications(application.getName());
+                if (appInLocalRegistry == null) {
+                    apps.addApplication(application);
+                }
+            }
+        }
         apps.setAppsHashCode(apps.getReconcileHashCode());
         return apps;
     }
@@ -504,7 +530,7 @@ LookupService<String> {
         try {
             write.lock();
             Iterator<RecentlyChangedItem> iter = this.recentlyChangedQueue
-            .iterator();
+                    .iterator();
             logger.debug("The number of elements in the delta queue is :"
                     + this.recentlyChangedQueue.size());
             while (iter.hasNext()) {
@@ -524,6 +550,15 @@ LookupService<String> {
                     apps.addApplication(app);
                 }
                 app.addInstance(decorateInstanceInfo(lease));
+            }
+            for (RemoteRegionRegistry remoteRegistry : this.remoteRegionRegistryList) {
+                Applications applications = remoteRegistry.getApplicationDeltas();
+                for (Application application : applications.getRegisteredApplications()) {
+                    Application appInLocalRegistry = apps.getRegisteredApplications(application.getName());
+                    if (appInLocalRegistry == null) {
+                        apps.addApplication(application);
+                    }
+                }
             }
             Applications allApps = getApplications();
             apps.setAppsHashCode(allApps.getReconcileHashCode());
@@ -552,6 +587,11 @@ LookupService<String> {
                 && (!isLeaseExpirationEnabled() || !lease.isExpired())) {
             return decorateInstanceInfo(lease);
         } else {
+            for (RemoteRegionRegistry remoteRegistry : this.remoteRegionRegistryList) {
+                Application application = remoteRegistry.getApplication(appName);
+                InstanceInfo instanceInfo = application.getByInstanceId(id);
+                return instanceInfo;
+            }
             return null;
         }
     }
@@ -559,12 +599,11 @@ LookupService<String> {
     /*
      * (non-Javadoc)
      * 
-     * @see
-     * com.netflix.eureka.shared.LookupService#getInstancesById(java.lang
+     * @see com.netflix.eureka.shared.LookupService#getInstancesById(java.lang
      * .String)
      */
     public List<InstanceInfo> getInstancesById(String id) {
-        List<InstanceInfo> list = Collections.emptyList();
+        List<InstanceInfo> list = new ArrayList<InstanceInfo>();
 
         for (Iterator<Entry<String, Map<String, Lease<InstanceInfo>>>> iter = _registry
                 .entrySet().iterator(); iter.hasNext();) {
@@ -584,6 +623,17 @@ LookupService<String> {
 
                 if (lease != null) {
                     list.add(decorateInstanceInfo(lease));
+                }
+            }
+        }
+        if (list.isEmpty()) {
+            for (RemoteRegionRegistry remoteRegistry : this.remoteRegionRegistryList) {
+                for (Application application: remoteRegistry.getApplications().getRegisteredApplications()) {
+                    InstanceInfo instanceInfo = application.getByInstanceId(id);
+                    if (instanceInfo != null) {
+                        list.add(instanceInfo);
+                        return list;
+                    }
                 }
             }
         }
@@ -620,8 +670,7 @@ LookupService<String> {
     public long getNumOfRenewsInLastMin() {
         if (renewsLastMin != null) {
             return renewsLastMin.getCount();
-        }
-        else {
+        } else {
             return 0;
         }
     }
@@ -688,7 +737,7 @@ LookupService<String> {
 
             }
         }, eurekaConfig.getEvictionIntervalTimerInMs(),
-        eurekaConfig.getEvictionIntervalTimerInMs());
+                eurekaConfig.getEvictionIntervalTimerInMs());
     }
 
     @com.netflix.servo.annotations.Monitor(name = "numOfElementsinInstanceCache", description = "Number of elements in the instance Cache", type = DataSourceType.GAUGE)
@@ -794,7 +843,7 @@ LookupService<String> {
             @Override
             public void run() {
                 Iterator<RecentlyChangedItem> it = recentlyChangedQueue
-                .iterator();
+                        .iterator();
                 while (it.hasNext()) {
                     if (it.next().getLastUpdateTime() < System
                             .currentTimeMillis()

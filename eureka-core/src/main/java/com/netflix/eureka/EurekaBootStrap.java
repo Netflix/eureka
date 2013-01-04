@@ -189,7 +189,7 @@ public class EurekaBootStrap implements ServletContextListener {
                 }
             }
             PeerAwareInstanceRegistry.getInstance().shutdown();
-            destoryEurekaEnvironment();
+            destroyEurekaEnvironment();
 
         } catch (Throwable e) {
             logger.error("Error shutting down eureka", e);
@@ -201,7 +201,7 @@ public class EurekaBootStrap implements ServletContextListener {
     /**
      * Users can override to clean up the environment themselves.
      */
-    protected void destoryEurekaEnvironment() {
+    protected void destroyEurekaEnvironment() {
         
     }
 
