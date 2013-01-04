@@ -316,6 +316,8 @@ public class RemoteRegionRegistry implements LookupService<String> {
             reconcileString = reconcileString + "\n";
         }
         logger.warn("The reconcile string is {}", reconcileString);
+        applications.set(serverApps);
+        applicationsDelta.set(serverApps);
         logger.warn(
                 "The Reconcile hashcodes after complete sync up, client : {}, server : {}.",
                 getApplications().getReconcileHashCode(),
