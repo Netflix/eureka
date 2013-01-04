@@ -378,13 +378,10 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
      *         true
      */
     public boolean shouldAllowAccess() {
-        boolean allowAccess = false;
         if (this.peerInstancesTransferEmptyOnStartup) {
-            if (System.currentTimeMillis() > this.startupTime
-                    + eurekaServerConfig.getWaitTimeInMsWhenSyncEmpty()) {
-                allowAccess = true;
-            } else {
-                allowAccess = false;
+            if (!(System.currentTimeMillis() > this.startupTime
+                    + eurekaServerConfig.getWaitTimeInMsWhenSyncEmpty())) {
+                return false;
             }
         }
         for (RemoteRegionRegistry remoteRegionRegistry: this.remoteRegionRegistryList) {
@@ -392,7 +389,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                 return false;
             }
         }
-        return allowAccess;
+        return true;
     }
 
     /**
