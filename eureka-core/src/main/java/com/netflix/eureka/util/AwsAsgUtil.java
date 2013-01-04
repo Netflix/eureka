@@ -305,7 +305,7 @@ public class AwsAsgUtil {
                 if (AmazonInfo.class.isInstance(instanceInfo
                         .getDataCenterInfo())) {
                     if (AmazonInfo.class
-                            .cast(instanceInfo)
+                            .cast(instanceInfo.getDataCenterInfo())
                             .get(MetaDataKey.availabilityZone)
                             .contains(
                                     ConfigurationManager.getDeploymentContext()
