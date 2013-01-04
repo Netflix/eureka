@@ -16,6 +16,7 @@
 
 package com.netflix.eureka;
 
+import java.net.URL;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -109,6 +110,8 @@ public class EurekaBootStrap implements ServletContextListener {
             if (Name.Amazon.equals(info.getDataCenterInfo().getName())) {
                 handleEIPbinding();
             }
+            // Initialize available remote registry
+            PeerAwareInstanceRegistry.getInstance().initRemoteRegionRegistry();
             // Register all monitoring statistics.
             EurekaMonitors.registerAllStats();
 

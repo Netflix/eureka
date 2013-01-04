@@ -98,7 +98,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
     private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     private final Lock read = readWriteLock.readLock();
     private final Lock write = readWriteLock.writeLock();
-    private List<RemoteRegionRegistry> remoteRegionRegistryList = new ArrayList<RemoteRegionRegistry>();
+    protected List<RemoteRegionRegistry> remoteRegionRegistryList = new ArrayList<RemoteRegionRegistry>();
 
     protected InstanceRegistry() {
 
@@ -107,19 +107,6 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         deltaRetentionTimer.schedule(getDeltaRetentionTask(),
                 eurekaConfig.getDeltaRetentionTimerIntervalInMs(),
                 eurekaConfig.getDeltaRetentionTimerIntervalInMs());
-        String[] remoteRegionUrls = eurekaConfig.getRemoteRegionUrls();
-        try {
-            if (remoteRegionUrls != null) {
-                for (String remoteRegionUrl : remoteRegionUrls) {
-                    RemoteRegionRegistry remoteRegionRegistry = new RemoteRegionRegistry(
-                            new URL(remoteRegionUrl));
-                    remoteRegionRegistryList.add(remoteRegionRegistry);
-                }
-            }
-        } catch (Throwable e) {
-            throw new RuntimeException ("Cannot initialize Remote Region Registry :", e);
-        }
-
     }
 
     /*
@@ -856,6 +843,21 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             }
 
         };
+    }
+    
+    protected void initRemoteRegionRegistry() {
+        try {
+            String[] remoteRegionUrls = eurekaConfig.getRemoteRegionUrls();
+            if (remoteRegionUrls != null) {
+                for (String remoteRegionUrl : remoteRegionUrls) {
+                    RemoteRegionRegistry remoteRegionRegistry = new RemoteRegionRegistry(
+                            new URL(remoteRegionUrl));
+                    remoteRegionRegistryList.add(remoteRegionRegistry);
+                }
+            }
+        } catch (Throwable e) {
+            logger.error ("Cannot initialize Remote Region Registry :", e);
+        }
     }
 
 }

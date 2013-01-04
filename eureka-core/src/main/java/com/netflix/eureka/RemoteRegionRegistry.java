@@ -31,7 +31,8 @@ import com.sun.jersey.client.apache4.ApacheHttpClient4;
 public class RemoteRegionRegistry implements LookupService<String> {
     private static final int RETRY_SLEEP_TIME_MS = 3000;
 
-    private static EurekaServerConfig EUREKA_SERVER_CONFIG = EurekaServerConfigurationManager.getInstance().getConfiguration();
+    private static EurekaServerConfig EUREKA_SERVER_CONFIG = EurekaServerConfigurationManager
+            .getInstance().getConfiguration();
 
     private static final Logger logger = LoggerFactory
             .getLogger(RemoteRegionRegistry.class);
@@ -39,9 +40,11 @@ public class RemoteRegionRegistry implements LookupService<String> {
     private JerseyClient discoveryJerseyClient;
     private com.netflix.servo.monitor.Timer fetchRegistryTimer;
     private URL remoteRegionURL;
-    private Timer remoteRegionCacheRefreshTimer = new Timer("Eureka-RemoteRegionCacheRefresher", true);
+    private Timer remoteRegionCacheRefreshTimer = new Timer(
+            "Eureka-RemoteRegionCacheRefresher", true);
     private volatile AtomicReference<Applications> applications = new AtomicReference<Applications>();
     private volatile AtomicReference<Applications> applicationsDelta = new AtomicReference<Applications>();
+    private volatile boolean readyForServingData;
 
     public RemoteRegionRegistry(URL remoteRegionURL) {
         this.remoteRegionURL = remoteRegionURL;
@@ -69,31 +72,43 @@ public class RemoteRegionRegistry implements LookupService<String> {
         }
         applications.set(new Applications());
         try {
-            while (!fetchRegistry()) {
-                Thread.sleep(RETRY_SLEEP_TIME_MS);
+            if (fetchRegistry()) {
+                this.readyForServingData = true;
             }
-          
         } catch (Throwable e) {
             logger.error("Problem fetching registry information :", e);
         }
-        
+
         // Registry fetch timer
-        remoteRegionCacheRefreshTimer.schedule(new TimerTask() {
+        remoteRegionCacheRefreshTimer
+                .schedule(new TimerTask() {
 
-            @Override
-            public void run() {
-                try {
-                fetchRegistry();
-                }
-                catch (Throwable e) {
-                    logger.error("Error getting from remote registry :", e);
-                }
-           }
-            
-        },
-        EUREKA_SERVER_CONFIG.getRemoteRegionRegistryFetchInterval() * 1000,
-        EUREKA_SERVER_CONFIG.getRemoteRegionRegistryFetchInterval() * 1000);
+                    @Override
+                    public void run() {
+                        try {
+                            if (fetchRegistry()) {
+                                readyForServingData = true;
+                            }
+                        } catch (Throwable e) {
+                            logger.error(
+                                    "Error getting from remote registry :", e);
+                        }
+                    }
 
+                },
+                        EUREKA_SERVER_CONFIG
+                                .getRemoteRegionRegistryFetchInterval() * 1000,
+                        EUREKA_SERVER_CONFIG
+                                .getRemoteRegionRegistryFetchInterval() * 1000);
+
+    }
+
+    /**
+     * Check if this registry is ready for serving data.
+     * @return true if ready, false otherwise.
+     */
+    public boolean isReadyForServingData() {
+        return readyForServingData;
     }
 
     private boolean fetchRegistry() {
@@ -233,7 +248,11 @@ public class RemoteRegionRegistry implements LookupService<String> {
      */
     public ClientResponse storeFullRegistry() {
         ClientResponse response = fetchRemoteRegistry(false);
-       Applications apps = response.getEntity(Applications.class);
+        if (response == null) {
+            logger.error("The response is null for some reason");
+            return null;
+        }
+        Applications apps = response.getEntity(Applications.class);
         if (apps == null) {
             logger.error("The application is null for some reason. Not storing this information");
         } else {
@@ -313,19 +332,16 @@ public class RemoteRegionRegistry implements LookupService<String> {
         logger.debug("The total number of instances in the client now is {}",
                 totInstances);
     }
- 
+
     @Override
     public Applications getApplications() {
         return applications.get();
     }
 
-
     @Override
     public InstanceInfo getNextServerFromEureka(String arg0, boolean arg1) {
         return null;
     }
-
-    
 
     @Override
     public Application getApplication(String appName) {
@@ -345,7 +361,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
         }
         return list;
     }
-    
+
     public Applications getApplicationDeltas() {
         return this.applicationsDelta.get();
     }
