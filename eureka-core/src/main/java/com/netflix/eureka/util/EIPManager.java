@@ -203,6 +203,10 @@ public class EIPManager {
 
         if (app != null) {
             for (InstanceInfo i : app.getInstances()) {
+                // Avoid eureka servers from other regions
+                if (!PeerAwareInstanceRegistry.getInstance().isRegisterable(i)) {
+                    continue;
+                }
                 AmazonInfo amazonInfo = (AmazonInfo) i.getDataCenterInfo();
                 String publicIP = amazonInfo.get(MetaDataKey.publicIpv4);
                 String instanceId = amazonInfo.get(MetaDataKey.instanceId);
