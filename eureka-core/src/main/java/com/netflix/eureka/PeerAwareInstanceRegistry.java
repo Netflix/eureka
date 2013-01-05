@@ -253,7 +253,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
         int count = 0;
 
         for (int i = 0; ((i < eurekaServerConfig.getRegistrySyncRetries()) && (count == 0)); i++) {
-            Applications apps = lookupService.getApplications();
+            Applications apps = PeerAwareInstanceRegistry.getInstance().getApplications(false);
             for (Application app : apps.getRegisteredApplications()) {
                 for (InstanceInfo instance : app.getInstances()) {
                     try {
@@ -324,7 +324,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
             try {
                 Application eurekaApps = this
                 .getApplication(ApplicationInfoManager.getInstance()
-                        .getInfo().getAppName());
+                        .getInfo().getAppName(), false);
                 if (eurekaApps == null) {
                     areAllPeerNodesPrimed = true;
                 }
@@ -585,7 +585,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
         try {
             LookupService lookupService = DiscoveryManager.getInstance()
             .getLookupService();
-            Applications apps = lookupService.getApplications();
+            Applications apps = PeerAwareInstanceRegistry.getInstance().getApplications(false);
             int count = 0;
             for (Application app : apps.getRegisteredApplications()) {
                 for (InstanceInfo instance : app.getInstances()) {
@@ -740,7 +740,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
             case Heartbeat:
                 InstanceStatus overriddenStatus = overriddenInstanceStatusMap
                 .get(id);
-                infoFromRegistry = getInstanceByAppAndId(appName, id);
+                infoFromRegistry = getInstanceByAppAndId(appName, id, false);
                 node.heartbeat(appName, id, infoFromRegistry, overriddenStatus,
                         false);
                 break;
@@ -748,7 +748,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                 node.register(info);
                 break;
             case StatusUpdate:
-                infoFromRegistry = getInstanceByAppAndId(appName, id);
+                infoFromRegistry = getInstanceByAppAndId(appName, id, false);
                 node.statusUpdate(appName, id, newStatus, infoFromRegistry);
                 break;
 

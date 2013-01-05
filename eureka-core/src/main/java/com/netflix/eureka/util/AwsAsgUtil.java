@@ -299,27 +299,16 @@ public class AwsAsgUtil {
     private Set<String> getASGNames() {
         Set<String> asgNames = new HashSet<String>();
         Applications apps = PeerAwareInstanceRegistry.getInstance()
-                .getApplications();
+        .getApplications(false);
         for (Application app : apps.getRegisteredApplications()) {
             for (InstanceInfo instanceInfo : app.getInstances()) {
-                if (AmazonInfo.class.isInstance(instanceInfo
-                        .getDataCenterInfo())) {
-                    if (AmazonInfo.class
-                            .cast(instanceInfo.getDataCenterInfo())
-                            .get(MetaDataKey.availabilityZone)
-                            .contains(
-                                    ConfigurationManager.getDeploymentContext()
-                                            .getDeploymentRegion())) {
-                        String asgName = instanceInfo.getASGName();
-                        if (asgName != null) {
-                            asgNames.add(asgName);
-                        }
-                    }
+                String asgName = instanceInfo.getASGName();
+                if (asgName != null) {
+                    asgNames.add(asgName);
                 }
-
             }
-
         }
+
         return asgNames;
     }
 

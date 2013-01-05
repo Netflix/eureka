@@ -204,7 +204,7 @@ public class InstanceResource {
 
     private boolean shouldSyncStatus(String status, boolean isReplication) {
         InstanceInfo appInfo = registry
-                .getInstanceByAppAndId(app.getName(), id);
+                .getInstanceByAppAndId(app.getName(), id, false);
         InstanceStatus instanceStatusFromRegistry = null;
         if (appInfo != null) {
             instanceStatusFromRegistry = appInfo.getStatus();
@@ -233,7 +233,7 @@ public class InstanceResource {
     private Response validateDirtyTimestamp(Long lastDirtyTimestamp,
             boolean isReplication) {
         InstanceInfo appInfo = registry
-                .getInstanceByAppAndId(app.getName(), id);
+                .getInstanceByAppAndId(app.getName(), id, false);
         if (appInfo != null) {
             if ((lastDirtyTimestamp != null)
                     && (!lastDirtyTimestamp.equals(appInfo

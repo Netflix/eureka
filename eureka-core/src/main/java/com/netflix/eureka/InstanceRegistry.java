@@ -429,6 +429,23 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      * com.netflix.eureka.shared.LookupService#getApplication(java.lang.String )
      */
     public Application getApplication(String appName) {
+        return this.getApplication(appName, true);
+    }
+
+    /**
+     * Get application information.
+     * 
+     * @param appName
+     *            - The name of the application
+     * @param includeRemoteRegion
+     *            - true, if we need to include applications from remote regions
+     *            as indicated by the region {@link URL} by this property
+     *            {@link EurekaServerConfig#getRemoteRegionUrls()}, false
+     *            otherwise
+     * @return
+     */
+    public Application getApplication(String appName,
+            boolean includeRemoteRegion) {
         Application app = null;
 
         Map<String, Lease<InstanceInfo>> leaseMap = _registry.get(appName);
@@ -443,24 +460,39 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                 }
                 app.addInstance(decorateInstanceInfo(entry.getValue()));
             }
-        }
-        else {
+        } else if (includeRemoteRegion) {
             for (RemoteRegionRegistry remoteRegistry : this.remoteRegionRegistryList) {
-                Application application = remoteRegistry.getApplication(appName);
+                Application application = remoteRegistry
+                        .getApplication(appName);
                 if (application != null) {
-                  return application;
+                    return application;
                 }
             }
         }
         return app;
     }
 
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.netflix.discovery.shared.LookupService#getApplications()
+     */
+    public Applications getApplications() {
+        return this.getApplications(true);
+    }
+
     /**
      * Get the registry information about all {@link Applications}.
      * 
      * @return all applications.
+     * @param includeRemoteRegion
+     *            - true, if we need to include applications from remote regions
+     *            as indicated by the region {@link URL} by this property
+     *            {@link EurekaServerConfig#getRemoteRegionUrls()}, false
+     *            otherwise
+     * @return applications
      */
-    public Applications getApplications() {
+    public Applications getApplications(boolean includeRemoteRegion) {
         GET_ALL_CACHE_MISS.increment();
         Applications apps = new Applications();
         apps.setVersion(1L);
@@ -487,12 +519,16 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                 apps.addApplication(app);
             }
         }
-        for (RemoteRegionRegistry remoteRegistry : this.remoteRegionRegistryList) {
-            Applications applications = remoteRegistry.getApplications();
-            for (Application application : applications.getRegisteredApplications()) {
-                Application appInLocalRegistry = apps.getRegisteredApplications(application.getName());
-                if (appInLocalRegistry == null) {
-                    apps.addApplication(application);
+        if (includeRemoteRegion) {
+            for (RemoteRegionRegistry remoteRegistry : this.remoteRegionRegistryList) {
+                Applications applications = remoteRegistry.getApplications();
+                for (Application application : applications
+                        .getRegisteredApplications()) {
+                    Application appInLocalRegistry = apps
+                            .getRegisteredApplications(application.getName());
+                    if (appInLocalRegistry == null) {
+                        apps.addApplication(application);
+                    }
                 }
             }
         }
@@ -539,9 +575,12 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                 app.addInstance(decorateInstanceInfo(lease));
             }
             for (RemoteRegionRegistry remoteRegistry : this.remoteRegionRegistryList) {
-                Applications applications = remoteRegistry.getApplicationDeltas();
-                for (Application application : applications.getRegisteredApplications()) {
-                    Application appInLocalRegistry = apps.getRegisteredApplications(application.getName());
+                Applications applications = remoteRegistry
+                        .getApplicationDeltas();
+                for (Application application : applications
+                        .getRegisteredApplications()) {
+                    Application appInLocalRegistry = apps
+                            .getRegisteredApplications(application.getName());
                     if (appInLocalRegistry == null) {
                         apps.addApplication(application);
                     }
@@ -565,6 +604,25 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      * @return the information about the instance.
      */
     public InstanceInfo getInstanceByAppAndId(String appName, String id) {
+        return this.getInstanceByAppAndId(appName, id, true);
+    }
+
+    /**
+     * Gets the {@link InstanceInfo} information.
+     * 
+     * @param appName
+     *            the application name for which the information is requested.
+     * @param id
+     *            the unique identifier of the instance.
+     * @param includeRemoteRegion
+     *            - true, if we need to include applications from remote regions
+     *            as indicated by the region {@link URL} by this property
+     *            {@link EurekaServerConfig#getRemoteRegionUrls()}, false
+     *            otherwise
+     * @return the information about the instance.
+     */
+    public InstanceInfo getInstanceByAppAndId(String appName, String id,
+            boolean includeRemoteRegions) {
         Map<String, Lease<InstanceInfo>> leaseMap = _registry.get(appName);
         Lease<InstanceInfo> lease = null;
         if (leaseMap != null) {
@@ -573,14 +631,15 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         if (lease != null
                 && (!isLeaseExpirationEnabled() || !lease.isExpired())) {
             return decorateInstanceInfo(lease);
-        } else {
+        } else if (includeRemoteRegions) {
             for (RemoteRegionRegistry remoteRegistry : this.remoteRegionRegistryList) {
-                Application application = remoteRegistry.getApplication(appName);
+                Application application = remoteRegistry
+                        .getApplication(appName);
                 InstanceInfo instanceInfo = application.getByInstanceId(id);
                 return instanceInfo;
             }
-            return null;
         }
+        return null;
     }
 
     /*
@@ -590,6 +649,23 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      * .String)
      */
     public List<InstanceInfo> getInstancesById(String id) {
+        return this.getInstancesById(id, true);
+    }
+
+    /**
+     * Get the list of instances by its unique id.
+     * 
+     * @param id
+     *            - the unique id of the instnace
+     * @param includeRemoteRegion
+     *            - true, if we need to include applications from remote regions
+     *            as indicated by the region {@link URL} by this property
+     *            {@link EurekaServerConfig#getRemoteRegionUrls()}, false
+     *            otherwise
+     * @return list of InstanceInfo objects.
+     */
+    public List<InstanceInfo> getInstancesById(String id,
+            boolean includeRemoteRegions) {
         List<InstanceInfo> list = new ArrayList<InstanceInfo>();
 
         for (Iterator<Entry<String, Map<String, Lease<InstanceInfo>>>> iter = _registry
@@ -613,9 +689,10 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                 }
             }
         }
-        if (list.isEmpty()) {
+        if (list.isEmpty() && includeRemoteRegions) {
             for (RemoteRegionRegistry remoteRegistry : this.remoteRegionRegistryList) {
-                for (Application application: remoteRegistry.getApplications().getRegisteredApplications()) {
+                for (Application application : remoteRegistry.getApplications()
+                        .getRegisteredApplications()) {
                     InstanceInfo instanceInfo = application.getByInstanceId(id);
                     if (instanceInfo != null) {
                         list.add(instanceInfo);
@@ -844,7 +921,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
 
         };
     }
-    
+
     protected void initRemoteRegionRegistry() {
         try {
             String[] remoteRegionUrls = eurekaConfig.getRemoteRegionUrls();
@@ -856,7 +933,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                 }
             }
         } catch (Throwable e) {
-            logger.error ("Cannot initialize Remote Region Registry :", e);
+            logger.error("Cannot initialize Remote Region Registry :", e);
         }
     }
 

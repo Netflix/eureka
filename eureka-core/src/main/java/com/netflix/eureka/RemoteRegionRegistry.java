@@ -1,3 +1,18 @@
+/*
+ * Copyright 2012 Netflix, Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
 package com.netflix.eureka;
 
 import java.net.URL;
@@ -28,9 +43,16 @@ import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
 
+/**
+ * Handles all registry operations that needs to be done on a eureka service running in an other region.
+ *
+ * The primary operations include fetching registry information from remote region and fetching delta information
+ * on a periodic basis.
+ * 
+ * @author Karthik Ranganathan
+ * 
+ */
 public class RemoteRegionRegistry implements LookupService<String> {
-    private static final int RETRY_SLEEP_TIME_MS = 3000;
-
     private static EurekaServerConfig EUREKA_SERVER_CONFIG = EurekaServerConfigurationManager
             .getInstance().getConfiguration();
 
@@ -111,6 +133,10 @@ public class RemoteRegionRegistry implements LookupService<String> {
         return readyForServingData;
     }
 
+    /**
+     * Fetch the registry information from the remote region.
+     * @return true, if the fetch was successful, false otherwise.
+     */
     private boolean fetchRegistry() {
         ClientResponse response = null;
         Stopwatch tracer = fetchRegistryTimer.start();
@@ -262,6 +288,11 @@ public class RemoteRegionRegistry implements LookupService<String> {
         return response;
     }
 
+    /**
+     * Fetch registry information from the remote region.
+     * @param delta - true, if the fetch needs to get deltas, false otherwise
+     * @return - response which has information about the data.
+     */
     private ClientResponse fetchRemoteRegistry(boolean delta) {
         logger.info(
                 "Getting instance registry info from the eureka server : {} , delta : {}",
@@ -294,6 +325,15 @@ public class RemoteRegionRegistry implements LookupService<String> {
         return response;
     }
 
+    /**
+     * Reconciles the delta information fetched to see if the hashcodes match.
+     * 
+     * @param response - the response of the delta fetch.
+     * @param delta - the delta information fetched previously for reconcililation.
+     * @param reconcileHashCode - the hashcode for comparison.
+     * @return - response
+     * @throws Throwable
+     */
     private ClientResponse reconcileAndLogDifference(ClientResponse response,
             Applications delta, String reconcileHashCode) throws Throwable {
         logger.warn(
