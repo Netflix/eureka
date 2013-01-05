@@ -16,6 +16,7 @@
 
 package com.netflix.eureka;
 
+import java.net.URL;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -32,6 +33,7 @@ import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.MyDataCenterInstanceConfig;
+import com.netflix.blitz4j.LoggingConfiguration;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.DiscoveryManager;
@@ -108,6 +110,8 @@ public class EurekaBootStrap implements ServletContextListener {
             if (Name.Amazon.equals(info.getDataCenterInfo().getName())) {
                 handleEIPbinding();
             }
+            // Initialize available remote registry
+            PeerAwareInstanceRegistry.getInstance().initRemoteRegionRegistry();
             // Register all monitoring statistics.
             EurekaMonitors.registerAllStats();
 
@@ -126,6 +130,7 @@ public class EurekaBootStrap implements ServletContextListener {
      */
     protected void initEurekaEnvironment() {
         logger.info("Setting the eureka configuration..");
+        LoggingConfiguration.getInstance().configure();
         EurekaServerConfig eurekaServerConfig = new DefaultEurekaServerConfig();
         EurekaServerConfigurationManager.getInstance().setConfiguration(
                 eurekaServerConfig);
@@ -187,7 +192,7 @@ public class EurekaBootStrap implements ServletContextListener {
                 }
             }
             PeerAwareInstanceRegistry.getInstance().shutdown();
-            destoryEurekaEnvironment();
+            destroyEurekaEnvironment();
 
         } catch (Throwable e) {
             logger.error("Error shutting down eureka", e);
@@ -199,7 +204,7 @@ public class EurekaBootStrap implements ServletContextListener {
     /**
      * Users can override to clean up the environment themselves.
      */
-    protected void destoryEurekaEnvironment() {
+    protected void destroyEurekaEnvironment() {
         
     }
 

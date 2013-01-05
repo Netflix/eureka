@@ -85,7 +85,7 @@ public class StatusResource {
         try {
             String givenHostName = new URI(url).getHost();
             Application app = PeerAwareInstanceRegistry.getInstance()
-            .getApplication(myAppName);
+            .getApplication(myAppName, false);
             for (InstanceInfo info : app.getInstances()) {
                 if (info.getHostName().equals(givenHostName)) {
                     return true;

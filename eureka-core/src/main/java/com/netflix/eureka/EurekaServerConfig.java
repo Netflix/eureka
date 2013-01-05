@@ -16,6 +16,7 @@
 
 package com.netflix.eureka;
 
+import java.net.URL;
 
 /**
  * Configuration information required by the eureka server to operate.
@@ -139,7 +140,7 @@ public interface EurekaServerConfig {
      * @return the number of retries.
      */
     int getNumberOfReplicationRetries();
-   
+
     /**
      * Gets the interval with which the status information about peer nodes is
      * updated.
@@ -307,7 +308,7 @@ public interface EurekaServerConfig {
      *         back up.
      */
     int getMaxElementsInStatusReplicationPool();
-    
+
     /**
      * Checks whether to synchronize instances when timestamp differs.
      * <p>
@@ -319,13 +320,13 @@ public interface EurekaServerConfig {
     boolean shouldSyncWhenTimestampDiffers();
 
     /**
-     * Get the number of times that a eureka node would try to get the registry information from
-     * the peers during startup.
+     * Get the number of times that a eureka node would try to get the registry
+     * information from the peers during startup.
      * 
      * @return the number of retries
      */
     int getRegistrySyncRetries();
-    
+
     /**
      * Get the maximum number of replication events that can be allowed to back
      * up in the replication pool. This replication pool is responsible for all
@@ -360,20 +361,97 @@ public interface EurekaServerConfig {
      * @return maximum number of threads to be used for replication.
      */
     int getMaxThreadsForPeerReplication();
-    
+
     /**
-     * Get the time in milliseconds to try to replicate before dropping replication events.
+     * Get the time in milliseconds to try to replicate before dropping
+     * replication events.
      * 
      * @return time in milliseconds
      */
     int getMaxTimeForReplication();
 
     /**
-     * Checks whether the connections to replicas should be primed. In AWS, the firewall requires sometime to establish network connection
-     * for new nodes.
+     * Checks whether the connections to replicas should be primed. In AWS, the
+     * firewall requires sometime to establish network connection for new nodes.
      * 
      * @return true, if connections should be primed, false otherwise.
      */
     boolean shouldPrimeAwsReplicaConnections();
+
+    /**
+     * Checks to see if the delta information can be served to client or not for
+     * remote regions.
+     * <p>
+     * <em>The changes are effective at runtime.</em>
+     * </p>
+     * 
+     * @return true if the delta information is allowed to be served, false
+     *         otherwise.
+     */
+    boolean shouldDisableDeltaForRemoteRegions();
+
+    /**
+     * Gets the timeout value for connecting to peer eureka nodes for remote
+     * regions.
+     * 
+     * @return timeout value in milliseconds.
+     */
+    int getRemoteRegionConnectTimeoutMs();
+
+    /**
+     * Gets the timeout value for reading information from peer eureka nodes for
+     * remote regions.
+     * 
+     * @return timeout value in milliseconds.
+     */
+    int getRemoteRegionReadTimeoutMs();
+
+    /**
+     * Gets the total number of <em>HTTP</em> connections allowed to peer eureka
+     * nodes for remote regions.
+     * 
+     * @return total number of allowed <em>HTTP</em> connections.
+     */
+
+    int getRemoteRegionTotalConnections();
+
+    /**
+     * Gets the total number of <em>HTTP</em> connections allowed to a
+     * particular peer eureka node for remote regions.
+     * 
+     * @return total number of allowed <em>HTTP</em> connections for a peer
+     *         node.
+     */
+    int getRemoteRegionTotalConnectionsPerHost();
+
+    /**
+     * Gets the idle time after which the <em>HTTP</em> connection should be
+     * cleaned up for remote regions.
+     * 
+     * @return idle time in seconds.
+     */
+    int getRemoteRegionConnectionIdleTimeoutSeconds();
+
+    /**
+     * Indicates whether the content fetched from eureka server has to be
+     * compressed for remote regions whenever it is supported by the server. The
+     * registry information from the eureka server is compressed for optimum
+     * network traffic.
+     * 
+     * @return true, if the content need to be compressed, false otherwise.
+     */
+    boolean shouldGZipContentFromRemoteRegion();
     
+    /**
+     * Get the list of remote region urls
+     * @return - array of string representing {@link URL}s.
+     */
+    String[] getRemoteRegionUrls();
+
+    /**
+     * Get the time interval for which the registryinformation need to be fetched from the remote region.
+     * @return time in seconds.
+     */
+    int getRemoteRegionRegistryFetchInterval();
+
 }
