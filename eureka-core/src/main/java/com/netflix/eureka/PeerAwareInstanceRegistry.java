@@ -694,7 +694,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
             if (availabilityZone == null
                     && US_EAST_1.equalsIgnoreCase(serverRegion)) {
                 return true;
-            } else if (availabilityZone.contains(serverRegion)) {
+            } else if ((availabilityZone != null) && (availabilityZone.contains(serverRegion))) {
                 // If in the same region as server, then consider it
                 // registerable
                 return true;
