@@ -165,6 +165,12 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                             r.getOverriddenStatus());
                 }
             }
+            InstanceStatus overriddenStatusFromMap = overriddenInstanceStatusMap.get(r.getId());
+            if (overriddenStatusFromMap != null) {
+                logger.info(
+                        "Storing overridden status {} from map", overriddenStatusFromMap);
+                r.setOverriddenStatus(overriddenStatusFromMap);
+            }
 
             // Set the status based on the overridden status rules
             InstanceStatus overriddenInstanceStatus = getOverriddenInstanceStatus(
