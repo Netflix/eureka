@@ -313,6 +313,14 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                     "Adding overridden status for instance id {} and the value is {}",
                     id, overriddenStatus.name());
             overriddenInstanceStatusMap.put(id, overriddenStatus);
+            List<InstanceInfo> instanceInfo = this.getInstancesById(id, false);
+            if ((instanceInfo != null) && (!instanceInfo.isEmpty())) {
+                instanceInfo.iterator().next().setOverriddenStatus(overriddenStatus);
+                logger.info(
+                        "Setting the overridden status for instance id {} and the value is {} ",
+                        id, overriddenStatus.name());
+              
+            }
         }
     }
 
