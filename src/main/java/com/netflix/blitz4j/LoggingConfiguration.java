@@ -67,6 +67,8 @@ import com.netflix.logging.messaging.MessageBatcher;
  */
 public class LoggingConfiguration implements PropertyListener {
 
+    private static final String LOG4J_ROOT_LOGGER = "log4j.rootLogger";
+    private static final String LOG4J_ROOT_CATEGORY = "log4j.rootCategory";
     private static final String LOG4J_PROPERTIES = "log4j.properties";
     private static final String BLITZ_LOGGER_FACTORY = "com.netflix.blitz4j.NFCategoryFactory";
     private static final String PROP_LOG4J_CONFIGURATION = "log4j.configuration";
@@ -148,6 +150,12 @@ public class LoggingConfiguration implements PropertyListener {
             
         }
         if (props != null) {
+            // If log4j properties is passed in as an override ignore the one that is loaded from log4j.properties.
+            // This could be a problem if the loaded one uses "log4j.rootLogger" instead of "log4j.rootCategory" 
+            if ((props.getProperty(LOG4J_ROOT_CATEGORY) != null || props.getProperty(LOG4J_ROOT_LOGGER) != null)) {
+                this.props.remove(LOG4J_ROOT_CATEGORY);
+                this.props.remove(LOG4J_ROOT_LOGGER);
+            }
             Enumeration enumeration = props.propertyNames();
             while (enumeration.hasMoreElements()) {
                 String key = (String) enumeration.nextElement();
@@ -358,9 +366,9 @@ public class LoggingConfiguration implements PropertyListener {
         logger.info("Updated properties is :" + updatedProps);
         consolidatedProps.putAll(updatedProps);
         logger.info("The root category for log4j.rootCategory now is "
-                + consolidatedProps.getProperty("log4j.rootCategory"));
+                + consolidatedProps.getProperty(LOG4J_ROOT_CATEGORY));
         logger.info("The root category for log4j.rootLogger now is "
-                + consolidatedProps.getProperty("log4j.rootLogger"));
+                + consolidatedProps.getProperty(LOG4J_ROOT_LOGGER));
 
         // Pause the async appenders so that the appenders are not accessed
         for (String originalAppenderName : originalAsyncAppenderNameMap
