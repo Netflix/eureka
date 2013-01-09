@@ -165,6 +165,12 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                             r.getOverriddenStatus());
                 }
             }
+            InstanceStatus overriddenStatusFromMap = overriddenInstanceStatusMap.get(r.getId());
+            if (overriddenStatusFromMap != null) {
+                logger.info(
+                        "Storing overridden status {} from map", overriddenStatusFromMap);
+                r.setOverriddenStatus(overriddenStatusFromMap);
+            }
 
             // Set the status based on the overridden status rules
             InstanceStatus overriddenInstanceStatus = getOverriddenInstanceStatus(
@@ -313,6 +319,14 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                     "Adding overridden status for instance id {} and the value is {}",
                     id, overriddenStatus.name());
             overriddenInstanceStatusMap.put(id, overriddenStatus);
+            List<InstanceInfo> instanceInfo = this.getInstancesById(id, false);
+            if ((instanceInfo != null) && (!instanceInfo.isEmpty())) {
+                instanceInfo.iterator().next().setOverriddenStatus(overriddenStatus);
+                logger.info(
+                        "Setting the overridden status for instance id {} and the value is {} ",
+                        id, overriddenStatus.name());
+              
+            }
         }
     }
 
