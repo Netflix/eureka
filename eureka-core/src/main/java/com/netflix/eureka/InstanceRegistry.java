@@ -86,7 +86,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
     private volatile MeasuredRate renewsLastMin;
     protected ConcurrentMap<String, InstanceStatus> overriddenInstanceStatusMap = CacheBuilder
             .newBuilder().initialCapacity(500)
-            .expireAfterAccess(5, TimeUnit.MINUTES)
+            .expireAfterAccess(1, TimeUnit.HOURS)
             .<String, InstanceStatus> build().asMap();
 
     // CircularQueues here for debugging/statistics purposes only
@@ -287,7 +287,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                             instanceInfo.getOverriddenStatus().name(),
                             instanceInfo.getId() };
                     logger.info(
-                            "The instance status {} is different from overridden instance status {] for instance {}. Hence setting the status to overridden status",
+                            "The instance status {} is different from overridden instance status {} for instance {}. Hence setting the status to overridden status",
                             args);
                     instanceInfo.setStatus(overriddenInstanceStatus);
                 }
