@@ -749,7 +749,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                 // If the url represents this host, do not replicate
                 // to yourself.
                 if (isThisMe(node.getServiceUrl())) {
-                    return;
+                    continue;
                 }
                 replicateInstanceActionsToPeers(action, appName, id, info,
                         newStatus, node);
