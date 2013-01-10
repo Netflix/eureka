@@ -1,25 +1,4 @@
-/*
- * Copyright 2012 Netflix, Inc.
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
 package com.netflix.blitz4j;
-
-/**
- * The configuration contract for blitz4j.
- * 
- * @author Karthik Ranganathan
- */ 
 
 public interface BlitzConfig {
 
@@ -196,5 +175,11 @@ public interface BlitzConfig {
      */
     public abstract boolean shouldRejectWhenAllBatcherThreadsUsed(
             String batcherName);
+    
+    /**
+     * Checks to see if the log4j.properties should be loaded from classpath during configuration.
+     * @return true, if log4j.properties need to be loaded, false otherwise.
+     */
+    public boolean shouldLoadLog4jPropertiesFromClassPath();
 
 }

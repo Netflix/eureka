@@ -342,4 +342,12 @@ public class DefaultBlitz4jConfig implements BlitzConfig {
             return defaultValue;
         }
     }
+
+    @Override
+    public boolean shouldLoadLog4jPropertiesFromClassPath() {
+        return CONFIGURATION.getBooleanProperty(
+                "netflix.blitz4j" + ".shouldLoadLog4jProperties",
+                Boolean.valueOf(this.getPropertyValue("netflix.blitz4j"
+                        + ".shouldLoadLog4jProperties", "true"))).get();
+    }
 }

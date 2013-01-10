@@ -123,11 +123,14 @@ public class LoggingConfiguration implements PropertyListener {
         String log4jConfigurationFile = System
         .getProperty(PROP_LOG4J_CONFIGURATION);
 
+        this.blitz4jConfig = new DefaultBlitz4jConfig(props);
+        
         if (log4jConfigurationFile != null) {
             loadLog4jConfigurationFile(log4jConfigurationFile);
 
         }
-        else {
+        else if (blitz4jConfig.shouldLoadLog4jPropertiesFromClassPath()) {
+            
            InputStream in = null;
             try {
                 URL url = Loader.getResource(LOG4J_PROPERTIES);
@@ -150,12 +153,6 @@ public class LoggingConfiguration implements PropertyListener {
             
         }
         if (props != null) {
-            // If log4j properties is passed in as an override ignore the one that is loaded from log4j.properties.
-            // This could be a problem if the loaded one uses "log4j.rootLogger" instead of "log4j.rootCategory" 
-            if ((props.getProperty(LOG4J_ROOT_CATEGORY) != null || props.getProperty(LOG4J_ROOT_LOGGER) != null)) {
-                this.props.remove(LOG4J_ROOT_CATEGORY);
-                this.props.remove(LOG4J_ROOT_LOGGER);
-            }
             Enumeration enumeration = props.propertyNames();
             while (enumeration.hasMoreElements()) {
                 String key = (String) enumeration.nextElement();
@@ -164,7 +161,6 @@ public class LoggingConfiguration implements PropertyListener {
             }
         }
         this.blitz4jConfig = new DefaultBlitz4jConfig(this.props);
-        
         NFHierarchy nfHierarchy = null;
         // Make log4j use blitz4j implementations
         if (blitz4jConfig.shouldUseLockFree()
