@@ -588,12 +588,14 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                 }
                 app.addInstance(decorateInstanceInfo(lease));
             }
+            Applications allAppsInLocalRegion = getApplications(false);
+            
             for (RemoteRegionRegistry remoteRegistry : this.remoteRegionRegistryList) {
                 Applications applications = remoteRegistry
                         .getApplicationDeltas();
                 for (Application application : applications
                         .getRegisteredApplications()) {
-                    Application appInLocalRegistry = apps
+                    Application appInLocalRegistry = allAppsInLocalRegion
                             .getRegisteredApplications(application.getName());
                     if (appInLocalRegistry == null) {
                         apps.addApplication(application);
