@@ -40,6 +40,7 @@ import com.netflix.appinfo.LeaseInfo;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.DiscoveryManager;
+import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.LookupService;
@@ -90,9 +91,11 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
     private static final Logger logger = LoggerFactory
             .getLogger(PeerAwareInstanceRegistry.class);
 
-    private static final EurekaServerConfig eurekaServerConfig = EurekaServerConfigurationManager
+    private static final EurekaServerConfig EUREKA_SERVER_CONFIG = EurekaServerConfigurationManager
             .getInstance().getConfiguration();
-    private static final String DICOVERY_FAILED_REPLICATION_AFTER_RETRY = "FailedReplicationAfterRetry";
+    private static final EurekaClientConfig EUREKA_CLIENT_CONFIG = DiscoveryManager
+            .getInstance().getEurekaClientConfig();
+
     private long startupTime = 0;
 
     private boolean peerInstancesTransferEmptyOnStartup = true;
@@ -173,8 +176,8 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
 
             }
 
-        }, eurekaServerConfig.getRenewalThresholdUpdateIntervalMs(),
-                eurekaServerConfig.getRenewalThresholdUpdateIntervalMs());
+        }, EUREKA_SERVER_CONFIG.getRenewalThresholdUpdateIntervalMs(),
+                EUREKA_SERVER_CONFIG.getRenewalThresholdUpdateIntervalMs());
     }
 
     /**
@@ -196,8 +199,8 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                     }
 
                 }
-            }, eurekaServerConfig.getPeerEurekaNodesUpdateIntervalMs(),
-                    eurekaServerConfig.getPeerEurekaNodesUpdateIntervalMs());
+            }, EUREKA_SERVER_CONFIG.getPeerEurekaNodesUpdateIntervalMs(),
+                    EUREKA_SERVER_CONFIG.getPeerEurekaNodesUpdateIntervalMs());
 
         } catch (Exception e) {
             throw new IllegalStateException(e);
@@ -258,7 +261,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                 .getLookupService();
         int count = 0;
 
-        for (int i = 0; ((i < eurekaServerConfig.getRegistrySyncRetries()) && (count == 0)); i++) {
+        for (int i = 0; ((i < EUREKA_SERVER_CONFIG.getRegistrySyncRetries()) && (count == 0)); i++) {
             Applications apps = lookupService.getApplications();
             for (Application app : apps.getRegisteredApplications()) {
                 for (InstanceInfo instance : app.getInstances()) {
@@ -289,7 +292,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
     public void openForTraffic(int count) {
         // Renewals happen every 30 seconds and for a minute it should be a
         // factor of 2.
-        numberOfRenewsPerMinThreshold = (int) ((count * 2) * eurekaServerConfig
+        numberOfRenewsPerMinThreshold = (int) ((count * 2) * EUREKA_SERVER_CONFIG
                 .getRenewalPercentThreshold());
         logger.info("Got " + count + " instances from neighboring DS node");
         logger.info("Renew threshold is: " + numberOfRenewsPerMinThreshold);
@@ -299,7 +302,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
         }
         boolean isAws = (Name.Amazon.equals(ApplicationInfoManager
                 .getInstance().getInfo().getDataCenterInfo().getName()));
-        if (isAws && eurekaServerConfig.shouldPrimeAwsReplicaConnections()) {
+        if (isAws && EUREKA_SERVER_CONFIG.shouldPrimeAwsReplicaConnections()) {
             logger.info("Priming AWS connections for all replicas..");
             primeAwsReplicas();
         }
@@ -389,7 +392,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
     public boolean shouldAllowAccess() {
         if (this.peerInstancesTransferEmptyOnStartup) {
             if (!(System.currentTimeMillis() > this.startupTime
-                    + eurekaServerConfig.getWaitTimeInMsWhenSyncEmpty())) {
+                    + EUREKA_SERVER_CONFIG.getWaitTimeInMsWhenSyncEmpty())) {
                 return false;
             }
         }
@@ -527,7 +530,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                         + " is lower than the minimum threshold. Number of Renewals Last Minute : "
                         + getNumOfRenewsInLastMin()
                         + ". The Threshold is "
-                        + eurekaServerConfig.getRenewalPercentThreshold()
+                        + EUREKA_SERVER_CONFIG.getRenewalPercentThreshold()
                         + " of total instances : "
                         + numberOfRenewsPerMinThreshold);
             } else {
@@ -555,7 +558,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
      * @return true if the self-preservation mode is enabled, false otherwise.
      */
     public boolean isSelfPreservationModeEnabled() {
-        return eurekaServerConfig.shouldEnableSelfPreservation();
+        return EUREKA_SERVER_CONFIG.shouldEnableSelfPreservation();
     }
 
     /**
@@ -605,8 +608,8 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
             }
             // Update threshold only if the threshold is greater than the
             // current expected threshold.
-            if ((count * 2) > (eurekaServerConfig.getRenewalPercentThreshold() * numberOfRenewsPerMinThreshold)) {
-                numberOfRenewsPerMinThreshold = (int) ((count * 2) * eurekaServerConfig
+            if ((count * 2) > (EUREKA_SERVER_CONFIG.getRenewalPercentThreshold() * numberOfRenewsPerMinThreshold)) {
+                numberOfRenewsPerMinThreshold = (int) ((count * 2) * EUREKA_SERVER_CONFIG
                         .getRenewalPercentThreshold());
                 logger.info("Updated the renewal threshold to : {}",
                         numberOfRenewsPerMinThreshold);
@@ -649,7 +652,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
     public int isBelowRenewThresold() {
         if ((getNumOfRenewsInLastMin() < numberOfRenewsPerMinThreshold)
                 && ((this.startupTime > 0) && (System.currentTimeMillis() > this.startupTime
-                        + (eurekaServerConfig.getWaitTimeInMsWhenSyncEmpty())))) {
+                        + (EUREKA_SERVER_CONFIG.getWaitTimeInMsWhenSyncEmpty())))) {
             return 1;
         } else {
             return 0;
@@ -684,8 +687,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
      */
     public boolean isRegisterable(InstanceInfo instanceInfo) {
         DataCenterInfo datacenterInfo = instanceInfo.getDataCenterInfo();
-        String serverRegion = ConfigurationManager.getDeploymentContext()
-                .getDeploymentRegion();
+        String serverRegion = EUREKA_CLIENT_CONFIG.getRegion();
         if (AmazonInfo.class.isInstance(datacenterInfo)) {
             AmazonInfo info = AmazonInfo.class.cast(instanceInfo
                     .getDataCenterInfo());

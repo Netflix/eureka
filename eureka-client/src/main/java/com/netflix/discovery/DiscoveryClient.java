@@ -1143,8 +1143,9 @@ public class DiscoveryClient implements LookupService {
                 return i;
             }
         }
-        logger.error("DISCOVERY: invalid zone - " + myZone + " defaulting to "
-                + availZones[0]);
+        logger.warn(
+                "DISCOVERY: Could not pick a zone based on preferred zone settings. My zone - {}, preferSameZone- {}. Defaulting to "
+                        + availZones[0], myZone, preferSameZone);
         return 0;
     }
 
