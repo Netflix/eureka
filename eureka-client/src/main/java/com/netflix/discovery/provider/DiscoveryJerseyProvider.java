@@ -92,9 +92,8 @@ MessageBodyReader {
             return getSerializer(serializableClass).read(inputStream,
                     serializableClass, mediaType);
         } catch (Throwable th) {
-            new IOException("Cannot read the object for :" + serializableClass, th);
+           throw new RuntimeException("Cannot read the object for :" + serializableClass, th);
         }
-        return null;
     }
 
     /*

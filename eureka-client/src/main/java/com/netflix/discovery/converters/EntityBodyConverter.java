@@ -42,6 +42,9 @@ import com.thoughtworks.xstream.XStream;
  */
 public class EntityBodyConverter implements ISerializer {
 
+    private static final String XML = "xml";
+    private static final String JSON = "json";
+
     /*
      * (non-Javadoc)
      * 
@@ -50,12 +53,7 @@ public class EntityBodyConverter implements ISerializer {
      */
     public Object read(InputStream is, Class type, MediaType mediaType)
     throws IOException {
-        XStream xstream = null;
-        if (MediaType.APPLICATION_JSON_TYPE.equals(mediaType)) {
-            xstream = JsonXStream.getInstance();
-        } else if (MediaType.APPLICATION_XML_TYPE.equals(mediaType)) {
-            xstream = XmlXStream.getInstance();
-        }
+        XStream xstream = getXStreamInstance(mediaType);
         if (xstream != null) {
             return xstream.fromXML(is);
         } else {
@@ -73,12 +71,7 @@ public class EntityBodyConverter implements ISerializer {
      */
     public void write(Object object, OutputStream os, MediaType mediaType)
     throws IOException {
-        XStream xstream = null;
-        if (MediaType.APPLICATION_JSON_TYPE.equals(mediaType)) {
-            xstream = JsonXStream.getInstance();
-        } else if (MediaType.APPLICATION_XML_TYPE.equals(mediaType)) {
-            xstream = XmlXStream.getInstance();
-        }
+        XStream xstream = getXStreamInstance(mediaType);
         if (xstream != null) {
             xstream.toXML(object, os);
         } else {
@@ -86,5 +79,15 @@ public class EntityBodyConverter implements ISerializer {
                     + mediaType.getType() + " is currently not supported for "
                     + object.getClass().getName());
         }
+    }
+    
+    private XStream getXStreamInstance(MediaType mediaType) {
+        XStream xstream = null;
+        if (JSON.equalsIgnoreCase(mediaType.getSubtype())) {
+            xstream = JsonXStream.getInstance();
+        } else if (XML.equalsIgnoreCase(mediaType.getSubtype())) {
+            xstream = XmlXStream.getInstance();
+        }
+        return xstream;
     }
 }
