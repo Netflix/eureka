@@ -185,12 +185,15 @@ public class MessageBatcher<T> {
         maxDelay = (long) (maxDelaySec * 1000000000);
     }
 
-    /** Set the number of threads that process batches. */
-    void setProcessorMaxThreads(int threads) {
-        if (processor.getCorePoolSize() > threads) {
-            processor.setCorePoolSize(threads);
+    /**
+     * Set the max threads for the processors
+     * @param maxThreads - max threads that can be launched for processing
+     */
+    public void setProcessorMaxThreads(int maxThreads) {
+        if (processor.getCorePoolSize() > maxThreads) {
+            processor.setCorePoolSize(maxThreads);
         }
-        processor.setMaximumPoolSize(threads);
+        processor.setMaximumPoolSize(maxThreads);
     }
 
     /**

@@ -24,6 +24,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.SynchronousQueue;
@@ -101,7 +102,7 @@ public class LoggingConfiguration implements PropertyListener {
         .setDaemon(false).setNameFormat("DynamicLog4jListener").build();
 
         this.executorPool = new ThreadPoolExecutor(0, 1, 15 * 60,
-                TimeUnit.SECONDS, new SynchronousQueue(), threadFactory);
+                TimeUnit.SECONDS, new ArrayBlockingQueue(100), threadFactory);
     }
 
     /**
@@ -122,50 +123,11 @@ public class LoggingConfiguration implements PropertyListener {
        // First try to load the log4j configuration file from the classpath
         String log4jConfigurationFile = System
         .getProperty(PROP_LOG4J_CONFIGURATION);
-
-        this.blitz4jConfig = new DefaultBlitz4jConfig(props);
         
-        if (log4jConfigurationFile != null) {
-            loadLog4jConfigurationFile(log4jConfigurationFile);
-
-        }
-        else if (blitz4jConfig.shouldLoadLog4jPropertiesFromClassPath()) {
-            
-           InputStream in = null;
-            try {
-                URL url = Loader.getResource(LOG4J_PROPERTIES);
-                if (url != null) {
-                    in = url.openStream();
-                    this.props.load(in);
-                }
-            } catch (Throwable t) {
-                
-            } finally {
-
-                if (in != null) {
-                    try {
-                        in.close();
-                    } catch (IOException ignore) {
-
-                    }
-                }
-            }
-            
-        }
-        if (props != null) {
-            Enumeration enumeration = props.propertyNames();
-            while (enumeration.hasMoreElements()) {
-                String key = (String) enumeration.nextElement();
-                String propertyValue = props.getProperty(key);
-                this.props.setProperty(key, propertyValue);
-            }
-        }
-        this.blitz4jConfig = new DefaultBlitz4jConfig(this.props);
         NFHierarchy nfHierarchy = null;
         // Make log4j use blitz4j implementations
-        if (blitz4jConfig.shouldUseLockFree()
-                && (!NFHierarchy.class.equals(LogManager.getLoggerRepository()
-                        .getClass()))) {
+        if ((!NFHierarchy.class.equals(LogManager.getLoggerRepository()
+                .getClass()))) {
             nfHierarchy = new NFHierarchy(new NFRootLogger(
                     org.apache.log4j.Level.INFO));
             org.apache.log4j.LogManager.setRepositorySelector(
@@ -188,11 +150,53 @@ public class LoggingConfiguration implements PropertyListener {
                 }
             }
         } else {
-            if (blitz4jConfig.shouldUseLockFree()) {
-                this.props.setProperty(PROP_LOG4J_LOGGER_FACTORY,
-                        BLITZ_LOGGER_FACTORY);
+            this.props.setProperty(PROP_LOG4J_LOGGER_FACTORY,
+                    BLITZ_LOGGER_FACTORY);
+
+        }
+        if (log4jConfigurationFile != null) {
+            loadLog4jConfigurationFile(log4jConfigurationFile);
+            // First configure without async so that we can capture the output
+            // of dependent libraries
+            PropertyConfigurator.configure(this.props);
+        }
+
+        this.blitz4jConfig = new DefaultBlitz4jConfig(props);
+
+        if ((log4jConfigurationFile == null)
+                && (blitz4jConfig.shouldLoadLog4jPropertiesFromClassPath())) {
+
+            InputStream in = null;
+            try {
+                URL url = Loader.getResource(LOG4J_PROPERTIES);
+                if (url != null) {
+                    in = url.openStream();
+                    this.props.load(in);
+                }
+            } catch (Throwable t) {
+
+            } finally {
+
+                if (in != null) {
+                    try {
+                        in.close();
+                    } catch (IOException ignore) {
+
+                    }
+                }
+            }
+
+        }
+        if (props != null) {
+            Enumeration enumeration = props.propertyNames();
+            while (enumeration.hasMoreElements()) {
+                String key = (String) enumeration.nextElement();
+                String propertyValue = props.getProperty(key);
+                this.props.setProperty(key, propertyValue);
             }
         }
+        this.blitz4jConfig = new DefaultBlitz4jConfig(this.props);
+        
     
         String[] asyncAppenderArray = blitz4jConfig.getAsyncAppenders();
         if (asyncAppenderArray == null) {
