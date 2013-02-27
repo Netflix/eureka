@@ -18,6 +18,7 @@ package com.netflix.eureka.resources;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
@@ -179,8 +180,9 @@ public class ResponseCache {
      */
     public byte[] getGZIP(Key key) {
         Value payload = getValue(key);
-        if (payload == null)
+        if (payload == null) {
             return null;
+        }
         return payload.getGzipped();
     }
 
@@ -351,31 +353,43 @@ public class ResponseCache {
     }
 
     private Applications getApplicationsForVip(Key key, InstanceRegistry registry) {
+        Object[] args = { key.getEntityType(), key.getName(), key.getVersion(), key.getType() };
+        logger.debug(
+                "Retrieving applications from registry for key : {} {} {} {}",
+                args);
         Applications toReturn = new Applications();
         Applications applications = registry.getApplications();
         for (Application application : applications.getRegisteredApplications()) {
             Application appToAdd = null;
             for (InstanceInfo instanceInfo : application.getInstances()) {
                 String vipAddress;
-                if (key.getEntityType() == Key.EntityType.VIP) {
+                if (Key.EntityType.VIP.equals(key.getEntityType())) {
                     vipAddress = instanceInfo.getVIPAddress();
-                } else if (key.getEntityType() == Key.EntityType.SVIP) {
+                } else if (Key.EntityType.SVIP.equals(key.getEntityType())) {
                     vipAddress = instanceInfo.getSecureVipAddress();
                 } else {
                     // should not happen, but just in case.
                     continue;
                 }
 
-                if (null != vipAddress && vipAddress.contains(key.getName())) { // Vip address can be comma-separated thats why we do contains.
-                    if (null == appToAdd) {
-                        appToAdd = new Application(application.getName());
-                        toReturn.addApplication(appToAdd);
+                if (null != vipAddress) {
+                    String[] vipAddresses = vipAddress.split(",");
+                    Arrays.sort(vipAddresses);
+                    if (Arrays.binarySearch(vipAddresses, key.getName()) > 0) {
+                        if (null == appToAdd) {
+                            appToAdd = new Application(application.getName());
+                            toReturn.addApplication(appToAdd);
+                        }
+                        appToAdd.addInstance(instanceInfo);
                     }
-                    appToAdd.addInstance(instanceInfo);
                 }
             }
         }
         toReturn.setAppsHashCode(toReturn.getReconcileHashCode());
+        args = new Object[]{ key.getEntityType(), key.getName(), key.getVersion(), key.getType(), toReturn.getReconcileHashCode() };
+        logger.debug(
+                "Retrieved applications from registry for key : {} {} {} {}, reconcile hashcode: {}",
+                args);
         return toReturn;
     }
 
