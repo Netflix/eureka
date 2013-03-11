@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.AssociateAddressRequest;
@@ -310,8 +311,21 @@ public class EIPManager {
     private AmazonEC2 getEC2Service() {
         eurekaConfig = EurekaServerConfigurationManager.getInstance()
         .getConfiguration();
-        AmazonEC2 ec2Service = new AmazonEC2Client(new BasicAWSCredentials(
-                eurekaConfig.getAWSAccessId(), eurekaConfig.getAWSSecretKey()));
+
+        String aWSAccessId = eurekaConfig.getAWSAccessId();
+        String aWSSecretKey = eurekaConfig.getAWSSecretKey();
+
+        AmazonEC2 ec2Service;
+        if (null != aWSAccessId && !"".equals(aWSAccessId) &&
+                null != aWSSecretKey && !"".equals(aWSSecretKey)) {
+            ec2Service = new AmazonEC2Client(new BasicAWSCredentials(
+                    aWSAccessId, aWSSecretKey));
+        }
+        else
+        {
+            ec2Service = new AmazonEC2Client(
+                    new InstanceProfileCredentialsProvider());
+        }
 
         String region = DiscoveryManager.getInstance().getEurekaClientConfig()
         .getRegion();
