@@ -522,9 +522,10 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
      */
     @Override
     public boolean isLeaseExpirationEnabled() {
-        boolean leaseExpirationEnabled = (getNumOfRenewsInLastMin() > numberOfRenewsPerMinThreshold);
+        boolean leaseExpirationEnabled = (numberOfRenewsPerMinThreshold > 0)
+                && (getNumOfRenewsInLastMin() > numberOfRenewsPerMinThreshold);
         boolean isSelfPreservationModeEnabled = isSelfPreservationModeEnabled();
-        if ((!leaseExpirationEnabled)) {
+      if ((!leaseExpirationEnabled)) {
             if (isSelfPreservationModeEnabled) {
                 logger.error("The lease expiration has been disabled since the number of renewals per minute  "
                         + " is lower than the minimum threshold. Number of Renewals Last Minute : "
