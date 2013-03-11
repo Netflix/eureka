@@ -995,7 +995,7 @@ public class InstanceInfo {
         while (matcher.find()) {
             String key = matcher.group(1);
             String value = DynamicPropertyFactory.getInstance()
-            .getStringProperty(key, null).get();
+            .getStringProperty(key, "").get();
 
             logger.debug("att:" + matcher.group());
             logger.debug(", att key:" + key);
