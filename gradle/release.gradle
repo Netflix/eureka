@@ -57,7 +57,7 @@ ext.'gradle.release.useAutomaticVersion' = "true"
 
 release {
     // http://tellurianring.com/wiki/gradle/release
-    failOnCommitNeeded=true
+    failOnCommitNeeded=false
     failOnPublishNeeded=true
     failOnUnversionedFiles=true
     failOnUpdateNeeded=true
