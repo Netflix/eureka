@@ -375,7 +375,7 @@ public class ResponseCache {
                 if (null != vipAddress) {
                     String[] vipAddresses = vipAddress.split(",");
                     Arrays.sort(vipAddresses);
-                    if (Arrays.binarySearch(vipAddresses, key.getName()) > 0) {
+                    if (Arrays.binarySearch(vipAddresses, key.getName()) >= 0) {
                         if (null == appToAdd) {
                             appToAdd = new Application(application.getName());
                             toReturn.addApplication(appToAdd);
