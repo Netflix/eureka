@@ -37,7 +37,6 @@ import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.LeaseInfo;
-import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaClientConfig;
@@ -267,11 +266,11 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                 for (InstanceInfo instance : app.getInstances()) {
                     try {
                         if (isRegisterable(instance)) {
-                        
-                                register(instance, instance.getLeaseInfo()
-                                        .getDurationInSecs(), true);
-                                count++;
-                       }
+
+                            register(instance, instance.getLeaseInfo()
+                                    .getDurationInSecs(), true);
+                            count++;
+                        }
                     } catch (Throwable t) {
                         logger.error("During DS init copy", t);
                     }
@@ -288,7 +287,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
         }
         return count;
     }
-    
+
     public void openForTraffic(int count) {
         // Renewals happen every 30 seconds and for a minute it should be a
         // factor of 2.
@@ -347,7 +346,8 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                         // If the lease is expired - do not worry about priming
                         if (System.currentTimeMillis() > (leaseInfo
                                 .getRenewalTimestamp() + (leaseInfo
-                                .getDurationInSecs() * 1000))) {
+                                .getDurationInSecs() * 1000))
+                                + (2 * 60 * 1000)) {
                             continue;
                         }
                         peerHostName = peerInstanceInfo.getHostName();
@@ -525,7 +525,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
         boolean leaseExpirationEnabled = (numberOfRenewsPerMinThreshold > 0)
                 && (getNumOfRenewsInLastMin() > numberOfRenewsPerMinThreshold);
         boolean isSelfPreservationModeEnabled = isSelfPreservationModeEnabled();
-      if ((!leaseExpirationEnabled)) {
+        if ((!leaseExpirationEnabled)) {
             if (isSelfPreservationModeEnabled) {
                 logger.error("The lease expiration has been disabled since the number of renewals per minute  "
                         + " is lower than the minimum threshold. Number of Renewals Last Minute : "
@@ -609,7 +609,8 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
             }
             // Update threshold only if the threshold is greater than the
             // current expected threshold.
-            if ((count * 2) > (EUREKA_SERVER_CONFIG.getRenewalPercentThreshold() * numberOfRenewsPerMinThreshold)) {
+            if ((count * 2) > (EUREKA_SERVER_CONFIG
+                    .getRenewalPercentThreshold() * numberOfRenewsPerMinThreshold)) {
                 numberOfRenewsPerMinThreshold = (int) ((count * 2) * EUREKA_SERVER_CONFIG
                         .getRenewalPercentThreshold());
                 logger.info("Updated the renewal threshold to : {}",
@@ -682,8 +683,11 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
     }
 
     /**
-     * Checks if an instance is registerable in this region. Instances from other regions are rejected.
-     * @param instanceInfo - the instance info information of the instance
+     * Checks if an instance is registerable in this region. Instances from
+     * other regions are rejected.
+     * 
+     * @param instanceInfo
+     *            - the instance info information of the instance
      * @return - true, if it can be registered in this server, false otherwise.
      */
     public boolean isRegisterable(InstanceInfo instanceInfo) {
@@ -697,7 +701,8 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
             if (availabilityZone == null
                     && US_EAST_1.equalsIgnoreCase(serverRegion)) {
                 return true;
-            } else if ((availabilityZone != null) && (availabilityZone.contains(serverRegion))) {
+            } else if ((availabilityZone != null)
+                    && (availabilityZone.contains(serverRegion))) {
                 // If in the same region as server, then consider it
                 // registerable
                 return true;
@@ -705,7 +710,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
         }
         return false;
     }
-    
+
     /**
      * Checks if the given service url contains the current host which is trying
      * to replicate. Only after the EIP binding is done the host has a chance to
@@ -818,6 +823,5 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
         }
 
     }
-   
-   
+
 }
