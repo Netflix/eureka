@@ -171,7 +171,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
 
             @Override
             public void run() {
-                updateRenewalThreshold();
+                updateRenewalThreshold(true);
 
             }
 
@@ -426,10 +426,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
         if (super.cancel(appName, id, isReplication)) {
             replicateToPeers(Action.Cancel, appName, id, null, null,
                     isReplication);
-            if (this.numberOfRenewsPerMinThreshold > 0) {
-                // Since the client wants to cancel it, reduce the threshold (1 for 30 seconds, 2 for a minute)
-                this.numberOfRenewsPerMinThreshold = this.numberOfRenewsPerMinThreshold - 2;
-            }
+            this.updateRenewalThreshold(false);;
             return true;
         }
         return false;
@@ -597,12 +594,20 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
      * renewals. The threshold is a percentage as specified in
      * {@link EurekaServerConfig#getRenewalPercentThreshold()} of renewals
      * received per minute {@link #getNumOfRenewsInLastMin()}.
+     * 
+     * @param updateFromClient - if true, sets the threshold based on the client, if not does it from its own registry
      */
-    private void updateRenewalThreshold() {
+    private synchronized void updateRenewalThreshold(boolean updateFromClient) {
         try {
-            LookupService lookupService = DiscoveryManager.getInstance()
-                    .getLookupService();
-            Applications apps = lookupService.getApplications();
+            Applications apps = null;
+            if (updateFromClient) {
+                LookupService lookupService = DiscoveryManager.getInstance()
+                .getLookupService();
+                apps = lookupService.getApplications();
+            } else {
+                apps = this.getApplications();
+            }
+
             int count = 0;
             for (Application app : apps.getRegisteredApplications()) {
                 for (InstanceInfo instance : app.getInstances()) {
