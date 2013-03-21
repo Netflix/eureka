@@ -426,6 +426,10 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
         if (super.cancel(appName, id, isReplication)) {
             replicateToPeers(Action.Cancel, appName, id, null, null,
                     isReplication);
+            if (this.numberOfRenewsPerMinThreshold > 0) {
+                // Since the client wants to cancel it, reduce the threshold (1 for 30 seconds, 2 for a minute)
+                this.numberOfRenewsPerMinThreshold = this.numberOfRenewsPerMinThreshold - 2;
+            }
             return true;
         }
         return false;
