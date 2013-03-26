@@ -10,9 +10,8 @@ createReleaseTag.dependsOn preTagCommit
 def buildTasks = tasks.matching { it.name =~ /:build/ }
 preTagCommit.dependsOn buildTasks
 preTagCommit.dependsOn checkSnapshotDependencies
-//checkSnapshotDependencies.dependsOn confirmReleaseVersion // Introduced in 1.0, forces readLine
-//confirmReleaseVersion.dependsOn unSnapshotVersion
-checkSnapshotDependencies.dependsOn unSnapshotVersion // Remove once above is fixed
+checkSnapshotDependencies.dependsOn confirmReleaseVersion
+confirmReleaseVersion.dependsOn unSnapshotVersion
 unSnapshotVersion.dependsOn checkUpdateNeeded
 checkUpdateNeeded.dependsOn checkCommitNeeded
 checkCommitNeeded.dependsOn initScmPlugin
@@ -34,20 +33,14 @@ checkCommitNeeded.dependsOn initScmPlugin
 task releaseArtifactory(dependsOn: [checkSnapshotDependencies, uploadArtifactory])
 
 // Ensure upload happens before taggging but after all pre-checks
-//releaseArtifactory.dependsOn checkSnapshotDependencies
-createReleaseTag.dependsOn releaseArtifactory
-gradle.taskGraph.whenReady { taskGraph ->
-    if ( taskGraph.hasTask(uploadArtifactory) && rootProject.status == 'release' && !taskGraph.hasTask(':release') ) {
-        throw new GradleException('Project has to be release status releasing to Artifactory')
-    }
-}
 subprojects.each { project ->
+    createReleaseTag.dependsOn releaseArtifactory
     project.uploadMavenCentral.dependsOn rootProject.checkSnapshotDependencies
     rootProject.createReleaseTag.dependsOn project.uploadMavenCentral
 
     gradle.taskGraph.whenReady { taskGraph ->
-        if ( taskGraph.hasTask(project.uploadMavenCentral) && !taskGraph.hasTask(':release') ) {
-            throw new GradleException('"release" task has to be run before uploading to Maven Central')
+        if ( rootProject.status == 'release' && !taskGraph.hasTask(':release') ) {
+            throw new GradleException('"release" task has to be run before uploading a release')
         }
     }
 }
@@ -59,8 +52,10 @@ release {
     // http://tellurianring.com/wiki/gradle/release
     failOnCommitNeeded=true
     failOnPublishNeeded=true
+    failOnSnapshotDependencies=true
     failOnUnversionedFiles=true
     failOnUpdateNeeded=true
     includeProjectNameInTag=true
+    revertOnFail=true
     requireBranch = null
 }
