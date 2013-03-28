@@ -96,7 +96,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
             .getInstance().getEurekaClientConfig();
 
     private long startupTime = 0;
-
+    private Object lock = new Object();
     private boolean peerInstancesTransferEmptyOnStartup = true;
     private static final Timer timerReplicaNodes = new Timer(
             "Eureka-PeerNodesUpdater", true);
@@ -123,6 +123,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
             1000 * 60 * 1);
 
     private volatile int numberOfRenewsPerMinThreshold;
+    private volatile int expectedNumberOfRenewsPerMin;
 
     private AtomicReference<List<PeerEurekaNode>> peerEurekaNodes;
 
@@ -171,7 +172,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
 
             @Override
             public void run() {
-                updateRenewalThreshold(true);
+                updateRenewalThreshold();
 
             }
 
@@ -291,7 +292,8 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
     public void openForTraffic(int count) {
         // Renewals happen every 30 seconds and for a minute it should be a
         // factor of 2.
-        numberOfRenewsPerMinThreshold = (int) ((count * 2) * EUREKA_SERVER_CONFIG
+        this.expectedNumberOfRenewsPerMin = count * 2;
+        this.numberOfRenewsPerMinThreshold = (int)(this.expectedNumberOfRenewsPerMin * EUREKA_SERVER_CONFIG
                 .getRenewalPercentThreshold());
         logger.info("Got " + count + " instances from neighboring DS node");
         logger.info("Renew threshold is: " + numberOfRenewsPerMinThreshold);
@@ -426,7 +428,16 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
         if (super.cancel(appName, id, isReplication)) {
             replicateToPeers(Action.Cancel, appName, id, null, null,
                     isReplication);
-            this.updateRenewalThreshold(false);;
+            synchronized (lock) {
+                if (this.expectedNumberOfRenewsPerMin > 0) {
+                    // Since the client wants to cancel it, reduce the threshold
+                    // (1
+                    // for 30 seconds, 2 for a minute)
+                    this.expectedNumberOfRenewsPerMin = this.expectedNumberOfRenewsPerMin - 2;
+                    this.numberOfRenewsPerMinThreshold = (int) (this.expectedNumberOfRenewsPerMin * EUREKA_SERVER_CONFIG
+                            .getRenewalPercentThreshold());
+                }
+            }
             return true;
         }
         return false;
@@ -594,20 +605,12 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
      * renewals. The threshold is a percentage as specified in
      * {@link EurekaServerConfig#getRenewalPercentThreshold()} of renewals
      * received per minute {@link #getNumOfRenewsInLastMin()}.
-     * 
-     * @param updateFromClient - if true, sets the threshold based on the client, if not does it from its own registry
      */
-    private synchronized void updateRenewalThreshold(boolean updateFromClient) {
+    private void updateRenewalThreshold() {
         try {
-            Applications apps = null;
-            if (updateFromClient) {
-                LookupService lookupService = DiscoveryManager.getInstance()
-                .getLookupService();
-                apps = lookupService.getApplications();
-            } else {
-                apps = this.getApplications();
-            }
-
+            LookupService lookupService = DiscoveryManager.getInstance()
+                    .getLookupService();
+            Applications apps = lookupService.getApplications();
             int count = 0;
             for (Application app : apps.getRegisteredApplications()) {
                 for (InstanceInfo instance : app.getInstances()) {
@@ -618,13 +621,16 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
             }
             // Update threshold only if the threshold is greater than the
             // current expected threshold.
-            if ((count * 2) > (EUREKA_SERVER_CONFIG
-                    .getRenewalPercentThreshold() * numberOfRenewsPerMinThreshold)) {
-                numberOfRenewsPerMinThreshold = (int) ((count * 2) * EUREKA_SERVER_CONFIG
-                        .getRenewalPercentThreshold());
-                logger.info("Updated the renewal threshold to : {}",
-                        numberOfRenewsPerMinThreshold);
+            synchronized (lock) {
+                if ((count * 2) > (EUREKA_SERVER_CONFIG
+                        .getRenewalPercentThreshold() * numberOfRenewsPerMinThreshold)) {
+                    this.expectedNumberOfRenewsPerMin = count * 2;
+                    this.numberOfRenewsPerMinThreshold = (int) ((count * 2) * EUREKA_SERVER_CONFIG
+                            .getRenewalPercentThreshold());
+                }
             }
+            logger.info("Current renewal threshold is : {}",
+                    numberOfRenewsPerMinThreshold);
         } catch (Throwable e) {
             logger.error("Cannot update renewal threshold", e);
         }
@@ -681,15 +687,6 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
         return numberOfRenewsPerMinThreshold;
     }
 
-    /**
-     * Sets the renewal threshold to the given threshold.
-     * 
-     * @param newThreshold
-     *            new renewal threshold to be set.
-     */
-    public void setNumOfRenewsPerMinThreshold(int newThreshold) {
-        numberOfRenewsPerMinThreshold = newThreshold;
-    }
 
     /**
      * Checks if an instance is registerable in this region. Instances from
