@@ -18,6 +18,7 @@ package com.netflix.eureka.resources;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
@@ -108,9 +109,10 @@ public class ResponseCache {
     private static final ResponseCache s_instance = new ResponseCache();
 
     private ResponseCache() {
+        long responseCacheUpdateIntervalMs = eurekaConfig.getResponseCacheUpdateIntervalMs();
         timer.schedule(getCacheUpdateTask(),
-                eurekaConfig.getResponseCacheUpdateIntervalMs(),
-                eurekaConfig.getResponseCacheUpdateIntervalMs());
+                new Date(((System.currentTimeMillis()/responseCacheUpdateIntervalMs)*responseCacheUpdateIntervalMs) + responseCacheUpdateIntervalMs),
+                responseCacheUpdateIntervalMs);
 
         try {
             Monitors.registerObject(this);

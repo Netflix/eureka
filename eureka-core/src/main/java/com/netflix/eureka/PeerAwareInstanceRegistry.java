@@ -96,7 +96,6 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
             .getInstance().getEurekaClientConfig();
 
     private long startupTime = 0;
-    private Object lock = new Object();
     private boolean peerInstancesTransferEmptyOnStartup = true;
     private static final Timer timerReplicaNodes = new Timer(
             "Eureka-PeerNodesUpdater", true);
@@ -122,9 +121,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
     private final MeasuredRate numberOfReplicationsLastMin = new MeasuredRate(
             1000 * 60 * 1);
 
-    private volatile int numberOfRenewsPerMinThreshold;
-    private volatile int expectedNumberOfRenewsPerMin;
-
+   
     private AtomicReference<List<PeerEurekaNode>> peerEurekaNodes;
 
     private Timer timer = new Timer(
