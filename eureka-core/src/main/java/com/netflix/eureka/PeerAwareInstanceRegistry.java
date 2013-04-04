@@ -616,11 +616,12 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                     }
                 }
             }
-            // Update threshold only if the threshold is greater than the
-            // current expected threshold.
             synchronized (lock) {
-                if ((count * 2) > (EUREKA_SERVER_CONFIG
-                        .getRenewalPercentThreshold() * numberOfRenewsPerMinThreshold)) {
+                // Update threshold only if the threshold is greater than the
+                // current expected threshold of if the self preservation is disabled.
+               if ((count * 2) > (EUREKA_SERVER_CONFIG
+                        .getRenewalPercentThreshold() * numberOfRenewsPerMinThreshold)
+                        || (!this.isSelfPreservationModeEnabled())) {
                     this.expectedNumberOfRenewsPerMin = count * 2;
                     this.numberOfRenewsPerMinThreshold = (int) ((count * 2) * EUREKA_SERVER_CONFIG
                             .getRenewalPercentThreshold());
