@@ -663,18 +663,22 @@ public class DiscoveryClient implements LookupService {
         response = makeRemoteCall(Action.Refresh);
         Applications serverApps = (Applications) response
                 .getEntity(Applications.class);
-        Map<String, List<String>> reconcileDiffMap = getApplications()
-                .getReconcileMapDiff(serverApps);
-        String reconcileString = "";
-        for (Map.Entry<String, List<String>> mapEntry : reconcileDiffMap
-                .entrySet()) {
-            reconcileString = reconcileString + mapEntry.getKey() + ": ";
-            for (String displayString : mapEntry.getValue()) {
-                reconcileString = reconcileString + displayString;
+        try {
+            Map<String, List<String>> reconcileDiffMap = getApplications()
+            .getReconcileMapDiff(serverApps);
+            String reconcileString = "";
+            for (Map.Entry<String, List<String>> mapEntry : reconcileDiffMap
+                    .entrySet()) {
+                reconcileString = reconcileString + mapEntry.getKey() + ": ";
+                for (String displayString : mapEntry.getValue()) {
+                    reconcileString = reconcileString + displayString;
+                }
+                reconcileString = reconcileString + "\n";
             }
-            reconcileString = reconcileString + "\n";
+            logger.warn("The reconcile string is {}", reconcileString);
+        } catch (Throwable e) {
+            logger.error("Could not calculate reconcile string ", e);
         }
-        logger.warn("The reconcile string is {}", reconcileString);
         applications.set(this.filterAndShuffle(serverApps));
         getApplications().setVersion(delta.getVersion());
         logger.warn(

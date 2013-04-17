@@ -31,6 +31,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
@@ -57,11 +60,11 @@ import com.thoughtworks.xstream.annotations.XStreamImplicit;
 @XStreamAlias("applications")
 public class Applications {
     private static final String APP_INSTANCEID_DELIMITER = "$$";
-
+    private static final Logger logger = LoggerFactory.getLogger(Applications.class);
     private static final String STATUS_DELIMITER = "_";
 
     private Long version_delta = Long.valueOf(-1);
-
+  
     @XStreamImplicit
     private AbstractQueue<Application> applications;
 
@@ -234,6 +237,10 @@ public class Applications {
         for (Application otherApp : apps.getRegisteredApplications()) {
             Application thisApp = this.getRegisteredApplications(otherApp
                     .getName());
+            if (thisApp == null) {
+                logger.warn("The application %s is not found in local cache :", otherApp.getName());
+                continue;
+            }
             for (InstanceInfo instanceInfo : thisApp.getInstancesAsIsFromEureka()) {
                 allInstanceAppInstanceIds.add(new Pair(thisApp.getName(),
                         instanceInfo.getId()));
