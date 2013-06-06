@@ -98,15 +98,9 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
      */
     @Override
     public String getAWSAccessId() {
-        String aWSAccessId = configInstance
-        .getStringProperty(namespace + "awsAccessId", null).get();
-
-        if (null != aWSAccessId) {
-            return aWSAccessId.trim();
-        }
-        else {
-            return null;
-        }
+        return configInstance
+        .getStringProperty(namespace + "awsAccessId", null).get()
+        .trim();
     }
 
     /*
@@ -116,15 +110,9 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
      */
     @Override
     public String getAWSSecretKey() {
-        String aWSSecretKey = configInstance
-        .getStringProperty(namespace + "awsSecretKey", null).get();
-
-        if (null != aWSSecretKey) {
-            return aWSSecretKey.trim();
-        }
-        else {
-            return null;
-        }
+        return configInstance
+        .getStringProperty(namespace + "awsSecretKey", null).get()
+        .trim();
     }
 
     /*
@@ -422,6 +410,19 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     public int getRemoteRegionRegistryFetchInterval() {
         return configInstance.getIntProperty(
                 namespace + "remoteRegion.registryFetchIntervalInSeconds", 30).get();
+    }
+
+    @Override
+    public String getRemoteRegionTrustStore() {
+        return configInstance.getStringProperty(
+                namespace + "remoteRegion.trustStoreFileName", "").get();
+   
+    }
+
+    @Override
+    public String getRemoteRegionTrustStorePassword() {
+       return configInstance.getStringProperty(
+               namespace + "remoteRegion.trustStorePassword", "changeit").get();
     }
 
     

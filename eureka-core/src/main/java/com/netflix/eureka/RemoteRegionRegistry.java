@@ -72,13 +72,14 @@ public class RemoteRegionRegistry implements LookupService<String> {
         this.remoteRegionURL = remoteRegionURL;
         this.fetchRegistryTimer = Monitors.newTimer(this.remoteRegionURL
                 .toString() + "_" + "FetchRegistry");
-        discoveryJerseyClient = EurekaJerseyClient.createJerseyClient(
+        discoveryJerseyClient = EurekaJerseyClient.createSSLJerseyClient(
                 EUREKA_SERVER_CONFIG.getRemoteRegionConnectTimeoutMs(),
                 EUREKA_SERVER_CONFIG.getRemoteRegionReadTimeoutMs(),
                 EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost(),
                 EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnections(),
-                EUREKA_SERVER_CONFIG
-                        .getRemoteRegionConnectionIdleTimeoutSeconds());
+                EUREKA_SERVER_CONFIG.getRemoteRegionConnectionIdleTimeoutSeconds(),
+                EUREKA_SERVER_CONFIG.getRemoteRegionTrustStore(),
+                EUREKA_SERVER_CONFIG.getRemoteRegionTrustStorePassword());
         discoveryApacheClient = discoveryJerseyClient.getClient();
         ClientConfig cc = discoveryJerseyClient.getClientconfig();
 
@@ -302,6 +303,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
         try {
 
             String urlPath = delta ? "apps/delta" : "apps/";
+            
             response = discoveryApacheClient
                     .resource(this.remoteRegionURL.toString() + urlPath)
                     .accept(MediaType.APPLICATION_JSON_TYPE)

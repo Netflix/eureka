@@ -611,9 +611,10 @@ public class PeerEurekaNode {
 
                                     }
                                     if ((isNetworkConnectException(e))) {
+                                        String[] s = null;
                                         DynamicCounter.increment(task
                                                 .getAction().name()
-                                                + "_retries", null);
+                                                + "_retries", s);
                                         done = false;
                                     } else {
                                         logger.info(

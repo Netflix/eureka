@@ -453,5 +453,16 @@ public interface EurekaServerConfig {
      * @return time in seconds.
      */
     int getRemoteRegionRegistryFetchInterval();
+    
+    /**
+     * Gets the fully qualified trust store file that will be used for remote region registry fetches
+     * @return
+     */
+    String getRemoteRegionTrustStore();
+    
+    /**
+     * Get the remote region trust store's password
+     */
+    String getRemoteRegionTrustStorePassword();
 
 }
