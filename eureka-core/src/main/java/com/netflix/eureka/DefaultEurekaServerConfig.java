@@ -60,9 +60,9 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     .getInstance().getStringProperty("eureka.server.props",
     "eureka-server");
     private static final int TIME_TO_WAIT_FOR_REPLICATION = 30000;
-    
+
     private String namespace = "eureka.";
-   
+
     public DefaultEurekaServerConfig() {
         init();
     }
@@ -98,21 +98,32 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
      */
     @Override
     public String getAWSAccessId() {
-        return configInstance
-        .getStringProperty(namespace + "awsAccessId", null).get()
-        .trim();
+        String aWSAccessId = configInstance.getStringProperty(
+                namespace + "awsAccessId", null).get();
+
+        if (null != aWSAccessId) {
+            return aWSAccessId.trim();
+        } else {
+            return null;
+        }
+
     }
 
     /*
      * (non-Javadoc)
      * 
-     * @see com.netflix.eureka.EurekaServerConfig#getAWSSecretKey()
+     * @see com.netflix.eureka.EurekaServerConfig#getAWSAccessId()
      */
     @Override
     public String getAWSSecretKey() {
-        return configInstance
-        .getStringProperty(namespace + "awsSecretKey", null).get()
-        .trim();
+        String aWSSecretKey = configInstance.getStringProperty(
+                namespace + "awsSecretKey", null).get();
+
+        if (null != aWSSecretKey) {
+            return aWSSecretKey.trim();
+        } else {
+            return null;
+        }
     }
 
     /*
@@ -254,7 +265,7 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     @Override
     public long getASGUpdateIntervalMs() {
         return configInstance.getIntProperty(namespace + "asgUpdateIntervalMs",
-                (5* 60 * 1000)).get();
+                (5 * 60 * 1000)).get();
     }
 
     @Override
@@ -345,48 +356,48 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
                 namespace + "maxTimeForReplication",
                 TIME_TO_WAIT_FOR_REPLICATION).get();
     }
-    
+
     @Override
     public boolean shouldPrimeAwsReplicaConnections() {
         return configInstance.getBooleanProperty(
-                namespace + "primeAwsReplicaConnections",
-                true).get();
+                namespace + "primeAwsReplicaConnections", true).get();
     }
-    
+
     @Override
     public boolean shouldDisableDeltaForRemoteRegions() {
-        return configInstance
-        .getBooleanProperty(namespace + "disableDeltaForRemoteRegions", false).get();
+        return configInstance.getBooleanProperty(
+                namespace + "disableDeltaForRemoteRegions", false).get();
     }
 
     @Override
     public int getRemoteRegionConnectTimeoutMs() {
-        return configInstance
-        .getIntProperty(namespace + "remoteRegionConnectTimeoutMs", 1000).get();
+        return configInstance.getIntProperty(
+                namespace + "remoteRegionConnectTimeoutMs", 1000).get();
     }
 
     @Override
     public int getRemoteRegionReadTimeoutMs() {
-        return configInstance
-        .getIntProperty(namespace + "remoteRegionReadTimeoutMs", 1000).get();
+        return configInstance.getIntProperty(
+                namespace + "remoteRegionReadTimeoutMs", 1000).get();
     }
 
     @Override
     public int getRemoteRegionTotalConnections() {
-        return configInstance
-        .getIntProperty(namespace + "remoteRegionTotalConnections", 1000).get();
+        return configInstance.getIntProperty(
+                namespace + "remoteRegionTotalConnections", 1000).get();
     }
 
     @Override
     public int getRemoteRegionTotalConnectionsPerHost() {
-        return configInstance
-        .getIntProperty(namespace + "remoteRegionTotalConnections", 500).get();
+        return configInstance.getIntProperty(
+                namespace + "remoteRegionTotalConnections", 500).get();
     }
 
     @Override
     public int getRemoteRegionConnectionIdleTimeoutSeconds() {
-        return configInstance
-        .getIntProperty(namespace + "remoteRegionConnectionIdleTimeoutSeconds", 30).get();
+        return configInstance.getIntProperty(
+                namespace + "remoteRegionConnectionIdleTimeoutSeconds", 30)
+                .get();
     }
 
     @Override
@@ -397,7 +408,7 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
 
     @Override
     public String[] getRemoteRegionUrls() {
-        String remoteRegionUrlString= configInstance.getStringProperty(
+        String remoteRegionUrlString = configInstance.getStringProperty(
                 namespace + "remoteRegionUrls", null).get();
         String[] remoteRegionUrl = null;
         if (remoteRegionUrlString != null) {
@@ -409,21 +420,22 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     @Override
     public int getRemoteRegionRegistryFetchInterval() {
         return configInstance.getIntProperty(
-                namespace + "remoteRegion.registryFetchIntervalInSeconds", 30).get();
+                namespace + "remoteRegion.registryFetchIntervalInSeconds", 30)
+                .get();
     }
 
     @Override
     public String getRemoteRegionTrustStore() {
         return configInstance.getStringProperty(
                 namespace + "remoteRegion.trustStoreFileName", "").get();
-   
+
     }
 
     @Override
     public String getRemoteRegionTrustStorePassword() {
-       return configInstance.getStringProperty(
-               namespace + "remoteRegion.trustStorePassword", "changeit").get();
+        return configInstance.getStringProperty(
+                namespace + "remoteRegion.trustStorePassword", "changeit")
+                .get();
     }
 
-    
 }
