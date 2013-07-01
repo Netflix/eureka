@@ -16,6 +16,8 @@
 
 package com.netflix.eureka.util;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -41,6 +43,7 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfigurationManager;
 import com.netflix.eureka.PeerAwareInstanceRegistry;
+import com.netflix.eureka.cluster.PeerEurekaNode;
 import com.netflix.servo.monitor.Monitors;
 
 /**
@@ -66,6 +69,8 @@ import com.netflix.servo.monitor.Monitors;
  * 
  */
 public class EIPManager {
+    private static final int HEARTBEAT_RETRY_INTERVAL_MS = 300;
+    private static final int NO_HEARTBEAT_RETRIES = 3;
     private static final String US_EAST_1 = "us-east-1";
     private static final Logger logger = LoggerFactory
     .getLogger(EIPManager.class);
@@ -211,8 +216,7 @@ public class EIPManager {
                 AmazonInfo amazonInfo = (AmazonInfo) i.getDataCenterInfo();
                 String publicIP = amazonInfo.get(MetaDataKey.publicIpv4);
                 String instanceId = amazonInfo.get(MetaDataKey.instanceId);
-                if ((instanceId
-                        .equals(myInstanceId))
+                if ((instanceId.equals(myInstanceId))
                         && (availableEIPList.contains(publicIP))) {
                     // This can happen if the server restarts and we haven't
                     // fully been dissociated with the previous shutdown
@@ -221,17 +225,50 @@ public class EIPManager {
                             myInstanceId, publicIP);
                     return publicIP;
                 }
-                for (Iterator<String> it = availableEIPList.iterator(); it.hasNext(); ) {
+                logger.info("The list of available EIPS in the priority order :"
+                        + availableEIPList);
+                for (Iterator<String> it = availableEIPList.iterator(); it
+                .hasNext();) {
                     String eip = it.next();
-                    // if there is already an EIP association, remove it from the list
+                    // if there is already an EIP association, remove it from
+                    // the list if it is reachable
                     if ((eip.trim().equals(publicIP))) {
-                        LeaseInfo leaseInfo = i.getLeaseInfo();
-                        if ((leaseInfo != null) && (System.currentTimeMillis() > (leaseInfo
-                                .getRenewalTimestamp() + (leaseInfo
-                                .getDurationInSecs() * 1000)))) {
+                        String instanceHostName = i.getHostName();
+                        PeerEurekaNode replicaNode = getPeerEurekaNode(instanceHostName);
+                        if (replicaNode == null) {
+                            logger.warn("Cannot get peer eureka node. Is this even a peer? :"
+                                    + instanceHostName);
                             continue;
                         }
-                        logger.info("Removing the EIP {} as it is already used by instance {}", eip, instanceId);
+                        boolean isInstanceReachable = false;
+                        for (int ctr = 0; ctr < NO_HEARTBEAT_RETRIES; ctr++) {
+                            try {
+                                replicaNode.heartbeat(
+                                        instanceInfo.getAppName(),
+                                        instanceInfo.getId(), instanceInfo,
+                                        null, true);
+                                isInstanceReachable = true;
+                                break;
+                            } catch (Throwable e) {
+                                try {
+                                    Thread.sleep(HEARTBEAT_RETRY_INTERVAL_MS);
+                                } catch (InterruptedException e1) {
+                                    logger.warn(
+                                            "Interrupted while trying send heartbeat",
+                                            e1);
+                                }
+                            }
+                        }
+
+                        if (!isInstanceReachable) {
+                            logger.info(
+                                    "The instance %s seems unreachable and making it available for reuse.",
+                                    instanceInfo.getHostName());
+                            continue;
+                        }
+                        logger.info(
+                                "Removing the EIP {} as it is already used by instance {}",
+                                eip, instanceId);
                         it.remove();
                     }
                 }
@@ -241,6 +278,29 @@ public class EIPManager {
             throw new RuntimeException("Cannot find a free EIP to bind");
         }
         return availableEIPList.iterator().next();
+    }
+
+    /**
+     * Return the  @link {PeerEurekaNode} given the host name.
+     * @param instanceHostName - the host name for which the @link {PeerEurekaNode}.
+     * @return @link {PeerEurekaNode} object that represents this host name.
+     */
+    private PeerEurekaNode getPeerEurekaNode(String instanceHostName) {
+        PeerEurekaNode replicaNode = null;
+        try {
+            for (PeerEurekaNode node : PeerAwareInstanceRegistry
+                    .getInstance().getReplicaNodes()) {
+                if (new URL(node.getServiceUrl()).getHost()
+                        .equalsIgnoreCase(instanceHostName)) {
+                    replicaNode = node;
+                }
+            }
+        } catch (Throwable e) {
+            logger.error(
+                    "Cannot get peer eureka node instance from instanceHostName for "
+                    + instanceHostName, replicaNode);
+        }
+        return replicaNode;
     }
 
     /**

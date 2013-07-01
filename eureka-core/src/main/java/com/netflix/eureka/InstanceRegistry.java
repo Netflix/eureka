@@ -101,6 +101,11 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
     private final Lock read = readWriteLock.readLock();
     private final Lock write = readWriteLock.writeLock();
     protected List<RemoteRegionRegistry> remoteRegionRegistryList = new ArrayList<RemoteRegionRegistry>();
+    protected Object lock = new Object();
+    protected volatile int numberOfRenewsPerMinThreshold;
+    protected volatile int expectedNumberOfRenewsPerMin;
+    protected static final EurekaServerConfig EUREKA_SERVER_CONFIG = EurekaServerConfigurationManager
+    .getInstance().getConfiguration();
 
     protected InstanceRegistry() {
 
@@ -143,6 +148,19 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                             existingLastDirtyTimestamp,
                             registrationLastDirtyTimestamp);
                     r.setLastDirtyTimestamp(existingLastDirtyTimestamp);
+                }
+            }
+            else {
+                // The lease does not exist and hence it is a new registration
+                synchronized (lock) {
+                    if (this.expectedNumberOfRenewsPerMin > 0) {
+                        // Since the client wants to cancel it, reduce the threshold
+                        // (1
+                        // for 30 seconds, 2 for a minute)
+                        this.expectedNumberOfRenewsPerMin = this.expectedNumberOfRenewsPerMin + 2;
+                        this.numberOfRenewsPerMinThreshold = (int) (this.expectedNumberOfRenewsPerMin * EUREKA_SERVER_CONFIG
+                                .getRenewalPercentThreshold());
+                    }
                 }
             }
             Lease<InstanceInfo> lease = new Lease<InstanceInfo>(r,
