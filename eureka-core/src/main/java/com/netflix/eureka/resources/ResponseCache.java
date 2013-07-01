@@ -18,6 +18,7 @@ package com.netflix.eureka.resources;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -27,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPOutputStream;
 
+import com.netflix.appinfo.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,42 +49,45 @@ import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
 
+import javax.annotation.Nullable;
+
 /**
  * The class that is responsible for caching registry information that will be
  * queried by the clients.
- * 
+ *
  * <p>
  * The cache is maintained in compressed and non-compressed form for three
  * categories of requests - all applications, delta changes and for individual
  * applications. The compressed form is probably the most efficient in terms of
  * network traffic especially when querying all applications.
- * 
+ *
  * The cache also maintains separate pay load for <em>JSON</em> and <em>XML</em>
  * formats and for multiple versions too. The cache is updated periodically to
  * reflect the latest information configured by
  * {@link EurekaServerConfig#getResponseCacheUpdateIntervalMs()}.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
  */
 public class ResponseCache {
 
     private static final Logger logger = LoggerFactory
-    .getLogger(ResponseCache.class);
+            .getLogger(ResponseCache.class);
     private static final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
-    .getInstance().getConfiguration();
+            .getInstance().getConfiguration();
 
     public final static String ALL_APPS = "ALL_APPS";
     public final static String ALL_APPS_DELTA = "ALL_APPS_DELTA";
 
     private final com.netflix.servo.monitor.Timer serializeAllAppsTimer = Monitors
-    .newTimer("serialize-all");
+            .newTimer("serialize-all");
     private final com.netflix.servo.monitor.Timer serializeDeltaAppsTimer = Monitors
-    .newTimer("serialize-all-delta");
+            .newTimer("serialize-all-delta");
     private final com.netflix.servo.monitor.Timer serializeOneApptimer = Monitors
-    .newTimer("serialize-one");
+            .newTimer("serialize-one");
+    private final com.netflix.servo.monitor.Timer serializeViptimer = Monitors.newTimer("serialize-one-vip");
     private final com.netflix.servo.monitor.Timer compressPayloadTimer = Monitors
-    .newTimer("compress-payload");
+            .newTimer("compress-payload");
 
     private static final Timer timer = new Timer("Eureka -CacheFillTimer", true);
     private static final AtomicLong versionDelta = new AtomicLong(0);
@@ -94,11 +99,11 @@ public class ResponseCache {
 
     private final ConcurrentMap<Key, Value> readOnlyCacheMap = new ConcurrentHashMap<Key, Value>();
     private final LoadingCache<Key, Value> readWriteCacheMap = CacheBuilder
-    .newBuilder()
-    .initialCapacity(1000)
-    .expireAfterWrite(
-            eurekaConfig.getResponseCacheAutoExpirationInSeconds(),
-            TimeUnit.SECONDS).build(new CacheLoader<Key, Value>() {
+            .newBuilder()
+            .initialCapacity(1000)
+            .expireAfterWrite(
+                    eurekaConfig.getResponseCacheAutoExpirationInSeconds(),
+                    TimeUnit.SECONDS).build(new CacheLoader<Key, Value>() {
 
                 @Override
                 public Value load(Key key) throws Exception {
@@ -146,13 +151,13 @@ public class ResponseCache {
 
     /**
      * Get the cached information about applications.
-     * 
+     *
      * <p>
      * If the cached information is not available it is generated on the first
      * request. After the first request, the information is then updated
      * periodically by a background thread.
      * </p>
-     * 
+     *
      * @param key
      *            the key for which the cached information needs to be obtained.
      * @return payload which contains information about the applications.
@@ -168,7 +173,7 @@ public class ResponseCache {
 
     /**
      * Get the compressed information about the applications.
-     * 
+     *
      * @param key
      *            the key for which the compressed cached information needs to
      *            be obtained.
@@ -177,45 +182,52 @@ public class ResponseCache {
      */
     public byte[] getGZIP(Key key) {
         Value payload = getValue(key);
-        if (payload == null)
+        if (payload == null) {
             return null;
+        }
         return payload.getGzipped();
     }
 
     /**
      * Invalidate the cache of a particular application.
-     * 
+     *
      * @param appName
      *            the application name of the application.
      */
-    public void invalidate(String appName) {
+    public void invalidate(String appName, @Nullable String vipAddress, @Nullable String secureVipAddress) {
         for (KeyType type : KeyType.values()) {
             for (Version v : Version.values()) {
                 invalidate(new Key(appName, type, v),
-                        new Key(ALL_APPS, type, v), new Key(ALL_APPS_DELTA,
-                                type, v));
+                        new Key(ALL_APPS, type, v),
+                        new Key(ALL_APPS_DELTA, type, v));
+                if (null != vipAddress) {
+                    invalidate(new Key(Key.EntityType.VIP, vipAddress, type, v));
+                }
+                if (null != secureVipAddress) {
+                    invalidate(new Key(Key.EntityType.SVIP, secureVipAddress, type, v));
+                }
             }
         }
     }
 
     /**
      * Invalidate the cache information given the list of keys.
-     * 
+     *
      * @param keys
      *            the list of keys for which the cache information needs to be
      *            invalidated.
      */
     public void invalidate(Key... keys) {
         for (Key key : keys) {
-            Object[] args = { key.getName(), key.getVersion(), key.getType() };
-            logger.debug("Invalidating the response cache key : {} {} {}", args);
+            Object[] args = { key.getEntityType(), key.getName(), key.getVersion(), key.getType() };
+            logger.debug("Invalidating the response cache key : {} {} {} {}", args);
             readWriteCacheMap.invalidate(key);
         }
     }
 
     /**
      * Gets the version number of the cached data.
-     * 
+     *
      * @return teh version number of the cached data.
      */
     public static AtomicLong getVersionDelta() {
@@ -224,7 +236,7 @@ public class ResponseCache {
 
     /**
      * Get the number of items in the response cache.
-     * 
+     *
      * @return int value representing the number of items in response cache.
      */
     @com.netflix.servo.annotations.Monitor(name = "responseCacheSize", type = DataSourceType.GAUGE)
@@ -283,9 +295,9 @@ public class ResponseCache {
     private void updateClientCache() {
         logger.debug("Updating the client cache from response cache");
         for (ResponseCache.Key key : readOnlyCacheMap.keySet()) {
-            Object[] args = { key.getName(), key.getVersion(), key.getType() };
+            Object[] args = { key.getEntityType(), key.getName(), key.getVersion(), key.getType() };
             logger.debug(
-                    "Updating the client cache from response cache for key : {} {} {}",
+                    "Updating the client cache from response cache for key : {} {} {} {}",
                     args);
             try {
                 CurrentRequestVersion.set(key.getVersion());
@@ -309,18 +321,30 @@ public class ResponseCache {
         Stopwatch tracer = null;
         InstanceRegistry registry = PeerAwareInstanceRegistry.getInstance();
         try {
-            String payload = null;
-            if (ALL_APPS.equals(key.getName())) {
-                tracer = this.serializeAllAppsTimer.start();
-                payload = getPayLoad(key, registry.getApplications());
-            } else if (ALL_APPS_DELTA.equals(key.getName())) {
-                tracer = this.serializeDeltaAppsTimer.start();
-                versionDelta.incrementAndGet();
-                payload = getPayLoad(key, registry.getApplicationDeltas());
-            } else {
-                tracer = this.serializeOneApptimer.start();
-                payload = getPayLoad(key,
-                        registry.getApplication(key.getName()));
+            String payload;
+            switch (key.getEntityType()) {
+                case Application:
+                    if (ALL_APPS.equals(key.getName())) {
+                        tracer = this.serializeAllAppsTimer.start();
+                        payload = getPayLoad(key, registry.getApplications());
+                    } else if (ALL_APPS_DELTA.equals(key.getName())) {
+                        tracer = this.serializeDeltaAppsTimer.start();
+                        versionDelta.incrementAndGet();
+                        payload = getPayLoad(key, registry.getApplicationDeltas());
+                    } else {
+                        tracer = this.serializeOneApptimer.start();
+                        payload = getPayLoad(key, registry.getApplication(key.getName()));
+                    }
+                    break;
+                case VIP:
+                case SVIP:
+                    tracer = this.serializeViptimer.start();
+                    payload = getPayLoad(key, getApplicationsForVip(key, registry));
+                    break;
+                default:
+                    logger.error("Unidentified entity type: " + key.getEntityType() + " found in the cache key.");
+                    payload = "";
+                    break;
             }
             return new Value(payload);
         } finally {
@@ -330,24 +354,77 @@ public class ResponseCache {
         }
     }
 
+    private Applications getApplicationsForVip(Key key, InstanceRegistry registry) {
+        Object[] args = { key.getEntityType(), key.getName(), key.getVersion(), key.getType() };
+        logger.debug(
+                "Retrieving applications from registry for key : {} {} {} {}",
+                args);
+        Applications toReturn = new Applications();
+        Applications applications = registry.getApplications();
+        for (Application application : applications.getRegisteredApplications()) {
+            Application appToAdd = null;
+            for (InstanceInfo instanceInfo : application.getInstances()) {
+                String vipAddress;
+                if (Key.EntityType.VIP.equals(key.getEntityType())) {
+                    vipAddress = instanceInfo.getVIPAddress();
+                } else if (Key.EntityType.SVIP.equals(key.getEntityType())) {
+                    vipAddress = instanceInfo.getSecureVipAddress();
+                } else {
+                    // should not happen, but just in case.
+                    continue;
+                }
+
+                if (null != vipAddress) {
+                    String[] vipAddresses = vipAddress.split(",");
+                    Arrays.sort(vipAddresses);
+                    if (Arrays.binarySearch(vipAddresses, key.getName()) >= 0) {
+                        if (null == appToAdd) {
+                            appToAdd = new Application(application.getName());
+                            toReturn.addApplication(appToAdd);
+                        }
+                        appToAdd.addInstance(instanceInfo);
+                    }
+                }
+            }
+        }
+        toReturn.setAppsHashCode(toReturn.getReconcileHashCode());
+        args = new Object[]{ key.getEntityType(), key.getName(), key.getVersion(), key.getType(), toReturn.getReconcileHashCode() };
+        logger.debug(
+                "Retrieved applications from registry for key : {} {} {} {}, reconcile hashcode: {}",
+                args);
+        return toReturn;
+    }
+
     /**
      * The key for the cached payload.
      */
     public static class Key {
-        private final String appName;
+
+        /**
+         * An enum to define the entity that is stored in this cache for this key.
+         */
+        public enum EntityType {Application, VIP, SVIP}
+
+        private final String entityName;
         private final KeyType requestType;
         private final Version requestVersion;
         private final String hashKey;
+        private final EntityType entityType;
 
-        public Key(String app, KeyType type, Version v) {
-            appName = app;
+        public Key(String entityName, KeyType type, Version v) {
+            this(null, entityName, type, v);
+        }
+
+        public Key(EntityType entityType, String entityName, KeyType type, Version v) {
+            this.entityType = (null == entityType) ? EntityType.Application : entityType;
+            this.entityName = entityName;
             requestType = type;
             requestVersion = v;
-            hashKey = appName + requestType.name() + requestVersion.name();
+            hashKey = this.entityType +this.entityName + requestType.name() + requestVersion.name();
         }
 
         public String getName() {
-            return appName;
+            return entityName;
         }
 
         public String getHashKey() {
@@ -360,6 +437,10 @@ public class ResponseCache {
 
         public Version getVersion() {
             return requestVersion;
+        }
+
+        public EntityType getEntityType() {
+            return entityType;
         }
 
         @Override
@@ -380,7 +461,7 @@ public class ResponseCache {
 
     /**
      * The class that stores payload in both compressed and uncompressed form.
-     * 
+     *
      */
     private class Value {
         private final String payload;
