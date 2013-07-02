@@ -210,6 +210,8 @@ public class InstanceInfo {
          * mostly used in constructing the {@link URL} for communicating with
          * the instance.
          * 
+         * You need to make sure that the instanceID gets updated as well.
+         * 
          * @param hostName
          *            the host name of the instance.
          * @return the {@link InstanceInfo} builder.
@@ -616,6 +618,15 @@ public class InstanceInfo {
      */
     public String getHostName() {
         return hostName;
+    }
+    
+    /**
+     * Returns the unique instance ID for this instance
+     * 
+     * @return the instance ID
+     */
+    public String getInstanceId() {
+        return instanceId;
     }
 
     @Deprecated

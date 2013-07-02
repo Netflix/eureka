@@ -260,9 +260,9 @@ implements EurekaInstanceConfig {
      * @see com.netflix.appinfo.AbstractInstanceConfig#getInstanceId()
      */
     @Override
-    public String getInstanceId() {
+    public String getInstanceId(boolean refresh) {
         return INSTANCE.getStringProperty(namespace + "instanceId",
-                super.getInstanceId()).get().trim();
+                super.getInstanceId(refresh)).get().trim();
     }
 
     /*

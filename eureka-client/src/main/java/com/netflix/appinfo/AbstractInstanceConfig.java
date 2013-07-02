@@ -220,7 +220,7 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
      * @see com.netflix.appinfo.EurekaInstanceConfig#getInstanceId()
      */
     @Override
-    public String getInstanceId() {
+    public String getInstanceId(boolean refresh) {
         return hostInfo.second();
     }
 
