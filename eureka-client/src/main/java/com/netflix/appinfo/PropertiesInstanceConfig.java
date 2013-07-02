@@ -257,6 +257,17 @@ implements EurekaInstanceConfig {
     /*
      * (non-Javadoc)
      * 
+     * @see com.netflix.appinfo.AbstractInstanceConfig#getInstanceId()
+     */
+    @Override
+    public String getInstanceId() {
+        return INSTANCE.getStringProperty(namespace + "instanceId",
+                super.getInstanceId()).get().trim();
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see com.netflix.appinfo.AbstractInstanceConfig#getIpAddress()
      */
     public String getIpAddress() {

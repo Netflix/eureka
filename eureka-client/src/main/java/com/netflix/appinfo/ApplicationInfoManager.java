@@ -90,7 +90,8 @@ public class ApplicationInfoManager {
             .setHealthCheckUrls(config.getHealthCheckUrlPath(),
                                 config.getHealthCheckUrl(),
                                 config.getSecureHealthCheckUrl())
-            .setASGName(config.getASGName());
+            .setASGName(config.getASGName())
+            .setInstanceId(config.getInstanceId());
 
             // Start off with the STARTING state to avoid traffic
             if (!config.isInstanceEnabledOnit()) {

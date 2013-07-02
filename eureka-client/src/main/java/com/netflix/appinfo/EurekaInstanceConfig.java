@@ -337,4 +337,10 @@ public interface EurekaInstanceConfig {
      */
     String getNamespace();
 
+    /**
+     * Get the instance ID, which should be a unique identifier,
+     * and already URL encoded
+     * @return the instance ID as a string
+     */
+    String getInstanceId();
 }
