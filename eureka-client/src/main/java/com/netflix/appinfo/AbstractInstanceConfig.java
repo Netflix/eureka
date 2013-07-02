@@ -214,6 +214,16 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
         return hostInfo.first();
     }
 
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.netflix.appinfo.EurekaInstanceConfig#getInstanceId()
+     */
+    @Override
+    public String getInstanceId() {
+        return hostInfo.second();
+    }
+
     private static Pair<String, String> getHostInfo() {
         Pair<String, String> pair = new Pair<String, String>("", "");
         try {
