@@ -16,7 +16,9 @@
 package com.netflix.appinfo;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.DataCenterInfo.Name;
+import com.netflix.appinfo.WebMethod;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.converters.Auto;
@@ -116,6 +119,9 @@ public class InstanceInfo {
     @Auto
     private volatile String asgName;
     private String version = "unknown";
+    
+    @XStreamAlias("serviceMethods")
+    private volatile List<WebMethod> serviceMethods = new ArrayList<WebMethod>();
     
     private InstanceInfo() {
     }
@@ -532,6 +538,16 @@ public class InstanceInfo {
          */
         public Builder setMetadata(Map<String, String> mt) {
             result.metadata = mt;
+            return this;
+        }
+
+//        public Builder setServiceMethods(List<WebMethod> serviceMethods) {
+//            result.serviceMethods = serviceMethods;
+//            return this;
+//        }
+//
+        public Builder setServiceMethods(List<WebMethod> serviceMethods) {
+            result.serviceMethods = serviceMethods;
             return this;
         }
 
@@ -1040,5 +1056,13 @@ public class InstanceInfo {
 
         return result;
     }
-
+    
+    public List<WebMethod> getServiceMethods() {
+        return serviceMethods;
+    }
+    
+    public void setServiceMethods(List<WebMethod> serviceMethods) {
+        this.serviceMethods = serviceMethods;
+        setIsDirty(true);
+    }
 }
