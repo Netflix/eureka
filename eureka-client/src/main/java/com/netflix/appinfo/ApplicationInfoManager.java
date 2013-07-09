@@ -76,6 +76,7 @@ public class ApplicationInfoManager {
             .setDataCenterInfo(config.getDataCenterInfo())
             .setIPAddr(config.getIpAddress())
             .setHostName(config.getHostName(false))
+            .setInstanceId(config.getInstanceId(false))
             .setPort(config.getNonSecurePort())
             .enablePort(PortType.UNSECURE,
                     config.isNonSecurePortEnabled())
@@ -146,21 +147,34 @@ public class ApplicationInfoManager {
     }
 
     /**
-     * Refetches the hostname to check if it has changed. If it has, the entire
-     * <code>DataCenterInfo</code> is refetched and passed on to the eureka
-     * server on next heartbeat.
+     * Refetches the hostname or instance IDto check if it has changed.
+     * If it has, the entire <code>DataCenterInfo</code> is refetched
+     * and passed on to the eureka server on next heartbeat.
      */
     public void refreshDataCenterInfoIfRequired() {
         String existingHostname = instanceInfo.getHostName();
+        String existingInstanceId = instanceInfo.getInstanceId();
         String newHostname = config.getHostName(true);
+        String newInstanceId = config.getInstanceId(true);
         if (newHostname != null && !newHostname.equals(existingHostname)) {
             logger.warn("The public hostname changed from : "
                     + existingHostname + " => " + newHostname);
-            InstanceInfo.Builder builder = new InstanceInfo.Builder(
-                    instanceInfo);
-            builder.setHostName(newHostname).setDataCenterInfo(
-                    config.getDataCenterInfo());
-            instanceInfo.setIsDirty(true);
+            updateHostnameAndInstanceId(newHostname, newInstanceId);
         }
+        
+        if (newInstanceId != null && !newInstanceId.equals(existingInstanceId)) {
+            logger.warn("The instance ID changed from : "
+                    + existingInstanceId + " => " + newInstanceId);
+            updateHostnameAndInstanceId(newHostname, newInstanceId);
+        }
+    }
+    
+    private void updateHostnameAndInstanceId(String newHostname, String newInstanceId) {
+        InstanceInfo.Builder builder = new InstanceInfo.Builder(
+                instanceInfo);
+        builder.setHostName(newHostname)
+                .setInstanceId(newInstanceId)
+                .setDataCenterInfo(config.getDataCenterInfo());
+        instanceInfo.setIsDirty(true);
     }
 }

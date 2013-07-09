@@ -115,6 +115,18 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
 
     /*
      * (non-Javadoc)
+     * @see com.netflix.appinfo.AbstractInstanceConfig#getInstanceId()
+     */
+    @Override
+    public String getInstanceId(boolean refresh) {
+        if (refresh) {
+            refreshAmazonInfo();
+        }
+        return ((AmazonInfo) info).get(MetaDataKey.instanceId);
+    }
+
+    /*
+     * (non-Javadoc)
      * @see com.netflix.appinfo.AbstractInstanceConfig#getDataCenterInfo()
      */
     @Override

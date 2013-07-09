@@ -19,9 +19,11 @@ package com.netflix.discovery.converters;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -35,6 +37,7 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.InstanceInfo.PortType;
 import com.netflix.appinfo.LeaseInfo;
+import com.netflix.appinfo.WebMethod;
 import com.netflix.discovery.provider.Serializer;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
@@ -121,6 +124,7 @@ public final class Converters {
                 context.convertAnother(app);
                 writer.endNode();
             }
+            
         }
 
         /*
@@ -227,6 +231,75 @@ public final class Converters {
     }
 
     /**
+     * Serialize/deserialize {@link WebMethod} object types.
+     */
+    public static class WebMethodConverter implements Converter {
+        /*
+         * (non-Javadoc)
+         * 
+         * @see
+         * com.thoughtworks.xstream.converters.ConverterMatcher#canConvert(java
+         * .lang.Class)
+         */
+        @Override
+        public boolean canConvert(@SuppressWarnings("rawtypes") Class clazz) {
+            return WebMethod.class == clazz;
+        }
+
+        /*
+         * (non-Javadoc)
+         * 
+         * @see
+         * com.thoughtworks.xstream.converters.Converter#marshal(java.lang.Object
+         * , com.thoughtworks.xstream.io.HierarchicalStreamWriter,
+         * com.thoughtworks.xstream.converters.MarshallingContext)
+         */
+        @Override
+        public void marshal(Object source, HierarchicalStreamWriter writer,
+                MarshallingContext context) {
+            WebMethod webMethod = (WebMethod) source;
+            writer.startNode("method");
+            
+            writer.startNode("operationName");
+            writer.setValue(webMethod.getOperationName());
+            writer.endNode();
+            writer.startNode("action");
+            writer.setValue(webMethod.getAction());
+            writer.endNode();
+            
+            writer.endNode();
+        }
+
+        /*
+         * (non-Javadoc)
+         * 
+         * @see
+         * com.thoughtworks.xstream.converters.Converter#unmarshal(com.thoughtworks
+         * .xstream.io.HierarchicalStreamReader,
+         * com.thoughtworks.xstream.converters.UnmarshallingContext)
+         */
+        @Override
+        public Object unmarshal(HierarchicalStreamReader reader,
+                UnmarshallingContext context) {
+            WebMethod webMethod = new WebMethod();
+            reader.moveDown();
+            while (reader.hasMoreChildren()) {
+                reader.moveDown();
+
+                String nodeName = reader.getNodeName();
+                if ("operationName".equals(nodeName)) {
+                    webMethod.setOperationName(String.valueOf(reader.getValue()));
+                } else if ("action".equals(nodeName)) {
+                    webMethod.setAction(String.valueOf(reader.getValue()));
+                }
+                reader.moveUp();
+            }
+            reader.moveUp();
+            return webMethod;
+        }
+    }
+
+    /**
      * Serialize/deserialize {@link InstanceInfo} object types.
      */
     public static class InstanceInfoConverter implements Converter {
@@ -244,6 +317,7 @@ public final class Converters {
         private static final String ELEM_COUNTRY_ID = "countryId";
         private static final String ELEM_IDENTIFYING_ATTR = "identifyingAttribute";
         private static final String ATTR_ENABLED = "enabled";
+        private static final String NODE_SERVICE_METHODS = "serviceMethods";
 
         /*
          * (non-Javadoc)
@@ -342,6 +416,16 @@ public final class Converters {
                 context.convertAnother(info.getMetadata());
                 writer.endNode();
             }
+            
+            if (info.getServiceMethods() != null) {
+                writer.startNode(NODE_SERVICE_METHODS);
+                writer.addAttribute("numberOfMethods",
+                        String.valueOf(info.getServiceMethods().size()));
+                for (WebMethod webMethod : info.getServiceMethods()) {
+                    context.convertAnother(webMethod);
+                }
+                writer.endNode();
+            }
             autoMarshalEligible(source, writer);
         }
 
@@ -407,6 +491,13 @@ public final class Converters {
                 } else if (NODE_METADATA.equals(nodeName)) {
                     builder.setMetadata((Map<String, String>) context
                             .convertAnother(builder, Map.class));
+                } else if (NODE_SERVICE_METHODS.equals(nodeName)) {
+                    List<WebMethod> list = new ArrayList<WebMethod>();
+
+                    while (reader.hasMoreChildren()) {
+                        list.add((WebMethod)context.convertAnother(builder, WebMethod.class));
+                    }
+                    builder.setServiceMethods(list);
                 } else {
                     autoUnmarshalEligible(reader, builder.getRawInstance());
                 }
@@ -618,6 +709,77 @@ public final class Converters {
             }
             return builder.build();
         }
+    }
+
+    /**
+     * Serialize/deserialize list of web methods.
+     */
+    public static class WebMethodListConverter implements Converter {
+
+        /*
+         * (non-Javadoc)
+         * 
+         * @see
+         * com.thoughtworks.xstream.converters.ConverterMatcher#canConvert(java
+         * .lang.Class)
+         */
+        @Override
+        public boolean canConvert(@SuppressWarnings("rawtypes") Class type) {
+            return List.class.isAssignableFrom(type);
+        }
+
+        /*
+         * (non-Javadoc)
+         * 
+         * @see
+         * com.thoughtworks.xstream.converters.Converter#marshal(java.lang.Object
+         * , com.thoughtworks.xstream.io.HierarchicalStreamWriter,
+         * com.thoughtworks.xstream.converters.MarshallingContext)
+         */
+        @Override
+        @SuppressWarnings("unchecked")
+        public void marshal(Object source, HierarchicalStreamWriter writer,
+                MarshallingContext context) {
+            List<String> list = (List<String>) source;
+
+            for (String webMethod : list) {
+                writer.startNode("method");
+                writer.setValue(webMethod);
+                System.out.println("WebMethodListConverter" + webMethod);
+                writer.endNode();
+            }
+        }
+
+        /*
+         * (non-Javadoc)
+         * 
+         * @see
+         * com.thoughtworks.xstream.converters.Converter#unmarshal(com.thoughtworks
+         * .xstream.io.HierarchicalStreamReader,
+         * com.thoughtworks.xstream.converters.UnmarshallingContext)
+         */
+        @Override
+        public Object unmarshal(HierarchicalStreamReader reader,
+                UnmarshallingContext context) {
+            return unmarshalList(reader, context);
+        }
+
+        private List<String> unmarshalList(
+                HierarchicalStreamReader reader, UnmarshallingContext context) {
+
+            List<String> list = new ArrayList<String>();
+
+            while (reader.hasMoreChildren()) {
+                reader.moveDown();
+                String key = reader.getNodeName();
+                String value = reader.getValue();
+                reader.moveUp();
+
+                list.add(value);
+            }
+            return list;
+        }
+
     }
 
     /**
