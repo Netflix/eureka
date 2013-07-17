@@ -19,9 +19,8 @@ package com.netflix.discovery;
 import java.net.URI;
 import java.net.URL;
 import java.util.List;
-
 import org.apache.http.client.HttpClient;
-
+import com.amazonaws.AmazonWebServiceClient;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 
 /**
@@ -331,6 +330,22 @@ public interface EurekaClientConfig {
      * @return AWS region where this instance resides.
      */
     String getRegion();
+
+    /**
+     * Gets the EC2 endpoint URL (used in AWS datacenters). The URL is determined by the
+     * implementor and may not be a string substitution as in AWS.
+     * 
+     * @return AWS service URL which this instance should use.
+     */
+    String getEc2Endpoint();
+
+    /**
+     * Gets the AutoScaling endpoint URL (used in AWS datacenters). The URL is determined by the
+     * implementor and may not be a string substitution as in AWS.
+     * 
+     * @return AWS service URL which this instance should use.
+     */
+    String getAutoScalingEndpoint();
 
     /**
      * Gets the list of availability zones (used in AWS data centers) for the
