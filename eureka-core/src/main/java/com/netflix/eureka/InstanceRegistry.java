@@ -21,6 +21,8 @@ import static com.netflix.eureka.util.EurekaMonitors.CANCEL_NOT_FOUND;
 import static com.netflix.eureka.util.EurekaMonitors.EXPIRED;
 import static com.netflix.eureka.util.EurekaMonitors.GET_ALL_CACHE_MISS;
 import static com.netflix.eureka.util.EurekaMonitors.GET_ALL_CACHE_MISS_DELTA;
+import static com.netflix.eureka.util.EurekaMonitors.GET_ALL_WITH_REMOTE_REGIONS_CACHE_MISS;
+import static com.netflix.eureka.util.EurekaMonitors.GET_ALL_WITH_REMOTE_REGIONS_CACHE_MISS_DELTA;
 import static com.netflix.eureka.util.EurekaMonitors.REGISTER;
 import static com.netflix.eureka.util.EurekaMonitors.RENEW;
 import static com.netflix.eureka.util.EurekaMonitors.RENEW_NOT_FOUND;
@@ -34,6 +36,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
@@ -100,7 +103,8 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
     private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     private final Lock read = readWriteLock.readLock();
     private final Lock write = readWriteLock.writeLock();
-    protected List<RemoteRegionRegistry> remoteRegionRegistryList = new ArrayList<RemoteRegionRegistry>();
+    protected Map<String, RemoteRegionRegistry> regionNameVSRemoteRegistry = new HashMap<String, RemoteRegionRegistry>();
+    protected String[] allKnownRemoteRegions = new String[0];
     protected Object lock = new Object();
     protected volatile int numberOfRenewsPerMinThreshold;
     protected volatile int expectedNumberOfRenewsPerMin;
@@ -482,8 +486,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      *            otherwise
      * @return
      */
-    public Application getApplication(String appName,
-                                      boolean includeRemoteRegion) {
+    public Application getApplication(String appName, boolean includeRemoteRegion) {
         Application app = null;
 
         Map<String, Lease<InstanceInfo>> leaseMap = _registry.get(appName);
@@ -499,9 +502,8 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                 app.addInstance(decorateInstanceInfo(entry.getValue()));
             }
         } else if (includeRemoteRegion) {
-            for (RemoteRegionRegistry remoteRegistry : this.remoteRegionRegistryList) {
-                Application application = remoteRegistry
-                        .getApplication(appName);
+            for (RemoteRegionRegistry remoteRegistry : this.regionNameVSRemoteRegistry.values()) {
+                Application application = remoteRegistry.getApplication(appName);
                 if (application != null) {
                     return application;
                 }
@@ -516,7 +518,162 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      * @see com.netflix.discovery.shared.LookupService#getApplications()
      */
     public Applications getApplications() {
-        return this.getApplications(true);
+        return this.getApplications(true); // keeping the current behavior of not mixing two regions in the same app.
+    }
+
+    /**
+     * Returns applications including instances from all remote regions. <br/>
+     * Same as calling {@link #getApplicationsFromMultipleRegions(String[])} with a <code>null</code> argument.
+     */
+    public Applications getApplicationsFromAllRemoteRegions() {
+        return getApplicationsFromMultipleRegions(null);
+    }
+
+    /**
+     * Returns applications including instances from local region only. <br/>
+     * Same as calling {@link #getApplicationsFromMultipleRegions(String[])} with an empty array.
+     */
+    public Applications getApplicationsFromLocalRegionOnly() {
+        return getApplicationsFromMultipleRegions(new String[0]);
+    }
+
+    /**
+     * This method will return applications with instances from all passed remote regions as well as the current region.
+     * Thus, this gives a union view of instances from multiple regions. <br/>
+     * The application instances for which this union will be done can be restricted to the names returned by
+     * {@link EurekaServerConfig#getRemoteRegionAppWhitelist(String)} for every region. In case, there is no whitelist
+     * defined for a region, this method will also look for a global whitelist by passing <code>null</code> to the
+     * method {@link EurekaServerConfig#getRemoteRegionAppWhitelist(String)} <br/>
+     * If you are not selectively requesting for a remote region, use {@link #getApplicationsFromAllRemoteRegions()}
+     * or {@link #getApplicationsFromLocalRegionOnly()}
+     *
+     * @param remoteRegions The remote regions for which the instances are to be queried. The instances may be limited
+     *                      by a whitelist as explained above. If <code>null</code> all remote regions are included.
+     *                      If empty list then no remote region is included.
+     *
+     * @return The applications with instances from the passed remote regions as well as local region. The instances
+     * from remote regions can be only for certain whitelisted apps as explained above.
+     */
+    public Applications getApplicationsFromMultipleRegions(@Nullable String[] remoteRegions) {
+        if (null == remoteRegions) {
+            remoteRegions = allKnownRemoteRegions; // null means all remote regions.
+        }
+
+        boolean includeRemoteRegion = remoteRegions.length != 0;
+
+        if (includeRemoteRegion) {
+            GET_ALL_WITH_REMOTE_REGIONS_CACHE_MISS.increment();
+        } else {
+            GET_ALL_CACHE_MISS.increment();
+        }
+        Applications apps = new Applications();
+        apps.setVersion(1L);
+        for (Entry<String, Map<String, Lease<InstanceInfo>>> entry : _registry.entrySet()) {
+            Application app = null;
+
+            if (entry.getValue() != null) {
+                for (Entry<String, Lease<InstanceInfo>> stringLeaseEntry : entry.getValue().entrySet()) {
+                    Lease<InstanceInfo> lease = stringLeaseEntry.getValue();
+                    if (app == null) {
+                        app = new Application(lease.getHolder().getAppName());
+                    }
+                    app.addInstance(decorateInstanceInfo(lease));
+                }
+            }
+            if (app != null) {
+                apps.addApplication(app);
+            }
+        }
+        if (includeRemoteRegion) {
+            for (String remoteRegion : remoteRegions) {
+                RemoteRegionRegistry remoteRegistry = regionNameVSRemoteRegistry.get(remoteRegion);
+                if (null != remoteRegistry) {
+                    Applications remoteApps = remoteRegistry.getApplications();
+                    for (Application application : remoteApps.getRegisteredApplications()) {
+                        if (shouldFetchFromRemoteRegistry(application.getName(), remoteRegion)) {
+                            Application appInstanceTillNow = apps.getRegisteredApplications(application.getName());
+                            if (appInstanceTillNow == null) {
+                                appInstanceTillNow = new Application(application.getName());
+                                apps.addApplication(appInstanceTillNow);
+                            }
+                            for (InstanceInfo instanceInfo : application.getInstances()) {
+                                appInstanceTillNow.addInstance(instanceInfo);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        apps.setAppsHashCode(apps.getReconcileHashCode());
+        return apps;
+    }
+
+    /**
+     * This method will return an application with instances from all passed remote regions as well as the current region.
+     * Thus, this gives a union view of instances from multiple regions. <br/>
+     *
+     * The remote regions from where the instances will be chosen can further be restricted if this application does not
+     * appear in the whitelist specified for the region as returned by
+     * {@link EurekaServerConfig#getRemoteRegionAppWhitelist(String)} for a region. In case, there is no whitelist
+     * defined for a region, this method will also look for a global whitelist by passing <code>null</code> to the
+     * method {@link EurekaServerConfig#getRemoteRegionAppWhitelist(String)} <br/>
+     *
+     * @param remoteRegions The remote regions for which the instances are to be queried. The instances may be limited
+     *                      by a whitelist as explained above. If <code>null</code> all remote regions are included.
+     *                      If empty list then no remote region is included.
+     *
+     * @return The instances from the passed remote regions as well as local region. The instances
+     * from remote regions can be further be restricted as explained above. <code>null</code> if the application does
+     * not exist locally or in remote regions.
+     */
+    @Nullable
+    public Application getApplicationFromMultipleRegions(String appName, @Nullable String[] remoteRegions) {
+        if (null == remoteRegions) {
+            remoteRegions = allKnownRemoteRegions; // null means all remote regions.
+        }
+
+        boolean includeRemoteRegion = remoteRegions.length != 0;
+
+        Application app = null;
+
+        Map<String, Lease<InstanceInfo>> leaseMap = _registry.get(appName);
+
+        if (leaseMap != null && leaseMap.size() > 0) {
+            for (Entry<String, Lease<InstanceInfo>> entry : leaseMap.entrySet()) {
+                if (app == null) {
+                    app = new Application(appName);
+                }
+                app.addInstance(decorateInstanceInfo(entry.getValue()));
+            }
+        }
+
+        if (includeRemoteRegion) {
+            for (String remoteRegion : remoteRegions) {
+                if (shouldFetchFromRemoteRegistry(appName, remoteRegion)) {
+                    RemoteRegionRegistry remoteRegistry = regionNameVSRemoteRegistry.get(remoteRegion);
+                    if (null != remoteRegistry) {
+                        Application remoteApp = remoteRegistry.getApplication(appName);
+                        if (null != remoteApp) {
+                            if (null == app) {
+                                app = new Application(appName);
+                            }
+                            for (InstanceInfo instanceInfo : remoteApp.getInstances()) {
+                                app.addInstance(instanceInfo);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return app;
+    }
+
+    private boolean shouldFetchFromRemoteRegistry(String appName, String remoteRegion) {
+        Set<String> whiteList = eurekaConfig.getRemoteRegionAppWhitelist(remoteRegion);
+        if (null == whiteList) {
+            whiteList = eurekaConfig.getRemoteRegionAppWhitelist(null); // see global whitelist.
+        }
+        return null == whiteList || whiteList.contains(appName);
     }
 
     /**
@@ -558,7 +715,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             }
         }
         if (includeRemoteRegion) {
-            for (RemoteRegionRegistry remoteRegistry : this.remoteRegionRegistryList) {
+            for (RemoteRegionRegistry remoteRegistry : this.regionNameVSRemoteRegistry.values()) {
                 Applications applications = remoteRegistry.getApplications();
                 for (Application application : applications
                         .getRegisteredApplications()) {
@@ -590,8 +747,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         Map<String, Application> applicationInstancesMap = new HashMap<String, Application>();
         try {
             write.lock();
-            Iterator<RecentlyChangedItem> iter = this.recentlyChangedQueue
-                    .iterator();
+            Iterator<RecentlyChangedItem> iter = this.recentlyChangedQueue.iterator();
             logger.debug("The number of elements in the delta queue is :"
                          + this.recentlyChangedQueue.size());
             while (iter.hasNext()) {
@@ -614,19 +770,104 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             }
             Applications allAppsInLocalRegion = getApplications(false);
 
-            for (RemoteRegionRegistry remoteRegistry : this.remoteRegionRegistryList) {
-                Applications applications = remoteRegistry
-                        .getApplicationDeltas();
-                for (Application application : applications
-                        .getRegisteredApplications()) {
-                    Application appInLocalRegistry = allAppsInLocalRegion
-                            .getRegisteredApplications(application.getName());
+            for (RemoteRegionRegistry remoteRegistry : this.regionNameVSRemoteRegistry.values()) {
+                Applications applications = remoteRegistry.getApplicationDeltas();
+                for (Application application : applications.getRegisteredApplications()) {
+                    Application appInLocalRegistry = allAppsInLocalRegion.getRegisteredApplications(application.getName());
                     if (appInLocalRegistry == null) {
                         apps.addApplication(application);
                     }
                 }
             }
             Applications allApps = getApplications();
+            apps.setAppsHashCode(allApps.getReconcileHashCode());
+            return apps;
+        } finally {
+            write.unlock();
+        }
+    }
+
+    /**
+     * Gets the application delta also including instances from the passed remote regions, with the instances from the
+     * local region. <br/>
+     *
+     * The remote regions from where the instances will be chosen can further be restricted if this application does not
+     * appear in the whitelist specified for the region as returned by
+     * {@link EurekaServerConfig#getRemoteRegionAppWhitelist(String)} for a region. In case, there is no whitelist
+     * defined for a region, this method will also look for a global whitelist by passing <code>null</code> to the
+     * method {@link EurekaServerConfig#getRemoteRegionAppWhitelist(String)} <br/>
+     *
+     * @param remoteRegions The remote regions for which the instances are to be queried. The instances may be limited
+     *                      by a whitelist as explained above. If <code>null</code> all remote regions are included.
+     *                      If empty list then no remote region is included.
+     *
+     * @return The delta with instances from the passed remote regions as well as local region. The instances
+     * from remote regions can be further be restricted as explained above. <code>null</code> if the application does
+     * not exist locally or in remote regions.
+     */
+    public Applications getApplicationDeltasFromMultipleRegions(String[] remoteRegions) {
+        if (null == remoteRegions) {
+            remoteRegions = allKnownRemoteRegions; // null means all remote regions.
+        }
+
+        boolean includeRemoteRegion = remoteRegions.length != 0;
+
+        if (includeRemoteRegion) {
+            GET_ALL_WITH_REMOTE_REGIONS_CACHE_MISS_DELTA.increment();
+        } else {
+            GET_ALL_CACHE_MISS_DELTA.increment();
+        }
+
+        Applications apps = new Applications();
+        apps.setVersion(ResponseCache.getVersionDelta().get());
+        Map<String, Application> applicationInstancesMap = new HashMap<String, Application>();
+        try {
+            write.lock();
+            Iterator<RecentlyChangedItem> iter = this.recentlyChangedQueue.iterator();
+            logger.debug("The number of elements in the delta queue is :" + this.recentlyChangedQueue.size());
+            while (iter.hasNext()) {
+                Lease<InstanceInfo> lease = iter.next().getLeaseInfo();
+                InstanceInfo instanceInfo = lease.getHolder();
+                Object[] args = { instanceInfo.getId(),
+                                  instanceInfo.getStatus().name(),
+                                  instanceInfo.getActionType().name() };
+                logger.debug(
+                        "The instance id %s is found with status %s and actiontype %s",
+                        args);
+                Application app = applicationInstancesMap.get(instanceInfo
+                        .getAppName());
+                if (app == null) {
+                    app = new Application(instanceInfo.getAppName());
+                    applicationInstancesMap.put(instanceInfo.getAppName(), app);
+                    apps.addApplication(app);
+                }
+                app.addInstance(decorateInstanceInfo(lease));
+            }
+
+            if (includeRemoteRegion) {
+                for (String remoteRegion : remoteRegions) {
+                    RemoteRegionRegistry remoteRegistry = regionNameVSRemoteRegistry.get(remoteRegion);
+                    if (null != remoteRegistry) {
+                        Applications remoteAppsDelta = remoteRegistry.getApplicationDeltas();
+                        if (null != remoteAppsDelta) {
+                            for (Application application : remoteAppsDelta.getRegisteredApplications()) {
+                                if (shouldFetchFromRemoteRegistry(application.getName(), remoteRegion)) {
+                                    Application appInstanceTillNow = apps.getRegisteredApplications(application.getName());
+                                    if (appInstanceTillNow == null) {
+                                        appInstanceTillNow = new Application(application.getName());
+                                        apps.addApplication(appInstanceTillNow);
+                                    }
+                                    for (InstanceInfo instanceInfo : application.getInstances()) {
+                                        appInstanceTillNow.addInstance(instanceInfo);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Applications allApps = getApplicationsFromMultipleRegions(remoteRegions);
             apps.setAppsHashCode(allApps.getReconcileHashCode());
             return apps;
         } finally {
@@ -654,7 +895,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      *            the application name for which the information is requested.
      * @param id
      *            the unique identifier of the instance.
-     * @param includeRemoteRegion
+     * @param includeRemoteRegions
      *            - true, if we need to include applications from remote regions
      *            as indicated by the region {@link URL} by this property
      *            {@link EurekaServerConfig#getRemoteRegionUrls()}, false
@@ -672,7 +913,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             && (!isLeaseExpirationEnabled() || !lease.isExpired())) {
             return decorateInstanceInfo(lease);
         } else if (includeRemoteRegions) {
-            for (RemoteRegionRegistry remoteRegistry : this.remoteRegionRegistryList) {
+            for (RemoteRegionRegistry remoteRegistry : this.regionNameVSRemoteRegistry.values()) {
                 Application application = remoteRegistry
                         .getApplication(appName);
                 InstanceInfo instanceInfo = application.getByInstanceId(id);
@@ -697,7 +938,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      *
      * @param id
      *            - the unique id of the instnace
-     * @param includeRemoteRegion
+     * @param includeRemoteRegions
      *            - true, if we need to include applications from remote regions
      *            as indicated by the region {@link URL} by this property
      *            {@link EurekaServerConfig#getRemoteRegionUrls()}, false
@@ -730,7 +971,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             }
         }
         if (list.isEmpty() && includeRemoteRegions) {
-            for (RemoteRegionRegistry remoteRegistry : this.remoteRegionRegistryList) {
+            for (RemoteRegionRegistry remoteRegistry : this.regionNameVSRemoteRegistry.values()) {
                 for (Application application : remoteRegistry.getApplications()
                                                              .getRegisteredApplications()) {
                     InstanceInfo instanceInfo = application.getByInstanceId(id);
@@ -964,12 +1205,14 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
 
     protected void initRemoteRegionRegistry() {
         try {
-            String[] remoteRegionUrls = eurekaConfig.getRemoteRegionUrls();
-            if (remoteRegionUrls != null) {
-                for (String remoteRegionUrl : remoteRegionUrls) {
-                    RemoteRegionRegistry remoteRegionRegistry = new RemoteRegionRegistry(
-                            new URL(remoteRegionUrl));
-                    remoteRegionRegistryList.add(remoteRegionRegistry);
+            Map<String, String> remoteRegionUrlsWithName = eurekaConfig.getRemoteRegionUrlsWithName();
+            if (remoteRegionUrlsWithName != null) {
+                allKnownRemoteRegions = new String[remoteRegionUrlsWithName.size()];
+                int remoteRegionArrayIndex = 0;
+                for (Entry<String, String> remoteRegionUrlWithName : remoteRegionUrlsWithName.entrySet()) {
+                    RemoteRegionRegistry remoteRegionRegistry = new RemoteRegionRegistry(new URL(remoteRegionUrlWithName.getValue()));
+                    regionNameVSRemoteRegistry.put(remoteRegionUrlWithName.getKey(), remoteRegionRegistry);
+                    allKnownRemoteRegions[remoteRegionArrayIndex++] = remoteRegionUrlWithName.getKey();
                 }
             }
         } catch (Throwable e) {

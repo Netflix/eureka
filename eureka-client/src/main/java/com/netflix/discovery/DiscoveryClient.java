@@ -19,6 +19,7 @@ package com.netflix.discovery;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,8 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.naming.directory.DirContext;
@@ -109,7 +112,7 @@ public class DiscoveryClient implements LookupService {
     private final com.netflix.servo.monitor.Timer GET_SERVICE_URLS_DNS_TIMER = Monitors
             .newTimer(PREFIX + "GetServiceUrlsFromDNS");
     private final com.netflix.servo.monitor.Timer REGISTER_TIMER = Monitors
-            .newTimer(PREFIX + "Register");;
+            .newTimer(PREFIX + "Register");
     private final com.netflix.servo.monitor.Timer REFRESH_TIMER = Monitors
             .newTimer(PREFIX + "Refresh");
     private final com.netflix.servo.monitor.Timer REFRESH_DELTA_TIMER = Monitors
@@ -130,7 +133,9 @@ public class DiscoveryClient implements LookupService {
     // instance variables
     private volatile HealthCheckCallback healthCheckCallback;
     private volatile AtomicReference<List<String>> eurekaServiceUrls = new AtomicReference<List<String>>();
-    private volatile AtomicReference<Applications> applications = new AtomicReference<Applications>();
+    private volatile AtomicReference<Applications> localRegionApps = new AtomicReference<Applications>();
+    private volatile Map<String, Applications> remoteRegionVsApps = new ConcurrentHashMap<String, Applications>();
+
     private InstanceInfo instanceInfo;
     private String appPathIdentifier;
     private boolean isRegisteredWithDiscovery = false;
@@ -138,6 +143,8 @@ public class DiscoveryClient implements LookupService {
     private JerseyClient discoveryJerseyClient;
     private ApacheHttpClient4 discoveryApacheClient;
     private static EurekaClientConfig clientConfig;
+    private final String remoteRegionsToFetch;
+    private final InstanceRegionChecker instanceRegionChecker;
 
     private enum Action {
         Register, Cancel, Renew, Refresh, Refresh_Delta
@@ -158,7 +165,7 @@ public class DiscoveryClient implements LookupService {
             serviceUrlUpdaterTimer.schedule(getServiceUrlUpdateTask(zone),
                     clientConfig.getEurekaServiceUrlPollIntervalSeconds(),
                     clientConfig.getEurekaServiceUrlPollIntervalSeconds());
-            applications.set(new Applications());
+            localRegionApps.set(new Applications());
 
             if (myInfo != null) {
                 instanceInfo = myInfo;
@@ -175,7 +182,8 @@ public class DiscoveryClient implements LookupService {
                     clientConfig.getEurekaConnectionIdleTimeoutSeconds());
             discoveryApacheClient = discoveryJerseyClient.getClient();
             ClientConfig cc = discoveryJerseyClient.getClientconfig();
-
+            remoteRegionsToFetch = clientConfig.fetchRegistryForRemoteRegions();
+            instanceRegionChecker = new InstanceRegionChecker(remoteRegionsToFetch, clientConfig);
             boolean enableGZIPContentEncodingFilter = config
                     .shouldGZipContent();
             // should we enable GZip decoding of responses based on Response
@@ -221,7 +229,7 @@ public class DiscoveryClient implements LookupService {
      * @see com.netflix.discovery.shared.LookupService#getApplications()
      */
     public Applications getApplications() {
-        return applications.get();
+        return localRegionApps.get();
     }
 
     /*
@@ -268,18 +276,40 @@ public class DiscoveryClient implements LookupService {
      *            - true if it is a secure vip address, false otherwise
      * @return - The list of {@link InstanceInfo} objects matching the criteria
      */
-    public List<InstanceInfo> getInstancesByVipAddress(String vipAddress,
-            boolean secure) {
+    public List<InstanceInfo> getInstancesByVipAddress(String vipAddress, boolean secure) {
+        return getInstancesByVipAddress(vipAddress, secure, instanceRegionChecker.getLocalRegion());
+    }
+
+    /**
+     * Gets the list of instances matching the given VIP Address in the passed region.
+     *
+     * @param vipAddress - The VIP address to match the instances for.
+     * @param secure - true if it is a secure vip address, false otherwise
+     * @param region - region from which the instances are to be fetched.
+     *
+     * @return - The list of {@link InstanceInfo} objects matching the criteria, empty list if not instances found.
+     */
+    public List<InstanceInfo> getInstancesByVipAddress(String vipAddress, boolean secure, String region) {
         if (vipAddress == null) {
             throw new IllegalArgumentException(
                     "Supplied VIP Address cannot be null");
         }
-        if (!secure) {
-            return this.applications.get().getInstancesByVirtualHostName(
-                    vipAddress);
+        Applications applications;
+        if (instanceRegionChecker.isLocalRegion(region)) {
+            applications = this.localRegionApps.get();
         } else {
-            return this.applications.get().getInstancesBySecureVirtualHostName(
-                    vipAddress);
+            applications = remoteRegionVsApps.get(region);
+            if (null == region) {
+                logger.debug("No applications are defined for region {}, so returning an empty instance list for vip address {}.",
+                             region, vipAddress);
+                return Collections.emptyList();
+            }
+        }
+
+        if (!secure) {
+            return applications.getInstancesByVirtualHostName(vipAddress);
+        } else {
+            return applications.getInstancesBySecureVirtualHostName(vipAddress);
 
         }
 
@@ -359,11 +389,10 @@ public class DiscoveryClient implements LookupService {
             throw new RuntimeException("No matches for the virtual host name :"
                     + virtualHostname);
         }
-        Applications apps = this.applications.get();
+        Applications apps = this.localRegionApps.get();
         int index = (int) (apps.getNextIndex(virtualHostname.toUpperCase(),
                 secure).incrementAndGet() % instanceInfoList.size());
-        InstanceInfo instanceInfo = instanceInfoList.get(index);
-        return instanceInfo;
+        return instanceInfoList.get(index);
     }
 
     /**
@@ -498,7 +527,7 @@ public class DiscoveryClient implements LookupService {
      */
     public void shutdown() {
         // If APPINFO was registered
-        if (instanceInfo != null) {
+        if (instanceInfo != null && shouldRegister(instanceInfo)) {
             instanceInfo.setStatus(InstanceStatus.DOWN);
             unregister();
         }
@@ -544,20 +573,22 @@ public class DiscoveryClient implements LookupService {
         try {
             // If the delta is disabled or if it is the first time, get all
             // applications
+            Applications applications = getApplications();
+
             if (clientConfig.shouldDisableDelta()
-                    || (getApplications() == null)
-                    || (getApplications().getRegisteredApplications().size() == 0)
+                    || (applications == null)
+                    || (applications.getRegisteredApplications().size() == 0)
                     // The client application does not have the latest library
                     // supporting delta
-                    || (getApplications().getVersion() == -1)) {
+                    || (applications.getVersion() == -1)) {
                 logger.info("Disable delta property : {}",
                         clientConfig.shouldDisableDelta());
                 logger.info("Application is null : {}",
-                        (getApplications() == null));
+                        (applications == null));
                 logger.info(
                         "Registered Applications size is zero : {}",
-                        (getApplications().getRegisteredApplications().size() == 0));
-                logger.info("Application version is -1: {}", (getApplications()
+                        (applications.getRegisteredApplications().size() == 0));
+                logger.info("Application version is -1: {}", (applications
                         .getVersion() == -1));
                 response = getAndStoreFullRegistry();
             } else {
@@ -572,8 +603,7 @@ public class DiscoveryClient implements LookupService {
                     response = getAndStoreFullRegistry();
                 } else {
                     updateDelta(delta);
-                    String reconcileHashCode = getApplications()
-                            .getReconcileHashCode();
+                    String reconcileHashCode = getReconcileHashCode(applications);
                     // There is a diff in number of instances for some reason
                     if ((!reconcileHashCode.equals(delta.getAppsHashCode()))
                             || clientConfig.shouldLogDeltaDiff()) {
@@ -602,6 +632,17 @@ public class DiscoveryClient implements LookupService {
         return true;
     }
 
+    private String getReconcileHashCode(Applications applications) {
+        TreeMap<String, AtomicInteger> instanceCountMap = new TreeMap<String, AtomicInteger>();
+        if (isFetchingRemoteRegionRegistries()) {
+            for (Applications remoteApp : remoteRegionVsApps.values()) {
+                remoteApp.populateInstanceCountMap(instanceCountMap);
+            }
+        }
+        applications.populateInstanceCountMap(instanceCountMap);
+        return Applications.getReconcileHashCode(instanceCountMap);
+    }
+
     /**
      * Gets the full registry information from the eureka server and stores it
      * locally.
@@ -619,7 +660,7 @@ public class DiscoveryClient implements LookupService {
             logger.error("The application is null for some reason. Not storing this information");
         }
         else {
-            applications.set(this.filterAndShuffle(apps));
+            localRegionApps.set(this.filterAndShuffle(apps));
         }
         logger.info("The response status is {}", response.getStatus());
         return response;
@@ -661,14 +702,11 @@ public class DiscoveryClient implements LookupService {
 
         this.closeResponse(response);
         response = makeRemoteCall(Action.Refresh);
-        Applications serverApps = (Applications) response
-                .getEntity(Applications.class);
+        Applications serverApps = response.getEntity(Applications.class);
         try {
-            Map<String, List<String>> reconcileDiffMap = getApplications()
-            .getReconcileMapDiff(serverApps);
+            Map<String, List<String>> reconcileDiffMap = getApplications().getReconcileMapDiff(serverApps);
             String reconcileString = "";
-            for (Map.Entry<String, List<String>> mapEntry : reconcileDiffMap
-                    .entrySet()) {
+            for (Map.Entry<String, List<String>> mapEntry : reconcileDiffMap.entrySet()) {
                 reconcileString = reconcileString + mapEntry.getKey() + ": ";
                 for (String displayString : mapEntry.getValue()) {
                     reconcileString = reconcileString + displayString;
@@ -679,7 +717,7 @@ public class DiscoveryClient implements LookupService {
         } catch (Throwable e) {
             logger.error("Could not calculate reconcile string ", e);
         }
-        applications.set(this.filterAndShuffle(serverApps));
+        localRegionApps.set(this.filterAndShuffle(serverApps));
         getApplications().setVersion(delta.getVersion());
         logger.warn(
                 "The Reconcile hashcodes after complete sync up, client : {}, server : {}.",
@@ -696,42 +734,54 @@ public class DiscoveryClient implements LookupService {
      *            the delta information received from eureka server in the last
      *            poll cycle.
      */
-    private void updateDelta(Applications delta) {
+    private void
+    updateDelta(Applications delta) {
         int deltaCount = 0;
         for (Application app : delta.getRegisteredApplications()) {
             for (InstanceInfo instance : app.getInstances()) {
+                Applications applications = getApplications();
+                String instanceRegion = instanceRegionChecker.getInstanceRegion(instance);
+                if (!instanceRegionChecker.isLocalRegion(instanceRegion)) {
+                    Applications remoteApps = remoteRegionVsApps.get(instanceRegion);
+                    if (null == remoteApps) {
+                        remoteApps = new Applications();
+                        remoteRegionVsApps.put(instanceRegion, remoteApps);
+                    }
+                    applications = remoteApps;
+                }
+
                 ++deltaCount;
                 if (ActionType.ADDED.equals(instance.getActionType())) {
-                    Application existingApp = getApplications()
+                    Application existingApp = applications
                             .getRegisteredApplications(instance.getAppName());
                     if (existingApp == null) {
-                        getApplications().addApplication(app);
+                        applications.addApplication(app);
                     }
-                    logger.debug("Added instance {} to the existing apps ",
-                            instance.getId());
-                    getApplications().getRegisteredApplications(
+                    logger.debug("Added instance {} to the existing apps in region {}",
+                            instance.getId(), instanceRegion);
+                    applications.getRegisteredApplications(
                             instance.getAppName()).addInstance(instance);
                 } else if (ActionType.MODIFIED.equals(instance.getActionType())) {
-                    Application existingApp = getApplications()
+                    Application existingApp = applications
                             .getRegisteredApplications(instance.getAppName());
                     if (existingApp == null) {
-                        getApplications().addApplication(app);
+                        applications.addApplication(app);
                     }
                     logger.debug("Modified instance {} to the existing apps ",
-                            instance.getId());
+                                 instance.getId());
 
-                    getApplications().getRegisteredApplications(
+                    applications.getRegisteredApplications(
                             instance.getAppName()).addInstance(instance);
 
                 } else if (ActionType.DELETED.equals(instance.getActionType())) {
-                    Application existingApp = getApplications()
+                    Application existingApp = applications
                             .getRegisteredApplications(instance.getAppName());
                     if (existingApp == null) {
-                        getApplications().addApplication(app);
+                        applications.addApplication(app);
                     }
                     logger.debug("Deleted instance {} to the existing apps ",
-                            instance.getId());
-                    getApplications().getRegisteredApplications(
+                                 instance.getId());
+                    applications.getRegisteredApplications(
                             instance.getAppName()).removeInstance(instance);
                 }
             }
@@ -739,9 +789,14 @@ public class DiscoveryClient implements LookupService {
         logger.debug(
                 "The total number of instances fetched by the delta processor : {}",
                 deltaCount);
+
         getApplications().setVersion(delta.getVersion());
-        getApplications().shuffleInstances(
-                clientConfig.shouldFilterOnlyUpInstances());
+        getApplications().shuffleInstances(clientConfig.shouldFilterOnlyUpInstances());
+
+        for (Applications applications : remoteRegionVsApps.values()) {
+            applications.setVersion(delta.getVersion());
+            applications.shuffleInstances(clientConfig.shouldFilterOnlyUpInstances());
+        }
     }
 
     /**
@@ -801,11 +856,17 @@ public class DiscoveryClient implements LookupService {
             case Refresh:
                 tracer = REFRESH_TIMER.start();
                 urlPath = "apps/";
+                if (isFetchingRemoteRegionRegistries()) {
+                    urlPath += "?regions=" + remoteRegionsToFetch;
+                }
                 response = getUrl(serviceUrl + urlPath);
                 break;
             case Refresh_Delta:
                 tracer = REFRESH_DELTA_TIMER.start();
                 urlPath = "apps/delta";
+                if (isFetchingRemoteRegionRegistries()) {
+                    urlPath += "?regions=" + remoteRegionsToFetch;
+                }
                 response = getUrl(serviceUrl + urlPath);
                 break;
             case Register:
@@ -1399,7 +1460,7 @@ public class DiscoveryClient implements LookupService {
                         .forName(backupRegistry).newInstance());
                 Applications apps = backupRegistryInstance.fetchRegistry();
                 if (apps != null) {
-                    applications.set(this.filterAndShuffle(apps));
+                    localRegionApps.set(this.filterAndShuffle(apps));
                     logTotalInstances();
                     logger.info("Fetched registry successfully from the backup");
                 }
@@ -1462,9 +1523,22 @@ public class DiscoveryClient implements LookupService {
      */
     private Applications filterAndShuffle(Applications apps) {
         if (apps != null) {
-            apps.shuffleInstances(clientConfig.shouldFilterOnlyUpInstances());
+            if (isFetchingRemoteRegionRegistries()) {
+                Map<String, Applications> remoteRegionVsApps = new ConcurrentHashMap<String, Applications>();
+                apps.shuffleAndIndexInstances(remoteRegionVsApps, clientConfig, instanceRegionChecker);
+                for (Applications applications : remoteRegionVsApps.values()) {
+                    applications.shuffleInstances(clientConfig.shouldFilterOnlyUpInstances());
+                }
+                this.remoteRegionVsApps = remoteRegionVsApps;
+            } else {
+                apps.shuffleInstances(clientConfig.shouldFilterOnlyUpInstances());
+            }
         }
         return apps;
     }
-   
+
+    private boolean isFetchingRemoteRegionRegistries() {
+        return null != remoteRegionsToFetch;
+    }
+
 }

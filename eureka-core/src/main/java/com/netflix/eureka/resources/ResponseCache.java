@@ -83,6 +83,10 @@ public class ResponseCache {
             .newTimer("serialize-all");
     private final com.netflix.servo.monitor.Timer serializeDeltaAppsTimer = Monitors
             .newTimer("serialize-all-delta");
+    private final com.netflix.servo.monitor.Timer serializeAllAppsWithRemoteRegionTimer = Monitors
+            .newTimer("serialize-all_remote_region");
+    private final com.netflix.servo.monitor.Timer serializeDeltaAppsWithRemoteRegionTimer = Monitors
+            .newTimer("serialize-all-delta_remote_region");
     private final com.netflix.servo.monitor.Timer serializeOneApptimer = Monitors
             .newTimer("serialize-one");
     private final com.netflix.servo.monitor.Timer serializeViptimer = Monitors.newTimer("serialize-one-vip");
@@ -336,6 +340,18 @@ public class ResponseCache {
                         payload = getPayLoad(key, registry.getApplication(key.getName()));
                     }
                     break;
+                case ApplicationWithRemoteRegion:
+                    String regionsStr = key.getName();
+                    String[] remoteRegions = regionsStr.split(",");
+                    tracer = this.serializeAllAppsWithRemoteRegionTimer.start();
+                    payload = getPayLoad(key, registry.getApplicationsFromMultipleRegions(remoteRegions));
+                    break;
+                case ApplicationDeltaWithRemoteRegion:
+                    String deltaRegionsStr = key.getName();
+                    String[] deltaRemoteRegions = deltaRegionsStr.split(",");
+                    tracer = this.serializeDeltaAppsWithRemoteRegionTimer.start();
+                    payload = getPayLoad(key, registry.getApplicationDeltasFromMultipleRegions(deltaRemoteRegions));
+                    break;
                 case VIP:
                 case SVIP:
                     tracer = this.serializeViptimer.start();
@@ -403,7 +419,7 @@ public class ResponseCache {
         /**
          * An enum to define the entity that is stored in this cache for this key.
          */
-        public enum EntityType {Application, VIP, SVIP}
+        public enum EntityType {Application, ApplicationWithRemoteRegion, ApplicationDeltaWithRemoteRegion, VIP, SVIP}
 
         private final String entityName;
         private final KeyType requestType;
