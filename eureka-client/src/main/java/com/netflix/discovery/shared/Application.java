@@ -26,13 +26,17 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.google.common.base.Preconditions;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.EurekaClientConfig;
+import com.netflix.discovery.InstanceRegionChecker;
 import com.netflix.discovery.provider.Serializer;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamImplicit;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
+
+import javax.annotation.Nullable;
 
 /**
  * The application class holds the list of instances for a particular
@@ -51,7 +55,7 @@ public class Application {
     private volatile boolean isDirty = false;
 
     @XStreamImplicit
-    private Set<InstanceInfo> instances;
+    private final Set<InstanceInfo> instances;
 
     private AtomicReference<List<InstanceInfo>> shuffledInstances = new AtomicReference<List<InstanceInfo>>();
 
@@ -90,11 +94,7 @@ public class Application {
      *            the instance info object to be removed.
      */
     public void removeInstance(InstanceInfo i) {
-        instancesMap.remove(i.getId());
-        synchronized (instances) {
-            instances.remove(i);
-            isDirty = true;
-        }
+        removeInstance(i, true);
     }
 
     /**
@@ -168,16 +168,49 @@ public class Application {
      *            {@link InstanceStatus#UP} needs to be stored.
      */
     public void shuffleAndStoreInstances(boolean filterUpInstances) {
-        List<InstanceInfo> instanceInfoList = null;
+        _shuffleAndStoreInstances(filterUpInstances, false, null, null, null);
+    }
+
+    public void shuffleAndStoreInstances(Map<String, Applications> remoteRegionsRegistry,
+                                         EurekaClientConfig clientConfig, InstanceRegionChecker instanceRegionChecker) {
+        _shuffleAndStoreInstances(clientConfig.shouldFilterOnlyUpInstances(), true, remoteRegionsRegistry, clientConfig,
+                                  instanceRegionChecker);
+    }
+
+    private void _shuffleAndStoreInstances(boolean filterUpInstances, boolean indexByRemoteRegions,
+                                           @Nullable Map<String, Applications> remoteRegionsRegistry,
+                                           @Nullable EurekaClientConfig clientConfig,
+                                           @Nullable InstanceRegionChecker instanceRegionChecker) {
+        List<InstanceInfo> instanceInfoList;
         synchronized (instances) {
             instanceInfoList = new ArrayList<InstanceInfo>(instances);
         }
-        if (filterUpInstances) {
+        if (indexByRemoteRegions || filterUpInstances) {
             Iterator<InstanceInfo> it = instanceInfoList.iterator();
             while (it.hasNext()) {
                 InstanceInfo instanceInfo = it.next();
-                if (!InstanceStatus.UP.equals(instanceInfo.getStatus())) {
+                if (filterUpInstances && !InstanceStatus.UP.equals(instanceInfo.getStatus())) {
                     it.remove();
+                } else if (indexByRemoteRegions && null != instanceRegionChecker && null != clientConfig
+                           && null != remoteRegionsRegistry) {
+                    String instanceRegion = instanceRegionChecker.getInstanceRegion(instanceInfo);
+                    if (!instanceRegionChecker.isLocalRegion(instanceRegion)) {
+                        Applications appsForRemoteRegion = remoteRegionsRegistry.get(instanceRegion);
+                        if (null == appsForRemoteRegion) {
+                            appsForRemoteRegion = new Applications();
+                            remoteRegionsRegistry.put(instanceRegion, appsForRemoteRegion);
+                        }
+
+                        Application remoteApp = appsForRemoteRegion.getRegisteredApplications(instanceInfo.getAppName());
+                        if (null == remoteApp) {
+                            remoteApp = new Application(instanceInfo.getAppName());
+                            appsForRemoteRegion.addApplication(remoteApp);
+                        }
+
+                        remoteApp.addInstance(instanceInfo);
+                        this.removeInstance(instanceInfo, false);
+                        it.remove();
+                    }
                 }
             }
 
@@ -185,6 +218,14 @@ public class Application {
         Collections.shuffle(instanceInfoList);
         this.shuffledInstances.set(instanceInfoList);
     }
-    
-    
+
+    private void removeInstance(InstanceInfo i, boolean markAsDirty) {
+        instancesMap.remove(i.getId());
+        synchronized (instances) {
+            instances.remove(i);
+            if (markAsDirty) {
+                isDirty = true;
+            }
+        }
+    }
 }

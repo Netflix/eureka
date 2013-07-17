@@ -28,6 +28,8 @@ import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.config.DynamicStringProperty;
 
+import javax.annotation.Nullable;
+
 /**
  * 
  * A default implementation of eureka client configuration as required by
@@ -62,6 +64,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     private static final DynamicStringProperty EUREKA_PROPS_FILE = DynamicPropertyFactory
             .getInstance().getStringProperty("eureka.client.props",
                     "eureka-client");
+    public static final String DEFAULT_ZONE = "defaultZone";
     private String namespace = "eureka.";
 
     public DefaultEurekaClientConfig() {
@@ -316,6 +319,12 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 false).get();
     }
 
+    @Nullable
+    @Override
+    public String fetchRegistryForRemoteRegions() {
+        return configInstance.getStringProperty(namespace + "fetchRemoteRegionsRegistry", null).get();
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -337,7 +346,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
         return configInstance
                 .getStringProperty(
                         namespace + "" + region + ".availabilityZones",
-                        "defaultZone").get().split(",");
+                        DEFAULT_ZONE).get().split(",");
     }
 
     /*

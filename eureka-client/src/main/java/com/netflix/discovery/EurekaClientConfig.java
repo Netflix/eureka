@@ -24,6 +24,8 @@ import org.apache.http.client.HttpClient;
 
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 
+import javax.annotation.Nullable;
+
 /**
  * Configuration information required by the eureka clients to register an
  * instance with <em>Eureka</em> server.
@@ -326,8 +328,19 @@ public interface EurekaClientConfig {
     boolean shouldDisableDelta();
 
     /**
+     * Comma separated list of regions for which the eureka registry information will be fetched. It is mandatory to
+     * define the availability zones for each of these regions as returned by {@link #getAvailabilityZones(String)}.
+     * Failing to do so, will result in failure of discovery client startup.
+     *
+     * @return Comma separated list of regions for which the eureka registry information will be fetched.
+     * <code>null</code> if no remote region has to be fetched.
+     */
+    @Nullable
+    String fetchRegistryForRemoteRegions();
+
+    /**
      * Gets the region (used in AWS datacenters) where this instance resides.
-     * 
+     *
      * @return AWS region where this instance resides.
      */
     String getRegion();

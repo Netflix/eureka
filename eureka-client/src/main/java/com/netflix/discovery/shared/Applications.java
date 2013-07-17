@@ -31,6 +31,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.netflix.discovery.InstanceRegionChecker;
+import com.sun.jersey.api.client.Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +43,8 @@ import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.provider.Serializer;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamImplicit;
+
+import javax.annotation.Nullable;
 
 /**
  * The class that wraps all the registry information returned by eureka server.
@@ -200,7 +204,12 @@ public class Applications {
      *         about the instances.
      */
     public String getReconcileHashCode() {
-        Map<String, AtomicInteger> instanceCountMap = new TreeMap<String, AtomicInteger>();
+        TreeMap<String, AtomicInteger> instanceCountMap = new TreeMap<String, AtomicInteger>();
+        populateInstanceCountMap(instanceCountMap);
+        return getReconcileHashCode(instanceCountMap);
+    }
+
+    public void populateInstanceCountMap(TreeMap<String, AtomicInteger> instanceCountMap) {
         for (Application app : this.getRegisteredApplications()) {
             for (InstanceInfo info : app.getInstancesAsIsFromEureka()) {
                 AtomicInteger instanceCount = instanceCountMap.get(info
@@ -213,6 +222,9 @@ public class Applications {
                 instanceCount.incrementAndGet();
             }
         }
+    }
+
+    public static String getReconcileHashCode(TreeMap<String, AtomicInteger> instanceCountMap) {
         String reconcileHashCode = "";
         for (Map.Entry<String, AtomicInteger> mapEntry : instanceCountMap
                 .entrySet()) {
@@ -352,10 +364,27 @@ public class Applications {
     }
 
     public void shuffleInstances(boolean filterUpInstances) {
+        _shuffleInstances(filterUpInstances, false, null, null, null);
+    }
+
+    public void shuffleAndIndexInstances(Map<String, Applications> remoteRegionsRegistry, EurekaClientConfig clientConfig,
+                                         InstanceRegionChecker instanceRegionChecker) {
+        _shuffleInstances(clientConfig.shouldFilterOnlyUpInstances(), true, remoteRegionsRegistry, clientConfig,
+                          instanceRegionChecker);
+    }
+
+    private void _shuffleInstances(boolean filterUpInstances, boolean indexByRemoteRegions,
+                                   @Nullable Map<String, Applications> remoteRegionsRegistry,
+                                   @Nullable EurekaClientConfig clientConfig,
+                                   @Nullable InstanceRegionChecker instanceRegionChecker) {
         this.virtualHostNameAppMap.clear();
         this.secureVirtualHostNameAppMap.clear();
         for (Application application : appNameApplicationMap.values()) {
-            application.shuffleAndStoreInstances(filterUpInstances);
+            if (indexByRemoteRegions) {
+                application.shuffleAndStoreInstances(remoteRegionsRegistry, clientConfig, instanceRegionChecker);
+            } else {
+                application.shuffleAndStoreInstances(filterUpInstances);
+            }
             this.addInstancesToVIPMaps(application);
         }
         shuffleAndFilterInstances(this.virtualHostNameAppMap,

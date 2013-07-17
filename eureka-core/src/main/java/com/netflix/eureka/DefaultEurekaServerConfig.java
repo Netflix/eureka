@@ -17,6 +17,12 @@
 package com.netflix.eureka;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +30,8 @@ import org.slf4j.LoggerFactory;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.config.DynamicStringProperty;
+
+import javax.annotation.Nullable;
 
 /**
  * 
@@ -407,6 +415,43 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     }
 
     @Override
+    public Map<String, String> getRemoteRegionUrlsWithName() {
+        String propName = namespace + "remoteRegionUrlsWithName";
+        String remoteRegionUrlWithNameString = configInstance.getStringProperty(propName, null).get();
+        if (null == remoteRegionUrlWithNameString) {
+            return Collections.emptyMap();
+        }
+
+        String[] remoteRegionUrlWithNamePairs = remoteRegionUrlWithNameString.split(",");
+        Map<String, String> toReturn = new HashMap<String, String>(remoteRegionUrlWithNamePairs.length);
+
+        final String pairSplitChar = ";";
+        for (String remoteRegionUrlWithNamePair : remoteRegionUrlWithNamePairs) {
+            String[] pairSplit = remoteRegionUrlWithNamePair.split(pairSplitChar);
+            if (pairSplit.length < 2) {
+                logger.error("Error reading eureka remote region urls from property {}. " +
+                             "Invalid entry {} for remote region url. The entry must contain region name and url separated by a {}. Ignoring this entry.",
+                             new String[]{propName, remoteRegionUrlWithNamePair, pairSplitChar});
+            } else {
+                String regionName = pairSplit[0];
+                String regionUrl = pairSplit[1];
+                if (pairSplit.length > 2) {
+                    StringBuilder regionUrlAssembler = new StringBuilder();
+                    for (int i = 1; i < pairSplit.length; i++) {
+                        if (regionUrlAssembler.length() != 0) {
+                            regionUrlAssembler.append(pairSplitChar);
+                        }
+                        regionUrlAssembler.append(pairSplit[i]);
+                    }
+                    regionUrl = regionUrlAssembler.toString();
+                }
+                toReturn.put(regionName, regionUrl);
+            }
+        }
+        return toReturn;
+    }
+
+    @Override
     public String[] getRemoteRegionUrls() {
         String remoteRegionUrlString = configInstance.getStringProperty(
                 namespace + "remoteRegionUrls", null).get();
@@ -415,6 +460,25 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
             remoteRegionUrl = remoteRegionUrlString.split(",");
         }
         return remoteRegionUrl;
+    }
+
+    @Nullable
+    @Override
+    public Set<String> getRemoteRegionAppWhitelist(@Nullable String regionName) {
+        if (null == regionName) {
+            regionName = "global";
+        } else {
+            regionName = regionName.trim().toLowerCase();
+        }
+        DynamicStringProperty appWhiteListProp =
+                configInstance.getStringProperty(namespace + "remoteRegion." + regionName + ".appWhiteList", null);
+        if (null == appWhiteListProp || null == appWhiteListProp.get()) {
+            return null;
+        } else {
+            String appWhiteListStr = appWhiteListProp.get();
+            String[] whitelistEntries = appWhiteListStr.split(",");
+            return new HashSet<String>(Arrays.asList(whitelistEntries));
+        }
     }
 
     @Override

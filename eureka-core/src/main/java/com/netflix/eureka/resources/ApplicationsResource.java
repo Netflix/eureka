@@ -17,17 +17,21 @@
 package com.netflix.eureka.resources;
 
 import java.net.URI;
+import java.util.Arrays;
 
+import javax.annotation.Nullable;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
+import com.google.common.base.Joiner;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka.CurrentRequestVersion;
@@ -90,6 +94,10 @@ public class ApplicationsResource {
      *            compressed or uncompressed data.
      * @param uriInfo
      *            the {@link URI} information of the request made.
+     * @param regionsStr A comma separated list of remote regions from which the
+     *                instances will also be returned. The applications returned
+     *                from the remote region can be limited to the applications
+     *                returned by {@link EurekaServerConfig#getRemoteRegionAppWhitelist(String)}
      * @return response containing information about all {@link Applications}
      *         from the {@link InstanceRegistry}.
      */
@@ -97,9 +105,19 @@ public class ApplicationsResource {
     public Response getContainers(@PathParam("version") String version,
             @HeaderParam(HEADER_ACCEPT) String acceptHeader,
             @HeaderParam(HEADER_ACCEPT_ENCODING) String acceptEncoding,
-            @Context UriInfo uriInfo) {
+            @Context UriInfo uriInfo, @Nullable @QueryParam("regions") String regionsStr) {
 
-        EurekaMonitors.GET_ALL.increment();
+        boolean isRemoteRegionRequested = null != regionsStr && !regionsStr.isEmpty();
+        String[] regions;
+        String normalizedRegionStr = null;
+        if (!isRemoteRegionRequested) {
+            EurekaMonitors.GET_ALL.increment();
+        } else {
+            regions = regionsStr.toLowerCase().split(",");
+            Arrays.sort(regions); // So, that we don't have different caches for same regions queried in different order.
+            normalizedRegionStr = Joiner.on(",").join(regions);
+            EurekaMonitors.GET_ALL_WITH_REMOTE_REGIONS.increment();
+        }
         // Check if the server allows the access to the registry. The server can
         // restrict access if it is not
         // ready to serve traffic depending on various reasons.
@@ -111,15 +129,19 @@ public class ApplicationsResource {
         if (acceptHeader == null || !acceptHeader.contains(HEADER_JSON_VALUE)) {
             keyType = KeyType.XML;
         }
-        Key cacheKey = new Key(ResponseCache.ALL_APPS, keyType,
-                CurrentRequestVersion.get());
+        Key cacheKey;
+        if (!isRemoteRegionRequested) {
+            cacheKey = new Key(ResponseCache.ALL_APPS, keyType, CurrentRequestVersion.get());
+        } else {
+            cacheKey = new Key(Key.EntityType.ApplicationWithRemoteRegion , normalizedRegionStr, keyType, CurrentRequestVersion.get());
+        }
         if (acceptEncoding != null
-                && acceptEncoding.contains(HEADER_GZIP_VALUE)) {
+            && acceptEncoding.contains(HEADER_GZIP_VALUE)) {
             return Response.ok(ResponseCache.getInstance().getGZIP(cacheKey))
-            .header(HEADER_CONTENT_ENCODING, HEADER_GZIP_VALUE).build();
+                           .header(HEADER_CONTENT_ENCODING, HEADER_GZIP_VALUE).build();
         } else {
             return Response.ok(ResponseCache.getInstance().get(cacheKey))
-            .build();
+                           .build();
         }
     }
 
@@ -163,7 +185,7 @@ public class ApplicationsResource {
             @PathParam("version") String version,
             @HeaderParam(HEADER_ACCEPT) String acceptHeader,
             @HeaderParam(HEADER_ACCEPT_ENCODING) String acceptEncoding,
-            @Context UriInfo uriInfo) {
+            @Context UriInfo uriInfo, @Nullable @QueryParam("regions") String regionsStr) {
         // If the delta flag is disabled in discovery or if the lease expiration
         // has been disabled, redirect clients to get all instances
         if ((eurekaConfig.shouldDisableDelta())
@@ -172,14 +194,30 @@ public class ApplicationsResource {
                                 .getInstance().shouldAllowAccess()))) {
             return Response.status(Status.FORBIDDEN).build();
         }
-        EurekaMonitors.GET_ALL_DELTA.increment();
+
+        boolean isRemoteRegionRequested = null != regionsStr && !regionsStr.isEmpty();
+        String[] regions;
+        String normalizedRegionStr = null;
+        if (!isRemoteRegionRequested) {
+            EurekaMonitors.GET_ALL_DELTA.increment();
+        } else {
+            regions = regionsStr.toLowerCase().split(",");
+            Arrays.sort(regions); // So, that we don't have different caches for same regions queried in different order.
+            normalizedRegionStr = Joiner.on(",").join(regions);
+            EurekaMonitors.GET_ALL_DELTA_WITH_REMOTE_REGIONS.increment();
+        }
+
         CurrentRequestVersion.set(Version.toEnum(version));
         KeyType keyType = KeyType.JSON;
         if (acceptHeader == null || !acceptHeader.contains(HEADER_JSON_VALUE)) {
             keyType = KeyType.XML;
         }
-        Key cacheKey = new Key(ResponseCache.ALL_APPS_DELTA, keyType,
-                CurrentRequestVersion.get());
+        Key cacheKey;
+        if (!isRemoteRegionRequested) {
+            cacheKey = new Key(ResponseCache.ALL_APPS_DELTA, keyType, CurrentRequestVersion.get());
+        } else {
+            cacheKey = new Key(Key.EntityType.ApplicationDeltaWithRemoteRegion, normalizedRegionStr, keyType, CurrentRequestVersion.get());
+        }
         if (acceptEncoding != null
                 && acceptEncoding.contains(HEADER_GZIP_VALUE)) {
             return Response.ok(ResponseCache.getInstance().getGZIP(cacheKey))
