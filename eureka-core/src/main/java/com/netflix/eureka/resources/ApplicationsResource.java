@@ -107,10 +107,10 @@ public class ApplicationsResource {
             @HeaderParam(HEADER_ACCEPT_ENCODING) String acceptEncoding,
             @Context UriInfo uriInfo, @Nullable @QueryParam("regions") String regionsStr) {
 
-        boolean isRemoteRegionRequested = null == regionsStr || regionsStr.isEmpty();
+        boolean isRemoteRegionRequested = null != regionsStr && !regionsStr.isEmpty();
         String[] regions;
         String normalizedRegionStr = null;
-        if (isRemoteRegionRequested) {
+        if (!isRemoteRegionRequested) {
             EurekaMonitors.GET_ALL.increment();
         } else {
             regions = regionsStr.toLowerCase().split(",");
@@ -195,10 +195,10 @@ public class ApplicationsResource {
             return Response.status(Status.FORBIDDEN).build();
         }
 
-        boolean isRemoteRegionRequested = null == regionsStr || regionsStr.isEmpty();
+        boolean isRemoteRegionRequested = null != regionsStr && !regionsStr.isEmpty();
         String[] regions;
         String normalizedRegionStr = null;
-        if (isRemoteRegionRequested) {
+        if (!isRemoteRegionRequested) {
             EurekaMonitors.GET_ALL_DELTA.increment();
         } else {
             regions = regionsStr.toLowerCase().split(",");
