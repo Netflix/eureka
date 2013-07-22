@@ -467,6 +467,43 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     }
 
     @Override
+    public Map<String, String> getRemoteRegionUrlsWithName() {
+        String propName = namespace + "remoteRegionUrlsWithName";
+        String remoteRegionUrlWithNameString = configInstance.getStringProperty(propName, null).get();
+        if (null == remoteRegionUrlWithNameString) {
+            return Collections.emptyMap();
+        }
+
+        String[] remoteRegionUrlWithNamePairs = remoteRegionUrlWithNameString.split(",");
+        Map<String, String> toReturn = new HashMap<String, String>(remoteRegionUrlWithNamePairs.length);
+
+        final String pairSplitChar = ";";
+        for (String remoteRegionUrlWithNamePair : remoteRegionUrlWithNamePairs) {
+            String[] pairSplit = remoteRegionUrlWithNamePair.split(pairSplitChar);
+            if (pairSplit.length < 2) {
+                logger.error("Error reading eureka remote region urls from property {}. " +
+                             "Invalid entry {} for remote region url. The entry must contain region name and url separated by a {}. Ignoring this entry.",
+                             new String[]{propName, remoteRegionUrlWithNamePair, pairSplitChar});
+            } else {
+                String regionName = pairSplit[0];
+                String regionUrl = pairSplit[1];
+                if (pairSplit.length > 2) {
+                    StringBuilder regionUrlAssembler = new StringBuilder();
+                    for (int i = 1; i < pairSplit.length; i++) {
+                        if (regionUrlAssembler.length() != 0) {
+                            regionUrlAssembler.append(pairSplitChar);
+                        }
+                        regionUrlAssembler.append(pairSplit[i]);
+                    }
+                    regionUrl = regionUrlAssembler.toString();
+                }
+                toReturn.put(regionName, regionUrl);
+            }
+        }
+        return toReturn;
+    }
+
+    @Override
     public String[] getRemoteRegionUrls() {
         String remoteRegionUrlString = configInstance.getStringProperty(
                 namespace + "remoteRegionUrls", null).get();
