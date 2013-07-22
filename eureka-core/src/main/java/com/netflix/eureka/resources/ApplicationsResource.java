@@ -129,12 +129,10 @@ public class ApplicationsResource {
         if (acceptHeader == null || !acceptHeader.contains(HEADER_JSON_VALUE)) {
             keyType = KeyType.XML;
         }
-        Key cacheKey;
-        if (!isRemoteRegionRequested) {
-            cacheKey = new Key(Key.EntityType.Application, ResponseCache.ALL_APPS, keyType, CurrentRequestVersion.get());
-        } else {
-            cacheKey = new Key(Key.EntityType.Application, normalizedRegionStr, regions, keyType, CurrentRequestVersion.get());
-        }
+
+        Key cacheKey = new Key(Key.EntityType.Application, ResponseCache.ALL_APPS, regions, keyType,
+                               CurrentRequestVersion.get());
+
         if (acceptEncoding != null
             && acceptEncoding.contains(HEADER_GZIP_VALUE)) {
             return Response.ok(ResponseCache.getInstance().getGZIP(cacheKey))
@@ -212,12 +210,8 @@ public class ApplicationsResource {
         if (acceptHeader == null || !acceptHeader.contains(HEADER_JSON_VALUE)) {
             keyType = KeyType.XML;
         }
-        Key cacheKey;
-        if (!isRemoteRegionRequested) {
-            cacheKey = new Key(Key.EntityType.Application, ResponseCache.ALL_APPS_DELTA, keyType, CurrentRequestVersion.get());
-        } else {
-            cacheKey = new Key(Key.EntityType.Application, normalizedRegionStr, regions, keyType, CurrentRequestVersion.get());
-        }
+        Key cacheKey = new Key(Key.EntityType.Application, ResponseCache.ALL_APPS_DELTA, regions, keyType,
+                               CurrentRequestVersion.get());
         if (acceptEncoding != null
                 && acceptEncoding.contains(HEADER_GZIP_VALUE)) {
             return Response.ok(ResponseCache.getInstance().getGZIP(cacheKey))
