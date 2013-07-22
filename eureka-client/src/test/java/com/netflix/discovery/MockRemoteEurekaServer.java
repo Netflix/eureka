@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Nitesh Kant
@@ -20,17 +21,19 @@ public class MockRemoteEurekaServer {
 
     public static final String EUREKA_API_BASE_PATH = "/eureka/v2/";
 
+    private final int port;
     private final Map<String, Application> applicationMap;
     private final Map<String, Application> remoteRegionApps;
     private final Map<String, Application> remoteRegionAppsDelta;
     private final Map<String, Application> applicationDeltaMap;
     private final Server server;
-    private boolean sentDelta;
+    private AtomicBoolean sentDelta = new AtomicBoolean();
 
     public MockRemoteEurekaServer(int port, Map<String, Application> localRegionApps,
                                   Map<String, Application> localRegionAppsDelta,
                                   Map<String, Application> remoteRegionApps,
                                   Map<String, Application> remoteRegionAppsDelta) {
+        this.port = port;
         this.applicationMap = localRegionApps;
         this.applicationDeltaMap = localRegionAppsDelta;
         this.remoteRegionApps = remoteRegionApps;
@@ -48,7 +51,7 @@ public class MockRemoteEurekaServer {
     }
 
     public boolean isSentDelta() {
-        return sentDelta;
+        return sentDelta.get();
     }
 
     private class AppsResourceHandler extends AbstractHandler {
@@ -57,9 +60,9 @@ public class MockRemoteEurekaServer {
         public void handle(String target, HttpServletRequest request, HttpServletResponse response, int dispatch)
                 throws IOException, ServletException {
             String pathInfo = request.getPathInfo();
-            System.out.println(
-                    "Eureka resource mock, received request on path: " + pathInfo + ". HTTP method: |" + request
-                            .getMethod() + "|" + ", query string: " + request.getQueryString());
+            System.out.println("Eureka port: " + port + ". " + System.currentTimeMillis() +
+                               ". Eureka resource mock, received request on path: " + pathInfo + ". HTTP method: |"
+                               + request.getMethod() + "|" + ", query string: " + request.getQueryString());
             boolean handled = false;
             if (null != pathInfo && pathInfo.startsWith("")) {
                 pathInfo = pathInfo.substring(EUREKA_API_BASE_PATH.length());
@@ -68,13 +71,14 @@ public class MockRemoteEurekaServer {
                 if (pathInfo.startsWith("apps/delta")) {
                     Applications apps = new Applications();
                     apps.setVersion(100l);
-                    if (!sentDelta) {
+                    if (sentDelta.compareAndSet(false, true)) {
                         addDeltaApps(includeRemote, apps);
+                    } else {
+                        System.out.println("Eureka port: " +  port + ". " + System.currentTimeMillis() +". Not including delta as it has already been sent.");
                     }
                     apps.setAppsHashCode(getDeltaAppsHashCode(includeRemote));
-                    sendOkResponseWithContent((Request) request, response, XmlXStream.getInstance().toXML(apps));
+                    sendOkResponseWithContent((Request) request, response, apps);
                     handled = true;
-                    sentDelta = true;
                 } else if(pathInfo.startsWith("apps")) {
                     Applications apps = new Applications();
                     apps.setVersion(100l);
@@ -87,11 +91,13 @@ public class MockRemoteEurekaServer {
                         }
                     }
 
-                    if (sentDelta) {
+                    if (sentDelta.get()) {
                         addDeltaApps(includeRemote, apps);
+                    } else {
+                        System.out.println("Eureka port: " + port + ". " + System.currentTimeMillis() +". Not including delta apps in /apps response, as delta has not been sent.");
                     }
                     apps.setAppsHashCode(apps.getReconcileHashCode());
-                    sendOkResponseWithContent((Request) request, response, XmlXStream.getInstance().toXML(apps));
+                    sendOkResponseWithContent((Request) request, response, apps);
                     handled = true;
                 }
             }
@@ -133,14 +139,17 @@ public class MockRemoteEurekaServer {
             return queryString.contains("regions=");
         }
 
-        private void sendOkResponseWithContent(Request request, HttpServletResponse response, String content)
+        private void sendOkResponseWithContent(Request request, HttpServletResponse response, Applications apps)
                 throws IOException {
+            String content = XmlXStream.getInstance().toXML(apps);
             response.setContentType("application/xml");
             response.setStatus(HttpServletResponse.SC_OK);
             response.getWriter().println(content);
             response.getWriter().flush();
             request.setHandled(true);
-            System.out.println("Eureka resource mock, sent response for request path: " + request.getPathInfo());
+            System.out.println("Eureka port: " + port + ". " + System.currentTimeMillis() +
+                               ". Eureka resource mock, sent response for request path: " + request.getPathInfo() +
+                               ", apps count: " + apps.getRegisteredApplications().size());
         }
     }
 

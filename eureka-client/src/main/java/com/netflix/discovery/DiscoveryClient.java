@@ -530,6 +530,10 @@ public class DiscoveryClient implements LookupService {
         if (instanceInfo != null && shouldRegister(instanceInfo)) {
             instanceInfo.setStatus(InstanceStatus.DOWN);
             unregister();
+        } else {
+            if (null != cacheRefreshTimer) {
+                cacheRefreshTimer.cancel();
+            }
         }
     }
 
@@ -1050,7 +1054,7 @@ public class DiscoveryClient implements LookupService {
                     clientConfig.shouldPreferSameZoneEureka());
         }
         return DiscoveryClient.getEurekaServiceUrlsFromConfig(zone,
-                clientConfig.shouldPreferSameZoneEureka());
+                                                              clientConfig.shouldPreferSameZoneEureka());
     }
 
     public enum DiscoveryUrlType {

@@ -32,6 +32,7 @@ public class DiscoveryClientTest {
     public static final String REMOTE_REGION_APP_NAME = "MYAPP";
     public static final String REMOTE_REGION = "myregion";
     public static final String REMOTE_ZONE = "myzone";
+    public static final int CLIENT_REFRESH_RATE = 10;
 
     private MockRemoteEurekaServer mockLocalEurekaServer;
     private final Map<String, Application> localRegionApps = new HashMap<String, Application>();
@@ -40,21 +41,22 @@ public class DiscoveryClientTest {
     private final Map<String, Application> remoteRegionAppsDelta = new HashMap<String, Application>();
 
     private DiscoveryClient client;
-    public static final int LOCAL_EUREKA_PORT = 7799;
+    private int localRandomEurekaPort = 7799;
 
     @Before
     public void setUp() throws Exception {
-        ConfigurationManager.getConfigInstance().setProperty("eureka.client.refresh.interval", "10");
+        final int eurekaPort = localRandomEurekaPort + (int)(Math.random() * 10);
+        ConfigurationManager.getConfigInstance().setProperty("eureka.client.refresh.interval", CLIENT_REFRESH_RATE);
         ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", "false");
         ConfigurationManager.getConfigInstance().setProperty("eureka.fetchRemoteRegionsRegistry", REMOTE_REGION);
         ConfigurationManager.getConfigInstance().setProperty("eureka.myregion.availabilityZones", REMOTE_ZONE);
         ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default",
-                                                             "http://localhost:" + LOCAL_EUREKA_PORT +
+                                                             "http://localhost:" + eurekaPort +
                                                              MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
         populateLocalRegistryAtStartup();
         populateRemoteRegistryAtStartup();
 
-        mockLocalEurekaServer = new MockRemoteEurekaServer(LOCAL_EUREKA_PORT, localRegionApps, localRegionAppsDelta,
+        mockLocalEurekaServer = new MockRemoteEurekaServer(eurekaPort, localRegionApps, localRegionAppsDelta,
                                                            remoteRegionApps, remoteRegionAppsDelta);
         mockLocalEurekaServer.start();
 
@@ -139,10 +141,12 @@ public class DiscoveryClientTest {
     private void waitForDeltaToBeRetrieved() throws InterruptedException {
         int count = 0;
         while (count < 3 && !mockLocalEurekaServer.isSentDelta()) {
-            System.out.println("Sleeping for 10 seconds to let the remote registry fetch delta. Attempt: " + count);
-            Thread.sleep(10 * 1000);
-            System.out.println("Done sleeping for 10 seconds to let the remote registry fetch delta");
+            System.out.println("Sleeping for " + CLIENT_REFRESH_RATE + " seconds to let the remote registry fetch delta. Attempt: " + count);
+            Thread.sleep( 3 * CLIENT_REFRESH_RATE * 1000);
+            System.out.println("Done sleeping for 10 seconds to let the remote registry fetch delta. Delta fetched: " + mockLocalEurekaServer.isSentDelta());
         }
+
+        System.out.println("Sleeping for extra " + CLIENT_REFRESH_RATE + " seconds for the client to update delta in memory.");
     }
 
     private void populateRemoteRegistryAtStartup() {
