@@ -95,6 +95,7 @@ public class ResponseCache {
 
     private static final Timer timer = new Timer("Eureka -CacheFillTimer", true);
     private static final AtomicLong versionDelta = new AtomicLong(0);
+    private static final AtomicLong versionDeltaWithRegions = new AtomicLong(0);
     private final static String EMPTY_PAYLOAD = "";
 
     public enum KeyType {
@@ -201,9 +202,9 @@ public class ResponseCache {
     public void invalidate(String appName, @Nullable String vipAddress, @Nullable String secureVipAddress) {
         for (KeyType type : KeyType.values()) {
             for (Version v : Version.values()) {
-                invalidate(new Key(appName, type, v),
-                        new Key(ALL_APPS, type, v),
-                        new Key(ALL_APPS_DELTA, type, v));
+                invalidate(new Key(Key.EntityType.Application, appName, type, v),
+                           new Key(Key.EntityType.Application, ALL_APPS, type, v),
+                           new Key(Key.EntityType.Application, ALL_APPS_DELTA, type, v));
                 if (null != vipAddress) {
                     invalidate(new Key(Key.EntityType.VIP, vipAddress, type, v));
                 }
@@ -236,6 +237,15 @@ public class ResponseCache {
      */
     public static AtomicLong getVersionDelta() {
         return versionDelta;
+    }
+
+    /**
+     * Gets the version number of the cached data with remote regions.
+     *
+     * @return teh version number of the cached data with remote regions.
+     */
+    public static AtomicLong getVersionDeltaWithRegions() {
+        return versionDeltaWithRegions;
     }
 
     /**
@@ -328,29 +338,30 @@ public class ResponseCache {
             String payload;
             switch (key.getEntityType()) {
                 case Application:
+                    boolean isRemoteRegionRequested = key.hasRegions();
+
                     if (ALL_APPS.equals(key.getName())) {
-                        tracer = this.serializeAllAppsTimer.start();
-                        payload = getPayLoad(key, registry.getApplications());
+                        if (isRemoteRegionRequested) {
+                            tracer = this.serializeAllAppsWithRemoteRegionTimer.start();
+                            payload = getPayLoad(key, registry.getApplicationsFromMultipleRegions(key.getRegions()));
+                        } else {
+                            tracer = this.serializeAllAppsTimer.start();
+                            payload = getPayLoad(key, registry.getApplications());
+                        }
                     } else if (ALL_APPS_DELTA.equals(key.getName())) {
-                        tracer = this.serializeDeltaAppsTimer.start();
-                        versionDelta.incrementAndGet();
-                        payload = getPayLoad(key, registry.getApplicationDeltas());
+                        if (isRemoteRegionRequested) {
+                            tracer = this.serializeDeltaAppsWithRemoteRegionTimer.start();
+                            versionDeltaWithRegions.incrementAndGet();
+                            payload = getPayLoad(key, registry.getApplicationDeltasFromMultipleRegions(key.getRegions()));
+                        } else {
+                            tracer = this.serializeDeltaAppsTimer.start();
+                            versionDelta.incrementAndGet();
+                            payload = getPayLoad(key, registry.getApplicationDeltas());
+                        }
                     } else {
                         tracer = this.serializeOneApptimer.start();
                         payload = getPayLoad(key, registry.getApplication(key.getName()));
                     }
-                    break;
-                case ApplicationWithRemoteRegion:
-                    String regionsStr = key.getName();
-                    String[] remoteRegions = regionsStr.split(",");
-                    tracer = this.serializeAllAppsWithRemoteRegionTimer.start();
-                    payload = getPayLoad(key, registry.getApplicationsFromMultipleRegions(remoteRegions));
-                    break;
-                case ApplicationDeltaWithRemoteRegion:
-                    String deltaRegionsStr = key.getName();
-                    String[] deltaRemoteRegions = deltaRegionsStr.split(",");
-                    tracer = this.serializeDeltaAppsWithRemoteRegionTimer.start();
-                    payload = getPayLoad(key, registry.getApplicationDeltasFromMultipleRegions(deltaRemoteRegions));
                     break;
                 case VIP:
                 case SVIP:
@@ -419,24 +430,27 @@ public class ResponseCache {
         /**
          * An enum to define the entity that is stored in this cache for this key.
          */
-        public enum EntityType {Application, ApplicationWithRemoteRegion, ApplicationDeltaWithRemoteRegion, VIP, SVIP}
+        public enum EntityType {Application, VIP, SVIP}
 
         private final String entityName;
+        private final String[] regions;
         private final KeyType requestType;
         private final Version requestVersion;
         private final String hashKey;
         private final EntityType entityType;
 
-        public Key(String entityName, KeyType type, Version v) {
-            this(null, entityName, type, v);
+        public Key(EntityType entityType, String entityName, KeyType type, Version v) {
+            this(entityType, entityName, null, type, v);
         }
 
-        public Key(EntityType entityType, String entityName, KeyType type, Version v) {
-            this.entityType = (null == entityType) ? EntityType.Application : entityType;
+        public Key(EntityType entityType, String entityName, @Nullable String[] regions, KeyType type, Version v) {
+            this.regions = regions;
+            this.entityType = entityType;
             this.entityName = entityName;
             requestType = type;
             requestVersion = v;
-            hashKey = this.entityType +this.entityName + requestType.name() + requestVersion.name();
+            hashKey = this.entityType + this.entityName + ((null != this.regions) ? Arrays.toString(this.regions) : "") +
+                      requestType.name() + requestVersion.name();
         }
 
         public String getName() {
@@ -457,6 +471,14 @@ public class ResponseCache {
 
         public EntityType getEntityType() {
             return entityType;
+        }
+
+        public boolean hasRegions() {
+            return null != regions && regions.length != 0;
+        }
+
+        public String[] getRegions() {
+            return regions;
         }
 
         @Override

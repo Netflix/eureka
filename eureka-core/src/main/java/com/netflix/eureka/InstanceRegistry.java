@@ -819,7 +819,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         }
 
         Applications apps = new Applications();
-        apps.setVersion(ResponseCache.getVersionDelta().get());
+        apps.setVersion(ResponseCache.getVersionDeltaWithRegions().get());
         Map<String, Application> applicationInstancesMap = new HashMap<String, Application>();
         try {
             write.lock();

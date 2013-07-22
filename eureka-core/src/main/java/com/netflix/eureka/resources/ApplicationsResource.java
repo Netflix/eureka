@@ -108,7 +108,7 @@ public class ApplicationsResource {
             @Context UriInfo uriInfo, @Nullable @QueryParam("regions") String regionsStr) {
 
         boolean isRemoteRegionRequested = null != regionsStr && !regionsStr.isEmpty();
-        String[] regions;
+        String[] regions = null;
         String normalizedRegionStr = null;
         if (!isRemoteRegionRequested) {
             EurekaMonitors.GET_ALL.increment();
@@ -131,9 +131,9 @@ public class ApplicationsResource {
         }
         Key cacheKey;
         if (!isRemoteRegionRequested) {
-            cacheKey = new Key(ResponseCache.ALL_APPS, keyType, CurrentRequestVersion.get());
+            cacheKey = new Key(Key.EntityType.Application, ResponseCache.ALL_APPS, keyType, CurrentRequestVersion.get());
         } else {
-            cacheKey = new Key(Key.EntityType.ApplicationWithRemoteRegion , normalizedRegionStr, keyType, CurrentRequestVersion.get());
+            cacheKey = new Key(Key.EntityType.Application, normalizedRegionStr, regions, keyType, CurrentRequestVersion.get());
         }
         if (acceptEncoding != null
             && acceptEncoding.contains(HEADER_GZIP_VALUE)) {
@@ -196,7 +196,7 @@ public class ApplicationsResource {
         }
 
         boolean isRemoteRegionRequested = null != regionsStr && !regionsStr.isEmpty();
-        String[] regions;
+        String[] regions = null;
         String normalizedRegionStr = null;
         if (!isRemoteRegionRequested) {
             EurekaMonitors.GET_ALL_DELTA.increment();
@@ -214,9 +214,9 @@ public class ApplicationsResource {
         }
         Key cacheKey;
         if (!isRemoteRegionRequested) {
-            cacheKey = new Key(ResponseCache.ALL_APPS_DELTA, keyType, CurrentRequestVersion.get());
+            cacheKey = new Key(Key.EntityType.Application, ResponseCache.ALL_APPS_DELTA, keyType, CurrentRequestVersion.get());
         } else {
-            cacheKey = new Key(Key.EntityType.ApplicationDeltaWithRemoteRegion, normalizedRegionStr, keyType, CurrentRequestVersion.get());
+            cacheKey = new Key(Key.EntityType.Application, normalizedRegionStr, regions, keyType, CurrentRequestVersion.get());
         }
         if (acceptEncoding != null
                 && acceptEncoding.contains(HEADER_GZIP_VALUE)) {
