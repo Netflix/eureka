@@ -526,7 +526,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      * Same as calling {@link #getApplicationsFromMultipleRegions(String[])} with a <code>null</code> argument.
      */
     public Applications getApplicationsFromAllRemoteRegions() {
-        return getApplicationsFromMultipleRegions(null);
+        return getApplicationsFromMultipleRegions(allKnownRemoteRegions);
     }
 
     /**
@@ -548,16 +548,12 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      * or {@link #getApplicationsFromLocalRegionOnly()}
      *
      * @param remoteRegions The remote regions for which the instances are to be queried. The instances may be limited
-     *                      by a whitelist as explained above. If <code>null</code> all remote regions are included.
-     *                      If empty list then no remote region is included.
+     *                      by a whitelist as explained above. If <code>null</code> or empty no remote regions are included.
      *
      * @return The applications with instances from the passed remote regions as well as local region. The instances
      * from remote regions can be only for certain whitelisted apps as explained above.
      */
-    public Applications getApplicationsFromMultipleRegions(@Nullable String[] remoteRegions) {
-        if (null == remoteRegions) {
-            remoteRegions = allKnownRemoteRegions; // null means all remote regions.
-        }
+    public Applications getApplicationsFromMultipleRegions(String[] remoteRegions) {
 
         boolean includeRemoteRegion = remoteRegions.length != 0;
 
@@ -606,66 +602,6 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         }
         apps.setAppsHashCode(apps.getReconcileHashCode());
         return apps;
-    }
-
-    /**
-     * This method will return an application with instances from all passed remote regions as well as the current region.
-     * Thus, this gives a union view of instances from multiple regions. <br/>
-     *
-     * The remote regions from where the instances will be chosen can further be restricted if this application does not
-     * appear in the whitelist specified for the region as returned by
-     * {@link EurekaServerConfig#getRemoteRegionAppWhitelist(String)} for a region. In case, there is no whitelist
-     * defined for a region, this method will also look for a global whitelist by passing <code>null</code> to the
-     * method {@link EurekaServerConfig#getRemoteRegionAppWhitelist(String)} <br/>
-     *
-     * @param remoteRegions The remote regions for which the instances are to be queried. The instances may be limited
-     *                      by a whitelist as explained above. If <code>null</code> all remote regions are included.
-     *                      If empty list then no remote region is included.
-     *
-     * @return The instances from the passed remote regions as well as local region. The instances
-     * from remote regions can be further be restricted as explained above. <code>null</code> if the application does
-     * not exist locally or in remote regions.
-     */
-    @Nullable
-    public Application getApplicationFromMultipleRegions(String appName, @Nullable String[] remoteRegions) {
-        if (null == remoteRegions) {
-            remoteRegions = allKnownRemoteRegions; // null means all remote regions.
-        }
-
-        boolean includeRemoteRegion = remoteRegions.length != 0;
-
-        Application app = null;
-
-        Map<String, Lease<InstanceInfo>> leaseMap = _registry.get(appName);
-
-        if (leaseMap != null && leaseMap.size() > 0) {
-            for (Entry<String, Lease<InstanceInfo>> entry : leaseMap.entrySet()) {
-                if (app == null) {
-                    app = new Application(appName);
-                }
-                app.addInstance(decorateInstanceInfo(entry.getValue()));
-            }
-        }
-
-        if (includeRemoteRegion) {
-            for (String remoteRegion : remoteRegions) {
-                if (shouldFetchFromRemoteRegistry(appName, remoteRegion)) {
-                    RemoteRegionRegistry remoteRegistry = regionNameVSRemoteRegistry.get(remoteRegion);
-                    if (null != remoteRegistry) {
-                        Application remoteApp = remoteRegistry.getApplication(appName);
-                        if (null != remoteApp) {
-                            if (null == app) {
-                                app = new Application(appName);
-                            }
-                            for (InstanceInfo instanceInfo : remoteApp.getInstances()) {
-                                app.addInstance(instanceInfo);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return app;
     }
 
     private boolean shouldFetchFromRemoteRegistry(String appName, String remoteRegion) {
