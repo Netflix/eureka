@@ -395,7 +395,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                 return false;
             }
         }
-        for (RemoteRegionRegistry remoteRegionRegistry : this.remoteRegionRegistryList) {
+        for (RemoteRegionRegistry remoteRegionRegistry : this.regionNameVSRemoteRegistry.values()) {
             if (!remoteRegionRegistry.isReadyForServingData()) {
                 return false;
             }

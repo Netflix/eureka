@@ -82,7 +82,7 @@ public class ApplicationResource {
             keyType = KeyType.XML;
         }
 
-        Key cacheKey = new Key(appName, keyType, CurrentRequestVersion.get());
+        Key cacheKey = new Key(Key.EntityType.Application, appName, keyType, CurrentRequestVersion.get());
 
         String payLoad = ResponseCache.getInstance().get(cacheKey);
 

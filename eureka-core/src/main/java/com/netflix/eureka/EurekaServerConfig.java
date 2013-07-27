@@ -16,7 +16,10 @@
 
 package com.netflix.eureka;
 
+import javax.annotation.Nullable;
 import java.net.URL;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Configuration information required by the eureka server to operate.
@@ -443,13 +446,38 @@ public interface EurekaServerConfig {
     boolean shouldGZipContentFromRemoteRegion();
     
     /**
+     * Get a map of region name against remote region discovery url.
+     *
+     * @return - An unmodifiable map of remote region name against remote region discovery url. Empty map if no remote region url
+     * is defined.
+     */
+    Map<String, String> getRemoteRegionUrlsWithName();
+
+    /**
      * Get the list of remote region urls
      * @return - array of string representing {@link URL}s.
+     * @deprecated Use {@link #getRemoteRegionUrlsWithName()}
      */
     String[] getRemoteRegionUrls();
 
     /**
-     * Get the time interval for which the registryinformation need to be fetched from the remote region.
+     * Returns a list of applications that must be retrieved from the passed remote region. <br/>
+     * This list can be <code>null</code> which means that no filtering should be applied on the applications
+     * for this region i.e. all applications must be returned. <br/>
+     * A global whitelist can also be configured which can be used when no setting is available for a region, such a
+     * whitelist can be obtained by passing <code>null</code> to this method.
+     *
+     * @param regionName Name of the region for which the application whitelist is to be retrieved. If null a global
+     *                   setting is returned.
+     *
+     * @return A set of application names which must be retrieved from the passed region. If <code>null</code> all
+     * applications must be retrieved.
+     */
+    @Nullable
+    Set<String> getRemoteRegionAppWhitelist(@Nullable String regionName);
+
+    /**
+     * Get the time interval for which the registry information need to be fetched from the remote region.
      * @return time in seconds.
      */
     int getRemoteRegionRegistryFetchInterval();
