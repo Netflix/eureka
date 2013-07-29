@@ -201,6 +201,10 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                     r, existingLease, isReplication);
             r.setStatusWithoutDirty(overriddenInstanceStatus);
 
+            // If the lease is registered with UP status, set lease service up timestamp
+            if (InstanceStatus.UP.equals(r.getStatus())) {
+                lease.serviceUp();
+            }
             if (r != null) {
                 r.setActionType(ActionType.ADDED);
                 recentlyChangedQueue.add(new RecentlyChangedItem(lease));
@@ -393,6 +397,10 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                 lease.renew();
                 InstanceInfo info = lease.getHolder();
                 if ((info != null) && !(info.getStatus().equals(newStatus))) {
+                    // Mark service as UP if needed
+                    if (InstanceStatus.UP.equals(newStatus)) {
+                        lease.serviceUp();
+                    }
                     // This is NAC overriden status
                     overriddenInstanceStatusMap.put(id, newStatus);
                     // Set it for transfer of overridden status to replica on
@@ -403,7 +411,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                         replicaDirtyTimestamp = Long
                                 .valueOf(lastDirtyTimestamp);
                     }
-                    // If the repication's dirty timestamp is more than the
+                    // If the replication's dirty timestamp is more than the
                     // existing one, just update
                     // it to the replica's.
                     if (replicaDirtyTimestamp > info.getLastDirtyTimestamp()) {
@@ -873,7 +881,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      * Get the list of instances by its unique id.
      *
      * @param id
-     *            - the unique id of the instnace
+     *            - the unique id of the instance
      * @param includeRemoteRegions
      *            - true, if we need to include applications from remote regions
      *            as indicated by the region {@link URL} by this property
@@ -939,6 +947,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         info.setLeaseInfo(LeaseInfo.Builder.newBuilder()
                                    .setRegistrationTimestamp(lease.getRegistrationTimestamp())
                                    .setRenewalTimestamp(lease.getLastRenewalTimestamp())
+                                   .setServiceUpTimestamp(lease.getServiceUpTimestamp())
                                    .setRenewalIntervalInSecs(renewalInterval)
                                    .setDurationInSecs(leaseDuration)
                                    .setEvictionTimestamp(lease.getEvictionTimestamp()).build());

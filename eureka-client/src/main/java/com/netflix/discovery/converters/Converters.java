@@ -523,7 +523,7 @@ public final class Converters {
         private static final String ELEM_REG_TIMESTAMP = "registrationTimestamp";
         private static final String ELEM_LAST_RENEW_TIMETSTAMP = "lastRenewalTimestamp";
         private static final String ELEM_EVICTION_TIMESTAMP = "evictionTimestamp";
-        private static final String ELEM_CLOCK = "clock";
+        private static final String ELEM_SERVICE_UP_TIMESTAMP = "serviceUpTimestamp";
 
         /*
          * (non-Javadoc)
@@ -571,6 +571,10 @@ public final class Converters {
             writer.setValue(String.valueOf(info.getEvictionTimestamp()));
             writer.endNode();
 
+            writer.startNode(ELEM_SERVICE_UP_TIMESTAMP);
+            writer.setValue(String.valueOf(info.getServiceUpTimestamp()));
+            writer.endNode();
+
         }
 
         /*
@@ -613,6 +617,8 @@ public final class Converters {
                     builder.setRegistrationTimestamp(longValue);
                 } else if (ELEM_RENEW_INT.equals(nodeName)) {
                     builder.setRenewalIntervalInSecs((int) longValue);
+                } else if (ELEM_SERVICE_UP_TIMESTAMP.equals(nodeName)) {
+                    builder.setServiceUpTimestamp(longValue);
                 }
                 reader.moveUp();
             }
