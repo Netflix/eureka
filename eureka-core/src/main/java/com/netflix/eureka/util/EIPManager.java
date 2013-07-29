@@ -175,8 +175,7 @@ public class EIPManager {
      *            the public ip of this instance
      * @return null if the EIP is already bound, valid EIP otherwise.
      */
-    public String getCandidateEIP(String myInstanceId, String myZone,
-            String myPublicIP) {
+    public String getCandidateEIP(String myInstanceId, String myZone, String myPublicIP) {
 
         if (myZone == null) {
             myZone = "us-east-1d";
@@ -202,10 +201,11 @@ public class EIPManager {
             availableEIPList.add(eipTrimmed);
         }
         // Look for unused EIPs
-        InstanceInfo instanceInfo = ApplicationInfoManager.getInstance()
-        .getInfo();
+        InstanceInfo instanceInfo = ApplicationInfoManager.getInstance().getInfo();
         Application app = DiscoveryManager.getInstance().getDiscoveryClient()
         .getApplication(instanceInfo.getAppName());
+
+        List<String> unreachableEips = new ArrayList<String>();
 
         if (app != null) {
             for (InstanceInfo i : app.getInstances()) {
@@ -227,8 +227,7 @@ public class EIPManager {
                 }
                 logger.info("The list of available EIPS in the priority order :"
                         + availableEIPList);
-                for (Iterator<String> it = availableEIPList.iterator(); it
-                .hasNext();) {
+                for (Iterator<String> it = availableEIPList.iterator(); it.hasNext(); ) {
                     String eip = it.next();
                     // if there is already an EIP association, remove it from
                     // the list if it is reachable
@@ -250,32 +249,48 @@ public class EIPManager {
                                 isInstanceReachable = true;
                                 break;
                             } catch (Throwable e) {
+                                logger.warn(
+                                        String.format(
+                                                "Error while checking whether the EIP %s is used by the instance id %s as reported by eureka peer.",
+                                                eip, instanceInfo.getId()), e);
                                 try {
                                     Thread.sleep(HEARTBEAT_RETRY_INTERVAL_MS);
                                 } catch (InterruptedException e1) {
-                                    logger.warn(
-                                            "Interrupted while trying send heartbeat",
-                                            e1);
+                                    logger.warn("Interrupted while trying send heartbeat", e1);
                                 }
                             }
                         }
 
                         if (!isInstanceReachable) {
                             logger.info(
-                                    "The instance %s seems unreachable and making it available for reuse.",
+                                    "The instance {} seems unreachable and making it available for reuse.",
                                     instanceInfo.getHostName());
+                            it.remove(); // This is so that we add this at the end, prioritize EIPs which are not even taken by an instance according to peer nodes.
+                            unreachableEips.add(eip);
                             continue;
                         }
-                        logger.info(
-                                "Removing the EIP {} as it is already used by instance {}",
-                                eip, instanceId);
+                        logger.info("Removing the EIP {} as it is already used by instance {}", eip, instanceId);
                         it.remove();
                     }
                 }
             }
         }
-        if (availableEIPList == null || availableEIPList.isEmpty()) {
+
+        /**
+         * The available EIPs list (when retrieved from DNS) contains EIPs for "this zone (i.e. in which this instance
+         * is running)" first and then from other zone. In the above loop we remove all the EIPs which are bound to
+         * eureka but are not reachable, these EIPs are added in unreachableEips list. Here, we add this unreachable
+         * EIPs at the end so that we pick these when no EIP is available readily. Unreachable EIPs are also sorted
+         * such that local zone is first, so the eventual list always have the same Zone EIP first.
+         */
+
+        if (availableEIPList == null) {
             throw new RuntimeException("Cannot find a free EIP to bind");
+        } else {
+            availableEIPList.addAll(unreachableEips);
+            if (availableEIPList.isEmpty()) {
+                throw new RuntimeException("Cannot find a free EIP to bind");
+            }
         }
         return availableEIPList.iterator().next();
     }
