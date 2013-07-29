@@ -17,6 +17,12 @@
 package com.netflix.eureka;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +30,8 @@ import org.slf4j.LoggerFactory;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.config.DynamicStringProperty;
+
+import javax.annotation.Nullable;
 
 /**
  * 
@@ -406,6 +414,58 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
                 namespace + "remoteRegion.gzipContent", true).get();
     }
 
+    /**
+     * Expects a property with name: [eureka-namespace].remoteRegionUrlsWithName and a value being a comma separated list
+     * of region name & remote url pairs, separated with a ";". <br/>
+     * So, if you wish to specify two regions with name region1 & region2, the property value will be:
+     <PRE>
+        eureka.remoteRegionUrlsWithName=region1;http://region1host/eureka/v2,region2;http://region2host/eureka/v2
+     </PRE>
+     * The above property will result in the following map:
+     <PRE>
+        region1->"http://region1host/eureka/v2"
+        region2->"http://region2host/eureka/v2"
+     </PRE>
+     * @return A map of region name to remote region URL parsed from the property specified above. If there is no
+     * property available, then an empty map is returned.
+     */
+    @Override
+    public Map<String, String> getRemoteRegionUrlsWithName() {
+        String propName = namespace + "remoteRegionUrlsWithName";
+        String remoteRegionUrlWithNameString = configInstance.getStringProperty(propName, null).get();
+        if (null == remoteRegionUrlWithNameString) {
+            return Collections.emptyMap();
+        }
+
+        String[] remoteRegionUrlWithNamePairs = remoteRegionUrlWithNameString.split(",");
+        Map<String, String> toReturn = new HashMap<String, String>(remoteRegionUrlWithNamePairs.length);
+
+        final String pairSplitChar = ";";
+        for (String remoteRegionUrlWithNamePair : remoteRegionUrlWithNamePairs) {
+            String[] pairSplit = remoteRegionUrlWithNamePair.split(pairSplitChar);
+            if (pairSplit.length < 2) {
+                logger.error("Error reading eureka remote region urls from property {}. " +
+                             "Invalid entry {} for remote region url. The entry must contain region name and url separated by a {}. Ignoring this entry.",
+                             new String[]{propName, remoteRegionUrlWithNamePair, pairSplitChar});
+            } else {
+                String regionName = pairSplit[0];
+                String regionUrl = pairSplit[1];
+                if (pairSplit.length > 2) {
+                    StringBuilder regionUrlAssembler = new StringBuilder();
+                    for (int i = 1; i < pairSplit.length; i++) {
+                        if (regionUrlAssembler.length() != 0) {
+                            regionUrlAssembler.append(pairSplitChar);
+                        }
+                        regionUrlAssembler.append(pairSplit[i]);
+                    }
+                    regionUrl = regionUrlAssembler.toString();
+                }
+                toReturn.put(regionName, regionUrl);
+            }
+        }
+        return toReturn;
+    }
+
     @Override
     public String[] getRemoteRegionUrls() {
         String remoteRegionUrlString = configInstance.getStringProperty(
@@ -415,6 +475,25 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
             remoteRegionUrl = remoteRegionUrlString.split(",");
         }
         return remoteRegionUrl;
+    }
+
+    @Nullable
+    @Override
+    public Set<String> getRemoteRegionAppWhitelist(@Nullable String regionName) {
+        if (null == regionName) {
+            regionName = "global";
+        } else {
+            regionName = regionName.trim().toLowerCase();
+        }
+        DynamicStringProperty appWhiteListProp =
+                configInstance.getStringProperty(namespace + "remoteRegion." + regionName + ".appWhiteList", null);
+        if (null == appWhiteListProp || null == appWhiteListProp.get()) {
+            return null;
+        } else {
+            String appWhiteListStr = appWhiteListProp.get();
+            String[] whitelistEntries = appWhiteListStr.split(",");
+            return new HashSet<String>(Arrays.asList(whitelistEntries));
+        }
     }
 
     @Override
