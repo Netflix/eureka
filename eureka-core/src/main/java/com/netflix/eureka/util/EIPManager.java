@@ -263,8 +263,8 @@ public class EIPManager {
 
                         if (!isInstanceReachable) {
                             logger.info(
-                                    "The instance {} seems unreachable and making it available for reuse.",
-                                    instanceInfo.getHostName());
+                                    "The instance {} seems unreachable, making EIP: {} available for reuse.",
+                                    instanceInfo.getHostName(), eip);
                             it.remove(); // This is so that we add this at the end, prioritize EIPs which are not even taken by an instance according to peer nodes.
                             unreachableEips.add(eip);
                             continue;
@@ -288,6 +288,9 @@ public class EIPManager {
             throw new RuntimeException("Cannot find a free EIP to bind");
         } else {
             availableEIPList.addAll(unreachableEips);
+            if (!unreachableEips.isEmpty()) {
+                logger.info("Added unreachable EIPs {} to the available EIP list. Final EIP list is {}", unreachableEips, availableEIPList);
+            }
             if (availableEIPList.isEmpty()) {
                 throw new RuntimeException("Cannot find a free EIP to bind");
             }
