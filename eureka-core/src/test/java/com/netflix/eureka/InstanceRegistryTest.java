@@ -25,6 +25,7 @@ import java.util.Map;
 public class InstanceRegistryTest {
 
     public static final int REMOTE_REGION_PORT = 7777;
+    public static final String REMOTE_REGION_NAME = "myregion";
     private final Map<String, Application> remoteRegionApps = new HashMap<String, Application>();
     private final Map<String, Application> remoteRegionAppsDelta = new HashMap<String, Application>();
 
@@ -40,15 +41,17 @@ public class InstanceRegistryTest {
 
     @Before
     public void setUp() throws Exception {
-        ConfigurationManager.getConfigInstance().setProperty("eureka.deltaRetentionTimerIntervalInMs",
-                                                             "600000");
+        ConfigurationManager.getConfigInstance().clearProperty("eureka.remoteRegion.global.appWhiteList");
+        ConfigurationManager.getConfigInstance().clearProperty("eureka.remoteRegion." + REMOTE_REGION_NAME + ".appWhiteList");
+        ConfigurationManager.getConfigInstance().setProperty("eureka.deltaRetentionTimerIntervalInMs", "600000");
         ConfigurationManager.getConfigInstance().setProperty("eureka.remoteRegion.registryFetchIntervalInSeconds",
                                                              "5");
         ConfigurationManager.getConfigInstance().setProperty("eureka.remoteRegionUrlsWithName",
-                                                             "myregion;http://localhost:" + REMOTE_REGION_PORT + "/" +
+                                                             REMOTE_REGION_NAME + ";http://localhost:" + REMOTE_REGION_PORT + "/" +
                                                              MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
         populateRemoteRegistryAtStartup();
-        mockRemoteEurekaServer = new MockRemoteEurekaServer(REMOTE_REGION_PORT, remoteRegionApps, remoteRegionAppsDelta);
+        mockRemoteEurekaServer = new MockRemoteEurekaServer(REMOTE_REGION_PORT, remoteRegionApps,
+                                                            remoteRegionAppsDelta);
         mockRemoteEurekaServer.start();
 
         EurekaServerConfig serverConfig = new DefaultEurekaServerConfig();
