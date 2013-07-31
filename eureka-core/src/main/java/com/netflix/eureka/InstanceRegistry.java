@@ -599,8 +599,13 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                             for (InstanceInfo instanceInfo : application.getInstances()) {
                                 appInstanceTillNow.addInstance(instanceInfo);
                             }
+                        } else {
+                            logger.info("Application {} not fetched from the remote region {} as there exists a whitelist and this app is not in the whitelist.",
+                                        application.getName(), remoteRegion);
                         }
                     }
+                } else {
+                    logger.warn("No remote registry available for the remote region {}", remoteRegion);
                 }
             }
         }
