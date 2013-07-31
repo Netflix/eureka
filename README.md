@@ -44,10 +44,6 @@ If in a multi-module project, edit the build.gradle and create a project block f
 
 The dependencies will have to be changed to match the pom dependencies. In the single-project branch, simply follow the dependencies block. In the multi-project branch, there are a few dependencies sections. The first one, part of subprojects, is common to all projects. And then there's a dependency block for each project.
 
-### Test
-
-Run the commands from the _Running_ section below.
-
 ### Delete the pom.xml
 
     find . -name 'pom.xml' -exec git rm \{\} \;
