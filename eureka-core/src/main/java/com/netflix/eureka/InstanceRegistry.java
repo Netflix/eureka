@@ -30,6 +30,7 @@ import static com.netflix.eureka.util.EurekaMonitors.STATUS_UPDATE;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -555,7 +556,10 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      */
     public Applications getApplicationsFromMultipleRegions(String[] remoteRegions) {
 
-        boolean includeRemoteRegion = remoteRegions.length != 0;
+        boolean includeRemoteRegion = null != remoteRegions && remoteRegions.length != 0;
+
+        logger.info("Fetching applications registry with remote regions: {}, Regions argument {}", includeRemoteRegion,
+                    Arrays.toString(remoteRegions));
 
         if (includeRemoteRegion) {
             GET_ALL_WITH_REMOTE_REGIONS_CACHE_MISS.increment();
@@ -1151,6 +1155,8 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                     allKnownRemoteRegions[remoteRegionArrayIndex++] = remoteRegionUrlWithName.getKey();
                 }
             }
+            logger.info("Finished initializing remote region registries. All known remote regions: {}",
+                        Arrays.toString(allKnownRemoteRegions));
         } catch (Throwable e) {
             logger.error("Cannot initialize Remote Region Registry :", e);
         }
