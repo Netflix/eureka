@@ -31,6 +31,9 @@ public class MockRemoteEurekaServer {
         this.applicationDeltaMap = applicationDeltaMap;
         server = new Server(port);
         server.setHandler(new AppsResourceHandler());
+        System.out.println(String.format(
+                "Created eureka server mock with applications map %s and applications delta map %s",
+                stringifyAppMap(applicationMap), stringifyAppMap(applicationDeltaMap)));
     }
 
     public void start() throws Exception {
@@ -43,6 +46,16 @@ public class MockRemoteEurekaServer {
 
     public boolean isSentDelta() {
         return sentDelta;
+    }
+
+    private String stringifyAppMap(Map<String, Application> applicationMap) {
+        StringBuilder builder = new StringBuilder();
+        for (Map.Entry<String, Application> entry : applicationMap.entrySet()) {
+            String entryAsString = String.format("{ name : %s , instance count: %d }", entry.getKey(),
+                                                 entry.getValue().getInstances().size());
+            builder.append(entryAsString);
+        }
+        return builder.toString();
     }
 
     private class AppsResourceHandler extends AbstractHandler {
@@ -90,7 +103,8 @@ public class MockRemoteEurekaServer {
             response.getWriter().println(content);
             response.getWriter().flush();
             request.setHandled(true);
-            System.out.println("Eureka resource mock, sent response for request path: " + request.getPathInfo());
+            System.out.println("Eureka resource mock, sent response for request path: " + request.getPathInfo() +
+                               " with content" + String.valueOf(content));
         }
     }
 
