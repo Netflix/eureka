@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import javax.annotation.Nullable;
 import javax.naming.directory.DirContext;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
@@ -285,11 +286,13 @@ public class DiscoveryClient implements LookupService {
      *
      * @param vipAddress - The VIP address to match the instances for.
      * @param secure - true if it is a secure vip address, false otherwise
-     * @param region - region from which the instances are to be fetched.
+     * @param region - region from which the instances are to be fetched. If <code>null</code> then local region is
+     *               assumed.
      *
      * @return - The list of {@link InstanceInfo} objects matching the criteria, empty list if not instances found.
      */
-    public List<InstanceInfo> getInstancesByVipAddress(String vipAddress, boolean secure, String region) {
+    public List<InstanceInfo> getInstancesByVipAddress(String vipAddress, boolean secure,
+                                                       @Nullable String region) {
         if (vipAddress == null) {
             throw new IllegalArgumentException(
                     "Supplied VIP Address cannot be null");
@@ -299,7 +302,7 @@ public class DiscoveryClient implements LookupService {
             applications = this.localRegionApps.get();
         } else {
             applications = remoteRegionVsApps.get(region);
-            if (null == region) {
+            if (null == applications) {
                 logger.debug("No applications are defined for region {}, so returning an empty instance list for vip address {}.",
                              region, vipAddress);
                 return Collections.emptyList();
