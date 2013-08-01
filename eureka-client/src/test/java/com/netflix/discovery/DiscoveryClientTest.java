@@ -98,6 +98,18 @@ public class DiscoveryClientTest {
     }
 
     @Test
+    public void testGetInvalidVIP() throws Exception {
+        List<InstanceInfo> instancesByVipAddress = client.getInstancesByVipAddress("XYZ", false);
+        Assert.assertEquals("Unexpected number of instances found for local region.", 0, instancesByVipAddress.size());
+    }
+
+    @Test
+    public void testGetInvalidVIPForRemoteRegion() throws Exception {
+        List<InstanceInfo> instancesByVipAddress = client.getInstancesByVipAddress("XYZ", false, REMOTE_REGION);
+        Assert.assertEquals("Unexpected number of instances found for local region.", 0, instancesByVipAddress.size());
+    }
+
+    @Test
     public void testGetByVipInRemoteRegion() throws Exception {
         List<InstanceInfo> instancesByVipAddress = client.getInstancesByVipAddress(ALL_REGIONS_VIP_ADDR, false, REMOTE_REGION);
         Assert.assertEquals("Unexpected number of instances found for remote region.", 1, instancesByVipAddress.size());
