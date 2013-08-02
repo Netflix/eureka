@@ -105,8 +105,7 @@ public class DiscoveryClient implements LookupService {
     private static final String COMMA_STRING = VALUE_DELIMITER;
     private static final String DISCOVERY_APPID = "DISCOVERY";
     private static final String UNKNOWN = "UNKNOWN";
-    private static final DirContext dirContext = DiscoveryClient
-            .getDirContext();
+    private static final DirContext dirContext = DiscoveryClient.getDirContext();
 
     // Timers
     private String PREFIX = "DiscoveryClient_";
@@ -144,7 +143,7 @@ public class DiscoveryClient implements LookupService {
     private JerseyClient discoveryJerseyClient;
     private ApacheHttpClient4 discoveryApacheClient;
     private static EurekaClientConfig clientConfig;
-    private final String remoteRegionsToFetch;
+    private final AtomicReference<String> remoteRegionsToFetch;
     private final InstanceRegionChecker instanceRegionChecker;
 
     private enum Action {
@@ -183,10 +182,18 @@ public class DiscoveryClient implements LookupService {
                     clientConfig.getEurekaConnectionIdleTimeoutSeconds());
             discoveryApacheClient = discoveryJerseyClient.getClient();
             ClientConfig cc = discoveryJerseyClient.getClientconfig();
-            remoteRegionsToFetch = clientConfig.fetchRegistryForRemoteRegions();
-            instanceRegionChecker = new InstanceRegionChecker(remoteRegionsToFetch, clientConfig);
-            boolean enableGZIPContentEncodingFilter = config
-                    .shouldGZipContent();
+            remoteRegionsToFetch = new AtomicReference<String>(clientConfig.fetchRegistryForRemoteRegions());
+            AzToRegionMapper azToRegionMapper;
+            if (clientConfig.shouldUseDnsForFetchingServiceUrls()) {
+                azToRegionMapper = new DNSBasedAzToRegionMapper();
+            } else {
+                azToRegionMapper = new PropertyBasedAzToRegionMapper(clientConfig);
+            }
+            if (null != remoteRegionsToFetch.get()) {
+                azToRegionMapper.setRegionsToFetch(remoteRegionsToFetch.get().split(","));
+            }
+            instanceRegionChecker = new InstanceRegionChecker(azToRegionMapper, clientConfig.getRegion());
+            boolean enableGZIPContentEncodingFilter = config.shouldGZipContent();
             // should we enable GZip decoding of responses based on Response
             // Headers?
             if (enableGZIPContentEncodingFilter) {
@@ -205,7 +212,7 @@ public class DiscoveryClient implements LookupService {
             throw new RuntimeException("Failed to initialize DiscoveryClient!",
                     e);
         }
-        if (!fetchRegistry()) {
+        if (!fetchRegistry(false)) {
             fetchRegistryFromBackup();
         }
         initScheduledTasks();
@@ -570,10 +577,12 @@ public class DiscoveryClient implements LookupService {
      * This method tries to get only deltas after the first fetch unless there
      * is an issue in reconciling eureka server and client registry information.
      * </p>
-     * 
+     *
+     * @param forceFullRegistryFetch Forces a full registry fetch.
+     *
      * @return
      */
-    private boolean fetchRegistry() {
+    private boolean fetchRegistry(boolean forceFullRegistryFetch) {
         ClientResponse response = null;
         Stopwatch tracer = FETCH_REGISTRY_TIMER.start();
 
@@ -582,21 +591,16 @@ public class DiscoveryClient implements LookupService {
             // applications
             Applications applications = getApplications();
 
-            if (clientConfig.shouldDisableDelta()
-                    || (applications == null)
+            if (clientConfig.shouldDisableDelta() || forceFullRegistryFetch || (applications == null)
                     || (applications.getRegisteredApplications().size() == 0)
                     // The client application does not have the latest library
                     // supporting delta
                     || (applications.getVersion() == -1)) {
-                logger.info("Disable delta property : {}",
-                        clientConfig.shouldDisableDelta());
-                logger.info("Application is null : {}",
-                        (applications == null));
-                logger.info(
-                        "Registered Applications size is zero : {}",
-                        (applications.getRegisteredApplications().size() == 0));
-                logger.info("Application version is -1: {}", (applications
-                        .getVersion() == -1));
+                logger.info("Disable delta property : {}", clientConfig.shouldDisableDelta());
+                logger.info("Force full registry fetch : {}", forceFullRegistryFetch);
+                logger.info("Application is null : {}", (applications == null));
+                logger.info("Registered Applications size is zero : {}", (applications.getRegisteredApplications().size() == 0));
+                logger.info("Application version is -1: {}", (applications.getVersion() == -1));
                 response = getAndStoreFullRegistry();
             } else {
                 Applications delta = null;
@@ -1111,7 +1115,7 @@ public class DiscoveryClient implements LookupService {
      * @return - The list of CNAMES from which the zone-related information can
      *         be retrieved
      */
-    private static Map<String, List<String>> getZoneBasedDiscoveryUrlsFromRegion(
+    static Map<String, List<String>> getZoneBasedDiscoveryUrlsFromRegion(
             String region) {
         String discoveryDnsName = null;
         try {
@@ -1386,7 +1390,23 @@ public class DiscoveryClient implements LookupService {
     class CacheRefreshThread extends TimerTask {
         public void run() {
             try {
-                fetchRegistry();
+                boolean remoteRegionsModified = false;
+                // This makes sure that a dynamic change to remote regions to fetch is honored.
+                String latestRemoteRegions = clientConfig.fetchRegistryForRemoteRegions();
+                if (null != latestRemoteRegions) {
+                    String currentRemoteRegions = remoteRegionsToFetch.get();
+                    if (!latestRemoteRegions.equals(currentRemoteRegions)) {
+                        if (remoteRegionsToFetch.compareAndSet(currentRemoteRegions, latestRemoteRegions)) {
+                            String[] remoteRegions = latestRemoteRegions.split(",");
+                            instanceRegionChecker.getAzToRegionMapper().setRegionsToFetch(remoteRegions);
+                            remoteRegionsModified = true;
+                        } else {
+                            logger.info("Remote regions to fetch modified concurrently, ignoring change from {} to {}",
+                                        currentRemoteRegions, latestRemoteRegions);
+                        }
+                    }
+                }
+                fetchRegistry(remoteRegionsModified);
             } catch (Throwable th) {
                 logger.error("Cannot fetch registry from server", th);
             }
@@ -1545,7 +1565,7 @@ public class DiscoveryClient implements LookupService {
     }
 
     private boolean isFetchingRemoteRegionRegistries() {
-        return null != remoteRegionsToFetch;
+        return null != remoteRegionsToFetch.get();
     }
 
 }
