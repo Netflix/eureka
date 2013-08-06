@@ -44,7 +44,7 @@ public class LeaseInfo {
     private long registrationTimestamp;
     private long lastRenewalTimestamp;
     private long evictionTimestamp;
-    private long clock;
+    private long serviceUpTimestamp;
 
     public static final class Builder {
 
@@ -92,6 +92,18 @@ public class LeaseInfo {
          */
         public Builder setEvictionTimestamp(long ts) {
             result.evictionTimestamp = ts;
+            return this;
+        }
+
+        /**
+         * Sets the service UP timestamp
+         *
+         * @param ts
+         *            time when the leased service marked as UP.
+         * @return the {@link LeaseInfo} builder.
+         */
+        public Builder setServiceUpTimestamp(long ts) {
+            result.serviceUpTimestamp = ts;
             return this;
         }
 
@@ -168,6 +180,15 @@ public class LeaseInfo {
      */
     public long getEvictionTimestamp() {
         return evictionTimestamp;
+    }
+
+    /**
+     * Returns the service UP timestamp
+     *
+     * @return time in milliseconds since epoch.
+     */
+    public long getServiceUpTimestamp() {
+        return serviceUpTimestamp;
     }
 
     /**
