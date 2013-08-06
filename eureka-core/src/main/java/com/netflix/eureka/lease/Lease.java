@@ -42,6 +42,7 @@ public class Lease<T> {
     private T holder;
     private long evictionTimestamp;
     private long registrationTimestamp;
+    private long serviceUpTimestamp;
     // Make it volatile so that the expiration task would see this quicker
     private volatile long lastUpdateTimestamp;
     private long duration;
@@ -70,6 +71,16 @@ public class Lease<T> {
     public void cancel() {
         if (evictionTimestamp <= 0) {
             evictionTimestamp = System.currentTimeMillis();
+        }
+    }
+
+    /**
+     * Mark the service as up. This will only take affect the first time called,
+     * subsequent calls will be ignored.
+     */
+    public void serviceUp() {
+        if (serviceUpTimestamp == 0) {
+            serviceUpTimestamp = System.currentTimeMillis();
         }
     }
 
@@ -105,6 +116,15 @@ public class Lease<T> {
      */
     public long getEvictionTimestamp() {
         return evictionTimestamp;
+    }
+
+    /**
+     * Gets the milliseconds since epoch when the service for the lease was marked as up.
+     *
+     * @return the milliseconds since epoch when the service for the lease was marked as up.
+     */
+    public long getServiceUpTimestamp() {
+        return serviceUpTimestamp;
     }
 
     /**
