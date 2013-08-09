@@ -900,6 +900,11 @@ public class DiscoveryClient implements LookupService {
                 }
                 break;
             }
+
+            if (logger.isInfoEnabled()) {
+                logger.info("Finished a call to service url {} and url path {} with status code {}.",
+                            new String[] {serviceUrl, urlPath, String.valueOf(response.getStatus())});
+            }
             if (isOk(action, response.getStatus())) {
                 return response;
             } else {
@@ -1407,6 +1412,21 @@ public class DiscoveryClient implements LookupService {
                     }
                 }
                 fetchRegistry(remoteRegionsModified);
+                if (logger.isInfoEnabled()) {
+                    StringBuilder allAppsHashCodes = new StringBuilder();
+                    allAppsHashCodes.append("Local region apps hashcode: ");
+                    allAppsHashCodes.append(localRegionApps.get().getAppsHashCode());
+                    allAppsHashCodes.append(", is fetching remote regions? ");
+                    allAppsHashCodes.append(isFetchingRemoteRegionRegistries());
+                    for (Map.Entry<String, Applications> entry : remoteRegionVsApps.entrySet()) {
+                        allAppsHashCodes.append(", Remote region: ");
+                        allAppsHashCodes.append(entry.getKey());
+                        allAppsHashCodes.append(" , apps hashcode: ");
+                        allAppsHashCodes.append(entry.getValue().getAppsHashCode());
+                    }
+                    logger.info("Completed cache refresh task for discovery. All Apps hash code is {} ",
+                                allAppsHashCodes.toString());
+                }
             } catch (Throwable th) {
                 logger.error("Cannot fetch registry from server", th);
             }
