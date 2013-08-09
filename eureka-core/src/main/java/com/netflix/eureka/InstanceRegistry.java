@@ -28,6 +28,7 @@ import static com.netflix.eureka.util.EurekaMonitors.RENEW;
 import static com.netflix.eureka.util.EurekaMonitors.RENEW_NOT_FOUND;
 import static com.netflix.eureka.util.EurekaMonitors.STATUS_UPDATE;
 
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1157,23 +1158,19 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         };
     }
 
-    protected void initRemoteRegionRegistry() {
-        try {
-            Map<String, String> remoteRegionUrlsWithName = eurekaConfig.getRemoteRegionUrlsWithName();
-            if (remoteRegionUrlsWithName != null) {
-                allKnownRemoteRegions = new String[remoteRegionUrlsWithName.size()];
-                int remoteRegionArrayIndex = 0;
-                for (Entry<String, String> remoteRegionUrlWithName : remoteRegionUrlsWithName.entrySet()) {
-                    RemoteRegionRegistry remoteRegionRegistry = new RemoteRegionRegistry(new URL(remoteRegionUrlWithName.getValue()));
-                    regionNameVSRemoteRegistry.put(remoteRegionUrlWithName.getKey(), remoteRegionRegistry);
-                    allKnownRemoteRegions[remoteRegionArrayIndex++] = remoteRegionUrlWithName.getKey();
-                }
+    protected void initRemoteRegionRegistry() throws MalformedURLException {
+        Map<String, String> remoteRegionUrlsWithName = eurekaConfig.getRemoteRegionUrlsWithName();
+        if (remoteRegionUrlsWithName != null) {
+            allKnownRemoteRegions = new String[remoteRegionUrlsWithName.size()];
+            int remoteRegionArrayIndex = 0;
+            for (Entry<String, String> remoteRegionUrlWithName : remoteRegionUrlsWithName.entrySet()) {
+                RemoteRegionRegistry remoteRegionRegistry = new RemoteRegionRegistry(new URL(remoteRegionUrlWithName.getValue()));
+                regionNameVSRemoteRegistry.put(remoteRegionUrlWithName.getKey(), remoteRegionRegistry);
+                allKnownRemoteRegions[remoteRegionArrayIndex++] = remoteRegionUrlWithName.getKey();
             }
-            logger.info("Finished initializing remote region registries. All known remote regions: {}",
-                        Arrays.toString(allKnownRemoteRegions));
-        } catch (Throwable e) {
-            logger.error("Cannot initialize Remote Region Registry :", e);
         }
+        logger.info("Finished initializing remote region registries. All known remote regions: {}",
+                    Arrays.toString(allKnownRemoteRegions));
     }
 
 }
