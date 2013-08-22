@@ -1471,6 +1471,9 @@ public class DiscoveryClient implements LookupService {
         if ((txtRecord == null) || ("".equals(txtRecord.trim()))) {
             return cnamesSet;
         }
+        
+        txtRecord = txtRecord.replace("\"", "");
+        
         String[] cnames = txtRecord.split(" ");
         for (String cname : cnames) {
             cnamesSet.add(cname);
