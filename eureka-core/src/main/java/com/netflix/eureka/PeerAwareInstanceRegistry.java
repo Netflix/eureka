@@ -16,8 +16,10 @@
 
 package com.netflix.eureka;
 
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -726,16 +728,30 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
      * @return true, if the url represents the current node which is trying to
      *         replicate, false otherwise.
      */
-    private boolean isThisMe(String url) {
-        InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
-        try {
-            URI uri = new URI(url);
-            return (uri.getHost().equals(myInfo.getHostName()));
-        } catch (URISyntaxException e) {
-            logger.error("Error in syntax", e);
-            return false;
-        }
-    }
+	private boolean isThisMe(String url) {
+		InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
+		try {
+			URI uri = new URI(url);
+			String host = uri.getHost();
+			if (host.equals(myInfo.getHostName())) {
+				return true;
+			}
+			try {
+				
+				if (host.equals(InetAddress.getLocalHost().getHostName())) {
+					logger.info("JPB Hostname change: true");
+					return true;
+				}
+			} catch (UnknownHostException e) {
+				logger.error("Error finding hostname", e);
+			}
+			logger.info("JPB Hostname change: false");
+			return false;
+		} catch (URISyntaxException e) {
+			logger.error("Error in syntax", e);
+			return false;
+		}
+	}
 
     /**
      * Replicates all eureka actions to peer eureka nodes except for replication

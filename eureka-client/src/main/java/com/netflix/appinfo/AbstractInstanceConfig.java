@@ -15,8 +15,13 @@
  */
 package com.netflix.appinfo;
 
+import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -217,8 +222,12 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
     private static Pair<String, String> getHostInfo() {
         Pair<String, String> pair = new Pair<String, String>("", "");
         try {
-            pair.setFirst(InetAddress.getLocalHost().getHostAddress());
-            pair.setSecond(InetAddress.getLocalHost().getHostName());
+        	String ipAddr = getIpAddress("eth0");
+            /*pair.setFirst(InetAddress.getLocalHost().getHostAddress());
+            pair.setSecond(InetAddress.getLocalHost().getHostName());*/
+        	
+            pair.setFirst(ipAddr);
+            pair.setSecond(ipAddr);
 
         } catch (UnknownHostException e) {
             logger.error("Cannot get host info", e);
@@ -226,4 +235,41 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
         return pair;
     }
 
+	private static String getIpAddress(String nicName) throws UnknownHostException{
+
+		String result =  null;
+
+		try {
+			Enumeration<NetworkInterface> interfaces = NetworkInterface
+					.getNetworkInterfaces();
+			while (interfaces.hasMoreElements()) {
+				NetworkInterface networkInterface = interfaces.nextElement();
+				if (networkInterface.isLoopback() || !networkInterface.isUp())
+					continue;
+				System.out.println(networkInterface);
+				Enumeration<InetAddress> addresses = networkInterface
+						.getInetAddresses();
+				while (addresses.hasMoreElements()) {
+					InetAddress address = addresses.nextElement();
+					if (address.isLoopbackAddress()
+							|| address instanceof Inet6Address)
+						continue;
+					result = address.getHostAddress();
+					if(nicName.equals(networkInterface.getName()))
+							break;
+				}
+			}
+			
+		} catch (Exception ex) {
+			logger.error("Cannot discover ipaddress for " + nicName, ex);
+		}
+		
+		if(result == null)
+		{
+			result = InetAddress.getLocalHost().getHostAddress();
+		}
+
+		return result;
+
+	}
 }
