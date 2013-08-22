@@ -189,8 +189,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
                 }
                 logTotalInstances();
             }
-            logger.debug("Remote Registry Fetch Status : {}",
-                    response.getStatus());
+            logger.debug("Remote Registry Fetch Status : {}", null == response ? null : response.getStatus());
         } catch (Throwable e) {
             logger.error(
                     "Unable to fetch registry information from the remote registry "
