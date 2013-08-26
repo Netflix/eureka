@@ -517,4 +517,8 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
                 .get();
     }
 
+    @Override
+    public boolean disableTransparentFallbackToOtherRegion() {
+        return configInstance.getBooleanProperty(namespace + "remoteRegion.disable.transparent.fallback", false).get();
+    }
 }

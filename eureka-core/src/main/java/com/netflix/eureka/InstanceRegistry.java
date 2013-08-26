@@ -88,6 +88,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             .getLogger(InstanceRegistry.class);
     private static final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
             .getInstance().getConfiguration();
+    public static final String[] EMPTY_STR_ARRAY = new String[0];
     private final ConcurrentHashMap<String, Map<String, Lease<InstanceInfo>>> _registry = new ConcurrentHashMap<String, Map<String, Lease<InstanceInfo>>>();
     private Timer evictionTimer = new Timer("Eureka-EvictionTimer", true);
     private volatile MeasuredRate renewsLastMin;
@@ -106,7 +107,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
     private final Lock read = readWriteLock.readLock();
     private final Lock write = readWriteLock.writeLock();
     protected Map<String, RemoteRegionRegistry> regionNameVSRemoteRegistry = new HashMap<String, RemoteRegionRegistry>();
-    protected String[] allKnownRemoteRegions = new String[0];
+    protected String[] allKnownRemoteRegions = EMPTY_STR_ARRAY;
     protected Object lock = new Object();
     protected volatile int numberOfRenewsPerMinThreshold;
     protected volatile int expectedNumberOfRenewsPerMin;
@@ -481,7 +482,8 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      * com.netflix.eureka.shared.LookupService#getApplication(java.lang.String )
      */
     public Application getApplication(String appName) {
-        return this.getApplication(appName, true);
+        boolean disableTransparentFallback = eurekaConfig.disableTransparentFallbackToOtherRegion();
+        return this.getApplication(appName, !disableTransparentFallback);
     }
 
     /**
@@ -528,7 +530,12 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      * @see com.netflix.discovery.shared.LookupService#getApplications()
      */
     public Applications getApplications() {
-        return this.getApplications(true); // keeping the current behavior of not mixing two regions in the same app.
+        boolean disableTransparentFallback = eurekaConfig.disableTransparentFallbackToOtherRegion();
+        if (disableTransparentFallback) {
+            return getApplicationsFromLocalRegionOnly();
+        } else {
+            return this.getApplications(true); // Behavior of falling back to remote region can be disabled.
+        }
     }
 
     /**
@@ -544,7 +551,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      * Same as calling {@link #getApplicationsFromMultipleRegions(String[])} with an empty array.
      */
     public Applications getApplicationsFromLocalRegionOnly() {
-        return getApplicationsFromMultipleRegions(new String[0]);
+        return getApplicationsFromMultipleRegions(EMPTY_STR_ARRAY);
     }
 
     /**
@@ -640,7 +647,11 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      *            {@link EurekaServerConfig#getRemoteRegionUrls()}, false
      *            otherwise
      * @return applications
+     * @deprecated Use {@link #getApplicationsFromMultipleRegions(String[])} instead. This method has a flawed behavior
+     * of transparently falling back to a remote region if no instances for an app is available locally. The new
+     * behavior is to explictly specify if you need a remote region.
      */
+    @Deprecated
     public Applications getApplications(boolean includeRemoteRegion) {
         GET_ALL_CACHE_MISS.increment();
         Applications apps = new Applications();
@@ -693,7 +704,11 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      * must make sure this does not adversely affect them.
      *
      * @return all application deltas.
+     * @deprecated use {@link #getApplicationDeltasFromMultipleRegions(String[])} instead. This method has a flawed behavior
+     * of transparently falling back to a remote region if no instances for an app is available locally. The new
+     * behavior is to explictly specify if you need a remote region.
      */
+    @Deprecated
     public Applications getApplicationDeltas() {
         GET_ALL_CACHE_MISS_DELTA.increment();
         Applications apps = new Applications();
@@ -722,18 +737,24 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                 }
                 app.addInstance(decorateInstanceInfo(lease));
             }
-            Applications allAppsInLocalRegion = getApplications(false);
 
-            for (RemoteRegionRegistry remoteRegistry : this.regionNameVSRemoteRegistry.values()) {
-                Applications applications = remoteRegistry.getApplicationDeltas();
-                for (Application application : applications.getRegisteredApplications()) {
-                    Application appInLocalRegistry = allAppsInLocalRegion.getRegisteredApplications(application.getName());
-                    if (appInLocalRegistry == null) {
-                        apps.addApplication(application);
+            boolean disableTransparentFallback = eurekaConfig.disableTransparentFallbackToOtherRegion();
+
+            if (!disableTransparentFallback) {
+                Applications allAppsInLocalRegion = getApplications(false);
+
+                for (RemoteRegionRegistry remoteRegistry : this.regionNameVSRemoteRegistry.values()) {
+                    Applications applications = remoteRegistry.getApplicationDeltas();
+                    for (Application application : applications.getRegisteredApplications()) {
+                        Application appInLocalRegistry = allAppsInLocalRegion.getRegisteredApplications(application.getName());
+                        if (appInLocalRegistry == null) {
+                            apps.addApplication(application);
+                        }
                     }
                 }
             }
-            Applications allApps = getApplications();
+
+            Applications allApps = getApplications(!disableTransparentFallback);
             apps.setAppsHashCode(allApps.getReconcileHashCode());
             return apps;
         } finally {
@@ -868,8 +889,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             return decorateInstanceInfo(lease);
         } else if (includeRemoteRegions) {
             for (RemoteRegionRegistry remoteRegistry : this.regionNameVSRemoteRegistry.values()) {
-                Application application = remoteRegistry
-                        .getApplication(appName);
+                Application application = remoteRegistry.getApplication(appName);
                 InstanceInfo instanceInfo = application.getByInstanceId(id);
                 return instanceInfo;
             }

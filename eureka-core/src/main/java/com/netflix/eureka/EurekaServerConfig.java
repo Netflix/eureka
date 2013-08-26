@@ -493,4 +493,11 @@ public interface EurekaServerConfig {
      */
     String getRemoteRegionTrustStorePassword();
 
+    /**
+     * Old behavior of fallback to applications in the remote region (if configured) if there are no instances of that
+     * application in the local region, will be disabled.
+     *
+     * @return {@code true} if the old behavior is to be disabled.
+     */
+    boolean disableTransparentFallbackToOtherRegion();
 }
