@@ -193,7 +193,12 @@ public class EIPManager {
         List<String> availableEIPList = new ArrayList<String>();
         for (String eip : eipCandidates) {
             String eipTrimmed = eip.trim();
-            if (myPublicIP.equals(eipTrimmed)) {
+            /* It's possible for myPublicIP to be null when eureka is restarted
+             * because unbinding an EIP on Amazon results in a null IP for the
+             * instance for a few minutes. In that case, it's ok to rebind the
+             * new EIP.
+             */
+            if (myPublicIP != null && myPublicIP.equals(eipTrimmed)) {
                 // Already associated to an EIP?
                 logger.debug("Already bound to an EIP : " + eip);
                 return null;
