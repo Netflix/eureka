@@ -24,4 +24,9 @@ public interface AzToRegionMapper {
      * @param regionsToFetch Regions to fetch. This should be the super set of all regions that this mapper should know.
      */
     void setRegionsToFetch(String[] regionsToFetch);
+
+    /**
+     * Updates the mappings it has if they depend on an external source.
+     */
+    void refreshMapping();
 }

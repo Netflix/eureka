@@ -23,6 +23,7 @@ import static com.netflix.discovery.DefaultEurekaClientConfig.DEFAULT_ZONE;
 public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
 
     protected static final Logger logger = LoggerFactory.getLogger(InstanceRegionChecker.class);
+    public static final String[] EMPTY_STR_ARRAY = new String[0];
 
     /**
      * A default for the mapping that we know of, if a remote region is configured to be fetched but does not have
@@ -38,14 +39,16 @@ public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
             });
 
     private final Map<String, String> availabilityZoneVsRegion = new ConcurrentHashMap<String, String>();
+    private String[] regionsToFetch;
 
-    public AbstractAzToRegionMapper() {
+    protected AbstractAzToRegionMapper() {
         populateDefaultAZToRegionMap();
     }
 
     @Override
     public void setRegionsToFetch(String[] regionsToFetch) {
         if (null != regionsToFetch) {
+            this.regionsToFetch = regionsToFetch;
             logger.info("Fetching availability zone to region mapping for regions {}", Arrays.toString(regionsToFetch));
             availabilityZoneVsRegion.clear();
             for (String remoteRegion : regionsToFetch) {
@@ -77,6 +80,7 @@ public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
         } else {
             logger.info("Regions to fetch is null. Erasing older mapping if any.");
             availabilityZoneVsRegion.clear();
+            this.regionsToFetch = EMPTY_STR_ARRAY;
         }
     }
 
@@ -84,7 +88,28 @@ public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
 
     @Override
     public String getRegionForAvailabilityZone(String availabilityZone) {
-        return availabilityZoneVsRegion.get(availabilityZone);
+        String region = availabilityZoneVsRegion.get(availabilityZone);
+        if (null == region) {
+            return parseAzToGetRegion(availabilityZone);
+        }
+        return region;
+    }
+
+    @Override
+    public void refreshMapping() {
+        logger.info("Refreshing availability zone to region mappings.");
+        setRegionsToFetch(regionsToFetch);
+    }
+
+    protected String parseAzToGetRegion(String availabilityZone) {
+        // Here we see that whether the availability zone is following a pattern like <region><single letter>
+        // If it is then we take ignore the last letter and check if the remaining part is actually a known remote region.
+        // If yes, then we return that region, else null which means local region.
+        String possibleRegion = availabilityZone.substring(0, availabilityZone.length() - 1);
+        if (availabilityZoneVsRegion.containsValue(possibleRegion)) {
+            return possibleRegion;
+        }
+        return null;
     }
 
     private void populateDefaultAZToRegionMap() {
