@@ -20,6 +20,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,7 @@ import javax.naming.directory.DirContext;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -238,6 +240,26 @@ public class DiscoveryClient implements LookupService {
      */
     public Applications getApplications() {
         return localRegionApps.get();
+    }
+
+    public Applications getApplicationsForARegion(@Nullable String region) {
+        if (instanceRegionChecker.isLocalRegion(region)) {
+            return localRegionApps.get();
+        } else {
+            return remoteRegionVsApps.get(region);
+        }
+    }
+
+    public Set<String> getAllKnownRegions() {
+        String localRegion = instanceRegionChecker.getLocalRegion();
+        if (!remoteRegionVsApps.isEmpty()) {
+            Set<String> regions = remoteRegionVsApps.keySet();
+            Set<String> toReturn = new HashSet<String>(regions);
+            toReturn.add(localRegion);
+            return toReturn;
+        } else {
+            return Collections.singleton(localRegion);
+        }
     }
 
     /*
@@ -1409,6 +1431,8 @@ public class DiscoveryClient implements LookupService {
                             logger.info("Remote regions to fetch modified concurrently, ignoring change from {} to {}",
                                         currentRemoteRegions, latestRemoteRegions);
                         }
+                    } else {
+                        instanceRegionChecker.getAzToRegionMapper().refreshMapping(); // Just refresh mapping to reflect any DNS/Property change
                     }
                 }
                 fetchRegistry(remoteRegionsModified);

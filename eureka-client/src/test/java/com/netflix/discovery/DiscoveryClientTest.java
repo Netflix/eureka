@@ -5,7 +5,8 @@ import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.shared.Application;
-import junit.framework.Assert;
+import com.netflix.discovery.shared.Applications;
+import org.junit.Assert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -14,6 +15,7 @@ import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -95,6 +97,20 @@ public class DiscoveryClientTest {
         InstanceInfo instance = instancesByVipAddress.iterator().next();
         Assert.assertEquals("Local instance not returned for local region vip address",
                             LOCAL_REGION_INSTANCE_1_HOSTNAME, instance.getHostName());
+    }
+
+    @Test
+    public void testGetAllKnownRegions() throws Exception {
+        Set<String> allKnownRegions = client.getAllKnownRegions();
+        Assert.assertEquals("Unexpected number of known regions.", 2, allKnownRegions.size());
+        Assert.assertTrue("Remote region not found in set of known regions.", allKnownRegions.contains(REMOTE_REGION));
+    }
+    @Test
+    public void testAllAppsForRegions() throws Exception {
+        Applications appsForRemoteRegion = client.getApplicationsForARegion(REMOTE_REGION);
+        Assert.assertTrue("No apps for remote region found.", (null != appsForRemoteRegion) && !appsForRemoteRegion.getRegisteredApplications().isEmpty());
+        Applications appsForLocalRegion = client.getApplicationsForARegion("us-east-1");
+        Assert.assertTrue("No apps for local region found.", (null != appsForLocalRegion) && !appsForLocalRegion.getRegisteredApplications().isEmpty());
     }
 
     @Test
