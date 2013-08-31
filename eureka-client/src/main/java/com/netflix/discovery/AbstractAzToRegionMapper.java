@@ -105,9 +105,11 @@ public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
         // Here we see that whether the availability zone is following a pattern like <region><single letter>
         // If it is then we take ignore the last letter and check if the remaining part is actually a known remote region.
         // If yes, then we return that region, else null which means local region.
-        String possibleRegion = availabilityZone.substring(0, availabilityZone.length() - 1);
-        if (availabilityZoneVsRegion.containsValue(possibleRegion)) {
-            return possibleRegion;
+        if (!availabilityZone.isEmpty()) {
+            String possibleRegion = availabilityZone.substring(0, availabilityZone.length() - 1);
+            if (availabilityZoneVsRegion.containsValue(possibleRegion)) {
+                return possibleRegion;
+            }
         }
         return null;
     }

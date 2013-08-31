@@ -41,6 +41,21 @@ public class InstanceRegionCheckerTest {
     }
 
     @Test
+    public void testInstanceWithNoAZ() throws Exception {
+        ConfigurationManager.getConfigInstance().setProperty("eureka.us-east-1.availabilityZones", "abc,def");
+        PropertyBasedAzToRegionMapper azToRegionMapper = new PropertyBasedAzToRegionMapper(new DefaultEurekaClientConfig());
+        InstanceRegionChecker checker = new InstanceRegionChecker(azToRegionMapper, "us-east-1");
+        azToRegionMapper.setRegionsToFetch(new String[] {"us-east-1"});
+        AmazonInfo dcInfo = AmazonInfo.Builder.newBuilder().addMetadata(AmazonInfo.MetaDataKey.availabilityZone,
+                                                                              "").build();
+        InstanceInfo instanceInfo = InstanceInfo.Builder.newBuilder().setAppName("app").setDataCenterInfo(
+                dcInfo).build();
+        String instanceRegion = checker.getInstanceRegion(instanceInfo);
+
+        Assert.assertNull("Invalid instance region.", instanceRegion);
+    }
+
+    @Test
     public void testNotMappedAZ() throws Exception {
         ConfigurationManager.getConfigInstance().setProperty("eureka.us-east-1.availabilityZones", "abc,def");
         PropertyBasedAzToRegionMapper azToRegionMapper = new PropertyBasedAzToRegionMapper(new DefaultEurekaClientConfig());
