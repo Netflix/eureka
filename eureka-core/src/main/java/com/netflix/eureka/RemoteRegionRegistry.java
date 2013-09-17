@@ -106,6 +106,8 @@ public class RemoteRegionRegistry implements LookupService<String> {
         try {
             if (fetchRegistry()) {
                 this.readyForServingData = true;
+            } else {
+                logger.warn("Failed to fetch remote registry. This means this eureka server is not ready for serving traffic.");
             }
         } catch (Throwable e) {
             logger.error("Problem fetching registry information :", e);
@@ -120,6 +122,8 @@ public class RemoteRegionRegistry implements LookupService<String> {
                         try {
                             if (fetchRegistry()) {
                                 readyForServingData = true;
+                            } else {
+                                logger.warn("Failed to fetch remote registry. This means this eureka server is not ready for serving traffic.");
                             }
                         } catch (Throwable e) {
                             logger.error(
@@ -168,26 +172,27 @@ public class RemoteRegionRegistry implements LookupService<String> {
             } else {
                 Applications delta = null;
                 response = fetchRemoteRegistry(true);
-                if (response.getStatus() == Status.OK.getStatusCode()) {
-                    delta = response.getEntity(Applications.class);
-                    this.applicationsDelta.set(delta);
-                }
-                if (delta == null) {
-                    logger.warn("The server does not allow the delta revision to be applied because it is not safe. Hence got the full registry.");
-                    this.closeResponse(response);
-                    response = fetchRemoteRegistry(true);
-                } else {
-                    updateDelta(delta);
-                    String reconcileHashCode = getApplications()
-                            .getReconcileHashCode();
-                    // There is a diff in number of instances for some reason
-                    if ((!reconcileHashCode.equals(delta.getAppsHashCode()))) {
-                        response = reconcileAndLogDifference(response, delta,
-                                reconcileHashCode);
-
+                if (null != response) {
+                    if (response.getStatus() == Status.OK.getStatusCode()) {
+                        delta = response.getEntity(Applications.class);
+                        this.applicationsDelta.set(delta);
                     }
+                    if (delta == null) {
+                        logger.warn("The server does not allow the delta revision to be applied because it is not safe. Hence got the full registry.");
+                        this.closeResponse(response);
+                        response = fetchRemoteRegistry(true);
+                    } else {
+                        updateDelta(delta);
+                        String reconcileHashCode = getApplications()
+                                .getReconcileHashCode();
+                        // There is a diff in number of instances for some reason
+                        if ((!reconcileHashCode.equals(delta.getAppsHashCode()))) {
+                            response = reconcileAndLogDifference(response, delta, reconcileHashCode);
+
+                        }
+                    }
+                    logTotalInstances();
                 }
-                logTotalInstances();
             }
             logger.debug("Remote Registry Fetch Status : {}", null == response ? null : response.getStatus());
         } catch (Throwable e) {
@@ -202,7 +207,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
             }
             closeResponse(response);
         }
-        return true;
+        return null != response;
     }
 
     /**
@@ -284,7 +289,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
     public ClientResponse storeFullRegistry() {
         ClientResponse response = fetchRemoteRegistry(false);
         if (response == null) {
-            logger.error("The response is null for some reason");
+            logger.error("The response is null.");
             return null;
         }
         Applications apps = response.getEntity(Applications.class);
@@ -320,8 +325,8 @@ public class RemoteRegionRegistry implements LookupService<String> {
             if (httpStatus >= 200 && httpStatus < 300) {
                 logger.debug("Got the data successfully : {}", httpStatus);
             } else {
-                logger.warn("Cannot get the data from {} : {}",
-                        this.remoteRegionURL.toString(), httpStatus);
+                logger.warn("Cannot get the data from {} : {}", this.remoteRegionURL.toString(), httpStatus);
+                return null; // To short circuit entity evaluation.
             }
 
         } catch (Throwable t) {
@@ -352,8 +357,11 @@ public class RemoteRegionRegistry implements LookupService<String> {
 
         this.closeResponse(response);
         response = this.fetchRemoteRegistry(false);
-        Applications serverApps = (Applications) response
-                .getEntity(Applications.class);
+        if (null == response) {
+            logger.warn("Response is null while fetching remote registry during reconcile difference.");
+            return null;
+        }
+        Applications serverApps = (Applications) response.getEntity(Applications.class);
         Map<String, List<String>> reconcileDiffMap = getApplications()
                 .getReconcileMapDiff(serverApps);
         String reconcileString = "";
