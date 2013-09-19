@@ -32,5 +32,8 @@ import com.netflix.discovery.shared.Applications;
  * 
  */
 public interface BackupRegistry {
+
     Applications fetchRegistry();
+
+    Applications fetchRegistry(String[] includeRemoteRegions);
 }
