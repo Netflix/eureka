@@ -144,7 +144,7 @@ public class DiscoveryClient implements LookupService {
     private String discoveryServerAMIId;
     private JerseyClient discoveryJerseyClient;
     private ApacheHttpClient4 discoveryApacheClient;
-    private static EurekaClientConfig clientConfig;
+    protected static EurekaClientConfig clientConfig;
     private final AtomicReference<String> remoteRegionsToFetch;
     private final InstanceRegionChecker instanceRegionChecker;
 
@@ -1524,22 +1524,41 @@ public class DiscoveryClient implements LookupService {
      * urls are unreachable.
      */
     private void fetchRegistryFromBackup() {
-        String backupRegistry = clientConfig.getBackupRegistryImpl();
-        if (backupRegistry != null) {
-            try {
-                BackupRegistry backupRegistryInstance = ((BackupRegistry) Class
-                        .forName(backupRegistry).newInstance());
-                Applications apps = backupRegistryInstance.fetchRegistry();
+        try {
+            BackupRegistry backupRegistryInstance = newBackupRegistryInstance();
+            if (null != backupRegistryInstance) {
+                Applications apps = null;
+                if (isFetchingRemoteRegionRegistries()) {
+                    String remoteRegionsStr = remoteRegionsToFetch.get();
+                    if (null != remoteRegionsStr) {
+                        apps = backupRegistryInstance.fetchRegistry(remoteRegionsStr.split(","));
+                    }
+                } else {
+                    apps = backupRegistryInstance.fetchRegistry();
+                }
                 if (apps != null) {
                     localRegionApps.set(this.filterAndShuffle(apps));
                     logTotalInstances();
                     logger.info("Fetched registry successfully from the backup");
                 }
-            } catch (Throwable e) {
-                logger.warn(
-                        "Cannot fetch applications from apps although backup registry was specified",
-                        e);
+            } else {
+                logger.warn("No backup registry instance defined & unable to find any discovery servers.");
             }
+        } catch (Throwable e) {
+            logger.warn(
+                    "Cannot fetch applications from apps although backup registry was specified",
+                    e);
+        }
+    }
+
+    @Nullable
+    protected BackupRegistry newBackupRegistryInstance()
+            throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+        String backupRegistryClassName = clientConfig.getBackupRegistryImpl();
+        if (null != backupRegistryClassName) {
+            return (BackupRegistry) Class.forName(backupRegistryClassName).newInstance();
+        } else {
+            return null;
         }
     }
 
