@@ -187,9 +187,8 @@ public class ApplicationsResource {
         // If the delta flag is disabled in discovery or if the lease expiration
         // has been disabled, redirect clients to get all instances
         if ((eurekaConfig.shouldDisableDelta())
-                || (!PeerAwareInstanceRegistry.getInstance()
-                        .isLeaseExpirationEnabled() || (!PeerAwareInstanceRegistry
-                                .getInstance().shouldAllowAccess()))) {
+                ||  (!PeerAwareInstanceRegistry
+                                .getInstance().shouldAllowAccess())) {
             return Response.status(Status.FORBIDDEN).build();
         }
 

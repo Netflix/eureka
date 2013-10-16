@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,7 +37,6 @@ import javax.naming.directory.DirContext;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
-import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1011,7 +1009,9 @@ public class DiscoveryClient implements LookupService {
 
     /**
      * Get the list of all eureka service urls from DNS for the eureka client to
-     * talk to.
+     * talk to. The client picks up the service url from its zone and then fails over to
+     * other zones randomly. If there are multiple servers in the same zone, the client once
+     * again picks one randomly. This way the traffic will be distributed in the case of failures.
      * 
      * @param instanceZone
      *            - The zone in which the client resides.
@@ -1029,7 +1029,10 @@ public class DiscoveryClient implements LookupService {
         // list of available zones
         Map<String, List<String>> zoneDnsNamesMap = getZoneBasedDiscoveryUrlsFromRegion(region);
         Set<String> availableZones = zoneDnsNamesMap.keySet();
-        List<String> zones = new LinkedList<String>(availableZones);
+        List<String> zones = new ArrayList<String>(availableZones);
+        if (zones.isEmpty()) {
+            throw new RuntimeException("No available zones configured for the instanceZone " + instanceZone);
+        }
         int zoneIndex = 0;
         boolean zoneFound = false;
         for (String zone : zones) {
@@ -1054,32 +1057,53 @@ public class DiscoveryClient implements LookupService {
             }
             zoneIndex++;
         }
-        // Swap the entries so that you get the instance zone first and then
-        // followed by the list of other zones
-        // in a circular order
-        for (int i = 0; i < zoneIndex; i++) {
-            String zone = zones.remove(0);
-            zones.add(zone);
-        }
+        if (zoneIndex >= zones.size()) {
+            logger.warn(
+                    "No match for the zone {} in the list of available zones {}",
+                    instanceZone, Arrays.toString(zones.toArray()));
+        } else {
+            // Rearrange the zones with the instance zone first 
+            for (int i=0; i <zoneIndex; i ++) {
+                String zone = zones.remove(0);
+                zones.add(zone);
+            }
+         }
+
         // Now get the eureka urls for all the zones in the order and return it
         List<String> serviceUrls = new ArrayList<String>();
         for (String zone : zones) {
             for (String zoneCname : zoneDnsNamesMap.get(zone)) {
-                for (String ec2Url : getEC2DiscoveryUrlsFromZone(zoneCname,
-                        DiscoveryUrlType.CNAME)) {
+                List<String> ec2Urls = new ArrayList<String>(
+                        getEC2DiscoveryUrlsFromZone(zoneCname,
+                                DiscoveryUrlType.CNAME));
+                // Rearrange the list to distribute the load in case of
+                // multiple servers
+                if (ec2Urls.size() > 1) {
+                    this.arrangeListBasedonHostname(ec2Urls);
+                }
+                 for (String ec2Url : ec2Urls) {
                     String serviceUrl = "http://" + ec2Url + ":"
-                            + clientConfig.getEurekaServerPort()
+                    + clientConfig.getEurekaServerPort()
 
-                            + "/" + clientConfig.getEurekaServerURLContext()
-                            + "/";
+                    + "/" + clientConfig.getEurekaServerURLContext()
+                    + "/";
                     logger.debug("The EC2 url is {}", serviceUrl);
                     serviceUrls.add(serviceUrl);
                 }
             }
         }
+        // Rearrange the fail over server list to distribute the load
+        String primaryServiceUrl = serviceUrls.remove(0);
+        arrangeListBasedonHostname(serviceUrls);
+        serviceUrls.add(0, primaryServiceUrl);
+ 
+        logger.info(
+                "This client will talk to the following serviceUrls in order : {} ",
+                Arrays.toString(serviceUrls.toArray()));
         t.stop();
         return serviceUrls;
     }
+
 
     public List<String> getDiscoveryServiceUrls(String zone) {
         boolean shouldUseDns = clientConfig.shouldUseDnsForFetchingServiceUrls();
@@ -1629,6 +1653,28 @@ public class DiscoveryClient implements LookupService {
 
     private boolean isFetchingRemoteRegionRegistries() {
         return null != remoteRegionsToFetch.get();
+    }
+    
+
+    private void arrangeListBasedonHostname(List<String> list) {
+        int listSize = 0;
+        if (list != null) {
+            listSize = list.size();
+        }
+        if ((this.instanceInfo == null) || (listSize == 0)) {
+            return;
+        }
+        // Find the hashcode of the instance hostname and use it to find an entry
+        // and then arrange the rest of the entries after this entry.
+        int instanceHashcode = this.instanceInfo.getHostName().hashCode();
+        if (instanceHashcode < 0) {
+            instanceHashcode = instanceHashcode * -1;
+        }
+        int backupInstance = instanceHashcode % listSize;
+        for (int i=0; i < backupInstance; i ++) {
+            String zone = list.remove(0);
+            list.add(zone);
+        }
     }
 
 }
