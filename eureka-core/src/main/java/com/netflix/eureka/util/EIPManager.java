@@ -16,7 +16,6 @@
 
 package com.netflix.eureka.util;
 
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,13 +30,14 @@ import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.AssociateAddressRequest;
+import com.amazonaws.services.ec2.model.DescribeAddressesRequest;
+import com.amazonaws.services.ec2.model.DescribeAddressesResult;
 import com.amazonaws.services.ec2.model.DisassociateAddressRequest;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.appinfo.LeaseInfo;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.shared.Application;
 import com.netflix.eureka.EurekaServerConfig;
@@ -111,25 +111,45 @@ public class EIPManager {
         String myPublicIP = ((AmazonInfo) myInfo.getDataCenterInfo())
         .get(MetaDataKey.publicIpv4);
 
-        String selectedEIP = getCandidateEIP(myInstanceId, myZone, myPublicIP);
+        List<String> candidateEIPs = getCandidateEIP(myInstanceId, myZone,
+                myPublicIP);
 
-        if (selectedEIP == null) {
+        if (candidateEIPs == null) {
             // The EIP is already bound to this instance
             logger.debug("No need to bind to EIP");
             return;
         } else {
-            try {
-                AmazonEC2 ec2Service = getEC2Service();
-                AssociateAddressRequest request = new AssociateAddressRequest(
-                        myInstanceId, selectedEIP);
-                ec2Service.associateAddress(request);
-                logger.info("\n\n\nAssociated " + myInstanceId
-                        + " running in zone: " + myZone + " to elastic IP: "
-                        + selectedEIP);
-            } catch (Throwable t) {
-                throw new RuntimeException("Failed to bind elastic IP: "
-                        + selectedEIP + " to " + myInstanceId, t);
+            AmazonEC2 ec2Service = getEC2Service();
+            for (String selectedEIP : candidateEIPs) {
+                try {
+
+                    AssociateAddressRequest request = new AssociateAddressRequest(
+                            myInstanceId, selectedEIP);
+                    DescribeAddressesRequest describeAddressRequest = new DescribeAddressesRequest().withPublicIps(selectedEIP);
+                    DescribeAddressesResult result = ec2Service.describeAddresses(describeAddressRequest);
+                    if ((result.getAddresses() != null)
+                            && (!result.getAddresses().isEmpty())) {
+                        String instanceId = result.getAddresses().get(0)
+                        .getInstanceId();
+                        if (instanceId == null || !instanceId.isEmpty()) {
+                            logger.warn(
+                                    "The selected EIP {} is associated with the instance {} according to AWS, hence skipping this",
+                                    selectedEIP, instanceId);
+                            continue;
+                        }
+                    }
+
+                    ec2Service.associateAddress(request);
+                    logger.info("\n\n\nAssociated " + myInstanceId
+                            + " running in zone: " + myZone
+                            + " to elastic IP: " + selectedEIP);
+                } catch (Throwable t) {
+                    logger.error("Failed to bind elastic IP: "
+                            + selectedEIP + " to " + myInstanceId, t);
+                }
+
             }
+
         }
     }
 
@@ -175,7 +195,7 @@ public class EIPManager {
      *            the public ip of this instance
      * @return null if the EIP is already bound, valid EIP otherwise.
      */
-    public String getCandidateEIP(String myInstanceId, String myZone, String myPublicIP) {
+    public List<String> getCandidateEIP(String myInstanceId, String myZone, String myPublicIP) {
 
         if (myZone == null) {
             myZone = "us-east-1d";
@@ -200,7 +220,7 @@ public class EIPManager {
              */
             if (myPublicIP != null && myPublicIP.equals(eipTrimmed)) {
                 // Already associated to an EIP?
-                logger.debug("Already bound to an EIP : " + eip);
+                logger.info("Already bound to an EIP : " + eip);
                 return null;
             }
             availableEIPList.add(eipTrimmed);
@@ -228,7 +248,9 @@ public class EIPManager {
                     logger.warn(
                             "The instance id {} is already bound to EIP {}. Hence returning that.",
                             myInstanceId, publicIP);
-                    return publicIP;
+                    List<String> eipList = new ArrayList<String>();
+                    eipList.add(publicIP);
+                    return eipList;
                 }
                 logger.info("The list of available EIPS in the priority order :"
                         + availableEIPList);
@@ -300,7 +322,7 @@ public class EIPManager {
                 throw new RuntimeException("Cannot find a free EIP to bind");
             }
         }
-        return availableEIPList.iterator().next();
+        return availableEIPList;
     }
 
     /**
