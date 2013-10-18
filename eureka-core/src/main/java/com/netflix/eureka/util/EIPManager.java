@@ -143,6 +143,8 @@ public class EIPManager {
                     logger.info("\n\n\nAssociated " + myInstanceId
                             + " running in zone: " + myZone
                             + " to elastic IP: " + selectedEIP);
+                    // Break since we already associated the address - don't go through it anymore
+                    break;
                 } catch (Throwable t) {
                     logger.error("Failed to bind elastic IP: "
                             + selectedEIP + " to " + myInstanceId, t);
