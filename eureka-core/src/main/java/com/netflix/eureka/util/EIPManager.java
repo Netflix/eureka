@@ -17,6 +17,7 @@
 package com.netflix.eureka.util;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -354,9 +355,7 @@ public class EIPManager {
             regionPhrase = "." + region;
         }
         for (String cname : ec2Urls) {
-            int beginIndex = cname.indexOf("ec2-") + 4;
-            int endIndex = cname.indexOf(regionPhrase + ".compute");
-            String eipStr = cname.substring(beginIndex, endIndex);
+            String eipStr = URI.create(cname).getHost().replaceFirst("^[^-]*-","").replaceFirst("\\..*$","");
             String eip = eipStr.replaceAll("\\-", ".");
             returnedUrls.add(eip);
         }
@@ -409,11 +408,10 @@ public class EIPManager {
             ec2Service = new AmazonEC2Client(
                     new InstanceProfileCredentialsProvider());
         }
-
-        String region = DiscoveryManager.getInstance().getEurekaClientConfig()
-        .getRegion();
-        region = region.trim().toLowerCase();
-        ec2Service.setEndpoint("ec2." + region + ".amazonaws.com");
+        
+        String ec2url = DiscoveryManager.getInstance().getEurekaClientConfig()
+            .getEc2Endpoint();
+        ec2Service.setEndpoint(ec2url);
         return ec2Service;
     }
 }

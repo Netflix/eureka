@@ -336,6 +336,16 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 .get();
     }
 
+    @Override
+    public String getEc2Endpoint( ) {
+      return "ec2." + this.getRegion( ).trim( ).toLowerCase( ) + ".amazonaws.com";
+    }
+
+    @Override
+    public String getAutoScalingEndpoint( ) {
+      return "autoscaling." + this.getRegion( ).trim( ).toLowerCase( ) + ".amazonaws.com";
+    }
+
     /*
      * (non-Javadoc)
      * 

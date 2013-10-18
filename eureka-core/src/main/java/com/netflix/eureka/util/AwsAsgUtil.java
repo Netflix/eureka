@@ -88,9 +88,9 @@ public class AwsAsgUtil {
     private static final AwsAsgUtil awsAsgUtil = new AwsAsgUtil();
 
     private AwsAsgUtil() {
-        String region = DiscoveryManager.getInstance().getEurekaClientConfig()
-                .getRegion();
-        client.setEndpoint("autoscaling." + region + ".amazonaws.com");
+        String autoscalingUrl = DiscoveryManager.getInstance().getEurekaClientConfig()
+                .getAutoScalingEndpoint();
+        client.setEndpoint(autoscalingUrl);
         timer.schedule(getASGUpdateTask(),
                 eurekaConfig.getASGUpdateIntervalMs(),
                 eurekaConfig.getASGUpdateIntervalMs());
