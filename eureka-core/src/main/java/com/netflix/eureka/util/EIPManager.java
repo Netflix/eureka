@@ -19,7 +19,6 @@ package com.netflix.eureka.util;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -39,7 +38,6 @@ import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.DiscoveryManager;
-import com.netflix.discovery.shared.Application;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfigurationManager;
 import com.netflix.eureka.PeerAwareInstanceRegistry;
@@ -96,10 +94,19 @@ public class EIPManager {
     }
 
     /**
-     * Binds an EIP to this instance. if an EIP is already bound to this
-     * instance this method simply returns. Otherwise, this method tries to find
-     * an unused EIP based on the registry information. If it cannot find any
-     * unused EIP this method, it waits until a free EIP is available.
+     * Binds an EIP to this instance. The list of EIPs are arranged with the EIPs allocated in the zone first
+     * followed by other EIPs.
+     * 
+     * if an EIP is already bound to this instance this method simply returns. Otherwise, this method tries to find
+     * an unused EIP based on information from AWS. If it cannot find any unused EIP this method, it will be retried
+     * for a specified interval.
+     * 
+     * One of the following scenarios can happen here :
+     * 
+     *  1) If the instance is already bound to an EIP as deemed by AWS, no action is taken.
+     *  2) If an EIP is already bound to another instance as deemed by AWS, that EIP is skipped.
+     *  3) If an EIP is not already bound to an instance and if this instance is not bound to an EIP, then 
+     *     the EIP is bound to this instance.
      * 
      */
     public void bindToEIP() {
@@ -111,48 +118,70 @@ public class EIPManager {
         String myPublicIP = ((AmazonInfo) myInfo.getDataCenterInfo())
         .get(MetaDataKey.publicIpv4);
 
-        List<String> candidateEIPs = getCandidateEIP(myInstanceId, myZone,
-                myPublicIP);
+        Collection<String> candidateEIPs = getCandidateEIPs(myInstanceId,
+                myZone, myPublicIP);
 
-        if (candidateEIPs == null) {
-            // The EIP is already bound to this instance
-            logger.debug("No need to bind to EIP");
-            return;
-        } else {
-            AmazonEC2 ec2Service = getEC2Service();
-            for (String selectedEIP : candidateEIPs) {
-                try {
+        AmazonEC2 ec2Service = getEC2Service();
+        boolean isMyinstanceAssociatedWithEIP = false;
+        String selectedEIP = null;
+        for (String eipEntry : candidateEIPs) {
+            try {
+                String associatedInstanceId = null;
 
-                    AssociateAddressRequest request = new AssociateAddressRequest(
-                            myInstanceId, selectedEIP);
-                    DescribeAddressesRequest describeAddressRequest = new DescribeAddressesRequest().withPublicIps(selectedEIP);
-                    DescribeAddressesResult result = ec2Service.describeAddresses(describeAddressRequest);
-                    if ((result.getAddresses() != null)
-                            && (!result.getAddresses().isEmpty())) {
-                        String instanceId = result.getAddresses().get(0)
-                        .getInstanceId();
-                        if (instanceId == null || !instanceId.isEmpty()) {
-                            logger.warn(
-                                    "The selected EIP {} is associated with the instance {} according to AWS, hence skipping this",
-                                    selectedEIP, instanceId);
-                            continue;
+                // Check with AWS, if this EIP is already been used by another
+                // instance
+                DescribeAddressesRequest describeAddressRequest = new DescribeAddressesRequest()
+                .withPublicIps(eipEntry);
+                DescribeAddressesResult result = ec2Service
+                .describeAddresses(describeAddressRequest);
+                if ((result.getAddresses() != null)
+                        && (!result.getAddresses().isEmpty())) {
+                    associatedInstanceId = result.getAddresses().get(0)
+                    .getInstanceId();
+                    // This EIP is not used by any other instance, hence mark it for selection if it is not
+                    // already marked.
+                    if (((associatedInstanceId == null) || (associatedInstanceId
+                            .isEmpty()))) {
+                        if (selectedEIP == null) {
+                            selectedEIP = eipEntry;
                         }
+                    } 
+                    // This EIP is associated with an instance, check if this is the same as the current instance.
+                    // If it is the same, stop searching for an EIP as this instance is already associated with an EIP
+                    else if (isMyinstanceAssociatedWithEIP = (associatedInstanceId
+                            .equals(myInstanceId))) {
+                        break;
+                    } 
+                    // The EIP is used by some other instance, hence skip it
+                    else {
+                        logger.warn(
+                                "The selected EIP {} is associated with another instance {} according to AWS, hence skipping this",
+                                eipEntry, associatedInstanceId);
+                        continue;
                     }
-
-                    ec2Service.associateAddress(request);
-                    logger.info("\n\n\nAssociated " + myInstanceId
-                            + " running in zone: " + myZone
-                            + " to elastic IP: " + selectedEIP);
-                    // Break since we already associated the address - don't go through it anymore
-                    break;
-                } catch (Throwable t) {
-                    logger.error("Failed to bind elastic IP: "
-                            + selectedEIP + " to " + myInstanceId, t);
                 }
-
+            } catch (Throwable t) {
+                logger.error("Failed to bind elastic IP: " + eipEntry + " to "
+                        + myInstanceId, t);
             }
-
         }
+        // Only bind if the EIP is already associated
+        if (!isMyinstanceAssociatedWithEIP) {
+            AssociateAddressRequest associateAddressRequest = new AssociateAddressRequest(
+                    myInstanceId, selectedEIP);
+
+            ec2Service.associateAddress(associateAddressRequest);
+            logger.info("\n\n\nAssociated " + myInstanceId
+                    + " running in zone: " + myZone + " to elastic IP: "
+                    + selectedEIP);
+            // Break since we already associated the address - don't go
+            // through it anymore
+        } else {
+            logger.info(
+                    "My instance {} seems to be already associated with the EIP {}",
+                    myInstanceId, selectedEIP);
+        }
+
     }
 
     /**
@@ -197,7 +226,7 @@ public class EIPManager {
      *            the public ip of this instance
      * @return null if the EIP is already bound, valid EIP otherwise.
      */
-    public List<String> getCandidateEIP(String myInstanceId, String myZone, String myPublicIP) {
+    public Collection<String> getCandidateEIPs(String myInstanceId, String myZone, String myPublicIP) {
 
         if (myZone == null) {
             myZone = "us-east-1d";
@@ -212,119 +241,8 @@ public class EIPManager {
                     "Could not get any elastic ips from the EIP pool for zone :"
                     + myZone);
         }
-        List<String> availableEIPList = new ArrayList<String>();
-        for (String eip : eipCandidates) {
-            String eipTrimmed = eip.trim();
-            /* It's possible for myPublicIP to be null when eureka is restarted
-             * because unbinding an EIP on Amazon results in a null IP for the
-             * instance for a few minutes. In that case, it's ok to rebind the
-             * new EIP.
-             */
-            if (myPublicIP != null && myPublicIP.equals(eipTrimmed)) {
-                // Already associated to an EIP?
-                logger.info("Already bound to an EIP : " + eip);
-                return null;
-            }
-            availableEIPList.add(eipTrimmed);
-        }
-        // Look for unused EIPs
-        InstanceInfo instanceInfo = ApplicationInfoManager.getInstance().getInfo();
-        Application app = DiscoveryManager.getInstance().getDiscoveryClient()
-        .getApplication(instanceInfo.getAppName());
-
-        List<String> unreachableEips = new ArrayList<String>();
-
-        if (app != null) {
-            for (InstanceInfo i : app.getInstances()) {
-                // Avoid eureka servers from other regions
-                if (!PeerAwareInstanceRegistry.getInstance().isRegisterable(i)) {
-                    continue;
-                }
-                AmazonInfo amazonInfo = (AmazonInfo) i.getDataCenterInfo();
-                String publicIP = amazonInfo.get(MetaDataKey.publicIpv4);
-                String instanceId = amazonInfo.get(MetaDataKey.instanceId);
-                if ((instanceId.equals(myInstanceId))
-                        && (availableEIPList.contains(publicIP))) {
-                    // This can happen if the server restarts and we haven't
-                    // fully been dissociated with the previous shutdown
-                    logger.warn(
-                            "The instance id {} is already bound to EIP {}. Hence returning that.",
-                            myInstanceId, publicIP);
-                    List<String> eipList = new ArrayList<String>();
-                    eipList.add(publicIP);
-                    return eipList;
-                }
-                logger.info("The list of available EIPS in the priority order :"
-                        + availableEIPList);
-                for (Iterator<String> it = availableEIPList.iterator(); it.hasNext(); ) {
-                    String eip = it.next();
-                    // if there is already an EIP association, remove it from
-                    // the list if it is reachable
-                    if ((eip.trim().equals(publicIP))) {
-                        String instanceHostName = i.getHostName();
-                        PeerEurekaNode replicaNode = getPeerEurekaNode(instanceHostName);
-                        if (replicaNode == null) {
-                            logger.warn("Cannot get peer eureka node. Is this even a peer? :"
-                                    + instanceHostName);
-                            continue;
-                        }
-                        boolean isInstanceReachable = false;
-                        for (int ctr = 0; ctr < NO_HEARTBEAT_RETRIES; ctr++) {
-                            try {
-                                replicaNode.heartbeat(
-                                        instanceInfo.getAppName(),
-                                        instanceInfo.getId(), instanceInfo,
-                                        null, true);
-                                isInstanceReachable = true;
-                                break;
-                            } catch (Throwable e) {
-                                logger.warn(
-                                        String.format(
-                                                "Error while checking whether the EIP %s is used by the instance id %s as reported by eureka peer.",
-                                                eip, instanceInfo.getId()), e);
-                                try {
-                                    Thread.sleep(HEARTBEAT_RETRY_INTERVAL_MS);
-                                } catch (InterruptedException e1) {
-                                    logger.warn("Interrupted while trying send heartbeat", e1);
-                                }
-                            }
-                        }
-
-                        if (!isInstanceReachable) {
-                            logger.info(
-                                    "The instance {} seems unreachable, making EIP: {} available for reuse.",
-                                    instanceInfo.getHostName(), eip);
-                            it.remove(); // This is so that we add this at the end, prioritize EIPs which are not even taken by an instance according to peer nodes.
-                            unreachableEips.add(eip);
-                            continue;
-                        }
-                        logger.info("Removing the EIP {} as it is already used by instance {}", eip, instanceId);
-                        it.remove();
-                    }
-                }
-            }
-        }
-
-        /**
-         * The available EIPs list (when retrieved from DNS) contains EIPs for "this zone (i.e. in which this instance
-         * is running)" first and then from other zone. In the above loop we remove all the EIPs which are bound to
-         * eureka but are not reachable, these EIPs are added in unreachableEips list. Here, we add this unreachable
-         * EIPs at the end so that we pick these when no EIP is available readily. Unreachable EIPs are also sorted
-         * such that local zone is first, so the eventual list always have the same Zone EIP first.
-         */
-
-        if (availableEIPList == null) {
-            throw new RuntimeException("Cannot find a free EIP to bind");
-        } else {
-            availableEIPList.addAll(unreachableEips);
-            if (!unreachableEips.isEmpty()) {
-                logger.info("Added unreachable EIPs {} to the available EIP list. Final EIP list is {}", unreachableEips, availableEIPList);
-            }
-            if (availableEIPList.isEmpty()) {
-                throw new RuntimeException("Cannot find a free EIP to bind");
-            }
-        }
-        return availableEIPList;
+       
+        return eipCandidates;
     }
 
     /**
