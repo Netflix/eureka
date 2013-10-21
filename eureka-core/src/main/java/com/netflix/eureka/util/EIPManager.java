@@ -150,6 +150,7 @@ public class EIPManager {
                     // If it is the same, stop searching for an EIP as this instance is already associated with an EIP
                     else if (isMyinstanceAssociatedWithEIP = (associatedInstanceId
                             .equals(myInstanceId))) {
+                        selectedEIP = eipEntry;
                         break;
                     } 
                     // The EIP is used by some other instance, hence skip it
