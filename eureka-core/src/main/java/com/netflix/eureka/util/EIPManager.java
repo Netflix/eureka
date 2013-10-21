@@ -174,9 +174,7 @@ public class EIPManager {
             logger.info("\n\n\nAssociated " + myInstanceId
                     + " running in zone: " + myZone + " to elastic IP: "
                     + selectedEIP);
-            // Break since we already associated the address - don't go
-            // through it anymore
-        } else {
+         } else {
             logger.info(
                     "My instance {} seems to be already associated with the EIP {}",
                     myInstanceId, selectedEIP);
@@ -210,21 +208,15 @@ public class EIPManager {
     }
 
     /**
-     * Get the EIP for this instance to bind to.
-     * 
-     * <p>
-     * if an EIP is already bound to this instance this method simply returns.
-     * Otherwise, this method tries to find an unused EIP based on the registry
-     * information. If it cannot find any unused EIP, it waits until a free EIP is available.
-     * </p>
+     * Get the list of EIPs in the order of preference depending on instance zone
      * 
      * @param myInstanceId
      *            the instance id for this instance
      * @param myZone
-     *            the zone where this instance is in.
+     *            the zone where this instance is in
      * @param myPublicIP
      *            the public ip of this instance
-     * @return null if the EIP is already bound, valid EIP otherwise.
+     * @return Collection containing the list of available EIPs
      */
     public Collection<String> getCandidateEIPs(String myInstanceId, String myZone, String myPublicIP) {
 
