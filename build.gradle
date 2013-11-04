@@ -91,6 +91,7 @@ project(':eureka-server') {
         compile project(':eureka-core')
         runtime 'xerces:xercesImpl:2.4.0'
         runtime 'asm:asm:3.1' 
+        runtime 'com.sun.jersey:jersey-bundle:1.9.1'
         compile 'org.slf4j:slf4j-log4j12:1.6.1'
         runtime 'org.codehaus.jettison:jettison:1.2' 
         providedCompile 'javax.servlet:servlet-api:2.4'
