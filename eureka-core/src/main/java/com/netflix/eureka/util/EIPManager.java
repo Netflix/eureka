@@ -94,10 +94,12 @@ public class EIPManager {
     }
 
     /**
-     * Binds an EIP to this instance. The list of EIPs are arranged with the EIPs allocated in the zone first
+     * Checks if an EIP is bound and optionally binds the EIP.
+     * 
+      *The list of EIPs are arranged with the EIPs allocated in the zone first
      * followed by other EIPs.
      * 
-     * if an EIP is already bound to this instance this method simply returns. Otherwise, this method tries to find
+     * If an EIP is already bound to this instance this method simply returns. Otherwise, this method tries to find
      * an unused EIP based on information from AWS. If it cannot find any unused EIP this method, it will be retried
      * for a specified interval.
      * 
@@ -107,9 +109,12 @@ public class EIPManager {
      *  2) If an EIP is already bound to another instance as deemed by AWS, that EIP is skipped.
      *  3) If an EIP is not already bound to an instance and if this instance is not bound to an EIP, then 
      *     the EIP is bound to this instance.
+     *     
+     * @param shouldBind - indicates if the EIP should be bound if it is not already bound.
      * 
+     * @return true - if the EIP is bound, false otherwise.
      */
-    public void bindToEIP() {
+    public boolean isEIPBound(boolean shouldBind) {
         InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
         String myInstanceId = ((AmazonInfo) myInfo.getDataCenterInfo())
         .get(MetaDataKey.instanceId);
@@ -168,6 +173,7 @@ public class EIPManager {
         }
         // Only bind if the EIP is already associated
         if (!isMyinstanceAssociatedWithEIP) {
+            if (shouldBind) {
             AssociateAddressRequest associateAddressRequest = new AssociateAddressRequest(
                     myInstanceId, selectedEIP);
 
@@ -175,12 +181,16 @@ public class EIPManager {
             logger.info("\n\n\nAssociated " + myInstanceId
                     + " running in zone: " + myZone + " to elastic IP: "
                     + selectedEIP);
-         } else {
+             return true;
+            }
+            return false;
+         } 
             logger.info(
                     "My instance {} seems to be already associated with the EIP {}",
                     myInstanceId, selectedEIP);
-        }
-
+            return true;
+       
+      
     }
 
     /**

@@ -45,8 +45,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,8 +69,6 @@ import com.netflix.eureka.resources.ResponseCache;
 import com.netflix.eureka.util.AwsAsgUtil;
 import com.netflix.eureka.util.MeasuredRate;
 import com.netflix.servo.annotations.DataSourceType;
-
-import javax.annotation.Nullable;
 
 /**
  * Handles all registry requests from eureka clients.
@@ -113,14 +114,25 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
     protected volatile int expectedNumberOfRenewsPerMin;
     protected static final EurekaServerConfig EUREKA_SERVER_CONFIG = EurekaServerConfigurationManager
     .getInstance().getConfiguration();
-
+    
+    private static final AtomicReference<EvictionTask> evictionTask = new AtomicReference<EvictionTask>();
+    
+    
     protected InstanceRegistry() {
-
         recentCanceledQueue = new CircularQueue<Pair<Long, String>>(1000);
         recentRegisteredQueue = new CircularQueue<Pair<Long, String>>(1000);
         deltaRetentionTimer.schedule(getDeltaRetentionTask(),
                 eurekaConfig.getDeltaRetentionTimerIntervalInMs(),
                 eurekaConfig.getDeltaRetentionTimerIntervalInMs());
+    }
+    
+    public void clearRegistry() {
+        overriddenInstanceStatusMap.clear();
+        recentCanceledQueue.clear();
+        recentRegisteredQueue.clear();
+        recentlyChangedQueue.clear();
+        _registry.clear();
+        
     }
 
     /*
@@ -1045,18 +1057,12 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
 
     protected void postInit() {
         renewsLastMin = new MeasuredRate(1000 * 60 * 1);
-        evictionTimer.schedule(new TimerTask() {
-
-            @Override
-            public void run() {
-                try {
-                    evict();
-                } catch (Throwable e) {
-                    logger.error("Could not run the evict task", e);
-                }
-
-            }
-        }, eurekaConfig.getEvictionIntervalTimerInMs(),
+        if (evictionTask.get() != null) {
+            evictionTask.get().cancel();
+        }
+        evictionTask.set(new EvictionTask());
+        evictionTimer.schedule(evictionTask.get(),
+                eurekaConfig.getEvictionIntervalTimerInMs(),
                 eurekaConfig.getEvictionIntervalTimerInMs());
     }
 
@@ -1064,7 +1070,21 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
     public long getNumberofElementsininstanceCache() {
         return overriddenInstanceStatusMap.size();
     }
+    private final class EvictionTask extends TimerTask {
 
+        @Override
+        public void run() {
+            try {
+                evict();
+            } catch (Throwable e) {
+                logger.error("Could not run the evict task", e);
+            }
+        }
+
+    }
+
+    
+   
     private class CircularQueue<E> extends ConcurrentLinkedQueue<E> {
         int size = 0;
 
@@ -1090,10 +1110,12 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             return super.offer(e);
         }
     }
+    
+    
 
     private InstanceStatus getOverriddenInstanceStatus(InstanceInfo r,
                                                        Lease<InstanceInfo> existingLease, boolean isReplication) {
-        // Instance is DOWN or STARTING - believe that, but when the instance
+        // ReplicationInstance is DOWN or STARTING - believe that, but when the instance
         // says UP, question that
         // The client instance sends STARTING or DOWN (because of heartbeat
         // failures), then we accept what

@@ -22,6 +22,7 @@ import java.util.Arrays;
 import javax.annotation.Nullable;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -31,7 +32,11 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Joiner;
+import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka.CurrentRequestVersion;
@@ -39,7 +44,9 @@ import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfigurationManager;
 import com.netflix.eureka.InstanceRegistry;
 import com.netflix.eureka.PeerAwareInstanceRegistry;
+import com.netflix.eureka.PeerAwareInstanceRegistry.Action;
 import com.netflix.eureka.Version;
+import com.netflix.eureka.cluster.PeerEurekaNode;
 import com.netflix.eureka.resources.ResponseCache.Key;
 import com.netflix.eureka.resources.ResponseCache.KeyType;
 import com.netflix.eureka.util.EurekaMonitors;
@@ -54,6 +61,7 @@ import com.netflix.eureka.util.EurekaMonitors;
 @Path("/{version}/apps")
 @Produces({ "application/xml", "application/json" })
 public class ApplicationsResource {
+    private static final String REPLICATION = "true";
     private static final String HEADER_ACCEPT = "Accept";
     private static final String HEADER_ACCEPT_ENCODING = "Accept-Encoding";
     private static final String HEADER_CONTENT_ENCODING = "Content-Encoding";
@@ -61,6 +69,12 @@ public class ApplicationsResource {
     private static final String HEADER_JSON_VALUE = "json";
     private static final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
     .getInstance().getConfiguration();
+    
+    private static final Logger logger = LoggerFactory.getLogger(ApplicationResource.class);
+    
+    private final static PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry
+    .getInstance();
+
 
     /**
      * Gets information about a particular {@link Application}.
@@ -219,5 +233,82 @@ public class ApplicationsResource {
             return Response.ok(ResponseCache.getInstance().get(cacheKey))
             .build();
         }
+    }
+   
+   
+    /**
+     * Process batched replication events from peer eureka nodes.
+     * 
+     * <p>
+     *  The batched events are delegated to underlying resources to generate a {@link PeerEurekaNode.ReplicationListResponse} 
+     *  containing the individual responses to the batched events
+     * </p>
+     * 
+     * @param replicationList
+     *            The List of replication events from peer eureka nodes
+      * @return A batched response containing the information about the responses of individual events
+     */
+    @Path("batch")
+    @POST
+    public Response batchReplication(
+            PeerEurekaNode.ReplicationList replicationList) {
+        Response response = null;
+        try {
+
+            PeerEurekaNode.ReplicationListResponse batchResponse = new PeerEurekaNode.ReplicationListResponse();
+            for (PeerEurekaNode.ReplicationInstance instanceInfo : replicationList
+                    .getList()) {
+                ApplicationResource applicationResource = new ApplicationResource(
+                        instanceInfo.getAppName());
+                InstanceResource resource = new InstanceResource(
+                        applicationResource, instanceInfo.getId());
+                String lastDirtyTimestamp = (instanceInfo
+                        .getLastDirtyTimestamp() == null ? null : instanceInfo
+                                .getLastDirtyTimestamp().toString());
+                String overriddenStatus = (instanceInfo.getOverriddenStatus() == null ? null
+                        : instanceInfo.getOverriddenStatus());
+                String instanceStatus = (instanceInfo.getStatus() == null ? null
+                        : instanceInfo.getStatus());
+                PeerEurekaNode.ReplicationInstanceResponse.Builder singleResponseBuilder = new PeerEurekaNode.ReplicationInstanceResponse.Builder();
+                if (replicationList.getAction() == Action.Heartbeat) {
+                    response = resource.renewLease(REPLICATION, overriddenStatus,
+                            instanceStatus, lastDirtyTimestamp);
+
+                    singleResponseBuilder.setStatusCode(response.getStatus());
+                    if (response.getStatus() == Response.Status.OK
+                            .getStatusCode() && response.getEntity() != null) {
+                        singleResponseBuilder
+                        .setResponseEntity((InstanceInfo) response
+                                .getEntity());
+                    }
+                } else if (replicationList.getAction() == Action.Register) {
+                    applicationResource.addInstance(
+                            instanceInfo.getInstanceInfo(), REPLICATION);
+
+                    singleResponseBuilder = new PeerEurekaNode.ReplicationInstanceResponse.Builder()
+                    .setStatusCode(Status.OK.getStatusCode());
+                } else if (replicationList.getAction() == Action.StatusUpdate) {
+                    response = resource.statusUpdate(instanceInfo.getStatus(),
+                            REPLICATION, instanceInfo.getLastDirtyTimestamp()
+                            .toString());
+
+                    singleResponseBuilder = new PeerEurekaNode.ReplicationInstanceResponse.Builder()
+                    .setStatusCode(response.getStatus());
+                } else if (replicationList.getAction() == Action.Cancel) {
+                    response = resource.cancelLease(REPLICATION);
+
+                    singleResponseBuilder = new PeerEurekaNode.ReplicationInstanceResponse.Builder()
+                    .setStatusCode(response.getStatus());
+                }
+
+                batchResponse.addResponse(singleResponseBuilder.build());
+            }
+            return Response.ok(batchResponse).build();
+        } catch (Throwable e) {
+            logger.error("Cannot execute batch Request", e);
+            return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+
+        }
+
     }
 }

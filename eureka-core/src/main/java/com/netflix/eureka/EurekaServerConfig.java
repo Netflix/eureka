@@ -500,4 +500,10 @@ public interface EurekaServerConfig {
      * @return {@code true} if the old behavior is to be disabled.
      */
     boolean disableTransparentFallbackToOtherRegion();
+
+    /**
+     * Indicates whether the replication between cluster nodes should be batched for network efficiency
+     * @return {@code true} if the replication needs to be batched.
+     */
+    boolean shouldBatchReplication();
 }
