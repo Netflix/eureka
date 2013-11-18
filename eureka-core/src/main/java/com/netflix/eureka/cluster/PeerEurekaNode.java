@@ -594,9 +594,7 @@ public class PeerEurekaNode {
     @XStreamAlias("repllist")
     public static class ReplicationList {
         private List<PeerEurekaNode.ReplicationInstance> replicationList = new ArrayList<PeerEurekaNode.ReplicationInstance>();
-        private Action action = Action.Heartbeat;
-        
-        
+      
         public void addReplicationInstance(PeerEurekaNode.ReplicationInstance instance) {
             replicationList.add(instance);
         }
@@ -605,12 +603,7 @@ public class PeerEurekaNode {
             return this.replicationList;
         }
         
-        public Action getAction() {
-            return action;
-        }
-        public void setAction(Action action) {
-            this.action = action;
-        }
+      
     }
 
     @Serializer("com.netflix.discovery.converters.EntityBodyConverter")
@@ -681,6 +674,7 @@ public class PeerEurekaNode {
         private String overriddenStatus;
         private String status;
         private InstanceInfo instanceInfo;
+        private Action action;
 
         public String getAppName() {
             return appName;
@@ -728,6 +722,14 @@ public class PeerEurekaNode {
 
         public void setInstanceInfo(InstanceInfo instanceInfo) {
             this.instanceInfo = instanceInfo;
+        }
+
+        public Action getAction() {
+            return action;
+        }
+
+        public void setAction(Action action) {
+            this.action = action;
         }
 
     }
@@ -820,13 +822,14 @@ public class PeerEurekaNode {
                 boolean done = true;
                 PeerEurekaNode.ReplicationList list = new PeerEurekaNode.ReplicationList();
                 for (ReplicationTask task : tasks) {
-                    Object[] args = { task.getAppName(), task.getId(),
-                            task.getAction(),
-                            new Date(System.currentTimeMillis()),
-                            new Date(task.getSubmitTime()) };
-                    if (System.currentTimeMillis()
+                   if (System.currentTimeMillis()
                             - config.getMaxTimeForReplication() > task
                             .getSubmitTime()) {
+                       Object[] args = { task.getAppName(), task.getId(),
+                               task.getAction(),
+                               new Date(System.currentTimeMillis()),
+                               new Date(task.getSubmitTime()) };
+                    
                         logger.warn(
                                 "Replication events older than the threshold. AppName : {}, Id: {}, Action : {}, Current Time : {}, Submit Time :{}",
                                 args);
@@ -852,14 +855,15 @@ public class PeerEurekaNode {
                                 : instanceInfo.getStatus().name();
                         instance.setStatus(instanceStatus);
                     }
+                    instance.setAction(task.getAction());
                     list.addReplicationInstance(instance);
                 }
                 if (list.getList().size() == 0) {
                     return true;
                 }
-                list.setAction(tasks.get(0).getAction());
+                Action action = list.getList().get(0).action;
                 DynamicCounter.increment("Batch_"
-                        + list.getAction().name()
+                        + action
 
                         + "_tries");
 
@@ -873,11 +877,11 @@ public class PeerEurekaNode {
                         .accept(MediaType.APPLICATION_JSON_TYPE)
                         .type(MediaType.APPLICATION_JSON_TYPE)
                         .post(ClientResponse.class, list);
-                        if (isSuccess(response)) {
+                        if (!isSuccess(response)) {
                             return false;
                         }
                         DynamicCounter.increment("Batch_"
-                                + list.getAction().name()
+                                + action
 
                                 + "_success");
 
@@ -909,9 +913,8 @@ public class PeerEurekaNode {
 
                         if ((isNetworkConnectException(e))) {
                             DynamicCounter.increment("Batch_"
-                                    + list.getAction().name()
-
-                                    + "_retries");
+                                    + action
+                              + "_retries");
                             done = false;
                         } else {
                             success = false;
@@ -939,15 +942,16 @@ public class PeerEurekaNode {
                     do {
                         done = true;
                         try {
-                            Object[] args = {
-                                    task.getAppName(),
-                                    task.getId(),
-                                    task.getAction(),
-                                    new Date(System.currentTimeMillis()),
-                                    new Date(task.getSubmitTime()) };
-                            if (System.currentTimeMillis()
+                              if (System.currentTimeMillis()
                                     - config.getMaxTimeForReplication() > task
                                     .getSubmitTime()) {
+                                  Object[] args = {
+                                          task.getAppName(),
+                                          task.getId(),
+                                          task.getAction(),
+                                          new Date(System.currentTimeMillis()),
+                                          new Date(task.getSubmitTime()) };
+       
                                 logger.warn(
                                         "Replication events older than the threshold. AppName : {}, Id: {}, Action : {}, Current Time : {}, Submit Time :{}",
                                         args);

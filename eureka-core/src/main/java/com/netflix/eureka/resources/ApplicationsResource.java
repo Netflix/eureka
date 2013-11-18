@@ -270,7 +270,7 @@ public class ApplicationsResource {
                 String instanceStatus = (instanceInfo.getStatus() == null ? null
                         : instanceInfo.getStatus());
                 PeerEurekaNode.ReplicationInstanceResponse.Builder singleResponseBuilder = new PeerEurekaNode.ReplicationInstanceResponse.Builder();
-                if (replicationList.getAction() == Action.Heartbeat) {
+                if (instanceInfo.getAction() == Action.Heartbeat) {
                     response = resource.renewLease(REPLICATION, overriddenStatus,
                             instanceStatus, lastDirtyTimestamp);
 
@@ -281,20 +281,20 @@ public class ApplicationsResource {
                         .setResponseEntity((InstanceInfo) response
                                 .getEntity());
                     }
-                } else if (replicationList.getAction() == Action.Register) {
+                } else if (instanceInfo.getAction() == Action.Register) {
                     applicationResource.addInstance(
                             instanceInfo.getInstanceInfo(), REPLICATION);
 
                     singleResponseBuilder = new PeerEurekaNode.ReplicationInstanceResponse.Builder()
                     .setStatusCode(Status.OK.getStatusCode());
-                } else if (replicationList.getAction() == Action.StatusUpdate) {
+                } else if (instanceInfo.getAction() == Action.StatusUpdate) {
                     response = resource.statusUpdate(instanceInfo.getStatus(),
                             REPLICATION, instanceInfo.getLastDirtyTimestamp()
                             .toString());
 
                     singleResponseBuilder = new PeerEurekaNode.ReplicationInstanceResponse.Builder()
                     .setStatusCode(response.getStatus());
-                } else if (replicationList.getAction() == Action.Cancel) {
+                } else if (instanceInfo.getAction() == Action.Cancel) {
                     response = resource.cancelLease(REPLICATION);
 
                     singleResponseBuilder = new PeerEurekaNode.ReplicationInstanceResponse.Builder()
