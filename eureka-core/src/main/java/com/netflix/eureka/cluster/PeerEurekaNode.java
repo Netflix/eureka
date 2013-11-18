@@ -806,7 +806,7 @@ public class PeerEurekaNode {
         return BatcherFactory.createBatcher(absoluteBatcherName,
                 new MessageProcessor<ReplicationTask>() {
 
-            private String BATCH_URL_PATH = "apps/batch/";;
+            private String BATCH_URL_PATH = "peerreplication/batch/";;
 
             @Override
             public void process(List<ReplicationTask> tasks) {
