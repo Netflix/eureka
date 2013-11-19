@@ -877,7 +877,7 @@ public class PeerEurekaNode {
                         .accept(MediaType.APPLICATION_JSON_TYPE)
                         .type(MediaType.APPLICATION_JSON_TYPE)
                         .post(ClientResponse.class, list);
-                        if (!isSuccess(response)) {
+                        if (!isSuccess(response.getStatus())) {
                             return false;
                         }
                         DynamicCounter.increment("Batch_"
@@ -892,7 +892,7 @@ public class PeerEurekaNode {
                                 .getResponseList()) {
                             int statusCode = singleResponse
                             .getStatusCode();
-                            if ((!isSuccess(response))
+                            if ((!isSuccess(statusCode))
                                     || (singleResponse
                                     .getResponseEntity() != null)) {
                                 if (singleResponse.getResponseEntity() != null) {
@@ -931,10 +931,6 @@ public class PeerEurekaNode {
                 return success;
             }
 
-            private boolean isSuccess(ClientResponse response) {
-                return response.getStatus() < 200
-                        || response.getStatus() >= 300;
-            }
 
             private void executeSingle(List<ReplicationTask> tasks) {
                 for (ReplicationTask task : tasks) {
@@ -964,7 +960,7 @@ public class PeerEurekaNode {
                                     + "_tries");
 
                             int statusCode = task.execute();
-                            if (statusCode < 200 && statusCode > 299) {
+                            if (!isSuccess(statusCode)) {
                                 task.handleFailure(statusCode);
                             }
                             DynamicCounter.increment("Single_"
@@ -997,6 +993,12 @@ public class PeerEurekaNode {
                 }
             }
         });
+    }
+    
+
+    private boolean isSuccess(int statusCode) {
+        return statusCode >= 200
+                &&  statusCode < 300;
     }
 
 }
