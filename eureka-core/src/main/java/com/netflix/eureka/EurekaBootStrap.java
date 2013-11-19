@@ -16,7 +16,6 @@
 
 package com.netflix.eureka;
 
-import java.net.URL;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -218,10 +217,14 @@ public class EurekaBootStrap implements ServletContextListener {
         EurekaServerConfig eurekaServerConfig = EurekaServerConfigurationManager.getInstance().getConfiguration();
         int retries = eurekaServerConfig.getEIPBindRebindRetries();
          // Bind to EIP if needed
+        EIPManager eipManager = EIPManager.getInstance();
         for (int i = 0; i < retries; i++) {
                try {
-                    if (EIPManager.getInstance().isEIPBound(true)) {
+                    if (eipManager.isEIPBound()) {
                         break;
+                    }
+                    else {
+                        eipManager.bindEIP();
                     }
                 }
                 catch (Throwable e) {
@@ -252,12 +255,17 @@ public class EurekaBootStrap implements ServletContextListener {
                     // If the EIP is not bound, the registry could  be stale
                     // First syncup the reigstry from the neighboring node before 
                     // tryig to bind the EIP
-                    if (!EIPManager.getInstance().isEIPBound(false)) {
+                    EIPManager eipManager = EIPManager.getInstance();
+                    if (!eipManager.isEIPBound()) {
                         registry.clearRegistry();
                         int count = registry.syncUp();
                         registry.openForTraffic(count);
                      } 
-                    EIPManager.getInstance().isEIPBound(true);
+                    else {
+                        // An EIP is already bound
+                        return;
+                    }
+                    eipManager.bindEIP();
                 } catch (Throwable e) {
                     logger.error("Could not bind to EIP", e);
                 }
