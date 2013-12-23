@@ -16,7 +16,6 @@
 
 package com.netflix.eureka;
 
-import java.net.URL;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -108,7 +107,7 @@ public class EurekaBootStrap implements ServletContextListener {
 
             // Only in AWS, enable the binding functionality
             if (Name.Amazon.equals(info.getDataCenterInfo().getName())) {
-                handleEIPbinding();
+                handleEIPbinding(registry);
             }
             // Initialize available remote registry
             PeerAwareInstanceRegistry.getInstance().initRemoteRegionRegistry();
@@ -213,18 +212,28 @@ public class EurekaBootStrap implements ServletContextListener {
      * 
      * @throws InterruptedException
      */
-    private void handleEIPbinding()
+    private void handleEIPbinding(PeerAwareInstanceRegistry registry)
     throws InterruptedException {
         EurekaServerConfig eurekaServerConfig = EurekaServerConfigurationManager.getInstance().getConfiguration();
         int retries = eurekaServerConfig.getEIPBindRebindRetries();
-        // Bind to EIP if needed
+         // Bind to EIP if needed
+        EIPManager eipManager = EIPManager.getInstance();
         for (int i = 0; i < retries; i++) {
-            if (bindEIP()) {
-                break;
-            }
+               try {
+                    if (eipManager.isEIPBound()) {
+                        break;
+                    }
+                    else {
+                        eipManager.bindEIP();
+                    }
+                }
+                catch (Throwable e) {
+                    logger.error("Cannot bind to EIP", e);
+                    Thread.sleep(EIP_BIND_SLEEP_TIME_MS);
+                }
         }
-        // Schedule a timer which periodically checks for EIP binding.
-        scheduleEIPBindTask(eurekaServerConfig);
+       // Schedule a timer which periodically checks for EIP binding.
+        scheduleEIPBindTask(eurekaServerConfig, registry);
     }
 
     /**
@@ -237,36 +246,33 @@ public class EurekaBootStrap implements ServletContextListener {
      *            the Eureka Server Configuration.
      */
     private void scheduleEIPBindTask(
-            EurekaServerConfig eurekaServerConfig) {
+            EurekaServerConfig eurekaServerConfig, final PeerAwareInstanceRegistry registry) {
         timer.schedule(new TimerTask() {
 
             @Override
             public void run() {
                 try {
-                    bindEIP();
-                } catch (Throwable ignore) {
-
+                    // If the EIP is not bound, the registry could  be stale
+                    // First syncup the reigstry from the neighboring node before 
+                    // tryig to bind the EIP
+                    EIPManager eipManager = EIPManager.getInstance();
+                    if (!eipManager.isEIPBound()) {
+                        registry.clearRegistry();
+                        int count = registry.syncUp();
+                        registry.openForTraffic(count);
+                     } 
+                    else {
+                        // An EIP is already bound
+                        return;
+                    }
+                    eipManager.bindEIP();
+                } catch (Throwable e) {
+                    logger.error("Could not bind to EIP", e);
                 }
             }
         }, eurekaServerConfig.getEIPBindingRetryIntervalMs(),
         eurekaServerConfig.getEIPBindingRetryIntervalMs());
     }
 
-    /**
-     * Binds the EIP if it is not already bound.
-     * 
-     * @return
-     * @throws InterruptedException
-     */
-    private boolean bindEIP() throws InterruptedException {
-        try {
-            EIPManager.getInstance().bindToEIP();
-            return true;
-        } catch (Throwable e) {
-            logger.error("Cannot bind to EIP", e);
-            Thread.sleep(EIP_BIND_SLEEP_TIME_MS);
-            return false;
-        }
-    }
-
+   
 }

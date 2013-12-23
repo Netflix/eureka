@@ -31,6 +31,9 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Joiner;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
@@ -54,6 +57,7 @@ import com.netflix.eureka.util.EurekaMonitors;
 @Path("/{version}/apps")
 @Produces({ "application/xml", "application/json" })
 public class ApplicationsResource {
+    private static final String REPLICATION = "true";
     private static final String HEADER_ACCEPT = "Accept";
     private static final String HEADER_ACCEPT_ENCODING = "Accept-Encoding";
     private static final String HEADER_CONTENT_ENCODING = "Content-Encoding";
@@ -61,6 +65,12 @@ public class ApplicationsResource {
     private static final String HEADER_JSON_VALUE = "json";
     private static final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
     .getInstance().getConfiguration();
+    
+    private static final Logger logger = LoggerFactory.getLogger(ApplicationResource.class);
+    
+    private final static PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry
+    .getInstance();
+
 
     /**
      * Gets information about a particular {@link Application}.
@@ -220,4 +230,4 @@ public class ApplicationsResource {
             .build();
         }
     }
-}
+ }

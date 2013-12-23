@@ -535,15 +535,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                 && (getNumOfRenewsInLastMin() > numberOfRenewsPerMinThreshold);
         boolean isSelfPreservationModeEnabled = isSelfPreservationModeEnabled();
         if ((!leaseExpirationEnabled)) {
-            if (isSelfPreservationModeEnabled) {
-                logger.error("The lease expiration has been disabled since the number of renewals per minute  "
-                        + " is lower than the minimum threshold. Number of Renewals Last Minute : "
-                        + getNumOfRenewsInLastMin()
-                        + ". The Threshold is "
-                        + EUREKA_SERVER_CONFIG.getRenewalPercentThreshold()
-                        + " of total instances : "
-                        + numberOfRenewsPerMinThreshold);
-            } else {
+            if (!isSelfPreservationModeEnabled) {
                 logger.warn("The self preservation mode is disabled!. Hence allowing the instances to expire.");
                 leaseExpirationEnabled = true;
             }

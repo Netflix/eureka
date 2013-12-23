@@ -201,7 +201,7 @@ public class InstanceResource {
     public Response updateMetadata(@Context UriInfo uriInfo) {
         try {
             InstanceInfo instanceInfo = registry.getInstanceByAppAndId(app.getName(), id);
-            // Instance information is not found, generate an error
+            // ReplicationInstance information is not found, generate an error
             if (instanceInfo == null) {
                 logger.error("Cannot find instance while updating metadata for instance {}", id);
                 return Response.serverError().build();
@@ -295,7 +295,7 @@ public class InstanceResource {
                 if (lastDirtyTimestamp > appInfo.getLastDirtyTimestamp()) {
                     logger.warn(
                             "Time to sync, since the last dirty timestamp differs -"
-                                    + " Instance id : {},Registry : {} Incoming: {} Replication: {}",
+                                    + " ReplicationInstance id : {},Registry : {} Incoming: {} Replication: {}",
                             args);
                     return Response.status(Status.NOT_FOUND).build();
                 } else if (appInfo.getLastDirtyTimestamp() > lastDirtyTimestamp) {
@@ -305,7 +305,7 @@ public class InstanceResource {
                     if (isReplication) {
                         logger.warn(
                                 "Time to sync, since the last dirty timestamp differs -"
-                                        + " Instance id : {},Registry : {} Incoming: {} Replication: {}",
+                                        + " ReplicationInstance id : {},Registry : {} Incoming: {} Replication: {}",
                                 args);
                         return Response.ok(appInfo).build();
                     } else {

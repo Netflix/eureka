@@ -92,24 +92,12 @@ public class EIPManager {
                     e);
         }
     }
-
+    
     /**
-     * Binds an EIP to this instance. The list of EIPs are arranged with the EIPs allocated in the zone first
-     * followed by other EIPs.
-     * 
-     * if an EIP is already bound to this instance this method simply returns. Otherwise, this method tries to find
-     * an unused EIP based on information from AWS. If it cannot find any unused EIP this method, it will be retried
-     * for a specified interval.
-     * 
-     * One of the following scenarios can happen here :
-     * 
-     *  1) If the instance is already bound to an EIP as deemed by AWS, no action is taken.
-     *  2) If an EIP is already bound to another instance as deemed by AWS, that EIP is skipped.
-     *  3) If an EIP is not already bound to an instance and if this instance is not bound to an EIP, then 
-     *     the EIP is bound to this instance.
-     * 
+     * Checks if an EIP is already bound to the instance
+     * @return true if an EIP is bound, false otherwise
      */
-    public void bindToEIP() {
+    public boolean isEIPBound() {
         InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
         String myInstanceId = ((AmazonInfo) myInfo.getDataCenterInfo())
         .get(MetaDataKey.instanceId);
@@ -119,11 +107,56 @@ public class EIPManager {
         .get(MetaDataKey.publicIpv4);
 
         Collection<String> candidateEIPs = getCandidateEIPs(myInstanceId,
-                myZone, myPublicIP);
+                myZone);
+        for (String eipEntry : candidateEIPs) {
+            if (eipEntry.equals(myPublicIP)) {
+                logger.info(
+                        "My instance {} seems to be already associated with the public ip {}",
+                        myInstanceId, myPublicIP);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Checks if an EIP is bound and optionally binds the EIP.
+     * 
+     * The list of EIPs are arranged with the EIPs allocated in the zone first
+     * followed by other EIPs.
+     * 
+     * If an EIP is already bound to this instance this method simply returns. Otherwise, this method tries to find
+     * an unused EIP based on information from AWS. If it cannot find any unused EIP this method, it will be retried
+     * for a specified interval.
+     * 
+     * One of the following scenarios can happen here :
+     * 
+     *  1) If the instance is already bound to an EIP as deemed by AWS, no action is taken.
+     *  2) If an EIP is already bound to another instance as deemed by AWS, that EIP is skipped.
+     *  3) If an EIP is not already bound to an instance and if this instance is not bound to an EIP, then 
+     *     the EIP is bound to this instance.
+     *     
+     * @param shouldBind - indicates if the EIP should be bound if it is not already bound.
+     * 
+     * @return true - if the EIP is bound, false otherwise.
+     */
+    public void bindEIP( ) {
+        InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
+        String myInstanceId = ((AmazonInfo) myInfo.getDataCenterInfo())
+        .get(MetaDataKey.instanceId);
+        String myZone = ((AmazonInfo) myInfo.getDataCenterInfo())
+        .get(MetaDataKey.availabilityZone);
+        String myPublicIP = ((AmazonInfo) myInfo.getDataCenterInfo())
+        .get(MetaDataKey.publicIpv4);
+
+        Collection<String> candidateEIPs = getCandidateEIPs(myInstanceId,
+                myZone);
 
         AmazonEC2 ec2Service = getEC2Service();
         boolean isMyinstanceAssociatedWithEIP = false;
         String selectedEIP = null;
+       
+        
         for (String eipEntry : candidateEIPs) {
             try {
                 String associatedInstanceId = null;
@@ -175,12 +208,11 @@ public class EIPManager {
             logger.info("\n\n\nAssociated " + myInstanceId
                     + " running in zone: " + myZone + " to elastic IP: "
                     + selectedEIP);
-         } else {
+        
+         } 
             logger.info(
                     "My instance {} seems to be already associated with the EIP {}",
                     myInstanceId, selectedEIP);
-        }
-
     }
 
     /**
@@ -219,12 +251,11 @@ public class EIPManager {
      *            the public ip of this instance
      * @return Collection containing the list of available EIPs
      */
-    public Collection<String> getCandidateEIPs(String myInstanceId, String myZone, String myPublicIP) {
+    public Collection<String> getCandidateEIPs(String myInstanceId, String myZone) {
 
         if (myZone == null) {
             myZone = "us-east-1d";
-            myPublicIP = "us-east-1d";
-        }
+       }
         Collection<String> eipCandidates = (DiscoveryManager.getInstance()
                 .getEurekaClientConfig().shouldUseDnsForFetchingServiceUrls() ? getEIPsForZoneFromDNS(myZone)
                         : getEIPsForZoneFromConfig(myZone));
