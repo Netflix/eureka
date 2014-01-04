@@ -1206,7 +1206,8 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             allKnownRemoteRegions = new String[remoteRegionUrlsWithName.size()];
             int remoteRegionArrayIndex = 0;
             for (Entry<String, String> remoteRegionUrlWithName : remoteRegionUrlsWithName.entrySet()) {
-                RemoteRegionRegistry remoteRegionRegistry = new RemoteRegionRegistry(new URL(remoteRegionUrlWithName.getValue()));
+                RemoteRegionRegistry remoteRegionRegistry = new RemoteRegionRegistry(remoteRegionUrlWithName.getKey(),
+                                                                                     new URL(remoteRegionUrlWithName.getValue()));
                 regionNameVSRemoteRegistry.put(remoteRegionUrlWithName.getKey(), remoteRegionRegistry);
                 allKnownRemoteRegions[remoteRegionArrayIndex++] = remoteRegionUrlWithName.getKey();
             }

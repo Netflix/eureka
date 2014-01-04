@@ -100,7 +100,13 @@ public class PeerEurekaNode {
 
             if (jerseyApacheClient == null) {
                 try {
-                    jerseyClient = EurekaJerseyClient.createJerseyClient(
+                    String hostname;
+                    try {
+                        hostname = new URL(serviceUrl).getHost();
+                    } catch (MalformedURLException e) {
+                        hostname = serviceUrl;
+                    }
+                    jerseyClient = EurekaJerseyClient.createJerseyClient(hostname,
                             config.getPeerNodeConnectTimeoutMs(),
                             config.getPeerNodeReadTimeoutMs(),
                             config.getPeerNodeTotalConnections(),

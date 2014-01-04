@@ -24,6 +24,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nullable;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
@@ -88,11 +89,22 @@ MessageBodyReader {
             Annotation[] annotations, MediaType mediaType,
             MultivaluedMap headers, InputStream inputStream)
     throws IOException, WebApplicationException {
-        try {
-            return getSerializer(serializableClass).read(inputStream,
-                    serializableClass, mediaType);
-        } catch (Throwable th) {
-           throw new RuntimeException("Cannot read the object for :" + serializableClass, th);
+        ISerializer serializer = getSerializer(serializableClass);
+        if (null != serializer) {
+            try {
+                return serializer.read(inputStream, serializableClass, mediaType);
+            } catch (Error e) { // See issue: https://github.com/Netflix/eureka/issues/72 on why we catch Error here.
+                LOGGER.error("Unexpected error occured during de-serialization of discovery data, doing connection cleanup.", e);
+                if (null != inputStream) {
+                    inputStream.close();
+                    LOGGER.error("Unexpected error occured during de-serialization of discovery data, done connection cleanup.", e);
+                }
+                throw e;
+            }
+        } else {
+            LOGGER.error("No serializer available for serializable class: " + serializableClass +
+                         ", de-serialization will fail.");
+            throw new IOException("No serializer available for serializable class: " + serializableClass);
         }
     }
 
@@ -136,11 +148,13 @@ MessageBodyReader {
             Type type, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap headers, OutputStream outputStream)
     throws IOException, WebApplicationException {
-        try {
-            ISerializer serializer = getSerializer(serializableClass);
+        ISerializer serializer = getSerializer(serializableClass);
+        if (null != serializer) {
             serializer.write(serializableObject, outputStream, mediaType);
-        } catch (Throwable th) {
-            throw new IOException("Cannot write the object for :" + serializableClass, th);
+        } else {
+            LOGGER.error("No serializer available for serializable class: " + serializableClass +
+                         ", serialization will fail.");
+            throw new IOException("No serializer available for serializable class: " + serializableClass);
         }
     }
 
@@ -177,25 +191,29 @@ MessageBodyReader {
      *            - The class that is to be serialized/deserialized.
      * @return The {@link Serializer} implementation for serializing/
      *         deserializing objects.
-     * @throws InstantiationException
-     * @throws IllegalAccessException
-     * @throws ClassNotFoundException
      */
-    private ISerializer getSerializer(Class serializableClass)
-    throws InstantiationException, IllegalAccessException,
-    ClassNotFoundException {
+    @Nullable
+    private static ISerializer getSerializer(@SuppressWarnings("rawtypes")Class serializableClass) {
         ISerializer converter = null;
-        Annotation annotation = serializableClass
-        .getAnnotation(Serializer.class);
+        Annotation annotation = serializableClass.getAnnotation(Serializer.class);
         if (annotation != null) {
             Serializer payloadConverter = (Serializer) annotation;
             String serializer = payloadConverter.value();
             if (serializer != null) {
                 converter = serializers.get(serializableClass);
                 if (converter == null) {
-                    converter = (ISerializer) Class.forName(serializer)
-                    .newInstance();
-                    serializers.put(serializableClass, converter);
+                    try {
+                        converter = (ISerializer) Class.forName(serializer).newInstance();
+                    } catch (InstantiationException e) {
+                        LOGGER.error("Error creating a serializer.", e);
+                    } catch (IllegalAccessException e) {
+                        LOGGER.error("Error creating a serializer.", e);
+                    } catch (ClassNotFoundException e) {
+                        LOGGER.error("Error creating a serializer.", e);
+                    }
+                    if (null != converter) {
+                        serializers.put(serializableClass, converter);
+                    }
                 }
             }
 
