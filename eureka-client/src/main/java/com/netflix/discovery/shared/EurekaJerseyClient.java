@@ -16,29 +16,38 @@
 
 package com.netflix.discovery.shared;
 
-import java.io.FileInputStream;
-import java.security.KeyStore;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.TimeUnit;
-
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-
+import com.google.common.base.Preconditions;
+import com.netflix.discovery.provider.DiscoveryJerseyProvider;
+import com.netflix.http4.MonitoredConnectionManager;
+import com.netflix.servo.monitor.BasicCounter;
+import com.netflix.servo.monitor.Counter;
+import com.netflix.servo.monitor.MonitorConfig;
+import com.netflix.servo.monitor.Monitors;
+import com.netflix.servo.monitor.StatsTimer;
+import com.netflix.servo.monitor.Stopwatch;
+import com.netflix.servo.stats.StatsConfig;
+import com.sun.jersey.api.client.config.ClientConfig;
+import com.sun.jersey.client.apache4.ApacheHttpClient4;
+import com.sun.jersey.client.apache4.config.ApacheHttpClient4Config;
+import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.ssl.SSLSocketFactory;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.netflix.discovery.provider.DiscoveryJerseyProvider;
-import com.sun.jersey.api.client.config.ClientConfig;
-import com.sun.jersey.client.apache4.ApacheHttpClient4;
-import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import java.io.FileInputStream;
+import java.security.KeyStore;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A wrapper for Jersey Apache Client to set the necessary configurations.
@@ -46,11 +55,16 @@ import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
  * @author Karthik Ranganathan
  * 
  */
-public class EurekaJerseyClient {
+public final class EurekaJerseyClient {
+
+    private EurekaJerseyClient() {
+    }
 
     /**
      * Creates a Jersey client with the given configuration parameters
      * 
+     *
+     * @param clientName
      * @param connectionTimeout
      *            - The connection timeout of the connection
      * @param readTimeout
@@ -64,16 +78,16 @@ public class EurekaJerseyClient {
      *            up
      * @return - The jersey client object encapsulating the connection
      */
-    public static JerseyClient createJerseyClient(int connectionTimeout,
-            int readTimeout, int maxConnectionsPerHost,
-            int maxTotalConnections, int connectionIdleTimeout) {
+    public static JerseyClient createJerseyClient(String clientName, int connectionTimeout,
+                                                  int readTimeout, int maxConnectionsPerHost,
+                                                  int maxTotalConnections, int connectionIdleTimeout) {
+        Preconditions.checkNotNull(clientName, "Client name can not be null.");
         try {
-            ClientConfig jerseyClientConfig = new CustomApacheHttpClientConfig(
-                    maxConnectionsPerHost, maxTotalConnections);
+            ClientConfig jerseyClientConfig = new CustomApacheHttpClientConfig(clientName, maxConnectionsPerHost,
+                                                                               maxTotalConnections);
 
             return new JerseyClient(connectionTimeout, readTimeout,
-                    maxConnectionsPerHost, maxTotalConnections,
-                    connectionIdleTimeout, jerseyClientConfig);
+                                    connectionIdleTimeout, jerseyClientConfig);
         } catch (Throwable e) {
             throw new RuntimeException("Cannot create Jersey client ", e);
         }
@@ -83,6 +97,9 @@ public class EurekaJerseyClient {
      * Creates the SSL based Jersey client with the given configuration
      * parameters
      * 
+     *
+     *
+     * @param clientName
      * @param connectionTimeout
      *            - The connection timeout of the connection
      * @param readTimeout
@@ -101,50 +118,43 @@ public class EurekaJerseyClient {
      * @return - The jersey client object encapsulating the connection
      */
 
-    public static JerseyClient createSSLJerseyClient(int connectionTimeout,
-            int readTimeout, int maxConnectionsPerHost,
-            int maxTotalConnections, int connectionIdleTimeout,
-            String trustStoreFileName, String trustStorePassword) {
+    public static JerseyClient createSSLJerseyClient(String clientName, int connectionTimeout,
+                                                     int readTimeout, int maxConnectionsPerHost,
+                                                     int maxTotalConnections, int connectionIdleTimeout,
+                                                     String trustStoreFileName, String trustStorePassword) {
+        Preconditions.checkNotNull(clientName, "Client name can not be null.");
         try {
-
-            ClientConfig jerseyClientConfig = new SSLCustomApacheHttpClientConfig(
-                    maxConnectionsPerHost, maxTotalConnections,
-                    trustStoreFileName, trustStorePassword);
+            ClientConfig jerseyClientConfig = new SSLCustomApacheHttpClientConfig(clientName, maxConnectionsPerHost,
+                                                                                  maxTotalConnections,
+                                                                                  trustStoreFileName, trustStorePassword);
 
             return new JerseyClient(connectionTimeout, readTimeout,
-                    maxConnectionsPerHost, maxTotalConnections,
-                    connectionIdleTimeout, jerseyClientConfig);
+                                    connectionIdleTimeout, jerseyClientConfig);
         } catch (Throwable e) {
             throw new RuntimeException("Cannot create SSL Jersey client ", e);
         }
     }
 
-    private static class CustomApacheHttpClientConfig extends
-    DefaultApacheHttpClient4Config {
+    private static class CustomApacheHttpClientConfig extends DefaultApacheHttpClient4Config {
 
-        public CustomApacheHttpClientConfig(int maxConnectionsPerHost,
-                int maxTotalConnections) throws Throwable {
-            ThreadSafeClientConnManager cm = new org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager();
+        public CustomApacheHttpClientConfig(String clientName, int maxConnectionsPerHost, int maxTotalConnections)
+                throws Throwable {
+            MonitoredConnectionManager cm = new MonitoredConnectionManager(clientName);
             cm.setDefaultMaxPerRoute(maxConnectionsPerHost);
             cm.setMaxTotal(maxTotalConnections);
-            getProperties().put(
-                    DefaultApacheHttpClient4Config.PROPERTY_CONNECTION_MANAGER,
-                    cm);
-
+            getProperties().put(ApacheHttpClient4Config.PROPERTY_CONNECTION_MANAGER, cm);
         }
-
     }
 
-    private static class SSLCustomApacheHttpClientConfig extends
-    DefaultApacheHttpClient4Config {
+    private static class SSLCustomApacheHttpClientConfig extends DefaultApacheHttpClient4Config {
         private static final String PROTOCOL_SCHEME = "SSL";
         private static final int HTTPS_PORT = 443;
         private static final String PROTOCOL = "https";
         private static final String KEYSTORE_TYPE = "JKS";
 
-        public SSLCustomApacheHttpClientConfig(int maxConnectionsPerHost,
-                int maxTotalConnections, String trustStoreFileName,
-                String trustStorePassword) throws Throwable {
+        public SSLCustomApacheHttpClientConfig(String clientName, int maxConnectionsPerHost,
+                                               int maxTotalConnections, String trustStoreFileName,
+                                               String trustStorePassword) throws Throwable {
 
             SSLContext sslContext = SSLContext.getInstance(PROTOCOL_SCHEME);
             TrustManagerFactory tmf = TrustManagerFactory
@@ -161,16 +171,13 @@ public class EurekaJerseyClient {
                 sslSocketFactory
                 .setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
                 SchemeRegistry sslSchemeRegistry = new SchemeRegistry();
-                sslSchemeRegistry.register(new Scheme(PROTOCOL, HTTPS_PORT,
-                        sslSocketFactory));
+                sslSchemeRegistry.register(new Scheme(PROTOCOL, HTTPS_PORT, sslSocketFactory));
 
-                ThreadSafeClientConnManager cm = new org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager(
-                        sslSchemeRegistry);
+                MonitoredConnectionManager cm = new MonitoredConnectionManager(clientName, sslSchemeRegistry);
                 cm.setDefaultMaxPerRoute(maxConnectionsPerHost);
                 cm.setMaxTotal(maxTotalConnections);
                 getProperties()
-                .put(DefaultApacheHttpClient4Config.PROPERTY_CONNECTION_MANAGER,
-                        cm);
+                .put(ApacheHttpClient4Config.PROPERTY_CONNECTION_MANAGER, cm);
             } finally {
                 if (fin != null) {
                     fin.close();
@@ -178,22 +185,22 @@ public class EurekaJerseyClient {
             }
 
         }
-    }
 
-    private static TrustManager[] createTrustManagers(KeyStore trustStore) {
-        TrustManagerFactory factory = null;
-        try {
-            factory = TrustManagerFactory.getInstance(TrustManagerFactory
-                    .getDefaultAlgorithm());
-            factory.init(trustStore);
-        } catch (Throwable e) {
-            throw new RuntimeException(e);
+        private static TrustManager[] createTrustManagers(KeyStore trustStore) {
+            TrustManagerFactory factory;
+            try {
+                factory = TrustManagerFactory.getInstance(TrustManagerFactory
+                                                                  .getDefaultAlgorithm());
+                factory.init(trustStore);
+            } catch (Throwable e) {
+                throw new RuntimeException(e);
+            }
+
+            final TrustManager[] managers = factory.getTrustManagers();
+
+            return managers;
+
         }
-
-        final TrustManager[] managers = factory.getTrustManagers();
-
-        return managers;
-
     }
 
     public static class JerseyClient {
@@ -204,10 +211,17 @@ public class EurekaJerseyClient {
 
         ClientConfig jerseyClientConfig;
 
-        private Timer eurekaConnCleaner = new Timer("Eureka-connectionCleaner",
-                true);
-        private static final Logger s_logger = LoggerFactory
-        .getLogger(JerseyClient.class);
+        private ScheduledExecutorService eurekaConnCleaner = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
+
+            private final AtomicInteger threadNumber = new AtomicInteger(1);
+
+            @Override
+            public Thread newThread(Runnable r) {
+                return new Thread(r, "Eureka-JerseyClient-Conn-Cleaner" + threadNumber.incrementAndGet());
+            }
+        });
+
+        private static final Logger s_logger = LoggerFactory.getLogger(JerseyClient.class);
 
         public ApacheHttpClient4 getClient() {
             return apacheHttpClient;
@@ -217,44 +231,21 @@ public class EurekaJerseyClient {
             return jerseyClientConfig;
         }
 
-        public JerseyClient(int connectionTimeout, int readTimeout,
-                int maxConnectionsPerHost, int maxTotalConnections,
-                final int connectionIdleTimeout, ClientConfig clientConfig) {
+        public JerseyClient(int connectionTimeout, int readTimeout, final int connectionIdleTimeout,
+                            ClientConfig clientConfig) {
             try {
                 jerseyClientConfig = clientConfig;
-
-                jerseyClientConfig.getClasses().add(
-                        DiscoveryJerseyProvider.class);
+                jerseyClientConfig.getClasses().add(DiscoveryJerseyProvider.class);
                 apacheHttpClient = ApacheHttpClient4.create(jerseyClientConfig);
-                HttpParams params = apacheHttpClient.getClientHandler()
-                .getHttpClient().getParams();
+                HttpParams params = apacheHttpClient.getClientHandler().getHttpClient().getParams();
 
-                HttpConnectionParams.setConnectionTimeout(params,
-                        connectionTimeout);
+                HttpConnectionParams.setConnectionTimeout(params, connectionTimeout);
                 HttpConnectionParams.setSoTimeout(params, readTimeout);
 
-                eurekaConnCleaner.schedule(
-                        new TimerTask() {
-
-                            @Override
-                            public void run() {
-                                try {
-                                    apacheHttpClient
-                                    .getClientHandler()
-                                    .getHttpClient()
-                                    .getConnectionManager()
-                                    .closeIdleConnections(
-                                            connectionIdleTimeout,
-                                            TimeUnit.SECONDS);
-                                } catch (Throwable e) {
-                                    s_logger.error("Cannot clean connections",
-                                            e);
-                                }
-
-                            }
-
-                        }, HTTP_CONNECTION_CLEANER_INTERVAL_MS,
-                        HTTP_CONNECTION_CLEANER_INTERVAL_MS);
+                eurekaConnCleaner.scheduleWithFixedDelay(
+                        new ConnectionCleanerTask(connectionIdleTimeout), HTTP_CONNECTION_CLEANER_INTERVAL_MS,
+                        HTTP_CONNECTION_CLEANER_INTERVAL_MS,
+                        TimeUnit.MILLISECONDS);
             } catch (Throwable e) {
                 throw new RuntimeException("Cannot create Jersey client", e);
             }
@@ -265,14 +256,61 @@ public class EurekaJerseyClient {
          * Clean up resources.
          */
         public void destroyResources() {
-            if (this.eurekaConnCleaner != null) {
-                this.eurekaConnCleaner.cancel();
+            if (eurekaConnCleaner != null) {
+                eurekaConnCleaner.shutdown();
             }
-            if (this.apacheHttpClient != null) {
-                this.apacheHttpClient.destroy();
+            if (apacheHttpClient != null) {
+                apacheHttpClient.destroy();
             }
         }
 
+        private class ConnectionCleanerTask implements Runnable {
+
+            private final int connectionIdleTimeout;
+            private final StatsTimer executionTimeStats;
+            private final Counter cleanupFailed;
+
+            public ConnectionCleanerTask(int connectionIdleTimeout) {
+                this.connectionIdleTimeout = connectionIdleTimeout;
+                MonitorConfig.Builder monitorConfigBuilder = MonitorConfig.builder("Eureka-Connection-Cleaner-Time");
+                StatsConfig.Builder statsConfigBuilder = new StatsConfig.Builder();
+                statsConfigBuilder.withPublishMean(true);
+                statsConfigBuilder.withPublishMin(true);
+                statsConfigBuilder.withPublishMax(true);
+                statsConfigBuilder.withPublishStdDev(true);
+                statsConfigBuilder.withPublishVariance(true);
+                statsConfigBuilder.withPublishTotal(true);
+                statsConfigBuilder.withPublishCount(true);
+                executionTimeStats = new StatsTimer(monitorConfigBuilder.build(), statsConfigBuilder.build());
+                cleanupFailed = new BasicCounter(MonitorConfig.builder("Eureka-Connection-Cleaner-Failure").build());
+                try {
+                    Monitors.registerObject(this);
+                } catch (Exception e) {
+                    s_logger.error("Unable to register with servo.", e);
+                }
+            }
+
+            @Override
+            public void run() {
+                Stopwatch start = executionTimeStats.start();
+                try {
+                    apacheHttpClient
+                    .getClientHandler()
+                    .getHttpClient()
+                    .getConnectionManager()
+                    .closeIdleConnections(connectionIdleTimeout, TimeUnit.SECONDS);
+                } catch (Throwable e) {
+                    s_logger.error("Cannot clean connections", e);
+                    cleanupFailed.increment();
+                } finally {
+                    if (null != start) {
+                        start.stop();
+                    }
+                }
+
+            }
+
+        }
     }
 
 }

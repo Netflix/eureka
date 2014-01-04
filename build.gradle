@@ -36,9 +36,11 @@ project(':eureka-client') {
         compile 'com.netflix.archaius:archaius-core:0.3.3'
         compile 'javax.ws.rs:jsr311-api:1.1.1'
         compile 'com.netflix.servo:servo-core:0.4.36'
-        provided 'com.sun.jersey:jersey-bundle:1.9.1'
+        compile 'com.sun.jersey:jersey-core:1.11'
+        compile 'com.sun.jersey:jersey-client:1.11'
         compile 'com.sun.jersey.contribs:jersey-apache-client4:1.8'
         compile 'org.apache.httpcomponents:httpclient:4.1.2'
+        compile 'com.netflix.ribbon:ribbon-httpclient:0.3.4'
         runtime 'org.codehaus.jettison:jettison:1.2'
 
         testCompile 'junit:junit:4.10'
@@ -55,9 +57,6 @@ project(':eureka-core') {
         compile 'com.netflix.archaius:archaius-core:0.3.3'
         compile 'javax.ws.rs:jsr311-api:1.1.1'
         compile 'com.netflix.servo:servo-core:0.4.36'
-        provided 'com.sun.jersey:jersey-bundle:1.9.1'
-        compile 'com.sun.jersey.contribs:jersey-apache-client4:1.8'
-        compile 'org.apache.httpcomponents:httpclient:4.1.2'
         compile 'com.netflix.blitz4j:blitz4j:1.18'
 
         testCompile 'junit:junit:4.10'
@@ -90,8 +89,8 @@ project(':eureka-server') {
         compile project(':eureka-client')
         compile project(':eureka-core')
         runtime 'xerces:xercesImpl:2.4.0'
-        runtime 'asm:asm:3.1' 
-        runtime 'com.sun.jersey:jersey-bundle:1.9.1'
+        runtime 'asm:asm:3.1'
+        compile 'com.sun.jersey:jersey-server:1.11'
         compile 'org.slf4j:slf4j-log4j12:1.6.1'
         runtime 'org.codehaus.jettison:jettison:1.2' 
         providedCompile 'javax.servlet:servlet-api:2.4'

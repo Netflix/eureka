@@ -68,26 +68,27 @@ public class RemoteRegionRegistry implements LookupService<String> {
     private volatile AtomicReference<Applications> applicationsDelta = new AtomicReference<Applications>();
     private volatile boolean readyForServingData;
 
-    public RemoteRegionRegistry(URL remoteRegionURL) {
+    public RemoteRegionRegistry(String regionName, URL remoteRegionURL) {
         this.remoteRegionURL = remoteRegionURL;
         this.fetchRegistryTimer = Monitors.newTimer(this.remoteRegionURL
                 .toString() + "_" + "FetchRegistry");
         if (remoteRegionURL.getProtocol().equals("http")) {
-            discoveryJerseyClient = EurekaJerseyClient.createJerseyClient(
+            discoveryJerseyClient = EurekaJerseyClient.createJerseyClient(regionName,
                     EUREKA_SERVER_CONFIG.getRemoteRegionConnectTimeoutMs(),
                     EUREKA_SERVER_CONFIG.getRemoteRegionReadTimeoutMs(),
                     EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost(),
                     EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnections(),
                     EUREKA_SERVER_CONFIG.getRemoteRegionConnectionIdleTimeoutSeconds());
         } else {
-            discoveryJerseyClient = EurekaJerseyClient.createSSLJerseyClient(
-                    EUREKA_SERVER_CONFIG.getRemoteRegionConnectTimeoutMs(),
-                    EUREKA_SERVER_CONFIG.getRemoteRegionReadTimeoutMs(),
-                    EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost(),
-                    EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnections(),
-                    EUREKA_SERVER_CONFIG.getRemoteRegionConnectionIdleTimeoutSeconds(),
-                    EUREKA_SERVER_CONFIG.getRemoteRegionTrustStore(),
-                    EUREKA_SERVER_CONFIG.getRemoteRegionTrustStorePassword());
+            discoveryJerseyClient =
+                    EurekaJerseyClient.createSSLJerseyClient(regionName,
+                                                             EUREKA_SERVER_CONFIG.getRemoteRegionConnectTimeoutMs(),
+                                                             EUREKA_SERVER_CONFIG.getRemoteRegionReadTimeoutMs(),
+                                                             EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost(),
+                                                             EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnections(),
+                                                             EUREKA_SERVER_CONFIG.getRemoteRegionConnectionIdleTimeoutSeconds(),
+                                                             EUREKA_SERVER_CONFIG.getRemoteRegionTrustStore(),
+                                                             EUREKA_SERVER_CONFIG.getRemoteRegionTrustStorePassword());
         }
         discoveryApacheClient = discoveryJerseyClient.getClient();
         ClientConfig cc = discoveryJerseyClient.getClientconfig();

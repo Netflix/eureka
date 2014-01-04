@@ -174,7 +174,7 @@ public class DiscoveryClient implements LookupService {
             }
             String proxyHost = clientConfig.getProxyHost();
             String proxyPort = clientConfig.getProxyPort();
-            discoveryJerseyClient = EurekaJerseyClient.createJerseyClient(
+            discoveryJerseyClient = EurekaJerseyClient.createJerseyClient("DiscoveryClient-HTTPClient",
                     clientConfig.getEurekaServerConnectTimeoutSeconds(),
                     clientConfig.getEurekaServerReadTimeoutSeconds(),
                     clientConfig.getEurekaServerTotalConnectionsPerHost(),
