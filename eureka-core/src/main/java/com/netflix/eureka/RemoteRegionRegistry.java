@@ -72,16 +72,19 @@ public class RemoteRegionRegistry implements LookupService<String> {
         this.remoteRegionURL = remoteRegionURL;
         this.fetchRegistryTimer = Monitors.newTimer(this.remoteRegionURL
                 .toString() + "_" + "FetchRegistry");
+        String jerseyClientName;
         if (remoteRegionURL.getProtocol().equals("http")) {
-            discoveryJerseyClient = EurekaJerseyClient.createJerseyClient(regionName,
+            jerseyClientName = "Discovery-RemoteRegionClient-" + regionName;
+            discoveryJerseyClient = EurekaJerseyClient.createJerseyClient(jerseyClientName,
                     EUREKA_SERVER_CONFIG.getRemoteRegionConnectTimeoutMs(),
                     EUREKA_SERVER_CONFIG.getRemoteRegionReadTimeoutMs(),
                     EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost(),
                     EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnections(),
                     EUREKA_SERVER_CONFIG.getRemoteRegionConnectionIdleTimeoutSeconds());
         } else {
+            jerseyClientName = "Discovery-RemoteRegionSecureClient-" + regionName;
             discoveryJerseyClient =
-                    EurekaJerseyClient.createSSLJerseyClient(regionName,
+                    EurekaJerseyClient.createSSLJerseyClient(jerseyClientName,
                                                              EUREKA_SERVER_CONFIG.getRemoteRegionConnectTimeoutMs(),
                                                              EUREKA_SERVER_CONFIG.getRemoteRegionReadTimeoutMs(),
                                                              EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost(),
