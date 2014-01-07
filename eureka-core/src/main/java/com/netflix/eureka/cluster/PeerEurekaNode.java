@@ -106,7 +106,8 @@ public class PeerEurekaNode {
                     } catch (MalformedURLException e) {
                         hostname = serviceUrl;
                     }
-                    jerseyClient = EurekaJerseyClient.createJerseyClient(hostname,
+                    String jerseyClientName = "Discovery-PeerNodeClient-" + hostname;
+                    jerseyClient = EurekaJerseyClient.createJerseyClient(jerseyClientName,
                             config.getPeerNodeConnectTimeoutMs(),
                             config.getPeerNodeReadTimeoutMs(),
                             config.getPeerNodeTotalConnections(),
