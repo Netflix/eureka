@@ -404,4 +404,11 @@ public interface EurekaClientConfig {
      *         can be closed.
      */
     int getEurekaConnectionIdleTimeoutSeconds();
+
+    /**
+     * Indicates whether this client should fetch eureka registry information from eureka server.
+     *
+     * @return {@code true} if registry information has to be fetched, {@code false} otherwise.
+     */
+    boolean shouldFetchRegistry();
 }

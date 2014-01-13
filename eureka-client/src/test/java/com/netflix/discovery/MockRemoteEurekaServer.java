@@ -28,6 +28,7 @@ public class MockRemoteEurekaServer {
     private final Map<String, Application> applicationDeltaMap;
     private final Server server;
     private AtomicBoolean sentDelta = new AtomicBoolean();
+    private AtomicBoolean sentRegistry = new AtomicBoolean();
 
     public MockRemoteEurekaServer(int port, Map<String, Application> localRegionApps,
                                   Map<String, Application> localRegionAppsDelta,
@@ -52,6 +53,10 @@ public class MockRemoteEurekaServer {
 
     public boolean isSentDelta() {
         return sentDelta.get();
+    }
+
+    public boolean isSentRegistry() {
+        return sentRegistry.get();
     }
 
     private class AppsResourceHandler extends AbstractHandler {
@@ -98,6 +103,7 @@ public class MockRemoteEurekaServer {
                     }
                     apps.setAppsHashCode(apps.getReconcileHashCode());
                     sendOkResponseWithContent((Request) request, response, apps);
+                    sentRegistry.set(true);
                     handled = true;
                 }
             }

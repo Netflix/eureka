@@ -21,7 +21,7 @@ import java.util.UUID;
 /**
  * @author Nitesh Kant
  */
-public class DiscoveryClientTest {
+public class DiscoveryClientRegistryTest {
 
     public static final String ALL_REGIONS_VIP_ADDR = "myvip";
     public static final String REMOTE_REGION_INSTANCE_1_HOSTNAME = "blah";
@@ -43,7 +43,7 @@ public class DiscoveryClientTest {
     private final Map<String, Application> remoteRegionAppsDelta = new HashMap<String, Application>();
 
     private DiscoveryClient client;
-    private int localRandomEurekaPort = 7799;
+    private final int localRandomEurekaPort = 7799;
 
     @Before
     public void setUp() throws Exception {

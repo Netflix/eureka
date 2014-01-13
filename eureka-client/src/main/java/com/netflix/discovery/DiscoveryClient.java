@@ -212,7 +212,7 @@ public class DiscoveryClient implements LookupService {
             throw new RuntimeException("Failed to initialize DiscoveryClient!",
                     e);
         }
-        if (!fetchRegistry(false)) {
+        if (clientConfig.shouldFetchRegistry() && !fetchRegistry(false)) {
             fetchRegistryFromBackup();
         }
         initScheduledTasks();
@@ -979,9 +979,11 @@ public class DiscoveryClient implements LookupService {
      */
     private void initScheduledTasks() {
         // Registry fetch timer
-        cacheRefreshTimer.schedule(new CacheRefreshThread(),
-                (clientConfig.getRegistryFetchIntervalSeconds() * 1000),
-                (clientConfig.getRegistryFetchIntervalSeconds() * 1000));
+        if (clientConfig.shouldFetchRegistry()) {
+            cacheRefreshTimer.schedule(new CacheRefreshThread(),
+                    (clientConfig.getRegistryFetchIntervalSeconds() * 1000),
+                    (clientConfig.getRegistryFetchIntervalSeconds() * 1000));
+        }
 
         if (shouldRegister(instanceInfo)) {
             logger.info("Starting heartbeat executor: " + "renew interval is: "
