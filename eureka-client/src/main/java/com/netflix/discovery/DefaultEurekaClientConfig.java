@@ -396,4 +396,10 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 .get();
     }
 
+    @Override
+    public boolean shouldFetchRegistry() {
+        return configInstance.getBooleanProperty(
+                namespace + "shouldFetchRegistry", true).get();
+    }
+
 }
