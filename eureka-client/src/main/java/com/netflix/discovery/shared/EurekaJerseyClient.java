@@ -51,9 +51,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A wrapper for Jersey Apache Client to set the necessary configurations.
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 public final class EurekaJerseyClient {
 
@@ -62,7 +62,7 @@ public final class EurekaJerseyClient {
 
     /**
      * Creates a Jersey client with the given configuration parameters
-     * 
+     *
      *
      * @param clientName
      * @param connectionTimeout
@@ -96,7 +96,7 @@ public final class EurekaJerseyClient {
     /**
      * Creates the SSL based Jersey client with the given configuration
      * parameters
-     * 
+     *
      *
      *
      * @param clientName

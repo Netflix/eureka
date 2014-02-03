@@ -58,9 +58,9 @@ import com.netflix.servo.monitor.Stopwatch;
 /**
  * A utility class for querying and updating information about amazon
  * autoscaling groups using the AWS APIs.
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 
 public class AwsAsgUtil {
@@ -111,7 +111,7 @@ public class AwsAsgUtil {
     /**
      * Return the status of the ASG whether is enabled or disabled for service.
      * The value is picked up from the cache except the very first time.
-     * 
+     *
      * @param asgName
      *            - The name of the ASG
      * @return - true if enabled, false otherwise
@@ -127,7 +127,7 @@ public class AwsAsgUtil {
 
     /**
      * Sets the status of the ASG
-     * 
+     *
      * @param asgName
      *            - The name of the ASG
      * @param enabled
@@ -140,7 +140,7 @@ public class AwsAsgUtil {
     /**
      * Check if the ASG is disabled. The amazon flag "AddToLoadBalancer" is
      * queried to figure out if it is or not.
-     * 
+     *
      * @param asgName
      *            - The name of the ASG for which the status needs to be queried
      * @return - true if the ASG is disabled, false otherwise
@@ -158,7 +158,7 @@ public class AwsAsgUtil {
 
     /**
      * Checks if the load balancer addition is disabled or not.
-     * 
+     *
      * @param asg
      *            - The ASG object for which the status needs to be checked
      * @return - true, if the load balancer addition is suspended, false
@@ -176,7 +176,7 @@ public class AwsAsgUtil {
 
     /**
      * Queries AWS to get the autoscaling information given the asgName.
-     * 
+     *
      * @param asgName
      *            - The name of the ASG.
      * @return - The auto scaling group information.
@@ -197,7 +197,7 @@ public class AwsAsgUtil {
 
     /**
      * Queries AWS to see if the load balancer flag is suspended.
-     * 
+     *
      * @param key
      *            - The name of the ASG for which the flag needs to be checked.
      * @return - true, if the load balancer flag is not suspended, false
@@ -218,7 +218,7 @@ public class AwsAsgUtil {
 
     /**
      * Gets the number of elements in the ASG cache.
-     * 
+     *
      * @return the long value representing the number of elements in the ASG
      *         cache.
      */
@@ -229,7 +229,7 @@ public class AwsAsgUtil {
 
     /**
      * Gets the number of ASG queries done in the period.
-     * 
+     *
      * @return the long value representing the number of ASG queries done in the
      *         period.
      */
@@ -240,7 +240,7 @@ public class AwsAsgUtil {
 
     /**
      * Gets the number of ASG queries that failed because of some reason.
-     * 
+     *
      * @return the long value representing the number of ASG queries that failed
      *         because of some reason.
      */
@@ -251,7 +251,7 @@ public class AwsAsgUtil {
 
     /**
      * Gets the task that updates the ASG information periodically.
-     * 
+     *
      * @return TimerTask that updates the ASG information periodically.
      */
     private TimerTask getASGUpdateTask() {
@@ -285,12 +285,12 @@ public class AwsAsgUtil {
 
     /**
      * Get the names of all the ASG to which query AWS for.
-     * 
+     *
      * <p>
      * The names are obtained from the {@link InstanceRegistry} which is then
      * used for querying the AWS.
      * </p>
-     * 
+     *
      * @return the set of ASG names.
      */
     private Set<String> getASGNames() {
@@ -328,5 +328,5 @@ public class AwsAsgUtil {
                     clientConfiguration);
         }
     }
-   
+
 }

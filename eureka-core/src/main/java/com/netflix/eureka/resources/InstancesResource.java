@@ -36,7 +36,7 @@ import com.netflix.eureka.Version;
 
 /**
  * A <em>jersey</em> resource that gets information about a particular instance.
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
  *
  */

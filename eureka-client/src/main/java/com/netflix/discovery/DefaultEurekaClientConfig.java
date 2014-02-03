@@ -31,10 +31,10 @@ import com.netflix.config.DynamicStringProperty;
 import javax.annotation.Nullable;
 
 /**
- * 
+ *
  * A default implementation of eureka client configuration as required by
  * {@link EurekaClientConfig}.
- * 
+ *
  * <p>
  * The information required for configuring eureka client is provided in a
  * configuration file.The configuration file is searched for in the classpath
@@ -43,15 +43,15 @@ import javax.annotation.Nullable;
  * <em>eureka-client.properties</em> is assumed as the default.The properties
  * that are looked up uses the <em>namespace</em> passed on to this class.
  * </p>
- * 
+ *
  * <p>
  * If the <em>eureka.environment</em> property is specified, additionally
  * <em>eureka-client-<eureka.environment>.properties</em> is loaded in addition
  * to <em>eureka-client.properties</em>.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 public class DefaultEurekaClientConfig implements EurekaClientConfig {
     private static final String ARCHAIUS_DEPLOYMENT_ENVIRONMENT = "archaius.deployment.environment";
@@ -98,7 +98,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.netflix.discovery.EurekaClientConfig#getRegistryFetchIntervalSeconds
      * ()
@@ -111,7 +111,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.discovery.EurekaClientConfig#
      * getInstanceInfoReplicationIntervalSeconds()
      */
@@ -123,7 +123,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.discovery.EurekaClientConfig#getDnsPollIntervalSeconds()
      */
     @Override
@@ -134,7 +134,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.discovery.EurekaClientConfig#getProxyHost()
      */
     @Override
@@ -145,7 +145,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.discovery.EurekaClientConfig#getProxyPort()
      */
     @Override
@@ -156,7 +156,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.discovery.EurekaClientConfig#shouldGZipContent()
      */
     @Override
@@ -167,7 +167,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.discovery.EurekaClientConfig#getDSServerReadTimeout()
      */
     @Override
@@ -178,7 +178,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.discovery.EurekaClientConfig#getDSServerConnectTimeout()
      */
     @Override
@@ -189,7 +189,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.discovery.EurekaClientConfig#getBackupRegistryImpl()
      */
     @Override
@@ -200,7 +200,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.netflix.discovery.EurekaClientConfig#getDSServerTotalMaxConnections()
      */
@@ -212,7 +212,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.netflix.discovery.EurekaClientConfig#getDSServerConnectionsPerHost()
      */
@@ -224,7 +224,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.discovery.EurekaClientConfig#getDSServerURLContext()
      */
     @Override
@@ -237,7 +237,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.discovery.EurekaClientConfig#getDSServerPort()
      */
     @Override
@@ -250,7 +250,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.discovery.EurekaClientConfig#getDSServerDomain()
      */
     @Override
@@ -264,7 +264,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.discovery.EurekaClientConfig#shouldUseDns()
      */
     @Override
@@ -275,7 +275,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.netflix.discovery.EurekaClientConfig#getDiscoveryRegistrationEnabled
      * ()
@@ -288,7 +288,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.discovery.EurekaClientConfig#shouldPreferSameZoneDS()
      */
     @Override
@@ -299,7 +299,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.discovery.EurekaClientConfig#shouldLogDeltaDiff()
      */
     @Override
@@ -310,7 +310,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.discovery.EurekaClientConfig#shouldDisableDelta()
      */
     @Override
@@ -327,7 +327,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.discovery.EurekaClientConfig#getRegion()
      */
     @Override
@@ -338,7 +338,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.discovery.EurekaClientConfig#getAvailabilityZones()
      */
     @Override
@@ -351,7 +351,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.netflix.discovery.EurekaClientConfig#getEurekaServerServiceUrls()
      */
@@ -373,7 +373,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.netflix.discovery.EurekaClientConfig#shouldFilterOnlyUpInstances()
      */
@@ -385,7 +385,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.netflix.discovery.EurekaClientConfig#getEurekaConnectionIdleTimeout()
      */

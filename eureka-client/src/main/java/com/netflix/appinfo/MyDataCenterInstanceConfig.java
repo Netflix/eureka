@@ -17,13 +17,13 @@ package com.netflix.appinfo;
 
 /**
  * An {@link InstanceInfo} configuration for the non-AWS datacenter.
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 public class MyDataCenterInstanceConfig extends PropertiesInstanceConfig
 implements EurekaInstanceConfig {
-    
+
     public MyDataCenterInstanceConfig() {
     }
 

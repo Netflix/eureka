@@ -50,9 +50,9 @@ import com.netflix.eureka.util.EurekaMonitors;
 /**
  * A <em>jersey</em> resource that handles request related to all
  * {@link Applications}.
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
- * 
+ *
  */
 @Path("/{version}/apps")
 @Produces({ "application/xml", "application/json" })
@@ -65,16 +65,16 @@ public class ApplicationsResource {
     private static final String HEADER_JSON_VALUE = "json";
     private static final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
     .getInstance().getConfiguration();
-    
+
     private static final Logger logger = LoggerFactory.getLogger(ApplicationResource.class);
-    
+
     private final static PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry
     .getInstance();
 
 
     /**
      * Gets information about a particular {@link Application}.
-     * 
+     *
      * @param version
      *            the version of the request.
      * @param appId
@@ -92,13 +92,13 @@ public class ApplicationsResource {
 
     /**
      * Get information about all {@link Applications}.
-     * 
+     *
      * @param version
      *            the version of the request.
      * @param acceptHeader
      *            the accept header of the request to indicate whether to serve
      *            JSON or XML data.
-     * 
+     *
      * @param acceptEncoding
      *            the accept header of the request to indicate whether to serve
      *            compressed or uncompressed data.
@@ -155,7 +155,7 @@ public class ApplicationsResource {
 
     /**
      * Get information about all delta changes in {@link Applications}.
-     * 
+     *
      * <p>
      * The delta changes represent the registry information change for a period
      * as configured by
@@ -165,20 +165,20 @@ public class ApplicationsResource {
      * the changes to the registry are infrequent and hence getting just the
      * delta will be much more efficient than getting the complete registry.
      * </p>
-     * 
+     *
      * <p>
      * Since the delta information is cached over a period of time, the requests
      * may return the same data multiple times within the window configured by
      * {@link EurekaServerConfig#getRetentionTimeInMSInDeltaQueue()}.The clients
      * are expected to handle this duplicate information.
      * <p>
-     * 
+     *
      * @param version
      *            the version of the request.
      * @param acceptHeader
      *            the accept header of the request to indicate whether to serve
      *            JSON or XML data.
-     * 
+     *
      * @param acceptEncoding
      *            the accept header of the request to indicate whether to serve
      *            compressed or uncompressed data.

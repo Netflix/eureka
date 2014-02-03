@@ -114,10 +114,10 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
     protected volatile int expectedNumberOfRenewsPerMin;
     protected static final EurekaServerConfig EUREKA_SERVER_CONFIG = EurekaServerConfigurationManager
     .getInstance().getConfiguration();
-    
+
     private static final AtomicReference<EvictionTask> evictionTask = new AtomicReference<EvictionTask>();
-    
-    
+
+
     protected InstanceRegistry() {
         recentCanceledQueue = new CircularQueue<Pair<Long, String>>(1000);
         recentRegisteredQueue = new CircularQueue<Pair<Long, String>>(1000);
@@ -125,14 +125,14 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                 eurekaConfig.getDeltaRetentionTimerIntervalInMs(),
                 eurekaConfig.getDeltaRetentionTimerIntervalInMs());
     }
-    
+
     public void clearRegistry() {
         overriddenInstanceStatusMap.clear();
         recentCanceledQueue.clear();
         recentRegisteredQueue.clear();
         recentlyChangedQueue.clear();
         _registry.clear();
-        
+
     }
 
     /*
@@ -1086,8 +1086,8 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
 
     }
 
-    
-   
+
+
     private class CircularQueue<E> extends ConcurrentLinkedQueue<E> {
         int size = 0;
 
@@ -1113,8 +1113,8 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             return super.offer(e);
         }
     }
-    
-    
+
+
 
     private InstanceStatus getOverriddenInstanceStatus(InstanceInfo r,
                                                        Lease<InstanceInfo> existingLease, boolean isReplication) {

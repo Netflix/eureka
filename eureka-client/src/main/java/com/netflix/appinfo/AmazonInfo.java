@@ -32,14 +32,14 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
 
 /**
  * An AWS specific {@link DataCenterInfo} implementation.
- * 
+ *
  * <p>
  * Gets AWS specific information for registration with eureka by making a HTTP
  * call to an AWS service as recommended by AWS.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
- * 
+ *
  */
 public class AmazonInfo implements DataCenterInfo {
 
@@ -48,7 +48,7 @@ public class AmazonInfo implements DataCenterInfo {
     private static DynamicIntProperty awsMetaDataReadTimeout;
     private static DynamicIntProperty awsMetaDataConnectTimeout;
     private static DynamicIntProperty awsMetaDataRetries;
-    
+
     public enum MetaDataKey {
         amiId("ami-id"), instanceId("instance-id"), instanceType(
         "instance-type"), localIpv4("local-ipv4"), availabilityZone(
@@ -102,7 +102,7 @@ public class AmazonInfo implements DataCenterInfo {
 
         /**
          * Build the {@link InstanceInfo} information.
-         * 
+         *
          * @return AWS specific instance information.
          */
         public AmazonInfo build() {
@@ -180,7 +180,7 @@ public class AmazonInfo implements DataCenterInfo {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.DataCenterInfo#getName()
      */
     @Override
@@ -190,7 +190,7 @@ public class AmazonInfo implements DataCenterInfo {
 
     /**
      * Get the metadata information specific to AWS.
-     * 
+     *
      * @return the map of AWS metadata as specified by {@link MetaDataKey}.
      */
     public Map<String, String> getMetadata() {
@@ -199,7 +199,7 @@ public class AmazonInfo implements DataCenterInfo {
 
     /**
      * Set AWS metadata.
-     * 
+     *
      * @param metadataMap
      *            the map containing AWS metadata.
      */
@@ -209,7 +209,7 @@ public class AmazonInfo implements DataCenterInfo {
 
     /**
      * Gets the AWS metadata specified in {@link MetaDataKey}.
-     * 
+     *
      * @param key
      *            the metadata key.
      * @return String returning the value.

@@ -37,7 +37,7 @@ import com.netflix.eureka.util.StatusInfo.Builder;
 
 /**
  * An utility class for exposing information about peer nodes.
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
  */
 @Path("/{version}/status")
@@ -79,7 +79,7 @@ public class StatusResource {
 
         return builder.build();
     }
-  
+
     private boolean isReplicaAvailable(String myAppName, String url) {
 
         try {

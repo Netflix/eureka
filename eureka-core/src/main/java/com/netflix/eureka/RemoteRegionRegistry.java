@@ -48,9 +48,9 @@ import com.sun.jersey.client.apache4.ApacheHttpClient4;
  *
  * The primary operations include fetching registry information from remote region and fetching delta information
  * on a periodic basis.
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 public class RemoteRegionRegistry implements LookupService<String> {
     private static EurekaServerConfig EUREKA_SERVER_CONFIG = EurekaServerConfigurationManager
@@ -217,7 +217,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
     /**
      * Updates the delta information fetches from the eureka server into the
      * local cache.
-     * 
+     *
      * @param delta
      *            the delta information received from eureka server in the last
      *            poll cycle.
@@ -270,7 +270,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
 
     /**
      * Close HTTP response object and its respective resources.
-     * 
+     *
      * @param response
      *            the HttpResponse object.
      */
@@ -287,7 +287,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
     /**
      * Gets the full registry information from the eureka server and stores it
      * locally.
-     * 
+     *
      * @return the full registry information.
      */
     public ClientResponse storeFullRegistry() {
@@ -320,7 +320,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
         try {
 
             String urlPath = delta ? "apps/delta" : "apps/";
-            
+
             response = discoveryApacheClient
                     .resource(this.remoteRegionURL.toString() + urlPath)
                     .accept(MediaType.APPLICATION_JSON_TYPE)
@@ -346,7 +346,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
 
     /**
      * Reconciles the delta information fetched to see if the hashcodes match.
-     * 
+     *
      * @param response - the response of the delta fetch.
      * @param delta - the delta information fetched previously for reconcililation.
      * @param reconcileHashCode - the hashcode for comparison.

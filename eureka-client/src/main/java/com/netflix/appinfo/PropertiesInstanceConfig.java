@@ -30,7 +30,7 @@ import com.netflix.config.DynamicStringProperty;
 
 /**
  * A properties based {@link InstanceInfo} configuration.
- * 
+ *
  * <p>
  * The information required for registration with eureka server is provided in a
  * configuration file.The configuration file is searched for in the classpath
@@ -39,15 +39,15 @@ import com.netflix.config.DynamicStringProperty;
  * <em>eureka-client.properties</em> is assumed as the default.The properties
  * that are looked up uses the <em>namespace</em> passed on to this class.
  * </p>
- * 
+ *
  * <p>
  * If the <em>eureka.environment</em> property is specified, additionally
  * <em>eureka-client-<eureka.environment>.properties</em> is loaded in addition
  * to <em>eureka-client.properties</em>.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig
 implements EurekaInstanceConfig {
@@ -64,11 +64,11 @@ implements EurekaInstanceConfig {
     .getInstance();
     private static final String UNKNOWN_APPLICATION = "unknown";
 
-    
+
     private static final String DEFAULT_STATUSPAGE_URLPATH = "/Status";
     private static final String DEFAULT_HOMEPAGE_URLPATH = "/";
     private static final String DEFAULT_HEALTHCHECK_URLPATH = "/healthcheck";
-    
+
     private String propSecurePort = namespace + "securePort";
     private String propSecurePortEnabled = propSecurePort + ".enabled";
     private String propNonSecurePort;
@@ -96,7 +96,7 @@ implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.AbstractInstanceConfig#isInstanceEnabledOnit()
      */
     @Override
@@ -107,7 +107,7 @@ implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.AbstractInstanceConfig#getNonSecurePort()
      */
     @Override
@@ -118,7 +118,7 @@ implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.AbstractInstanceConfig#getSecurePort()
      */
     @Override
@@ -129,7 +129,7 @@ implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.AbstractInstanceConfig#isNonSecurePortEnabled()
      */
     @Override
@@ -140,7 +140,7 @@ implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.AbstractInstanceConfig#getSecurePortEnabled()
      */
     @Override
@@ -151,7 +151,7 @@ implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.netflix.appinfo.AbstractInstanceConfig#getLeaseRenewalIntervalInSeconds
      * ()
@@ -164,7 +164,7 @@ implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.AbstractInstanceConfig#
      * getLeaseExpirationDurationInSeconds()
      */
@@ -176,7 +176,7 @@ implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.AbstractInstanceConfig#getVirtualHostName()
      */
     @Override
@@ -191,7 +191,7 @@ implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.netflix.appinfo.AbstractInstanceConfig#getSecureVirtualHostName()
      */
@@ -207,7 +207,7 @@ implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.AbstractInstanceConfig#getASGName()
      */
     @Override
@@ -219,7 +219,7 @@ implements EurekaInstanceConfig {
     /**
      * Gets the metadata map associated with the instance. The properties that
      * will be looked up for this will be <code>namespace + ".metadata"</code>.
-     * 
+     *
      * <p>
      * For instance, if the given namespace is <code>eureka.appinfo</code>, the
      * metadata keys are searched under the namespace
@@ -245,7 +245,7 @@ implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.AbstractInstanceConfig#getAppname()
      */
     @Override
@@ -256,13 +256,13 @@ implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.AbstractInstanceConfig#getIpAddress()
      */
     public String getIpAddress() {
         return super.getIpAddress();
     }
-    
+
 
     @Override
     public String getStatusPageUrlPath() {
@@ -282,7 +282,7 @@ implements EurekaInstanceConfig {
         return INSTANCE.getStringProperty(namespace + "homePageUrlPath",
             DEFAULT_HOMEPAGE_URLPATH).get();
     }
- 
+
     @Override
     public String getHomePageUrl() {
         return INSTANCE.getStringProperty(namespace + "homePageUrl", null)
@@ -293,24 +293,24 @@ implements EurekaInstanceConfig {
         return INSTANCE.getStringProperty( namespace + "healthCheckUrlPath",
                 DEFAULT_HEALTHCHECK_URLPATH).get();
     }
-    
+
     @Override
     public String getHealthCheckUrl() {
         return INSTANCE.getStringProperty(namespace + "healthCheckUrl", null)
         .get();
      }
-   
+
     @Override
     public String getSecureHealthCheckUrl() {
         return INSTANCE.getStringProperty(namespace + "secureHealthCheckUrl",
-                null).get(); 
+                null).get();
      }
-    
+
     @Override
     public String getNamespace() {
         return this.namespace;
     }
-   
+
 
     private void init(String namespace) {
         this.namespace = namespace;
@@ -341,5 +341,5 @@ implements EurekaInstanceConfig {
 
         }
     }
-  
+
 }

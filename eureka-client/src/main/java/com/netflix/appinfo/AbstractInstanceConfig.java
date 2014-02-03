@@ -28,14 +28,14 @@ import com.netflix.discovery.shared.Pair;
  * An abstract instance info configuration with some defaults to get the users
  * started quickly.The users have to override only a few methods to register
  * their instance with eureka server.
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
     private static final Logger logger = LoggerFactory
     .getLogger(AbstractInstanceConfig.class);
-    
+
     private static final int LEASE_EXPIRATION_DURATION_SECONDS = 90;
     private static final int LEASE_RENEWAL_INTERVAL_SECONDS = 30;
     private static final boolean SECURE_PORT_ENABLED = false;
@@ -62,7 +62,7 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.InstanceConfig#getAppname()
      */
     @Override
@@ -70,7 +70,7 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.InstanceConfig#isInstanceEnabledOnit()
      */
     @Override
@@ -80,7 +80,7 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.InstanceConfig#getNonSecurePort()
      */
     @Override
@@ -90,7 +90,7 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.InstanceConfig#getSecurePort()
      */
     @Override
@@ -100,7 +100,7 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.InstanceConfig#isNonSecurePortEnabled()
      */
     @Override
@@ -110,7 +110,7 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.InstanceConfig#getSecurePortEnabled()
      */
     @Override
@@ -121,7 +121,7 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.netflix.appinfo.InstanceConfig#getLeaseRenewalIntervalInSeconds()
      */
@@ -132,7 +132,7 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.netflix.appinfo.InstanceConfig#getLeaseExpirationDurationInSeconds()
      */
@@ -143,7 +143,7 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.InstanceConfig#getVirtualHostName()
      */
     @Override
@@ -153,7 +153,7 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.InstanceConfig#getSecureVirtualHostName()
      */
     @Override
@@ -163,7 +163,7 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.InstanceConfig#getASGName()
      */
     @Override
@@ -174,7 +174,7 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.InstanceConfig#getHostName()
      */
     @Override
@@ -184,7 +184,7 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.InstanceConfig#getMetadataMap()
      */
     @Override
@@ -195,7 +195,7 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.InstanceConfig#getDataCenterInfo()
      */
     @Override
@@ -206,7 +206,7 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.InstanceConfig#getIpAddress()
      */
     @Override
