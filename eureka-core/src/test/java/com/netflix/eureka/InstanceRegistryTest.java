@@ -185,7 +185,6 @@ public class InstanceRegistryTest {
     private Application createRemoteApps() {
         Application myapp = new Application(REMOTE_REGION_APP_NAME);
         InstanceInfo instanceInfo = createRemoteInstance(REMOTE_REGION_INSTANCE_1_HOSTNAME);
-        //instanceInfo.setActionType(InstanceInfo.ActionType.MODIFIED);
         myapp.addInstance(instanceInfo);
         return myapp;
     }
@@ -209,13 +208,6 @@ public class InstanceRegistryTest {
             }
         });
         return instanceBuilder.build();
-    }
-
-    private Application createLocalApps() {
-        Application myapp = new Application(LOCAL_REGION_APP_NAME);
-        InstanceInfo instanceInfo = createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME);
-        myapp.addInstance(instanceInfo);
-        return myapp;
     }
 
     private InstanceInfo createLocalInstance(String hostname) {

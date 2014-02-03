@@ -26,6 +26,6 @@ import com.thoughtworks.xstream.annotations.XStreamAlias;
  */
 @XStreamAlias("datacenter")
 public interface DataCenterInfo {
-   enum Name {Netflix, Amazon, MyOwn};
+   enum Name {Netflix, Amazon, MyOwn}
    Name getName();
 }

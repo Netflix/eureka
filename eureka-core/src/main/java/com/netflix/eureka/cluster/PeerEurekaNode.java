@@ -236,7 +236,6 @@ public class PeerEurekaNode {
      *            the instance info {@link InstanceInfo} of the instance.
      * @param overriddenStatus
      *            the overridden status information if any of the instance.
-     * @return true, if the instance exists in the peer node, false otherwise.
      * @throws Throwable
      */
     public void heartbeat(final String appName, final String id,
@@ -341,7 +340,6 @@ public class PeerEurekaNode {
      *            the new status of the instance.
      * @param info
      *            the instance information of the instance.
-     * @return true if the update succeeded, false otherwise.
      */
     public void statusUpdate(final String appName, final String id,
             final InstanceStatus newStatus, final InstanceInfo info) {
@@ -392,8 +390,7 @@ public class PeerEurekaNode {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result
-                + ((serviceUrl == null) ? 0 : serviceUrl.hashCode());
+        result = prime * result + serviceUrl.hashCode();
         return result;
     }
 
@@ -406,12 +403,7 @@ public class PeerEurekaNode {
         if (getClass() != obj.getClass())
             return false;
         PeerEurekaNode other = (PeerEurekaNode) obj;
-        if (serviceUrl == null) {
-            if (other.serviceUrl != null)
-                return false;
-        } else if (!serviceUrl.equals(other.serviceUrl))
-            return false;
-        return true;
+        return serviceUrl.equals(other.serviceUrl);
     }
 
     /**
@@ -790,7 +782,7 @@ public class PeerEurekaNode {
      * @return The batcher instance
      */
     private MessageBatcher getBatcher(final String serviceUrl, String pBatcherName) {
-        String batcherName = null;
+        String batcherName;
         try {
             batcherName = new URL(serviceUrl).getHost();
         } catch (MalformedURLException e1) {
@@ -813,7 +805,7 @@ public class PeerEurekaNode {
         return BatcherFactory.createBatcher(absoluteBatcherName,
                 new MessageProcessor<ReplicationTask>() {
 
-            private String BATCH_URL_PATH = "peerreplication/batch/";;
+            private String BATCH_URL_PATH = "peerreplication/batch/";
 
             @Override
             public void process(List<ReplicationTask> tasks) {
@@ -983,7 +975,7 @@ public class PeerEurekaNode {
                             try {
                                 Thread.sleep(RETRY_SLEEP_TIME_MS);
                             } catch (InterruptedException e1) {
-
+                                // Ignored
                             }
                             if ((isNetworkConnectException(e))) {
                                 DynamicCounter.increment(task

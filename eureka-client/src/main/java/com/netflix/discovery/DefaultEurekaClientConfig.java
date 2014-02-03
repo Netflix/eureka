@@ -84,8 +84,6 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
         String eurekaPropsFile = EUREKA_PROPS_FILE.get();
         try {
-            // ConfigurationManager
-            // .loadPropertiesFromResources(eurekaPropsFile);
             ConfigurationManager
                     .loadCascadedPropertiesFromResources(eurekaPropsFile);
         } catch (IOException e) {

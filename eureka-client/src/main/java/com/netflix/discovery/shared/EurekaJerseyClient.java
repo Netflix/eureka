@@ -196,10 +196,7 @@ public final class EurekaJerseyClient {
                 throw new RuntimeException(e);
             }
 
-            final TrustManager[] managers = factory.getTrustManagers();
-
-            return managers;
-
+            return factory.getTrustManagers();
         }
     }
 

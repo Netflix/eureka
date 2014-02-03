@@ -229,12 +229,9 @@ implements EurekaInstanceConfig {
     @Override
     public Map<String, String> getMetadataMap() {
         Map<String, String> metadataMap = new LinkedHashMap<String, String>();
-        Configuration config = (Configuration) INSTANCE
-        .getBackingConfigurationSource();
+        Configuration config = (Configuration) DynamicPropertyFactory.getBackingConfigurationSource();
         for (Iterator<String> iter = config.subset(propMetadataNamespace)
-                .getKeys();
-
-        iter.hasNext();) {
+                .getKeys(); iter.hasNext();) {
 
             String key = iter.next();
             String value = config.getString(propMetadataNamespace + key);

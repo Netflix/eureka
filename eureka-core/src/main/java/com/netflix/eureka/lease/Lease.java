@@ -33,10 +33,6 @@ import com.netflix.eureka.InstanceRegistry;
  */
 public class Lease<T> {
 
-    enum Action {
-        Register, Cancel, Renew
-    };
-
     public final static int DEFAULT_DURATION_IN_SECS = 90;
 
     private T holder;

@@ -100,7 +100,7 @@ public class ResponseCache {
 
     public enum KeyType {
         JSON, XML
-    };
+    }
 
     private final ConcurrentMap<Key, Value> readOnlyCacheMap = new ConcurrentHashMap<Key, Value>();
     private final LoadingCache<Key, Value> readWriteCacheMap = CacheBuilder
@@ -169,7 +169,7 @@ public class ResponseCache {
      */
     public String get(final Key key) {
         Value payload = getValue(key);
-        if (payload == null || payload.getPayload() == EMPTY_PAYLOAD) {
+        if (payload == null || EMPTY_PAYLOAD.equals(payload.getPayload())) {
             return null;
         } else {
             return payload.getPayload();
@@ -489,11 +489,7 @@ public class ResponseCache {
 
         @Override
         public boolean equals(Object other) {
-            if (other instanceof Key) {
-                return getHashKey().equals(((Key) other).getHashKey());
-            } else {
-                return false;
-            }
+            return other instanceof Key && getHashKey().equals(((Key) other).getHashKey());
         }
     }
 
@@ -507,7 +503,7 @@ public class ResponseCache {
 
         public Value(String payload) {
             this.payload = payload;
-            if (payload != EMPTY_PAYLOAD) {
+            if (!EMPTY_PAYLOAD.equals(payload)) {
                 Stopwatch tracer = compressPayloadTimer.start();
                 try {
                     ByteArrayOutputStream bos = new ByteArrayOutputStream();

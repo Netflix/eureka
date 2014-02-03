@@ -99,7 +99,7 @@ public class ASGResource {
                     asgName, newStatus);
             ASGStatus asgStatus = ASGStatus.valueOf(newStatus.toUpperCase());
             AwsAsgUtil.getInstance().setStatus(asgName,
-                    (ASGStatus.DISABLED.equals(asgStatus) ? false : true));
+                    !ASGStatus.DISABLED.equals(asgStatus));
             PeerAwareInstanceRegistry.getInstance().statusUpdate(asgName,
                     asgStatus, Boolean.valueOf(isReplication));
             logger.debug("Updated ASG Status for ASG {} to {}", asgName,

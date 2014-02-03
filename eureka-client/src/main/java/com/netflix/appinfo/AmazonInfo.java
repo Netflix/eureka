@@ -144,9 +144,8 @@ public class AmazonInfo implements DataCenterInfo {
                             try {
                                 Thread.sleep(SLEEP_TIME_MS);
                             } catch (InterruptedException e1) {
-
+                                // Ignored
                             }
-                            continue;
                         }
                     }
                 }

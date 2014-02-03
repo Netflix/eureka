@@ -69,7 +69,7 @@ public class SampleEurekaClient {
             System.out.println("Connected to server. Sending a sample request");
             PrintStream out = new PrintStream(s.getOutputStream());
             out.println("Sample request " + new Date());
-            String str = null;
+            String str;
             System.out.println("Waiting for server response..");
             BufferedReader rd = new BufferedReader(new InputStreamReader(
                     s.getInputStream()));

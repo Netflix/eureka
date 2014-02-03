@@ -59,7 +59,7 @@ public class PeerReplicationResource {
     @POST
     public Response batchReplication(
             PeerEurekaNode.ReplicationList replicationList) {
-        Response response = null;
+        Response response;
         try {
 
             PeerEurekaNode.ReplicationListResponse batchResponse = new PeerEurekaNode.ReplicationListResponse();

@@ -59,11 +59,9 @@ public class RemoteRegionRegistry implements LookupService<String> {
     private static final Logger logger = LoggerFactory
             .getLogger(RemoteRegionRegistry.class);
     private ApacheHttpClient4 discoveryApacheClient;
-    private JerseyClient discoveryJerseyClient;
     private com.netflix.servo.monitor.Timer fetchRegistryTimer;
     private URL remoteRegionURL;
-    private Timer remoteRegionCacheRefreshTimer = new Timer(
-            "Eureka-RemoteRegionCacheRefresher", true);
+    private Timer remoteRegionCacheRefreshTimer = new Timer("Eureka-RemoteRegionCacheRefresher", true);
     private volatile AtomicReference<Applications> applications = new AtomicReference<Applications>();
     private volatile AtomicReference<Applications> applicationsDelta = new AtomicReference<Applications>();
     private volatile boolean readyForServingData;
@@ -73,6 +71,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
         this.fetchRegistryTimer = Monitors.newTimer(this.remoteRegionURL
                 .toString() + "_" + "FetchRegistry");
         String jerseyClientName;
+        JerseyClient discoveryJerseyClient;
         if (remoteRegionURL.getProtocol().equals("http")) {
             jerseyClientName = "Discovery-RemoteRegionClient-" + regionName;
             discoveryJerseyClient = EurekaJerseyClient.createJerseyClient(jerseyClientName,
@@ -315,7 +314,6 @@ public class RemoteRegionRegistry implements LookupService<String> {
         logger.info(
                 "Getting instance registry info from the eureka server : {} , delta : {}",
                 this.remoteRegionURL, delta);
-        Stopwatch tracer = null;
         ClientResponse response = null;
         try {
 
@@ -335,11 +333,6 @@ public class RemoteRegionRegistry implements LookupService<String> {
 
         } catch (Throwable t) {
             logger.error("Can't get a response from " + this.remoteRegionURL, t);
-
-        } finally {
-            if (tracer != null) {
-                tracer.stop();
-            }
         }
         return response;
     }

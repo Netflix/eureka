@@ -187,7 +187,6 @@ public class EurekaBootStrap implements ServletContextListener {
                 } catch (Throwable e) {
                     logger.warn("Cannot unbind the EIP from the instance");
                     Thread.sleep(1000);
-                    continue;
                 }
             }
             PeerAwareInstanceRegistry.getInstance().shutdown();
@@ -253,8 +252,8 @@ public class EurekaBootStrap implements ServletContextListener {
             public void run() {
                 try {
                     // If the EIP is not bound, the registry could  be stale
-                    // First syncup the reigstry from the neighboring node before
-                    // tryig to bind the EIP
+                    // First syncup the registry from the neighboring node before
+                    // trying to bind the EIP
                     EIPManager eipManager = EIPManager.getInstance();
                     if (!eipManager.isEIPBound()) {
                         registry.clearRegistry();

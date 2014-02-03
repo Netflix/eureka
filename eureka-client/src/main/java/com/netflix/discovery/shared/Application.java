@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.google.common.base.Preconditions;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.EurekaClientConfig;
@@ -51,6 +50,7 @@ public class Application {
 
     private String name;
 
+    // Private local variable that is set but never accessed. Is this needed??
     @XStreamOmitField
     private volatile boolean isDirty = false;
 

@@ -140,7 +140,6 @@ public class DiscoveryClient implements LookupService {
     private String appPathIdentifier;
     private boolean isRegisteredWithDiscovery = false;
     private String discoveryServerAMIId;
-    private JerseyClient discoveryJerseyClient;
     private ApacheHttpClient4 discoveryApacheClient;
     protected static EurekaClientConfig clientConfig;
     private final AtomicReference<String> remoteRegionsToFetch;
@@ -155,7 +154,7 @@ public class DiscoveryClient implements LookupService {
     private Timer serviceUrlUpdaterTimer = new Timer(PREFIX
             + "ServiceURLUpdater", true);
     private Timer instanceInfoReplicatorTimer = new Timer(PREFIX
-            + "InstanceInfo-Replictor", true);
+            + "InstanceInfo-Replicator", true);
 
     DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config) {
         try {
@@ -174,7 +173,8 @@ public class DiscoveryClient implements LookupService {
             }
             String proxyHost = clientConfig.getProxyHost();
             String proxyPort = clientConfig.getProxyPort();
-            discoveryJerseyClient = EurekaJerseyClient.createJerseyClient("DiscoveryClient-HTTPClient",
+            JerseyClient discoveryJerseyClient = EurekaJerseyClient.createJerseyClient(
+                    "DiscoveryClient-HTTPClient",
                     clientConfig.getEurekaServerConnectTimeoutSeconds(),
                     clientConfig.getEurekaServerReadTimeoutSeconds(),
                     clientConfig.getEurekaServerTotalConnectionsPerHost(),
@@ -458,22 +458,11 @@ public class DiscoveryClient implements LookupService {
     /**
      * Checks to see if the eureka client registration is enabled.
      *
-     * @param myInfo
-     *            - The instance info object
      * @return - true, if the instance should be registered with eureka, false
      *         otherwise
      */
-    private boolean shouldRegister(InstanceInfo myInfo) {
-        boolean shouldRegister = clientConfig.shouldRegisterWithEureka();
-        if (!shouldRegister) {
-            return false;
-        } else if ((myInfo != null)
-                && (myInfo.getDataCenterInfo()
-                        .equals(DataCenterInfo.Name.Amazon))) {
-            return true;
-        }
-
-        return shouldRegister;
+    private boolean shouldRegister() {
+        return clientConfig.shouldRegisterWithEureka();
     }
 
     /**
@@ -557,7 +546,7 @@ public class DiscoveryClient implements LookupService {
      */
     public void shutdown() {
         // If APPINFO was registered
-        if (instanceInfo != null && shouldRegister(instanceInfo)) {
+        if (instanceInfo != null && shouldRegister()) {
             instanceInfo.setStatus(InstanceStatus.DOWN);
             unregister();
         } else {
@@ -985,7 +974,7 @@ public class DiscoveryClient implements LookupService {
                     (clientConfig.getRegistryFetchIntervalSeconds() * 1000));
         }
 
-        if (shouldRegister(instanceInfo)) {
+        if (shouldRegister()) {
             logger.info("Starting heartbeat executor: " + "renew interval is: "
                     + instanceInfo.getLeaseInfo().getRenewalIntervalInSecs());
 
@@ -1182,7 +1171,7 @@ public class DiscoveryClient implements LookupService {
                             discoveryDnsName));
             Map<String, List<String>> zoneCnameMapForRegion = new TreeMap<String, List<String>>();
             for (String zoneCname : zoneCnamesForRegion) {
-                String zone = null;
+                String zone;
                 if (isEC2Url(zoneCname)) {
                     throw new RuntimeException(
                             "Cannot find the right DNS entry for "
@@ -1224,7 +1213,7 @@ public class DiscoveryClient implements LookupService {
      */
     public static Set<String> getEC2DiscoveryUrlsFromZone(String dnsName,
             DiscoveryUrlType type) {
-        Set<String> eipsForZone = null;
+        Set<String> eipsForZone;
         try {
             dnsName = "txt." + dnsName;
             logger.debug("The zone url to be looked up is {} :", dnsName);
@@ -1243,7 +1232,7 @@ public class DiscoveryClient implements LookupService {
                 String[] tokens = cname.split("\\.");
                 String ec2HostName = tokens[0];
                 String[] ips = ec2HostName.split("-");
-                StringBuffer eipBuffer = new StringBuffer();
+                StringBuilder eipBuffer = new StringBuilder();
                 for (int ipCtr = 1; ipCtr < 5; ipCtr++) {
                     eipBuffer.append(ips[ipCtr]);
                     if (ipCtr < 4) {
@@ -1287,11 +1276,9 @@ public class DiscoveryClient implements LookupService {
             return true;
         } else if (Action.Renew == action && httpStatus == 404) {
             return true;
-        } else if (Action.Refresh_Delta == action
-                && (httpStatus == 403 || httpStatus == 404)) {
-            return true;
         } else {
-            return false;
+            return (Action.Refresh_Delta == action
+                    && (httpStatus == 403 || httpStatus == 404));
         }
     }
 
@@ -1384,7 +1371,7 @@ public class DiscoveryClient implements LookupService {
                 // Pass in the appinfo again since
                 if ((discoveryServer != null)
                         && (Name.Amazon.equals(discoveryServer
-                                .getDataCenterInfo()))) {
+                                .getDataCenterInfo().getName()))) {
                     String amiId = ((AmazonInfo) discoveryServer
                             .getDataCenterInfo()).get(MetaDataKey.amiId);
                     if (discoveryServerAMIId == null) {
@@ -1492,7 +1479,7 @@ public class DiscoveryClient implements LookupService {
         env.put(JAVA_NAMING_FACTORY_INITIAL, DNS_NAMING_FACTORY);
         env.put(JAVA_NAMING_PROVIDER_URL, DNS_PROVIDER_URL);
 
-        DirContext dirContext = null;
+        DirContext dirContext;
 
         try {
             dirContext = new javax.naming.directory.InitialDirContext(env);
@@ -1522,27 +1509,8 @@ public class DiscoveryClient implements LookupService {
             return cnamesSet;
         }
         String[] cnames = txtRecord.split(" ");
-        for (String cname : cnames) {
-            cnamesSet.add(cname);
-        }
+        cnamesSet.addAll(Arrays.asList(cnames));
         return cnamesSet;
-    }
-
-    private static String[] getInstanceVipAddresses(InstanceInfo instanceInfo,
-            boolean isSecure) {
-        String vipAddresses;
-
-        if (isSecure) {
-            vipAddresses = instanceInfo.getSecureVipAddress();
-        } else {
-            vipAddresses = instanceInfo.getVIPAddress();
-        }
-
-        if (vipAddresses == null) {
-            return new String[0];
-        }
-
-        return vipAddresses.split(COMMA_STRING);
     }
 
     /**

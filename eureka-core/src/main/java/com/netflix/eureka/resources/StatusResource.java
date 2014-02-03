@@ -91,7 +91,6 @@ public class StatusResource {
                     return true;
                 }
             }
-            givenHostName = new URI(url).getHost();
         } catch (Throwable e) {
             logger.error("Could not determine if the replica is available ", e);
         }

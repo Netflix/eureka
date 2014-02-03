@@ -119,7 +119,7 @@ public class InstanceResource {
         }
         // Check if we need to sync based on dirty time stamp, the client
         // instance might have changed some value
-        Response response = null;
+        Response response;
         if (lastDirtyTimestamp != null
                 && EurekaServerConfigurationManager.getInstance()
                         .getConfiguration().shouldSyncWhenTimestampDiffers()) {
@@ -131,7 +131,7 @@ public class InstanceResource {
             if (response.getStatus() == Response.Status.NOT_FOUND
                     .getStatusCode()
                     && (overriddenStatus != null)
-                    && !(InstanceStatus.UNKNOWN.equals(overriddenStatus))
+                    && !(InstanceStatus.UNKNOWN.name().equals(overriddenStatus))
                     && isFromReplicaNode) {
                 registry.storeOverriddenStatusIfRequired(id,
                         InstanceStatus.valueOf(overriddenStatus));
@@ -252,34 +252,6 @@ public class InstanceResource {
             logger.info("Not Found (Cancel): " + app.getName() + " - " + id);
             return Response.status(Status.NOT_FOUND).build();
         }
-    }
-
-    private boolean shouldSyncStatus(String status, boolean isReplication) {
-        InstanceInfo appInfo = registry.getInstanceByAppAndId(app.getName(),
-                id, false);
-        InstanceStatus instanceStatusFromRegistry = null;
-        if (appInfo != null) {
-            instanceStatusFromRegistry = appInfo.getStatus();
-        }
-        InstanceStatus instanceStatusFromReplica = (status != null ? InstanceStatus
-                .valueOf(status) : null);
-        if (instanceStatusFromReplica != null) {
-            // Do sync up only for replication - because the client could have
-            // different state when the server
-            // state is updated by an external tool
-            if ((!instanceStatusFromRegistry.equals(instanceStatusFromReplica))
-                    && isReplication) {
-                Object[] args = { id, instanceStatusFromRegistry.name(),
-                        instanceStatusFromReplica.name() };
-                logger.warn(
-                        "The instance status for {} is {} from registry, whereas it is {} from replica. Requesting a re-register from replica.",
-                        args);
-
-                return true;
-            }
-        }
-        return false;
-
     }
 
     private Response validateDirtyTimestamp(Long lastDirtyTimestamp,

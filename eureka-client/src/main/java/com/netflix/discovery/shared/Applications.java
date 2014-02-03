@@ -67,7 +67,7 @@ public class Applications {
     private static final Logger logger = LoggerFactory.getLogger(Applications.class);
     private static final String STATUS_DELIMITER = "_";
 
-    private Long version_delta = Long.valueOf(-1);
+    private Long version_delta = -1L;
 
     @XStreamImplicit
     private AbstractQueue<Application> applications;

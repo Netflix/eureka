@@ -337,34 +337,35 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                                 .getAppName(), false);
                 if (eurekaApps == null) {
                     areAllPeerNodesPrimed = true;
-                }
-                for (PeerEurekaNode node : peerEurekaNodes.get()) {
-                    for (InstanceInfo peerInstanceInfo : eurekaApps
-                            .getInstances()) {
-                        LeaseInfo leaseInfo = peerInstanceInfo.getLeaseInfo();
-                        // If the lease is expired - do not worry about priming
-                        if (System.currentTimeMillis() > (leaseInfo
-                                .getRenewalTimestamp() + (leaseInfo
-                                .getDurationInSecs() * 1000))
-                                + (2 * 60 * 1000)) {
-                            continue;
-                        }
-                        peerHostName = peerInstanceInfo.getHostName();
-                        logger.info(
-                                "Trying to send heartbeat for the eureka server at {} to make sure the network channels are open",
-                                peerHostName);
-                        // Only try to contact the eureka nodes that are in this
-                        // instance's registry - because
-                        // the other instances may be legitimately down
-                        if (peerHostName.equalsIgnoreCase(new URI(node
-                                .getServiceUrl()).getHost())) {
-                            node.heartbeat(peerInstanceInfo.getAppName(),
-                                    peerInstanceInfo.getId(), peerInstanceInfo,
-                                    null, true);
+                } else {
+                    for (PeerEurekaNode node : peerEurekaNodes.get()) {
+                        for (InstanceInfo peerInstanceInfo : eurekaApps
+                                .getInstances()) {
+                            LeaseInfo leaseInfo = peerInstanceInfo.getLeaseInfo();
+                            // If the lease is expired - do not worry about priming
+                            if (System.currentTimeMillis() > (leaseInfo
+                                    .getRenewalTimestamp() + (leaseInfo
+                                    .getDurationInSecs() * 1000))
+                                    + (2 * 60 * 1000)) {
+                                continue;
+                            }
+                            peerHostName = peerInstanceInfo.getHostName();
+                            logger.info(
+                                    "Trying to send heartbeat for the eureka server at {} to make sure the network channels are open",
+                                    peerHostName);
+                            // Only try to contact the eureka nodes that are in this
+                            // instance's registry - because
+                            // the other instances may be legitimately down
+                            if (peerHostName.equalsIgnoreCase(new URI(node
+                                    .getServiceUrl()).getHost())) {
+                                node.heartbeat(peerInstanceInfo.getAppName(),
+                                        peerInstanceInfo.getId(), peerInstanceInfo,
+                                        null, true);
+                            }
                         }
                     }
+                    areAllPeerNodesPrimed = true;
                 }
-                areAllPeerNodesPrimed = true;
             } catch (Throwable e) {
                 logger.error("Could not contact " + peerHostName, e);
                 try {
@@ -428,8 +429,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
             synchronized (lock) {
                 if (this.expectedNumberOfRenewsPerMin > 0) {
                     // Since the client wants to cancel it, reduce the threshold
-                    // (1
-                    // for 30 seconds, 2 for a minute)
+                    // (1 for 30 seconds, 2 for a minute)
                     this.expectedNumberOfRenewsPerMin = this.expectedNumberOfRenewsPerMin - 2;
                     this.numberOfRenewsPerMinThreshold = (int) (this.expectedNumberOfRenewsPerMin * EUREKA_SERVER_CONFIG
                             .getRenewalPercentThreshold());
@@ -772,7 +772,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
             String id, InstanceInfo info, InstanceStatus newStatus,
             PeerEurekaNode node) {
         try {
-            InstanceInfo infoFromRegistry = null;
+            InstanceInfo infoFromRegistry;
             CurrentRequestVersion.set(Version.V2);
             switch (action) {
             case Cancel:
