@@ -59,6 +59,8 @@ public class InstanceInfo {
     public final static int DEFAULT_COUNTRY_ID = 1; // US
     private volatile String appName;
     private volatile String ipAddr;
+    @Auto
+    private volatile String instanceId = null;
     private volatile String sid = "na";
 
     private volatile int port = DEFAULT_PORT;
@@ -208,6 +210,8 @@ public class InstanceInfo {
          * mostly used in constructing the {@link URL} for communicating with
          * the instance.
          * 
+         * You need to make sure that the instanceID gets updated as well.
+         * 
          * @param hostName
          *            the host name of the instance.
          * @return the {@link InstanceInfo} builder.
@@ -259,6 +263,18 @@ public class InstanceInfo {
          */
         public Builder setIPAddr(String ip) {
             result.ipAddr = ip;
+            return this;
+        }
+
+        /**
+         * Sets the unique identity of this application instance.
+         * 
+         * @param instanceId
+         *            the id of the instance.
+         * @return the {@link InstanceInfo} builder.
+         */
+        public Builder setInstanceId(String instanceId) {
+            result.instanceId = instanceId;
             return this;
         }
 
@@ -603,6 +619,15 @@ public class InstanceInfo {
     public String getHostName() {
         return hostName;
     }
+    
+    /**
+     * Returns the unique instance ID for this instance
+     * 
+     * @return the instance ID
+     */
+    public String getInstanceId() {
+        return instanceId;
+    }
 
     @Deprecated
     public void setSID(String sid) {
@@ -618,15 +643,23 @@ public class InstanceInfo {
     /**
      * 
      * Returns the unique id of the instance.
+     * First precedence is {@link AmazonInfo}'s metadata instanceId, if any
+     * Second precedence is the instanceId set using the {@link Builder}, if any
+     * The {@link ApplicationInfoManager} builds this using
+     * the instanceId from {@link EurekaInstanceConfig}.
+     * This may have been loaded by a config property, if at all
+     * Last option is the hostname, if it is specified in no other way
      * 
      * @return the unique id.
      */
     public String getId() {
         if (dataCenterInfo.getName() == Name.Amazon) {
             return ((AmazonInfo) dataCenterInfo).get(MetaDataKey.instanceId);
-        } else {
-            return hostName;
         }
+        if (instanceId != null && !instanceId.isEmpty()) {
+            return instanceId;
+        }
+        return hostName;
     }
 
     /**
