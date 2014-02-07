@@ -184,6 +184,9 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             }
             Lease<InstanceInfo> lease = new Lease<InstanceInfo>(r,
                     leaseDuration);
+            if (existingLease != null) {
+                lease.setServiceUpTimestamp(existingLease.getServiceUpTimestamp());
+            }
             gMap.put(r.getId(), lease);
             synchronized (recentRegisteredQueue) {
                 recentRegisteredQueue.add(new Pair<Long, String>(Long
