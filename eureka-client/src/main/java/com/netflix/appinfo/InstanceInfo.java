@@ -119,8 +119,12 @@ public class InstanceInfo {
     private InstanceInfo() {
     }
 
-    // shallow copy constructor so we can make our own InstanceInfo to play with
-    // without corrupting global eureka client concept of the InstanceInfo object
+    /**
+     *
+     * shallow copy constructor
+     *
+     * @param ii The object to copy
+     */
     public InstanceInfo(InstanceInfo ii) {
         this.appName = ii.appName;
         this.ipAddr = ii.ipAddr;
