@@ -41,7 +41,7 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
  * @author Karthik Ranganathan, Greg Kim
  * 
  */
-public class AmazonInfo implements DataCenterInfo {
+public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
 
     private Map<String, String> metadata = new HashMap<String, String>();
     private static DynamicBooleanProperty shouldLogAWSMetadataError;
@@ -216,5 +216,10 @@ public class AmazonInfo implements DataCenterInfo {
      */
     public String get(MetaDataKey key) {
         return metadata.get(key.getName());
+    }
+
+    @Override
+    public String getId() {
+        return get(MetaDataKey.instanceId);
     }
 }
