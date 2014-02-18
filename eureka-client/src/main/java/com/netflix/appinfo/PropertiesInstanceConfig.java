@@ -231,7 +231,8 @@ implements EurekaInstanceConfig {
         Map<String, String> metadataMap = new LinkedHashMap<String, String>();
         Configuration config = (Configuration) INSTANCE
         .getBackingConfigurationSource();
-        for (Iterator<String> iter = config.subset(propMetadataNamespace)
+        String subsetPrefix = propMetadataNamespace.substring(0, propMetadataNamespace.length() - 1);
+        for (Iterator<String> iter = config.subset(subsetPrefix)
                 .getKeys();
 
         iter.hasNext();) {
