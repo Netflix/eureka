@@ -35,9 +35,9 @@ import com.netflix.discovery.DiscoveryManager;
 /**
  * Sample Eureka client that discovers the service using Eureka and sends
  * requests.
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 public class SampleEurekaClient {
     private static final DynamicPropertyFactory configInstance = com.netflix.config.DynamicPropertyFactory
@@ -69,7 +69,7 @@ public class SampleEurekaClient {
             System.out.println("Connected to server. Sending a sample request");
             PrintStream out = new PrintStream(s.getOutputStream());
             out.println("Sample request " + new Date());
-            String str = null;
+            String str;
             System.out.println("Waiting for server response..");
             BufferedReader rd = new BufferedReader(new InputStreamReader(
                     s.getInputStream()));

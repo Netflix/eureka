@@ -27,13 +27,13 @@ import com.thoughtworks.xstream.io.xml.XmlFriendlyNameCoder;
 /**
  * An <tt>Xstream</tt> specific implementation for serializing and deserializing
  * to/from JSON format.
- * 
+ *
  * <p>
  * This class also allows configuration of custom serializers with Xstream.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 public class JsonXStream extends XStream {
 
@@ -42,7 +42,7 @@ public class JsonXStream extends XStream {
     public JsonXStream() {
         super(new JettisonMappedXmlDriver() {
             private final NameCoder coder = new XmlFriendlyNameCoder();
-            
+
             protected NameCoder getNameCoder() {
                 return this.coder;
             }

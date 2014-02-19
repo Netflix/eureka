@@ -99,25 +99,24 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             .<String, InstanceStatus> build().asMap();
 
     // CircularQueues here for debugging/statistics purposes only
-    private CircularQueue<Pair<Long, String>> recentRegisteredQueue;
-    private CircularQueue<Pair<Long, String>> recentCanceledQueue;
-    private Timer deltaRetentionTimer = new Timer("Eureka-DeltaRetentionTimer",
-            true);
-    private ConcurrentLinkedQueue<RecentlyChangedItem> recentlyChangedQueue = new ConcurrentLinkedQueue<RecentlyChangedItem>();
+    private final CircularQueue<Pair<Long, String>> recentRegisteredQueue;
+    private final CircularQueue<Pair<Long, String>> recentCanceledQueue;
+    private Timer deltaRetentionTimer = new Timer("Eureka-DeltaRetentionTimer", true);
+    private final ConcurrentLinkedQueue<RecentlyChangedItem> recentlyChangedQueue = new ConcurrentLinkedQueue<RecentlyChangedItem>();
     private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     private final Lock read = readWriteLock.readLock();
     private final Lock write = readWriteLock.writeLock();
     protected Map<String, RemoteRegionRegistry> regionNameVSRemoteRegistry = new HashMap<String, RemoteRegionRegistry>();
     protected String[] allKnownRemoteRegions = EMPTY_STR_ARRAY;
-    protected Object lock = new Object();
+    protected final Object lock = new Object();
     protected volatile int numberOfRenewsPerMinThreshold;
     protected volatile int expectedNumberOfRenewsPerMin;
     protected static final EurekaServerConfig EUREKA_SERVER_CONFIG = EurekaServerConfigurationManager
     .getInstance().getConfiguration();
-    
+
     private static final AtomicReference<EvictionTask> evictionTask = new AtomicReference<EvictionTask>();
-    
-    
+
+
     protected InstanceRegistry() {
         recentCanceledQueue = new CircularQueue<Pair<Long, String>>(1000);
         recentRegisteredQueue = new CircularQueue<Pair<Long, String>>(1000);
@@ -125,14 +124,14 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                 eurekaConfig.getDeltaRetentionTimerIntervalInMs(),
                 eurekaConfig.getDeltaRetentionTimerIntervalInMs());
     }
-    
+
     public void clearRegistry() {
         overriddenInstanceStatusMap.clear();
         recentCanceledQueue.clear();
         recentRegisteredQueue.clear();
         recentlyChangedQueue.clear();
         _registry.clear();
-        
+
     }
 
     /*
@@ -143,6 +142,12 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      */
     public void register(InstanceInfo r, int leaseDuration,
                          boolean isReplication) {
+
+        if (r == null) {
+            logger.warn("register() called with null InstanceInfo, ignoring");
+            return;
+        }
+
         try {
             read.lock();
             Map<String, Lease<InstanceInfo>> gMap = _registry.get(r
@@ -174,8 +179,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                 synchronized (lock) {
                     if (this.expectedNumberOfRenewsPerMin > 0) {
                         // Since the client wants to cancel it, reduce the threshold
-                        // (1
-                        // for 30 seconds, 2 for a minute)
+                        // (1 for 30 seconds, 2 for a minute)
                         this.expectedNumberOfRenewsPerMin = this.expectedNumberOfRenewsPerMin + 2;
                         this.numberOfRenewsPerMinThreshold = (int) (this.expectedNumberOfRenewsPerMin * EUREKA_SERVER_CONFIG
                                 .getRenewalPercentThreshold());
@@ -189,9 +193,8 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             }
             gMap.put(r.getId(), lease);
             synchronized (recentRegisteredQueue) {
-                recentRegisteredQueue.add(new Pair<Long, String>(Long
-                        .valueOf(System.currentTimeMillis()), r.getAppName()
-                                                              + "(" + r.getId() + ")"));
+                recentRegisteredQueue.add(new Pair<Long, String>(System.currentTimeMillis(), r.getAppName()
+                                          + "(" + r.getId() + ")"));
             }
             // This is where the initial state transfer of overridden status
             // happens
@@ -223,14 +226,13 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             if (InstanceStatus.UP.equals(r.getStatus())) {
                 lease.serviceUp();
             }
-            if (r != null) {
-                r.setActionType(ActionType.ADDED);
-                recentlyChangedQueue.add(new RecentlyChangedItem(lease));
-                r.setLastUpdatedTimestamp();
-            }
+
+            r.setActionType(ActionType.ADDED);
+            recentlyChangedQueue.add(new RecentlyChangedItem(lease));
+            r.setLastUpdatedTimestamp();
             invalidateCache(r.getAppName(), r.getVIPAddress(), r.getSecureVipAddress());
             logger.info("Registered instance id {} with status {}", r.getId(),
-                    r.getStatus().toString());
+                        r.getStatus().toString());
             logger.debug("DS: Registry: registered " + r.getAppName() + " - "
                          + r.getId());
         } finally {
@@ -266,9 +268,8 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                 leaseToCancel = gMap.remove(id);
             }
             synchronized (recentCanceledQueue) {
-                recentCanceledQueue.add(new Pair<Long, String>(Long
-                        .valueOf(System.currentTimeMillis()), appName + "("
-                                                              + id + ")"));
+                recentCanceledQueue.add(new Pair<Long, String>(System.currentTimeMillis(), appName + "("
+                                        + id + ")"));
             }
             InstanceStatus instanceStatus = overriddenInstanceStatusMap
                     .remove(id);
@@ -326,12 +327,9 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         } else {
             InstanceInfo instanceInfo = leaseToRenew.getHolder();
             if (instanceInfo != null) {
-                // touchASGCache(instanceInfo.getASGName());
                 InstanceStatus overriddenInstanceStatus = this
                         .getOverriddenInstanceStatus(instanceInfo,
                                 leaseToRenew, isReplication);
-                // InstanceStatus overriddenInstanceStatus =
-                // instanceInfo.getStatus();
                 if (!instanceInfo.getStatus().equals(overriddenInstanceStatus)) {
                     Object[] args = { instanceInfo.getStatus().name(),
                                       instanceInfo.getOverriddenStatus().name(),
@@ -430,20 +428,16 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                                 .valueOf(lastDirtyTimestamp);
                     }
                     // If the replication's dirty timestamp is more than the
-                    // existing one, just update
-                    // it to the replica's.
+                    // existing one, just update it to the replica's.
                     if (replicaDirtyTimestamp > info.getLastDirtyTimestamp()) {
                         info.setLastDirtyTimestamp(replicaDirtyTimestamp);
                         info.setStatusWithoutDirty(newStatus);
                     } else {
                         info.setStatus(newStatus);
                     }
-                    if (info != null) {
-                        info.setActionType(ActionType.MODIFIED);
-                        recentlyChangedQueue
-                                .add(new RecentlyChangedItem(lease));
-                        info.setLastUpdatedTimestamp();
-                    }
+                    info.setActionType(ActionType.MODIFIED);
+                    recentlyChangedQueue.add(new RecentlyChangedItem(lease));
+                    info.setLastUpdatedTimestamp();
                     invalidateCache(appName, info.getVIPAddress(), info.getSecureVipAddress());
                 }
                 return true;
@@ -465,18 +459,9 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             return;
         }
         logger.debug("Running the evict task");
-        for (Iterator<Entry<String, Map<String, Lease<InstanceInfo>>>> iter = _registry
-                .entrySet().iterator(); iter.hasNext();) {
-            Entry<String, Map<String, Lease<InstanceInfo>>> groupEntry = iter
-                    .next();
-
-            Map<String, Lease<InstanceInfo>> leaseMap = groupEntry.getValue();
+        for (Map<String, Lease<InstanceInfo>> leaseMap : _registry.values()) {
             if (leaseMap != null) {
-                for (Iterator<Entry<String, Lease<InstanceInfo>>> subIter = leaseMap
-                        .entrySet().iterator(); subIter.hasNext();) {
-                    Entry<String, Lease<InstanceInfo>> leaseEntry = subIter
-                            .next();
-                    Lease<InstanceInfo> lease = leaseEntry.getValue();
+                for (Lease<InstanceInfo> lease : leaseMap.values()) {
                     if (lease.isExpired() && lease.getHolder() != null) {
                         String appName = lease.getHolder().getAppName();
                         String id = lease.getHolder().getId();
@@ -519,14 +504,11 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         Map<String, Lease<InstanceInfo>> leaseMap = _registry.get(appName);
 
         if (leaseMap != null && leaseMap.size() > 0) {
-            for (Iterator<Entry<String, Lease<InstanceInfo>>> iter = leaseMap
-                    .entrySet().iterator(); iter.hasNext();) {
-                Entry<String, Lease<InstanceInfo>> entry = iter.next();
-
+            for (Lease<InstanceInfo> lease : leaseMap.values()) {
                 if (app == null) {
                     app = new Application(appName);
                 }
-                app.addInstance(decorateInstanceInfo(entry.getValue()));
+                app.addInstance(decorateInstanceInfo(lease));
             }
         } else if (includeRemoteRegion) {
             for (RemoteRegionRegistry remoteRegistry : this.regionNameVSRemoteRegistry.values()) {
@@ -671,18 +653,11 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         GET_ALL_CACHE_MISS.increment();
         Applications apps = new Applications();
         apps.setVersion(1L);
-        for (Iterator<Entry<String, Map<String, Lease<InstanceInfo>>>> iter = _registry
-                .entrySet().iterator(); iter.hasNext();) {
-            Entry<String, Map<String, Lease<InstanceInfo>>> entry = iter.next();
-
+        for (Map<String, Lease<InstanceInfo>> leases : _registry.values()) {
             Application app = null;
 
-            if (entry.getValue() != null) {
-                for (Iterator<Entry<String, Lease<InstanceInfo>>> subIter = entry
-                        .getValue().entrySet().iterator(); subIter.hasNext();) {
-
-                    Lease<InstanceInfo> lease = subIter.next().getValue();
-
+            if (leases != null) {
+                for (Lease<InstanceInfo> lease : leases.values()) {
                     if (app == null) {
                         app = new Application(lease.getHolder().getAppName());
                     }
@@ -905,8 +880,9 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         } else if (includeRemoteRegions) {
             for (RemoteRegionRegistry remoteRegistry : this.regionNameVSRemoteRegistry.values()) {
                 Application application = remoteRegistry.getApplication(appName);
-                InstanceInfo instanceInfo = application.getByInstanceId(id);
-                return instanceInfo;
+                if (application != null) {
+                    return application.getByInstanceId(id);
+                }
             }
         }
         return null;
@@ -950,13 +926,11 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                     continue;
                 }
 
-                if (lease != null && list == Collections.EMPTY_LIST) {
+                if (list == Collections.EMPTY_LIST) {
                     list = new ArrayList<InstanceInfo>();
                 }
 
-                if (lease != null) {
-                    list.add(decorateInstanceInfo(lease));
-                }
+                list.add(decorateInstanceInfo(lease));
             }
         }
         if (list.isEmpty() && includeRemoteRegions) {
@@ -1073,6 +1047,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
     public long getNumberofElementsininstanceCache() {
         return overriddenInstanceStatusMap.size();
     }
+
     private final class EvictionTask extends TimerTask {
 
         @Override
@@ -1086,8 +1061,8 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
 
     }
 
-    
-   
+
+
     private class CircularQueue<E> extends ConcurrentLinkedQueue<E> {
         int size = 0;
 
@@ -1113,19 +1088,16 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             return super.offer(e);
         }
     }
-    
-    
+
+
 
     private InstanceStatus getOverriddenInstanceStatus(InstanceInfo r,
                                                        Lease<InstanceInfo> existingLease, boolean isReplication) {
         // ReplicationInstance is DOWN or STARTING - believe that, but when the instance
-        // says UP, question that
-        // The client instance sends STARTING or DOWN (because of heartbeat
-        // failures), then we accept what
-        // the client says. The same is the case with replica as well.
-        // The OUT_OF_SERVICE from the client or replica needs to be confirmed
-        // as well since the service may be
-        // currently in SERVICE
+        // says UP, question that the client instance sends STARTING or DOWN (because of
+        // heartbeat failures), then we accept what the client says. The same is the case
+        // with replica as well. The OUT_OF_SERVICE from the client or replica needs to
+        // be confirmed as well since the service may be currently in SERVICE.
         if ((!InstanceStatus.UP.equals(r.getStatus()))
             && (!InstanceStatus.OUT_OF_SERVICE.equals(r.getStatus()))) {
             logger.debug(
@@ -1157,8 +1129,8 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             }
         }
         // This is for backward compatibility until all applications have ASG
-        // names, otherwise while starting up
-        // the client status may override status replicated from other servers
+        // names, otherwise while starting up the client status may override
+        // status replicated from other servers
         if (!isReplication) {
             InstanceStatus existingStatus = null;
             if (existingLease != null) {

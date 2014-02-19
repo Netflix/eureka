@@ -49,7 +49,7 @@ import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 /**
  * The custom {@link Serializer} for serializing and deserializing the registry
  * information from and to the eureka server.
- * 
+ *
  * <p>
  * The {@link Serializer} used here is an <tt>Xstream</tt> serializer which uses
  * the <tt>JSON</tt> format and custom fields.The XStream deserialization does
@@ -60,9 +60,9 @@ import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
  * alternatives they can do so my implementing their own providers in
  * {@link EntityBodyConverter}.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
- * 
+ *
  */
 public final class Converters {
     private static final String UNMARSHAL_ERROR = "UNMARSHAL_ERROR";
@@ -88,7 +88,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.ConverterMatcher#canConvert(java
          * .lang.Class)
@@ -100,7 +100,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.Converter#marshal(java.lang.Object
          * , com.thoughtworks.xstream.io.HierarchicalStreamWriter,
@@ -125,7 +125,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.Converter#unmarshal(com.thoughtworks
          * .xstream.io.HierarchicalStreamReader,
@@ -163,7 +163,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.ConverterMatcher#canConvert(java
          * .lang.Class)
@@ -174,7 +174,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.Converter#marshal(java.lang.Object
          * , com.thoughtworks.xstream.io.HierarchicalStreamWriter,
@@ -198,7 +198,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.Converter#unmarshal(com.thoughtworks
          * .xstream.io.HierarchicalStreamReader,
@@ -235,8 +235,6 @@ public final class Converters {
         private static final String ELEM_HOST = "hostName";
         private static final String ELEM_APP = "app";
         private static final String ELEM_IP = "ipAddr";
-        private static final String ELEM_VERSION = "version";
-        private static final String ELEM_SRC_VERSION = "sourceVersion";
         private static final String ELEM_SID = "sid";
         private static final String ELEM_STATUS = "status";
         private static final String ELEM_PORT = "port";
@@ -247,7 +245,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.ConverterMatcher#canConvert(java
          * .lang.Class)
@@ -259,7 +257,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.Converter#marshal(java.lang.Object
          * , com.thoughtworks.xstream.io.HierarchicalStreamWriter,
@@ -351,7 +349,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.Converter#unmarshal(com.thoughtworks
          * .xstream.io.HierarchicalStreamReader,
@@ -384,20 +382,17 @@ public final class Converters {
                     builder.setOverriddenStatus(InstanceStatus.toEnum(reader
                             .getValue()));
                 } else if (ELEM_PORT.equals(nodeName)) {
-                    builder.setPort(Integer.valueOf(reader.getValue())
-                            .intValue());
+                    builder.setPort(Integer.valueOf(reader.getValue()));
                     // Defaults to true
                     builder.enablePort(PortType.UNSECURE,
                             !"false".equals(reader.getAttribute(ATTR_ENABLED)));
                 } else if (ELEM_SECURE_PORT.equals(nodeName)) {
-                    builder.setSecurePort(Integer.valueOf(reader.getValue())
-                            .intValue());
+                    builder.setSecurePort(Integer.valueOf(reader.getValue()));
                     // Defaults to false
                     builder.enablePort(PortType.SECURE,
                             "true".equals(reader.getAttribute(ATTR_ENABLED)));
                 } else if (ELEM_COUNTRY_ID.equals(nodeName)) {
-                    builder.setCountryId(Integer.valueOf(reader.getValue())
-                            .intValue());
+                    builder.setCountryId(Integer.valueOf(reader.getValue()));
                 } else if (NODE_DATACENTER.equals(nodeName)) {
                     builder.setDataCenterInfo((DataCenterInfo) context
                             .convertAnother(builder, DataCenterInfo.class));
@@ -427,7 +422,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.ConverterMatcher#canConvert(java
          * .lang.Class)
@@ -439,7 +434,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.Converter#marshal(java.lang.Object
          * , com.thoughtworks.xstream.io.HierarchicalStreamWriter,
@@ -470,7 +465,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.Converter#unmarshal(com.thoughtworks
          * .xstream.io.HierarchicalStreamReader,
@@ -497,10 +492,9 @@ public final class Converters {
                                 return Name.valueOf(dataCenterName);
                             }
                         };
-                        ;
                     }
                 } else if (NODE_METADATA.equals(reader.getNodeName())) {
-                    if (info.getName() == Name.Amazon) {
+                    if (info != null && info.getName() == Name.Amazon) {
                         ((AmazonInfo) info)
                         .setMetadata((Map<String, String>) context
                                 .convertAnother(info, Map.class));
@@ -527,7 +521,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.ConverterMatcher#canConvert(java
          * .lang.Class)
@@ -540,7 +534,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.Converter#marshal(java.lang.Object
          * , com.thoughtworks.xstream.io.HierarchicalStreamWriter,
@@ -579,7 +573,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.Converter#unmarshal(com.thoughtworks
          * .xstream.io.HierarchicalStreamReader,
@@ -602,7 +596,7 @@ public final class Converters {
 
                 long longValue = 0;
                 try {
-                    longValue = Long.valueOf(nodeValue).longValue();
+                    longValue = Long.valueOf(nodeValue);
                 } catch (NumberFormatException ne) {
                     continue;
                 }
@@ -633,7 +627,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.ConverterMatcher#canConvert(java
          * .lang.Class)
@@ -645,7 +639,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.Converter#marshal(java.lang.Object
          * , com.thoughtworks.xstream.io.HierarchicalStreamWriter,
@@ -657,10 +651,7 @@ public final class Converters {
                 MarshallingContext context) {
             Map<String, String> map = (Map<String, String>) source;
 
-            for (Iterator<Entry<String, String>> iter = map.entrySet()
-                    .iterator(); iter.hasNext();) {
-                Entry<String, String> entry = iter.next();
-
+            for (Entry<String, String> entry : map.entrySet()) {
                 writer.startNode(entry.getKey());
                 writer.setValue(entry.getValue());
                 writer.endNode();
@@ -669,7 +660,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.Converter#unmarshal(com.thoughtworks
          * .xstream.io.HierarchicalStreamReader,
@@ -705,7 +696,7 @@ public final class Converters {
     /**
      * Marshal all the objects containing an {@link Auto} annotation
      * automatically.
-     * 
+     *
      * @param o
      *            - The object's fields that needs to be marshalled.
      * @param writer
@@ -716,7 +707,7 @@ public final class Converters {
         try {
             Class c = o.getClass();
             Field[] fields = c.getDeclaredFields();
-            Annotation annotation = null;
+            Annotation annotation;
             for (Field f : fields) {
                 annotation = f.getAnnotation(Auto.class);
                 if (annotation != null) {
@@ -737,7 +728,7 @@ public final class Converters {
     /**
      * Unmarshal all the elements to their field values if the fields have the
      * {@link Auto} annotation defined.
-     * 
+     *
      * @param reader
      *            - The reader where the elements can be read.
      * @param o

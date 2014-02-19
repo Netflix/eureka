@@ -27,21 +27,21 @@ import com.netflix.discovery.shared.LookupService;
 /**
  * <tt>Discovery Manager</tt> configures <tt>Discovery Client</tt> based on the
  * properties specified.
- * 
+ *
  * <p>
  * The configuration file is searched for in the classpath with the name
  * specified by the property <em>eureka.client.props</em> and with the suffix
  * <em>.properties</em>. If the property is not specified,
  * <em>eureka-client.properties</em> is assumed as the default.
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 public class DiscoveryManager {
     private static final Logger logger = LoggerFactory
             .getLogger(DiscoveryManager.class);
     private DiscoveryClient discoveryClient;
-    
+
     private EurekaInstanceConfig eurekaInstanceConfig;
     private EurekaClientConfig eurekaClientConfig;
     private static final DiscoveryManager s_instance = new DiscoveryManager();
@@ -55,7 +55,7 @@ public class DiscoveryManager {
 
     /**
      * Initializes the <tt>Discovery Client</tt> with the given configuration.
-     * 
+     *
      * @param config
      *            the instance info configuration that will be used for
      *            registration with Eureka.

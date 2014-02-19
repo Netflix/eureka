@@ -34,10 +34,10 @@ import com.netflix.config.DynamicStringProperty;
 import javax.annotation.Nullable;
 
 /**
- * 
+ *
  * A default implementation of eureka server configuration as required by
  * {@link EurekaServerConfig}.
- * 
+ *
  * <p>
  * The information required for configuring eureka server is provided in a
  * configuration file.The configuration file is searched for in the classpath
@@ -46,15 +46,15 @@ import javax.annotation.Nullable;
  * <em>eureka-server.properties</em> is assumed as the default.The properties
  * that are looked up uses the <em>namespace</em> passed on to this class.
  * </p>
- * 
+ *
  * <p>
  * If the <em>eureka.environment</em> property is specified, additionally
  * <em>eureka-server-<eureka.environment>.properties</em> is loaded in addition
  * to <em>eureka-server.properties</em>.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 public class DefaultEurekaServerConfig implements EurekaServerConfig {
     private static final String ARCHAIUS_DEPLOYMENT_ENVIRONMENT = "archaius.deployment.environment";
@@ -88,8 +88,6 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
 
         String eurekaPropsFile = EUREKA_PROPS_FILE.get();
         try {
-            // ConfigurationManager
-            // .loadPropertiesFromResources(eurekaPropsFile);
             ConfigurationManager
             .loadCascadedPropertiesFromResources(eurekaPropsFile);
         } catch (IOException e) {
@@ -101,7 +99,7 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.eureka.EurekaServerConfig#getAWSAccessId()
      */
     @Override
@@ -119,7 +117,7 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.eureka.EurekaServerConfig#getAWSAccessId()
      */
     @Override
@@ -136,7 +134,7 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.eureka.EurekaServerConfig#getEIPBindRebindRetries()
      */
     @Override
@@ -148,7 +146,7 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.eureka.EurekaServerConfig#getEIPBindingRetryInterval()
      */
     @Override
@@ -160,7 +158,7 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.eureka.EurekaServerConfig#shouldEnableSelfPreservation()
      */
     @Override
@@ -171,7 +169,7 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.netflix.eureka.EurekaServerConfig#getPeerEurekaNodesUpdateInterval()
      */

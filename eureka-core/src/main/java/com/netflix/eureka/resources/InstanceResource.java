@@ -47,9 +47,9 @@ import com.netflix.eureka.cluster.PeerEurekaNode;
 
 /**
  * A <em>jersey</em> resource that handles operations for a particular instance.
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
- * 
+ *
  */
 @Produces({ "application/xml", "application/json" })
 public class InstanceResource {
@@ -70,7 +70,7 @@ public class InstanceResource {
     /**
      * Get requests returns the information about the instance's
      * {@link InstanceInfo}.
-     * 
+     *
      * @return response containing information about the the instance's
      *         {@link InstanceInfo}.
      */
@@ -89,7 +89,7 @@ public class InstanceResource {
 
     /**
      * A put request for renewing lease from a client instance.
-     * 
+     *
      * @param isReplication
      *            a header parameter containing information whether this is
      *            replicated from other nodes.
@@ -119,7 +119,7 @@ public class InstanceResource {
         }
         // Check if we need to sync based on dirty time stamp, the client
         // instance might have changed some value
-        Response response = null;
+        Response response;
         if (lastDirtyTimestamp != null
                 && EurekaServerConfigurationManager.getInstance()
                         .getConfiguration().shouldSyncWhenTimestampDiffers()) {
@@ -131,7 +131,7 @@ public class InstanceResource {
             if (response.getStatus() == Response.Status.NOT_FOUND
                     .getStatusCode()
                     && (overriddenStatus != null)
-                    && !(InstanceStatus.UNKNOWN.equals(overriddenStatus))
+                    && !(InstanceStatus.UNKNOWN.name().equals(overriddenStatus))
                     && isFromReplicaNode) {
                 registry.storeOverriddenStatusIfRequired(id,
                         InstanceStatus.valueOf(overriddenStatus));
@@ -144,14 +144,14 @@ public class InstanceResource {
 
     /**
      * Handles {@link InstanceStatus} updates.
-     * 
+     *
      * <p>
      * The status updates are normally done for administrative purposes to
      * change the instance status between {@link InstanceStatus#UP} and
      * {@link InstanceStatus#OUT_OF_SERVICE} to select or remove instances for
      * receiving traffic.
      * </p>
-     * 
+     *
      * @param newStatus
      *            the new status of the instance.
      * @param isReplication
@@ -227,12 +227,12 @@ public class InstanceResource {
             logger.error("Error updating metadata for instance " + id, e);
             return Response.serverError().build();
         }
-      
+
     }
 
     /**
      * Handles cancellation of leases for this particular instance.
-     * 
+     *
      * @param isReplication
      *            a header parameter containing information whether this is
      *            replicated from other nodes.
@@ -252,34 +252,6 @@ public class InstanceResource {
             logger.info("Not Found (Cancel): " + app.getName() + " - " + id);
             return Response.status(Status.NOT_FOUND).build();
         }
-    }
-
-    private boolean shouldSyncStatus(String status, boolean isReplication) {
-        InstanceInfo appInfo = registry.getInstanceByAppAndId(app.getName(),
-                id, false);
-        InstanceStatus instanceStatusFromRegistry = null;
-        if (appInfo != null) {
-            instanceStatusFromRegistry = appInfo.getStatus();
-        }
-        InstanceStatus instanceStatusFromReplica = (status != null ? InstanceStatus
-                .valueOf(status) : null);
-        if (instanceStatusFromReplica != null) {
-            // Do sync up only for replication - because the client could have
-            // different state when the server
-            // state is updated by an external tool
-            if ((!instanceStatusFromRegistry.equals(instanceStatusFromReplica))
-                    && isReplication) {
-                Object[] args = { id, instanceStatusFromRegistry.name(),
-                        instanceStatusFromReplica.name() };
-                logger.warn(
-                        "The instance status for {} is {} from registry, whereas it is {} from replica. Requesting a re-register from replica.",
-                        args);
-
-                return true;
-            }
-        }
-        return false;
-
     }
 
     private Response validateDirtyTimestamp(Long lastDirtyTimestamp,

@@ -45,7 +45,7 @@ import com.thoughtworks.xstream.XStream;
 
 /**
  * The class that kick starts the eureka server.
- * 
+ *
  * <p>
  * The eureka server is configured by using the configuration
  * {@link EurekaServerConfig} specified by <em>eureka.server.props</em> in the
@@ -54,9 +54,9 @@ import com.thoughtworks.xstream.XStream;
  * <em>eureka.client.props</em>. If the server runs in the AWS cloud, the eurea
  * server binds it to the elastic ip as specified.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
- * 
+ *
  */
 public class EurekaBootStrap implements ServletContextListener {
     private static final String TEST = "test";
@@ -80,7 +80,7 @@ public class EurekaBootStrap implements ServletContextListener {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * javax.servlet.ServletContextListener#contextInitialized(javax.servlet
      * .ServletContextEvent)
@@ -88,7 +88,7 @@ public class EurekaBootStrap implements ServletContextListener {
     public void contextInitialized(ServletContextEvent event) {
         try {
             initEurekaEnvironment();
-          
+
             // For backward compatibility
             JsonXStream.getInstance().registerConverter(
                     new V1AwareInstanceInfoConverter(),
@@ -97,7 +97,7 @@ public class EurekaBootStrap implements ServletContextListener {
                     new V1AwareInstanceInfoConverter(),
                     XStream.PRIORITY_VERY_HIGH);
             InstanceInfo info = ApplicationInfoManager.getInstance().getInfo();
-         
+
             PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry
             .getInstance();
 
@@ -133,7 +133,7 @@ public class EurekaBootStrap implements ServletContextListener {
         EurekaServerConfig eurekaServerConfig = new DefaultEurekaServerConfig();
         EurekaServerConfigurationManager.getInstance().setConfiguration(
                 eurekaServerConfig);
-   
+
         String dataCenter = ConfigurationManager.getConfigInstance()
         .getString(EUREKA_DATACENTER);
         if (dataCenter == null) {
@@ -166,7 +166,7 @@ public class EurekaBootStrap implements ServletContextListener {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see javax.servlet.ServletContextListener#contextDestroyed(javax.servlet.
      * ServletContextEvent)
      */
@@ -187,7 +187,6 @@ public class EurekaBootStrap implements ServletContextListener {
                 } catch (Throwable e) {
                     logger.warn("Cannot unbind the EIP from the instance");
                     Thread.sleep(1000);
-                    continue;
                 }
             }
             PeerAwareInstanceRegistry.getInstance().shutdown();
@@ -204,12 +203,12 @@ public class EurekaBootStrap implements ServletContextListener {
      * Users can override to clean up the environment themselves.
      */
     protected void destroyEurekaEnvironment() {
-        
+
     }
 
     /**
      * Handles EIP binding process in AWS Cloud.
-     * 
+     *
      * @throws InterruptedException
      */
     private void handleEIPbinding(PeerAwareInstanceRegistry registry)
@@ -241,7 +240,7 @@ public class EurekaBootStrap implements ServletContextListener {
      * same zone and binds it to itself.If the EIP is taken away for some
      * reason, this task tries to get the EIP back. Hence it is advised to take
      * one EIP assignment per instance in a zone.
-     * 
+     *
      * @param eurekaServerConfig
      *            the Eureka Server Configuration.
      */
@@ -253,14 +252,14 @@ public class EurekaBootStrap implements ServletContextListener {
             public void run() {
                 try {
                     // If the EIP is not bound, the registry could  be stale
-                    // First syncup the reigstry from the neighboring node before 
-                    // tryig to bind the EIP
+                    // First syncup the registry from the neighboring node before
+                    // trying to bind the EIP
                     EIPManager eipManager = EIPManager.getInstance();
                     if (!eipManager.isEIPBound()) {
                         registry.clearRegistry();
                         int count = registry.syncUp();
                         registry.openForTraffic(count);
-                     } 
+                     }
                     else {
                         // An EIP is already bound
                         return;
@@ -274,5 +273,5 @@ public class EurekaBootStrap implements ServletContextListener {
         eurekaServerConfig.getEIPBindingRetryIntervalMs());
     }
 
-   
+
 }

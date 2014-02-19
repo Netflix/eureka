@@ -23,19 +23,15 @@ import com.netflix.eureka.InstanceRegistry;
  * Describes a time-based availability of a {@link T}. Purpose is to avoid
  * accumulation of instances in {@link InstanceRegistry} as result of ungraceful
  * shutdowns that is not uncommon in AWS environments.
- * 
+ *
  * If a lease elapses without renewals, it will eventually expire consequently
  * marking the associated {@link T} for immediate eviction - this is similar to
  * an explicit cancellation except that there is no communication between the
  * {@link T} and {@link LeaseManager}.
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
  */
 public class Lease<T> {
-
-    enum Action {
-        Register, Cancel, Renew
-    };
 
     public final static int DEFAULT_DURATION_IN_SECS = 90;
 
@@ -100,7 +96,7 @@ public class Lease<T> {
 
     /**
      * Gets the milliseconds since epoch when the lease was registered.
-     * 
+     *
      * @return the milliseconds since epoch when the lease was registered.
      */
     public long getRegistrationTimestamp() {
@@ -109,7 +105,7 @@ public class Lease<T> {
 
     /**
      * Gets the milliseconds since epoch when the lease was last renewed.
-     * 
+     *
      * @return the milliseconds since epoch when the lease was last renewed.
      */
     public long getLastRenewalTimestamp() {
@@ -118,7 +114,7 @@ public class Lease<T> {
 
     /**
      * Gets the milliseconds since epoch when the lease was evicted.
-     * 
+     *
      * @return the milliseconds since epoch when the lease was evicted.
      */
     public long getEvictionTimestamp() {

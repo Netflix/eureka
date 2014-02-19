@@ -12,6 +12,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import javax.annotation.Nullable;
+import java.net.ServerSocket;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,11 +44,13 @@ public class DiscoveryClientRegistryTest {
     private final Map<String, Application> remoteRegionAppsDelta = new HashMap<String, Application>();
 
     private DiscoveryClient client;
-    private final int localRandomEurekaPort = 7799;
 
     @Before
     public void setUp() throws Exception {
-        final int eurekaPort = localRandomEurekaPort + (int)(Math.random() * 10);
+        // This finds a socket port guaranteed to be available, rather than relying on random and hope
+        ServerSocket socket = new ServerSocket(0);
+        final int eurekaPort = socket.getLocalPort();
+        socket.close();
         ConfigurationManager.getConfigInstance().setProperty("eureka.client.refresh.interval", CLIENT_REFRESH_RATE);
         ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", "false");
         ConfigurationManager.getConfigInstance().setProperty("eureka.fetchRemoteRegionsRegistry", REMOTE_REGION);

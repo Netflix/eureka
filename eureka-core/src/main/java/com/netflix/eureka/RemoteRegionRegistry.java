@@ -48,9 +48,9 @@ import com.sun.jersey.client.apache4.ApacheHttpClient4;
  *
  * The primary operations include fetching registry information from remote region and fetching delta information
  * on a periodic basis.
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 public class RemoteRegionRegistry implements LookupService<String> {
     private static EurekaServerConfig EUREKA_SERVER_CONFIG = EurekaServerConfigurationManager
@@ -59,11 +59,9 @@ public class RemoteRegionRegistry implements LookupService<String> {
     private static final Logger logger = LoggerFactory
             .getLogger(RemoteRegionRegistry.class);
     private ApacheHttpClient4 discoveryApacheClient;
-    private JerseyClient discoveryJerseyClient;
     private com.netflix.servo.monitor.Timer fetchRegistryTimer;
     private URL remoteRegionURL;
-    private Timer remoteRegionCacheRefreshTimer = new Timer(
-            "Eureka-RemoteRegionCacheRefresher", true);
+    private Timer remoteRegionCacheRefreshTimer = new Timer("Eureka-RemoteRegionCacheRefresher", true);
     private volatile AtomicReference<Applications> applications = new AtomicReference<Applications>();
     private volatile AtomicReference<Applications> applicationsDelta = new AtomicReference<Applications>();
     private volatile boolean readyForServingData;
@@ -73,6 +71,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
         this.fetchRegistryTimer = Monitors.newTimer(this.remoteRegionURL
                 .toString() + "_" + "FetchRegistry");
         String jerseyClientName;
+        JerseyClient discoveryJerseyClient;
         if (remoteRegionURL.getProtocol().equals("http")) {
             jerseyClientName = "Discovery-RemoteRegionClient-" + regionName;
             discoveryJerseyClient = EurekaJerseyClient.createJerseyClient(jerseyClientName,
@@ -217,7 +216,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
     /**
      * Updates the delta information fetches from the eureka server into the
      * local cache.
-     * 
+     *
      * @param delta
      *            the delta information received from eureka server in the last
      *            poll cycle.
@@ -270,7 +269,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
 
     /**
      * Close HTTP response object and its respective resources.
-     * 
+     *
      * @param response
      *            the HttpResponse object.
      */
@@ -287,7 +286,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
     /**
      * Gets the full registry information from the eureka server and stores it
      * locally.
-     * 
+     *
      * @return the full registry information.
      */
     public ClientResponse storeFullRegistry() {
@@ -315,12 +314,11 @@ public class RemoteRegionRegistry implements LookupService<String> {
         logger.info(
                 "Getting instance registry info from the eureka server : {} , delta : {}",
                 this.remoteRegionURL, delta);
-        Stopwatch tracer = null;
         ClientResponse response = null;
         try {
 
             String urlPath = delta ? "apps/delta" : "apps/";
-            
+
             response = discoveryApacheClient
                     .resource(this.remoteRegionURL.toString() + urlPath)
                     .accept(MediaType.APPLICATION_JSON_TYPE)
@@ -335,18 +333,13 @@ public class RemoteRegionRegistry implements LookupService<String> {
 
         } catch (Throwable t) {
             logger.error("Can't get a response from " + this.remoteRegionURL, t);
-
-        } finally {
-            if (tracer != null) {
-                tracer.stop();
-            }
         }
         return response;
     }
 
     /**
      * Reconciles the delta information fetched to see if the hashcodes match.
-     * 
+     *
      * @param response - the response of the delta fetch.
      * @param delta - the delta information fetched previously for reconcililation.
      * @param reconcileHashCode - the hashcode for comparison.

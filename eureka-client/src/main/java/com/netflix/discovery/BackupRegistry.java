@@ -22,14 +22,14 @@ import com.netflix.discovery.shared.Applications;
  * A simple contract for <em>eureka</em> clients to fallback for getting
  * registry information in case eureka clients are unable to retrieve this
  * information from any of the <em>eureka</em> servers.
- * 
+ *
  * <p>
  * This is normally not required, but for applications that cannot exist without
  * the registry information it can provide some additional reslience.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 public interface BackupRegistry {
 

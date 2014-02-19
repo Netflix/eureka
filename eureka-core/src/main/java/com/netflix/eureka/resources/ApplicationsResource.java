@@ -31,10 +31,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Joiner;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka.CurrentRequestVersion;
@@ -50,14 +46,13 @@ import com.netflix.eureka.util.EurekaMonitors;
 /**
  * A <em>jersey</em> resource that handles request related to all
  * {@link Applications}.
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
- * 
+ *
  */
 @Path("/{version}/apps")
 @Produces({ "application/xml", "application/json" })
 public class ApplicationsResource {
-    private static final String REPLICATION = "true";
     private static final String HEADER_ACCEPT = "Accept";
     private static final String HEADER_ACCEPT_ENCODING = "Accept-Encoding";
     private static final String HEADER_CONTENT_ENCODING = "Content-Encoding";
@@ -65,16 +60,11 @@ public class ApplicationsResource {
     private static final String HEADER_JSON_VALUE = "json";
     private static final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
     .getInstance().getConfiguration();
-    
-    private static final Logger logger = LoggerFactory.getLogger(ApplicationResource.class);
-    
-    private final static PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry
-    .getInstance();
 
 
     /**
      * Gets information about a particular {@link Application}.
-     * 
+     *
      * @param version
      *            the version of the request.
      * @param appId
@@ -92,13 +82,13 @@ public class ApplicationsResource {
 
     /**
      * Get information about all {@link Applications}.
-     * 
+     *
      * @param version
      *            the version of the request.
      * @param acceptHeader
      *            the accept header of the request to indicate whether to serve
      *            JSON or XML data.
-     * 
+     *
      * @param acceptEncoding
      *            the accept header of the request to indicate whether to serve
      *            compressed or uncompressed data.
@@ -119,13 +109,11 @@ public class ApplicationsResource {
 
         boolean isRemoteRegionRequested = null != regionsStr && !regionsStr.isEmpty();
         String[] regions = null;
-        String normalizedRegionStr = null;
         if (!isRemoteRegionRequested) {
             EurekaMonitors.GET_ALL.increment();
         } else {
             regions = regionsStr.toLowerCase().split(",");
             Arrays.sort(regions); // So, that we don't have different caches for same regions queried in different order.
-            normalizedRegionStr = Joiner.on(",").join(regions);
             EurekaMonitors.GET_ALL_WITH_REMOTE_REGIONS.increment();
         }
         // Check if the server allows the access to the registry. The server can
@@ -155,7 +143,7 @@ public class ApplicationsResource {
 
     /**
      * Get information about all delta changes in {@link Applications}.
-     * 
+     *
      * <p>
      * The delta changes represent the registry information change for a period
      * as configured by
@@ -165,20 +153,20 @@ public class ApplicationsResource {
      * the changes to the registry are infrequent and hence getting just the
      * delta will be much more efficient than getting the complete registry.
      * </p>
-     * 
+     *
      * <p>
      * Since the delta information is cached over a period of time, the requests
      * may return the same data multiple times within the window configured by
      * {@link EurekaServerConfig#getRetentionTimeInMSInDeltaQueue()}.The clients
      * are expected to handle this duplicate information.
      * <p>
-     * 
+     *
      * @param version
      *            the version of the request.
      * @param acceptHeader
      *            the accept header of the request to indicate whether to serve
      *            JSON or XML data.
-     * 
+     *
      * @param acceptEncoding
      *            the accept header of the request to indicate whether to serve
      *            compressed or uncompressed data.
@@ -204,13 +192,11 @@ public class ApplicationsResource {
 
         boolean isRemoteRegionRequested = null != regionsStr && !regionsStr.isEmpty();
         String[] regions = null;
-        String normalizedRegionStr = null;
         if (!isRemoteRegionRequested) {
             EurekaMonitors.GET_ALL_DELTA.increment();
         } else {
             regions = regionsStr.toLowerCase().split(",");
             Arrays.sort(regions); // So, that we don't have different caches for same regions queried in different order.
-            normalizedRegionStr = Joiner.on(",").join(regions);
             EurekaMonitors.GET_ALL_DELTA_WITH_REMOTE_REGIONS.increment();
         }
 

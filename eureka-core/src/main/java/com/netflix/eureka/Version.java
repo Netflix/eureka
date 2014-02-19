@@ -19,9 +19,9 @@ package com.netflix.eureka;
 
 /**
  * Supported versions for Eureka.
- * 
+ *
  * <p>The latest versions are always recommended.</p>
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
  *
  */

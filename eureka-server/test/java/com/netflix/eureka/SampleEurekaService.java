@@ -24,9 +24,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Date;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
@@ -38,21 +35,18 @@ import com.netflix.discovery.DiscoveryManager;
 /**
  * Sample Eureka service that registers with Eureka to receive and process
  * requests.
- * 
+ *
  * <p>
  * This example just receives one request and exits once it receives the request
  * after processing it.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 public class SampleEurekaService {
     private static final DynamicPropertyFactory configInstance = com.netflix.config.DynamicPropertyFactory
     .getInstance();
-
-    private static final Logger logger = LoggerFactory
-    .getLogger(SampleEurekaService.class);
 
     public void registerWithEureka() {
         int sleepSeconds = 60; // Application initialization and running simulation time

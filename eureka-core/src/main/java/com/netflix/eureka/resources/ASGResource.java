@@ -34,7 +34,7 @@ import com.netflix.eureka.util.AwsAsgUtil;
 
 /**
  * A <em>jersey</em> resource for handling updates to {@link ASGStatus}.
- * 
+ *
  * <p>
  * The ASG status is used in <em>AWS</em> environments to automatically
  * enable/disable instance registration based on the status of the ASG. This is
@@ -42,7 +42,7 @@ import com.netflix.eureka.util.AwsAsgUtil;
  * easy to switch to a new version and incase of problems switch back to the old
  * versions of the deployment.
  * </p>
- * 
+ *
  * <p>
  * During such a scenario, when an ASG is disabled and the instances go away and
  * get refilled by an ASG - which is normal in AWS environments,the instances
@@ -50,9 +50,9 @@ import com.netflix.eureka.util.AwsAsgUtil;
  * are refilled by the ASG and if the ASG is disabled by as indicated by a flag
  * in the ASG as described in {@link AwsAsgUtil#isASGEnabled(String)}
  * </p>
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 @Path("/{version}/asg")
 @Produces({ "application/xml", "application/json" })
@@ -78,7 +78,7 @@ public class ASGResource {
 
     /**
      * Changes the status information of the ASG.
-     * 
+     *
      * @param asgName
      *            the name of the ASG for which the status needs to be changed.
      * @param newStatus
@@ -86,7 +86,7 @@ public class ASGResource {
      * @param isReplication
      *            a header parameter containing information whether this is
      *            replicated from other nodes.
-     * 
+     *
      * @return response which indicates if the operation succeeded or not.
      */
     @PUT
@@ -99,7 +99,7 @@ public class ASGResource {
                     asgName, newStatus);
             ASGStatus asgStatus = ASGStatus.valueOf(newStatus.toUpperCase());
             AwsAsgUtil.getInstance().setStatus(asgName,
-                    (ASGStatus.DISABLED.equals(asgStatus) ? false : true));
+                    !ASGStatus.DISABLED.equals(asgStatus));
             PeerAwareInstanceRegistry.getInstance().statusUpdate(asgName,
                     asgStatus, Boolean.valueOf(isReplication));
             logger.debug("Updated ASG Status for ASG {} to {}", asgName,

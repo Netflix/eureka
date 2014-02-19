@@ -114,6 +114,8 @@ public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
         return null;
     }
 
+    // This seems horribly fragile - regions and AZs come and go. Plus
+    // AZ mappings are account specific
     private void populateDefaultAZToRegionMap() {
         defaultRegionVsAzMap.put("us-east-1", "us-east-1a");
         defaultRegionVsAzMap.put("us-east-1", "us-east-1c");

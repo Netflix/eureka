@@ -16,7 +16,7 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
 
 /**
  * An utility class for exposing status information of an instance.
- * 
+ *
  * @author Greg Kim
  */
 @Serializer("com.netflix.eureka.converters.EntityBodyConverter")
@@ -109,7 +109,7 @@ public class StatusInfo {
     /**
      * Output the amount of time that has elapsed since the given date in the
      * format x days, xx:xx.
-     * 
+     *
      * @return A string representing the formatted interval.
      */
     public static String getUpTime() {
