@@ -686,8 +686,8 @@ public class InstanceInfo {
      * @return the unique id.
      */
     public String getId() {
-        if (dataCenterInfo.getName() == Name.Amazon) {
-            return ((AmazonInfo) dataCenterInfo).get(MetaDataKey.instanceId);
+        if (dataCenterInfo instanceof UniqueIdentifier) {
+            return ((UniqueIdentifier) dataCenterInfo).getId();
         } else {
             return hostName;
         }
