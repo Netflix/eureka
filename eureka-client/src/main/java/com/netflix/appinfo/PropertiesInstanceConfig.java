@@ -231,14 +231,16 @@ implements EurekaInstanceConfig {
         Map<String, String> metadataMap = new LinkedHashMap<String, String>();
         Configuration config = (Configuration) INSTANCE
         .getBackingConfigurationSource();
-        String subsetPrefix = propMetadataNamespace.substring(0, propMetadataNamespace.length() - 1);
+        String subsetPrefix = propMetadataNamespace.charAt(propMetadataNamespace.length() - 1) == '.' 
+        						? propMetadataNamespace.substring(0, propMetadataNamespace.length() - 1)
+        						: propMetadataNamespace; 
         for (Iterator<String> iter = config.subset(subsetPrefix)
                 .getKeys();
 
         iter.hasNext();) {
 
             String key = iter.next();
-            String value = config.getString(propMetadataNamespace + key);
+            String value = config.getString(subsetPrefix + "." + key);
             metadataMap.put(key, value);
         }
         return metadataMap;
