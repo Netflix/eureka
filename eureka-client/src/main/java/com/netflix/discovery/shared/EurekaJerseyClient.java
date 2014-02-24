@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.netflix.discovery.provider.DiscoveryJerseyProvider;
 import com.netflix.http4.MonitoredConnectionManager;
 import com.netflix.servo.monitor.BasicCounter;
+import com.netflix.servo.monitor.BasicTimer;
 import com.netflix.servo.monitor.Counter;
 import com.netflix.servo.monitor.MonitorConfig;
 import com.netflix.servo.monitor.Monitors;
@@ -267,21 +268,13 @@ public final class EurekaJerseyClient {
         private class ConnectionCleanerTask implements Runnable {
 
             private final int connectionIdleTimeout;
-            private final StatsTimer executionTimeStats;
+            private final BasicTimer executionTimeStats;
             private final Counter cleanupFailed;
 
             public ConnectionCleanerTask(int connectionIdleTimeout) {
                 this.connectionIdleTimeout = connectionIdleTimeout;
                 MonitorConfig.Builder monitorConfigBuilder = MonitorConfig.builder("Eureka-Connection-Cleaner-Time");
-                StatsConfig.Builder statsConfigBuilder = new StatsConfig.Builder();
-                statsConfigBuilder.withPublishMean(true);
-                statsConfigBuilder.withPublishMin(true);
-                statsConfigBuilder.withPublishMax(true);
-                statsConfigBuilder.withPublishStdDev(true);
-                statsConfigBuilder.withPublishVariance(true);
-                statsConfigBuilder.withPublishTotal(true);
-                statsConfigBuilder.withPublishCount(true);
-                executionTimeStats = new StatsTimer(monitorConfigBuilder.build(), statsConfigBuilder.build());
+                executionTimeStats = new BasicTimer(monitorConfigBuilder.build());
                 cleanupFailed = new BasicCounter(MonitorConfig.builder("Eureka-Connection-Cleaner-Failure").build());
                 try {
                     Monitors.registerObject(this);
