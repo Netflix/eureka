@@ -444,7 +444,7 @@ public class DiscoveryClient implements LookupService {
         } catch (Exception e) {
             logger.error(
                     PREFIX + appPathIdentifier
-                            + " - was unable to refresh it's cache! status = "
+                            + " - was unable to refresh its cache! status = "
                             + e.getMessage(), e);
 
         } finally {
@@ -650,7 +650,7 @@ public class DiscoveryClient implements LookupService {
         } catch (Throwable e) {
             logger.error(
                     PREFIX + appPathIdentifier
-                            + " - was unable to refresh it's cache! status = "
+                            + " - was unable to refresh its cache! status = "
                             + e.getMessage(), e);
             return false;
 
