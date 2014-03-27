@@ -29,6 +29,7 @@ import java.util.TimerTask;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -40,6 +41,7 @@ import javax.ws.rs.core.Response.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Sets;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.ApplicationInfoManager;
@@ -132,7 +134,7 @@ public class DiscoveryClient implements LookupService {
 
     // instance variables
     private volatile HealthCheckCallback healthCheckCallback;
-    private volatile RefreshCallback refreshCallback;
+    private CopyOnWriteArraySet<RefreshCallback> refreshCallbacks = Sets.newCopyOnWriteArraySet();
     private volatile AtomicReference<List<String>> eurekaServiceUrls = new AtomicReference<List<String>>();
     private volatile AtomicReference<Applications> localRegionApps = new AtomicReference<Applications>();
     private volatile Map<String, Applications> remoteRegionVsApps = new ConcurrentHashMap<String, Applications>();
@@ -310,8 +312,17 @@ public class DiscoveryClient implements LookupService {
             logger.error("Cannot register a listener for instance info since it is null!");
         }
         if (callback != null) {
-            refreshCallback = callback;
+            refreshCallbacks.add(callback);
         }
+    }
+    
+    /**
+     * Stop a {@link RefreshCallback} from getting further
+     * notifications after refreshes
+     * @param callback
+     */
+    public void unregisterRefreshCallback(RefreshCallback callback) {
+        refreshCallbacks.remove(callback);
     }
 
     /**
@@ -680,11 +691,22 @@ public class DiscoveryClient implements LookupService {
             }
             closeResponse(response);
             
-            notifyPostRefresh(refreshCallback);
+            notifyRefreshCallbacks();
         }
         return true;
     }
 
+    private void notifyRefreshCallbacks() {
+        for (RefreshCallback callback : refreshCallbacks) {
+            try {
+                callback.postRefresh(DiscoveryClient.this);
+            }
+            catch (Throwable t) {
+                // ok to ignore
+            }
+        }
+    }
+    
     private String getReconcileHashCode(Applications applications) {
         TreeMap<String, AtomicInteger> instanceCountMap = new TreeMap<String, AtomicInteger>();
         if (isFetchingRemoteRegionRegistries()) {
@@ -1501,17 +1523,6 @@ public class DiscoveryClient implements LookupService {
                 }
             } catch (Throwable th) {
                 logger.error("Cannot fetch registry from server", th);
-            }
-        }
-    }
-
-    private void notifyPostRefresh(RefreshCallback callback) {
-        if (callback != null) {
-            try {
-                callback.postRefresh(DiscoveryClient.this);
-            }
-            catch (Throwable t) {
-                // ok to ignore
             }
         }
     }

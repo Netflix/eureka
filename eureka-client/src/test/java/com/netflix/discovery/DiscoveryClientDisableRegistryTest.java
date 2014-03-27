@@ -9,6 +9,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Collections;
+import java.util.Properties;
 import java.util.UUID;
 
 /**
@@ -23,10 +24,13 @@ public class DiscoveryClientDisableRegistryTest {
     @Before
     public void setUp() throws Exception {
         final int eurekaPort = localRandomEurekaPort + (int)(Math.random() * 10);
-        ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", "false");
-        ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default",
-                                                             "http://localhost:" + eurekaPort +
-                                                             MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
+        Properties props = new Properties();
+        props.setProperty("eureka.registration.enabled", "false");
+        props.setProperty("eureka.serviceUrl.default",
+                "http://localhost:" + eurekaPort +
+                MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
+        
+        ConfigurationManager.loadProperties(props);
 
         mockLocalEurekaServer = new MockRemoteEurekaServer(eurekaPort, Collections.<String, Application>emptyMap(),
                                                            Collections.<String, Application>emptyMap(),

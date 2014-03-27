@@ -79,7 +79,6 @@ public class MockRemoteEurekaServer {
             if (null != pathInfo && pathInfo.startsWith("")) {
                 pathInfo = pathInfo.substring(EUREKA_API_BASE_PATH.length());
                 boolean includeRemote = isRemoteRequest(request);
-                String[] parts = StringUtils.split(pathInfo, "/");
 
                 if (pathInfo.startsWith("apps/delta")) {
                     Applications apps = new Applications();
@@ -116,26 +115,32 @@ public class MockRemoteEurekaServer {
                         handled = true;
                     }
                     else if (request.getMethod().equals("DELETE")) {
-                        if (parts.length == 3) {
-                            String appName = parts[1];
-                            String id = parts[2];
-                            Application app = applicationMap.get(appName);
-                            InstanceInfo ii = app.getByInstanceId(id);
-                            ii.setStatus(InstanceStatus.OUT_OF_SERVICE);
-                            handled = true;
+                        if (pathInfo != null) {
+                            String[] parts = StringUtils.split(pathInfo, "/");
+                            if (parts.length == 3) {
+                                String appName = parts[1];
+                                String id = parts[2];
+                                Application app = applicationMap.get(appName);
+                                InstanceInfo ii = app.getByInstanceId(id);
+                                ii.setStatus(InstanceStatus.OUT_OF_SERVICE);
+                                handled = true;
+                            }
                         }
                     }
                     else if (request.getMethod().equals("POST")) {
-                        if (parts.length == 2) {
-                            String appName = parts[1];
-                            Application app = applicationMap.get(appName);
-                            
-                            ObjectMapper mapper = new ObjectMapper();
-                            JsonNode node = mapper.readTree(request.getInputStream());
-                            String id = node.get("instance").get("hostName").asText();
-                            InstanceInfo ii = app.getByInstanceId(id);
-                            ii.setStatus(InstanceStatus.UP);
-                            handled = true;
+                        if (pathInfo != null) {
+                            String[] parts = StringUtils.split(pathInfo, "/");
+                            if (parts.length == 2) {
+                                String appName = parts[1];
+                                Application app = applicationMap.get(appName);
+                                
+                                ObjectMapper mapper = new ObjectMapper();
+                                JsonNode node = mapper.readTree(request.getInputStream());
+                                String id = node.get("instance").get("hostName").asText();
+                                InstanceInfo ii = app.getByInstanceId(id);
+                                ii.setStatus(InstanceStatus.UP);
+                                handled = true;
+                            }
                         }
                     }
                 }
