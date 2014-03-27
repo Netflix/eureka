@@ -132,6 +132,7 @@ public class DiscoveryClient implements LookupService {
 
     // instance variables
     private volatile HealthCheckCallback healthCheckCallback;
+    private volatile RefreshCallback refreshCallback;
     private volatile AtomicReference<List<String>> eurekaServiceUrls = new AtomicReference<List<String>>();
     private volatile AtomicReference<Applications> localRegionApps = new AtomicReference<Applications>();
     private volatile Map<String, Applications> remoteRegionVsApps = new ConcurrentHashMap<String, Applications>();
@@ -145,7 +146,7 @@ public class DiscoveryClient implements LookupService {
     protected static EurekaClientConfig clientConfig;
     private final AtomicReference<String> remoteRegionsToFetch;
     private final InstanceRegionChecker instanceRegionChecker;
-
+    
     private enum Action {
         Register, Cancel, Renew, Refresh, Refresh_Delta
     }
@@ -292,6 +293,24 @@ public class DiscoveryClient implements LookupService {
         }
         if (callback != null) {
             healthCheckCallback = callback;
+        }
+    }
+    
+    /**
+     * Register {@link RefreshCallback} with the eureka client.
+     * 
+     * Once registered, the eureka client will invoke the 
+     * {@link postRefresh} method after each refresh from the eureka server.
+     * A RefershCallback can implement state change notification logic.
+     * 
+     * @param callback
+     */
+    public void registerRefreshCallback(RefreshCallback callback) {
+        if (instanceInfo == null) {
+            logger.error("Cannot register a listener for instance info since it is null!");
+        }
+        if (callback != null) {
+            refreshCallback = callback;
         }
     }
 
@@ -645,6 +664,7 @@ public class DiscoveryClient implements LookupService {
                 }
                 logTotalInstances();
             }
+            
             logger.debug(PREFIX + appPathIdentifier + " -  refresh status: "
                     + response.getStatus());
         } catch (Throwable e) {
@@ -659,6 +679,8 @@ public class DiscoveryClient implements LookupService {
                 tracer.stop();
             }
             closeResponse(response);
+            
+            notifyPostRefresh(refreshCallback);
         }
         return true;
     }
@@ -1479,6 +1501,17 @@ public class DiscoveryClient implements LookupService {
                 }
             } catch (Throwable th) {
                 logger.error("Cannot fetch registry from server", th);
+            }
+        }
+    }
+
+    private void notifyPostRefresh(RefreshCallback callback) {
+        if (callback != null) {
+            try {
+                callback.postRefresh(DiscoveryClient.this);
+            }
+            catch (Throwable t) {
+                // ok to ignore
             }
         }
     }

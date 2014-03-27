@@ -1,12 +1,10 @@
-package com.netflix.discovery;
+package com.netflix.discovery.lifecycle;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -16,19 +14,26 @@ import junit.framework.Assert;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mortbay.log.Log;
+
+import rx.Observable;
+import rx.util.functions.Action1;
 
 import com.google.common.base.Supplier;
 import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import com.google.inject.util.Modules;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.config.ConfigurationManager;
+import com.netflix.discovery.DefaultEurekaClientConfig;
+import com.netflix.discovery.DiscoveryClient;
+import com.netflix.discovery.DiscoveryClientProxy;
+import com.netflix.discovery.MockRemoteEurekaServer;
 import com.netflix.discovery.shared.Application;
-import com.netflix.governator.annotations.binding.Background;
 import com.netflix.governator.annotations.binding.DownStatus;
 import com.netflix.governator.annotations.binding.UpStatus;
 import com.netflix.governator.configuration.PropertiesConfigurationProvider;
@@ -58,7 +63,7 @@ public class DiscoveryStatusCheckerTest {
     private final Map<String, Application> remoteRegionApps = new HashMap<String, Application>();
     private final Map<String, Application> remoteRegionAppsDelta = new HashMap<String, Application>();
     
-    private DiscoveryClient client;
+    private DiscoveryClientProxy client;
     private InstanceInfo instanceInfo;
     private final int localRandomEurekaPort = 7799;
 
@@ -81,8 +86,9 @@ public class DiscoveryStatusCheckerTest {
 
         InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder();
         builder.setIPAddr("10.10.101.00");
-        builder.setHostName("Hosttt");
-        builder.setAppName("EurekaTestApp-" + UUID.randomUUID());
+        builder.setHostName(LOCAL_REGION_INSTANCE_1_HOSTNAME);
+        builder.setAppName(LOCAL_REGION_APP_NAME);
+        builder.setStatus(InstanceStatus.OUT_OF_SERVICE);
         builder.setDataCenterInfo(new DataCenterInfo() {
             @Override
             public Name getName() {
@@ -91,79 +97,77 @@ public class DiscoveryStatusCheckerTest {
         });
         
         instanceInfo = builder.build();
-        client = new DiscoveryClient(instanceInfo, new DefaultEurekaClientConfig());
+        client = new DiscoveryClientProxy(instanceInfo, new DefaultEurekaClientConfig());
     }
     
     
     public static class Service {
-        final AtomicBoolean upStatus;
         final Supplier<Boolean> upStatusSupplier;
         final Supplier<Boolean> dnStatusSupplier;
+        final DiscoveryClient client;
         
         @Inject
         public Service(
-                @UpStatus   AtomicBoolean upStatus,
+                DiscoveryClient client,
                 @UpStatus   Supplier<Boolean> upStatusSupplier,
-                @DownStatus Supplier<Boolean> dnStatusSupplier
+                @DownStatus Supplier<Boolean> dnStatusSupplier,
+                @UpStatus   Observable<Boolean> upStatusObservable
                 ) {
-            this.upStatus = upStatus;
+            this.client = client;
             this.upStatusSupplier = upStatusSupplier;
             this.dnStatusSupplier = dnStatusSupplier;
+            upStatusObservable.subscribe(new Action1<Boolean>() {
+                @Override
+                public void call(Boolean t1) {
+                    System.out.println("***** Status change to : " + t1);
+                }
+            });
         }
         
-        public void assertState(Boolean state) {
-            Assert.assertTrue(state == upStatus.get());
-            Assert.assertTrue(state == upStatusSupplier.get());
-            Assert.assertTrue(state == !dnStatusSupplier.get());
+        public void assertState(boolean state) {
+            Assert.assertEquals(state, (boolean)upStatusSupplier.get());
+            Assert.assertEquals(state, !dnStatusSupplier.get());
         }
     }
     
     @Test
     public void testStatus() throws Exception {
-        
         Injector injector = LifecycleInjector.builder()
                 .withBootstrapModule(new BootstrapModule() {
                     @Override
                     public void configure(BootstrapBinder binder) {
                         Properties props = new Properties();
-                        props.put("discovery.status.interval", STATUS_REFRESH_RATE);
+                        props.put("eureka.status.interval", STATUS_REFRESH_RATE);
 
                         binder.bindConfigurationProvider().toInstance(new PropertiesConfigurationProvider(props));
                     }
                 })
+                .withRootModule(InternalEurekaStatusModule.class)
                 .withModules(
                     new AbstractModule() {
                         @Override
                         protected void configure() {
-                            bind(ScheduledExecutorService.class).annotatedWith(Background.class).toInstance(Executors.newSingleThreadScheduledExecutor());
                             bind(Service.class);
+                            bind(DiscoveryClient.class).toInstance(client.getClient());
+                            bind(InstanceInfo.class).toInstance(instanceInfo);
                         }
-                    },
-                    Modules
-                        .override(new EurekaModule())
-                        .with(new AbstractModule() {
-                            @Override
-                            protected void configure() {
-                                bind(DiscoveryClient.class).toInstance(client);
-                                bind(InstanceInfo.class).toInstance(instanceInfo);
-                            }
-                        })
-                    )
+                    })
                 .build()
                 .createInjector();
         
         Service service = injector.getInstance(Service.class);
-        service.assertState(false);
-        
-        client.register();
         waitForDeltaToBeRetrieved();
-        TimeUnit.SECONDS.sleep(CLIENT_REFRESH_RATE * 2);
         service.assertState(true);
         
         client.unregister();
         waitForDeltaToBeRetrieved();
         TimeUnit.SECONDS.sleep(CLIENT_REFRESH_RATE * 2);
         service.assertState(false);
+        
+        client.register();
+        waitForDeltaToBeRetrieved();
+        TimeUnit.SECONDS.sleep(CLIENT_REFRESH_RATE * 2);
+        service.assertState(true);
     }
     
     private void populateLocalRegistryAtStartup() {
