@@ -43,25 +43,24 @@ public class DiscoveryClientRegistryTest {
     private final Map<String, Application> remoteRegionAppsDelta = new HashMap<String, Application>();
 
     private DiscoveryClient client;
-    private final int localRandomEurekaPort = 7799;
 
     @Before
     public void setUp() throws Exception {
-        final int eurekaPort = localRandomEurekaPort + (int)(Math.random() * 10);
+        populateLocalRegistryAtStartup();
+        populateRemoteRegistryAtStartup();
+
+        mockLocalEurekaServer = MockRemoteEurekaServer.createNearPort(
+                7799, localRegionApps, localRegionAppsDelta,
+                remoteRegionApps, remoteRegionAppsDelta);
+
         ConfigurationManager.getConfigInstance().setProperty("eureka.client.refresh.interval", CLIENT_REFRESH_RATE);
         ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", "false");
         ConfigurationManager.getConfigInstance().setProperty("eureka.fetchRemoteRegionsRegistry", REMOTE_REGION);
         ConfigurationManager.getConfigInstance().setProperty("eureka.myregion.availabilityZones", REMOTE_ZONE);
         ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default",
-                                                             "http://localhost:" + eurekaPort +
-                                                             MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
-        populateLocalRegistryAtStartup();
-        populateRemoteRegistryAtStartup();
-
-        mockLocalEurekaServer = new MockRemoteEurekaServer(eurekaPort, localRegionApps, localRegionAppsDelta,
-                                                           remoteRegionApps, remoteRegionAppsDelta);
-        mockLocalEurekaServer.start();
-
+                "http://localhost:" + mockLocalEurekaServer.getPort() +
+                        MockRemoteEurekaServer.EUREKA_API_BASE_PATH
+        );
         InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder();
         builder.setIPAddr("10.10.101.00");
         builder.setHostName("Hosttt");

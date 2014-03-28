@@ -11,7 +11,9 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.BindException;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -30,7 +32,7 @@ public class MockRemoteEurekaServer {
     private AtomicBoolean sentDelta = new AtomicBoolean();
     private AtomicBoolean sentRegistry = new AtomicBoolean();
 
-    public MockRemoteEurekaServer(int port, Map<String, Application> localRegionApps,
+    private MockRemoteEurekaServer(int port, Map<String, Application> localRegionApps,
                                   Map<String, Application> localRegionAppsDelta,
                                   Map<String, Application> remoteRegionApps,
                                   Map<String, Application> remoteRegionAppsDelta) {
@@ -43,12 +45,41 @@ public class MockRemoteEurekaServer {
         server.setHandler(new AppsResourceHandler());
     }
 
-    public void start() throws Exception {
+    public static MockRemoteEurekaServer createNearPort(
+            int basePort,
+            Map<String, Application> localRegionApps,
+            Map<String, Application> localRegionAppsDelta,
+            Map<String, Application> remoteRegionApps,
+            Map<String, Application> remoteRegionAppsDelta) throws Exception
+    {
+        final Random random = new Random();
+        while (true) {
+            final int port = basePort + random.nextInt(20);
+            try {
+                MockRemoteEurekaServer mockRemoteEurekaServer = new MockRemoteEurekaServer(
+                        port,
+                        localRegionApps,
+                        localRegionAppsDelta,
+                        remoteRegionApps,
+                        remoteRegionAppsDelta);
+                mockRemoteEurekaServer.start();
+                return mockRemoteEurekaServer;
+            } catch (BindException e) {
+                continue;
+            }
+        }
+    }
+
+    private void start() throws Exception {
         server.start();
     }
 
     public void stop() throws Exception {
         server.stop();
+    }
+
+    public int getPort() {
+        return this.port;
     }
 
     public boolean isSentDelta() {
