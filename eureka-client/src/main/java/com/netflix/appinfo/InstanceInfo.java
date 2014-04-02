@@ -57,6 +57,7 @@ public class InstanceInfo {
     public final static int DEFAULT_PORT = 7001;
     public final static int DEFAULT_SECURE_PORT = 7002;
     public final static int DEFAULT_COUNTRY_ID = 1; // US
+
     private volatile String appName;
     private volatile String ipAddr;
     private volatile String sid = "na";
@@ -117,6 +118,69 @@ public class InstanceInfo {
     
     private InstanceInfo() {
     }
+
+    /**
+     *
+     * shallow copy constructor
+     *
+     * @param ii The object to copy
+     */
+    public InstanceInfo(InstanceInfo ii) {
+        this.appName = ii.appName;
+        this.ipAddr = ii.ipAddr;
+        this.sid = ii.sid;
+
+        this.port = ii.port;
+        this.securePort = ii.securePort;
+
+        this.homePageUrl = ii.homePageUrl;
+        this.statusPageUrl = ii.statusPageUrl;
+        this.healthCheckUrl = ii.healthCheckUrl;
+        this.secureHealthCheckUrl = ii.secureHealthCheckUrl;
+
+        this.vipAddress = ii.vipAddress;
+        this.secureVipAddress = ii.secureVipAddress;
+        this.statusPageRelativeUrl = ii.statusPageRelativeUrl;
+        this.statusPageExplicitUrl = ii.statusPageExplicitUrl;
+
+        this.healthCheckRelativeUrl = ii.healthCheckRelativeUrl;
+        this.healthCheckSecureExplicitUrl = ii.healthCheckSecureExplicitUrl;
+
+        this.vipAddressUnresolved = ii.vipAddressUnresolved;
+        this.secureVipAddressUnresolved = ii.secureVipAddressUnresolved;
+
+        this.healthCheckExplicitUrl = ii.healthCheckExplicitUrl;
+
+        this.countryId = ii.countryId;
+        this.isSecurePortEnabled = ii.isSecurePortEnabled;
+        this.isUnsecurePortEnabled = ii.isUnsecurePortEnabled;
+
+        this.dataCenterInfo = ii.dataCenterInfo;
+
+        this.hostName = ii.hostName;
+
+        this.status = ii.status;
+        this.overriddenstatus = ii.overriddenstatus;
+
+        this.isInstanceInfoDirty = ii.isInstanceInfoDirty;
+
+        this.leaseInfo = ii.leaseInfo;
+
+        this.isCoordinatingDiscoveryServer = ii.isCoordinatingDiscoveryServer;
+
+        this.metadata = ii.metadata;
+
+        this.lastUpdatedTimestamp = ii.lastUpdatedTimestamp;
+        this.lastDirtyTimestamp = ii.lastDirtyTimestamp;
+
+        this.actionType = ii.actionType;
+
+        this.asgName = ii.asgName;
+
+        this.version = ii.version;
+    }
+
+
 
     public enum InstanceStatus {
         UP, // Ready to receive traffic
@@ -622,8 +686,8 @@ public class InstanceInfo {
      * @return the unique id.
      */
     public String getId() {
-        if (dataCenterInfo.getName() == Name.Amazon) {
-            return ((AmazonInfo) dataCenterInfo).get(MetaDataKey.instanceId);
+        if (dataCenterInfo instanceof UniqueIdentifier) {
+            return ((UniqueIdentifier) dataCenterInfo).getId();
         } else {
             return hostName;
         }

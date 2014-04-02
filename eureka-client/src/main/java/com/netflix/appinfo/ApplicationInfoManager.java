@@ -94,7 +94,13 @@ public class ApplicationInfoManager {
 
             // Start off with the STARTING state to avoid traffic
             if (!config.isInstanceEnabledOnit()) {
-                builder.setStatus(InstanceStatus.STARTING);
+                InstanceStatus initialStatus = InstanceStatus.STARTING;
+                logger.info("Setting initial instance status as: " + initialStatus);
+                builder.setStatus(initialStatus);
+            } else {
+                logger.info("Setting initial instance status as: " + InstanceStatus.UP +
+                            ". This may be too early for the instance to advertise itself as available. " +
+                            "You would instead want to control this via a healthcheck handler.");
             }
 
             // Add any user-specific metadata information

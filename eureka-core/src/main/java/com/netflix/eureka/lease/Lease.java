@@ -85,6 +85,13 @@ public class Lease<T> {
     }
 
     /**
+     * Set the leases service UP timestamp
+     */
+    public void setServiceUpTimestamp(long serviceUpTimestamp) {
+        this.serviceUpTimestamp = serviceUpTimestamp;
+    }
+
+    /**
      * Checks if the lease of a given {@link InstanceInfo} has expired or not.
      */
     public boolean isExpired() {

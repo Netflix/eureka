@@ -524,6 +524,6 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
 
     @Override
     public boolean shouldBatchReplication() {
-        return configInstance.getBooleanProperty(namespace + "shouldBatchReplication", true).get();
+        return configInstance.getBooleanProperty(namespace + "shouldBatchReplication", false).get();
     }
 }

@@ -55,12 +55,32 @@ public class SampleEurekaService {
     .getLogger(SampleEurekaService.class);
 
     public void registerWithEureka() {
+        int sleepSeconds = 60; // Application initialization and running simulation time
+
         // Register with Eureka
         DiscoveryManager.getInstance().initComponent(
                 new MyDataCenterInstanceConfig(),
                 new DefaultEurekaClientConfig());
+
+        // A good practice is to register as STARTING and only change status to UP
+        // after the service is ready to receive traffic
+        System.out.println("Registering service to eureka with STARTING status");
+        ApplicationInfoManager.getInstance().setInstanceStatus(
+                InstanceStatus.STARTING);
+
+        System.out.println("Simulating service initialization by sleeping for " +
+                           sleepSeconds + " seconds...");
+        try {
+            Thread.sleep(sleepSeconds * 1000);
+        } catch (InterruptedException e) {
+            // Nothing
+        }
+
+        // Now we change our status to UP
+        System.out.println("Done sleeping, now changing status to UP");
         ApplicationInfoManager.getInstance().setInstanceStatus(
                 InstanceStatus.UP);
+
         String vipAddress = configInstance.getStringProperty(
                 "eureka.vipAddress", "sampleservice.mydomain.net").get();
         InstanceInfo nextServerInfo = null;
@@ -95,7 +115,18 @@ public class SampleEurekaService {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        System.out.println("Simulating service doing work by sleeping for " +
+                sleepSeconds + " seconds...");
+        try {
+            Thread.sleep(sleepSeconds * 1000);
+        } catch (InterruptedException e) {
+            // Nothing
+        }
+
+        System.out.println("Removing registration from eureka");
         this.unRegisterWithEureka();
+
         System.out.println("Shutting down server.Demo over.");
 
     }
@@ -116,7 +147,7 @@ public class SampleEurekaService {
             PrintStream out = new PrintStream(s.getOutputStream());
             System.out.println("Sending the response to the client...");
 
-            out.println("Reponse at " + new Date());
+            out.println("Response at " + new Date());
 
         } catch (Throwable e) {
             System.err.println("Error processing requests");
