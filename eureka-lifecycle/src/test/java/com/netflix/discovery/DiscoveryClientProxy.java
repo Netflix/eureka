@@ -3,6 +3,7 @@ package com.netflix.discovery;
 import java.util.List;
 
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.eventbus.spi.EventBus;
 
 /**
  * Stupid proxy because I don't want to change the visibility of DiscoveryClient
@@ -13,8 +14,9 @@ public class DiscoveryClientProxy {
     private DiscoveryClient client;
     
     public DiscoveryClientProxy(InstanceInfo instanceInfo,
-            DefaultEurekaClientConfig defaultEurekaClientConfig) {
-        client = new DiscoveryClient(instanceInfo, defaultEurekaClientConfig);
+            DefaultEurekaClientConfig defaultEurekaClientConfig, 
+            EventBus eventBus) {
+        client = new DiscoveryClient(instanceInfo, defaultEurekaClientConfig, eventBus);
     }
     
     public DiscoveryClient getClient() {

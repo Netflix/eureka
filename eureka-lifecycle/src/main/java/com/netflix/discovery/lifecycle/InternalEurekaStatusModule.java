@@ -1,16 +1,13 @@
 package com.netflix.discovery.lifecycle;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import rx.Observable;
 
 import com.google.common.base.Supplier;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
+import com.netflix.appinfo.InstanceInfo;
 import com.netflix.governator.annotations.binding.DownStatus;
 import com.netflix.governator.annotations.binding.UpStatus;
 import com.netflix.governator.guice.lazy.LazySingleton;
@@ -40,11 +37,11 @@ class InternalEurekaStatusModule extends AbstractModule {
         
         @Override
         public Supplier<Boolean> get() {
-            final AtomicBoolean isUp = upStatus.get().getUpStatus();
+            final EurekaUpStatusResolver resolver = upStatus.get();
             return new Supplier<Boolean>() {
                 @Override
                 public Boolean get() {
-                    return isUp.get();
+                    return resolver.getStatus().equals(InstanceInfo.InstanceStatus.UP);
                 }
             };
         }
@@ -57,24 +54,13 @@ class InternalEurekaStatusModule extends AbstractModule {
         
         @Override
         public Supplier<Boolean> get() {
-            final AtomicBoolean isUp = upStatus.get().getUpStatus();
+            final EurekaUpStatusResolver resolver = upStatus.get();
             return new Supplier<Boolean>() {
                 @Override
                 public Boolean get() {
-                    return !isUp.get();
+                    return !resolver.getStatus().equals(InstanceInfo.InstanceStatus.UP);
                 }
             };
-        }
-    }
-
-    @LazySingleton
-    public static class ObservableStatusProvider implements Provider<Observable<Boolean>> {
-        @Inject
-        private Provider<EurekaUpStatusResolver> upStatus;
-        
-        @Override
-        public Observable<Boolean> get() {
-            return upStatus.get().asObservable();
         }
     }
 
@@ -87,10 +73,5 @@ class InternalEurekaStatusModule extends AbstractModule {
         bind(new TypeLiteral<Supplier<Boolean>>() {})
             .annotatedWith(DownStatus.class)
             .toProvider(DownStatusProvider.class);
-        
-        bind(new TypeLiteral<Observable<Boolean>>() {})
-            .annotatedWith(UpStatus.class)
-            .toProvider(ObservableStatusProvider.class);
-        
     }
 }

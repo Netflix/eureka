@@ -3,7 +3,6 @@ ext.githubProjectName = 'eureka'
 ext {
     jerseyVersion="1.11"
     governatorVersion="1.2.7"
-    rxJavaVersion="0.17.2"
 }
 
 buildscript {
@@ -38,6 +37,7 @@ subprojects {
 
 project(':eureka-client') {
     dependencies {
+        compile "com.netflix.netflix-commons:netflix-eventbus:0.1.2"
         compile 'com.thoughtworks.xstream:xstream:1.4.2'
         compile 'com.netflix.archaius:archaius-core:0.3.3'
         compile 'javax.ws.rs:jsr311-api:1.1.1'
@@ -79,7 +79,6 @@ project(':eureka-lifecycle') {
         compile project(':eureka-client')
         compile project(':eureka-core')
         compile "com.netflix.governator:governator:$governatorVersion"
-        compile "com.netflix.rxjava:rxjava-core:$rxJavaVersion"
     }
 }
 

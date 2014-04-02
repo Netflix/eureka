@@ -1,14 +1,8 @@
 package com.netflix.discovery;
 
-import com.netflix.appinfo.InstanceInfo;
-import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.converters.XmlXStream;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
-
-import org.apache.commons.lang.StringUtils;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.mortbay.jetty.Request;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.handler.AbstractHandler;
@@ -16,7 +10,6 @@ import org.mortbay.jetty.handler.AbstractHandler;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -92,57 +85,26 @@ public class MockRemoteEurekaServer {
                     sendOkResponseWithContent((Request) request, response, apps);
                     handled = true;
                 } else if(pathInfo.startsWith("apps")) {
-                    if (request.getMethod().equals("GET")) {
-                        Applications apps = new Applications();
-                        apps.setVersion(100l);
-                        for (Application application : applicationMap.values()) {
+                    Applications apps = new Applications();
+                    apps.setVersion(100l);
+                    for (Application application : applicationMap.values()) {
+                        apps.addApplication(application);
+                    }
+                    if (includeRemote) {
+                        for (Application application : remoteRegionApps.values()) {
                             apps.addApplication(application);
                         }
-                        if (includeRemote) {
-                            for (Application application : remoteRegionApps.values()) {
-                                apps.addApplication(application);
-                            }
-                        }
-    
-                        if (sentDelta.get()) {
-                            addDeltaApps(includeRemote, apps);
-                        } else {
-                            System.out.println("Eureka port: " + port + ". " + System.currentTimeMillis() +". Not including delta apps in /apps response, as delta has not been sent.");
-                        }
-                        apps.setAppsHashCode(apps.getReconcileHashCode());
-                        sendOkResponseWithContent((Request) request, response, apps);
-                        sentRegistry.set(true);
-                        handled = true;
                     }
-                    else if (request.getMethod().equals("DELETE")) {
-                        if (pathInfo != null) {
-                            String[] parts = StringUtils.split(pathInfo, "/");
-                            if (parts.length == 3) {
-                                String appName = parts[1];
-                                String id = parts[2];
-                                Application app = applicationMap.get(appName);
-                                InstanceInfo ii = app.getByInstanceId(id);
-                                ii.setStatus(InstanceStatus.OUT_OF_SERVICE);
-                                handled = true;
-                            }
-                        }
+
+                    if (sentDelta.get()) {
+                        addDeltaApps(includeRemote, apps);
+                    } else {
+                        System.out.println("Eureka port: " + port + ". " + System.currentTimeMillis() +". Not including delta apps in /apps response, as delta has not been sent.");
                     }
-                    else if (request.getMethod().equals("POST")) {
-                        if (pathInfo != null) {
-                            String[] parts = StringUtils.split(pathInfo, "/");
-                            if (parts.length == 2) {
-                                String appName = parts[1];
-                                Application app = applicationMap.get(appName);
-                                
-                                ObjectMapper mapper = new ObjectMapper();
-                                JsonNode node = mapper.readTree(request.getInputStream());
-                                String id = node.get("instance").get("hostName").asText();
-                                InstanceInfo ii = app.getByInstanceId(id);
-                                ii.setStatus(InstanceStatus.UP);
-                                handled = true;
-                            }
-                        }
-                    }
+                    apps.setAppsHashCode(apps.getReconcileHashCode());
+                    sendOkResponseWithContent((Request) request, response, apps);
+                    sentRegistry.set(true);
+                    handled = true;
                 }
             }
 
@@ -180,8 +142,6 @@ public class MockRemoteEurekaServer {
 
         private boolean isRemoteRequest(HttpServletRequest request) {
             String queryString = request.getQueryString();
-            if (queryString == null)
-                return false;
             return queryString.contains("regions=");
         }
 

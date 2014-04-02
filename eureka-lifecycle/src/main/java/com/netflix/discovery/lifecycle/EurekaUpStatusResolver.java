@@ -1,6 +1,6 @@
 package com.netflix.discovery.lifecycle;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -8,17 +8,13 @@ import javax.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import rx.Observable;
-import rx.subjects.BehaviorSubject;
-import rx.subjects.Subject;
-
 import com.google.inject.Inject;
-import com.google.inject.Provider;
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.DiscoveryClient;
-import com.netflix.discovery.RefreshCallback;
-import com.netflix.discovery.shared.Application;
+import com.netflix.discovery.StatusChangeEvent;
+import com.netflix.eventbus.spi.EventBus;
+import com.netflix.eventbus.spi.InvalidSubscriberException;
+import com.netflix.eventbus.spi.Subscribe;
 import com.netflix.governator.guice.lazy.LazySingleton;
 
 /**
@@ -32,10 +28,9 @@ import com.netflix.governator.guice.lazy.LazySingleton;
 public class EurekaUpStatusResolver  {
     private static Logger LOG = LoggerFactory.getLogger(EurekaUpStatusResolver.class);
     
-    private final Provider<DiscoveryClient> discoveryClientProvider;
-    private final Provider<InstanceInfo>    instanceInfoProvider;
-    private final AtomicBoolean upStatus = new AtomicBoolean(false);
-    private final Subject<Boolean, Boolean> subject = BehaviorSubject.createWithDefaultValue(false);
+    private AtomicReference<InstanceInfo.InstanceStatus> currentStatus = new AtomicReference<InstanceInfo.InstanceStatus>(InstanceInfo.InstanceStatus.UNKNOWN);
+    private final EventBus eventBus;
+    private final DiscoveryClient client;
     
     /**
      * @param executor
@@ -44,52 +39,37 @@ public class EurekaUpStatusResolver  {
      *  because the DiscoveryClient reference may not exist at bootstrap time
      */
     @Inject
-    public EurekaUpStatusResolver(
-            Provider<DiscoveryClient> discoveryClientProvider,
-            Provider<InstanceInfo>    instanceInfoProvider) {
-        this.discoveryClientProvider = discoveryClientProvider;
-        this.instanceInfoProvider = instanceInfoProvider;
+    public EurekaUpStatusResolver(DiscoveryClient client, EventBus eventBus) {
+        this.eventBus = eventBus;
+        this.client   = client;
+    }
+    
+    @Subscribe
+    public void onStatusChange(StatusChangeEvent event) {
+        currentStatus.set(event.getStatus());
     }
     
     @PostConstruct
     public void init() {
-        final InstanceInfo self = instanceInfoProvider.get();
-        
-        discoveryClientProvider.get().registerRefreshCallback(new RefreshCallback() {
-            @Override
-            public void postRefresh(DiscoveryClient discoveryClient) {
-                for (Application app : discoveryClient.getApplications().getRegisteredApplications()) {
-                    InstanceInfo remoteSelf = app.getByInstanceId(self.getId());
-                    if (remoteSelf != null) {
-                        setIsUp(remoteSelf.getStatus().equals(InstanceStatus.UP));
-                        return;
-                    }
-                }
-                setIsUp(false);
-            }
+        try {
+            eventBus.registerSubscriber(this);
             
-            private void setIsUp(boolean isUp) {
-                if (upStatus.compareAndSet(!isUp, isUp)) {
-                    LOG.info("Discovery upStatus change to " + isUp);
-                    subject.onNext(isUp);
-                }
-            }
-        });
+            // Must set the initial status
+            currentStatus.compareAndSet(InstanceInfo.InstanceStatus.UNKNOWN, client.getInstanceRemoteStatus());
+        } catch (InvalidSubscriberException e) {
+            LOG.error("Error registring for discovery status change events.", e);
+        }
     }
     
     @PreDestroy
     public void shutdown() {
+        eventBus.unregisterSubscriber(this);
     }
     
-    public AtomicBoolean getUpStatus() {
-        return upStatus;
-    }
-
-    public Boolean isUp() {
-        return upStatus.get();
-    }
-
-    public Observable<Boolean> asObservable() {
-        return subject;
-    }
+    /**
+     * @return Get the current instance status
+     */
+    public InstanceInfo.InstanceStatus getStatus() {
+        return currentStatus.get();
+    }   
 }
