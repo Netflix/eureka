@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Nitesh Kant
@@ -43,11 +45,12 @@ public class DiscoveryClientRegistryTest {
     private final Map<String, Application> remoteRegionAppsDelta = new HashMap<String, Application>();
 
     private DiscoveryClient client;
-    private final int localRandomEurekaPort = 7799;
-
+    private final static int localRandomEurekaPort = 7799;
+    private final static AtomicInteger portCounter = new AtomicInteger(0);
+    
     @Before
     public void setUp() throws Exception {
-        final int eurekaPort = localRandomEurekaPort + (int)(Math.random() * 10);
+        final int eurekaPort = localRandomEurekaPort + portCounter.incrementAndGet();
         ConfigurationManager.getConfigInstance().setProperty("eureka.client.refresh.interval", CLIENT_REFRESH_RATE);
         ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", "false");
         ConfigurationManager.getConfigInstance().setProperty("eureka.fetchRemoteRegionsRegistry", REMOTE_REGION);
@@ -77,13 +80,15 @@ public class DiscoveryClientRegistryTest {
 
     @After
     public void tearDown() throws Exception {
-        client.shutdown();
+        if (client != null)
+            client.shutdown();
         ConfigurationManager.getConfigInstance().clearProperty("eureka.client.refresh.interval");
         ConfigurationManager.getConfigInstance().clearProperty("eureka.registration.enabled");
         ConfigurationManager.getConfigInstance().clearProperty("eureka.fetchRemoteRegionsRegistry");
         ConfigurationManager.getConfigInstance().clearProperty("eureka.myregion.availabilityZones");
         ConfigurationManager.getConfigInstance().clearProperty("eureka.serviceUrl.default");
-        mockLocalEurekaServer.stop();
+        if (mockLocalEurekaServer != null)
+            mockLocalEurekaServer.stop();
         localRegionApps.clear();
         localRegionAppsDelta.clear();
         remoteRegionApps.clear();
@@ -102,8 +107,8 @@ public class DiscoveryClientRegistryTest {
     @Test
     public void testGetAllKnownRegions() throws Exception {
         Set<String> allKnownRegions = client.getAllKnownRegions();
-        Assert.assertEquals("Unexpected number of known regions.", 2, allKnownRegions.size());
-        Assert.assertTrue("Remote region not found in set of known regions.", allKnownRegions.contains(REMOTE_REGION));
+        Assert.assertEquals("Unexpected number of known regions." + allKnownRegions, 2, allKnownRegions.size());
+        Assert.assertTrue("Remote region not found in set of known regions." + allKnownRegions, allKnownRegions.contains(REMOTE_REGION));
     }
     @Test
     public void testAllAppsForRegions() throws Exception {

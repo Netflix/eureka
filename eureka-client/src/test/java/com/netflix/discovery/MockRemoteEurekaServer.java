@@ -142,6 +142,8 @@ public class MockRemoteEurekaServer {
 
         private boolean isRemoteRequest(HttpServletRequest request) {
             String queryString = request.getQueryString();
+            if (queryString == null)
+                return false;
             return queryString.contains("regions=");
         }
 

@@ -26,6 +26,7 @@ public class DiscoveryClientDisableRegistryTest {
         final int eurekaPort = localRandomEurekaPort + (int)(Math.random() * 10);
         Properties props = new Properties();
         props.setProperty("eureka.registration.enabled", "false");
+        props.setProperty("eureka.shouldFetchRegistry", "false");
         props.setProperty("eureka.serviceUrl.default",
                 "http://localhost:" + eurekaPort +
                 MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
