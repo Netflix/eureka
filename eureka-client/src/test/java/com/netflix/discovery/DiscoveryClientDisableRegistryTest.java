@@ -17,13 +17,19 @@ import java.util.UUID;
  */
 public class DiscoveryClientDisableRegistryTest {
 
-    private static final int localRandomEurekaPort = 7799;
     private DiscoveryClient client;
     private MockRemoteEurekaServer mockLocalEurekaServer;
 
     @Before
     public void setUp() throws Exception {
-        final int eurekaPort = localRandomEurekaPort + (int)(Math.random() * 10);
+        mockLocalEurekaServer = new MockRemoteEurekaServer(Collections.<String, Application>emptyMap(),
+                                                           Collections.<String, Application>emptyMap(),
+                                                           Collections.<String, Application>emptyMap(),
+                                                           Collections.<String, Application>emptyMap());
+        mockLocalEurekaServer.start();
+
+        final int eurekaPort = mockLocalEurekaServer.getPort();
+        
         Properties props = new Properties();
         props.setProperty("eureka.registration.enabled", "false");
         props.setProperty("eureka.shouldFetchRegistry", "false");
@@ -33,11 +39,6 @@ public class DiscoveryClientDisableRegistryTest {
         
         ConfigurationManager.loadProperties(props);
 
-        mockLocalEurekaServer = new MockRemoteEurekaServer(eurekaPort, Collections.<String, Application>emptyMap(),
-                                                           Collections.<String, Application>emptyMap(),
-                                                           Collections.<String, Application>emptyMap(),
-                                                           Collections.<String, Application>emptyMap());
-        mockLocalEurekaServer.start();
 
         InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder();
         builder.setIPAddr("10.10.101.00");

@@ -5,6 +5,7 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import org.mortbay.jetty.Request;
 import org.mortbay.jetty.Server;
+import org.mortbay.jetty.bio.SocketConnector;
 import org.mortbay.jetty.handler.AbstractHandler;
 
 import javax.servlet.ServletException;
@@ -21,7 +22,7 @@ public class MockRemoteEurekaServer {
 
     public static final String EUREKA_API_BASE_PATH = "/eureka/v2/";
 
-    private final int port;
+    private int port;
     private final Map<String, Application> applicationMap;
     private final Map<String, Application> remoteRegionApps;
     private final Map<String, Application> remoteRegionAppsDelta;
@@ -30,7 +31,7 @@ public class MockRemoteEurekaServer {
     private AtomicBoolean sentDelta = new AtomicBoolean();
     private AtomicBoolean sentRegistry = new AtomicBoolean();
 
-    public MockRemoteEurekaServer(int port, Map<String, Application> localRegionApps,
+    public MockRemoteEurekaServer(Map<String, Application> localRegionApps,
                                   Map<String, Application> localRegionAppsDelta,
                                   Map<String, Application> remoteRegionApps,
                                   Map<String, Application> remoteRegionAppsDelta) {
@@ -39,14 +40,19 @@ public class MockRemoteEurekaServer {
         this.applicationDeltaMap = localRegionAppsDelta;
         this.remoteRegionApps = remoteRegionApps;
         this.remoteRegionAppsDelta = remoteRegionAppsDelta;
-        server = new Server(port);
+        server = new Server(this.port);
         server.setHandler(new AppsResourceHandler());
     }
 
     public void start() throws Exception {
         server.start();
+        this.port = ((SocketConnector)server.getConnectors()[0]).getLocalPort();
     }
 
+    public int getPort() {
+        return port;
+    }
+    
     public void stop() throws Exception {
         server.stop();
     }

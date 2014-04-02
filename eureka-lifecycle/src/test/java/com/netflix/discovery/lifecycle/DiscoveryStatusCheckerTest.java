@@ -60,12 +60,15 @@ public class DiscoveryStatusCheckerTest {
     
     private DiscoveryClientProxy client;
     private InstanceInfo instanceInfo;
-    private final int localRandomEurekaPort = 7799;
     private static EventBus eventBus = new EventBusImpl();
     
     @Before
     public void setUp() throws Exception {
-        final int eurekaPort = localRandomEurekaPort + (int)(Math.random() * 10);
+        mockLocalEurekaServer = new MockRemoteEurekaServer(localRegionApps, localRegionAppsDelta,
+                remoteRegionApps, remoteRegionAppsDelta);
+        mockLocalEurekaServer.start();
+
+        final int eurekaPort = mockLocalEurekaServer.getPort();
         ConfigurationManager.getConfigInstance().setProperty("eureka.client.refresh.interval", CLIENT_REFRESH_RATE);
         ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", "false");
         ConfigurationManager.getConfigInstance().setProperty("eureka.fetchRemoteRegionsRegistry", REMOTE_REGION);
@@ -75,10 +78,6 @@ public class DiscoveryStatusCheckerTest {
                                                              MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
         populateLocalRegistryAtStartup();
         populateRemoteRegistryAtStartup();
-
-        mockLocalEurekaServer = new MockRemoteEurekaServer(eurekaPort, localRegionApps, localRegionAppsDelta,
-                                                           remoteRegionApps, remoteRegionAppsDelta);
-        mockLocalEurekaServer.start();
 
         InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder();
         builder.setIPAddr("10.10.101.00");

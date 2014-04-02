@@ -17,8 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Nitesh Kant
@@ -45,12 +43,14 @@ public class DiscoveryClientRegistryTest {
     private final Map<String, Application> remoteRegionAppsDelta = new HashMap<String, Application>();
 
     private DiscoveryClient client;
-    private final static int localRandomEurekaPort = 7799;
-    private final static AtomicInteger portCounter = new AtomicInteger(0);
     
     @Before
     public void setUp() throws Exception {
-        final int eurekaPort = localRandomEurekaPort + portCounter.incrementAndGet();
+        mockLocalEurekaServer = new MockRemoteEurekaServer(localRegionApps, localRegionAppsDelta,
+                remoteRegionApps, remoteRegionAppsDelta);
+        mockLocalEurekaServer.start();
+
+        final int eurekaPort = mockLocalEurekaServer.getPort();
         ConfigurationManager.getConfigInstance().setProperty("eureka.client.refresh.interval", CLIENT_REFRESH_RATE);
         ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", "false");
         ConfigurationManager.getConfigInstance().setProperty("eureka.fetchRemoteRegionsRegistry", REMOTE_REGION);
@@ -60,10 +60,6 @@ public class DiscoveryClientRegistryTest {
                                                              MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
         populateLocalRegistryAtStartup();
         populateRemoteRegistryAtStartup();
-
-        mockLocalEurekaServer = new MockRemoteEurekaServer(eurekaPort, localRegionApps, localRegionAppsDelta,
-                                                           remoteRegionApps, remoteRegionAppsDelta);
-        mockLocalEurekaServer.start();
 
         InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder();
         builder.setIPAddr("10.10.101.00");
