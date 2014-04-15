@@ -45,6 +45,13 @@ public interface EurekaInstanceConfig {
     String getAppname();
 
     /**
+     * Get the name of the application group to be registered with eureka.
+     *
+     * @return string denoting the name.
+     */
+    String getAppGroupName();
+
+    /**
      * Indicates whether the instance should be enabled for taking traffic as
      * soon as it is registered with eureka. Sometimes the application might
      * need to do some pre-processing before it is ready to take traffic.

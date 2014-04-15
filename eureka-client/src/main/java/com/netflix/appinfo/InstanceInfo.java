@@ -59,6 +59,8 @@ public class InstanceInfo {
     public final static int DEFAULT_COUNTRY_ID = 1; // US
 
     private volatile String appName;
+    @Auto private volatile String appGroupName;
+
     private volatile String ipAddr;
     private volatile String sid = "na";
 
@@ -127,6 +129,7 @@ public class InstanceInfo {
      */
     public InstanceInfo(InstanceInfo ii) {
         this.appName = ii.appName;
+        this.appGroupName = ii.appGroupName;
         this.ipAddr = ii.ipAddr;
         this.sid = ii.sid;
 
@@ -263,6 +266,14 @@ public class InstanceInfo {
             result.appName = appName;
             if (result.appName != null) {
                 result.appName = result.appName.toUpperCase();
+            }
+            return this;
+        }
+
+        public Builder setAppGroupName(String appGroupName) {
+            result.appGroupName = appGroupName;
+            if (result.appGroupName != null) {
+                result.appGroupName = result.appGroupName.toUpperCase();
             }
             return this;
         }
@@ -657,6 +668,10 @@ public class InstanceInfo {
      */
     public String getAppName() {
         return appName;
+    }
+
+    public String getAppGroupName() {
+        return appGroupName;
     }
 
     /**

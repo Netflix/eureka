@@ -73,6 +73,7 @@ public class ApplicationInfoManager {
 
             builder.setNamespace(config.getNamespace())
             .setAppName(config.getAppname())
+            .setAppGroupName(config.getAppGroupName())
             .setDataCenterInfo(config.getDataCenterInfo())
             .setIPAddr(config.getIpAddress())
             .setHostName(config.getHostName(false))

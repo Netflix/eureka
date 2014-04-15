@@ -29,6 +29,9 @@ import java.util.TimerTask;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -150,36 +153,38 @@ public class DiscoveryClient implements LookupService {
         Register, Cancel, Renew, Refresh, Refresh_Delta
     }
 
-    private Timer cacheRefreshTimer = new Timer(PREFIX + "CacheRefresher", true);
-    private Timer heartbeatTimer = new Timer(PREFIX + "Heartbeat", true);
-    private Timer serviceUrlUpdaterTimer = new Timer(PREFIX
-            + "ServiceURLUpdater", true);
-    private Timer instanceInfoReplicatorTimer = new Timer(PREFIX
-            + "InstanceInfo-Replictor", true);
+    private final ScheduledExecutorService scheduler;
 
     DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config) {
         try {
+            scheduler = Executors.newScheduledThreadPool(4);
+
             clientConfig = config;
             final String zone = getZone(myInfo);
             eurekaServiceUrls.set(getDiscoveryServiceUrls(zone));
-            serviceUrlUpdaterTimer.schedule(getServiceUrlUpdateTask(zone),
-                    clientConfig.getEurekaServiceUrlPollIntervalSeconds(),
-                    clientConfig.getEurekaServiceUrlPollIntervalSeconds());
+            scheduler.scheduleWithFixedDelay(getServiceUrlUpdateTask(zone),
+                                             clientConfig.getEurekaServiceUrlPollIntervalSeconds(),
+                                             clientConfig.getEurekaServiceUrlPollIntervalSeconds(), TimeUnit.SECONDS);
             localRegionApps.set(new Applications());
 
             if (myInfo != null) {
                 instanceInfo = myInfo;
                 appPathIdentifier = instanceInfo.getAppName() + "/"
-                        + instanceInfo.getId();
+                                    + instanceInfo.getId();
             }
             String proxyHost = clientConfig.getProxyHost();
             String proxyPort = clientConfig.getProxyPort();
             discoveryJerseyClient = EurekaJerseyClient.createJerseyClient("DiscoveryClient-HTTPClient",
-                    clientConfig.getEurekaServerConnectTimeoutSeconds(),
-                    clientConfig.getEurekaServerReadTimeoutSeconds(),
-                    clientConfig.getEurekaServerTotalConnectionsPerHost(),
-                    clientConfig.getEurekaServerTotalConnections(),
-                    clientConfig.getEurekaConnectionIdleTimeoutSeconds());
+                                                                          clientConfig
+                                                                                  .getEurekaServerConnectTimeoutSeconds(),
+                                                                          clientConfig
+                                                                                  .getEurekaServerReadTimeoutSeconds(),
+                                                                          clientConfig
+                                                                                  .getEurekaServerTotalConnectionsPerHost(),
+                                                                          clientConfig
+                                                                                  .getEurekaServerTotalConnections(),
+                                                                          clientConfig
+                                                                                  .getEurekaConnectionIdleTimeoutSeconds());
             discoveryApacheClient = discoveryJerseyClient.getClient();
             ClientConfig cc = discoveryJerseyClient.getClientconfig();
             remoteRegionsToFetch = new AtomicReference<String>(clientConfig.fetchRegistryForRemoteRegions());
@@ -556,14 +561,12 @@ public class DiscoveryClient implements LookupService {
      * eureka server.
      */
     public void shutdown() {
+        cancelScheduledTasks();
+
         // If APPINFO was registered
         if (instanceInfo != null && shouldRegister(instanceInfo)) {
             instanceInfo.setStatus(InstanceStatus.DOWN);
             unregister();
-        } else {
-            if (null != cacheRefreshTimer) {
-                cacheRefreshTimer.cancel();
-            }
         }
     }
 
@@ -980,9 +983,9 @@ public class DiscoveryClient implements LookupService {
     private void initScheduledTasks() {
         // Registry fetch timer
         if (clientConfig.shouldFetchRegistry()) {
-            cacheRefreshTimer.schedule(new CacheRefreshThread(),
-                    (clientConfig.getRegistryFetchIntervalSeconds() * 1000),
-                    (clientConfig.getRegistryFetchIntervalSeconds() * 1000));
+            scheduler.scheduleWithFixedDelay(new CacheRefreshThread(),
+                                             clientConfig.getRegistryFetchIntervalSeconds(),
+                                             clientConfig.getRegistryFetchIntervalSeconds(), TimeUnit.SECONDS);
         }
 
         if (shouldRegister(instanceInfo)) {
@@ -990,23 +993,19 @@ public class DiscoveryClient implements LookupService {
                     + instanceInfo.getLeaseInfo().getRenewalIntervalInSecs());
 
             // Heartbeat timer
-            heartbeatTimer
-                    .schedule(new HeartbeatThread(), instanceInfo
-                            .getLeaseInfo().getRenewalIntervalInSecs() * 1000,
-                            instanceInfo.getLeaseInfo()
-                                    .getRenewalIntervalInSecs() * 1000);
+            scheduler.scheduleWithFixedDelay(new HeartbeatThread(), instanceInfo.getLeaseInfo().getRenewalIntervalInSecs(),
+                                             instanceInfo.getLeaseInfo().getRenewalIntervalInSecs(), TimeUnit.SECONDS);
 
             // InstanceInfo replication timer
-            instanceInfoReplicatorTimer
-                    .schedule(
-                            new InstanceInfoReplicator(),
-                            (10 * 1000)
-                                    + (clientConfig
-                                            .getInstanceInfoReplicationIntervalSeconds() * 1000),
-                            (clientConfig
-                                    .getInstanceInfoReplicationIntervalSeconds() * 1000));
+            scheduler.scheduleWithFixedDelay(new InstanceInfoReplicator(),
+                                             10 * 1000 + clientConfig.getInstanceInfoReplicationIntervalSeconds(),
+                                             clientConfig.getInstanceInfoReplicationIntervalSeconds(), TimeUnit.SECONDS);
 
         }
+    }
+
+    private void cancelScheduledTasks() {
+        scheduler.shutdownNow();
     }
 
     /**
