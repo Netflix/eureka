@@ -21,7 +21,7 @@ public class MockRemoteEurekaServer {
 
     public static final String EUREKA_API_BASE_PATH = "/eureka/v2/";
 
-    private final int port;
+    private int port;
     private final Map<String, Application> applicationMap;
     private final Map<String, Application> remoteRegionApps;
     private final Map<String, Application> remoteRegionAppsDelta;
@@ -30,13 +30,13 @@ public class MockRemoteEurekaServer {
     private AtomicBoolean sentDelta = new AtomicBoolean();
     private AtomicBoolean sentRegistry = new AtomicBoolean();
 
-    public MockRemoteEurekaServer(int port, Map<String, Application> localRegionApps,
+    public MockRemoteEurekaServer(Map<String, Application> localRegionApps,
                                   Map<String, Application> localRegionAppsDelta,
                                   Map<String, Application> remoteRegionApps,
                                   Map<String, Application> remoteRegionAppsDelta) {
         this.port = port;
-        this.applicationMap = localRegionApps;
-        this.applicationDeltaMap = localRegionAppsDelta;
+        applicationMap = localRegionApps;
+        applicationDeltaMap = localRegionAppsDelta;
         this.remoteRegionApps = remoteRegionApps;
         this.remoteRegionAppsDelta = remoteRegionAppsDelta;
         server = new Server(port);
@@ -45,6 +45,7 @@ public class MockRemoteEurekaServer {
 
     public void start() throws Exception {
         server.start();
+        port = server.getConnectors()[0].getLocalPort();
     }
 
     public void stop() throws Exception {
@@ -57,6 +58,10 @@ public class MockRemoteEurekaServer {
 
     public boolean isSentRegistry() {
         return sentRegistry.get();
+    }
+
+    public int getPort() {
+        return port;
     }
 
     private class AppsResourceHandler extends AbstractHandler {
