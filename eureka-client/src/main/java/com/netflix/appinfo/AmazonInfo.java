@@ -134,6 +134,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
                         if (value != null) {
                             result.metadata.put(key.getName(), value);
                         }
+                        break;
                     } catch (Throwable e) {
                         if (shouldLogAWSMetadataError.get()) {
                             logger.warn(

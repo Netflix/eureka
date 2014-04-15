@@ -38,7 +38,7 @@ project(':eureka-client') {
         compile 'com.netflix.servo:servo-core:0.4.36'
         compile 'com.sun.jersey:jersey-core:1.11'
         compile 'com.sun.jersey:jersey-client:1.11'
-        compile 'com.sun.jersey.contribs:jersey-apache-client4:1.8'
+        compile 'com.sun.jersey.contribs:jersey-apache-client4:1.11'
         compile 'org.apache.httpcomponents:httpclient:4.2.1'
         compile 'com.netflix.ribbon:ribbon-httpclient:0.3.4'
         runtime 'org.codehaus.jettison:jettison:1.2'

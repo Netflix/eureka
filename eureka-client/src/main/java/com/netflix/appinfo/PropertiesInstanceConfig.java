@@ -54,6 +54,7 @@ implements EurekaInstanceConfig {
     private static final String TEST = "test";
     private static final String ARCHAIUS_DEPLOYMENT_ENVIRONMENT = "archaius.deployment.environment";
     private static final String EUREKA_ENVIRONMENT = "eureka.environment";
+    private static final String APP_GROUP_ENV_VAR_NAME = "NETFLIX_APP_GROUP";
     private static final Logger logger = LoggerFactory
     .getLogger(PropertiesInstanceConfig.class);
     protected String namespace = "eureka.";
@@ -80,6 +81,8 @@ implements EurekaInstanceConfig {
     private String propVirtualHostname;
     private String propMetadataNamespace;
     private String propASGName;
+    private String propAppGroupName;
+    private String appGrpNameFromEnv;
 
     public PropertiesInstanceConfig() {
         init(namespace);
@@ -102,7 +105,7 @@ implements EurekaInstanceConfig {
     @Override
     public boolean isInstanceEnabledOnit() {
         return INSTANCE.getBooleanProperty(namespace + "traffic.enabled",
-                super.isInstanceEnabledOnit()).get();
+                                           super.isInstanceEnabledOnit()).get();
     }
 
     /*
@@ -146,7 +149,7 @@ implements EurekaInstanceConfig {
     @Override
     public boolean getSecurePortEnabled() {
         return INSTANCE.getBooleanProperty(propSecurePortEnabled,
-                super.getSecurePortEnabled()).get();
+                                           super.getSecurePortEnabled()).get();
     }
 
     /*
@@ -253,15 +256,19 @@ implements EurekaInstanceConfig {
      */
     @Override
     public String getAppname() {
-        return INSTANCE.getStringProperty(propName, UNKNOWN_APPLICATION).get()
-        .trim();
+        return INSTANCE.getStringProperty(propName, UNKNOWN_APPLICATION).get().trim();
+    }
+
+    @Override
+    public String getAppGroupName() {
+        return INSTANCE.getStringProperty(propAppGroupName, appGrpNameFromEnv).get().trim();
     }
 
     /*
-     * (non-Javadoc)
-     * 
-     * @see com.netflix.appinfo.AbstractInstanceConfig#getIpAddress()
-     */
+         * (non-Javadoc)
+         *
+         * @see com.netflix.appinfo.AbstractInstanceConfig#getIpAddress()
+         */
     public String getIpAddress() {
         return super.getIpAddress();
     }
@@ -329,14 +336,15 @@ implements EurekaInstanceConfig {
         propVirtualHostname = namespace + "vipAddress";
         propMetadataNamespace = namespace + "metadata.";
         propASGName = namespace + "asgName";
-        String env = ConfigurationManager.getConfigInstance().getString(
-                EUREKA_ENVIRONMENT, TEST);
-        ConfigurationManager.getConfigInstance().setProperty(
-                ARCHAIUS_DEPLOYMENT_ENVIRONMENT, env);
+        propAppGroupName = namespace + "appGroup";
+        appGrpNameFromEnv = ConfigurationManager.getConfigInstance().getString(APP_GROUP_ENV_VAR_NAME,
+                                                                               UNKNOWN_APPLICATION);
+
+        String env = ConfigurationManager.getConfigInstance().getString(EUREKA_ENVIRONMENT, TEST);
+        ConfigurationManager.getConfigInstance().setProperty(ARCHAIUS_DEPLOYMENT_ENVIRONMENT, env);
         String eurekaPropsFile = EUREKA_PROPS_FILE.get();
         try {
-            ConfigurationManager
-            .loadCascadedPropertiesFromResources(eurekaPropsFile);
+            ConfigurationManager.loadCascadedPropertiesFromResources(eurekaPropsFile);
         } catch (IOException e) {
             logger.warn(
                     "Cannot find the properties specified : {}. This may be okay if there are other environment specific properties or the configuration is installed with a different mechanism.",
