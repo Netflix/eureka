@@ -1,8 +1,6 @@
 package com.netflix.discovery.lifecycle;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -11,6 +9,7 @@ import javax.annotation.Nullable;
 import junit.framework.Assert;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import com.google.common.base.Supplier;
@@ -52,11 +51,8 @@ public class DiscoveryStatusCheckerTest {
     public static final int CLIENT_REFRESH_RATE = 6;
     public static final long STATUS_REFRESH_RATE = 3L;
 
-    private MockRemoteEurekaServer mockLocalEurekaServer;
-    private final Map<String, Application> localRegionApps = new HashMap<String, Application>();
-    private final Map<String, Application> localRegionAppsDelta = new HashMap<String, Application>();
-    private final Map<String, Application> remoteRegionApps = new HashMap<String, Application>();
-    private final Map<String, Application> remoteRegionAppsDelta = new HashMap<String, Application>();
+    @Rule
+    public MockRemoteEurekaServer mockLocalEurekaServer = new MockRemoteEurekaServer();
     
     private DiscoveryClientProxy client;
     private InstanceInfo instanceInfo;
@@ -64,10 +60,6 @@ public class DiscoveryStatusCheckerTest {
     
     @Before
     public void setUp() throws Exception {
-        mockLocalEurekaServer = new MockRemoteEurekaServer(localRegionApps, localRegionAppsDelta,
-                remoteRegionApps, remoteRegionAppsDelta);
-        mockLocalEurekaServer.start();
-
         final int eurekaPort = mockLocalEurekaServer.getPort();
         ConfigurationManager.getConfigInstance().setProperty("eureka.client.refresh.interval", CLIENT_REFRESH_RATE);
         ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", "false");
@@ -145,11 +137,11 @@ public class DiscoveryStatusCheckerTest {
                 .createInjector();
         
         Service service = injector.getInstance(Service.class);
-        waitForDeltaToBeRetrieved();
+        mockLocalEurekaServer.waitForDeltaToBeRetrieved(CLIENT_REFRESH_RATE);
         service.assertState(true);
         
         client.unregister();
-        waitForDeltaToBeRetrieved();
+        mockLocalEurekaServer.waitForDeltaToBeRetrieved(CLIENT_REFRESH_RATE);
         TimeUnit.SECONDS.sleep(CLIENT_REFRESH_RATE * 2);
 //        service.assertState(false);
         
@@ -165,8 +157,8 @@ public class DiscoveryStatusCheckerTest {
     private void populateLocalRegistryAtStartup() {
         Application myapp = createLocalApps();
         Application myappDelta = createLocalAppsDelta();
-        localRegionApps.put(LOCAL_REGION_APP_NAME, myapp);
-        localRegionAppsDelta.put(LOCAL_REGION_APP_NAME, myappDelta);
+        mockLocalEurekaServer.addLocalRegionApps(LOCAL_REGION_APP_NAME, myapp);
+        mockLocalEurekaServer.addLocalRegionAppsDelta(LOCAL_REGION_APP_NAME, myappDelta);
     }
 
     private Application createLocalApps() {
@@ -231,22 +223,11 @@ public class DiscoveryStatusCheckerTest {
         Assert.assertNotNull("Instance added as delta not returned for " + region + " region vip address", localInstance2);
     }
 
-    private void waitForDeltaToBeRetrieved() throws InterruptedException {
-        int count = 0;
-        while (count < 3 && !mockLocalEurekaServer.isSentDelta()) {
-            System.out.println("Sleeping for " + CLIENT_REFRESH_RATE + " seconds to let the remote registry fetch delta. Attempt: " + count);
-            Thread.sleep( 3 * CLIENT_REFRESH_RATE * 1000);
-            System.out.println("Done sleeping for 10 seconds to let the remote registry fetch delta. Delta fetched: " + mockLocalEurekaServer.isSentDelta());
-        }
-
-        System.out.println("Sleeping for extra " + CLIENT_REFRESH_RATE + " seconds for the client to update delta in memory.");
-    }
-
     private void populateRemoteRegistryAtStartup() {
         Application myapp = createRemoteApps();
         Application myappDelta = createRemoteAppsDelta();
-        remoteRegionApps.put(REMOTE_REGION_APP_NAME, myapp);
-        remoteRegionAppsDelta.put(REMOTE_REGION_APP_NAME, myappDelta);
+        mockLocalEurekaServer.addRemoteRegionApps(REMOTE_REGION_APP_NAME, myapp);
+        mockLocalEurekaServer.addRemoteRegionAppsDelta(REMOTE_REGION_APP_NAME, myappDelta);
     }
 
     private Application createRemoteApps() {

@@ -1,5 +1,6 @@
 package com.netflix.discovery;
 
+
 import com.netflix.discovery.converters.XmlXStream;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;

@@ -78,7 +78,10 @@ project(':eureka-lifecycle') {
     dependencies {
         compile project(':eureka-client')
         compile project(':eureka-core')
+        
         compile "com.netflix.governator:governator:$governatorVersion"
+        testCompile 'junit:junit:4.10'
+        testCompile 'org.mortbay.jetty:jetty:6.1H.22'
     }
 }
 
