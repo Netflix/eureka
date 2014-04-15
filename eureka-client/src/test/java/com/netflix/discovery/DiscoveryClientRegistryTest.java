@@ -43,20 +43,18 @@ public class DiscoveryClientRegistryTest {
     private final Map<String, Application> remoteRegionAppsDelta = new HashMap<String, Application>();
 
     private DiscoveryClient client;
-    
     @Before
     public void setUp() throws Exception {
         mockLocalEurekaServer = new MockRemoteEurekaServer(localRegionApps, localRegionAppsDelta,
-                remoteRegionApps, remoteRegionAppsDelta);
+                                                           remoteRegionApps, remoteRegionAppsDelta);
         mockLocalEurekaServer.start();
 
-        final int eurekaPort = mockLocalEurekaServer.getPort();
         ConfigurationManager.getConfigInstance().setProperty("eureka.client.refresh.interval", CLIENT_REFRESH_RATE);
         ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", "false");
         ConfigurationManager.getConfigInstance().setProperty("eureka.fetchRemoteRegionsRegistry", REMOTE_REGION);
         ConfigurationManager.getConfigInstance().setProperty("eureka.myregion.availabilityZones", REMOTE_ZONE);
         ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default",
-                                                             "http://localhost:" + eurekaPort +
+                                                             "http://localhost:" + mockLocalEurekaServer.getPort() +
                                                              MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
         populateLocalRegistryAtStartup();
         populateRemoteRegistryAtStartup();
@@ -169,7 +167,7 @@ public class DiscoveryClientRegistryTest {
 
     private void waitForDeltaToBeRetrieved() throws InterruptedException {
         int count = 0;
-        while (count < 3 && !mockLocalEurekaServer.isSentDelta()) {
+        while (count++ < 3 && !mockLocalEurekaServer.isSentDelta()) {
             System.out.println("Sleeping for " + CLIENT_REFRESH_RATE + " seconds to let the remote registry fetch delta. Attempt: " + count);
             Thread.sleep( 3 * CLIENT_REFRESH_RATE * 1000);
             System.out.println("Done sleeping for 10 seconds to let the remote registry fetch delta. Delta fetched: " + mockLocalEurekaServer.isSentDelta());

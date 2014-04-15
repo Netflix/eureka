@@ -5,7 +5,6 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import org.mortbay.jetty.Request;
 import org.mortbay.jetty.Server;
-import org.mortbay.jetty.bio.SocketConnector;
 import org.mortbay.jetty.handler.AbstractHandler;
 
 import javax.servlet.ServletException;
@@ -35,7 +34,6 @@ public class MockRemoteEurekaServer {
                                   Map<String, Application> localRegionAppsDelta,
                                   Map<String, Application> remoteRegionApps,
                                   Map<String, Application> remoteRegionAppsDelta) {
-        this.port = port;
         this.applicationMap = localRegionApps;
         this.applicationDeltaMap = localRegionAppsDelta;
         this.remoteRegionApps = remoteRegionApps;
@@ -46,7 +44,7 @@ public class MockRemoteEurekaServer {
 
     public void start() throws Exception {
         server.start();
-        this.port = ((SocketConnector)server.getConnectors()[0]).getLocalPort();
+        port = server.getConnectors()[0].getLocalPort();
     }
 
     public int getPort() {

@@ -28,17 +28,13 @@ public class DiscoveryClientDisableRegistryTest {
                                                            Collections.<String, Application>emptyMap());
         mockLocalEurekaServer.start();
 
-        final int eurekaPort = mockLocalEurekaServer.getPort();
-        
         Properties props = new Properties();
         props.setProperty("eureka.registration.enabled", "false");
-        props.setProperty("eureka.shouldFetchRegistry", "false");
         props.setProperty("eureka.serviceUrl.default",
-                "http://localhost:" + eurekaPort +
+                "http://localhost:" + mockLocalEurekaServer.getPort() +
                 MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
         
         ConfigurationManager.loadProperties(props);
-
 
         InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder();
         builder.setIPAddr("10.10.101.00");
