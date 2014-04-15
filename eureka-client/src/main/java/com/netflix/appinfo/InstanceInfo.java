@@ -263,17 +263,19 @@ public class InstanceInfo {
          * @return the instance info builder.
          */
         public Builder setAppName(String appName) {
-            result.appName = appName;
-            if (result.appName != null) {
-                result.appName = result.appName.toUpperCase();
+            if (appName != null) {
+                result.appName = appName.toUpperCase();
+            } else {
+                result.appName = null;
             }
             return this;
         }
 
         public Builder setAppGroupName(String appGroupName) {
-            result.appGroupName = appGroupName;
-            if (result.appGroupName != null) {
-                result.appGroupName = result.appGroupName.toUpperCase();
+            if (appGroupName != null) {
+                result.appGroupName = appGroupName.toUpperCase();
+            } else {
+                result.appGroupName = null;
             }
             return this;
         }
