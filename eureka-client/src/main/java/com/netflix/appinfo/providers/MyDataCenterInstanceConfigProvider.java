@@ -1,9 +1,10 @@
-package com.netflix.appinfo;
+package com.netflix.appinfo.providers;
 
 import javax.annotation.PreDestroy;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.netflix.appinfo.MyDataCenterInstanceConfig;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaNamespace;
 

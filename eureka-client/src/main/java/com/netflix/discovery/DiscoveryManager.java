@@ -52,17 +52,14 @@ public class DiscoveryManager {
         return s_instance;
     }
 
-    @Deprecated
     public void setDiscoveryClient(DiscoveryClient discoveryClient) {
         this.discoveryClient = discoveryClient;
     }
     
-    @Deprecated
     public void setEurekaClientConfig(EurekaClientConfig eurekaClientConfig) {
         this.eurekaClientConfig = eurekaClientConfig;
     }
     
-    @Deprecated
     public void setEurekaInstanceConfig(EurekaInstanceConfig eurekaInstanceConfig) {
         this.eurekaInstanceConfig = eurekaInstanceConfig;
     }
@@ -92,7 +89,6 @@ public class DiscoveryManager {
      * Shuts down the <tt>Discovery Client</tt> which unregisters the
      * information about this instance from the <tt>Discovery Server</tt>.
      */
-    @Deprecated
     public void shutdownComponent() {
         if (discoveryClient != null) {
             try {

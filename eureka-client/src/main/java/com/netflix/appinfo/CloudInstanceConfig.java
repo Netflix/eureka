@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.ProvidedBy;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.DataCenterInfo.Name;
+import com.netflix.appinfo.providers.CloudInstanceConfigProvider;
 import com.netflix.config.DynamicBooleanProperty;
 import com.netflix.config.DynamicPropertyFactory;
 

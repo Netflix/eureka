@@ -161,9 +161,15 @@ public class DiscoveryClient implements LookupService {
     @Inject(optional=true)
     private EventBus eventBus;
     
+    DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, EventBus eventBus) {
+        this(myInfo, config);
+        this.eventBus = eventBus;
+    }
+    
     @Inject
     DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config) {
-        // *** Remove these when DiscoveryManager is finally no longer used
+        // This is a bit of hack to allow for existing code using DiscoveryManager.getInstance()
+        // to work with DI'd DiscoveryClient
         DiscoveryManager.getInstance().setDiscoveryClient(this);
         DiscoveryManager.getInstance().setEurekaClientConfig(config);
         

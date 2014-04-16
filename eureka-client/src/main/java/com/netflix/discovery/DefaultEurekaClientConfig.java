@@ -28,6 +28,7 @@ import com.google.inject.ProvidedBy;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.config.DynamicStringProperty;
+import com.netflix.discovery.providers.DefaultEurekaClientConfigProvider;
 
 import javax.annotation.Nullable;
 

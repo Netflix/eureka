@@ -1,4 +1,4 @@
-package com.netflix.appinfo;
+package com.netflix.appinfo.providers;
 
 import java.util.Map;
 
@@ -9,8 +9,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.Provider;
+import com.netflix.appinfo.EurekaInstanceConfig;
+import com.netflix.appinfo.InstanceInfo;
+import com.netflix.appinfo.LeaseInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.InstanceInfo.PortType;
+import com.netflix.appinfo.LeaseInfo.Builder;
 
 /**
  * InstanceInfo provider that constructs the InstanceInfo this this instance using
