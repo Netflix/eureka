@@ -1,4 +1,4 @@
-<%@ page language="java" import="java.util.*,java.util.Map.Entry,com.netflix.discovery.shared.Pair,com.netflix.logging.*,com.netflix.discovery.shared.*, com.netflix.eureka.util.*,com.netflix.appinfo.InstanceInfo.*, com.netflix.appinfo.DataCenterInfo.*,com.netflix.appinfo.AmazonInfo.MetaDataKey,com.netflix.eureka.resources.*,com.netflix.eureka.*,com.netflix.appinfo.*" pageEncoding="UTF-8" %>
+<%@ page language="java" import="java.util.*,java.util.Map.Entry,com.netflix.discovery.shared.Pair,com.netflix.discovery.shared.*, com.netflix.eureka.util.*,com.netflix.appinfo.InstanceInfo.*, com.netflix.appinfo.DataCenterInfo.*,com.netflix.appinfo.AmazonInfo.MetaDataKey,com.netflix.eureka.resources.*,com.netflix.eureka.*,com.netflix.appinfo.*" pageEncoding="UTF-8" %>
 <%
 String path = request.getContextPath();
 String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+path+"/";
