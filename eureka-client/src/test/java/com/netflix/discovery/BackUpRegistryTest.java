@@ -78,11 +78,7 @@ public class BackUpRegistryTest {
     @After
     public void tearDown() throws Exception {
         client.shutdown();
-        ConfigurationManager.getConfigInstance().clearProperty("eureka.client.refresh.interval");
-        ConfigurationManager.getConfigInstance().clearProperty("eureka.registration.enabled");
-        ConfigurationManager.getConfigInstance().clearProperty("eureka.fetchRemoteRegionsRegistry");
-        ConfigurationManager.getConfigInstance().clearProperty("eureka.myregion.availabilityZones");
-        ConfigurationManager.getConfigInstance().clearProperty("eureka.serviceUrl.default");
+        ConfigurationManager.getConfigInstance().clear();
     }
 
     @Test
