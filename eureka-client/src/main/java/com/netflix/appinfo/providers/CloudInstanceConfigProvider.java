@@ -1,6 +1,5 @@
 package com.netflix.appinfo.providers;
 
-import javax.annotation.PreDestroy;
 import javax.inject.Singleton;
 
 import com.google.inject.Inject;
@@ -32,9 +31,4 @@ public class CloudInstanceConfigProvider implements Provider<CloudInstanceConfig
         return config;
     }
     
-    @PreDestroy
-    public void shutdown() {
-        // TOOD: Remove this when DiscoveryManager is finally no longer used
-        DiscoveryManager.getInstance().setEurekaInstanceConfig(null);      
-    }
 }

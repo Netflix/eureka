@@ -1,7 +1,5 @@
 package com.netflix.appinfo.providers;
 
-import javax.annotation.PreDestroy;
-
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.netflix.appinfo.MyDataCenterInstanceConfig;
@@ -23,10 +21,5 @@ public class MyDataCenterInstanceConfigProvider implements Provider<MyDataCenter
         
         DiscoveryManager.getInstance().setEurekaInstanceConfig(config);      
         return config;
-    }
-
-    @PreDestroy
-    public void shutdown() {
-        DiscoveryManager.getInstance().setEurekaInstanceConfig(null);      
     }
 }

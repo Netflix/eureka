@@ -14,7 +14,6 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.LeaseInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.InstanceInfo.PortType;
-import com.netflix.appinfo.LeaseInfo.Builder;
 
 /**
  * InstanceInfo provider that constructs the InstanceInfo this this instance using

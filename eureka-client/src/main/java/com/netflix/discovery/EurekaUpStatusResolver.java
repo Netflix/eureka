@@ -1,7 +1,5 @@
 package com.netflix.discovery;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
@@ -26,7 +24,7 @@ import com.netflix.governator.guice.lazy.LazySingleton;
 public class EurekaUpStatusResolver  {
     private static Logger LOG = LoggerFactory.getLogger(EurekaUpStatusResolver.class);
     
-    private AtomicReference<InstanceInfo.InstanceStatus> currentStatus = new AtomicReference<InstanceInfo.InstanceStatus>(InstanceInfo.InstanceStatus.UNKNOWN);
+    private volatile InstanceInfo.InstanceStatus currentStatus = InstanceInfo.InstanceStatus.UNKNOWN;
     private final EventBus eventBus;
     private final DiscoveryClient client;
     
@@ -44,7 +42,7 @@ public class EurekaUpStatusResolver  {
     
     @Subscribe
     public void onStatusChange(StatusChangeEvent event) {
-        currentStatus.set(event.getStatus());
+        currentStatus = event.getStatus();
     }
     
     @PostConstruct
@@ -53,7 +51,7 @@ public class EurekaUpStatusResolver  {
             eventBus.registerSubscriber(this);
             
             // Must set the initial status
-            currentStatus.compareAndSet(InstanceInfo.InstanceStatus.UNKNOWN, client.getInstanceRemoteStatus());
+            currentStatus = client.getInstanceRemoteStatus();
         } catch (InvalidSubscriberException e) {
             LOG.error("Error registring for discovery status change events.", e);
         }
@@ -68,6 +66,6 @@ public class EurekaUpStatusResolver  {
      * @return Get the current instance status
      */
     public InstanceInfo.InstanceStatus getStatus() {
-        return currentStatus.get();
+        return currentStatus;
     }   
 }

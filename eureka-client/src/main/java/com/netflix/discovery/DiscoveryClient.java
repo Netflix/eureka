@@ -168,11 +168,6 @@ public class DiscoveryClient implements LookupService {
     
     @Inject
     DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config) {
-        // This is a bit of hack to allow for existing code using DiscoveryManager.getInstance()
-        // to work with DI'd DiscoveryClient
-        DiscoveryManager.getInstance().setDiscoveryClient(this);
-        DiscoveryManager.getInstance().setEurekaClientConfig(config);
-        
         try {
             scheduler = Executors.newScheduledThreadPool(4);
             clientConfig = config;
@@ -242,6 +237,11 @@ public class DiscoveryClient implements LookupService {
         } catch (Throwable e) {
             logger.warn("Cannot register timers", e);
         }
+        
+        // This is a bit of hack to allow for existing code using DiscoveryManager.getInstance()
+        // to work with DI'd DiscoveryClient
+        DiscoveryManager.getInstance().setDiscoveryClient(this);
+        DiscoveryManager.getInstance().setEurekaClientConfig(config);
     }
 
     /*
@@ -585,10 +585,6 @@ public class DiscoveryClient implements LookupService {
             instanceInfo.setStatus(InstanceStatus.DOWN);
             unregister();
         }
-        
-        DiscoveryManager.getInstance().setDiscoveryClient(null);
-        DiscoveryManager.getInstance().setEurekaClientConfig(null);
-
     }
 
     /**
