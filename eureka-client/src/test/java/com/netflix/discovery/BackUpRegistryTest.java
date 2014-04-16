@@ -78,11 +78,7 @@ public class BackUpRegistryTest {
     @After
     public void tearDown() throws Exception {
         client.shutdown();
-        ConfigurationManager.getConfigInstance().clearProperty("eureka.client.refresh.interval");
-        ConfigurationManager.getConfigInstance().clearProperty("eureka.registration.enabled");
-        ConfigurationManager.getConfigInstance().clearProperty("eureka.fetchRemoteRegionsRegistry");
-        ConfigurationManager.getConfigInstance().clearProperty("eureka.myregion.availabilityZones");
-        ConfigurationManager.getConfigInstance().clearProperty("eureka.serviceUrl.default");
+        ConfigurationManager.getConfigInstance().clear();
     }
 
     @Test
@@ -90,6 +86,7 @@ public class BackUpRegistryTest {
         setUp(false);
         Applications applications = client.getApplications();
         List<Application> registeredApplications = applications.getRegisteredApplications();
+        System.out.println("***" + registeredApplications);
         Assert.assertNotNull("Local region apps not found.", registeredApplications);
         Assert.assertEquals("Local apps size not as expected.", 1, registeredApplications.size());
         Assert.assertEquals("Local region apps not present.", LOCAL_REGION_APP_NAME, registeredApplications.get(0).getName());

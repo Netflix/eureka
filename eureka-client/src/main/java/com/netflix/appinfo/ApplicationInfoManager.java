@@ -18,11 +18,14 @@ package com.netflix.appinfo;
 
 import java.util.Map;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
-import com.netflix.appinfo.InstanceInfo.PortType;
+import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
 
 /**
  * The class that initializes information required for registration with
@@ -41,14 +44,24 @@ import com.netflix.appinfo.InstanceInfo.PortType;
  * @author Karthik Ranganathan, Greg Kim
  * 
  */
+@Singleton
 public class ApplicationInfoManager {
-    private static final Logger logger = LoggerFactory
-    .getLogger(ApplicationInfoManager.class);
-    private static final ApplicationInfoManager instance = new ApplicationInfoManager();
+    private static final Logger logger = LoggerFactory.getLogger(ApplicationInfoManager.class);
+    private static ApplicationInfoManager instance = new ApplicationInfoManager();
+    
     private InstanceInfo instanceInfo;
     private EurekaInstanceConfig config;
 
     private ApplicationInfoManager() {
+    }
+    
+    @Inject
+    ApplicationInfoManager(EurekaInstanceConfig config, InstanceInfo instanceInfo) {
+        this.config = config;
+        this.instanceInfo = instanceInfo;
+        
+        // Hack to allow for getInstance() to use the DI'd ApplicationInfoManager
+        instance = this;
     }
 
     public static ApplicationInfoManager getInstance() {
@@ -58,62 +71,7 @@ public class ApplicationInfoManager {
     public void initComponent(EurekaInstanceConfig config) {
         try {
             this.config = config;
-            // Build the lease information to be passed to the server based
-            // on config
-            LeaseInfo.Builder leaseInfoBuilder = LeaseInfo.Builder
-            .newBuilder()
-            .setRenewalIntervalInSecs(
-                    config.getLeaseRenewalIntervalInSeconds())
-                    .setDurationInSecs(
-                            config.getLeaseExpirationDurationInSeconds());
-
-            // Builder the instance information to be registered with eureka
-            // server
-            InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder();
-
-            builder.setNamespace(config.getNamespace())
-            .setAppName(config.getAppname())
-            .setAppGroupName(config.getAppGroupName())
-            .setDataCenterInfo(config.getDataCenterInfo())
-            .setIPAddr(config.getIpAddress())
-            .setHostName(config.getHostName(false))
-            .setPort(config.getNonSecurePort())
-            .enablePort(PortType.UNSECURE,
-                    config.isNonSecurePortEnabled())
-            .setSecurePort(config.getSecurePort())
-            .enablePort(PortType.SECURE, config.getSecurePortEnabled())
-            .setVIPAddress(config.getVirtualHostName())
-            .setSecureVIPAddress(config.getSecureVirtualHostName())
-            .setHomePageUrl(config.getHomePageUrlPath(),
-                            config.getHomePageUrl())
-            .setStatusPageUrl(config.getStatusPageUrlPath(),
-                              config.getStatusPageUrl())
-            .setHealthCheckUrls(config.getHealthCheckUrlPath(),
-                                config.getHealthCheckUrl(),
-                                config.getSecureHealthCheckUrl())
-            .setASGName(config.getASGName());
-
-            // Start off with the STARTING state to avoid traffic
-            if (!config.isInstanceEnabledOnit()) {
-                InstanceStatus initialStatus = InstanceStatus.STARTING;
-                logger.info("Setting initial instance status as: " + initialStatus);
-                builder.setStatus(initialStatus);
-            } else {
-                logger.info("Setting initial instance status as: " + InstanceStatus.UP +
-                            ". This may be too early for the instance to advertise itself as available. " +
-                            "You would instead want to control this via a healthcheck handler.");
-            }
-
-            // Add any user-specific metadata information
-            for (Map.Entry<String, String> mapEntry : config.getMetadataMap()
-                    .entrySet()) {
-                String key = mapEntry.getKey();
-                String value = mapEntry.getValue();
-                builder.add(key, value);
-            }
-            instanceInfo = builder.build();
-            instanceInfo.setLeaseInfo(leaseInfoBuilder.build());
-
+            this.instanceInfo = new EurekaConfigBasedInstanceInfoProvider(config).get();
         } catch (Throwable e) {
             throw new RuntimeException(
                     "Failed to initialize ApplicationInfoManager", e);
@@ -128,7 +86,7 @@ public class ApplicationInfoManager {
     public InstanceInfo getInfo() {
         return instanceInfo;
     }
-
+    
     /**
      * Register user-specific instance meta data. Application can send any other
      * additional meta data that need to be accessed for other reasons.The data

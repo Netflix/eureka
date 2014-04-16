@@ -18,6 +18,7 @@ package com.netflix.appinfo;
 import java.net.URL;
 import java.util.Map;
 
+import com.google.inject.ImplementedBy;
 import com.netflix.discovery.DiscoveryClient;
 
 /**
@@ -36,6 +37,7 @@ import com.netflix.discovery.DiscoveryClient;
  * @author Karthik Ranganathan
  * 
  */
+@ImplementedBy(CloudInstanceConfig.class)
 public interface EurekaInstanceConfig {
     /**
      * Get the name of the application to be registered with eureka.

@@ -3,6 +3,9 @@ package com.netflix.discovery;
 import com.netflix.discovery.converters.XmlXStream;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+
+import org.junit.Assert;
+import org.junit.rules.ExternalResource;
 import org.mortbay.jetty.Request;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.handler.AbstractHandler;
@@ -11,45 +14,61 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Nitesh Kant
  */
-public class MockRemoteEurekaServer {
+public class MockRemoteEurekaServer extends ExternalResource {
 
     public static final String EUREKA_API_BASE_PATH = "/eureka/v2/";
 
-    private int port;
-    private final Map<String, Application> applicationMap;
-    private final Map<String, Application> remoteRegionApps;
-    private final Map<String, Application> remoteRegionAppsDelta;
-    private final Map<String, Application> applicationDeltaMap;
-    private final Server server;
+    private int port = 0;
+    private final Map<String, Application> applicationMap        = new HashMap<String, Application>();
+    private final Map<String, Application> remoteRegionApps      = new HashMap<String, Application>();
+    private final Map<String, Application> remoteRegionAppsDelta = new HashMap<String, Application>();
+    private final Map<String, Application> applicationDeltaMap   = new HashMap<String, Application>();
+    private Server server;
     private AtomicBoolean sentDelta = new AtomicBoolean();
     private AtomicBoolean sentRegistry = new AtomicBoolean();
 
-    public MockRemoteEurekaServer(Map<String, Application> localRegionApps,
-                                  Map<String, Application> localRegionAppsDelta,
-                                  Map<String, Application> remoteRegionApps,
-                                  Map<String, Application> remoteRegionAppsDelta) {
-        this.port = port;
-        applicationMap = localRegionApps;
-        applicationDeltaMap = localRegionAppsDelta;
-        this.remoteRegionApps = remoteRegionApps;
-        this.remoteRegionAppsDelta = remoteRegionAppsDelta;
-        server = new Server(port);
-        server.setHandler(new AppsResourceHandler());
+    public MockRemoteEurekaServer() {
+    }
+
+    protected void before() throws Throwable {
+        start();
+    }
+
+    protected void after() {
+        try {
+            stop();
+        } catch (Exception e) {
+            Assert.fail(e.getMessage());
+        }
     }
 
     public void start() throws Exception {
+        server = new Server(this.port);
+        server.setHandler(new AppsResourceHandler());
         server.start();
         port = server.getConnectors()[0].getLocalPort();
     }
 
+    public int getPort() {
+        return port;
+    }
+    
     public void stop() throws Exception {
         server.stop();
+        server = null;
+        port = 0;
+        
+        applicationMap.clear();
+        remoteRegionApps.clear();
+        remoteRegionAppsDelta.clear();
+        applicationDeltaMap.clear();
     }
 
     public boolean isSentDelta() {
@@ -58,10 +77,6 @@ public class MockRemoteEurekaServer {
 
     public boolean isSentRegistry() {
         return sentRegistry.get();
-    }
-
-    public int getPort() {
-        return port;
     }
 
     private class AppsResourceHandler extends AbstractHandler {
@@ -147,6 +162,8 @@ public class MockRemoteEurekaServer {
 
         private boolean isRemoteRequest(HttpServletRequest request) {
             String queryString = request.getQueryString();
+            if (queryString == null)
+                return false;
             return queryString.contains("regions=");
         }
 
@@ -162,6 +179,33 @@ public class MockRemoteEurekaServer {
                                ". Eureka resource mock, sent response for request path: " + request.getPathInfo() +
                                ", apps count: " + apps.getRegisteredApplications().size());
         }
+    }
+
+    public void addRemoteRegionApps(String appName, Application app) {
+        this.remoteRegionApps.put(appName, app);
+    }
+
+    public void addRemoteRegionAppsDelta(String appName, Application app) {
+        this.remoteRegionAppsDelta.put(appName, app);
+    }
+
+    public void addLocalRegionApps(String appName, Application app) {
+        this.applicationMap.put(appName, app);
+    }
+
+    public void addLocalRegionAppsDelta(String appName, Application app) {
+        this.applicationDeltaMap.put(appName, app);
+    }
+
+    public void waitForDeltaToBeRetrieved(int refreshRate) throws InterruptedException {
+        int count = 0;
+        while (count < 3 && !isSentDelta()) {
+            System.out.println("Sleeping for " + refreshRate + " seconds to let the remote registry fetch delta. Attempt: " + count);
+            Thread.sleep( 3 * refreshRate * 1000);
+            System.out.println("Done sleeping for 10 seconds to let the remote registry fetch delta. Delta fetched: " + isSentDelta());
+        }
+
+        System.out.println("Sleeping for extra " + refreshRate + " seconds for the client to update delta in memory.");
     }
 
 }

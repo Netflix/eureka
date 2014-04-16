@@ -26,8 +26,8 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.netflix.appinfo.AmazonInfo.MetaDataKey;
-import com.netflix.appinfo.DataCenterInfo.Name;
+import com.google.inject.ProvidedBy;
+import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.converters.Auto;
@@ -46,13 +46,12 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
  * @author Karthik Ranganathan, Greg Kim
  * 
  */
+@ProvidedBy(EurekaConfigBasedInstanceInfoProvider.class)
 @Serializer("com.netflix.discovery.converters.EntityBodyConverter")
 @XStreamAlias("instance")
 public class InstanceInfo {
-    private static final Logger logger = LoggerFactory
-    .getLogger(InstanceInfo.class);
-    private static final Pattern VIP_ATTRIBUTES_PATTERN = Pattern
-    .compile("\\$\\{(.*?)\\}");
+    private static final Logger logger = LoggerFactory.getLogger(InstanceInfo.class);
+    private static final Pattern VIP_ATTRIBUTES_PATTERN = Pattern.compile("\\$\\{(.*?)\\}");
 
     public final static int DEFAULT_PORT = 7001;
     public final static int DEFAULT_SECURE_PORT = 7002;

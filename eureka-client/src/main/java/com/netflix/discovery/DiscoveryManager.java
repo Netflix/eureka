@@ -38,8 +38,7 @@ import com.netflix.discovery.shared.LookupService;
  * 
  */
 public class DiscoveryManager {
-    private static final Logger logger = LoggerFactory
-            .getLogger(DiscoveryManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(DiscoveryManager.class);
     private DiscoveryClient discoveryClient;
     
     private EurekaInstanceConfig eurekaInstanceConfig;
@@ -53,6 +52,18 @@ public class DiscoveryManager {
         return s_instance;
     }
 
+    public void setDiscoveryClient(DiscoveryClient discoveryClient) {
+        this.discoveryClient = discoveryClient;
+    }
+    
+    public void setEurekaClientConfig(EurekaClientConfig eurekaClientConfig) {
+        this.eurekaClientConfig = eurekaClientConfig;
+    }
+    
+    public void setEurekaInstanceConfig(EurekaInstanceConfig eurekaInstanceConfig) {
+        this.eurekaInstanceConfig = eurekaInstanceConfig;
+    }
+    
     /**
      * Initializes the <tt>Discovery Client</tt> with the given configuration.
      * 
@@ -72,7 +83,7 @@ public class DiscoveryManager {
         InstanceInfo info = ApplicationInfoManager.getInstance().getInfo();
         discoveryClient = new DiscoveryClient(info, eurekaConfig);
     }
-
+    
     /**
      * Shuts down the <tt>Discovery Client</tt> which unregisters the
      * information about this instance from the <tt>Discovery Server</tt>.
