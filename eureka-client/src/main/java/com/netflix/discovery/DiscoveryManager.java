@@ -72,7 +72,6 @@ public class DiscoveryManager {
      *            registration with Eureka.
      * @param eurekaConfig the eureka client configuration of the instance.
      */
-    @Deprecated
     public void initComponent(EurekaInstanceConfig config,
             EurekaClientConfig eurekaConfig) {
         this.eurekaInstanceConfig = config;

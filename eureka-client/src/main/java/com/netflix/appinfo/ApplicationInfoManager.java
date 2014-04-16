@@ -47,7 +47,7 @@ import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
 @Singleton
 public class ApplicationInfoManager {
     private static final Logger logger = LoggerFactory.getLogger(ApplicationInfoManager.class);
-    private static final ApplicationInfoManager instance = new ApplicationInfoManager();
+    private static ApplicationInfoManager instance = new ApplicationInfoManager();
     
     private InstanceInfo instanceInfo;
     private EurekaInstanceConfig config;
@@ -56,17 +56,18 @@ public class ApplicationInfoManager {
     }
     
     @Inject
-    public ApplicationInfoManager(EurekaInstanceConfig config, InstanceInfo instanceInfo) {
+    ApplicationInfoManager(EurekaInstanceConfig config, InstanceInfo instanceInfo) {
         this.config = config;
         this.instanceInfo = instanceInfo;
+        
+        // Hack to allow for getInstance() to use the DI'd ApplicationInfoManager
+        instance = this;
     }
 
-    @Deprecated
     public static ApplicationInfoManager getInstance() {
         return instance;
     }
 
-    @Deprecated
     public void initComponent(EurekaInstanceConfig config) {
         try {
             this.config = config;
@@ -82,11 +83,10 @@ public class ApplicationInfoManager {
      * 
      * @return information about this instance that is registered with eureka.
      */
-    @Deprecated
     public InstanceInfo getInfo() {
         return instanceInfo;
     }
-
+    
     /**
      * Register user-specific instance meta data. Application can send any other
      * additional meta data that need to be accessed for other reasons.The data
