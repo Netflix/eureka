@@ -86,6 +86,7 @@ public class BackUpRegistryTest {
         setUp(false);
         Applications applications = client.getApplications();
         List<Application> registeredApplications = applications.getRegisteredApplications();
+        System.out.println("***" + registeredApplications);
         Assert.assertNotNull("Local region apps not found.", registeredApplications);
         Assert.assertEquals("Local apps size not as expected.", 1, registeredApplications.size());
         Assert.assertEquals("Local region apps not present.", LOCAL_REGION_APP_NAME, registeredApplications.get(0).getName());

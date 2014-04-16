@@ -49,6 +49,13 @@ import javax.annotation.Nullable;
 @XStreamAlias("application")
 public class Application {
 
+    @Override
+    public String toString() {
+        return "Application [name=" + name + ", isDirty=" + isDirty
+                + ", instances=" + instances + ", shuffledInstances="
+                + shuffledInstances + ", instancesMap=" + instancesMap + "]";
+    }
+
     private String name;
 
     @XStreamOmitField
