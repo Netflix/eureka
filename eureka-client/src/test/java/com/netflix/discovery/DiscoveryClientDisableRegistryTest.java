@@ -9,6 +9,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Collections;
+import java.util.Properties;
 import java.util.UUID;
 
 /**
@@ -16,22 +17,19 @@ import java.util.UUID;
  */
 public class DiscoveryClientDisableRegistryTest {
 
-    private static final int localRandomEurekaPort = 7799;
     private DiscoveryClient client;
     private MockRemoteEurekaServer mockLocalEurekaServer;
 
     @Before
     public void setUp() throws Exception {
-        mockLocalEurekaServer = new MockRemoteEurekaServer(Collections.<String, Application>emptyMap(),
-                                                           Collections.<String, Application>emptyMap(),
-                                                           Collections.<String, Application>emptyMap(),
-                                                           Collections.<String, Application>emptyMap());
+        mockLocalEurekaServer = new MockRemoteEurekaServer();
         mockLocalEurekaServer.start();
 
         ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", "false");
+        ConfigurationManager.getConfigInstance().setProperty("eureka.shouldFetchRegistry", "false");
         ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default",
-                                                             "http://localhost:" + mockLocalEurekaServer.getPort() +
-                                                             MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
+                "http://localhost:" + mockLocalEurekaServer.getPort() +
+                MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
 
         InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder();
         builder.setIPAddr("10.10.101.00");

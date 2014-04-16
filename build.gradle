@@ -1,5 +1,10 @@
 ext.githubProjectName = 'eureka'
 
+ext {
+    jerseyVersion="1.11"
+    governatorVersion="1.2.7"
+}
+
 buildscript {
     repositories {
         mavenLocal()
@@ -32,12 +37,13 @@ subprojects {
 
 project(':eureka-client') {
     dependencies {
+        compile "com.netflix.netflix-commons:netflix-eventbus:0.1.2"
         compile 'com.thoughtworks.xstream:xstream:1.4.2'
         compile 'com.netflix.archaius:archaius-core:0.3.3'
         compile 'javax.ws.rs:jsr311-api:1.1.1'
         compile 'com.netflix.servo:servo-core:0.4.36'
-        compile 'com.sun.jersey:jersey-core:1.11'
-        compile 'com.sun.jersey:jersey-client:1.11'
+        compile "com.sun.jersey:jersey-core:$jerseyVersion"
+        compile "com.sun.jersey:jersey-client:$jerseyVersion"
         compile 'com.sun.jersey.contribs:jersey-apache-client4:1.11'
         compile 'org.apache.httpcomponents:httpclient:4.2.1'
         compile 'com.netflix.ribbon:ribbon-httpclient:0.3.4'
@@ -68,6 +74,16 @@ project(':eureka-core') {
 project(':eureka-resources') {
 }
 
+project(':eureka-lifecycle') {
+    dependencies {
+        compile project(':eureka-client')
+        compile project(':eureka-core')
+        
+        compile "com.netflix.governator:governator:$governatorVersion"
+        testCompile 'junit:junit:4.10'
+        testCompile 'org.mortbay.jetty:jetty:6.1H.22'
+    }
+}
 
 project(':eureka-server') {
     apply plugin: 'war'
@@ -90,8 +106,8 @@ project(':eureka-server') {
         compile project(':eureka-core')
         runtime 'xerces:xercesImpl:2.4.0'
         runtime 'asm:asm:3.1'
-        compile 'com.sun.jersey:jersey-server:1.11'
-        compile 'com.sun.jersey:jersey-servlet:1.11'
+        compile "com.sun.jersey:jersey-server:$jerseyVersion"
+        compile "com.sun.jersey:jersey-servlet:$jerseyVersion"
         compile 'org.slf4j:slf4j-log4j12:1.6.1'
         runtime 'org.codehaus.jettison:jettison:1.2' 
         providedCompile 'javax.servlet:servlet-api:2.4'

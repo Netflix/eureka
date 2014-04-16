@@ -23,6 +23,7 @@ import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.shared.LookupService;
+import com.netflix.eventbus.spi.EventBus;
 
 /**
  * <tt>Discovery Manager</tt> configures <tt>Discovery Client</tt> based on the
@@ -61,8 +62,22 @@ public class DiscoveryManager {
      *            registration with Eureka.
      * @param eurekaConfig the eureka client configuration of the instance.
      */
+    @Deprecated
     public void initComponent(EurekaInstanceConfig config,
             EurekaClientConfig eurekaConfig) {
+        initComponent(config, eurekaConfig, null);
+    }
+    
+    /**
+     * Initializes the <tt>Discovery Client</tt> with the given configuration.
+     * 
+     * @param config
+     *            the instance info configuration that will be used for
+     *            registration with Eureka.
+     * @param eurekaConfig the eureka client configuration of the instance.
+     */
+    public void initComponent(EurekaInstanceConfig config,
+            EurekaClientConfig eurekaConfig, EventBus eventBus) {
         this.eurekaInstanceConfig = config;
         this.eurekaClientConfig = eurekaConfig;
         if (ApplicationInfoManager.getInstance().getInfo() == null) {
@@ -70,7 +85,7 @@ public class DiscoveryManager {
             ApplicationInfoManager.getInstance().initComponent(config);
         }
         InstanceInfo info = ApplicationInfoManager.getInstance().getInfo();
-        discoveryClient = new DiscoveryClient(info, eurekaConfig);
+        discoveryClient = new DiscoveryClient(info, eurekaConfig, eventBus);
     }
 
     /**

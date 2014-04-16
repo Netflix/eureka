@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Timer;
 import java.util.TimerTask;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -58,6 +57,7 @@ import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.EurekaJerseyClient;
 import com.netflix.discovery.shared.EurekaJerseyClient.JerseyClient;
 import com.netflix.discovery.shared.LookupService;
+import com.netflix.eventbus.spi.EventBus;
 import com.netflix.servo.monitor.Counter;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
@@ -148,7 +148,9 @@ public class DiscoveryClient implements LookupService {
     protected static EurekaClientConfig clientConfig;
     private final AtomicReference<String> remoteRegionsToFetch;
     private final InstanceRegionChecker instanceRegionChecker;
-
+    private final EventBus eventBus;
+    private volatile InstanceInfo.InstanceStatus lastRemoteInstanceStatus = InstanceInfo.InstanceStatus.UNKNOWN;
+    
     private enum Action {
         Register, Cancel, Renew, Refresh, Refresh_Delta
     }
@@ -156,9 +158,13 @@ public class DiscoveryClient implements LookupService {
     private final ScheduledExecutorService scheduler;
 
     DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config) {
+        this(myInfo, config, null);
+    }
+    
+    DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, EventBus eventBus) {
         try {
+            this.eventBus = eventBus;
             scheduler = Executors.newScheduledThreadPool(4);
-
             clientConfig = config;
             final String zone = getZone(myInfo);
             eurekaServiceUrls.set(getDiscoveryServiceUrls(zone));
@@ -299,7 +305,7 @@ public class DiscoveryClient implements LookupService {
             healthCheckCallback = callback;
         }
     }
-
+    
     /**
      * Gets the list of instances matching the given VIP Address.
      * 
@@ -648,15 +654,18 @@ public class DiscoveryClient implements LookupService {
                 }
                 logTotalInstances();
             }
+            
             logger.debug(PREFIX + appPathIdentifier + " -  refresh status: "
                     + response.getStatus());
+            
+            updateInstanceRemoteStatus();
+
         } catch (Throwable e) {
             logger.error(
                     PREFIX + appPathIdentifier
                             + " - was unable to refresh its cache! status = "
                             + e.getMessage(), e);
             return false;
-
         } finally {
             if (tracer != null) {
                 tracer.stop();
@@ -666,6 +675,43 @@ public class DiscoveryClient implements LookupService {
         return true;
     }
 
+    private synchronized void updateInstanceRemoteStatus() {
+        // Determine this instance's status for this app and set to UNKNOWN if not found
+        InstanceInfo.InstanceStatus currentRemoteInstanceStatus = null;
+        if (instanceInfo.getAppName() != null) {
+            Application app = getApplication(instanceInfo.getAppName());
+            if (app != null) {
+                InstanceInfo remoteInstanceInfo = app.getByInstanceId(instanceInfo.getId());
+                if (remoteInstanceInfo != null) {
+                    currentRemoteInstanceStatus = remoteInstanceInfo.getStatus();
+                }
+            }
+        }
+        if (currentRemoteInstanceStatus == null) {
+            currentRemoteInstanceStatus = InstanceInfo.InstanceStatus.UNKNOWN;
+        }
+            
+        // Notify if status changed
+        if (lastRemoteInstanceStatus != currentRemoteInstanceStatus) {
+            try {
+                if (eventBus != null) {
+                    StatusChangeEvent event = new StatusChangeEvent(lastRemoteInstanceStatus, currentRemoteInstanceStatus);
+                    eventBus.publish(event);
+                }
+            }
+            finally {
+                lastRemoteInstanceStatus = currentRemoteInstanceStatus;
+            }
+        }
+    }
+    
+    /**
+     * @return Return he current instance status as seen on the Eureka server.
+     */
+    public InstanceInfo.InstanceStatus getInstanceRemoteStatus() {
+        return lastRemoteInstanceStatus;
+    }
+    
     private String getReconcileHashCode(Applications applications) {
         TreeMap<String, AtomicInteger> instanceCountMap = new TreeMap<String, AtomicInteger>();
         if (isFetchingRemoteRegionRegistries()) {
@@ -768,8 +814,7 @@ public class DiscoveryClient implements LookupService {
      *            the delta information received from eureka server in the last
      *            poll cycle.
      */
-    private void
-    updateDelta(Applications delta) {
+    private void updateDelta(Applications delta) {
         int deltaCount = 0;
         for (Application app : delta.getRegisteredApplications()) {
             for (InstanceInfo instance : app.getInstances()) {
