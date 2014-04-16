@@ -19,9 +19,12 @@ package com.netflix.appinfo;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.inject.Singleton;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.inject.ProvidedBy;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.config.DynamicBooleanProperty;
@@ -41,17 +44,19 @@ import com.netflix.config.DynamicPropertyFactory;
  * @author Karthik Ranganathan
  * 
  */
+@Singleton
+@ProvidedBy(CloudInstanceConfigProvider.class)
 public class CloudInstanceConfig extends PropertiesInstanceConfig {
-    private static final Logger logger = LoggerFactory
-    .getLogger(CloudInstanceConfig.class);
-    private static final DynamicPropertyFactory INSTANCE = com.netflix.config.DynamicPropertyFactory
-    .getInstance();
+    private static final Logger logger = LoggerFactory.getLogger(CloudInstanceConfig.class);
+    private static final DynamicPropertyFactory INSTANCE = DynamicPropertyFactory.getInstance();
+    
     private DynamicBooleanProperty propValidateInstanceId;
     private DataCenterInfo info;
     
     public CloudInstanceConfig() {
         initCloudInstanceConfig(namespace); 
     }
+    
     public CloudInstanceConfig(String namespace) {
         super(namespace);
         initCloudInstanceConfig(namespace);

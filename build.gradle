@@ -47,6 +47,7 @@ project(':eureka-client') {
         compile 'com.sun.jersey.contribs:jersey-apache-client4:1.11'
         compile 'org.apache.httpcomponents:httpclient:4.2.1'
         compile 'com.netflix.ribbon:ribbon-httpclient:0.3.4'
+        compile "com.netflix.governator:governator:$governatorVersion"
         runtime 'org.codehaus.jettison:jettison:1.2'
 
         testCompile 'junit:junit:4.10'
@@ -72,17 +73,6 @@ project(':eureka-core') {
 }
 
 project(':eureka-resources') {
-}
-
-project(':eureka-lifecycle') {
-    dependencies {
-        compile project(':eureka-client')
-        compile project(':eureka-core')
-        
-        compile "com.netflix.governator:governator:$governatorVersion"
-        testCompile 'junit:junit:4.10'
-        testCompile 'org.mortbay.jetty:jetty:6.1H.22'
-    }
 }
 
 project(':eureka-server') {

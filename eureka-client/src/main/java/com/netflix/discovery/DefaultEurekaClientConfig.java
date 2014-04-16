@@ -24,6 +24,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.inject.ProvidedBy;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.config.DynamicStringProperty;
@@ -53,6 +54,7 @@ import javax.annotation.Nullable;
  * @author Karthik Ranganathan
  * 
  */
+@ProvidedBy(DefaultEurekaClientConfigProvider.class)
 public class DefaultEurekaClientConfig implements EurekaClientConfig {
     private static final String ARCHAIUS_DEPLOYMENT_ENVIRONMENT = "archaius.deployment.environment";
     private static final String TEST = "test";

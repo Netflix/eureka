@@ -23,7 +23,6 @@ import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.shared.LookupService;
-import com.netflix.eventbus.spi.EventBus;
 
 /**
  * <tt>Discovery Manager</tt> configures <tt>Discovery Client</tt> based on the
@@ -39,8 +38,7 @@ import com.netflix.eventbus.spi.EventBus;
  * 
  */
 public class DiscoveryManager {
-    private static final Logger logger = LoggerFactory
-            .getLogger(DiscoveryManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(DiscoveryManager.class);
     private DiscoveryClient discoveryClient;
     
     private EurekaInstanceConfig eurekaInstanceConfig;
@@ -54,6 +52,21 @@ public class DiscoveryManager {
         return s_instance;
     }
 
+    @Deprecated
+    public void setDiscoveryClient(DiscoveryClient discoveryClient) {
+        this.discoveryClient = discoveryClient;
+    }
+    
+    @Deprecated
+    public void setEurekaClientConfig(EurekaClientConfig eurekaClientConfig) {
+        this.eurekaClientConfig = eurekaClientConfig;
+    }
+    
+    @Deprecated
+    public void setEurekaInstanceConfig(EurekaInstanceConfig eurekaInstanceConfig) {
+        this.eurekaInstanceConfig = eurekaInstanceConfig;
+    }
+    
     /**
      * Initializes the <tt>Discovery Client</tt> with the given configuration.
      * 
@@ -65,19 +78,6 @@ public class DiscoveryManager {
     @Deprecated
     public void initComponent(EurekaInstanceConfig config,
             EurekaClientConfig eurekaConfig) {
-        initComponent(config, eurekaConfig, null);
-    }
-    
-    /**
-     * Initializes the <tt>Discovery Client</tt> with the given configuration.
-     * 
-     * @param config
-     *            the instance info configuration that will be used for
-     *            registration with Eureka.
-     * @param eurekaConfig the eureka client configuration of the instance.
-     */
-    public void initComponent(EurekaInstanceConfig config,
-            EurekaClientConfig eurekaConfig, EventBus eventBus) {
         this.eurekaInstanceConfig = config;
         this.eurekaClientConfig = eurekaConfig;
         if (ApplicationInfoManager.getInstance().getInfo() == null) {
@@ -85,13 +85,14 @@ public class DiscoveryManager {
             ApplicationInfoManager.getInstance().initComponent(config);
         }
         InstanceInfo info = ApplicationInfoManager.getInstance().getInfo();
-        discoveryClient = new DiscoveryClient(info, eurekaConfig, eventBus);
+        discoveryClient = new DiscoveryClient(info, eurekaConfig);
     }
-
+    
     /**
      * Shuts down the <tt>Discovery Client</tt> which unregisters the
      * information about this instance from the <tt>Discovery Server</tt>.
      */
+    @Deprecated
     public void shutdownComponent() {
         if (discoveryClient != null) {
             try {

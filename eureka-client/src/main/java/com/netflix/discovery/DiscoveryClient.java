@@ -35,6 +35,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nullable;
+import javax.annotation.PreDestroy;
+import javax.inject.Singleton;
 import javax.naming.directory.DirContext;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
@@ -42,6 +44,8 @@ import javax.ws.rs.core.Response.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.inject.Inject;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.ApplicationInfoManager;
@@ -91,12 +95,10 @@ import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
  * @author Karthik Ranganathan, Greg Kim
  * 
  */
+@Singleton
 public class DiscoveryClient implements LookupService {
-    private static final Logger logger = LoggerFactory
-            .getLogger(DiscoveryClient.class);
-
-    private static final DynamicPropertyFactory configInstance = DynamicPropertyFactory
-            .getInstance();
+    private static final Logger logger = LoggerFactory.getLogger(DiscoveryClient.class);
+    private static final DynamicPropertyFactory configInstance = DynamicPropertyFactory.getInstance();
 
     // Constants
     private static final String DNS_PROVIDER_URL = "dns:";
@@ -148,7 +150,6 @@ public class DiscoveryClient implements LookupService {
     protected static EurekaClientConfig clientConfig;
     private final AtomicReference<String> remoteRegionsToFetch;
     private final InstanceRegionChecker instanceRegionChecker;
-    private final EventBus eventBus;
     private volatile InstanceInfo.InstanceStatus lastRemoteInstanceStatus = InstanceInfo.InstanceStatus.UNKNOWN;
     
     private enum Action {
@@ -157,13 +158,16 @@ public class DiscoveryClient implements LookupService {
 
     private final ScheduledExecutorService scheduler;
 
-    DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config) {
-        this(myInfo, config, null);
-    }
+    @Inject(optional=true)
+    private EventBus eventBus;
     
-    DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, EventBus eventBus) {
+    @Inject
+    DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config) {
+        // *** Remove these when DiscoveryManager is finally no longer used
+        DiscoveryManager.getInstance().setDiscoveryClient(this);
+        DiscoveryManager.getInstance().setEurekaClientConfig(config);
+        
         try {
-            this.eventBus = eventBus;
             scheduler = Executors.newScheduledThreadPool(4);
             clientConfig = config;
             final String zone = getZone(myInfo);
@@ -566,6 +570,7 @@ public class DiscoveryClient implements LookupService {
      * Shuts down Eureka Client. Also sends a deregistration request to the
      * eureka server.
      */
+    @PreDestroy
     public void shutdown() {
         cancelScheduledTasks();
 
@@ -574,6 +579,10 @@ public class DiscoveryClient implements LookupService {
             instanceInfo.setStatus(InstanceStatus.DOWN);
             unregister();
         }
+        
+        DiscoveryManager.getInstance().setDiscoveryClient(null);
+        DiscoveryManager.getInstance().setEurekaClientConfig(null);
+
     }
 
     /**

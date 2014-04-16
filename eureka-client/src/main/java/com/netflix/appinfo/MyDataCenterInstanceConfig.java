@@ -15,12 +15,18 @@
  */
 package com.netflix.appinfo;
 
+import javax.inject.Singleton;
+
+import com.google.inject.ProvidedBy;
+
 /**
  * An {@link InstanceInfo} configuration for the non-AWS datacenter.
  * 
  * @author Karthik Ranganathan
  * 
  */
+@Singleton
+@ProvidedBy(MyDataCenterInstanceConfigProvider.class)
 public class MyDataCenterInstanceConfig extends PropertiesInstanceConfig
 implements EurekaInstanceConfig {
     
@@ -34,7 +40,6 @@ implements EurekaInstanceConfig {
     public MyDataCenterInstanceConfig(String namespace,
             DataCenterInfo dataCenterInfo) {
         super(namespace, dataCenterInfo);
-
     }
 
 }
