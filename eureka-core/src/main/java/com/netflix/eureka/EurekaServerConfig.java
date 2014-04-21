@@ -123,7 +123,7 @@ public interface EurekaServerConfig {
     /**
      * The interval with which the information about the changes in peer eureka
      * nodes is updated. The user can use the DNS mechanism or dynamic
-     * configuration provided by {@link https://github.com/Netflix/archaius} to
+     * configuration provided by <a href="https://github.com/Netflix/archaius">Archaius</a> to
      * change the information dynamically.
      * <p>
      * <em>The changes are effective at runtime.</em>

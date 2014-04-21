@@ -31,7 +31,7 @@ import com.netflix.servo.monitor.Monitors;
  * The enum that encapsulates all statistics monitored by Eureka.
  * 
  * <p>
- * Eureka Monitoring is done using {@link https://github.com/Netflix/servo}. The
+ * Eureka Monitoring is done using <a href="https://github.com/Netflix/servo">Servo</a>. The
  * users who wants to take advantage of the monitoring should read up on
  * <tt>Servo</tt>
  * <p>

@@ -236,7 +236,6 @@ public class PeerEurekaNode {
      *            the instance info {@link InstanceInfo} of the instance.
      * @param overriddenStatus
      *            the overridden status information if any of the instance.
-     * @return true, if the instance exists in the peer node, false otherwise.
      * @throws Throwable
      */
     public void heartbeat(final String appName, final String id,
@@ -341,7 +340,6 @@ public class PeerEurekaNode {
      *            the new status of the instance.
      * @param info
      *            the instance information of the instance.
-     * @return true if the update succeeded, false otherwise.
      */
     public void statusUpdate(final String appName, final String id,
             final InstanceStatus newStatus, final InstanceInfo info) {

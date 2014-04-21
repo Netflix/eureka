@@ -135,10 +135,6 @@ public class EIPManager {
      *  2) If an EIP is already bound to another instance as deemed by AWS, that EIP is skipped.
      *  3) If an EIP is not already bound to an instance and if this instance is not bound to an EIP, then 
      *     the EIP is bound to this instance.
-     *     
-     * @param shouldBind - indicates if the EIP should be bound if it is not already bound.
-     * 
-     * @return true - if the EIP is bound, false otherwise.
      */
     public void bindEIP( ) {
         InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
@@ -247,8 +243,6 @@ public class EIPManager {
      *            the instance id for this instance
      * @param myZone
      *            the zone where this instance is in
-     * @param myPublicIP
-     *            the public ip of this instance
      * @return Collection containing the list of available EIPs
      */
     public Collection<String> getCandidateEIPs(String myInstanceId, String myZone) {
