@@ -43,7 +43,6 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
     private static final int NON_SECURE_PORT = 80;
     private static final int SECURE_PORT = 443;
     private static final boolean INSTANCE_ENABLED_ON_INIT = false;
-    private static final String UNKNOWN_APPLICATION = "unknown";
     private static final Pair<String, String> hostInfo = getHostInfo();
     private DataCenterInfo info = new DataCenterInfo() {
         @Override

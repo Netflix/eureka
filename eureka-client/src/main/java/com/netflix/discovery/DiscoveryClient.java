@@ -44,7 +44,6 @@ import javax.ws.rs.core.Response.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
@@ -1581,23 +1580,6 @@ public class DiscoveryClient implements LookupService {
             cnamesSet.add(cname);
         }
         return cnamesSet;
-    }
-
-    private static String[] getInstanceVipAddresses(InstanceInfo instanceInfo,
-            boolean isSecure) {
-        String vipAddresses;
-
-        if (isSecure) {
-            vipAddresses = instanceInfo.getSecureVipAddress();
-        } else {
-            vipAddresses = instanceInfo.getVIPAddress();
-        }
-
-        if (vipAddresses == null) {
-            return new String[0];
-        }
-
-        return vipAddresses.split(COMMA_STRING);
     }
 
     /**

@@ -1,30 +1,16 @@
 package com.netflix.discovery;
 
-import com.google.common.base.Supplier;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-
-import static com.netflix.discovery.DefaultEurekaClientConfig.DEFAULT_ZONE;
 
 /**
  * @author Nitesh Kant
  */
 public class InstanceRegionChecker {
-
-    private static final Logger logger = LoggerFactory.getLogger(InstanceRegionChecker.class);
-
     private final AzToRegionMapper azToRegionMapper;
     private final String localRegion;
 

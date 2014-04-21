@@ -8,7 +8,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.governator.annotations.binding.DownStatus;
 import com.netflix.governator.annotations.binding.UpStatus;
 import com.netflix.governator.guice.lazy.LazySingleton;

@@ -39,7 +39,6 @@ import com.netflix.discovery.shared.LookupService;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
 import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
 
@@ -94,7 +93,6 @@ public class RemoteRegionRegistry implements LookupService<String> {
                                                              EUREKA_SERVER_CONFIG.getRemoteRegionTrustStorePassword());
         }
         discoveryApacheClient = discoveryJerseyClient.getClient();
-        ClientConfig cc = discoveryJerseyClient.getClientconfig();
 
         boolean enableGZIPContentEncodingFilter = EUREKA_SERVER_CONFIG
                 .shouldGZipContentFromRemoteRegion();
@@ -315,7 +313,6 @@ public class RemoteRegionRegistry implements LookupService<String> {
         logger.info(
                 "Getting instance registry info from the eureka server : {} , delta : {}",
                 this.remoteRegionURL, delta);
-        Stopwatch tracer = null;
         ClientResponse response = null;
         try {
 
@@ -336,10 +333,6 @@ public class RemoteRegionRegistry implements LookupService<String> {
         } catch (Throwable t) {
             logger.error("Can't get a response from " + this.remoteRegionURL, t);
 
-        } finally {
-            if (tracer != null) {
-                tracer.stop();
-            }
         }
         return response;
     }
@@ -365,7 +358,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
             logger.warn("Response is null while fetching remote registry during reconcile difference.");
             return null;
         }
-        Applications serverApps = (Applications) response.getEntity(Applications.class);
+        Applications serverApps = response.getEntity(Applications.class);
         Map<String, List<String>> reconcileDiffMap = getApplications()
                 .getReconcileMapDiff(serverApps);
         String reconcileString = "";

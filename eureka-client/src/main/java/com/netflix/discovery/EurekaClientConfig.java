@@ -23,7 +23,6 @@ import java.util.List;
 import org.apache.http.client.HttpClient;
 
 import com.google.inject.ImplementedBy;
-import com.netflix.appinfo.CloudInstanceConfig;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 
 import javax.annotation.Nullable;
