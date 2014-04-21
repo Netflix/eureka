@@ -199,7 +199,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
 
     public void waitForDeltaToBeRetrieved(int refreshRate) throws InterruptedException {
         int count = 0;
-        while (count < 3 && !isSentDelta()) {
+        while (count++ < 3 && !isSentDelta()) {
             System.out.println("Sleeping for " + refreshRate + " seconds to let the remote registry fetch delta. Attempt: " + count);
             Thread.sleep( 3 * refreshRate * 1000);
             System.out.println("Done sleeping for 10 seconds to let the remote registry fetch delta. Delta fetched: " + isSentDelta());
