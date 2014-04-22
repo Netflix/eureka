@@ -65,16 +65,16 @@ public final class EurekaJerseyClient {
      *
      * @param clientName
      * @param connectionTimeout
-     *            - The connection timeout of the connection
+     *            - The connection timeout of the connection in milliseconds
      * @param readTimeout
-     *            - The read timeout of the connection
+     *            - The read timeout of the connection in milliseconds
      * @param maxConnectionsPerHost
      *            - The maximum number of connections to a particular host
      * @param maxTotalConnections
      *            - The maximum number of total connections across all hosts
      * @param connectionIdleTimeout
      *            - The idle timeout after which the connections will be cleaned
-     *            up
+     *            up in seconds
      * @return - The jersey client object encapsulating the connection
      */
     public static JerseyClient createJerseyClient(String clientName, int connectionTimeout,
@@ -100,16 +100,16 @@ public final class EurekaJerseyClient {
      *
      * @param clientName
      * @param connectionTimeout
-     *            - The connection timeout of the connection
+     *            - The connection timeout of the connection in milliseconds
      * @param readTimeout
-     *            - The read timeout of the connection
+     *            - The read timeout of the connection in milliseconds
      * @param maxConnectionsPerHost
      *            - The maximum number of connections to a particular host
      * @param maxTotalConnections
      *            - The maximum number of total connections across all hosts
      * @param connectionIdleTimeout
      *            - The idle timeout after which the connections will be cleaned
-     *            up
+     *            up in seconds
      * @param trustStoreFileName
      *            - The full path to the trust store file
      * @param trustStorePassword
