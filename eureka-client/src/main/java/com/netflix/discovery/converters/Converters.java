@@ -488,11 +488,13 @@ public final class Converters {
                             dataCenterName)) {
                         info = new AmazonInfo();
                     } else {
+                        final DataCenterInfo.Name name =
+                                DataCenterInfo.Name.valueOf(dataCenterName);
                         info = new DataCenterInfo() {
 
                             @Override
                             public Name getName() {
-                                return Name.valueOf(dataCenterName);
+                                return name;
                             }
                         };
                     }
