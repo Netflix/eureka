@@ -67,8 +67,6 @@ import com.netflix.servo.monitor.Monitors;
  * 
  */
 public class EIPManager {
-    private static final int HEARTBEAT_RETRY_INTERVAL_MS = 300;
-    private static final int NO_HEARTBEAT_RETRIES = 3;
     private static final String US_EAST_1 = "us-east-1";
     private static final Logger logger = LoggerFactory
     .getLogger(EIPManager.class);
@@ -142,8 +140,6 @@ public class EIPManager {
         .get(MetaDataKey.instanceId);
         String myZone = ((AmazonInfo) myInfo.getDataCenterInfo())
         .get(MetaDataKey.availabilityZone);
-        String myPublicIP = ((AmazonInfo) myInfo.getDataCenterInfo())
-        .get(MetaDataKey.publicIpv4);
 
         Collection<String> candidateEIPs = getCandidateEIPs(myInstanceId,
                 myZone);
@@ -261,29 +257,6 @@ public class EIPManager {
         }
        
         return eipCandidates;
-    }
-
-    /**
-     * Return the  @link {PeerEurekaNode} given the host name.
-     * @param instanceHostName - the host name for which the @link {PeerEurekaNode}.
-     * @return @link {PeerEurekaNode} object that represents this host name.
-     */
-    private PeerEurekaNode getPeerEurekaNode(String instanceHostName) {
-        PeerEurekaNode replicaNode = null;
-        try {
-            for (PeerEurekaNode node : PeerAwareInstanceRegistry
-                    .getInstance().getReplicaNodes()) {
-                if (new URL(node.getServiceUrl()).getHost()
-                        .equalsIgnoreCase(instanceHostName)) {
-                    replicaNode = node;
-                }
-            }
-        } catch (Throwable e) {
-            logger.error(
-                    "Cannot get peer eureka node instance from instanceHostName for "
-                    + instanceHostName, replicaNode);
-        }
-        return replicaNode;
     }
 
     /**

@@ -254,34 +254,6 @@ public class InstanceResource {
         }
     }
 
-    private boolean shouldSyncStatus(String status, boolean isReplication) {
-        InstanceInfo appInfo = registry.getInstanceByAppAndId(app.getName(),
-                id, false);
-        InstanceStatus instanceStatusFromRegistry = null;
-        if (appInfo != null) {
-            instanceStatusFromRegistry = appInfo.getStatus();
-        }
-        InstanceStatus instanceStatusFromReplica = (status != null ? InstanceStatus
-                .valueOf(status) : null);
-        if (instanceStatusFromReplica != null) {
-            // Do sync up only for replication - because the client could have
-            // different state when the server
-            // state is updated by an external tool
-            if ((!instanceStatusFromRegistry.equals(instanceStatusFromReplica))
-                    && isReplication) {
-                Object[] args = { id, instanceStatusFromRegistry.name(),
-                        instanceStatusFromReplica.name() };
-                logger.warn(
-                        "The instance status for {} is {} from registry, whereas it is {} from replica. Requesting a re-register from replica.",
-                        args);
-
-                return true;
-            }
-        }
-        return false;
-
-    }
-
     private Response validateDirtyTimestamp(Long lastDirtyTimestamp,
             boolean isReplication) {
         InstanceInfo appInfo = registry.getInstanceByAppAndId(app.getName(),

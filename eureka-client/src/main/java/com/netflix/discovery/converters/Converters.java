@@ -235,8 +235,6 @@ public final class Converters {
         private static final String ELEM_HOST = "hostName";
         private static final String ELEM_APP = "app";
         private static final String ELEM_IP = "ipAddr";
-        private static final String ELEM_VERSION = "version";
-        private static final String ELEM_SRC_VERSION = "sourceVersion";
         private static final String ELEM_SID = "sid";
         private static final String ELEM_STATUS = "status";
         private static final String ELEM_PORT = "port";
@@ -497,7 +495,6 @@ public final class Converters {
                                 return Name.valueOf(dataCenterName);
                             }
                         };
-                        ;
                     }
                 } else if (NODE_METADATA.equals(reader.getNodeName())) {
                     if (info.getName() == Name.Amazon) {
