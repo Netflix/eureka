@@ -66,7 +66,7 @@ public class Applications {
     private static final Logger logger = LoggerFactory.getLogger(Applications.class);
     private static final String STATUS_DELIMITER = "_";
 
-    private Long version_delta = Long.valueOf(-1);
+    private Long versionDelta = Long.valueOf(-1);
 
     @XStreamImplicit
     private AbstractQueue<Application> applications;
@@ -169,12 +169,12 @@ public class Applications {
 
     @Deprecated
     public void setVersion(Long version) {
-        this.version_delta = version;
+        this.versionDelta = version;
     }
 
     @Deprecated
     public Long getVersion() {
-        return this.version_delta;
+        return this.versionDelta;
     }
 
     /**
@@ -228,8 +228,8 @@ public class Applications {
         for (Map.Entry<String, AtomicInteger> mapEntry : instanceCountMap
                 .entrySet()) {
             reconcileHashCode = reconcileHashCode + mapEntry.getKey()
-            + STATUS_DELIMITER + mapEntry.getValue().get()
-            + STATUS_DELIMITER;
+                    + STATUS_DELIMITER + mapEntry.getValue().get()
+                    + STATUS_DELIMITER;
         }
         return reconcileHashCode;
     }
@@ -286,9 +286,9 @@ public class Applications {
             }
         }
         for (Pair pair : allInstanceAppInstanceIds) {
-            Application app = new Application(pair.getItem_1());
+            Application app = new Application(pair.getItem1());
             InstanceInfo thisInstanceInfo = app.getByInstanceId(pair
-                    .getItem_2());
+                    .getItem2());
             if (thisInstanceInfo != null) {
                 List<String> diffList = diffMap.get(ActionType.ADDED.name());
                 if (diffList == null) {
@@ -303,13 +303,13 @@ public class Applications {
     }
 
     private static final class Pair {
-        private String item_1;
-        private String item_2;
+        private final String item1;
+        private final String item2;
 
-        public Pair(String item_1, String item_2) {
+        public Pair(String item1, String item2) {
             super();
-            this.item_1 = item_1;
-            this.item_2 = item_2;
+            this.item1 = item1;
+            this.item2 = item2;
         }
 
         @Override
@@ -317,9 +317,9 @@ public class Applications {
             final int prime = 31;
             int result = 1;
             result = prime * result
-            + ((item_1 == null) ? 0 : item_1.hashCode());
+                    + ((item1 == null) ? 0 : item1.hashCode());
             result = prime * result
-            + ((item_2 == null) ? 0 : item_2.hashCode());
+                    + ((item2 == null) ? 0 : item2.hashCode());
             return result;
         }
 
@@ -335,54 +335,46 @@ public class Applications {
                 return false;
             }
             Pair other = (Pair) obj;
-            if (item_1 == null) {
-                if (other.item_1 != null) {
+            if (item1 == null) {
+                if (other.item1 != null) {
                     return false;
                 }
-            } else if (!item_1.equals(other.item_1)) {
+            } else if (!item1.equals(other.item1)) {
                 return false;
             }
-            if (item_2 == null) {
-                if (other.item_2 != null) {
+            if (item2 == null) {
+                if (other.item2 != null) {
                     return false;
                 }
-            } else if (!item_2.equals(other.item_2)) {
+            } else if (!item2.equals(other.item2)) {
                 return false;
             }
             return true;
         }
 
-        public String getItem_1() {
-            return item_1;
+        public String getItem1() {
+            return item1;
         }
 
-        public void setItem_1(String item_1) {
-            this.item_1 = item_1;
-        }
-
-        public String getItem_2() {
-            return item_2;
-        }
-
-        public void setItem_2(String item_2) {
-            this.item_2 = item_2;
+        public String getItem2() {
+            return item2;
         }
     }
 
     public void shuffleInstances(boolean filterUpInstances) {
-        _shuffleInstances(filterUpInstances, false, null, null, null);
+        shuffleInstances(filterUpInstances, false, null, null, null);
     }
 
     public void shuffleAndIndexInstances(Map<String, Applications> remoteRegionsRegistry,
                                          EurekaClientConfig clientConfig, InstanceRegionChecker instanceRegionChecker) {
-        _shuffleInstances(clientConfig.shouldFilterOnlyUpInstances(), true, remoteRegionsRegistry, clientConfig,
-                          instanceRegionChecker);
+        shuffleInstances(clientConfig.shouldFilterOnlyUpInstances(), true, remoteRegionsRegistry, clientConfig,
+                instanceRegionChecker);
     }
 
-    private void _shuffleInstances(boolean filterUpInstances, boolean indexByRemoteRegions,
-                                   @Nullable Map<String, Applications> remoteRegionsRegistry,
-                                   @Nullable EurekaClientConfig clientConfig,
-                                   @Nullable InstanceRegionChecker instanceRegionChecker) {
+    private void shuffleInstances(boolean filterUpInstances, boolean indexByRemoteRegions,
+                                  @Nullable Map<String, Applications> remoteRegionsRegistry,
+                                  @Nullable EurekaClientConfig clientConfig,
+                                  @Nullable InstanceRegionChecker instanceRegionChecker) {
         this.virtualHostNameAppMap.clear();
         this.secureVirtualHostNameAppMap.clear();
         for (Application application : appNameApplicationMap.values()) {
