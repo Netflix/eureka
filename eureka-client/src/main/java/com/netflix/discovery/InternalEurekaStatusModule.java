@@ -20,9 +20,9 @@ import com.netflix.governator.guice.lazy.LazySingleton;
  *
  * Exposed bindings,
  *
- * @UpStatus   Supplier<Boolean>
- * @DownStatus Supplier<Boolean>
- * @UpStatus   Observable<Boolean>
+ * &#64;UpStatus   Supplier<Boolean>
+ * &#64;DownStatus Supplier<Boolean>
+ * &#64;UpStatus   Observable<Boolean>
  *
  * @author elandau
  *
