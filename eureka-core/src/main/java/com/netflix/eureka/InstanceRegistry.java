@@ -99,8 +99,8 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             .<String, InstanceStatus>build().asMap();
 
     // CircularQueues here for debugging/statistics purposes only
-    private CircularQueue<Pair<Long, String>> recentRegisteredQueue;
-    private CircularQueue<Pair<Long, String>> recentCanceledQueue;
+    private final CircularQueue<Pair<Long, String>> recentRegisteredQueue;
+    private final CircularQueue<Pair<Long, String>> recentCanceledQueue;
     private Timer deltaRetentionTimer = new Timer("Eureka-DeltaRetentionTimer",
             true);
     private ConcurrentLinkedQueue<RecentlyChangedItem> recentlyChangedQueue = new ConcurrentLinkedQueue<RecentlyChangedItem>();
@@ -109,7 +109,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
     private final Lock write = readWriteLock.writeLock();
     protected Map<String, RemoteRegionRegistry> regionNameVSRemoteRegistry = new HashMap<String, RemoteRegionRegistry>();
     protected String[] allKnownRemoteRegions = EMPTY_STR_ARRAY;
-    protected Object lock = new Object();
+    protected final Object lock = new Object();
     protected volatile int numberOfRenewsPerMinThreshold;
     protected volatile int expectedNumberOfRenewsPerMin;
     protected static final EurekaServerConfig EUREKA_SERVER_CONFIG = EurekaServerConfigurationManager
