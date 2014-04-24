@@ -51,9 +51,9 @@ public class InstanceInfo {
     private static final Logger logger = LoggerFactory.getLogger(InstanceInfo.class);
     private static final Pattern VIP_ATTRIBUTES_PATTERN = Pattern.compile("\\$\\{(.*?)\\}");
 
-    public final static int DEFAULT_PORT = 7001;
-    public final static int DEFAULT_SECURE_PORT = 7002;
-    public final static int DEFAULT_COUNTRY_ID = 1; // US
+    public static final int DEFAULT_PORT = 7001;
+    public static final int DEFAULT_SECURE_PORT = 7002;
+    public static final int DEFAULT_COUNTRY_ID = 1; // US
 
     private volatile String appName;
     @Auto private volatile String appGroupName;

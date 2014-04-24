@@ -45,9 +45,9 @@ import com.netflix.eureka.util.StatusInfo.Builder;
 public class StatusResource {
     private static final Logger logger = LoggerFactory
     .getLogger(StatusResource.class);
-    private final static String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss Z";
+    private static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss Z";
 
-    private final static PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry
+    private static final PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry
     .getInstance();
 
     @GET

@@ -112,7 +112,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
 
     }
 
-    private final static Comparator<Application> APP_COMPARATOR = new Comparator<Application>() {
+    private static final Comparator<Application> APP_COMPARATOR = new Comparator<Application>() {
         public int compare(Application l, Application r) {
             return l.getName().compareTo(r.getName());
         }

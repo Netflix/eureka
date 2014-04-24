@@ -111,7 +111,7 @@ public class DiscoveryClient implements LookupService {
     private static final DirContext dirContext = DiscoveryClient.getDirContext();
 
     // Timers
-    private String PREFIX = "DiscoveryClient_";
+    private static final String PREFIX = "DiscoveryClient_";
     private final com.netflix.servo.monitor.Timer GET_SERVICE_URLS_DNS_TIMER = Monitors
             .newTimer(PREFIX + "GetServiceUrlsFromDNS");
     private final com.netflix.servo.monitor.Timer REGISTER_TIMER = Monitors

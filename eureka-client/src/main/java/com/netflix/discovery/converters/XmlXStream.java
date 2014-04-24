@@ -36,7 +36,7 @@ import com.thoughtworks.xstream.io.xml.DomDriver;
 
 public class XmlXStream extends XStream {
 
-    private final static XmlXStream s_instance = new XmlXStream();
+    private static final XmlXStream s_instance = new XmlXStream();
 
     public XmlXStream() {
         super(new DomDriver());

@@ -22,7 +22,7 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
 @Serializer("com.netflix.eureka.converters.EntityBodyConverter")
 @XStreamAlias("status")
 public class StatusInfo {
-    private final static String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss Z";
+    private static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss Z";
 
     public static final class Builder {
 

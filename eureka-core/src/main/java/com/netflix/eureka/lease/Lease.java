@@ -34,7 +34,7 @@ public class Lease<T> {
         Register, Cancel, Renew
     };
 
-    public final static int DEFAULT_DURATION_IN_SECS = 90;
+    public static final int DEFAULT_DURATION_IN_SECS = 90;
 
     private T holder;
     private long evictionTimestamp;

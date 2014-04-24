@@ -80,8 +80,8 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
         private static final Logger logger = LoggerFactory
         .getLogger(Builder.class);
         private static final int SLEEP_TIME_MS = 100;
-        private final static String AWS_API_VERSION = "latest";
-        private final static String AWS_METADATA_URL = "http://169.254.169.254/"
+        private static final String AWS_API_VERSION = "latest";
+        private static final String AWS_METADATA_URL = "http://169.254.169.254/"
             + AWS_API_VERSION + "/meta-data/";
 
         @XStreamOmitField

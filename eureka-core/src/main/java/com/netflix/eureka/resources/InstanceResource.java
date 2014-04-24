@@ -53,10 +53,10 @@ import com.netflix.eureka.cluster.PeerEurekaNode;
  */
 @Produces({ "application/xml", "application/json" })
 public class InstanceResource {
-    private final static Logger logger = LoggerFactory
+    private static final Logger logger = LoggerFactory
             .getLogger(InstanceResource.class);
 
-    private final static PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry
+    private static final PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry
             .getInstance();
 
     String id;

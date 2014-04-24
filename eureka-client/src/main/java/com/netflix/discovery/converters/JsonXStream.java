@@ -37,7 +37,7 @@ import com.thoughtworks.xstream.io.xml.XmlFriendlyNameCoder;
  */
 public class JsonXStream extends XStream {
 
-    private final static JsonXStream s_instance = new JsonXStream();
+    private static final JsonXStream s_instance = new JsonXStream();
 
     public JsonXStream() {
         super(new JettisonMappedXmlDriver() {

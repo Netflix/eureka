@@ -76,8 +76,8 @@ public class ResponseCache {
     private static final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
             .getInstance().getConfiguration();
 
-    public final static String ALL_APPS = "ALL_APPS";
-    public final static String ALL_APPS_DELTA = "ALL_APPS_DELTA";
+    public static final String ALL_APPS = "ALL_APPS";
+    public static final String ALL_APPS_DELTA = "ALL_APPS_DELTA";
 
     private final com.netflix.servo.monitor.Timer serializeAllAppsTimer = Monitors
             .newTimer("serialize-all");
@@ -96,7 +96,7 @@ public class ResponseCache {
     private static final Timer timer = new Timer("Eureka -CacheFillTimer", true);
     private static final AtomicLong versionDelta = new AtomicLong(0);
     private static final AtomicLong versionDeltaWithRegions = new AtomicLong(0);
-    private final static String EMPTY_PAYLOAD = "";
+    private static final String EMPTY_PAYLOAD = "";
 
     public enum KeyType {
         JSON, XML
