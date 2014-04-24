@@ -91,7 +91,7 @@ public class SampleEurekaClient {
         DiscoveryManager.getInstance().shutdownComponent();
     }
 
-    public static void main(String args[]) {
+    public static void main(String[] args) {
         SampleEurekaClient sampleEurekaService = new SampleEurekaClient();
         sampleEurekaService.sendRequestToServiceUsingEureka();
 

@@ -529,7 +529,7 @@ public class DiscoveryClient implements LookupService {
             String instanceZone, boolean preferSameZone) {
         List<String> orderedUrls = new ArrayList<String>();
         String region = getRegion();
-        String availZones[] = clientConfig.getAvailabilityZones(clientConfig.getRegion());
+        String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
         if (availZones == null || availZones.length == 0) {
             availZones = new String[1];
             availZones[0] = "default";
@@ -1180,7 +1180,7 @@ public class DiscoveryClient implements LookupService {
      * @return - The zone in which the particular instance belongs to.
      */
     public static String getZone(InstanceInfo myInfo) {
-        String availZones[] = clientConfig.getAvailabilityZones(clientConfig
+        String[] availZones = clientConfig.getAvailabilityZones(clientConfig
                 .getRegion());
         String instanceZone = ((availZones == null || availZones.length == 0) ? "default"
                 : availZones[0]);
