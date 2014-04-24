@@ -30,7 +30,7 @@ import com.netflix.eureka.PeerAwareInstanceRegistry.Action;
 import com.netflix.eureka.cluster.PeerEurekaNode;
 
 /**
- * A <em>jersey</em> resource that handles requests for replication purposes
+ * A <em>jersey</em> resource that handles requests for replication purposes.
  *
  * @author Karthik Ranganathan
  *

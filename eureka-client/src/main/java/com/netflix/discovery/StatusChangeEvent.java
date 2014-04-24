@@ -20,7 +20,7 @@ public class StatusChangeEvent {
     }
 
     /**
-     * Return the up current when the event was generated
+     * Return the up current when the event was generated.
      * @return true if current is up or false for ALL other current values
      */
     public boolean isUp() {

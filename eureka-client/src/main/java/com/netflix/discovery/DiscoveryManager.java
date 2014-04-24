@@ -104,7 +104,7 @@ public class DiscoveryManager {
     }
 
     /**
-     * Get the {@link DiscoveryClient}
+     * Get the {@link DiscoveryClient}.
      * @return the client that is used to talk to eureka.
      */
     public DiscoveryClient getDiscoveryClient() {

@@ -46,7 +46,7 @@ import javax.annotation.Nullable;
  * {@link DiscoveryClient} based on <em>virtual hostname</em> (also called
  * VIPAddress), the most common way of doing it or by other means to get the
  * information necessary to talk to other instances registered with
- * <em>Eureka</em>. </p>
+ * <em>Eureka</em>.
  *
  * <p>
  * Note that all configurations are not effective at runtime unless and

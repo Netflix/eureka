@@ -58,7 +58,7 @@ public class Lease<T> {
     /**
      * Renew the lease, use renewal duration if it was specified by the
      * associated {@link T} during registration, otherwise default duration is
-     * {@link #DEFAULT_DURATION_IN_SECS}
+     * {@link #DEFAULT_DURATION_IN_SECS}.
      */
     public void renew() {
         lastUpdateTimestamp = System.currentTimeMillis() + duration;
@@ -85,7 +85,7 @@ public class Lease<T> {
     }
 
     /**
-     * Set the leases service UP timestamp
+     * Set the leases service UP timestamp.
      */
     public void setServiceUpTimestamp(long serviceUpTimestamp) {
         this.serviceUpTimestamp = serviceUpTimestamp;

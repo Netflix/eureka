@@ -60,7 +60,7 @@ public final class EurekaJerseyClient {
     }
 
     /**
-     * Creates a Jersey client with the given configuration parameters
+     * Creates a Jersey client with the given configuration parameters.
      *
      *
      * @param clientName
@@ -94,7 +94,7 @@ public final class EurekaJerseyClient {
 
     /**
      * Creates the SSL based Jersey client with the given configuration
-     * parameters
+     * parameters.
      *
      *
      *

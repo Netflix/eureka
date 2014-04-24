@@ -244,7 +244,7 @@ public interface EurekaServerConfig {
 
     /**
      * Get the time interval with which the <em>ASG</em> information must be
-     * queried from <em>AWS</em>
+     * queried from <em>AWS</em>.
      *
      * @return time in milliseconds.
      */
@@ -454,7 +454,7 @@ public interface EurekaServerConfig {
     Map<String, String> getRemoteRegionUrlsWithName();
 
     /**
-     * Get the list of remote region urls
+     * Get the list of remote region urls.
      * @return - array of string representing {@link URL}s.
      * @deprecated Use {@link #getRemoteRegionUrlsWithName()}
      */
@@ -483,13 +483,13 @@ public interface EurekaServerConfig {
     int getRemoteRegionRegistryFetchInterval();
 
     /**
-     * Gets the fully qualified trust store file that will be used for remote region registry fetches
+     * Gets the fully qualified trust store file that will be used for remote region registry fetches.
      * @return
      */
     String getRemoteRegionTrustStore();
 
     /**
-     * Get the remote region trust store's password
+     * Get the remote region trust store's password.
      */
     String getRemoteRegionTrustStorePassword();
 
@@ -502,7 +502,7 @@ public interface EurekaServerConfig {
     boolean disableTransparentFallbackToOtherRegion();
 
     /**
-     * Indicates whether the replication between cluster nodes should be batched for network efficiency
+     * Indicates whether the replication between cluster nodes should be batched for network efficiency.
      * @return {@code true} if the replication needs to be batched.
      */
     boolean shouldBatchReplication();

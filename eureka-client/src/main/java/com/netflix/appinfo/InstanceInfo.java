@@ -122,7 +122,7 @@ public class InstanceInfo {
 
     /**
      *
-     * shallow copy constructor
+     * shallow copy constructor.
      *
      * @param ii The object to copy
      */
@@ -575,7 +575,7 @@ public class InstanceInfo {
         }
 
         /**
-         * Add arbitrary metadata to running instance
+         * Add arbitrary metadata to running instance.
          *
          * @param key
          *            The key of the metadata.
@@ -681,7 +681,7 @@ public class InstanceInfo {
     }
 
     /**
-     * Returns the fully qualified hostname of this running instance
+     * Returns the fully qualified hostname of this running instance.
      *
      * @return the hostname.
      */
@@ -1030,7 +1030,7 @@ public class InstanceInfo {
     }
 
     /**
-     * Returns the specification version of this application
+     * Returns the specification version of this application.
      *
      * @return the string indicating the version of the application.
      */

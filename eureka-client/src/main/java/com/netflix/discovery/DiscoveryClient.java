@@ -247,7 +247,7 @@ public class DiscoveryClient implements LookupService {
         return getApplications().getRegisteredApplications(appName);
     }
 
-    /**
+    /*
      * (non-Javadoc)
      *
      * @see com.netflix.discovery.shared.LookupService#getApplications()
@@ -516,7 +516,7 @@ public class DiscoveryClient implements LookupService {
 
     /**
      * Get the list of all eureka service urls from properties file for the
-     * eureka client to talk to
+     * eureka client to talk to.
      *
      * @param instanceZone
      *            - The zone in which the client resides
@@ -583,7 +583,7 @@ public class DiscoveryClient implements LookupService {
     }
 
     /**
-     * unregister w/ the eureka service
+     * unregister w/ the eureka service.
      */
     void unregister() {
         ClientResponse response = null;
@@ -1266,7 +1266,7 @@ public class DiscoveryClient implements LookupService {
     }
 
     /**
-     * Get the list of EC2 URLs given the zone name
+     * Get the list of EC2 URLs given the zone name.
      *
      * @param dnsName
      *            - The dns name of the zone-specific CNAME

@@ -60,7 +60,7 @@ public class LeaseInfo {
         }
 
         /**
-         * Sets the registration timestamp
+         * Sets the registration timestamp.
          *
          * @param ts
          *            time when the lease was first registered.
@@ -72,7 +72,7 @@ public class LeaseInfo {
         }
 
         /**
-         * Sets the last renewal timestamp of lease
+         * Sets the last renewal timestamp of lease.
          *
          * @param ts
          *            time when the lease was last renewed.
@@ -84,7 +84,7 @@ public class LeaseInfo {
         }
 
         /**
-         * Sets the de-registration timestamp
+         * Sets the de-registration timestamp.
          *
          * @param ts
          *            time when the lease was removed.
@@ -96,7 +96,7 @@ public class LeaseInfo {
         }
 
         /**
-         * Sets the service UP timestamp
+         * Sets the service UP timestamp.
          *
          * @param ts
          *            time when the leased service marked as UP.
@@ -109,7 +109,7 @@ public class LeaseInfo {
 
         /**
          * Sets the client specified setting for eviction (e.g. how long to wait
-         * without renewal event)
+         * without renewal event).
          *
          * @param d
          *            time in seconds after which the lease would expire without
@@ -126,7 +126,7 @@ public class LeaseInfo {
         }
 
         /**
-         * Sets the client specified setting for renew interval
+         * Sets the client specified setting for renew interval.
          *
          * @param i
          *            the time interval with which the renewals will be renewed.
@@ -142,7 +142,7 @@ public class LeaseInfo {
         }
 
         /**
-         * Build the {@link InstanceInfo}
+         * Build the {@link InstanceInfo}.
          *
          * @return the {@link LeaseInfo} information built based on the supplied
          *         information.
@@ -156,7 +156,7 @@ public class LeaseInfo {
     }
 
     /**
-     * Returns the registration timestamp
+     * Returns the registration timestamp.
      *
      * @return time in milliseconds since epoch.
      */
@@ -165,7 +165,7 @@ public class LeaseInfo {
     }
 
     /**
-     * Returns the last renewal timestamp of lease
+     * Returns the last renewal timestamp of lease.
      *
      * @return time in milliseconds since epoch.
      */
@@ -174,7 +174,7 @@ public class LeaseInfo {
     }
 
     /**
-     * Returns the de-registration timestamp
+     * Returns the de-registration timestamp.
      *
      * @return time in milliseconds since epoch.
      */
@@ -183,7 +183,7 @@ public class LeaseInfo {
     }
 
     /**
-     * Returns the service UP timestamp
+     * Returns the service UP timestamp.
      *
      * @return time in milliseconds since epoch.
      */
@@ -192,7 +192,7 @@ public class LeaseInfo {
     }
 
     /**
-     * Returns client specified setting for renew interval
+     * Returns client specified setting for renew interval.
      *
      * @return time in milliseconds since epoch.
      */

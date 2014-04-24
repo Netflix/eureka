@@ -123,7 +123,7 @@ public class AwsAsgUtil {
     }
 
     /**
-     * Sets the status of the ASG
+     * Sets the status of the ASG.
      *
      * @param asgName
      *            - The name of the ASG

@@ -17,7 +17,7 @@ import com.netflix.appinfo.InstanceInfo.PortType;
 
 /**
  * InstanceInfo provider that constructs the InstanceInfo this this instance using
- * EurekaInstanceConfig
+ * EurekaInstanceConfig.
  *
  * @author elandau
  *

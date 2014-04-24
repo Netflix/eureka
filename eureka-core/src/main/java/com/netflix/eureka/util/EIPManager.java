@@ -92,7 +92,7 @@ public class EIPManager {
     }
 
     /**
-     * Checks if an EIP is already bound to the instance
+     * Checks if an EIP is already bound to the instance.
      * @return true if an EIP is bound, false otherwise
      */
     public boolean isEIPBound() {

@@ -45,7 +45,7 @@ public final class CurrentRequestVersion {
     }
 
     /**
-     * Sets the current {@link Version}
+     * Sets the current {@link Version}.
      */
     public static void set(Version version) {
         CURRENT_REQ_VERSION.set(version);

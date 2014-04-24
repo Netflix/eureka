@@ -36,7 +36,7 @@ import com.netflix.eureka.InstanceRegistry;
 public interface LeaseManager<T> {
 
     /**
-     * Assign a new {@link Lease} to the passed in {@link T}
+     * Assign a new {@link Lease} to the passed in {@link T}.
      *
      * @param r
      *            - T to register
@@ -48,7 +48,7 @@ public interface LeaseManager<T> {
 
     /**
      * Cancel the {@link Lease} associated w/ the passed in <code>appName</code>
-     * and <code>id</code>
+     * and <code>id</code>.
      *
      * @param appName
      *            - unique id of the application.
@@ -62,7 +62,7 @@ public interface LeaseManager<T> {
 
     /**
      * Renew the {@link Lease} associated w/ the passed in <code>appName</code>
-     * and <code>id</code>
+     * and <code>id</code>.
      *
      * @param id
      *            - unique id within appName
