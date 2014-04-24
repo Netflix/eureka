@@ -14,10 +14,11 @@ public class MyDataCenterInstanceConfigProvider implements Provider<MyDataCenter
     @Override
     public MyDataCenterInstanceConfig get() {
         MyDataCenterInstanceConfig config;
-        if (namespace == null)
+        if (namespace == null) {
             config = new MyDataCenterInstanceConfig();
-        else
+        } else {
             config = new MyDataCenterInstanceConfig(namespace);
+        }
 
         DiscoveryManager.getInstance().setEurekaInstanceConfig(config);
         return config;

@@ -325,23 +325,30 @@ public class Applications {
 
         @Override
         public boolean equals(Object obj) {
-            if (this == obj)
+            if (this == obj) {
                 return true;
-            if (obj == null)
+            }
+            if (obj == null) {
                 return false;
-            if (getClass() != obj.getClass())
+            }
+            if (getClass() != obj.getClass()) {
                 return false;
+            }
             Pair other = (Pair) obj;
             if (item_1 == null) {
-                if (other.item_1 != null)
+                if (other.item_1 != null) {
                     return false;
-            } else if (!item_1.equals(other.item_1))
+                }
+            } else if (!item_1.equals(other.item_1)) {
                 return false;
+            }
             if (item_2 == null) {
-                if (other.item_2 != null)
+                if (other.item_2 != null) {
                     return false;
-            } else if (!item_2.equals(other.item_2))
+                }
+            } else if (!item_2.equals(other.item_2)) {
                 return false;
+            }
             return true;
         }
 

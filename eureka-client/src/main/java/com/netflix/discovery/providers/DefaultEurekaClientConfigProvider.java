@@ -18,9 +18,10 @@ public class DefaultEurekaClientConfigProvider implements Provider<EurekaClientC
 
     @Override
     public EurekaClientConfig get() {
-        if (namespace == null)
+        if (namespace == null) {
             return new DefaultEurekaClientConfig();
-        else
+        } else {
             return new DefaultEurekaClientConfig(namespace);
+        }
     }
 }

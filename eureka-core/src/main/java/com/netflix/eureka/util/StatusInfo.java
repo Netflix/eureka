@@ -121,10 +121,11 @@ public class StatusInfo {
         diff /= 24;
         long days = diff;
         StringBuilder buf = new StringBuilder();
-        if (days == 1)
+        if (days == 1) {
             buf.append("1 day ");
-        else if (days > 1)
+        } else if (days > 1) {
             buf.append(Long.valueOf(days).toString()).append(" days ");
+        }
         DecimalFormat format = new DecimalFormat();
         format.setMinimumIntegerDigits(2);
         buf.append(format.format(hours)).append(":")

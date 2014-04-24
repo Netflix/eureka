@@ -151,8 +151,9 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             if (gMap == null) {
                 final ConcurrentHashMap<String, Lease<InstanceInfo>> gNewMap = new ConcurrentHashMap<String, Lease<InstanceInfo>>();
                 gMap = _registry.putIfAbsent(r.getAppName(), gNewMap);
-                if (gMap == null)
+                if (gMap == null) {
                     gMap = gNewMap;
+                }
             }
             Lease<InstanceInfo> existingLease = gMap.get(r.getId());
             // Retain the last dirty timestamp without overwriting it, if there
