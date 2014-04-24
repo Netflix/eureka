@@ -87,10 +87,10 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
 
     private static final Logger logger = LoggerFactory
             .getLogger(InstanceRegistry.class);
-    private static final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
+    private static final EurekaServerConfig EUREKA_CONFIG = EurekaServerConfigurationManager
             .getInstance().getConfiguration();
     private static final String[] EMPTY_STR_ARRAY = new String[0];
-    private final ConcurrentHashMap<String, Map<String, Lease<InstanceInfo>>> _registry = new ConcurrentHashMap<String, Map<String, Lease<InstanceInfo>>>();
+    private final ConcurrentHashMap<String, Map<String, Lease<InstanceInfo>>> registry = new ConcurrentHashMap<String, Map<String, Lease<InstanceInfo>>>();
     private Timer evictionTimer = new Timer("Eureka-EvictionTimer", true);
     private volatile MeasuredRate renewsLastMin;
     protected ConcurrentMap<String, InstanceStatus> overriddenInstanceStatusMap = CacheBuilder
@@ -115,7 +115,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
     protected static final EurekaServerConfig EUREKA_SERVER_CONFIG = EurekaServerConfigurationManager
             .getInstance().getConfiguration();
 
-    private static final AtomicReference<EvictionTask> evictionTask = new AtomicReference<EvictionTask>();
+    private static final AtomicReference<EvictionTask> EVICTION_TASK = new AtomicReference<EvictionTask>();
 
 
     /**
@@ -125,8 +125,8 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         recentCanceledQueue = new CircularQueue<Pair<Long, String>>(1000);
         recentRegisteredQueue = new CircularQueue<Pair<Long, String>>(1000);
         deltaRetentionTimer.schedule(getDeltaRetentionTask(),
-                eurekaConfig.getDeltaRetentionTimerIntervalInMs(),
-                eurekaConfig.getDeltaRetentionTimerIntervalInMs());
+                EUREKA_CONFIG.getDeltaRetentionTimerIntervalInMs(),
+                EUREKA_CONFIG.getDeltaRetentionTimerIntervalInMs());
     }
 
     /**
@@ -137,7 +137,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         recentCanceledQueue.clear();
         recentRegisteredQueue.clear();
         recentlyChangedQueue.clear();
-        _registry.clear();
+        registry.clear();
 
     }
 
@@ -150,12 +150,12 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
     public void register(InstanceInfo r, int leaseDuration, boolean isReplication) {
         try {
             read.lock();
-            Map<String, Lease<InstanceInfo>> gMap = _registry.get(r
+            Map<String, Lease<InstanceInfo>> gMap = registry.get(r
                     .getAppName());
             REGISTER.increment(isReplication);
             if (gMap == null) {
                 final ConcurrentHashMap<String, Lease<InstanceInfo>> gNewMap = new ConcurrentHashMap<String, Lease<InstanceInfo>>();
-                gMap = _registry.putIfAbsent(r.getAppName(), gNewMap);
+                gMap = registry.putIfAbsent(r.getAppName(), gNewMap);
                 if (gMap == null) {
                     gMap = gNewMap;
                 }
@@ -266,15 +266,13 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         try {
             read.lock();
             CANCEL.increment(isReplication);
-            Map<String, Lease<InstanceInfo>> gMap = _registry.get(appName);
+            Map<String, Lease<InstanceInfo>> gMap = registry.get(appName);
             Lease<InstanceInfo> leaseToCancel = null;
             if (gMap != null) {
                 leaseToCancel = gMap.remove(id);
             }
             synchronized (recentCanceledQueue) {
-                recentCanceledQueue.add(new Pair<Long, String>(Long
-                        .valueOf(System.currentTimeMillis()), appName + "("
-                                                              + id + ")"));
+                recentCanceledQueue.add(new Pair<Long, String>(System.currentTimeMillis(), appName + "(" + id + ")"));
             }
             InstanceStatus instanceStatus = overriddenInstanceStatusMap
                     .remove(id);
@@ -320,7 +318,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      */
     public boolean renew(String appName, String id, boolean isReplication) {
         RENEW.increment(isReplication);
-        Map<String, Lease<InstanceInfo>> gMap = _registry.get(appName);
+        Map<String, Lease<InstanceInfo>> gMap = registry.get(appName);
         Lease<InstanceInfo> leaseToRenew = null;
         if (gMap != null) {
             leaseToRenew = gMap.get(id);
@@ -411,7 +409,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         try {
             read.lock();
             STATUS_UPDATE.increment(isReplication);
-            Map<String, Lease<InstanceInfo>> gMap = _registry.get(appName);
+            Map<String, Lease<InstanceInfo>> gMap = registry.get(appName);
             Lease<InstanceInfo> lease = null;
             if (gMap != null) {
                 lease = gMap.get(id);
@@ -466,30 +464,22 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      * @see com.netflix.eureka.lease.LeaseManager#evict()
      */
     public void evict() {
-
         if (!isLeaseExpirationEnabled()) {
             logger.debug("DS: lease expiration is currently disabled.");
             return;
         }
         logger.debug("Running the evict task");
-        for (Iterator<Entry<String, Map<String, Lease<InstanceInfo>>>> iter = _registry
-                .entrySet().iterator(); iter.hasNext();) {
-            Entry<String, Map<String, Lease<InstanceInfo>>> groupEntry = iter
-                    .next();
-
+        for (Entry<String, Map<String, Lease<InstanceInfo>>> groupEntry : registry.entrySet()) {
             Map<String, Lease<InstanceInfo>> leaseMap = groupEntry.getValue();
             if (leaseMap != null) {
-                for (Iterator<Entry<String, Lease<InstanceInfo>>> subIter = leaseMap
-                        .entrySet().iterator(); subIter.hasNext();) {
-                    Entry<String, Lease<InstanceInfo>> leaseEntry = subIter
-                            .next();
+                for (Entry<String, Lease<InstanceInfo>> leaseEntry : leaseMap.entrySet()) {
                     Lease<InstanceInfo> lease = leaseEntry.getValue();
                     if (lease.isExpired() && lease.getHolder() != null) {
                         String appName = lease.getHolder().getAppName();
                         String id = lease.getHolder().getId();
                         EXPIRED.increment();
                         logger.warn("DS: Registry: expired lease for "
-                                    + appName + " - " + id);
+                                + appName + " - " + id);
                         cancel(appName, id, false);
                     }
                 }
@@ -509,7 +499,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      * com.netflix.discovery.shared.LookupService#getApplication(java.lang.String )
      */
     public Application getApplication(String appName) {
-        boolean disableTransparentFallback = eurekaConfig.disableTransparentFallbackToOtherRegion();
+        boolean disableTransparentFallback = EUREKA_CONFIG.disableTransparentFallbackToOtherRegion();
         return this.getApplication(appName, !disableTransparentFallback);
     }
 
@@ -528,7 +518,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
     public Application getApplication(String appName, boolean includeRemoteRegion) {
         Application app = null;
 
-        Map<String, Lease<InstanceInfo>> leaseMap = _registry.get(appName);
+        Map<String, Lease<InstanceInfo>> leaseMap = registry.get(appName);
 
         if (leaseMap != null && leaseMap.size() > 0) {
             for (Iterator<Entry<String, Lease<InstanceInfo>>> iter = leaseMap
@@ -559,7 +549,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      * @see com.netflix.discovery.shared.LookupService#getApplications()
      */
     public Applications getApplications() {
-        boolean disableTransparentFallback = eurekaConfig.disableTransparentFallbackToOtherRegion();
+        boolean disableTransparentFallback = EUREKA_CONFIG.disableTransparentFallbackToOtherRegion();
         if (disableTransparentFallback) {
             return getApplicationsFromLocalRegionOnly();
         } else {
@@ -614,7 +604,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         }
         Applications apps = new Applications();
         apps.setVersion(1L);
-        for (Entry<String, Map<String, Lease<InstanceInfo>>> entry : _registry.entrySet()) {
+        for (Entry<String, Map<String, Lease<InstanceInfo>>> entry : registry.entrySet()) {
             Application app = null;
 
             if (entry.getValue() != null) {
@@ -661,9 +651,9 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
     }
 
     private boolean shouldFetchFromRemoteRegistry(String appName, String remoteRegion) {
-        Set<String> whiteList = eurekaConfig.getRemoteRegionAppWhitelist(remoteRegion);
+        Set<String> whiteList = EUREKA_CONFIG.getRemoteRegionAppWhitelist(remoteRegion);
         if (null == whiteList) {
-            whiteList = eurekaConfig.getRemoteRegionAppWhitelist(null); // see global whitelist.
+            whiteList = EUREKA_CONFIG.getRemoteRegionAppWhitelist(null); // see global whitelist.
         }
         return null == whiteList || whiteList.contains(appName);
     }
@@ -686,17 +676,13 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         GET_ALL_CACHE_MISS.increment();
         Applications apps = new Applications();
         apps.setVersion(1L);
-        for (Iterator<Entry<String, Map<String, Lease<InstanceInfo>>>> iter = _registry
-                .entrySet().iterator(); iter.hasNext();) {
-            Entry<String, Map<String, Lease<InstanceInfo>>> entry = iter.next();
-
+        for (Entry<String, Map<String, Lease<InstanceInfo>>> entry : registry.entrySet()) {
             Application app = null;
 
             if (entry.getValue() != null) {
-                for (Iterator<Entry<String, Lease<InstanceInfo>>> subIter = entry
-                        .getValue().entrySet().iterator(); subIter.hasNext();) {
+                for (Entry<String, Lease<InstanceInfo>> stringLeaseEntry : entry.getValue().entrySet()) {
 
-                    Lease<InstanceInfo> lease = subIter.next().getValue();
+                    Lease<InstanceInfo> lease = stringLeaseEntry.getValue();
 
                     if (app == null) {
                         app = new Application(lease.getHolder().getAppName());
@@ -768,7 +754,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                 app.addInstance(decorateInstanceInfo(lease));
             }
 
-            boolean disableTransparentFallback = eurekaConfig.disableTransparentFallbackToOtherRegion();
+            boolean disableTransparentFallback = EUREKA_CONFIG.disableTransparentFallbackToOtherRegion();
 
             if (!disableTransparentFallback) {
                 Applications allAppsInLocalRegion = getApplications(false);
@@ -911,7 +897,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      */
     public InstanceInfo getInstanceByAppAndId(String appName, String id,
                                               boolean includeRemoteRegions) {
-        Map<String, Lease<InstanceInfo>> leaseMap = _registry.get(appName);
+        Map<String, Lease<InstanceInfo>> leaseMap = registry.get(appName);
         Lease<InstanceInfo> lease = null;
         if (leaseMap != null) {
             lease = leaseMap.get(id);
@@ -953,7 +939,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                                                boolean includeRemoteRegions) {
         List<InstanceInfo> list = new ArrayList<InstanceInfo>();
 
-        for (Iterator<Entry<String, Map<String, Lease<InstanceInfo>>>> iter = _registry
+        for (Iterator<Entry<String, Map<String, Lease<InstanceInfo>>>> iter = registry
                 .entrySet().iterator(); iter.hasNext();) {
 
             Map<String, Lease<InstanceInfo>> leaseMap = iter.next().getValue();
@@ -1096,13 +1082,13 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
 
     protected void postInit() {
         renewsLastMin = new MeasuredRate(1000 * 60 * 1);
-        if (evictionTask.get() != null) {
-            evictionTask.get().cancel();
+        if (EVICTION_TASK.get() != null) {
+            EVICTION_TASK.get().cancel();
         }
-        evictionTask.set(new EvictionTask());
-        evictionTimer.schedule(evictionTask.get(),
-                eurekaConfig.getEvictionIntervalTimerInMs(),
-                eurekaConfig.getEvictionIntervalTimerInMs());
+        EVICTION_TASK.set(new EvictionTask());
+        evictionTimer.schedule(EVICTION_TASK.get(),
+                EUREKA_CONFIG.getEvictionIntervalTimerInMs(),
+                EUREKA_CONFIG.getEvictionIntervalTimerInMs());
     }
 
     @com.netflix.servo.annotations.Monitor(name = "numOfElementsinInstanceCache", description = "Number of elements in the instance Cache", type = DataSourceType.GAUGE)
@@ -1133,19 +1119,19 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
 
         @Override
         public boolean add(E e) {
-            this.makeSpaceIfnotAvailable();
+            this.makeSpaceIfNotAvailable();
             return super.add(e);
 
         }
 
-        private void makeSpaceIfnotAvailable() {
+        private void makeSpaceIfNotAvailable() {
             if (this.size() == size) {
                 this.remove();
             }
         }
 
         public boolean offer(E e) {
-            this.makeSpaceIfnotAvailable();
+            this.makeSpaceIfNotAvailable();
             return super.offer(e);
         }
     }
@@ -1203,8 +1189,8 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             // Allow server to have its way when the status is UP or
             // OUT_OF_SERVICE
             if ((existingStatus != null)
-                && (InstanceStatus.OUT_OF_SERVICE.equals(existingStatus) || InstanceStatus.UP
-                                                                                          .equals(existingStatus))) {
+                && (InstanceStatus.OUT_OF_SERVICE.equals(existingStatus)
+                    || InstanceStatus.UP.equals(existingStatus))) {
                 logger.debug(
                         "There is already an existing lease with status {}  for instance {}",
                         existingLease.getHolder().getStatus().name(),
@@ -1223,12 +1209,10 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
 
             @Override
             public void run() {
-                Iterator<RecentlyChangedItem> it = recentlyChangedQueue
-                        .iterator();
+                Iterator<RecentlyChangedItem> it = recentlyChangedQueue.iterator();
                 while (it.hasNext()) {
-                    if (it.next().getLastUpdateTime() < System
-                                                                .currentTimeMillis()
-                                                        - eurekaConfig.getRetentionTimeInMSInDeltaQueue()) {
+                    if (it.next().getLastUpdateTime() <
+                            System.currentTimeMillis() - EUREKA_CONFIG.getRetentionTimeInMSInDeltaQueue()) {
                         it.remove();
                     } else {
                         break;
@@ -1240,7 +1224,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
     }
 
     protected void initRemoteRegionRegistry() throws MalformedURLException {
-        Map<String, String> remoteRegionUrlsWithName = eurekaConfig.getRemoteRegionUrlsWithName();
+        Map<String, String> remoteRegionUrlsWithName = EUREKA_CONFIG.getRemoteRegionUrlsWithName();
         if (remoteRegionUrlsWithName != null) {
             allKnownRemoteRegions = new String[remoteRegionUrlsWithName.size()];
             int remoteRegionArrayIndex = 0;
