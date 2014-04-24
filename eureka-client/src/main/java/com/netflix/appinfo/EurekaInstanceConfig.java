@@ -15,16 +15,14 @@
  */
 package com.netflix.appinfo;
 
-import java.net.URL;
 import java.util.Map;
 
 import com.google.inject.ImplementedBy;
-import com.netflix.discovery.DiscoveryClient;
 
 /**
  * Configuration information required by the instance to register with Eureka
  * server. Once registered, users can look up information from
- * {@link DiscoveryClient} based on virtual hostname (also called VIPAddress),
+ * {@link com.netflix.discovery.DiscoveryClient} based on virtual hostname (also called VIPAddress),
  * the most common way of doing it or by other means to get the information
  * necessary to talk to other instances registered with <em>Eureka</em>.
  *
@@ -210,7 +208,7 @@ public interface EurekaInstanceConfig {
     String getIpAddress();
 
     /**
-     * Gets the relative status page {@link URL} <em>Path</em> for this
+     * Gets the relative status page {@link java.net.URL} <em>Path</em> for this
      * instance. The status page URL is then constructed out of the
      * {@link #getHostName(boolean)} and the type of communication - secure or
      * unsecure as specified in {@link #getSecurePort()} and
@@ -227,17 +225,17 @@ public interface EurekaInstanceConfig {
     String getStatusPageUrlPath();
 
     /**
-     * Gets the absolute status page {@link URL} for this instance. The users
+     * Gets the absolute status page {@link java.net.URL} for this instance. The users
      * can provide the {@link #getStatusPageUrlPath()} if the status page
      * resides in the same instance talking to eureka, else in the cases where
      * the instance is a proxy for some other server, users can provide the full
-     * {@link URL}. If the full {@link URL} is provided it takes precedence.
+     * {@link java.net.URL}. If the full {@link java.net.URL} is provided it takes precedence.
      *
      * <p>
      * * It is normally used for informational purposes for other services to
      * find about the status of this instance. Users can provide a simple
      * <code>HTML</code> indicating what is the current status of the instance.
-     * . The full {@link URL} should follow the format
+     * . The full {@link java.net.URL} should follow the format
      * http://${eureka.hostname}:7001/ where the value ${eureka.hostname} is
      * replaced at runtime.
      * </p>
@@ -247,7 +245,7 @@ public interface EurekaInstanceConfig {
     String getStatusPageUrl();
 
     /**
-     * Gets the relative home page {@link URL} <em>Path</em> for this instance.
+     * Gets the relative home page {@link java.net.URL} <em>Path</em> for this instance.
      * The home page URL is then constructed out of the
      * {@link #getHostName(boolean)} and the type of communication - secure or
      * unsecure as specified in {@link #getSecurePort()} and
@@ -263,15 +261,15 @@ public interface EurekaInstanceConfig {
     String getHomePageUrlPath();
 
     /**
-     * Gets the absolute home page {@link URL} for this instance. The users can
+     * Gets the absolute home page {@link java.net.URL} for this instance. The users can
      * provide the {@link #getHomePageUrlPath()} if the home page resides in the
      * same instance talking to eureka, else in the cases where the instance is
-     * a proxy for some other server, users can provide the full {@link URL}. If
-     * the full {@link URL} is provided it takes precedence.
+     * a proxy for some other server, users can provide the full {@link java.net.URL}. If
+     * the full {@link java.net.URL} is provided it takes precedence.
      *
      * <p>
      * It is normally used for informational purposes for other services to use
-     * it as a landing page. The full {@link URL} should follow the format
+     * it as a landing page. The full {@link java.net.URL} should follow the format
      * http://${eureka.hostname}:7001/ where the value ${eureka.hostname} is
      * replaced at runtime.
      * </p>
@@ -281,7 +279,7 @@ public interface EurekaInstanceConfig {
     String getHomePageUrl();
 
     /**
-     * Gets the relative health check {@link URL} <em>Path</em> for this
+     * Gets the relative health check {@link java.net.URL} <em>Path</em> for this
      * instance. The health check page URL is then constructed out of the
      * {@link #getHostName(boolean)} and the type of communication - secure or
      * unsecure as specified in {@link #getSecurePort()} and
@@ -299,18 +297,18 @@ public interface EurekaInstanceConfig {
     String getHealthCheckUrlPath();
 
     /**
-     * Gets the absolute health check page {@link URL} for this instance. The
+     * Gets the absolute health check page {@link java.net.URL} for this instance. The
      * users can provide the {@link #getHealthCheckUrlPath()} if the health
      * check page resides in the same instance talking to eureka, else in the
      * cases where the instance is a proxy for some other server, users can
-     * provide the full {@link URL}. If the full {@link URL} is provided it
+     * provide the full {@link java.net.URL}. If the full {@link java.net.URL} is provided it
      * takes precedence.
      *
      * <p>
      * It is normally used for making educated decisions based on the health of
      * the instance - for example, it can be used to determine whether to
      * proceed deployments to an entire farm or stop the deployments without
-     * causing further damage.. The full {@link URL} should follow the format
+     * causing further damage.  The full {@link java.net.URL} should follow the format
      * http://${eureka.hostname}:7001/ where the value ${eureka.hostname} is
      * replaced at runtime.
      * </p>
@@ -320,18 +318,18 @@ public interface EurekaInstanceConfig {
     String getHealthCheckUrl();
 
     /**
-     * Gets the absolute secure health check page {@link URL} for this instance.
+     * Gets the absolute secure health check page {@link java.net.URL} for this instance.
      * The users can provide the {@link #getSecureHealthCheckUrl()} if the
      * health check page resides in the same instance talking to eureka, else in
      * the cases where the instance is a proxy for some other server, users can
-     * provide the full {@link URL}. If the full {@link URL} is provided it
+     * provide the full {@link java.net.URL}. If the full {@link java.net.URL} is provided it
      * takes precedence.
      *
      * <p>
      * It is normally used for making educated decisions based on the health of
      * the instance - for example, it can be used to determine whether to
      * proceed deployments to an entire farm or stop the deployments without
-     * causing further damage. The full {@link URL} should follow the format
+     * causing further damage. The full {@link java.net.URL} should follow the format
      * http://${eureka.hostname}:7001/ where the value ${eureka.hostname} is
      * replaced at runtime.
      * </p>

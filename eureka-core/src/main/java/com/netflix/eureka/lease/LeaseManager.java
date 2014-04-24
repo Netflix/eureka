@@ -16,8 +16,6 @@
 
 package com.netflix.eureka.lease;
 
-import com.netflix.eureka.InstanceRegistry;
-
 /**
  * This class is responsible for creating/renewing and evicting a <em>lease</em>
  * for a particular instance.
@@ -25,7 +23,7 @@ import com.netflix.eureka.InstanceRegistry;
  * <p>
  * Leases determine what instances receive traffic. When there is no renewal
  * request from the client, the lease gets expired and the instances are evicted
- * out of {@link InstanceRegistry}. This is key to instances receiving traffic
+ * out of {@link com.netflix.eureka.InstanceRegistry}. This is key to instances receiving traffic
  * or not.
  * <p>
  *

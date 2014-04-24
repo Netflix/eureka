@@ -15,7 +15,6 @@
  */
 package com.netflix.appinfo;
 
-import java.net.URL;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -29,7 +28,6 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.ProvidedBy;
 import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
 import com.netflix.config.DynamicPropertyFactory;
-import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.converters.Auto;
 import com.netflix.discovery.provider.Serializer;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
@@ -286,7 +284,7 @@ public class InstanceInfo {
 
         /**
          * Sets the fully qualified hostname of this running instance.This is
-         * mostly used in constructing the {@link URL} for communicating with
+         * mostly used in constructing the {@link java.net.URL} for communicating with
          * the instance.
          *
          * @param hostName
@@ -405,15 +403,15 @@ public class InstanceInfo {
         }
 
         /**
-         * Sets the absolute home page {@link URL} for this instance. The users
+         * Sets the absolute home page {@link java.net.URL} for this instance. The users
          * can provide the <code>homePageUrlPath</code> if the home page resides
          * in the same instance talking to discovery, else in the cases where
          * the instance is a proxy for some other server, it can provide the
-         * full {@link URL}. If the full {@link URL} is provided it takes
+         * full {@link java.net.URL}. If the full {@link java.net.URL} is provided it takes
          * precedence.
          *
          * <p>
-         * The full {@link URL} should follow the format
+         * The full {@link java.net.URL} should follow the format
          * http://${netflix.appinfo.hostname}:7001/ where the value
          * ${netflix.appinfo.hostname} is replaced at runtime.
          * </p>
@@ -422,7 +420,7 @@ public class InstanceInfo {
          *            the relative url path of the home page.
          *
          * @param explicitUrl
-         *            - The full {@link URL} for the home page
+         *            - The full {@link java.net.URL} for the home page
          * @return the instance builder.
          */
         public Builder setHomePageUrl(String relativeUrl, String explicitUrl) {
@@ -438,23 +436,23 @@ public class InstanceInfo {
         }
 
         /**
-         * Sets the absolute status page {@link URL} for this instance. The
+         * Sets the absolute status page {@link java.net.URL} for this instance. The
          * users can provide the <code>statusPageUrlPath</code> if the status
          * page resides in the same instance talking to discovery, else in the
          * cases where the instance is a proxy for some other server, it can
-         * provide the full {@link URL}. If the full {@link URL} is provided it
+         * provide the full {@link java.net.URL}. If the full {@link java.net.URL} is provided it
          * takes precedence.
          *
          * <p>
-         * The full {@link URL} should follow the format
+         * The full {@link java.net.URL} should follow the format
          * http://${netflix.appinfo.hostname}:7001/Status where the value
          * ${netflix.appinfo.hostname} is replaced at runtime.
          * </p>
          *
          * @param relativeUrl
-         *            - The {@link URL} path for status page for this instance
+         *            - The {@link java.net.URL} path for status page for this instance
          * @param explicitUrl
-         *            - The full {@link URL} for the status page
+         *            - The full {@link java.net.URL} for the status page
          * @return - Builder instance
          */
         public Builder setStatusPageUrl(String relativeUrl, String explicitUrl) {
@@ -472,24 +470,24 @@ public class InstanceInfo {
         }
 
         /**
-         * Sets the absolute health check {@link URL} for this instance for both
+         * Sets the absolute health check {@link java.net.URL} for this instance for both
          * secure and non-secure communication The users can provide the
          * <code>healthCheckUrlPath</code> if the healthcheck page resides in
          * the same instance talking to discovery, else in the cases where the
          * instance is a proxy for some other server, it can provide the full
-         * {@link URL}. If the full {@link URL} is provided it takes precedence.
+         * {@link java.net.URL}. If the full {@link java.net.URL} is provided it takes precedence.
          *
          * <p>
-         * The full {@link URL} should follow the format
+         * The full {@link java.net.URL} should follow the format
          * http://${netflix.appinfo.hostname}:7001/healthcheck where the value
          * ${netflix.appinfo.hostname} is replaced at runtime.
          * </p>
          *
          * @param relativeUrl
-         *            - The {@link URL} path for healthcheck page for this
+         *            - The {@link java.net.URL} path for healthcheck page for this
          *            instance.
          * @param explicitUrl
-         *            - The full {@link URL} for the healthcheck page.
+         *            - The full {@link java.net.URL} for the healthcheck page.
          * @param secureExplicitUrl
          *            the full secure explicit url of the healthcheck page.
          * @return the instance builder
@@ -837,18 +835,18 @@ public class InstanceInfo {
     }
 
     /**
-     * Gets the home page {@link URL} set for this instance.
+     * Gets the home page {@link java.net.URL} set for this instance.
      *
-     * @return home page {@link URL}
+     * @return home page {@link java.net.URL}
      */
     public String getHomePageUrl() {
         return homePageUrl;
     }
 
     /**
-     * Gets the status page {@link URL} set for this instance.
+     * Gets the status page {@link java.net.URL} set for this instance.
      *
-     * @return status page {@link URL}
+     * @return status page {@link java.net.URL}
      */
     public String getStatusPageUrl() {
         return statusPageUrl;
@@ -1001,7 +999,7 @@ public class InstanceInfo {
 
     /**
      * Returns the type of action done on the instance in the server.Primarily
-     * used for updating deltas in the {@link DiscoveryClient}
+     * used for updating deltas in the {@link com.netflix.discovery.DiscoveryClient}
      * instance.
      *
      * @return action type done on the instance.

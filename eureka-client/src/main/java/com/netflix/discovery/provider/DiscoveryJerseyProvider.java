@@ -19,7 +19,6 @@ package com.netflix.discovery.provider;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.concurrent.ConcurrentHashMap;
@@ -161,7 +160,7 @@ MessageBodyReader {
     }
 
     /**
-     * Checks for the {@link Serializable} annotation for the given class.
+     * Checks for the {@link java.io.Serializable} annotation for the given class.
      *
      * @param serializableClass
      *            The class to be serialized/deserialized.

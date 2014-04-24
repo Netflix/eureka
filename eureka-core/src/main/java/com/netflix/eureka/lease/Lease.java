@@ -16,12 +16,9 @@
 
 package com.netflix.eureka.lease;
 
-import com.netflix.appinfo.InstanceInfo;
-import com.netflix.eureka.InstanceRegistry;
-
 /**
  * Describes a time-based availability of a {@link T}. Purpose is to avoid
- * accumulation of instances in {@link InstanceRegistry} as result of ungraceful
+ * accumulation of instances in {@link com.netflix.eureka.InstanceRegistry} as result of ungraceful
  * shutdowns that is not uncommon in AWS environments.
  *
  * If a lease elapses without renewals, it will eventually expire consequently
@@ -92,7 +89,7 @@ public class Lease<T> {
     }
 
     /**
-     * Checks if the lease of a given {@link InstanceInfo} has expired or not.
+     * Checks if the lease of a given {@link com.netflix.appinfo.InstanceInfo} has expired or not.
      */
     public boolean isExpired() {
         return (evictionTimestamp > 0 || System.currentTimeMillis() > (lastUpdateTimestamp + duration));

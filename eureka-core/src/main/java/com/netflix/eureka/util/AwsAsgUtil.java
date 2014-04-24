@@ -46,7 +46,6 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfigurationManager;
-import com.netflix.eureka.InstanceRegistry;
 import com.netflix.eureka.PeerAwareInstanceRegistry;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.monitor.Monitors;
@@ -288,7 +287,7 @@ public class AwsAsgUtil {
      * Get the names of all the ASG to which query AWS for.
      *
      * <p>
-     * The names are obtained from the {@link InstanceRegistry} which is then
+     * The names are obtained from the {@link com.netflix.eureka.InstanceRegistry} which is then
      * used for querying the AWS.
      * </p>
      *

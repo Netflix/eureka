@@ -16,7 +16,6 @@
 
 package com.netflix.eureka.util;
 
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -40,8 +39,6 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfigurationManager;
-import com.netflix.eureka.PeerAwareInstanceRegistry;
-import com.netflix.eureka.cluster.PeerEurekaNode;
 import com.netflix.servo.monitor.Monitors;
 
 /**
@@ -232,7 +229,7 @@ public class EIPManager {
     }
 
     /**
-     * Get the list of EIPs in the order of preference depending on instance zone
+     * Get the list of EIPs in the order of preference depending on instance zone.
      *
      * @param myInstanceId
      *            the instance id for this instance
@@ -303,8 +300,8 @@ public class EIPManager {
      * looking up the DNS name <code>{zone}.{region}.{domainName}</code>. The
      * zone is fetched from the {@link InstanceInfo} object;the region is picked
      * up from the specified configuration
-     * {@link EurekaServerConfig#getRegion()};the domain name is picked up from
-     * the specified configuration {@link EurekaServerConfig#getDomainName()}.
+     * {@link com.netflix.eureka.EurekaServerConfig#getRegion()};the domain name is picked up from
+     * the specified configuration {@link com.netflix.eureka.EurekaServerConfig#getDomainName()}.
      * </p>
      *
      * @param myZone

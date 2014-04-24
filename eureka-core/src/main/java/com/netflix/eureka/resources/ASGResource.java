@@ -27,7 +27,6 @@ import javax.ws.rs.core.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.eureka.PeerAwareInstanceRegistry;
 import com.netflix.eureka.cluster.PeerEurekaNode;
 import com.netflix.eureka.util.AwsAsgUtil;
@@ -46,7 +45,7 @@ import com.netflix.eureka.util.AwsAsgUtil;
  * <p>
  * During such a scenario, when an ASG is disabled and the instances go away and
  * get refilled by an ASG - which is normal in AWS environments,the instances
- * automatically go in the {@link InstanceStatus#OUT_OF_SERVICE} state when they
+ * automatically go in the {@link com.netflix.appinfo.InstanceInfo.InstanceStatus#OUT_OF_SERVICE} state when they
  * are refilled by the ASG and if the ASG is disabled by as indicated by a flag
  * in the ASG as described in {@link AwsAsgUtil#isASGEnabled(String)}
  * </p>

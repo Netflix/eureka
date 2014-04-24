@@ -16,14 +16,9 @@
 
 package com.netflix.discovery;
 
-import java.net.URI;
-import java.net.URL;
 import java.util.List;
 
-import org.apache.http.client.HttpClient;
-
 import com.google.inject.ImplementedBy;
-import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 
 import javax.annotation.Nullable;
 
@@ -126,7 +121,7 @@ public interface EurekaClientConfig {
      *
      * <p>
      * Note that the connections in the client are pooled by
-     * {@link HttpClient} and this setting affects the actual
+     * {@link org.apache.http.client.HttpClient} and this setting affects the actual
      * connection creation and also the wait time to get the connection from the
      * pool.
      * </p>
@@ -184,7 +179,7 @@ public interface EurekaClientConfig {
      * <em>The changes are effective at runtime.</em>
      * </p>
      *
-     * @return the string indicating the context {@link URI} of the eureka
+     * @return the string indicating the context {@link java.net.URI} of the eureka
      *         server.
      */
     String getEurekaServerURLContext();
@@ -365,11 +360,11 @@ public interface EurekaClientConfig {
     String[] getAvailabilityZones(String region);
 
     /**
-     * Gets the list of fully qualified {@link URL}s to communicate with eureka
+     * Gets the list of fully qualified {@link java.net.URL}s to communicate with eureka
      * server.
      *
      * <p>
-     * Typically the eureka server {@link URL}s carry protocol,host,port,context
+     * Typically the eureka server {@link java.net.URL}s carry protocol,host,port,context
      * and version information if any.
      * <code>Example: http://ec2-256-156-243-129.compute-1.amazonaws.com:7001/eureka/v2/</code>
      * <p>
@@ -387,7 +382,7 @@ public interface EurekaClientConfig {
 
     /**
      * Indicates whether to get the <em>applications</em> after filtering the
-     * applications for instances with only {@link InstanceStatus#UP} states.
+     * applications for instances with only {@link com.netflix.appinfo.InstanceInfo.InstanceStatus#UP} states.
      *
      * <p>
      * <em>The changes are effective at runtime at the next registry fetch cycle as specified by

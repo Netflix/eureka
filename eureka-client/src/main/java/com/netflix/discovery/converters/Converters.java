@@ -35,7 +35,6 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.InstanceInfo.PortType;
 import com.netflix.appinfo.LeaseInfo;
-import com.netflix.discovery.provider.Serializer;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.servo.monitor.Counter;
@@ -47,11 +46,11 @@ import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 
 /**
- * The custom {@link Serializer} for serializing and deserializing the registry
+ * The custom {@link com.netflix.discovery.provider.Serializer} for serializing and deserializing the registry
  * information from and to the eureka server.
  *
  * <p>
- * The {@link Serializer} used here is an <tt>Xstream</tt> serializer which uses
+ * The {@link com.netflix.discovery.provider.Serializer} used here is an <tt>Xstream</tt> serializer which uses
  * the <tt>JSON</tt> format and custom fields.The XStream deserialization does
  * not handle removal of fields and hence this custom mechanism. Since then
  * {@link Auto} annotation introduced handles any fields that does not exist

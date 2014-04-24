@@ -16,7 +16,6 @@
 
 package com.netflix.discovery;
 
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -86,9 +85,9 @@ import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
  *
  * <p>
  * <tt>Eureka Client</tt> needs a configured list of <tt>Eureka Server</tt>
- * {@link URL}s to talk to.These {@link URL}s are typically amazon elastic eips
+ * {@link java.net.URL}s to talk to.These {@link java.net.URL}s are typically amazon elastic eips
  * which do not change. All of the functions defined above fail-over to other
- * {@link URL}s specified in the list in the case of failure.
+ * {@link java.net.URL}s specified in the list in the case of failure.
  * </p>
  *
  * @author Karthik Ranganathan, Greg Kim

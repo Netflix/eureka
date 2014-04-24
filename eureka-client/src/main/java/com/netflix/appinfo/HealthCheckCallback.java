@@ -16,11 +16,9 @@
 
 package com.netflix.appinfo;
 
-import com.netflix.discovery.DiscoveryClient;
-
 /**
  * Applications can implement this interface and register a callback with the
- * {@link DiscoveryClient#registerHealthCheckCallback(HealthCheckCallback)}.
+ * {@link com.netflix.discovery.DiscoveryClient#registerHealthCheckCallback(HealthCheckCallback)}.
  *
  * <p>
  * Your callback will be invoked every

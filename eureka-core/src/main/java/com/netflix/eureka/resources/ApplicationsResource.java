@@ -16,7 +16,6 @@
 
 package com.netflix.eureka.resources;
 
-import java.net.URI;
 import java.util.Arrays;
 
 import javax.annotation.Nullable;
@@ -31,12 +30,9 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
-import com.netflix.discovery.shared.Application;
-import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka.CurrentRequestVersion;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfigurationManager;
-import com.netflix.eureka.InstanceRegistry;
 import com.netflix.eureka.PeerAwareInstanceRegistry;
 import com.netflix.eureka.Version;
 import com.netflix.eureka.resources.ResponseCache.Key;
@@ -45,7 +41,7 @@ import com.netflix.eureka.util.EurekaMonitors;
 
 /**
  * A <em>jersey</em> resource that handles request related to all
- * {@link Applications}.
+ * {@link com.netflix.discovery.shared.Applications}.
  *
  * @author Karthik Ranganathan, Greg Kim
  *
@@ -62,7 +58,7 @@ public class ApplicationsResource {
     .getInstance().getConfiguration();
 
     /**
-     * Gets information about a particular {@link Application}.
+     * Gets information about a particular {@link com.netflix.discovery.shared.Application}.
      *
      * @param version
      *            the version of the request.
@@ -80,7 +76,7 @@ public class ApplicationsResource {
     }
 
     /**
-     * Get information about all {@link Applications}.
+     * Get information about all {@link com.netflix.discovery.shared.Applications}.
      *
      * @param version
      *            the version of the request.
@@ -92,13 +88,13 @@ public class ApplicationsResource {
      *            the accept header of the request to indicate whether to serve
      *            compressed or uncompressed data.
      * @param uriInfo
-     *            the {@link URI} information of the request made.
+     *            the {@link java.net.URI} information of the request made.
      * @param regionsStr A comma separated list of remote regions from which the
      *                instances will also be returned. The applications returned
      *                from the remote region can be limited to the applications
      *                returned by {@link EurekaServerConfig#getRemoteRegionAppWhitelist(String)}
-     * @return response containing information about all {@link Applications}
-     *         from the {@link InstanceRegistry}.
+     * @return response containing information about all {@link com.netflix.discovery.shared.Applications}
+     *         from the {@link com.netflix.eureka.InstanceRegistry}.
      */
     @GET
     public Response getContainers(@PathParam("version") String version,
@@ -141,7 +137,7 @@ public class ApplicationsResource {
     }
 
     /**
-     * Get information about all delta changes in {@link Applications}.
+     * Get information about all delta changes in {@link com.netflix.discovery.shared.Applications}.
      *
      * <p>
      * The delta changes represent the registry information change for a period
@@ -170,9 +166,9 @@ public class ApplicationsResource {
      *            the accept header of the request to indicate whether to serve
      *            compressed or uncompressed data.
      * @param uriInfo
-     *            the {@link URI} information of the request made.
+     *            the {@link java.net.URI} information of the request made.
      * @return response containing the delta information of the
-     *         {@link InstanceRegistry}.z
+     *         {@link com.netflix.eureka.InstanceRegistry}.
      */
     @Path("delta")
     @GET

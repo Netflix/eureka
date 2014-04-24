@@ -17,7 +17,6 @@
 package com.netflix.eureka;
 
 import javax.annotation.Nullable;
-import java.net.URL;
 import java.util.Map;
 import java.util.Set;
 
@@ -26,7 +25,7 @@ import java.util.Set;
  *
  * <p>
  * Most of the required information is provided by the default configuration
- * {@link DefaultServerConfig}.
+ * {@link com.netflix.eureka.DefaultEurekaServerConfig}.
  *
  * Note that all configurations are not effective at runtime unless and
  * otherwise specified.
@@ -455,7 +454,7 @@ public interface EurekaServerConfig {
 
     /**
      * Get the list of remote region urls.
-     * @return - array of string representing {@link URL}s.
+     * @return - array of string representing {@link java.net.URL}s.
      * @deprecated Use {@link #getRemoteRegionUrlsWithName()}
      */
     String[] getRemoteRegionUrls();

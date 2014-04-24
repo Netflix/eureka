@@ -15,12 +15,9 @@
  */
 package com.netflix.discovery.shared;
 
-import java.util.Collections;
 import java.util.List;
 
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.appinfo.InstanceInfo.InstanceStatus;
-import com.netflix.discovery.EurekaClientConfig;
 
 /**
  * Lookup service for finding active instances.
@@ -56,7 +53,7 @@ public interface LookupService<T> {
      *
      * @param id
      * @return {@link List} of {@link InstanceInfo}s or
-     *         {@link Collections#emptyList()}
+     *         {@link java.util.Collections#emptyList()}
      */
     List<InstanceInfo> getInstancesById(String id);
 
@@ -67,8 +64,8 @@ public interface LookupService<T> {
      * <p>
      * The next server is picked on a round-robin fashion.By default, this
      * method just returns the servers that are currently with
-     * {@link InstanceStatus#UP} status. This configuration can be controlled by
-     * overriding the {@link EurekaClientConfig#shouldFilterOnlyUpInstances()}.
+     * {@link com.netflix.appinfo.InstanceInfo.InstanceStatus#UP} status. This configuration can be controlled by
+     * overriding the {@link com.netflix.discovery.EurekaClientConfig#shouldFilterOnlyUpInstances()}.
      * Note that in some cases (Eureka emergency mode situation), the instances
      * that are returned may not be unreachable, it is solely up to the client
      * at that point to timeout quickly and retry the next server.

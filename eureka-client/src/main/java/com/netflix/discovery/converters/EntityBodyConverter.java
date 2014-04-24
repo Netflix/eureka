@@ -23,7 +23,6 @@ import java.io.OutputStream;
 import javax.ws.rs.core.MediaType;
 
 import com.netflix.discovery.provider.ISerializer;
-import com.netflix.discovery.provider.Serializer;
 import com.thoughtworks.xstream.XStream;
 
 /**
@@ -34,7 +33,7 @@ import com.thoughtworks.xstream.XStream;
  * serialization/deserialization capabilities. If the users to wish to provide
  * their own implementation they can do so by plugging in their own provider
  * here and annotating their classes with that provider by specifying the
- * {@link Serializer} annotation.
+ * {@link com.netflix.discovery.provider.Serializer} annotation.
  * <p>
  *
  * @author Karthik Ranganathan, Greg Kim.
