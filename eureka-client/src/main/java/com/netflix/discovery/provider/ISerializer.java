@@ -30,7 +30,7 @@ import javax.ws.rs.core.MediaType;
  */
 public interface ISerializer {
 
-    public Object read(InputStream is, Class type, MediaType mediaType) throws IOException;
+    Object read(InputStream is, Class type, MediaType mediaType) throws IOException;
 
-    public void write(Object object, OutputStream os, MediaType mediaType) throws IOException;
+    void write(Object object, OutputStream os, MediaType mediaType) throws IOException;
 }

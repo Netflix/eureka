@@ -80,6 +80,6 @@ public interface LookupService<T> {
      *         host name of the next server in line to process the request based
      *         on the round-robin algorithm.
      */
-    public InstanceInfo getNextServerFromEureka(String virtualHostname,
+    InstanceInfo getNextServerFromEureka(String virtualHostname,
             boolean secure);
 }
