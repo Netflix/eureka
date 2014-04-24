@@ -229,11 +229,9 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             if (InstanceStatus.UP.equals(r.getStatus())) {
                 lease.serviceUp();
             }
-            if (r != null) {
-                r.setActionType(ActionType.ADDED);
-                recentlyChangedQueue.add(new RecentlyChangedItem(lease));
-                r.setLastUpdatedTimestamp();
-            }
+            r.setActionType(ActionType.ADDED);
+            recentlyChangedQueue.add(new RecentlyChangedItem(lease));
+            r.setLastUpdatedTimestamp();
             invalidateCache(r.getAppName(), r.getVIPAddress(), r.getSecureVipAddress());
             logger.info("Registered instance id {} with status {}", r.getId(),
                     r.getStatus().toString());
@@ -443,12 +441,10 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                     } else {
                         info.setStatus(newStatus);
                     }
-                    if (info != null) {
-                        info.setActionType(ActionType.MODIFIED);
-                        recentlyChangedQueue
-                                .add(new RecentlyChangedItem(lease));
-                        info.setLastUpdatedTimestamp();
-                    }
+                    info.setActionType(ActionType.MODIFIED);
+                    recentlyChangedQueue
+                            .add(new RecentlyChangedItem(lease));
+                    info.setLastUpdatedTimestamp();
                     invalidateCache(appName, info.getVIPAddress(), info.getSecureVipAddress());
                 }
                 return true;
@@ -948,13 +944,10 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                     continue;
                 }
 
-                if (lease != null && list == Collections.EMPTY_LIST) {
+                if (list == Collections.EMPTY_LIST) {
                     list = new ArrayList<InstanceInfo>();
                 }
-
-                if (lease != null) {
-                    list.add(decorateInstanceInfo(lease));
-                }
+                list.add(decorateInstanceInfo(lease));
             }
         }
         if (list.isEmpty() && includeRemoteRegions) {
