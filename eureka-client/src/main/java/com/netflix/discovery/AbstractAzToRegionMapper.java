@@ -22,8 +22,8 @@ import static com.netflix.discovery.DefaultEurekaClientConfig.DEFAULT_ZONE;
  */
 public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
 
-    protected static final Logger logger = LoggerFactory.getLogger(InstanceRegionChecker.class);
-    public static final String[] EMPTY_STR_ARRAY = new String[0];
+    private static final Logger logger = LoggerFactory.getLogger(InstanceRegionChecker.class);
+    private static final String[] EMPTY_STR_ARRAY = new String[0];
 
     /**
      * A default for the mapping that we know of, if a remote region is configured to be fetched but does not have

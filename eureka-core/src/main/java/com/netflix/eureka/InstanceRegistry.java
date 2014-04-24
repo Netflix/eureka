@@ -89,7 +89,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             .getLogger(InstanceRegistry.class);
     private static final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
             .getInstance().getConfiguration();
-    public static final String[] EMPTY_STR_ARRAY = new String[0];
+    private static final String[] EMPTY_STR_ARRAY = new String[0];
     private final ConcurrentHashMap<String, Map<String, Lease<InstanceInfo>>> _registry = new ConcurrentHashMap<String, Map<String, Lease<InstanceInfo>>>();
     private Timer evictionTimer = new Timer("Eureka-EvictionTimer", true);
     private volatile MeasuredRate renewsLastMin;
