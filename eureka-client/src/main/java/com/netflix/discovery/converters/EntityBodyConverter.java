@@ -28,7 +28,7 @@ import com.thoughtworks.xstream.XStream;
 
 /**
  * A custom <tt>jersey</tt> provider implementation for eureka.
- * 
+ *
  * <p>
  * The implementation uses <tt>Xstream</tt> to provide
  * serialization/deserialization capabilities. If the users to wish to provide
@@ -36,9 +36,9 @@ import com.thoughtworks.xstream.XStream;
  * here and annotating their classes with that provider by specifying the
  * {@link Serializer} annotation.
  * <p>
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim.
- * 
+ *
  */
 public class EntityBodyConverter implements ISerializer {
 
@@ -47,7 +47,7 @@ public class EntityBodyConverter implements ISerializer {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.discovery.provider.ISerializer#read(java.io.InputStream,
      * java.lang.Class, javax.ws.rs.core.MediaType)
      */
@@ -65,7 +65,7 @@ public class EntityBodyConverter implements ISerializer {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.discovery.provider.ISerializer#write(java.lang.Object,
      * java.io.OutputStream, javax.ws.rs.core.MediaType)
      */
@@ -80,7 +80,7 @@ public class EntityBodyConverter implements ISerializer {
                     + object.getClass().getName());
         }
     }
-    
+
     private XStream getXStreamInstance(MediaType mediaType) {
         XStream xstream = null;
         if (JSON.equalsIgnoreCase(mediaType.getSubtype())) {

@@ -18,12 +18,12 @@ package com.netflix.eureka;
 
 
 /**
- * 
+ *
  * The class that caches the configuration of the instance of
  * {@link EurekaServerConfig} that the server started with.
- * 
+ *
  * @author Karthik Ranganathan.
- * 
+ *
  */
 public class EurekaServerConfigurationManager {
     private EurekaServerConfig config;

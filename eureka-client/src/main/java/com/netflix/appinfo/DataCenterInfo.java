@@ -20,7 +20,7 @@ import com.thoughtworks.xstream.annotations.XStreamAlias;
 
 /**
  * A simple interface for indicating which <em>datacenter</em> a particular instance belongs.
- * 
+ *
  * @author Karthik Ranganathan
  *
  */

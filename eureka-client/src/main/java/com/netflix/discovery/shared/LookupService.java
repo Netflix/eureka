@@ -24,7 +24,7 @@ import com.netflix.discovery.EurekaClientConfig;
 
 /**
  * Lookup service for finding active instances.
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim.
  * @param <T> for backward compatibility
 
@@ -34,7 +34,7 @@ public interface LookupService<T> {
     /**
      * Returns the corresponding {@link Application} object which is basically a
      * container of all registered <code>appName</code> {@link InstanceInfo}s.
-     * 
+     *
      * @param appName
      * @return a {@link Application} or null if we couldn't locate any app of
      *         the requested appName
@@ -44,7 +44,7 @@ public interface LookupService<T> {
     /**
      * Returns the {@link Applications} object which is basically a container of
      * all currently registered {@link Application}s.
-     * 
+     *
      * @return {@link Applications}
      */
     Applications getApplications();
@@ -53,7 +53,7 @@ public interface LookupService<T> {
      * Returns the {@link List} of {@link InstanceInfo}s matching the the passed
      * in id. A single {@link InstanceInfo} can possibly be registered w/ more
      * than one {@link Application}s
-     * 
+     *
      * @param id
      * @return {@link List} of {@link InstanceInfo}s or
      *         {@link Collections#emptyList()}
@@ -63,7 +63,7 @@ public interface LookupService<T> {
     /**
      * Gets the next possible server to process the requests from the registry
      * information received from eureka.
-     * 
+     *
      * <p>
      * The next server is picked on a round-robin fashion.By default, this
      * method just returns the servers that are currently with
@@ -73,7 +73,7 @@ public interface LookupService<T> {
      * that are returned may not be unreachable, it is solely up to the client
      * at that point to timeout quickly and retry the next server.
      * </p>
-     * 
+     *
      * @param virtualHostname
      *            the virtual host name that is associated to the servers.
      * @param secure

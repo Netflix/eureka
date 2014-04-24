@@ -33,7 +33,7 @@ import com.netflix.config.DynamicPropertyFactory;
 
 /**
  * An {@link InstanceInfo} configuration for AWS cloud deployments.
- * 
+ *
  * <p>
  * The information required for registration with eureka by a combination of
  * user-supplied values as well as querying AWS instance metadata.An utility
@@ -41,23 +41,23 @@ import com.netflix.config.DynamicPropertyFactory;
  * that information including <em>availability zone</em> is used for determining
  * which eureka server to communicate to.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 @Singleton
 @ProvidedBy(CloudInstanceConfigProvider.class)
 public class CloudInstanceConfig extends PropertiesInstanceConfig {
     private static final Logger logger = LoggerFactory.getLogger(CloudInstanceConfig.class);
     private static final DynamicPropertyFactory INSTANCE = DynamicPropertyFactory.getInstance();
-    
+
     private DynamicBooleanProperty propValidateInstanceId;
     private DataCenterInfo info;
-    
+
     public CloudInstanceConfig() {
-        initCloudInstanceConfig(namespace); 
+        initCloudInstanceConfig(namespace);
     }
-    
+
     public CloudInstanceConfig(String namespace) {
         super(namespace);
         initCloudInstanceConfig(namespace);
@@ -127,7 +127,7 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
     public DataCenterInfo getDataCenterInfo() {
         return info;
     }
-    
+
     /**
      * Refresh instance info - currently only used when in AWS cloud
      * as a public ip can change whenever an EIP is associated or dissociated.

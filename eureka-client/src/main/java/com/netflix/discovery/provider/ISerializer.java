@@ -24,13 +24,13 @@ import javax.ws.rs.core.MediaType;
 
 /**
  * A contract for dispatching to a custom serialization/de-serialization mechanism from jersey.
- * 
+ *
  * @author Karthik Ranganathan
  *
  */
 public interface ISerializer {
-	
-	public Object read(InputStream is, Class type, MediaType mediaType) throws IOException;
-	
-	public void write(Object object, OutputStream os, MediaType mediaType) throws IOException;
+
+    public Object read(InputStream is, Class type, MediaType mediaType) throws IOException;
+
+    public void write(Object object, OutputStream os, MediaType mediaType) throws IOException;
 }

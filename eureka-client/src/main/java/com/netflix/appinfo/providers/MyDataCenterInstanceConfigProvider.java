@@ -8,9 +8,9 @@ import com.netflix.discovery.EurekaNamespace;
 
 public class MyDataCenterInstanceConfigProvider implements Provider<MyDataCenterInstanceConfig> {
     @Inject(optional=true)
-    @EurekaNamespace 
+    @EurekaNamespace
     private String namespace;
-    
+
     @Override
     public MyDataCenterInstanceConfig get() {
         MyDataCenterInstanceConfig config;
@@ -18,8 +18,8 @@ public class MyDataCenterInstanceConfigProvider implements Provider<MyDataCenter
             config = new MyDataCenterInstanceConfig();
         else
             config = new MyDataCenterInstanceConfig(namespace);
-        
-        DiscoveryManager.getInstance().setEurekaInstanceConfig(config);      
+
+        DiscoveryManager.getInstance().setEurekaInstanceConfig(config);
         return config;
     }
 }

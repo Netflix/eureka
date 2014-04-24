@@ -47,7 +47,7 @@ import javax.annotation.Nullable;
 
 /**
  * The class that wraps all the registry information returned by eureka server.
- * 
+ *
  * <p>
  * Note that the registry information is fetched from eureka server as specified
  * in {@link EurekaClientConfig#getRegistryFetchIntervalSeconds()}.Once the
@@ -55,9 +55,9 @@ import javax.annotation.Nullable;
  * {@link InstanceStatus#UP} status as specified by the configuration
  * {@link EurekaClientConfig#shouldFilterOnlyUpInstances()}.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 @Serializer("com.netflix.discovery.converters.EntityBodyConverter")
 @XStreamAlias("applications")
@@ -67,7 +67,7 @@ public class Applications {
     private static final String STATUS_DELIMITER = "_";
 
     private Long version_delta = Long.valueOf(-1);
-  
+
     @XStreamImplicit
     private AbstractQueue<Application> applications;
 
@@ -93,7 +93,7 @@ public class Applications {
 
     /**
      * Add the <em>application</em> to the list.
-     * 
+     *
      * @param app
      *            the <em>application</em> to be added.
      */
@@ -103,10 +103,10 @@ public class Applications {
         applications.add(app);
     }
 
-   
+
     /**
      * Gets the list of all registered <em>applications</em> from eureka.
-     * 
+     *
      * @return list containing all applications registered with eureka.
      */
     public List<Application> getRegisteredApplications() {
@@ -118,7 +118,7 @@ public class Applications {
     /**
      * Gets the list of all registered <em>applications</em> for the given
      * application name.
-     * 
+     *
      * @param appName
      *            the application name for which the result need to be fetched.
      * @return the list of registered applications for the given application
@@ -130,7 +130,7 @@ public class Applications {
 
     /**
      * Gets the list of <em>instances</em> associated to a virtual host name.
-     * 
+     *
      * @param virtualHostName
      *            the virtual hostname for which the instances need to be
      *            returned.
@@ -150,7 +150,7 @@ public class Applications {
     /**
      * Gets the list of secure <em>instances</em> associated to a virtual host
      * name.
-     * 
+     *
      * @param secureVirtualHostName
      *            the virtual hostname for which the secure instances need to be
      *            returned.
@@ -179,7 +179,7 @@ public class Applications {
 
     /**
      * Used by the eureka server. Not for external use.
-     * 
+     *
      * @param hashCode
      */
     public void setAppsHashCode(String hashCode) {
@@ -198,7 +198,7 @@ public class Applications {
     /**
      * Gets the hash code for this <em>applications</em> instance. Used for
      * comparison of instances between eureka server and eureka client.
-     * 
+     *
      * @return the internal hash code representation indicating the information
      *         about the instances.
      */
@@ -237,7 +237,7 @@ public class Applications {
     /**
      * Gets the exact difference between this applications instance and another
      * one.
-     * 
+     *
      * @param apps
      *            the applications for which to compare this one.
      * @return a map containing the differences between the two.
@@ -397,7 +397,7 @@ public class Applications {
     /**
      * Gets the next round-robin index for the given virtual host name. This
      * index is reset after every registry fetch cycle.
-     * 
+     *
      * @param virtualHostname
      *            the virtual host name.
      * @param secure
@@ -416,7 +416,7 @@ public class Applications {
     /**
      * Shuffle the instances and fiter for only {@link InstanceStatus#UP} if
      * required.
-     * 
+     *
      */
     private void shuffleAndFilterInstances(
             Map<String, AbstractQueue<InstanceInfo>> srcMap,
@@ -453,7 +453,7 @@ public class Applications {
      * Add the instance to the given map based if the vip adddress matches with
      * that of the instance. Note that an instance can be mapped to multiple vip
      * adddresses.
-     * 
+     *
      */
     private void addInstanceToMap(InstanceInfo info, String vipAddresses,
             Map<String, AbstractQueue<InstanceInfo>> vipMap) {
@@ -471,7 +471,7 @@ public class Applications {
             }
         }
     }
-    
+
     /**
      * Adds the instances to the internal vip address map.
      * @param app - the applications for which the instances need to be added.

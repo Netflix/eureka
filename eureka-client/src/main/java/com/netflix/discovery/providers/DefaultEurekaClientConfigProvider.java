@@ -13,9 +13,9 @@ import com.netflix.discovery.EurekaNamespace;
 public class DefaultEurekaClientConfigProvider implements Provider<EurekaClientConfig> {
 
     @Inject(optional=true)
-    @EurekaNamespace 
+    @EurekaNamespace
     private String namespace;
-    
+
     @Override
     public EurekaClientConfig get() {
         if (namespace == null)

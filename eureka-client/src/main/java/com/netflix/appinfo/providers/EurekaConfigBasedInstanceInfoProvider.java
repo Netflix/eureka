@@ -18,21 +18,21 @@ import com.netflix.appinfo.InstanceInfo.PortType;
 /**
  * InstanceInfo provider that constructs the InstanceInfo this this instance using
  * EurekaInstanceConfig
- * 
+ *
  * @author elandau
  *
  */
 @Singleton
 public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceInfo> {
     private static final Logger LOG = LoggerFactory.getLogger(EurekaConfigBasedInstanceInfoProvider.class);
-    
+
     private final EurekaInstanceConfig config;
-    
+
     @Inject
     public EurekaConfigBasedInstanceInfoProvider(EurekaInstanceConfig config) {
         this.config = config;
     }
-    
+
     @Override
     public InstanceInfo get() {
         // Build the lease information to be passed to the server based
@@ -88,7 +88,7 @@ public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceI
             String value = mapEntry.getValue();
             builder.add(key, value);
         }
-        
+
         InstanceInfo instanceInfo = builder.build();
         instanceInfo.setLeaseInfo(leaseInfoBuilder.build());
         return instanceInfo;

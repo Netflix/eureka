@@ -15,9 +15,9 @@ import com.netflix.discovery.EurekaNamespace;
 @Singleton
 public class CloudInstanceConfigProvider implements Provider<CloudInstanceConfig> {
     @Inject(optional=true)
-    @EurekaNamespace 
+    @EurekaNamespace
     private String namespace;
-    
+
     @Override
     public CloudInstanceConfig get() {
         CloudInstanceConfig config;
@@ -25,10 +25,10 @@ public class CloudInstanceConfigProvider implements Provider<CloudInstanceConfig
             config = new CloudInstanceConfig();
         else
             config = new CloudInstanceConfig(namespace);
-        
+
         // TOOD: Remove this when DiscoveryManager is finally no longer used
-        DiscoveryManager.getInstance().setEurekaInstanceConfig(config);      
+        DiscoveryManager.getInstance().setEurekaInstanceConfig(config);
         return config;
     }
-    
+
 }

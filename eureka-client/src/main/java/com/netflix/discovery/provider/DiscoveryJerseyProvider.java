@@ -41,15 +41,15 @@ import org.slf4j.LoggerFactory;
  * A custom provider implementation for Jersey that dispatches to the
  * implementation that serializes/deserializes objects sent to and from eureka
  * server.
- * 
+ *
  * <p>
  * This implementation allows users to plugin their own
  * serialization/deserialization mechanism by reading the annotation provided by
  * specifying the {@link Serializer} and dispatching it to that implementation.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 @Provider
 @Produces("*/*")
@@ -65,7 +65,7 @@ MessageBodyReader {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see javax.ws.rs.ext.MessageBodyReader#isReadable(java.lang.Class,
      * java.lang.reflect.Type, java.lang.annotation.Annotation[],
      * javax.ws.rs.core.MediaType)
@@ -78,7 +78,7 @@ MessageBodyReader {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see javax.ws.rs.ext.MessageBodyReader#readFrom(java.lang.Class,
      * java.lang.reflect.Type, java.lang.annotation.Annotation[],
      * javax.ws.rs.core.MediaType, javax.ws.rs.core.MultivaluedMap,
@@ -110,7 +110,7 @@ MessageBodyReader {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see javax.ws.rs.ext.MessageBodyWriter#getSize(java.lang.Object,
      * java.lang.Class, java.lang.reflect.Type,
      * java.lang.annotation.Annotation[], javax.ws.rs.core.MediaType)
@@ -124,7 +124,7 @@ MessageBodyReader {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see javax.ws.rs.ext.MessageBodyWriter#isWriteable(java.lang.Class,
      * java.lang.reflect.Type, java.lang.annotation.Annotation[],
      * javax.ws.rs.core.MediaType)
@@ -137,7 +137,7 @@ MessageBodyReader {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see javax.ws.rs.ext.MessageBodyWriter#writeTo(java.lang.Object,
      * java.lang.Class, java.lang.reflect.Type,
      * java.lang.annotation.Annotation[], javax.ws.rs.core.MediaType,
@@ -160,7 +160,7 @@ MessageBodyReader {
 
     /**
      * Checks for the {@link Serializable} annotation for the given class.
-     * 
+     *
      * @param serializableClass
      *            The class to be serialized/deserialized.
      * @return true if the annotation is present, false otherwise.
@@ -181,12 +181,12 @@ MessageBodyReader {
     /**
      * Gets the {@link Serializer} implementation for serializing/ deserializing
      * objects.
-     * 
+     *
      * <p>
      * The implementation is cached after the first time instantiation and then
      * returned.
      * <p>
-     * 
+     *
      * @param serializableClass
      *            - The class that is to be serialized/deserialized.
      * @return The {@link Serializer} implementation for serializing/

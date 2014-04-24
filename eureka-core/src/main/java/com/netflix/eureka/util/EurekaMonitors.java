@@ -29,15 +29,15 @@ import com.netflix.servo.monitor.Monitors;
 
 /**
  * The enum that encapsulates all statistics monitored by Eureka.
- * 
+ *
  * <p>
  * Eureka Monitoring is done using <a href="https://github.com/Netflix/servo">Servo</a>. The
  * users who wants to take advantage of the monitoring should read up on
  * <tt>Servo</tt>
  * <p>
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
- * 
+ *
  */
 public enum EurekaMonitors {
     RENEW("renewCounter", "Number of total renews seen since startup"),
@@ -95,7 +95,7 @@ public enum EurekaMonitors {
      * Increment the counter for the given statistic based on whether this is
      * because of replication from other eureka servers or it is a eureka client
      * initiated action.
-     * 
+     *
      * @param isReplication
      *            true if this a replication, false otherwise.
      */
@@ -109,7 +109,7 @@ public enum EurekaMonitors {
 
     /**
      * Gets the statistic name of this monitor.
-     * 
+     *
      * @return the statistic name.
      */
     public String getName() {
@@ -119,7 +119,7 @@ public enum EurekaMonitors {
     /**
      * Gets the zone specific statistic name of this monitor. Applies only for
      * AWS cloud.
-     * 
+     *
      * @return the zone specific statistic name.
      */
     public String getZoneSpecificName() {
@@ -128,7 +128,7 @@ public enum EurekaMonitors {
 
     /**
      * Gets the description of this statistic means.
-     * 
+     *
      * @return the description of this statistic means.
      */
     public String getDescription() {
@@ -137,7 +137,7 @@ public enum EurekaMonitors {
 
     /**
      * Gets the actual counter value for this statistic.
-     * 
+     *
      * @return the long value representing the number of times this statistic
      *         has occurred.
      */
@@ -148,7 +148,7 @@ public enum EurekaMonitors {
     /**
      * Gets the zone specific counter value for this statistic. This is
      * application only for AWS cloud environment.
-     * 
+     *
      * @return the long value representing the number of times this statistic
      *         has occurred.
      */

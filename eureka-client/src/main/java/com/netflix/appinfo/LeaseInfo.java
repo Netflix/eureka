@@ -20,16 +20,16 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
 
 /**
  * Represents the <em>lease</em> information with <em>Eureka</em>.
- * 
+ *
  * <p>
  * <em>Eureka</em> decides to remove the instance out of its view depending on
  * the duration that is set in
  * {@link EurekaInstanceConfig#getLeaseExpirationDurationInSeconds()} which is
  * held in this lease. The lease also tracks the last time it was renewed.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
- * 
+ *
  */
 public class LeaseInfo {
 
@@ -61,7 +61,7 @@ public class LeaseInfo {
 
         /**
          * Sets the registration timestamp
-         * 
+         *
          * @param ts
          *            time when the lease was first registered.
          * @return the {@link LeaseInfo} builder.
@@ -73,7 +73,7 @@ public class LeaseInfo {
 
         /**
          * Sets the last renewal timestamp of lease
-         * 
+         *
          * @param ts
          *            time when the lease was last renewed.
          * @return the {@link LeaseInfo} builder.
@@ -85,7 +85,7 @@ public class LeaseInfo {
 
         /**
          * Sets the de-registration timestamp
-         * 
+         *
          * @param ts
          *            time when the lease was removed.
          * @return the {@link LeaseInfo} builder.
@@ -110,7 +110,7 @@ public class LeaseInfo {
         /**
          * Sets the client specified setting for eviction (e.g. how long to wait
          * without renewal event)
-         * 
+         *
          * @param d
          *            time in seconds after which the lease would expire without
          *            renewa.
@@ -127,7 +127,7 @@ public class LeaseInfo {
 
         /**
          * Sets the client specified setting for renew interval
-         * 
+         *
          * @param i
          *            the time interval with which the renewals will be renewed.
          * @return the {@link LeaseInfo} builder.
@@ -143,7 +143,7 @@ public class LeaseInfo {
 
         /**
          * Build the {@link InstanceInfo}
-         * 
+         *
          * @return the {@link LeaseInfo} information built based on the supplied
          *         information.
          */
@@ -157,7 +157,7 @@ public class LeaseInfo {
 
     /**
      * Returns the registration timestamp
-     * 
+     *
      * @return time in milliseconds since epoch.
      */
     public long getRegistrationTimestamp() {
@@ -166,7 +166,7 @@ public class LeaseInfo {
 
     /**
      * Returns the last renewal timestamp of lease
-     * 
+     *
      * @return time in milliseconds since epoch.
      */
     public long getRenewalTimestamp() {
@@ -175,7 +175,7 @@ public class LeaseInfo {
 
     /**
      * Returns the de-registration timestamp
-     * 
+     *
      * @return time in milliseconds since epoch.
      */
     public long getEvictionTimestamp() {
@@ -193,7 +193,7 @@ public class LeaseInfo {
 
     /**
      * Returns client specified setting for renew interval
-     * 
+     *
      * @return time in milliseconds since epoch.
      */
     public int getRenewalIntervalInSecs() {
@@ -203,7 +203,7 @@ public class LeaseInfo {
     /**
      * Returns client specified setting for eviction (e.g. how long to wait w/o
      * renewal event)
-     * 
+     *
      * @return time in milliseconds since epoch.
      */
     public int getDurationInSecs() {

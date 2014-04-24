@@ -38,14 +38,14 @@ import com.netflix.discovery.DiscoveryManager;
 /**
  * Sample Eureka service that registers with Eureka to receive and process
  * requests.
- * 
+ *
  * <p>
  * This example just receives one request and exits once it receives the request
  * after processing it.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 public class SampleEurekaService {
     private static final DynamicPropertyFactory configInstance = com.netflix.config.DynamicPropertyFactory
