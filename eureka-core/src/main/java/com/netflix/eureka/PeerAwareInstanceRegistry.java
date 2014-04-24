@@ -290,7 +290,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
         // Renewals happen every 30 seconds and for a minute it should be a
         // factor of 2.
         this.expectedNumberOfRenewsPerMin = count * 2;
-        this.numberOfRenewsPerMinThreshold = (int)(this.expectedNumberOfRenewsPerMin * EUREKA_SERVER_CONFIG
+        this.numberOfRenewsPerMinThreshold = (int) (this.expectedNumberOfRenewsPerMin * EUREKA_SERVER_CONFIG
                 .getRenewalPercentThreshold());
         logger.info("Got " + count + " instances from neighboring DS node");
         logger.info("Renew threshold is: " + numberOfRenewsPerMinThreshold);
@@ -351,8 +351,8 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                         }
                         peerHostName = peerInstanceInfo.getHostName();
                         logger.info(
-                                "Trying to send heartbeat for the eureka server at {} to make sure the network channels are open",
-                                peerHostName);
+                                "Trying to send heartbeat for the eureka server at {} to make sure the network "
+                                + "channels are open", peerHostName);
                         // Only try to contact the eureka nodes that are in this
                         // instance's registry - because
                         // the other instances may be legitimately down
@@ -645,7 +645,9 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
      * @return a long value representing the number of <em>renewals</em> in the
      *         last minute.
      */
-    @com.netflix.servo.annotations.Monitor(name = "numOfReplicationsInLastMin", description = "Number of total replications received in the last minute", type = com.netflix.servo.annotations.DataSourceType.GAUGE)
+    @com.netflix.servo.annotations.Monitor(name = "numOfReplicationsInLastMin",
+            description = "Number of total replications received in the last minute",
+            type = com.netflix.servo.annotations.DataSourceType.GAUGE)
     public long getNumOfReplicationsInLastMin() {
         return numberOfReplicationsLastMin.getCount();
     }
@@ -655,7 +657,8 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
      *
      * @return 0 if the renewals are greater than threshold, 1 otherwise.
      */
-    @com.netflix.servo.annotations.Monitor(name = "isBelowRenewThreshold", description = "0 = false, 1 = true", type = com.netflix.servo.annotations.DataSourceType.GAUGE)
+    @com.netflix.servo.annotations.Monitor(name = "isBelowRenewThreshold", description = "0 = false, 1 = true",
+            type = com.netflix.servo.annotations.DataSourceType.GAUGE)
     public int isBelowRenewThresold() {
         if ((getNumOfRenewsInLastMin() < numberOfRenewsPerMinThreshold)
                 && ((this.startupTime > 0) && (System.currentTimeMillis() > this.startupTime

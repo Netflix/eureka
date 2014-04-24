@@ -28,9 +28,9 @@ package com.netflix.eureka;
 public enum Version {
     V1, V2;
 
-    public static Version toEnum(String v){
-        for(Version version : Version.values()){
-            if(version.name().equalsIgnoreCase(v)){
+    public static Version toEnum(String v) {
+        for (Version version : Version.values()) {
+            if (version.name().equalsIgnoreCase(v)) {
                 return version;
             }
         }

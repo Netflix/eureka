@@ -219,7 +219,8 @@ public class AwsAsgUtil {
      * @return the long value representing the number of elements in the ASG
      *         cache.
      */
-    @com.netflix.servo.annotations.Monitor(name = "numOfElementsinASGCache", description = "Number of elements in the ASG Cache", type = DataSourceType.GAUGE)
+    @com.netflix.servo.annotations.Monitor(name = "numOfElementsinASGCache",
+            description = "Number of elements in the ASG Cache", type = DataSourceType.GAUGE)
     public long getNumberofElementsinASGCache() {
         return asgCache.size();
     }
@@ -230,7 +231,8 @@ public class AwsAsgUtil {
      * @return the long value representing the number of ASG queries done in the
      *         period.
      */
-    @com.netflix.servo.annotations.Monitor(name = "numOfASGQueries", description = "Number of queries made to AWS to retrieve ASG information", type = DataSourceType.COUNTER)
+    @com.netflix.servo.annotations.Monitor(name = "numOfASGQueries",
+            description = "Number of queries made to AWS to retrieve ASG information", type = DataSourceType.COUNTER)
     public long getNumberofASGQueries() {
         return asgCache.stats().loadCount();
     }
@@ -241,7 +243,9 @@ public class AwsAsgUtil {
      * @return the long value representing the number of ASG queries that failed
      *         because of some reason.
      */
-    @com.netflix.servo.annotations.Monitor(name = "numOfASGQueryFailures", description = "Number of queries made to AWS to retrieve ASG information and that failed", type = DataSourceType.COUNTER)
+    @com.netflix.servo.annotations.Monitor(name = "numOfASGQueryFailures",
+            description = "Number of queries made to AWS to retrieve ASG information and that failed",
+            type = DataSourceType.COUNTER)
     public long getNumberofASGQueryFailures() {
         return asgCache.stats().loadExceptionCount();
     }
@@ -312,14 +316,12 @@ public class AwsAsgUtil {
         ClientConfiguration clientConfiguration = new ClientConfiguration()
                 .withConnectionTimeout(eurekaConfig.getASGQueryTimeoutMs());
 
-        if (null != aWSAccessId && !"".equals(aWSAccessId) &&
-                null != aWSSecretKey && !"".equals(aWSSecretKey)) {
+        if (null != aWSAccessId && !"".equals(aWSAccessId)
+                && null != aWSSecretKey && !"".equals(aWSSecretKey)) {
             return new AmazonAutoScalingClient(
                     new BasicAWSCredentials(aWSAccessId, aWSSecretKey),
                     clientConfiguration);
-        }
-        else
-        {
+        } else {
             return new AmazonAutoScalingClient(
                     new InstanceProfileCredentialsProvider(),
                     clientConfiguration);

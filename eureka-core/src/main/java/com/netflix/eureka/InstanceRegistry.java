@@ -96,7 +96,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
     protected ConcurrentMap<String, InstanceStatus> overriddenInstanceStatusMap = CacheBuilder
             .newBuilder().initialCapacity(500)
             .expireAfterAccess(1, TimeUnit.HOURS)
-            .<String, InstanceStatus> build().asMap();
+            .<String, InstanceStatus>build().asMap();
 
     // CircularQueues here for debugging/statistics purposes only
     private CircularQueue<Pair<Long, String>> recentRegisteredQueue;
@@ -163,13 +163,12 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                 Long registrationLastDirtyTimestamp = r.getLastDirtyTimestamp();
                 if (existingLastDirtyTimestamp > registrationLastDirtyTimestamp) {
                     logger.warn(
-                            "There is an existing lease and the existing lease's dirty timestamp {} is greater than the one that is being registered {}",
-                            existingLastDirtyTimestamp,
+                            "There is an existing lease and the existing lease's dirty timestamp {} is greater than "
+                            + "the one that is being registered {}", existingLastDirtyTimestamp,
                             registrationLastDirtyTimestamp);
                     r.setLastDirtyTimestamp(existingLastDirtyTimestamp);
                 }
-            }
-            else {
+            } else {
                 // The lease does not exist and hence it is a new registration
                 synchronized (lock) {
                     if (this.expectedNumberOfRenewsPerMin > 0) {
@@ -177,8 +176,9 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                         // (1
                         // for 30 seconds, 2 for a minute)
                         this.expectedNumberOfRenewsPerMin = this.expectedNumberOfRenewsPerMin + 2;
-                        this.numberOfRenewsPerMinThreshold = (int) (this.expectedNumberOfRenewsPerMin * EUREKA_SERVER_CONFIG
-                                .getRenewalPercentThreshold());
+                        this.numberOfRenewsPerMinThreshold =
+                                (int) (this.expectedNumberOfRenewsPerMin
+                                        * EUREKA_SERVER_CONFIG.getRenewalPercentThreshold());
                     }
                 }
             }
@@ -197,8 +197,8 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             // happens
             if (!InstanceStatus.UNKNOWN.equals(r.getOverriddenStatus())) {
                 logger.debug(
-                        "Found overridden status {} for instance {}. Checking to see if needs to be add to the overrides",
-                        r.getOverriddenStatus(), r.getId());
+                        "Found overridden status {} for instance {}. Checking to see if needs to be add to the "
+                        + "overrides", r.getOverriddenStatus(), r.getId());
                 if (!overriddenInstanceStatusMap.containsKey(r.getId())) {
                     logger.info(
                             "Not found overridden id {} and hence adding it",
@@ -333,12 +333,12 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                 // InstanceStatus overriddenInstanceStatus =
                 // instanceInfo.getStatus();
                 if (!instanceInfo.getStatus().equals(overriddenInstanceStatus)) {
-                    Object[] args = { instanceInfo.getStatus().name(),
-                                      instanceInfo.getOverriddenStatus().name(),
-                                      instanceInfo.getId() };
+                    Object[] args = {instanceInfo.getStatus().name(),
+                                     instanceInfo.getOverriddenStatus().name(),
+                                     instanceInfo.getId()};
                     logger.info(
-                            "The instance status {} is different from overridden instance status {} for instance {}. Hence setting the status to overridden status",
-                            args);
+                            "The instance status {} is different from overridden instance status {} for instance {}. "
+                            + "Hence setting the status to overridden status", args);
                     instanceInfo.setStatus(overriddenInstanceStatus);
                 }
             }
@@ -580,7 +580,8 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      * or {@link #getApplicationsFromLocalRegionOnly()}
      *
      * @param remoteRegions The remote regions for which the instances are to be queried. The instances may be limited
-     *                      by a whitelist as explained above. If <code>null</code> or empty no remote regions are included.
+     *                      by a whitelist as explained above. If <code>null</code> or empty no remote regions are
+     *                      included.
      *
      * @return The applications with instances from the passed remote regions as well as local region. The instances
      * from remote regions can be only for certain whitelisted apps as explained above.
@@ -631,8 +632,9 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                                 appInstanceTillNow.addInstance(instanceInfo);
                             }
                         } else {
-                            logger.info("Application {} not fetched from the remote region {} as there exists a whitelist and this app is not in the whitelist.",
-                                        application.getName(), remoteRegion);
+                            logger.info("Application {} not fetched from the remote region {} as there exists a "
+                                    + "whitelist and this app is not in the whitelist.", application.getName(),
+                                    remoteRegion);
                         }
                     }
                 } else {
@@ -719,9 +721,9 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      * must make sure this does not adversely affect them.
      *
      * @return all application deltas.
-     * @deprecated use {@link #getApplicationDeltasFromMultipleRegions(String[])} instead. This method has a flawed behavior
-     * of transparently falling back to a remote region if no instances for an app is available locally. The new
-     * behavior is to explictly specify if you need a remote region.
+     * @deprecated use {@link #getApplicationDeltasFromMultipleRegions(String[])} instead. This method has a
+     * flawed behavior of transparently falling back to a remote region if no instances for an app is available locally.
+     * The new behavior is to explictly specify if you need a remote region.
      */
     @Deprecated
     public Applications getApplicationDeltas() {
@@ -737,9 +739,9 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             while (iter.hasNext()) {
                 Lease<InstanceInfo> lease = iter.next().getLeaseInfo();
                 InstanceInfo instanceInfo = lease.getHolder();
-                Object[] args = { instanceInfo.getId(),
-                                  instanceInfo.getStatus().name(),
-                                  instanceInfo.getActionType().name() };
+                Object[] args = {instanceInfo.getId(),
+                                 instanceInfo.getStatus().name(),
+                                 instanceInfo.getActionType().name()};
                 logger.debug(
                         "The instance id %s is found with status %s and actiontype %s",
                         args);
@@ -761,7 +763,8 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                 for (RemoteRegionRegistry remoteRegistry : this.regionNameVSRemoteRegistry.values()) {
                     Applications applications = remoteRegistry.getApplicationDeltas();
                     for (Application application : applications.getRegisteredApplications()) {
-                        Application appInLocalRegistry = allAppsInLocalRegion.getRegisteredApplications(application.getName());
+                        Application appInLocalRegistry =
+                                allAppsInLocalRegion.getRegisteredApplications(application.getName());
                         if (appInLocalRegistry == null) {
                             apps.addApplication(application);
                         }
@@ -818,9 +821,9 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             while (iter.hasNext()) {
                 Lease<InstanceInfo> lease = iter.next().getLeaseInfo();
                 InstanceInfo instanceInfo = lease.getHolder();
-                Object[] args = { instanceInfo.getId(),
-                                  instanceInfo.getStatus().name(),
-                                  instanceInfo.getActionType().name() };
+                Object[] args = {instanceInfo.getId(),
+                                 instanceInfo.getStatus().name(),
+                                 instanceInfo.getActionType().name()};
                 logger.debug(
                         "The instance id %s is found with status %s and actiontype %s",
                         args);
@@ -842,7 +845,8 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                         if (null != remoteAppsDelta) {
                             for (Application application : remoteAppsDelta.getRegisteredApplications()) {
                                 if (shouldFetchFromRemoteRegistry(application.getName(), remoteRegion)) {
-                                    Application appInstanceTillNow = apps.getRegisteredApplications(application.getName());
+                                    Application appInstanceTillNow =
+                                            apps.getRegisteredApplications(application.getName());
                                     if (appInstanceTillNow == null) {
                                         appInstanceTillNow = new Application(application.getName());
                                         apps.addApplication(appInstanceTillNow);
@@ -1001,7 +1005,8 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         return info;
     }
 
-    @com.netflix.servo.annotations.Monitor(name = "numOfRenewsInLastMin", description = "Number of total heartbeats received in the last minute", type = DataSourceType.GAUGE)
+    @com.netflix.servo.annotations.Monitor(name = "numOfRenewsInLastMin",
+            description = "Number of total heartbeats received in the last minute", type = DataSourceType.GAUGE)
     public long getNumOfRenewsInLastMin() {
         if (renewsLastMin != null) {
             return renewsLastMin.getCount();
@@ -1209,8 +1214,9 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             allKnownRemoteRegions = new String[remoteRegionUrlsWithName.size()];
             int remoteRegionArrayIndex = 0;
             for (Entry<String, String> remoteRegionUrlWithName : remoteRegionUrlsWithName.entrySet()) {
-                RemoteRegionRegistry remoteRegionRegistry = new RemoteRegionRegistry(remoteRegionUrlWithName.getKey(),
-                                                                                     new URL(remoteRegionUrlWithName.getValue()));
+                RemoteRegionRegistry remoteRegionRegistry =
+                        new RemoteRegionRegistry(remoteRegionUrlWithName.getKey(),
+                                new URL(remoteRegionUrlWithName.getValue()));
                 regionNameVSRemoteRegistry.put(remoteRegionUrlWithName.getKey(), remoteRegionRegistry);
                 allKnownRemoteRegions[remoteRegionArrayIndex++] = remoteRegionUrlWithName.getKey();
             }

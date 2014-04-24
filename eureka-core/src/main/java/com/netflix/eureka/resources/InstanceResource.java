@@ -222,8 +222,7 @@ public class InstanceResource {
             }
             registry.register(instanceInfo, false);
             return Response.ok().build();
-        }
-        catch (Throwable e) {
+        } catch (Throwable e) {
             logger.error("Error updating metadata for instance " + id, e);
             return Response.serverError().build();
         }
@@ -262,8 +261,8 @@ public class InstanceResource {
             if ((lastDirtyTimestamp != null)
                     && (!lastDirtyTimestamp.equals(appInfo
                             .getLastDirtyTimestamp()))) {
-                Object[] args = { id, appInfo.getLastDirtyTimestamp(),
-                        lastDirtyTimestamp, isReplication };
+                Object[] args = {id, appInfo.getLastDirtyTimestamp(),
+                        lastDirtyTimestamp, isReplication};
                 if (lastDirtyTimestamp > appInfo.getLastDirtyTimestamp()) {
                     logger.warn(
                             "Time to sync, since the last dirty timestamp differs -"

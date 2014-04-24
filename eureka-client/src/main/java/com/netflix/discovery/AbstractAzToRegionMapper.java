@@ -56,16 +56,17 @@ public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
                 if (null == availabilityZones
                     || (availabilityZones.size() == 1 && availabilityZones.iterator().next().equals(DEFAULT_ZONE))
                     || availabilityZones.isEmpty()) {
-                    logger.info("No availability zone information available for remote region: " + remoteRegion +
-                                ". Now checking in the default mapping.");
+                    logger.info("No availability zone information available for remote region: " + remoteRegion
+                            + ". Now checking in the default mapping.");
                     if (defaultRegionVsAzMap.containsKey(remoteRegion)) {
                         Collection<String> defaultAvailabilityZones = defaultRegionVsAzMap.get(remoteRegion);
                         for (String defaultAvailabilityZone : defaultAvailabilityZones) {
                             availabilityZoneVsRegion.put(defaultAvailabilityZone, remoteRegion);
                         }
                     } else {
-                        String msg = "No availability zone information available for remote region: " + remoteRegion +
-                                     ". This is required if registry information for this region is configured to be fetched.";
+                        String msg = "No availability zone information available for remote region: " + remoteRegion
+                                + ". This is required if registry information for this region is configured to be "
+                                + "fetched.";
                         logger.error(msg);
                         throw new RuntimeException(msg);
                     }
@@ -103,8 +104,8 @@ public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
 
     protected String parseAzToGetRegion(String availabilityZone) {
         // Here we see that whether the availability zone is following a pattern like <region><single letter>
-        // If it is then we take ignore the last letter and check if the remaining part is actually a known remote region.
-        // If yes, then we return that region, else null which means local region.
+        // If it is then we take ignore the last letter and check if the remaining part is actually a known remote
+        // region. If yes, then we return that region, else null which means local region.
         if (!availabilityZone.isEmpty()) {
             String possibleRegion = availabilityZone.substring(0, availabilityZone.length() - 1);
             if (availabilityZoneVsRegion.containsValue(possibleRegion)) {

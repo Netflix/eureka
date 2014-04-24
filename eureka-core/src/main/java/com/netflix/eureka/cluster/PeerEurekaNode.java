@@ -160,7 +160,7 @@ public class PeerEurekaNode {
             }
 
             @Override
-            public boolean shouldReplicateInstanceInfo () {
+            public boolean shouldReplicateInstanceInfo() {
                 return true;
             }
         };
@@ -578,8 +578,7 @@ public class PeerEurekaNode {
         public abstract int execute() throws Throwable;
 
         public void handleFailure(int statusCode) throws Throwable {
-            Object[] args = { this.appName, this.id, this.action.name(),
-                    statusCode };
+            Object[] args = {this.appName, this.id, this.action.name(), statusCode};
             logger.warn(
                     "The replication of {}/{}/{} failed with response code {}",
                     args);
@@ -747,17 +746,15 @@ public class PeerEurekaNode {
            ) {
         try {
                 if (infoFromPeer != null) {
-                    Object[] args = { id, info.getLastDirtyTimestamp(),
-                            infoFromPeer.getLastDirtyTimestamp() };
+                    Object[] args = {id, info.getLastDirtyTimestamp(), infoFromPeer.getLastDirtyTimestamp()};
 
                     logger.warn(
-                            "Peer wants us to take the instance information from it, since the timestamp differs,Id : {} My Timestamp : {}, Peer's timestamp: {}",
-                            args);
+                            "Peer wants us to take the instance information from it, since the timestamp differs,"
+                            + "Id : {} My Timestamp : {}, Peer's timestamp: {}", args);
                     if ((infoFromPeer.getOverriddenStatus() != null)
                             && !(InstanceStatus.UNKNOWN.equals(infoFromPeer
                                     .getOverriddenStatus()))) {
-                        Object[] args1 = { id, info.getOverriddenStatus(),
-                                infoFromPeer.getOverriddenStatus() };
+                        Object[] args1 = {id, info.getOverriddenStatus(), infoFromPeer.getOverriddenStatus()};
                         logger.warn(
                                 "Overridden Status info -id {}, mine {}, peer's {}",
                                 args1);
@@ -830,16 +827,16 @@ public class PeerEurekaNode {
                    if (System.currentTimeMillis()
                             - config.getMaxTimeForReplication() > task
                             .getSubmitTime()) {
-                       Object[] args = { task.getAppName(), task.getId(),
+                       Object[] args = {task.getAppName(), task.getId(),
                                task.getAction(),
                                new Date(System.currentTimeMillis()),
-                               new Date(task.getSubmitTime()) };
+                               new Date(task.getSubmitTime())};
 
                         logger.warn(
-                                "Replication events older than the threshold. AppName : {}, Id: {}, Action : {}, Current Time : {}, Submit Time :{}",
-                                args);
+                                "Replication events older than the threshold. AppName : {}, Id: {}, Action : {}, "
+                                + "Current Time : {}, Submit Time :{}", args);
 
-                        continue;
+                       continue;
                     }
                     PeerEurekaNode.ReplicationInstance instance = new PeerEurekaNode.ReplicationInstance();
                     instance.setAppName(task.getAppName());
@@ -990,8 +987,8 @@ public class PeerEurekaNode {
                                 done = false;
                             } else {
                                 logger.info(
-                                        "Not re-trying this exception because it does not seem to be a network exception",
-                                        e);
+                                        "Not re-trying this exception because it does not seem to be a network "
+                                        + "exception", e);
                             }
                         }
                     } while (!done);

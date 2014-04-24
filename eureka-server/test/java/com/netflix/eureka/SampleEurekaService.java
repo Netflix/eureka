@@ -68,8 +68,7 @@ public class SampleEurekaService {
         ApplicationInfoManager.getInstance().setInstanceStatus(
                 InstanceStatus.STARTING);
 
-        System.out.println("Simulating service initialization by sleeping for " +
-                           sleepSeconds + " seconds...");
+        System.out.println("Simulating service initialization by sleeping for " + sleepSeconds + " seconds...");
         try {
             Thread.sleep(sleepSeconds * 1000);
         } catch (InterruptedException e) {
@@ -116,8 +115,8 @@ public class SampleEurekaService {
             e.printStackTrace();
         }
 
-        System.out.println("Simulating service doing work by sleeping for " +
-                sleepSeconds + " seconds...");
+        System.out.println("Simulating service doing work by sleeping for "
+                + sleepSeconds + " seconds...");
         try {
             Thread.sleep(sleepSeconds * 1000);
         } catch (InterruptedException e) {

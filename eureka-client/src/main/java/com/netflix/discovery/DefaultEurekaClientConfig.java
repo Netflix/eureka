@@ -93,7 +93,8 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                     .loadCascadedPropertiesFromResources(eurekaPropsFile);
         } catch (IOException e) {
             logger.warn(
-                    "Cannot find the properties specified : {}. This may be okay if there are other environment specific properties or the configuration is installed with a different mechanism.",
+                    "Cannot find the properties specified : {}. This may be okay if there are other environment "
+                    + "specific properties or the configuration is installed with a different mechanism.",
                     eurekaPropsFile);
 
         }

@@ -448,8 +448,8 @@ public interface EurekaServerConfig {
     /**
      * Get a map of region name against remote region discovery url.
      *
-     * @return - An unmodifiable map of remote region name against remote region discovery url. Empty map if no remote region url
-     * is defined.
+     * @return - An unmodifiable map of remote region name against remote region discovery url. Empty map if no remote
+     * region url is defined.
      */
     Map<String, String> getRemoteRegionUrlsWithName();
 

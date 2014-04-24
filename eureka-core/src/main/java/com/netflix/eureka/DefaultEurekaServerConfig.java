@@ -94,7 +94,8 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
             .loadCascadedPropertiesFromResources(eurekaPropsFile);
         } catch (IOException e) {
             logger.warn(
-                    "Cannot find the properties specified : {}. This may be okay if there are other environment specific properties or the configuration is installed with a different mechanism.",
+                    "Cannot find the properties specified : {}. This may be okay if there are other environment "
+                    + "specific properties or the configuration is installed with a different mechanism.",
                     eurekaPropsFile);
         }
     }
@@ -415,8 +416,8 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     }
 
     /**
-     * Expects a property with name: [eureka-namespace].remoteRegionUrlsWithName and a value being a comma separated list
-     * of region name & remote url pairs, separated with a ";". <br/>
+     * Expects a property with name: [eureka-namespace].remoteRegionUrlsWithName and a value being a comma separated
+     * list of region name & remote url pairs, separated with a ";". <br/>
      * So, if you wish to specify two regions with name region1 & region2, the property value will be:
      <PRE>
         eureka.remoteRegionUrlsWithName=region1;http://region1host/eureka/v2,region2;http://region2host/eureka/v2
@@ -444,8 +445,9 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
         for (String remoteRegionUrlWithNamePair : remoteRegionUrlWithNamePairs) {
             String[] pairSplit = remoteRegionUrlWithNamePair.split(pairSplitChar);
             if (pairSplit.length < 2) {
-                logger.error("Error reading eureka remote region urls from property {}. " +
-                             "Invalid entry {} for remote region url. The entry must contain region name and url separated by a {}. Ignoring this entry.",
+                logger.error("Error reading eureka remote region urls from property {}. "
+                                + "Invalid entry {} for remote region url. The entry must contain region name and url "
+                                + "separated by a {}. Ignoring this entry.",
                              new String[]{propName, remoteRegionUrlWithNamePair, pairSplitChar});
             } else {
                 String regionName = pairSplit[0];

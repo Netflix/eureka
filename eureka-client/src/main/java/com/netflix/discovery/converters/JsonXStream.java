@@ -54,8 +54,7 @@ public class JsonXStream extends XStream {
         registerConverter(new Converters.LeaseInfoConverter());
         registerConverter(new Converters.MetadataConverter());
         setMode(XStream.NO_REFERENCES);
-        processAnnotations(new Class[] { InstanceInfo.class, Application.class,
-                Applications.class });
+        processAnnotations(new Class[] {InstanceInfo.class, Application.class, Applications.class});
     }
 
     public static JsonXStream getInstance() {

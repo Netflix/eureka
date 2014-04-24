@@ -94,16 +94,18 @@ MessageBodyReader {
             try {
                 return serializer.read(inputStream, serializableClass, mediaType);
             } catch (Error e) { // See issue: https://github.com/Netflix/eureka/issues/72 on why we catch Error here.
-                LOGGER.error("Unexpected error occured during de-serialization of discovery data, doing connection cleanup.", e);
+                LOGGER.error("Unexpected error occured during de-serialization of discovery data, doing connection "
+                        + "cleanup.", e);
                 if (null != inputStream) {
                     inputStream.close();
-                    LOGGER.error("Unexpected error occured during de-serialization of discovery data, done connection cleanup.", e);
+                    LOGGER.error("Unexpected error occured during de-serialization of discovery data, done connection "
+                            + "cleanup.", e);
                 }
                 throw e;
             }
         } else {
-            LOGGER.error("No serializer available for serializable class: " + serializableClass +
-                         ", de-serialization will fail.");
+            LOGGER.error("No serializer available for serializable class: " + serializableClass
+                    + ", de-serialization will fail.");
             throw new IOException("No serializer available for serializable class: " + serializableClass);
         }
     }
@@ -152,8 +154,8 @@ MessageBodyReader {
         if (null != serializer) {
             serializer.write(serializableObject, outputStream, mediaType);
         } else {
-            LOGGER.error("No serializer available for serializable class: " + serializableClass +
-                         ", serialization will fail.");
+            LOGGER.error("No serializer available for serializable class: " + serializableClass
+                    + ", serialization will fail.");
             throw new IOException("No serializer available for serializable class: " + serializableClass);
         }
     }

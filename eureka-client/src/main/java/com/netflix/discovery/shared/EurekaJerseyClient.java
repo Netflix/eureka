@@ -123,9 +123,9 @@ public final class EurekaJerseyClient {
                                                      String trustStoreFileName, String trustStorePassword) {
         Preconditions.checkNotNull(clientName, "Client name can not be null.");
         try {
-            ClientConfig jerseyClientConfig = new SSLCustomApacheHttpClientConfig(clientName, maxConnectionsPerHost,
-                                                                                  maxTotalConnections,
-                                                                                  trustStoreFileName, trustStorePassword);
+            ClientConfig jerseyClientConfig = new SSLCustomApacheHttpClientConfig(
+                    clientName, maxConnectionsPerHost, maxTotalConnections,
+                    trustStoreFileName, trustStorePassword);
 
             return new JerseyClient(connectionTimeout, readTimeout,
                                     connectionIdleTimeout, jerseyClientConfig);
@@ -210,7 +210,8 @@ public final class EurekaJerseyClient {
 
         ClientConfig jerseyClientConfig;
 
-        private ScheduledExecutorService eurekaConnCleaner = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
+        private ScheduledExecutorService eurekaConnCleaner =
+                Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
 
             private final AtomicInteger threadNumber = new AtomicInteger(1);
 

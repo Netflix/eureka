@@ -112,7 +112,7 @@ public class ApplicationsResource {
             EurekaMonitors.GET_ALL.increment();
         } else {
             regions = regionsStr.toLowerCase().split(",");
-            Arrays.sort(regions); // So, that we don't have different caches for same regions queried in different order.
+            Arrays.sort(regions); // So we don't have different caches for same regions queried in different order.
             EurekaMonitors.GET_ALL_WITH_REMOTE_REGIONS.increment();
         }
         // Check if the server allows the access to the registry. The server can
@@ -195,7 +195,7 @@ public class ApplicationsResource {
             EurekaMonitors.GET_ALL_DELTA.increment();
         } else {
             regions = regionsStr.toLowerCase().split(",");
-            Arrays.sort(regions); // So, that we don't have different caches for same regions queried in different order.
+            Arrays.sort(regions); // So we don't have different caches for same regions queried in different order.
             EurekaMonitors.GET_ALL_DELTA_WITH_REMOTE_REGIONS.increment();
         }
 

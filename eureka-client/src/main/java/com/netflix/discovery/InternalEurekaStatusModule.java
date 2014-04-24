@@ -66,11 +66,11 @@ class InternalEurekaStatusModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        bind(new TypeLiteral<Supplier<Boolean>>() {})
+        bind(new TypeLiteral<Supplier<Boolean>>() { })
             .annotatedWith(UpStatus.class)
             .toProvider(UpStatusProvider.class);
 
-        bind(new TypeLiteral<Supplier<Boolean>>() {})
+        bind(new TypeLiteral<Supplier<Boolean>>() { })
             .annotatedWith(DownStatus.class)
             .toProvider(DownStatusProvider.class);
     }

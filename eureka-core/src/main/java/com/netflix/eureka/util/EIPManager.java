@@ -134,7 +134,7 @@ public class EIPManager {
      *  3) If an EIP is not already bound to an instance and if this instance is not bound to an EIP, then
      *     the EIP is bound to this instance.
      */
-    public void bindEIP( ) {
+    public void bindEIP() {
         InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
         String myInstanceId = ((AmazonInfo) myInfo.getDataCenterInfo())
         .get(MetaDataKey.instanceId);
@@ -170,19 +170,18 @@ public class EIPManager {
                         if (selectedEIP == null) {
                             selectedEIP = eipEntry;
                         }
-                    }
-                    // This EIP is associated with an instance, check if this is the same as the current instance.
-                    // If it is the same, stop searching for an EIP as this instance is already associated with an EIP
-                    else if (isMyinstanceAssociatedWithEIP = (associatedInstanceId
+                    } else if (isMyinstanceAssociatedWithEIP = (associatedInstanceId
                             .equals(myInstanceId))) {
+                        // This EIP is associated with an instance, check if this is the same as the current instance.
+                        // If it is the same, stop searching for an EIP as this instance is already associated with an
+                        // EIP
                         selectedEIP = eipEntry;
                         break;
-                    }
-                    // The EIP is used by some other instance, hence skip it
-                    else {
+                    } else {
+                        // The EIP is used by some other instance, hence skip it
                         logger.warn(
-                                "The selected EIP {} is associated with another instance {} according to AWS, hence skipping this",
-                                eipEntry, associatedInstanceId);
+                                "The selected EIP {} is associated with another instance {} according to AWS, hence "
+                                + "skipping this", eipEntry, associatedInstanceId);
                         continue;
                     }
                 }
@@ -282,7 +281,7 @@ public class EIPManager {
     private Collection<String> getEIPsFromServiceUrls(List<String> ec2Urls) {
         List<String> returnedUrls = new ArrayList<String>();
         String region = DiscoveryManager.getInstance().getEurekaClientConfig().getRegion();
-        String regionPhrase="";
+        String regionPhrase = "";
         if (!US_EAST_1.equals(region)) {
             regionPhrase = "." + region;
         }
@@ -332,13 +331,11 @@ public class EIPManager {
         String aWSSecretKey = eurekaConfig.getAWSSecretKey();
 
         AmazonEC2 ec2Service;
-        if (null != aWSAccessId && !"".equals(aWSAccessId) &&
-                null != aWSSecretKey && !"".equals(aWSSecretKey)) {
+        if (null != aWSAccessId && !"".equals(aWSAccessId)
+                && null != aWSSecretKey && !"".equals(aWSSecretKey)) {
             ec2Service = new AmazonEC2Client(new BasicAWSCredentials(
                     aWSAccessId, aWSSecretKey));
-        }
-        else
-        {
+        } else {
             ec2Service = new AmazonEC2Client(
                     new InstanceProfileCredentialsProvider());
         }

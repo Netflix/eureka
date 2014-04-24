@@ -47,8 +47,8 @@ public class PeerReplicationResource {
      * Process batched replication events from peer eureka nodes.
      *
      * <p>
-     *  The batched events are delegated to underlying resources to generate a {@link PeerEurekaNode.ReplicationListResponse}
-     *  containing the individual responses to the batched events
+     *  The batched events are delegated to underlying resources to generate a
+     *  {@link PeerEurekaNode.ReplicationListResponse} containing the individual responses to the batched events
      * </p>
      *
      * @param replicationList
@@ -76,7 +76,8 @@ public class PeerReplicationResource {
                         : instanceInfo.getOverriddenStatus());
                 String instanceStatus = (instanceInfo.getStatus() == null ? null
                         : instanceInfo.getStatus());
-                PeerEurekaNode.ReplicationInstanceResponse.Builder singleResponseBuilder = new PeerEurekaNode.ReplicationInstanceResponse.Builder();
+                PeerEurekaNode.ReplicationInstanceResponse.Builder singleResponseBuilder =
+                        new PeerEurekaNode.ReplicationInstanceResponse.Builder();
                 if (instanceInfo.getAction() == Action.Heartbeat) {
                     response = resource.renewLease(REPLICATION, overriddenStatus,
                             instanceStatus, lastDirtyTimestamp);

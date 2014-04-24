@@ -366,8 +366,8 @@ public class Applications {
         _shuffleInstances(filterUpInstances, false, null, null, null);
     }
 
-    public void shuffleAndIndexInstances(Map<String, Applications> remoteRegionsRegistry, EurekaClientConfig clientConfig,
-                                         InstanceRegionChecker instanceRegionChecker) {
+    public void shuffleAndIndexInstances(Map<String, Applications> remoteRegionsRegistry,
+                                         EurekaClientConfig clientConfig, InstanceRegionChecker instanceRegionChecker) {
         _shuffleInstances(clientConfig.shouldFilterOnlyUpInstances(), true, remoteRegionsRegistry, clientConfig,
                           instanceRegionChecker);
     }

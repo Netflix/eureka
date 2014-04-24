@@ -76,9 +76,9 @@ public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceI
             LOG.info("Setting initial instance status as: " + initialStatus);
             builder.setStatus(initialStatus);
         } else {
-            LOG.info("Setting initial instance status as: " + InstanceStatus.UP +
-                        ". This may be too early for the instance to advertise itself as available. " +
-                        "You would instead want to control this via a healthcheck handler.");
+            LOG.info("Setting initial instance status as: " + InstanceStatus.UP
+                    + ". This may be too early for the instance to advertise itself as available. "
+                    + "You would instead want to control this via a healthcheck handler.");
         }
 
         // Add any user-specific metadata information

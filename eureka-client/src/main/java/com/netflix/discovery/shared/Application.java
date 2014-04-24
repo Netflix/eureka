@@ -117,8 +117,7 @@ public class Application {
     public List<InstanceInfo> getInstances() {
         if (this.shuffledInstances.get() == null) {
             return this.getInstancesAsIsFromEureka();
-        }
-        else {
+        } else {
             return this.shuffledInstances.get();
         }
     }
@@ -207,7 +206,8 @@ public class Application {
                             remoteRegionsRegistry.put(instanceRegion, appsForRemoteRegion);
                         }
 
-                        Application remoteApp = appsForRemoteRegion.getRegisteredApplications(instanceInfo.getAppName());
+                        Application remoteApp =
+                                appsForRemoteRegion.getRegisteredApplications(instanceInfo.getAppName());
                         if (null == remoteApp) {
                             remoteApp = new Application(instanceInfo.getAppName());
                             appsForRemoteRegion.addApplication(remoteApp);

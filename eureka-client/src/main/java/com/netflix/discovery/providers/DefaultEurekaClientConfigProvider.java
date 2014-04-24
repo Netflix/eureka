@@ -12,7 +12,7 @@ import com.netflix.discovery.EurekaNamespace;
  */
 public class DefaultEurekaClientConfigProvider implements Provider<EurekaClientConfig> {
 
-    @Inject(optional=true)
+    @Inject(optional = true)
     @EurekaNamespace
     private String namespace;
 

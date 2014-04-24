@@ -157,7 +157,7 @@ public class DiscoveryClient implements LookupService {
 
     private final ScheduledExecutorService scheduler;
 
-    @Inject(optional=true)
+    @Inject(optional = true)
     private EventBus eventBus;
 
     public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, EventBus eventBus) {
@@ -184,17 +184,13 @@ public class DiscoveryClient implements LookupService {
             }
             String proxyHost = clientConfig.getProxyHost();
             String proxyPort = clientConfig.getProxyPort();
-            discoveryJerseyClient = EurekaJerseyClient.createJerseyClient("DiscoveryClient-HTTPClient",
-                                                                          clientConfig
-                                                                                  .getEurekaServerConnectTimeoutSeconds() * 1000,
-                                                                          clientConfig
-                                                                                  .getEurekaServerReadTimeoutSeconds() * 1000,
-                                                                          clientConfig
-                                                                                  .getEurekaServerTotalConnectionsPerHost(),
-                                                                          clientConfig
-                                                                                  .getEurekaServerTotalConnections(),
-                                                                          clientConfig
-                                                                                  .getEurekaConnectionIdleTimeoutSeconds());
+            discoveryJerseyClient = EurekaJerseyClient.createJerseyClient(
+                    "DiscoveryClient-HTTPClient",
+                    clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000,
+                    clientConfig.getEurekaServerReadTimeoutSeconds() * 1000,
+                    clientConfig.getEurekaServerTotalConnectionsPerHost(),
+                    clientConfig.getEurekaServerTotalConnections(),
+                    clientConfig.getEurekaConnectionIdleTimeoutSeconds());
             discoveryApacheClient = discoveryJerseyClient.getClient();
             ClientConfig cc = discoveryJerseyClient.getClientconfig();
             remoteRegionsToFetch = new AtomicReference<String>(clientConfig.fetchRegistryForRemoteRegions());
@@ -350,8 +346,8 @@ public class DiscoveryClient implements LookupService {
         } else {
             applications = remoteRegionVsApps.get(region);
             if (null == applications) {
-                logger.debug("No applications are defined for region {}, so returning an empty instance list for vip address {}.",
-                             region, vipAddress);
+                logger.debug("No applications are defined for region {}, so returning an empty instance list for vip "
+                        + "address {}.", region, vipAddress);
                 return Collections.emptyList();
             }
         }
@@ -638,7 +634,8 @@ public class DiscoveryClient implements LookupService {
                 logger.info("Disable delta property : {}", clientConfig.shouldDisableDelta());
                 logger.info("Force full registry fetch : {}", forceFullRegistryFetch);
                 logger.info("Application is null : {}", (applications == null));
-                logger.info("Registered Applications size is zero : {}", (applications.getRegisteredApplications().size() == 0));
+                logger.info("Registered Applications size is zero : {}",
+                        (applications.getRegisteredApplications().size() == 0));
                 logger.info("Application version is -1: {}", (applications.getVersion() == -1));
                 response = getAndStoreFullRegistry();
             } else {
@@ -648,7 +645,8 @@ public class DiscoveryClient implements LookupService {
                     delta = response.getEntity(Applications.class);
                 }
                 if (delta == null) {
-                    logger.warn("The server does not allow the delta revision to be applied because it is not safe. Hence got the full registry.");
+                    logger.warn("The server does not allow the delta revision to be applied because it is not safe. "
+                            + "Hence got the full registry.");
                     this.closeResponse(response);
                     response = getAndStoreFullRegistry();
                 } else {
@@ -705,11 +703,11 @@ public class DiscoveryClient implements LookupService {
         if (lastRemoteInstanceStatus != currentRemoteInstanceStatus) {
             try {
                 if (eventBus != null) {
-                    StatusChangeEvent event = new StatusChangeEvent(lastRemoteInstanceStatus, currentRemoteInstanceStatus);
+                    StatusChangeEvent event = new StatusChangeEvent(lastRemoteInstanceStatus,
+                            currentRemoteInstanceStatus);
                     eventBus.publish(event);
                 }
-            }
-            finally {
+            } finally {
                 lastRemoteInstanceStatus = currentRemoteInstanceStatus;
             }
         }
@@ -748,8 +746,7 @@ public class DiscoveryClient implements LookupService {
         Applications apps = response.getEntity(Applications.class);
         if (apps == null) {
             logger.error("The application is null for some reason. Not storing this information");
-        }
-        else {
+        } else {
             localRegionApps.set(this.filterAndShuffle(apps));
         }
         logger.info("The response status is {}", response.getStatus());
@@ -1048,13 +1045,14 @@ public class DiscoveryClient implements LookupService {
                     + instanceInfo.getLeaseInfo().getRenewalIntervalInSecs());
 
             // Heartbeat timer
-            scheduler.scheduleWithFixedDelay(new HeartbeatThread(), instanceInfo.getLeaseInfo().getRenewalIntervalInSecs(),
-                                             instanceInfo.getLeaseInfo().getRenewalIntervalInSecs(), TimeUnit.SECONDS);
+            scheduler.scheduleWithFixedDelay(new HeartbeatThread(),
+                    instanceInfo.getLeaseInfo().getRenewalIntervalInSecs(),
+                    instanceInfo.getLeaseInfo().getRenewalIntervalInSecs(), TimeUnit.SECONDS);
 
             // InstanceInfo replication timer
             scheduler.scheduleWithFixedDelay(new InstanceInfoReplicator(),
-                                             10 + clientConfig.getInstanceInfoReplicationIntervalSeconds(),
-                                             clientConfig.getInstanceInfoReplicationIntervalSeconds(), TimeUnit.SECONDS);
+                    10 + clientConfig.getInstanceInfoReplicationIntervalSeconds(),
+                    clientConfig.getInstanceInfoReplicationIntervalSeconds(), TimeUnit.SECONDS);
 
         }
     }
@@ -1105,7 +1103,7 @@ public class DiscoveryClient implements LookupService {
                 }
             }
             if (zoneFound) {
-                Object[] args = { zones, instanceZone, zoneIndex };
+                Object[] args = {zones, instanceZone, zoneIndex};
                 logger.debug(
                         "The zone index from the list {} that matches the instance zone {} is {}",
                         args);
@@ -1119,7 +1117,7 @@ public class DiscoveryClient implements LookupService {
                     instanceZone, Arrays.toString(zones.toArray()));
         } else {
             // Rearrange the zones with the instance zone first
-            for (int i=0; i <zoneIndex; i ++) {
+            for (int i = 0; i < zoneIndex; i++) {
                 String zone = zones.remove(0);
                 zones.add(zone);
             }
@@ -1327,8 +1325,8 @@ public class DiscoveryClient implements LookupService {
             }
         }
         logger.warn(
-                "DISCOVERY: Could not pick a zone based on preferred zone settings. My zone - {}, preferSameZone- {}. Defaulting to "
-                        + availZones[0], myZone, preferSameZone);
+                "DISCOVERY: Could not pick a zone based on preferred zone settings. My zone - {}, preferSameZone- {}. "
+                + "Defaulting to " + availZones[0], myZone, preferSameZone);
         return 0;
     }
 
@@ -1512,7 +1510,8 @@ public class DiscoveryClient implements LookupService {
                                         currentRemoteRegions, latestRemoteRegions);
                         }
                     } else {
-                        instanceRegionChecker.getAzToRegionMapper().refreshMapping(); // Just refresh mapping to reflect any DNS/Property change
+                        // Just refresh mapping to reflect any DNS/Property change
+                        instanceRegionChecker.getAzToRegionMapper().refreshMapping();
                     }
                 }
                 fetchRegistry(remoteRegionsModified);
@@ -1564,7 +1563,7 @@ public class DiscoveryClient implements LookupService {
     private static Set<String> getCnamesFromDirContext(DirContext dirContext,
             String discoveryDnsName) throws Throwable {
         javax.naming.directory.Attributes attrs = dirContext.getAttributes(
-                discoveryDnsName, new String[] { DNS_RECORD_TYPE });
+                discoveryDnsName, new String[] {DNS_RECORD_TYPE});
         javax.naming.directory.Attribute attr = attrs.get(DNS_RECORD_TYPE);
         String txtRecord = null;
         if (attr != null) {
@@ -1710,7 +1709,7 @@ public class DiscoveryClient implements LookupService {
             instanceHashcode = instanceHashcode * -1;
         }
         int backupInstance = instanceHashcode % listSize;
-        for (int i=0; i < backupInstance; i ++) {
+        for (int i = 0; i < backupInstance; i++) {
             String zone = list.remove(0);
             list.add(zone);
         }

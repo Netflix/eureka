@@ -276,7 +276,8 @@ public interface EurekaClientConfig {
      * </p>
      *
      * <p>
-     * <em>The changes are effective at runtime at the next registry fetch cycle as specified by {@link #getRegistryFetchIntervalSeconds()}</em>
+     * <em>The changes are effective at runtime at the next registry fetch cycle as specified by
+     * {@link #getRegistryFetchIntervalSeconds()}</em>
      * </p>
      *
      * @return true if the eureka client should prefer the server in the same
@@ -303,7 +304,8 @@ public interface EurekaClientConfig {
      * controls that.
      * </p>
      * <p>
-     * <em>The changes are effective at runtime at the next registry fetch cycle as specified by {@link #getRegistryFetchIntervalSeconds()}</em>
+     * <em>The changes are effective at runtime at the next registry fetch cycle as specified by
+     * {@link #getRegistryFetchIntervalSeconds()}</em>
      * </p>
      *
      * @return true if the eureka client should log delta differences in the
@@ -321,7 +323,8 @@ public interface EurekaClientConfig {
      * rate of fetches.
      * </p>
      * <p>
-     * <em>The changes are effective at runtime at the next registry fetch cycle as specified by {@link #getRegistryFetchIntervalSeconds()}</em>
+     * <em>The changes are effective at runtime at the next registry fetch cycle as specified by
+     * {@link #getRegistryFetchIntervalSeconds()}</em>
      * </p>
      *
      * @return true to enable fetching delta information for registry, false to
@@ -352,7 +355,8 @@ public interface EurekaClientConfig {
      * region in which this instance resides.
      *
      * <p>
-     * <em>The changes are effective at runtime at the next registry fetch cycle as specified by {@link #getRegistryFetchIntervalSeconds()}</em>
+     * <em>The changes are effective at runtime at the next registry fetch cycle as specified by
+     * {@link #getRegistryFetchIntervalSeconds()}</em>
      * </p>
      * @param region the region where this instance is deployed.
      *
@@ -371,7 +375,8 @@ public interface EurekaClientConfig {
      * <p>
      *
      * <p>
-     * <em>The changes are effective at runtime at the next service url refresh cycle as specified by {@link #getEurekaServiceUrlPollIntervalSeconds()}</em>
+     * <em>The changes are effective at runtime at the next service url refresh cycle as specified by
+     * {@link #getEurekaServiceUrlPollIntervalSeconds()}</em>
      * </p>
      * @param myZone the zone in which the instance is deployed.
      *
@@ -385,7 +390,8 @@ public interface EurekaClientConfig {
      * applications for instances with only {@link InstanceStatus#UP} states.
      *
      * <p>
-     * <em>The changes are effective at runtime at the next registry fetch cycle as specified by {@link #getRegistryFetchIntervalSeconds()}</em>
+     * <em>The changes are effective at runtime at the next registry fetch cycle as specified by
+     * {@link #getRegistryFetchIntervalSeconds()}</em>
      * </p>
      *
      * @return true to filter, false otherwise.

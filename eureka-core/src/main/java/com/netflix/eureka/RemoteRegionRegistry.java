@@ -83,14 +83,15 @@ public class RemoteRegionRegistry implements LookupService<String> {
         } else {
             jerseyClientName = "Discovery-RemoteRegionSecureClient-" + regionName;
             discoveryJerseyClient =
-                    EurekaJerseyClient.createSSLJerseyClient(jerseyClientName,
-                                                             EUREKA_SERVER_CONFIG.getRemoteRegionConnectTimeoutMs(),
-                                                             EUREKA_SERVER_CONFIG.getRemoteRegionReadTimeoutMs(),
-                                                             EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost(),
-                                                             EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnections(),
-                                                             EUREKA_SERVER_CONFIG.getRemoteRegionConnectionIdleTimeoutSeconds(),
-                                                             EUREKA_SERVER_CONFIG.getRemoteRegionTrustStore(),
-                                                             EUREKA_SERVER_CONFIG.getRemoteRegionTrustStorePassword());
+                    EurekaJerseyClient.createSSLJerseyClient(
+                            jerseyClientName,
+                            EUREKA_SERVER_CONFIG.getRemoteRegionConnectTimeoutMs(),
+                            EUREKA_SERVER_CONFIG.getRemoteRegionReadTimeoutMs(),
+                            EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost(),
+                            EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnections(),
+                            EUREKA_SERVER_CONFIG.getRemoteRegionConnectionIdleTimeoutSeconds(),
+                            EUREKA_SERVER_CONFIG.getRemoteRegionTrustStore(),
+                            EUREKA_SERVER_CONFIG.getRemoteRegionTrustStorePassword());
         }
         discoveryApacheClient = discoveryJerseyClient.getClient();
 
@@ -109,7 +110,8 @@ public class RemoteRegionRegistry implements LookupService<String> {
             if (fetchRegistry()) {
                 this.readyForServingData = true;
             } else {
-                logger.warn("Failed to fetch remote registry. This means this eureka server is not ready for serving traffic.");
+                logger.warn("Failed to fetch remote registry. This means this eureka server is not ready for serving "
+                        + "traffic.");
             }
         } catch (Throwable e) {
             logger.error("Problem fetching registry information :", e);
@@ -125,7 +127,8 @@ public class RemoteRegionRegistry implements LookupService<String> {
                             if (fetchRegistry()) {
                                 readyForServingData = true;
                             } else {
-                                logger.warn("Failed to fetch remote registry. This means this eureka server is not ready for serving traffic.");
+                                logger.warn("Failed to fetch remote registry. This means this eureka server is not "
+                                        + "ready for serving traffic.");
                             }
                         } catch (Throwable e) {
                             logger.error(
@@ -180,7 +183,8 @@ public class RemoteRegionRegistry implements LookupService<String> {
                         this.applicationsDelta.set(delta);
                     }
                     if (delta == null) {
-                        logger.warn("The server does not allow the delta revision to be applied because it is not safe. Hence got the full registry.");
+                        logger.warn("The server does not allow the delta revision to be applied because it is not "
+                                + "safe. Hence got the full registry.");
                         this.closeResponse(response);
                         response = fetchRemoteRegistry(true);
                     } else {

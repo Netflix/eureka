@@ -235,8 +235,8 @@ implements EurekaInstanceConfig {
         Configuration config = (Configuration) INSTANCE
         .getBackingConfigurationSource();
         String subsetPrefix = propMetadataNamespace.charAt(propMetadataNamespace.length() - 1) == '.'
-        						? propMetadataNamespace.substring(0, propMetadataNamespace.length() - 1)
-        						: propMetadataNamespace;
+                ? propMetadataNamespace.substring(0, propMetadataNamespace.length() - 1)
+                : propMetadataNamespace;
         for (Iterator<String> iter = config.subset(subsetPrefix)
                 .getKeys();
 
@@ -300,7 +300,7 @@ implements EurekaInstanceConfig {
     }
     @Override
     public String getHealthCheckUrlPath() {
-        return INSTANCE.getStringProperty( namespace + "healthCheckUrlPath",
+        return INSTANCE.getStringProperty(namespace + "healthCheckUrlPath",
                 DEFAULT_HEALTHCHECK_URLPATH).get();
     }
 
@@ -347,7 +347,8 @@ implements EurekaInstanceConfig {
             ConfigurationManager.loadCascadedPropertiesFromResources(eurekaPropsFile);
         } catch (IOException e) {
             logger.warn(
-                    "Cannot find the properties specified : {}. This may be okay if there are other environment specific properties or the configuration is installed with a different mechanism.",
+                    "Cannot find the properties specified : {}. This may be okay if there are other environment "
+                    + "specific properties or the configuration is installed with a different mechanism.",
                     eurekaPropsFile);
 
         }

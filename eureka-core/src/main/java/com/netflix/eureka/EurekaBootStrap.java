@@ -222,12 +222,10 @@ public class EurekaBootStrap implements ServletContextListener {
                try {
                     if (eipManager.isEIPBound()) {
                         break;
-                    }
-                    else {
+                    } else {
                         eipManager.bindEIP();
                     }
-                }
-                catch (Throwable e) {
+                } catch (Throwable e) {
                     logger.error("Cannot bind to EIP", e);
                     Thread.sleep(EIP_BIND_SLEEP_TIME_MS);
                 }
@@ -260,8 +258,7 @@ public class EurekaBootStrap implements ServletContextListener {
                         registry.clearRegistry();
                         int count = registry.syncUp();
                         registry.openForTraffic(count);
-                     }
-                    else {
+                    } else {
                         // An EIP is already bound
                         return;
                     }
