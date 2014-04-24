@@ -154,7 +154,8 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                     .getAppName());
             REGISTER.increment(isReplication);
             if (gMap == null) {
-                final ConcurrentHashMap<String, Lease<InstanceInfo>> gNewMap = new ConcurrentHashMap<String, Lease<InstanceInfo>>();
+                final ConcurrentHashMap<String, Lease<InstanceInfo>> gNewMap =
+                        new ConcurrentHashMap<String, Lease<InstanceInfo>>();
                 gMap = registry.putIfAbsent(r.getAppName(), gNewMap);
                 if (gMap == null) {
                     gMap = gNewMap;
@@ -195,8 +196,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
             }
             gMap.put(r.getId(), lease);
             synchronized (recentRegisteredQueue) {
-                recentRegisteredQueue.add(new Pair<Long, String>(Long
-                        .valueOf(System.currentTimeMillis()), r.getAppName()
+                recentRegisteredQueue.add(new Pair<Long, String>(System.currentTimeMillis(), r.getAppName()
                                                               + "(" + r.getId() + ")"));
             }
             // This is where the initial state transfer of overridden status
@@ -521,10 +521,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         Map<String, Lease<InstanceInfo>> leaseMap = registry.get(appName);
 
         if (leaseMap != null && leaseMap.size() > 0) {
-            for (Iterator<Entry<String, Lease<InstanceInfo>>> iter = leaseMap
-                    .entrySet().iterator(); iter.hasNext();) {
-                Entry<String, Lease<InstanceInfo>> entry = iter.next();
-
+            for (Entry<String, Lease<InstanceInfo>> entry : leaseMap.entrySet()) {
                 if (app == null) {
                     app = new Application(appName);
                 }
@@ -1031,9 +1028,8 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         List<Pair<Long, String>> list = new ArrayList<Pair<Long, String>>();
 
         synchronized (recentRegisteredQueue) {
-            for (Iterator<Pair<Long, String>> iter = recentRegisteredQueue
-                    .iterator(); iter.hasNext();) {
-                list.add(iter.next());
+            for (Pair<Long, String> aRecentRegisteredQueue : recentRegisteredQueue) {
+                list.add(aRecentRegisteredQueue);
             }
         }
         Collections.reverse(list);
@@ -1048,9 +1044,8 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
     public List<Pair<Long, String>> getLastNCanceledInstances() {
         List<Pair<Long, String>> list = new ArrayList<Pair<Long, String>>();
         synchronized (recentCanceledQueue) {
-            for (Iterator<Pair<Long, String>> iter = recentCanceledQueue
-                    .iterator(); iter.hasNext();) {
-                list.add(iter.next());
+            for (Pair<Long, String> aRecentCanceledQueue : recentCanceledQueue) {
+                list.add(aRecentCanceledQueue);
             }
         }
         Collections.reverse(list);
