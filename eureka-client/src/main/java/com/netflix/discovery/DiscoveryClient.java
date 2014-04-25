@@ -161,7 +161,7 @@ public class DiscoveryClient implements LookupService {
     @Inject(optional=true)
     private EventBus eventBus;
     
-    DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, EventBus eventBus) {
+    public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, EventBus eventBus) {
         this(myInfo, config);
         this.eventBus = eventBus;
     }
