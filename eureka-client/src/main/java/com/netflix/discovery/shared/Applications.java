@@ -50,7 +50,7 @@ import javax.annotation.Nullable;
  *
  * <p>
  * Note that the registry information is fetched from eureka server as specified
- * in {@link EurekaClientConfig#getRegistryFetchIntervalSeconds()}.Once the
+ * in {@link EurekaClientConfig#getRegistryFetchIntervalSeconds()}.  Once the
  * information is fetched it is shuffled and also filtered for instances with
  * {@link InstanceStatus#UP} status as specified by the configuration
  * {@link EurekaClientConfig#shouldFilterOnlyUpInstances()}.
@@ -444,7 +444,7 @@ public class Applications {
     }
 
     /**
-     * Shuffle the instances and fiter for only {@link InstanceStatus#UP} if
+     * Shuffle the instances and filter for only {@link InstanceStatus#UP} if
      * required.
      *
      */
@@ -480,9 +480,9 @@ public class Applications {
     }
 
     /**
-     * Add the instance to the given map based if the vip adddress matches with
+     * Add the instance to the given map based if the vip address matches with
      * that of the instance. Note that an instance can be mapped to multiple vip
-     * adddresses.
+     * addresses.
      *
      */
     private void addInstanceToMap(InstanceInfo info, String vipAddresses,

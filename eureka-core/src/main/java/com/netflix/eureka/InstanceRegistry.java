@@ -679,7 +679,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      * @return applications
      * @deprecated Use {@link #getApplicationsFromMultipleRegions(String[])} instead. This method has a flawed behavior
      * of transparently falling back to a remote region if no instances for an app is available locally. The new
-     * behavior is to explictly specify if you need a remote region.
+     * behavior is to explicitly specify if you need a remote region.
      */
     @Deprecated
     public Applications getApplications(boolean includeRemoteRegion) {
