@@ -2,7 +2,6 @@ ext.githubProjectName = 'eureka'
 
 ext {
     jerseyVersion="1.11"
-    governatorVersion="1.2.7"
 }
 
 buildscript {
@@ -37,7 +36,10 @@ subprojects {
 
 project(':eureka-client') {
     dependencies {
-        compile "com.netflix.netflix-commons:netflix-eventbus:0.1.2"
+        compile "com.netflix.netflix-commons:netflix-eventbus:latest.release"
+        compile 'com.netflix.ribbon:ribbon-httpclient:latest.release'
+        compile "com.netflix.governator:governator:latest.release"
+
         compile 'com.thoughtworks.xstream:xstream:1.4.2'
         compile 'com.netflix.archaius:archaius-core:0.3.3'
         compile 'javax.ws.rs:jsr311-api:1.1.1'
@@ -46,8 +48,6 @@ project(':eureka-client') {
         compile "com.sun.jersey:jersey-client:$jerseyVersion"
         compile 'com.sun.jersey.contribs:jersey-apache-client4:1.11'
         compile 'org.apache.httpcomponents:httpclient:4.2.1'
-        compile 'com.netflix.ribbon:ribbon-httpclient:0.3.4'
-        compile "com.netflix.governator:governator:$governatorVersion"
         runtime 'org.codehaus.jettison:jettison:1.2'
 
         testCompile 'junit:junit:4.10'
@@ -58,13 +58,14 @@ project(':eureka-client') {
 project(':eureka-core') {
     dependencies {
         compile project(':eureka-client')
+        compile 'com.netflix.archaius:archaius-core:latest.release'
+        compile 'com.netflix.servo:servo-core:latest.release'
+        compile 'com.netflix.blitz4j:blitz4j:latest.release'
+
         compile 'com.amazonaws:aws-java-sdk:1.3.27'
         compile 'javax.servlet:servlet-api:2.4'
         compile 'com.thoughtworks.xstream:xstream:1.4.2'
-        compile 'com.netflix.archaius:archaius-core:0.3.3'
         compile 'javax.ws.rs:jsr311-api:1.1.1'
-        compile 'com.netflix.servo:servo-core:0.4.36'
-        compile 'com.netflix.blitz4j:blitz4j:1.18'
 
         testCompile 'junit:junit:4.10'
         testCompile 'org.mortbay.jetty:jetty:6.1H.22'
