@@ -182,7 +182,6 @@ public class EurekaBootStrap implements ServletContextListener {
                 } catch (Throwable e) {
                     logger.warn("Cannot unbind the EIP from the instance");
                     Thread.sleep(1000);
-                    continue;
                 }
             }
             PeerAwareInstanceRegistry.getInstance().shutdown();
