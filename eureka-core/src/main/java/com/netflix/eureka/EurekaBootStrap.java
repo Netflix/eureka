@@ -49,9 +49,9 @@ import com.thoughtworks.xstream.XStream;
  * <p>
  * The eureka server is configured by using the configuration
  * {@link EurekaServerConfig} specified by <em>eureka.server.props</em> in the
- * classpath.The eureka client component is also initialized by using the
+ * classpath.  The eureka client component is also initialized by using the
  * configuration {@link EurekaInstanceConfig} specified by
- * <em>eureka.client.props</em>. If the server runs in the AWS cloud, the eurea
+ * <em>eureka.client.props</em>. If the server runs in the AWS cloud, the eureka
  * server binds it to the elastic ip as specified.
  * </p>
  *
@@ -78,12 +78,11 @@ public class EurekaBootStrap implements ServletContextListener {
     private static final int EIP_BIND_SLEEP_TIME_MS = 1000;
     private static final Timer timer = new Timer("Eureka-EIPBinder", true);
 
-    /*
-     * (non-Javadoc)
+    /**
+     * Initializes Eureka, including syncing up with other Eureka peers and publishing the registry.
      *
      * @see
-     * javax.servlet.ServletContextListener#contextInitialized(javax.servlet
-     * .ServletContextEvent)
+     * javax.servlet.ServletContextListener#contextInitialized(javax.servlet.ServletContextEvent)
      */
     public void contextInitialized(ServletContextEvent event) {
         try {
@@ -164,11 +163,10 @@ public class EurekaBootStrap implements ServletContextListener {
                 new DefaultEurekaClientConfig());
     }
 
-    /*
-     * (non-Javadoc)
+    /**
+     * Handles Eureka cleanup, including shutting down all monitors and yielding all EIPs.
      *
-     * @see javax.servlet.ServletContextListener#contextDestroyed(javax.servlet.
-     * ServletContextEvent)
+     * @see javax.servlet.ServletContextListener#contextDestroyed(javax.servlet.ServletContextEvent)
      */
     public void contextDestroyed(ServletContextEvent event) {
         try {
@@ -251,8 +249,8 @@ public class EurekaBootStrap implements ServletContextListener {
             public void run() {
                 try {
                     // If the EIP is not bound, the registry could  be stale
-                    // First syncup the reigstry from the neighboring node before
-                    // tryig to bind the EIP
+                    // First sync up the registry from the neighboring node before
+                    // trying to bind the EIP
                     EIPManager eipManager = EIPManager.getInstance();
                     if (!eipManager.isEIPBound()) {
                         registry.clearRegistry();
