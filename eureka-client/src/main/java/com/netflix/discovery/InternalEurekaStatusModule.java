@@ -13,28 +13,28 @@ import com.netflix.governator.annotations.binding.UpStatus;
 import com.netflix.governator.guice.lazy.LazySingleton;
 
 /**
- * Specific bindings for eureka status checker.  
- * 
- * Note that this is an internal modules and ASSUMES that a binding for 
- * DiscoveryClient was already set.  
- * 
+ * Specific bindings for eureka status checker.
+ *
+ * Note that this is an internal modules and ASSUMES that a binding for
+ * DiscoveryClient was already set.
+ *
  * Exposed bindings,
- * 
- * @UpStatus   Supplier<Boolean>
- * @DownStatus Supplier<Boolean>
- * @UpStatus   Observable<Boolean>
- * 
+ *
+ * &#64;UpStatus   Supplier<Boolean>
+ * &#64;DownStatus Supplier<Boolean>
+ * &#64;UpStatus   Observable<Boolean>
+ *
  * @author elandau
  *
  */
 @Singleton
 class InternalEurekaStatusModule extends AbstractModule {
-    
+
     @LazySingleton
     public static class UpStatusProvider implements Provider<Supplier<Boolean>> {
         @Inject
         private Provider<EurekaUpStatusResolver> upStatus;
-        
+
         @Override
         public Supplier<Boolean> get() {
             final EurekaUpStatusResolver resolver = upStatus.get();
@@ -46,12 +46,12 @@ class InternalEurekaStatusModule extends AbstractModule {
             };
         }
     }
-    
+
     @LazySingleton
     public static class DownStatusProvider implements Provider<Supplier<Boolean>> {
         @Inject
         private Provider<EurekaUpStatusResolver> upStatus;
-        
+
         @Override
         public Supplier<Boolean> get() {
             final EurekaUpStatusResolver resolver = upStatus.get();
@@ -66,11 +66,11 @@ class InternalEurekaStatusModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        bind(new TypeLiteral<Supplier<Boolean>>() {})
+        bind(new TypeLiteral<Supplier<Boolean>>() { })
             .annotatedWith(UpStatus.class)
             .toProvider(UpStatusProvider.class);
-        
-        bind(new TypeLiteral<Supplier<Boolean>>() {})
+
+        bind(new TypeLiteral<Supplier<Boolean>>() { })
             .annotatedWith(DownStatus.class)
             .toProvider(DownStatusProvider.class);
     }

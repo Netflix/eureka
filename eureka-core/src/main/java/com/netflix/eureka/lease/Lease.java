@@ -16,19 +16,16 @@
 
 package com.netflix.eureka.lease;
 
-import com.netflix.appinfo.InstanceInfo;
-import com.netflix.eureka.InstanceRegistry;
-
 /**
  * Describes a time-based availability of a {@link T}. Purpose is to avoid
- * accumulation of instances in {@link InstanceRegistry} as result of ungraceful
+ * accumulation of instances in {@link com.netflix.eureka.InstanceRegistry} as result of ungraceful
  * shutdowns that is not uncommon in AWS environments.
- * 
+ *
  * If a lease elapses without renewals, it will eventually expire consequently
  * marking the associated {@link T} for immediate eviction - this is similar to
  * an explicit cancellation except that there is no communication between the
  * {@link T} and {@link LeaseManager}.
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
  */
 public class Lease<T> {
@@ -37,7 +34,7 @@ public class Lease<T> {
         Register, Cancel, Renew
     };
 
-    public final static int DEFAULT_DURATION_IN_SECS = 90;
+    public static final int DEFAULT_DURATION_IN_SECS = 90;
 
     private T holder;
     private long evictionTimestamp;
@@ -58,7 +55,7 @@ public class Lease<T> {
     /**
      * Renew the lease, use renewal duration if it was specified by the
      * associated {@link T} during registration, otherwise default duration is
-     * {@link #DEFAULT_DURATION_IN_SECS}
+     * {@link #DEFAULT_DURATION_IN_SECS}.
      */
     public void renew() {
         lastUpdateTimestamp = System.currentTimeMillis() + duration;
@@ -85,14 +82,14 @@ public class Lease<T> {
     }
 
     /**
-     * Set the leases service UP timestamp
+     * Set the leases service UP timestamp.
      */
     public void setServiceUpTimestamp(long serviceUpTimestamp) {
         this.serviceUpTimestamp = serviceUpTimestamp;
     }
 
     /**
-     * Checks if the lease of a given {@link InstanceInfo} has expired or not.
+     * Checks if the lease of a given {@link com.netflix.appinfo.InstanceInfo} has expired or not.
      */
     public boolean isExpired() {
         return (evictionTimestamp > 0 || System.currentTimeMillis() > (lastUpdateTimestamp + duration));
@@ -100,7 +97,7 @@ public class Lease<T> {
 
     /**
      * Gets the milliseconds since epoch when the lease was registered.
-     * 
+     *
      * @return the milliseconds since epoch when the lease was registered.
      */
     public long getRegistrationTimestamp() {
@@ -109,7 +106,7 @@ public class Lease<T> {
 
     /**
      * Gets the milliseconds since epoch when the lease was last renewed.
-     * 
+     *
      * @return the milliseconds since epoch when the lease was last renewed.
      */
     public long getLastRenewalTimestamp() {
@@ -118,7 +115,7 @@ public class Lease<T> {
 
     /**
      * Gets the milliseconds since epoch when the lease was evicted.
-     * 
+     *
      * @return the milliseconds since epoch when the lease was evicted.
      */
     public long getEvictionTimestamp() {

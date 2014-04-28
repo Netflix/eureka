@@ -17,22 +17,22 @@ import com.netflix.appinfo.InstanceInfo.PortType;
 
 /**
  * InstanceInfo provider that constructs the InstanceInfo this this instance using
- * EurekaInstanceConfig
- * 
+ * EurekaInstanceConfig.
+ *
  * @author elandau
  *
  */
 @Singleton
 public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceInfo> {
     private static final Logger LOG = LoggerFactory.getLogger(EurekaConfigBasedInstanceInfoProvider.class);
-    
+
     private final EurekaInstanceConfig config;
-    
+
     @Inject
     public EurekaConfigBasedInstanceInfoProvider(EurekaInstanceConfig config) {
         this.config = config;
     }
-    
+
     @Override
     public InstanceInfo get() {
         // Build the lease information to be passed to the server based
@@ -76,9 +76,9 @@ public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceI
             LOG.info("Setting initial instance status as: " + initialStatus);
             builder.setStatus(initialStatus);
         } else {
-            LOG.info("Setting initial instance status as: " + InstanceStatus.UP +
-                        ". This may be too early for the instance to advertise itself as available. " +
-                        "You would instead want to control this via a healthcheck handler.");
+            LOG.info("Setting initial instance status as: " + InstanceStatus.UP
+                    + ". This may be too early for the instance to advertise itself as available. "
+                    + "You would instead want to control this via a healthcheck handler.");
         }
 
         // Add any user-specific metadata information
@@ -88,7 +88,7 @@ public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceI
             String value = mapEntry.getValue();
             builder.add(key, value);
         }
-        
+
         InstanceInfo instanceInfo = builder.build();
         instanceInfo.setLeaseInfo(leaseInfoBuilder.build());
         return instanceInfo;

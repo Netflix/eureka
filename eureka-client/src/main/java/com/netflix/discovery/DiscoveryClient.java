@@ -16,7 +16,6 @@
 
 package com.netflix.discovery;
 
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -73,7 +72,7 @@ import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
 
 /**
  * The class that is instrumental for interactions with <tt>Eureka Server</tt>.
- * 
+ *
  * <p>
  * <tt>Eureka Client</tt> is responsible for a) <em>Registering</em> the
  * instance with <tt>Eureka Server</tt> b) <em>Renewal</em>of the lease with
@@ -83,16 +82,16 @@ import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
  * d) <em>Querying</em> the list of services/instances registered with
  * <tt>Eureka Server</tt>
  * <p>
- * 
+ *
  * <p>
  * <tt>Eureka Client</tt> needs a configured list of <tt>Eureka Server</tt>
- * {@link URL}s to talk to.These {@link URL}s are typically amazon elastic eips
+ * {@link java.net.URL}s to talk to.These {@link java.net.URL}s are typically amazon elastic eips
  * which do not change. All of the functions defined above fail-over to other
- * {@link URL}s specified in the list in the case of failure.
+ * {@link java.net.URL}s specified in the list in the case of failure.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
- * 
+ *
  */
 @Singleton
 public class DiscoveryClient implements LookupService {
@@ -112,7 +111,7 @@ public class DiscoveryClient implements LookupService {
     private static final DirContext dirContext = DiscoveryClient.getDirContext();
 
     // Timers
-    private String PREFIX = "DiscoveryClient_";
+    private static final String PREFIX = "DiscoveryClient_";
     private final com.netflix.servo.monitor.Timer GET_SERVICE_URLS_DNS_TIMER = Monitors
             .newTimer(PREFIX + "GetServiceUrlsFromDNS");
     private final com.netflix.servo.monitor.Timer REGISTER_TIMER = Monitors
@@ -150,21 +149,21 @@ public class DiscoveryClient implements LookupService {
     private final AtomicReference<String> remoteRegionsToFetch;
     private final InstanceRegionChecker instanceRegionChecker;
     private volatile InstanceInfo.InstanceStatus lastRemoteInstanceStatus = InstanceInfo.InstanceStatus.UNKNOWN;
-    
+
     private enum Action {
         Register, Cancel, Renew, Refresh, Refresh_Delta
     }
 
     private final ScheduledExecutorService scheduler;
 
-    @Inject(optional=true)
+    @Inject(optional = true)
     private EventBus eventBus;
-    
-    DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, EventBus eventBus) {
+
+    public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, EventBus eventBus) {
         this(myInfo, config);
         this.eventBus = eventBus;
     }
-    
+
     @Inject
     DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config) {
         try {
@@ -184,17 +183,13 @@ public class DiscoveryClient implements LookupService {
             }
             String proxyHost = clientConfig.getProxyHost();
             String proxyPort = clientConfig.getProxyPort();
-            discoveryJerseyClient = EurekaJerseyClient.createJerseyClient("DiscoveryClient-HTTPClient",
-                                                                          clientConfig
-                                                                                  .getEurekaServerConnectTimeoutSeconds(),
-                                                                          clientConfig
-                                                                                  .getEurekaServerReadTimeoutSeconds(),
-                                                                          clientConfig
-                                                                                  .getEurekaServerTotalConnectionsPerHost(),
-                                                                          clientConfig
-                                                                                  .getEurekaServerTotalConnections(),
-                                                                          clientConfig
-                                                                                  .getEurekaConnectionIdleTimeoutSeconds());
+            discoveryJerseyClient = EurekaJerseyClient.createJerseyClient(
+                    "DiscoveryClient-HTTPClient",
+                    clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000,
+                    clientConfig.getEurekaServerReadTimeoutSeconds() * 1000,
+                    clientConfig.getEurekaServerTotalConnectionsPerHost(),
+                    clientConfig.getEurekaServerTotalConnections(),
+                    clientConfig.getEurekaConnectionIdleTimeoutSeconds());
             discoveryApacheClient = discoveryJerseyClient.getClient();
             ClientConfig cc = discoveryJerseyClient.getClientconfig();
             remoteRegionsToFetch = new AtomicReference<String>(clientConfig.fetchRegistryForRemoteRegions());
@@ -236,7 +231,7 @@ public class DiscoveryClient implements LookupService {
         } catch (Throwable e) {
             logger.warn("Cannot register timers", e);
         }
-        
+
         // This is a bit of hack to allow for existing code using DiscoveryManager.getInstance()
         // to work with DI'd DiscoveryClient
         DiscoveryManager.getInstance().setDiscoveryClient(this);
@@ -251,9 +246,9 @@ public class DiscoveryClient implements LookupService {
         return getApplications().getRegisteredApplications(appName);
     }
 
-    /**
+    /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.discovery.shared.LookupService#getApplications()
      */
     public Applications getApplications() {
@@ -298,11 +293,11 @@ public class DiscoveryClient implements LookupService {
 
     /**
      * Register {@link HealthCheckCallback} with the eureka client.
-     * 
+     *
      * Once registered, the eureka client will invoke the
      * {@link HealthCheckCallback} in intervals specified by
      * {@link EurekaClientConfig#getInstanceInfoReplicationIntervalSeconds()}.
-     * 
+     *
      * @param callback
      *            -- app specific healthcheck.
      */
@@ -314,10 +309,10 @@ public class DiscoveryClient implements LookupService {
             healthCheckCallback = callback;
         }
     }
-    
+
     /**
      * Gets the list of instances matching the given VIP Address.
-     * 
+     *
      * @param vipAddress
      *            - The VIP address to match the instances for.
      * @param secure
@@ -350,8 +345,8 @@ public class DiscoveryClient implements LookupService {
         } else {
             applications = remoteRegionVsApps.get(region);
             if (null == applications) {
-                logger.debug("No applications are defined for region {}, so returning an empty instance list for vip address {}.",
-                             region, vipAddress);
+                logger.debug("No applications are defined for region {}, so returning an empty instance list for vip "
+                        + "address {}.", region, vipAddress);
                 return Collections.emptyList();
             }
         }
@@ -369,7 +364,7 @@ public class DiscoveryClient implements LookupService {
      * Gets the list of instances matching the given VIP Address and the given
      * application name if both of them are not null. If one of them is null,
      * then that criterion is completely ignored for matching instances.
-     * 
+     *
      * @param vipAddress
      *            - The VIP address to match the instances for.
      * @param appName
@@ -427,7 +422,7 @@ public class DiscoveryClient implements LookupService {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.netflix.discovery.shared.LookupService#getNextServerFromEureka(java
      * .lang.String, boolean)
@@ -447,7 +442,7 @@ public class DiscoveryClient implements LookupService {
 
     /**
      * Get all applications registered with a specific eureka service.
-     * 
+     *
      * @param serviceUrl
      *            - The string representation of the service url.
      * @return - The registry information containing all applications.
@@ -477,7 +472,7 @@ public class DiscoveryClient implements LookupService {
 
     /**
      * Checks to see if the eureka client registration is enabled.
-     * 
+     *
      * @param myInfo
      *            - The instance info object
      * @return - true, if the instance should be registered with eureka, false
@@ -520,8 +515,8 @@ public class DiscoveryClient implements LookupService {
 
     /**
      * Get the list of all eureka service urls from properties file for the
-     * eureka client to talk to
-     * 
+     * eureka client to talk to.
+     *
      * @param instanceZone
      *            - The zone in which the client resides
      * @param preferSameZone
@@ -534,7 +529,7 @@ public class DiscoveryClient implements LookupService {
             String instanceZone, boolean preferSameZone) {
         List<String> orderedUrls = new ArrayList<String>();
         String region = getRegion();
-        String availZones[] = clientConfig.getAvailabilityZones(clientConfig.getRegion());
+        String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
         if (availZones == null || availZones.length == 0) {
             availZones = new String[1];
             availZones[0] = "default";
@@ -587,7 +582,7 @@ public class DiscoveryClient implements LookupService {
     }
 
     /**
-     * unregister w/ the eureka service
+     * unregister w/ the eureka service.
      */
     void unregister() {
         ClientResponse response = null;
@@ -611,7 +606,7 @@ public class DiscoveryClient implements LookupService {
 
     /**
      * Fetches the registry information.
-     * 
+     *
      * <p>
      * This method tries to get only deltas after the first fetch unless there
      * is an issue in reconciling eureka server and client registry information.
@@ -638,7 +633,8 @@ public class DiscoveryClient implements LookupService {
                 logger.info("Disable delta property : {}", clientConfig.shouldDisableDelta());
                 logger.info("Force full registry fetch : {}", forceFullRegistryFetch);
                 logger.info("Application is null : {}", (applications == null));
-                logger.info("Registered Applications size is zero : {}", (applications.getRegisteredApplications().size() == 0));
+                logger.info("Registered Applications size is zero : {}",
+                        (applications.getRegisteredApplications().size() == 0));
                 logger.info("Application version is -1: {}", (applications.getVersion() == -1));
                 response = getAndStoreFullRegistry();
             } else {
@@ -648,7 +644,8 @@ public class DiscoveryClient implements LookupService {
                     delta = response.getEntity(Applications.class);
                 }
                 if (delta == null) {
-                    logger.warn("The server does not allow the delta revision to be applied because it is not safe. Hence got the full registry.");
+                    logger.warn("The server does not allow the delta revision to be applied because it is not safe. "
+                            + "Hence got the full registry.");
                     this.closeResponse(response);
                     response = getAndStoreFullRegistry();
                 } else {
@@ -664,10 +661,10 @@ public class DiscoveryClient implements LookupService {
                 }
                 logTotalInstances();
             }
-            
+
             logger.debug(PREFIX + appPathIdentifier + " -  refresh status: "
                     + response.getStatus());
-            
+
             updateInstanceRemoteStatus();
 
         } catch (Throwable e) {
@@ -700,28 +697,28 @@ public class DiscoveryClient implements LookupService {
         if (currentRemoteInstanceStatus == null) {
             currentRemoteInstanceStatus = InstanceInfo.InstanceStatus.UNKNOWN;
         }
-            
+
         // Notify if status changed
         if (lastRemoteInstanceStatus != currentRemoteInstanceStatus) {
             try {
                 if (eventBus != null) {
-                    StatusChangeEvent event = new StatusChangeEvent(lastRemoteInstanceStatus, currentRemoteInstanceStatus);
+                    StatusChangeEvent event = new StatusChangeEvent(lastRemoteInstanceStatus,
+                            currentRemoteInstanceStatus);
                     eventBus.publish(event);
                 }
-            }
-            finally {
+            } finally {
                 lastRemoteInstanceStatus = currentRemoteInstanceStatus;
             }
         }
     }
-    
+
     /**
      * @return Return he current instance status as seen on the Eureka server.
      */
     public InstanceInfo.InstanceStatus getInstanceRemoteStatus() {
         return lastRemoteInstanceStatus;
     }
-    
+
     private String getReconcileHashCode(Applications applications) {
         TreeMap<String, AtomicInteger> instanceCountMap = new TreeMap<String, AtomicInteger>();
         if (isFetchingRemoteRegionRegistries()) {
@@ -736,7 +733,7 @@ public class DiscoveryClient implements LookupService {
     /**
      * Gets the full registry information from the eureka server and stores it
      * locally.
-     * 
+     *
      * @return the full registry information.
      * @throws Throwable
      *             on error.
@@ -748,8 +745,7 @@ public class DiscoveryClient implements LookupService {
         Applications apps = response.getEntity(Applications.class);
         if (apps == null) {
             logger.error("The application is null for some reason. Not storing this information");
-        }
-        else {
+        } else {
             localRegionApps.set(this.filterAndShuffle(apps));
         }
         logger.info("The response status is {}", response.getStatus());
@@ -772,7 +768,7 @@ public class DiscoveryClient implements LookupService {
     /**
      * Reconcile the eureka server and client registry information and logs the
      * differences if any.
-     * 
+     *
      * @param response
      *            the HTTP response after getting the full registry.
      * @param delta
@@ -819,7 +815,7 @@ public class DiscoveryClient implements LookupService {
     /**
      * Updates the delta information fetches from the eureka server into the
      * local cache.
-     * 
+     *
      * @param delta
      *            the delta information received from eureka server in the last
      *            poll cycle.
@@ -890,7 +886,7 @@ public class DiscoveryClient implements LookupService {
 
     /**
      * Makes remote calls with the corresponding action(register,renew etc).
-     * 
+     *
      * @param action
      *            the action to be performed on eureka server.
      * @return ClientResponse the HTTP response object.
@@ -903,13 +899,13 @@ public class DiscoveryClient implements LookupService {
 
     /**
      * Makes remote calls with the corresponding action(register,renew etc).
-     * 
+     *
      * @param action
      *            the action to be performed on eureka server.
-     * 
+     *
      *            Try the fallback servers in case of problems communicating to
      *            the primary one.
-     * 
+     *
      * @return ClientResponse the HTTP response object.
      * @throws Throwable
      *             on any error.
@@ -1018,7 +1014,7 @@ public class DiscoveryClient implements LookupService {
 
     /**
      * Close HTTP response object and its respective resources.
-     * 
+     *
      * @param response
      *            the HttpResponse object.
      */
@@ -1048,13 +1044,14 @@ public class DiscoveryClient implements LookupService {
                     + instanceInfo.getLeaseInfo().getRenewalIntervalInSecs());
 
             // Heartbeat timer
-            scheduler.scheduleWithFixedDelay(new HeartbeatThread(), instanceInfo.getLeaseInfo().getRenewalIntervalInSecs(),
-                                             instanceInfo.getLeaseInfo().getRenewalIntervalInSecs(), TimeUnit.SECONDS);
+            scheduler.scheduleWithFixedDelay(new HeartbeatThread(),
+                    instanceInfo.getLeaseInfo().getRenewalIntervalInSecs(),
+                    instanceInfo.getLeaseInfo().getRenewalIntervalInSecs(), TimeUnit.SECONDS);
 
             // InstanceInfo replication timer
             scheduler.scheduleWithFixedDelay(new InstanceInfoReplicator(),
-                                             10 + clientConfig.getInstanceInfoReplicationIntervalSeconds(),
-                                             clientConfig.getInstanceInfoReplicationIntervalSeconds(), TimeUnit.SECONDS);
+                    10 + clientConfig.getInstanceInfoReplicationIntervalSeconds(),
+                    clientConfig.getInstanceInfoReplicationIntervalSeconds(), TimeUnit.SECONDS);
 
         }
     }
@@ -1068,7 +1065,7 @@ public class DiscoveryClient implements LookupService {
      * talk to. The client picks up the service url from its zone and then fails over to
      * other zones randomly. If there are multiple servers in the same zone, the client once
      * again picks one randomly. This way the traffic will be distributed in the case of failures.
-     * 
+     *
      * @param instanceZone
      *            - The zone in which the client resides.
      * @param preferSameZone
@@ -1105,7 +1102,7 @@ public class DiscoveryClient implements LookupService {
                 }
             }
             if (zoneFound) {
-                Object[] args = { zones, instanceZone, zoneIndex };
+                Object[] args = {zones, instanceZone, zoneIndex};
                 logger.debug(
                         "The zone index from the list {} that matches the instance zone {} is {}",
                         args);
@@ -1118,8 +1115,8 @@ public class DiscoveryClient implements LookupService {
                     "No match for the zone {} in the list of available zones {}",
                     instanceZone, Arrays.toString(zones.toArray()));
         } else {
-            // Rearrange the zones with the instance zone first 
-            for (int i=0; i <zoneIndex; i ++) {
+            // Rearrange the zones with the instance zone first
+            for (int i = 0; i < zoneIndex; i++) {
                 String zone = zones.remove(0);
                 zones.add(zone);
             }
@@ -1152,7 +1149,7 @@ public class DiscoveryClient implements LookupService {
         String primaryServiceUrl = serviceUrls.remove(0);
         arrangeListBasedonHostname(serviceUrls);
         serviceUrls.add(0, primaryServiceUrl);
- 
+
         logger.info(
                 "This client will talk to the following serviceUrls in order : {} ",
                 Arrays.toString(serviceUrls.toArray()));
@@ -1177,13 +1174,13 @@ public class DiscoveryClient implements LookupService {
 
     /**
      * Get the zone that a particular instance is in.
-     * 
+     *
      * @param myInfo
      *            - The InstanceInfo object of the instance.
      * @return - The zone in which the particular instance belongs to.
      */
     public static String getZone(InstanceInfo myInfo) {
-        String availZones[] = clientConfig.getAvailabilityZones(clientConfig
+        String[] availZones = clientConfig.getAvailabilityZones(clientConfig
                 .getRegion());
         String instanceZone = ((availZones == null || availZones.length == 0) ? "default"
                 : availZones[0]);
@@ -1202,7 +1199,7 @@ public class DiscoveryClient implements LookupService {
 
     /**
      * Get the region that this particular instance is in.
-     * 
+     *
      * @return - The region in which the particular instance belongs to.
      */
     public static String getRegion() {
@@ -1216,7 +1213,7 @@ public class DiscoveryClient implements LookupService {
 
     /**
      * Get the zone based CNAMES that are bound to a region.
-     * 
+     *
      * @param region
      *            - The region for which the zone names need to be retrieved
      * @return - The list of CNAMES from which the zone-related information can
@@ -1268,8 +1265,8 @@ public class DiscoveryClient implements LookupService {
     }
 
     /**
-     * Get the list of EC2 URLs given the zone name
-     * 
+     * Get the list of EC2 URLs given the zone name.
+     *
      * @param dnsName
      *            - The dns name of the zone-specific CNAME
      * @param type
@@ -1316,7 +1313,7 @@ public class DiscoveryClient implements LookupService {
 
     /**
      * Gets the zone to pick up for this instance.
-     * 
+     *
      */
     private static int getZoneOffset(String myZone, boolean preferSameZone,
             String[] availZones) {
@@ -1327,14 +1324,14 @@ public class DiscoveryClient implements LookupService {
             }
         }
         logger.warn(
-                "DISCOVERY: Could not pick a zone based on preferred zone settings. My zone - {}, preferSameZone- {}. Defaulting to "
-                        + availZones[0], myZone, preferSameZone);
+                "DISCOVERY: Could not pick a zone based on preferred zone settings. My zone - {}, preferSameZone- {}. "
+                + "Defaulting to " + availZones[0], myZone, preferSameZone);
         return 0;
     }
 
     /**
      * Check if the http status code is a success for the given action.
-     * 
+     *
      */
     private boolean isOk(Action action, int httpStatus) {
         if (httpStatus >= 200 && httpStatus < 300) {
@@ -1351,7 +1348,7 @@ public class DiscoveryClient implements LookupService {
 
     /**
      * Returns the eureka server which this eureka client communicates with.
-     * 
+     *
      * @return - The instance information that describes the eureka server.
      */
     private InstanceInfo getCoordinatingServer() {
@@ -1385,7 +1382,7 @@ public class DiscoveryClient implements LookupService {
 
     /**
      * The heartbeat task that renews the lease in the given intervals.
-     * 
+     *
      */
     private class HeartbeatThread extends TimerTask {
 
@@ -1421,7 +1418,7 @@ public class DiscoveryClient implements LookupService {
     /**
      * The instance info replicator thread that replicates instance info data to
      * the eureka server at specified intervals.
-     * 
+     *
      */
     private class InstanceInfoReplicator extends TimerTask {
 
@@ -1481,7 +1478,7 @@ public class DiscoveryClient implements LookupService {
 
     /**
      * Checks if a {@link HealthCheckCallback} is registered.
-     * 
+     *
      */
     private boolean isHealthCheckEnabled() {
         return (healthCheckCallback != null && (InstanceInfo.InstanceStatus.STARTING != instanceInfo
@@ -1490,9 +1487,9 @@ public class DiscoveryClient implements LookupService {
     }
 
     /**
-     * 
+     *
      * The task that fetches the registry information at specified intervals.
-     * 
+     *
      */
     class CacheRefreshThread extends TimerTask {
         public void run() {
@@ -1512,7 +1509,8 @@ public class DiscoveryClient implements LookupService {
                                         currentRemoteRegions, latestRemoteRegions);
                         }
                     } else {
-                        instanceRegionChecker.getAzToRegionMapper().refreshMapping(); // Just refresh mapping to reflect any DNS/Property change
+                        // Just refresh mapping to reflect any DNS/Property change
+                        instanceRegionChecker.getAzToRegionMapper().refreshMapping();
                     }
                 }
                 fetchRegistry(remoteRegionsModified);
@@ -1539,7 +1537,7 @@ public class DiscoveryClient implements LookupService {
 
     /**
      * Load up the DNS JNDI context provider.
-     * 
+     *
      */
     private static DirContext getDirContext() {
         java.util.Hashtable<String, String> env = new java.util.Hashtable<String, String>();
@@ -1559,12 +1557,12 @@ public class DiscoveryClient implements LookupService {
 
     /**
      * Looks up the DNS name provided in the JNDI context.
-     * 
+     *
      */
     private static Set<String> getCnamesFromDirContext(DirContext dirContext,
             String discoveryDnsName) throws Throwable {
         javax.naming.directory.Attributes attrs = dirContext.getAttributes(
-                discoveryDnsName, new String[] { DNS_RECORD_TYPE });
+                discoveryDnsName, new String[] {DNS_RECORD_TYPE});
         javax.naming.directory.Attribute attr = attrs.get(DNS_RECORD_TYPE);
         String txtRecord = null;
         if (attr != null) {
@@ -1627,7 +1625,7 @@ public class DiscoveryClient implements LookupService {
 
     /**
      * Gets the task that is responsible for fetching the eureka service Urls.
-     * 
+     *
      * @param zone
      *            the zone in which the instance resides.
      * @return TimerTask the task which executes periodically.
@@ -1662,14 +1660,14 @@ public class DiscoveryClient implements LookupService {
     /**
      * Gets the <em>applications</em> after filtering the applications for
      * instances with only UP states and shuffling them.
-     * 
+     *
      * <p>
      * The filtering depends on the option specified by the configuration
      * {@link EurekaClientConfig#shouldFilterOnlyUpInstances()}. Shuffling helps
      * in randomizing the applications list there by avoiding the same instances
      * receiving traffic during start ups.
      * </p>
-     * 
+     *
      * @param apps
      *            The applications that needs to be filtered and shuffled.
      * @return The applications after the filter and the shuffle.
@@ -1693,7 +1691,7 @@ public class DiscoveryClient implements LookupService {
     private boolean isFetchingRemoteRegionRegistries() {
         return null != remoteRegionsToFetch.get();
     }
-    
+
 
     private void arrangeListBasedonHostname(List<String> list) {
         int listSize = 0;
@@ -1710,7 +1708,7 @@ public class DiscoveryClient implements LookupService {
             instanceHashcode = instanceHashcode * -1;
         }
         int backupInstance = instanceHashcode % listSize;
-        for (int i=0; i < backupInstance; i ++) {
+        for (int i = 0; i < backupInstance; i++) {
             String zone = list.remove(0);
             list.add(zone);
         }

@@ -23,9 +23,9 @@ import com.netflix.discovery.converters.Converters.InstanceInfoConverter;
 /**
  * Support for {@link Version#V1}. {@link Version#V2} introduces a new status
  * {@link InstanceStatus#OUT_OF_SERVICE}.
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
- * 
+ *
  */
 public class V1AwareInstanceInfoConverter extends InstanceInfoConverter {
 

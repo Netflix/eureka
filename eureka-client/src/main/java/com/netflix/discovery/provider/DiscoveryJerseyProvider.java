@@ -19,7 +19,6 @@ package com.netflix.discovery.provider;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,15 +40,15 @@ import org.slf4j.LoggerFactory;
  * A custom provider implementation for Jersey that dispatches to the
  * implementation that serializes/deserializes objects sent to and from eureka
  * server.
- * 
+ *
  * <p>
  * This implementation allows users to plugin their own
  * serialization/deserialization mechanism by reading the annotation provided by
  * specifying the {@link Serializer} and dispatching it to that implementation.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 @Provider
 @Produces("*/*")
@@ -65,7 +64,7 @@ MessageBodyReader {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see javax.ws.rs.ext.MessageBodyReader#isReadable(java.lang.Class,
      * java.lang.reflect.Type, java.lang.annotation.Annotation[],
      * javax.ws.rs.core.MediaType)
@@ -78,7 +77,7 @@ MessageBodyReader {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see javax.ws.rs.ext.MessageBodyReader#readFrom(java.lang.Class,
      * java.lang.reflect.Type, java.lang.annotation.Annotation[],
      * javax.ws.rs.core.MediaType, javax.ws.rs.core.MultivaluedMap,
@@ -94,23 +93,25 @@ MessageBodyReader {
             try {
                 return serializer.read(inputStream, serializableClass, mediaType);
             } catch (Error e) { // See issue: https://github.com/Netflix/eureka/issues/72 on why we catch Error here.
-                LOGGER.error("Unexpected error occured during de-serialization of discovery data, doing connection cleanup.", e);
+                LOGGER.error("Unexpected error occured during de-serialization of discovery data, doing connection "
+                        + "cleanup.", e);
                 if (null != inputStream) {
                     inputStream.close();
-                    LOGGER.error("Unexpected error occured during de-serialization of discovery data, done connection cleanup.", e);
+                    LOGGER.error("Unexpected error occured during de-serialization of discovery data, done connection "
+                            + "cleanup.", e);
                 }
                 throw e;
             }
         } else {
-            LOGGER.error("No serializer available for serializable class: " + serializableClass +
-                         ", de-serialization will fail.");
+            LOGGER.error("No serializer available for serializable class: " + serializableClass
+                    + ", de-serialization will fail.");
             throw new IOException("No serializer available for serializable class: " + serializableClass);
         }
     }
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see javax.ws.rs.ext.MessageBodyWriter#getSize(java.lang.Object,
      * java.lang.Class, java.lang.reflect.Type,
      * java.lang.annotation.Annotation[], javax.ws.rs.core.MediaType)
@@ -124,7 +125,7 @@ MessageBodyReader {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see javax.ws.rs.ext.MessageBodyWriter#isWriteable(java.lang.Class,
      * java.lang.reflect.Type, java.lang.annotation.Annotation[],
      * javax.ws.rs.core.MediaType)
@@ -137,7 +138,7 @@ MessageBodyReader {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see javax.ws.rs.ext.MessageBodyWriter#writeTo(java.lang.Object,
      * java.lang.Class, java.lang.reflect.Type,
      * java.lang.annotation.Annotation[], javax.ws.rs.core.MediaType,
@@ -152,15 +153,15 @@ MessageBodyReader {
         if (null != serializer) {
             serializer.write(serializableObject, outputStream, mediaType);
         } else {
-            LOGGER.error("No serializer available for serializable class: " + serializableClass +
-                         ", serialization will fail.");
+            LOGGER.error("No serializer available for serializable class: " + serializableClass
+                    + ", serialization will fail.");
             throw new IOException("No serializer available for serializable class: " + serializableClass);
         }
     }
 
     /**
-     * Checks for the {@link Serializable} annotation for the given class.
-     * 
+     * Checks for the {@link java.io.Serializable} annotation for the given class.
+     *
      * @param serializableClass
      *            The class to be serialized/deserialized.
      * @return true if the annotation is present, false otherwise.
@@ -181,12 +182,12 @@ MessageBodyReader {
     /**
      * Gets the {@link Serializer} implementation for serializing/ deserializing
      * objects.
-     * 
+     *
      * <p>
      * The implementation is cached after the first time instantiation and then
      * returned.
      * <p>
-     * 
+     *
      * @param serializableClass
      *            - The class that is to be serialized/deserialized.
      * @return The {@link Serializer} implementation for serializing/

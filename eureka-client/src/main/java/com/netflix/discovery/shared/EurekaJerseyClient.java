@@ -50,9 +50,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A wrapper for Jersey Apache Client to set the necessary configurations.
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 public final class EurekaJerseyClient {
 
@@ -60,21 +60,21 @@ public final class EurekaJerseyClient {
     }
 
     /**
-     * Creates a Jersey client with the given configuration parameters
-     * 
+     * Creates a Jersey client with the given configuration parameters.
+     *
      *
      * @param clientName
      * @param connectionTimeout
-     *            - The connection timeout of the connection
+     *            - The connection timeout of the connection in milliseconds
      * @param readTimeout
-     *            - The read timeout of the connection
+     *            - The read timeout of the connection in milliseconds
      * @param maxConnectionsPerHost
      *            - The maximum number of connections to a particular host
      * @param maxTotalConnections
      *            - The maximum number of total connections across all hosts
      * @param connectionIdleTimeout
      *            - The idle timeout after which the connections will be cleaned
-     *            up
+     *            up in seconds
      * @return - The jersey client object encapsulating the connection
      */
     public static JerseyClient createJerseyClient(String clientName, int connectionTimeout,
@@ -94,22 +94,22 @@ public final class EurekaJerseyClient {
 
     /**
      * Creates the SSL based Jersey client with the given configuration
-     * parameters
-     * 
+     * parameters.
+     *
      *
      *
      * @param clientName
      * @param connectionTimeout
-     *            - The connection timeout of the connection
+     *            - The connection timeout of the connection in milliseconds
      * @param readTimeout
-     *            - The read timeout of the connection
+     *            - The read timeout of the connection in milliseconds
      * @param maxConnectionsPerHost
      *            - The maximum number of connections to a particular host
      * @param maxTotalConnections
      *            - The maximum number of total connections across all hosts
      * @param connectionIdleTimeout
      *            - The idle timeout after which the connections will be cleaned
-     *            up
+     *            up in seconds
      * @param trustStoreFileName
      *            - The full path to the trust store file
      * @param trustStorePassword
@@ -123,9 +123,9 @@ public final class EurekaJerseyClient {
                                                      String trustStoreFileName, String trustStorePassword) {
         Preconditions.checkNotNull(clientName, "Client name can not be null.");
         try {
-            ClientConfig jerseyClientConfig = new SSLCustomApacheHttpClientConfig(clientName, maxConnectionsPerHost,
-                                                                                  maxTotalConnections,
-                                                                                  trustStoreFileName, trustStorePassword);
+            ClientConfig jerseyClientConfig = new SSLCustomApacheHttpClientConfig(
+                    clientName, maxConnectionsPerHost, maxTotalConnections,
+                    trustStoreFileName, trustStorePassword);
 
             return new JerseyClient(connectionTimeout, readTimeout,
                                     connectionIdleTimeout, jerseyClientConfig);
@@ -210,7 +210,8 @@ public final class EurekaJerseyClient {
 
         ClientConfig jerseyClientConfig;
 
-        private ScheduledExecutorService eurekaConnCleaner = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
+        private ScheduledExecutorService eurekaConnCleaner =
+                Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
 
             private final AtomicInteger threadNumber = new AtomicInteger(1);
 

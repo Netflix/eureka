@@ -30,27 +30,27 @@ import com.netflix.eureka.PeerAwareInstanceRegistry.Action;
 import com.netflix.eureka.cluster.PeerEurekaNode;
 
 /**
- * A <em>jersey</em> resource that handles requests for replication purposes
- * 
+ * A <em>jersey</em> resource that handles requests for replication purposes.
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 @Path("/{version}/peerreplication")
 @Produces({ "application/xml", "application/json" })
 public class PeerReplicationResource {
     private static final String REPLICATION = "true";
     private static final Logger logger = LoggerFactory.getLogger(PeerReplicationResource.class);
-    
-   
-   
+
+
+
     /**
      * Process batched replication events from peer eureka nodes.
-     * 
+     *
      * <p>
-     *  The batched events are delegated to underlying resources to generate a {@link PeerEurekaNode.ReplicationListResponse} 
-     *  containing the individual responses to the batched events
+     *  The batched events are delegated to underlying resources to generate a
+     *  {@link PeerEurekaNode.ReplicationListResponse} containing the individual responses to the batched events
      * </p>
-     * 
+     *
      * @param replicationList
      *            The List of replication events from peer eureka nodes
       * @return A batched response containing the information about the responses of individual events
@@ -76,7 +76,8 @@ public class PeerReplicationResource {
                         : instanceInfo.getOverriddenStatus());
                 String instanceStatus = (instanceInfo.getStatus() == null ? null
                         : instanceInfo.getStatus());
-                PeerEurekaNode.ReplicationInstanceResponse.Builder singleResponseBuilder = new PeerEurekaNode.ReplicationInstanceResponse.Builder();
+                PeerEurekaNode.ReplicationInstanceResponse.Builder singleResponseBuilder =
+                        new PeerEurekaNode.ReplicationInstanceResponse.Builder();
                 if (instanceInfo.getAction() == Action.Heartbeat) {
                     response = resource.renewLease(REPLICATION, overriddenStatus,
                             instanceStatus, lastDirtyTimestamp);

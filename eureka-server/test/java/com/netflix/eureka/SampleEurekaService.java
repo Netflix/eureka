@@ -38,14 +38,14 @@ import com.netflix.discovery.DiscoveryManager;
 /**
  * Sample Eureka service that registers with Eureka to receive and process
  * requests.
- * 
+ *
  * <p>
  * This example just receives one request and exits once it receives the request
  * after processing it.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 public class SampleEurekaService {
     private static final DynamicPropertyFactory configInstance = com.netflix.config.DynamicPropertyFactory
@@ -68,8 +68,7 @@ public class SampleEurekaService {
         ApplicationInfoManager.getInstance().setInstanceStatus(
                 InstanceStatus.STARTING);
 
-        System.out.println("Simulating service initialization by sleeping for " +
-                           sleepSeconds + " seconds...");
+        System.out.println("Simulating service initialization by sleeping for " + sleepSeconds + " seconds...");
         try {
             Thread.sleep(sleepSeconds * 1000);
         } catch (InterruptedException e) {
@@ -116,8 +115,8 @@ public class SampleEurekaService {
             e.printStackTrace();
         }
 
-        System.out.println("Simulating service doing work by sleeping for " +
-                sleepSeconds + " seconds...");
+        System.out.println("Simulating service doing work by sleeping for "
+                + sleepSeconds + " seconds...");
         try {
             Thread.sleep(sleepSeconds * 1000);
         } catch (InterruptedException e) {
@@ -164,7 +163,7 @@ public class SampleEurekaService {
 
     }
 
-    public static void main(String args[]) {
+    public static void main(String[] args) {
         SampleEurekaService sampleEurekaService = new SampleEurekaService();
         sampleEurekaService.registerWithEureka();
     }

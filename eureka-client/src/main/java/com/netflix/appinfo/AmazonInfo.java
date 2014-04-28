@@ -32,14 +32,14 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
 
 /**
  * An AWS specific {@link DataCenterInfo} implementation.
- * 
+ *
  * <p>
  * Gets AWS specific information for registration with eureka by making a HTTP
  * call to an AWS service as recommended by AWS.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
- * 
+ *
  */
 public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
 
@@ -48,7 +48,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
     private static DynamicIntProperty awsMetaDataReadTimeout;
     private static DynamicIntProperty awsMetaDataConnectTimeout;
     private static DynamicIntProperty awsMetaDataRetries;
-    
+
     public enum MetaDataKey {
         amiId("ami-id"), instanceId("instance-id"), instanceType(
         "instance-type"), localIpv4("local-ipv4"), availabilityZone(
@@ -80,8 +80,8 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
         private static final Logger logger = LoggerFactory
         .getLogger(Builder.class);
         private static final int SLEEP_TIME_MS = 100;
-        private final static String AWS_API_VERSION = "latest";
-        private final static String AWS_METADATA_URL = "http://169.254.169.254/"
+        private static final String AWS_API_VERSION = "latest";
+        private static final String AWS_METADATA_URL = "http://169.254.169.254/"
             + AWS_API_VERSION + "/meta-data/";
 
         @XStreamOmitField
@@ -102,7 +102,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
 
         /**
          * Build the {@link InstanceInfo} information.
-         * 
+         *
          * @return AWS specific instance information.
          */
         public AmazonInfo build() {
@@ -181,7 +181,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.netflix.appinfo.DataCenterInfo#getName()
      */
     @Override
@@ -191,7 +191,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
 
     /**
      * Get the metadata information specific to AWS.
-     * 
+     *
      * @return the map of AWS metadata as specified by {@link MetaDataKey}.
      */
     public Map<String, String> getMetadata() {
@@ -200,7 +200,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
 
     /**
      * Set AWS metadata.
-     * 
+     *
      * @param metadataMap
      *            the map containing AWS metadata.
      */
@@ -210,7 +210,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
 
     /**
      * Gets the AWS metadata specified in {@link MetaDataKey}.
-     * 
+     *
      * @param key
      *            the metadata key.
      * @return String returning the value.

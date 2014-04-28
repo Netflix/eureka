@@ -76,8 +76,8 @@ public class ResponseCache {
     private static final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
             .getInstance().getConfiguration();
 
-    public final static String ALL_APPS = "ALL_APPS";
-    public final static String ALL_APPS_DELTA = "ALL_APPS_DELTA";
+    public static final String ALL_APPS = "ALL_APPS";
+    public static final String ALL_APPS_DELTA = "ALL_APPS_DELTA";
 
     private final com.netflix.servo.monitor.Timer serializeAllAppsTimer = Monitors
             .newTimer("serialize-all");
@@ -96,7 +96,7 @@ public class ResponseCache {
     private static final Timer timer = new Timer("Eureka -CacheFillTimer", true);
     private static final AtomicLong versionDelta = new AtomicLong(0);
     private static final AtomicLong versionDeltaWithRegions = new AtomicLong(0);
-    private final static String EMPTY_PAYLOAD = "";
+    private static final String EMPTY_PAYLOAD = "";
 
     public enum KeyType {
         JSON, XML
@@ -121,7 +121,8 @@ public class ResponseCache {
     private ResponseCache() {
         long responseCacheUpdateIntervalMs = eurekaConfig.getResponseCacheUpdateIntervalMs();
         timer.schedule(getCacheUpdateTask(),
-                new Date(((System.currentTimeMillis()/responseCacheUpdateIntervalMs)*responseCacheUpdateIntervalMs) + responseCacheUpdateIntervalMs),
+                new Date(((System.currentTimeMillis() / responseCacheUpdateIntervalMs) * responseCacheUpdateIntervalMs)
+                        + responseCacheUpdateIntervalMs),
                 responseCacheUpdateIntervalMs);
 
         try {
@@ -224,7 +225,7 @@ public class ResponseCache {
      */
     public void invalidate(Key... keys) {
         for (Key key : keys) {
-            Object[] args = { key.getEntityType(), key.getName(), key.getVersion(), key.getType() };
+            Object[] args = {key.getEntityType(), key.getName(), key.getVersion(), key.getType()};
             logger.debug("Invalidating the response cache key : {} {} {} {}", args);
             readWriteCacheMap.invalidate(key);
         }
@@ -309,7 +310,7 @@ public class ResponseCache {
     private void updateClientCache() {
         logger.debug("Updating the client cache from response cache");
         for (ResponseCache.Key key : readOnlyCacheMap.keySet()) {
-            Object[] args = { key.getEntityType(), key.getName(), key.getVersion(), key.getType() };
+            Object[] args = {key.getEntityType(), key.getName(), key.getVersion(), key.getType()};
             logger.debug(
                     "Updating the client cache from response cache for key : {} {} {} {}",
                     args);
@@ -352,7 +353,8 @@ public class ResponseCache {
                         if (isRemoteRegionRequested) {
                             tracer = this.serializeDeltaAppsWithRemoteRegionTimer.start();
                             versionDeltaWithRegions.incrementAndGet();
-                            payload = getPayLoad(key, registry.getApplicationDeltasFromMultipleRegions(key.getRegions()));
+                            payload = getPayLoad(key,
+                                    registry.getApplicationDeltasFromMultipleRegions(key.getRegions()));
                         } else {
                             tracer = this.serializeDeltaAppsTimer.start();
                             versionDelta.incrementAndGet();
@@ -382,7 +384,7 @@ public class ResponseCache {
     }
 
     private Applications getApplicationsForVip(Key key, InstanceRegistry registry) {
-        Object[] args = { key.getEntityType(), key.getName(), key.getVersion(), key.getType() };
+        Object[] args = {key.getEntityType(), key.getName(), key.getVersion(), key.getType()};
         logger.debug(
                 "Retrieving applications from registry for key : {} {} {} {}",
                 args);
@@ -415,7 +417,8 @@ public class ResponseCache {
             }
         }
         toReturn.setAppsHashCode(toReturn.getReconcileHashCode());
-        args = new Object[]{ key.getEntityType(), key.getName(), key.getVersion(), key.getType(), toReturn.getReconcileHashCode() };
+        args = new Object[] {key.getEntityType(), key.getName(), key.getVersion(), key.getType(),
+                toReturn.getReconcileHashCode()};
         logger.debug(
                 "Retrieved applications from registry for key : {} {} {} {}, reconcile hashcode: {}",
                 args);
@@ -430,7 +433,7 @@ public class ResponseCache {
         /**
          * An enum to define the entity that is stored in this cache for this key.
          */
-        public enum EntityType {Application, VIP, SVIP}
+        public enum EntityType { Application, VIP, SVIP }
 
         private final String entityName;
         private final String[] regions;
@@ -449,8 +452,8 @@ public class ResponseCache {
             this.entityName = entityName;
             requestType = type;
             requestVersion = v;
-            hashKey = this.entityType + this.entityName + ((null != this.regions) ? Arrays.toString(this.regions) : "") +
-                      requestType.name() + requestVersion.name();
+            hashKey = this.entityType + this.entityName + ((null != this.regions) ? Arrays.toString(this.regions) : "")
+                    + requestType.name() + requestVersion.name();
         }
 
         public String getName() {

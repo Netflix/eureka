@@ -47,16 +47,16 @@ import com.netflix.eureka.cluster.PeerEurekaNode;
 
 /**
  * A <em>jersey</em> resource that handles operations for a particular instance.
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
- * 
+ *
  */
 @Produces({ "application/xml", "application/json" })
 public class InstanceResource {
-    private final static Logger logger = LoggerFactory
+    private static final Logger logger = LoggerFactory
             .getLogger(InstanceResource.class);
 
-    private final static PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry
+    private static final PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry
             .getInstance();
 
     String id;
@@ -70,7 +70,7 @@ public class InstanceResource {
     /**
      * Get requests returns the information about the instance's
      * {@link InstanceInfo}.
-     * 
+     *
      * @return response containing information about the the instance's
      *         {@link InstanceInfo}.
      */
@@ -89,7 +89,7 @@ public class InstanceResource {
 
     /**
      * A put request for renewing lease from a client instance.
-     * 
+     *
      * @param isReplication
      *            a header parameter containing information whether this is
      *            replicated from other nodes.
@@ -144,14 +144,14 @@ public class InstanceResource {
 
     /**
      * Handles {@link InstanceStatus} updates.
-     * 
+     *
      * <p>
      * The status updates are normally done for administrative purposes to
      * change the instance status between {@link InstanceStatus#UP} and
      * {@link InstanceStatus#OUT_OF_SERVICE} to select or remove instances for
      * receiving traffic.
      * </p>
-     * 
+     *
      * @param newStatus
      *            the new status of the instance.
      * @param isReplication
@@ -222,17 +222,16 @@ public class InstanceResource {
             }
             registry.register(instanceInfo, false);
             return Response.ok().build();
-        }
-        catch (Throwable e) {
+        } catch (Throwable e) {
             logger.error("Error updating metadata for instance " + id, e);
             return Response.serverError().build();
         }
-      
+
     }
 
     /**
      * Handles cancellation of leases for this particular instance.
-     * 
+     *
      * @param isReplication
      *            a header parameter containing information whether this is
      *            replicated from other nodes.
@@ -262,8 +261,8 @@ public class InstanceResource {
             if ((lastDirtyTimestamp != null)
                     && (!lastDirtyTimestamp.equals(appInfo
                             .getLastDirtyTimestamp()))) {
-                Object[] args = { id, appInfo.getLastDirtyTimestamp(),
-                        lastDirtyTimestamp, isReplication };
+                Object[] args = {id, appInfo.getLastDirtyTimestamp(),
+                        lastDirtyTimestamp, isReplication};
                 if (lastDirtyTimestamp > appInfo.getLastDirtyTimestamp()) {
                     logger.warn(
                             "Time to sync, since the last dirty timestamp differs -"

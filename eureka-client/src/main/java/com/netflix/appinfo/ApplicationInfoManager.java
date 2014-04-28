@@ -30,7 +30,7 @@ import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
 /**
  * The class that initializes information required for registration with
  * <tt>Eureka Server</tt> and to be discovered by other components.
- * 
+ *
  * <p>
  * The information required for registration is provided by the user by passing
  * the configuration defined by the contract in {@link EurekaInstanceConfig}
@@ -39,27 +39,27 @@ import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
  * {@link MyDataCenterInstanceConfig} or very basic
  * {@link AbstractInstanceConfig}.
  * </p>
- * 
- * 
+ *
+ *
  * @author Karthik Ranganathan, Greg Kim
- * 
+ *
  */
 @Singleton
 public class ApplicationInfoManager {
     private static final Logger logger = LoggerFactory.getLogger(ApplicationInfoManager.class);
     private static ApplicationInfoManager instance = new ApplicationInfoManager();
-    
+
     private InstanceInfo instanceInfo;
     private EurekaInstanceConfig config;
 
     private ApplicationInfoManager() {
     }
-    
+
     @Inject
     ApplicationInfoManager(EurekaInstanceConfig config, InstanceInfo instanceInfo) {
         this.config = config;
         this.instanceInfo = instanceInfo;
-        
+
         // Hack to allow for getInstance() to use the DI'd ApplicationInfoManager
         instance = this;
     }
@@ -80,18 +80,18 @@ public class ApplicationInfoManager {
 
     /**
      * Gets the information about this instance that is registered with eureka.
-     * 
+     *
      * @return information about this instance that is registered with eureka.
      */
     public InstanceInfo getInfo() {
         return instanceInfo;
     }
-    
+
     /**
      * Register user-specific instance meta data. Application can send any other
      * additional meta data that need to be accessed for other reasons.The data
      * will be periodically sent to the eureka server.
-     * 
+     *
      * @param appMetadata
      *            application specific meta data.
      */
@@ -102,7 +102,7 @@ public class ApplicationInfoManager {
     /**
      * Set the status of this instance. Application can use this to indicate
      * whether it is ready to receive traffic.
-     * 
+     *
      * @param status
      *            Status of the instance
      */

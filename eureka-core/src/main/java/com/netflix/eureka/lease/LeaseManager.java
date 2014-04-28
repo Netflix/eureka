@@ -16,28 +16,26 @@
 
 package com.netflix.eureka.lease;
 
-import com.netflix.eureka.InstanceRegistry;
-
 /**
  * This class is responsible for creating/renewing and evicting a <em>lease</em>
  * for a particular instance.
- * 
+ *
  * <p>
  * Leases determine what instances receive traffic. When there is no renewal
  * request from the client, the lease gets expired and the instances are evicted
- * out of {@link InstanceRegistry}. This is key to instances receiving traffic
+ * out of {@link com.netflix.eureka.InstanceRegistry}. This is key to instances receiving traffic
  * or not.
  * <p>
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
- * 
+ *
  * @param <T>
  */
 public interface LeaseManager<T> {
 
     /**
-     * Assign a new {@link Lease} to the passed in {@link T}
-     * 
+     * Assign a new {@link Lease} to the passed in {@link T}.
+     *
      * @param r
      *            - T to register
      * @param leaseDuration
@@ -48,8 +46,8 @@ public interface LeaseManager<T> {
 
     /**
      * Cancel the {@link Lease} associated w/ the passed in <code>appName</code>
-     * and <code>id</code>
-     * 
+     * and <code>id</code>.
+     *
      * @param appName
      *            - unique id of the application.
      * @param id
@@ -62,8 +60,8 @@ public interface LeaseManager<T> {
 
     /**
      * Renew the {@link Lease} associated w/ the passed in <code>appName</code>
-     * and <code>id</code>
-     * 
+     * and <code>id</code>.
+     *
      * @param id
      *            - unique id within appName
      * @param isReplication

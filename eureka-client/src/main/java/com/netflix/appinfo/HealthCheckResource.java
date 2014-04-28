@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * A basic <em>healthcheck</em> jersey resource.
- * 
+ *
  * This can be used a {@link HealthCheckCallback} resource if required.
  * @author Karthik Ranganathan, Greg Kim
  *

@@ -44,7 +44,8 @@ abstract class AbstractVIPResource {
             keyType = ResponseCache.KeyType.XML;
         }
 
-        ResponseCache.Key cacheKey = new ResponseCache.Key(entityType, entityName, keyType, CurrentRequestVersion.get());
+        ResponseCache.Key cacheKey = new ResponseCache.Key(entityType, entityName, keyType,
+                CurrentRequestVersion.get());
 
         String payLoad = ResponseCache.getInstance().get(cacheKey);
 

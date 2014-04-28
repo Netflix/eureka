@@ -55,15 +55,15 @@ import com.thoughtworks.xstream.annotations.XStreamAlias;
 /**
  * The <code>PeerEurekaNode</code> represents a peer node to which information
  * should be shared from this node.
- * 
+ *
  * <p>
  * This class handles replicating all update operations like
  * <em>Register,Renew,Cancel,Expiration and Status Changes</em> to the eureka
  * node it represents.
  * <p>
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
- * 
+ *
  */
 public class PeerEurekaNode {
 
@@ -85,7 +85,7 @@ public class PeerEurekaNode {
     private MessageBatcher<ReplicationTask> registerBatcher;
     private MessageBatcher<ReplicationTask> cancelBatcher;
     private MessageBatcher<ReplicationTask> asgStatusBatcher;
-    
+
 
     public PeerEurekaNode(String serviceUrl) {
         this.serviceUrl = serviceUrl.intern();
@@ -132,7 +132,7 @@ public class PeerEurekaNode {
     /**
      * Sends the registration information of {@link InstanceInfo} receiving by
      * this node to the peer node represented by this class.
-     * 
+     *
      * @param info
      *            the instance information {@link InstanceInfo} of any instance
      *            that is send to this instance.
@@ -158,9 +158,9 @@ public class PeerEurekaNode {
                     }
                 }
             }
-            
+
             @Override
-            public boolean shouldReplicateInstanceInfo () {
+            public boolean shouldReplicateInstanceInfo() {
                 return true;
             }
         };
@@ -178,7 +178,7 @@ public class PeerEurekaNode {
     /**
      * Send the cancellation information of an instance to the node represented
      * by this class.
-     * 
+     *
      * @param appName
      *            the application name of the instance.
      * @param id
@@ -197,15 +197,15 @@ public class PeerEurekaNode {
                             .path(urlPath).header(HEADER_REPLICATION, "true")
                             .delete(ClientResponse.class);
                     return response.getStatus();
-                   
-                   
+
+
                 } finally {
                     if (response != null) {
                         response.close();
                     }
                 }
             }
-            
+
             @Override
             public void handleFailure(int statusCode) throws Throwable {
                 super.handleFailure(statusCode);
@@ -227,7 +227,7 @@ public class PeerEurekaNode {
      * Send the heartbeat information of an instance to the node represented by
      * this class. If the instance does not exist the node, the instance
      * registration information is sent again to the peer node.
-     * 
+     *
      * @param appName
      *            the application name of the instance.
      * @param id
@@ -251,7 +251,7 @@ public class PeerEurekaNode {
             public int execute() throws Throwable {
                 return sendHeartBeat(appName, id, info, overriddenStatus, this);
             }
-            
+
             @Override
             public void handleFailure(int statusCode) throws Throwable  {
                super.handleFailure(statusCode);
@@ -283,12 +283,12 @@ public class PeerEurekaNode {
 
     /**
      * Send the status information of of the ASG represented by the instance.
-     * 
+     *
      * <p>
      * ASG (Autoscaling group) names are available for instances in AWS and the
      * ASG information is used for determining if the instance should be
      * registered as {@link InstanceStatus#DOWN} or {@link InstanceStatus#UP}.
-     * 
+     *
      * @param asgName
      *            the asg name if any of this instance.
      * @param newStatus
@@ -315,7 +315,7 @@ public class PeerEurekaNode {
                 }
 
             }
-            
+
             @Override
             public boolean isBatchingSupported() {
                 return false;
@@ -329,9 +329,9 @@ public class PeerEurekaNode {
     }
 
     /**
-     * 
+     *
      * Send the status update of the instance.
-     * 
+     *
      * @param appName
      *            the application name of the instance.
      * @param id
@@ -379,7 +379,7 @@ public class PeerEurekaNode {
 
     /**
      * Get the service Url of the peer eureka node.
-     * 
+     *
      * @return the service Url of the peer eureka node.
      */
     public String getServiceUrl() {
@@ -397,18 +397,23 @@ public class PeerEurekaNode {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         PeerEurekaNode other = (PeerEurekaNode) obj;
         if (serviceUrl == null) {
-            if (other.serviceUrl != null)
+            if (other.serviceUrl != null) {
                 return false;
-        } else if (!serviceUrl.equals(other.serviceUrl))
+            }
+        } else if (!serviceUrl.equals(other.serviceUrl)) {
             return false;
+        }
         return true;
     }
 
@@ -451,7 +456,7 @@ public class PeerEurekaNode {
 
     /**
      * Sends heartbeats to peer eureka nodes.
-     * 
+     *
      * @param appName
      *            - the application name for which the hearbeat needs to be
      *            sent.
@@ -485,13 +490,13 @@ public class PeerEurekaNode {
             if ((response.getStatus() == Status.OK.getStatusCode())  && response.hasEntity()) {
                 infoFromPeer = response
                         .getEntity(InstanceInfo.class);
-                
+
             }
             if ((task != null) && (infoFromPeer != null)) {
                 task.setPeerInstanceInfo(infoFromPeer);
             }
             return response.getStatus();
-            
+
         } finally {
             if (response != null) {
                 response.close();
@@ -502,7 +507,7 @@ public class PeerEurekaNode {
     /**
      * Check if the exception is some sort of network timeout exception (ie)
      * read,connect.
-     * 
+     *
      * @param e
      *            The exception for which the information needs to be found.
      * @return true, if it is a network timeout, false otherwise.
@@ -578,8 +583,7 @@ public class PeerEurekaNode {
         public abstract int execute() throws Throwable;
 
         public void handleFailure(int statusCode) throws Throwable {
-            Object[] args = { this.appName, this.id, this.action.name(),
-                    statusCode };
+            Object[] args = {this.appName, this.id, this.action.name(), statusCode};
             logger.warn(
                     "The replication of {}/{}/{} failed with response code {}",
                     args);
@@ -589,7 +593,7 @@ public class PeerEurekaNode {
         public boolean shouldReplicateInstanceInfo() {
             return false;
         }
-        
+
         public boolean isBatchingSupported() {
             return config.shouldBatchReplication();
         }
@@ -599,16 +603,16 @@ public class PeerEurekaNode {
     @XStreamAlias("repllist")
     public static class ReplicationList {
         private List<PeerEurekaNode.ReplicationInstance> replicationList = new ArrayList<PeerEurekaNode.ReplicationInstance>();
-      
+
         public void addReplicationInstance(PeerEurekaNode.ReplicationInstance instance) {
             replicationList.add(instance);
         }
-        
+
         public List<PeerEurekaNode.ReplicationInstance> getList() {
             return this.replicationList;
         }
-        
-      
+
+
     }
 
     @Serializer("com.netflix.discovery.converters.EntityBodyConverter")
@@ -747,17 +751,15 @@ public class PeerEurekaNode {
            ) {
         try {
                 if (infoFromPeer != null) {
-                    Object[] args = { id, info.getLastDirtyTimestamp(),
-                            infoFromPeer.getLastDirtyTimestamp() };
+                    Object[] args = {id, info.getLastDirtyTimestamp(), infoFromPeer.getLastDirtyTimestamp()};
 
                     logger.warn(
-                            "Peer wants us to take the instance information from it, since the timestamp differs,Id : {} My Timestamp : {}, Peer's timestamp: {}",
-                            args);
+                            "Peer wants us to take the instance information from it, since the timestamp differs,"
+                            + "Id : {} My Timestamp : {}, Peer's timestamp: {}", args);
                     if ((infoFromPeer.getOverriddenStatus() != null)
                             && !(InstanceStatus.UNKNOWN.equals(infoFromPeer
                                     .getOverriddenStatus()))) {
-                        Object[] args1 = { id, info.getOverriddenStatus(),
-                                infoFromPeer.getOverriddenStatus() };
+                        Object[] args1 = {id, info.getOverriddenStatus(), infoFromPeer.getOverriddenStatus()};
                         logger.warn(
                                 "Overridden Status info -id {}, mine {}, peer's {}",
                                 args1);
@@ -779,7 +781,7 @@ public class PeerEurekaNode {
 
     /**
      * Get the batcher to process the replication events asynchronously.
-     * 
+     *
      * @param serviceUrl
      *            the serviceUrl for which the events needs to be replicated
      * @param action
@@ -830,16 +832,16 @@ public class PeerEurekaNode {
                    if (System.currentTimeMillis()
                             - config.getMaxTimeForReplication() > task
                             .getSubmitTime()) {
-                       Object[] args = { task.getAppName(), task.getId(),
+                       Object[] args = {task.getAppName(), task.getId(),
                                task.getAction(),
                                new Date(System.currentTimeMillis()),
-                               new Date(task.getSubmitTime()) };
-                    
-                        logger.warn(
-                                "Replication events older than the threshold. AppName : {}, Id: {}, Action : {}, Current Time : {}, Submit Time :{}",
-                                args);
+                               new Date(task.getSubmitTime())};
 
-                        continue;
+                        logger.warn(
+                                "Replication events older than the threshold. AppName : {}, Id: {}, Action : {}, "
+                                + "Current Time : {}, Submit Time :{}", args);
+
+                       continue;
                     }
                     PeerEurekaNode.ReplicationInstance instance = new PeerEurekaNode.ReplicationInstance();
                     instance.setAppName(task.getAppName());
@@ -952,7 +954,7 @@ public class PeerEurekaNode {
                                           task.getAction(),
                                           new Date(System.currentTimeMillis()),
                                           new Date(task.getSubmitTime()) };
-       
+
                                 logger.warn(
                                         "Replication events older than the threshold. AppName : {}, Id: {}, Action : {}, Current Time : {}, Submit Time :{}",
                                         args);
@@ -990,8 +992,8 @@ public class PeerEurekaNode {
                                 done = false;
                             } else {
                                 logger.info(
-                                        "Not re-trying this exception because it does not seem to be a network exception",
-                                        e);
+                                        "Not re-trying this exception because it does not seem to be a network "
+                                        + "exception", e);
                             }
                         }
                     } while (!done);
@@ -999,7 +1001,7 @@ public class PeerEurekaNode {
             }
         });
     }
-    
+
 
     private boolean isSuccess(int statusCode) {
         return statusCode >= 200

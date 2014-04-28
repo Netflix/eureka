@@ -29,27 +29,32 @@ import com.netflix.servo.monitor.Monitors;
 
 /**
  * The enum that encapsulates all statistics monitored by Eureka.
- * 
+ *
  * <p>
  * Eureka Monitoring is done using <a href="https://github.com/Netflix/servo">Servo</a>. The
  * users who wants to take advantage of the monitoring should read up on
  * <tt>Servo</tt>
  * <p>
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
- * 
+ *
  */
 public enum EurekaMonitors {
     RENEW("renewCounter", "Number of total renews seen since startup"),
     CANCEL("cancelCounter", "Number of total cancels seen since startup"),
     GET_ALL_CACHE_MISS("getAllCacheMissCounter", "Number of total registery queries seen since startup"),
-    GET_ALL_CACHE_MISS_DELTA("getAllCacheMissDeltaCounter", "Number of total registery queries for delta seen since startup"),
-    GET_ALL_WITH_REMOTE_REGIONS_CACHE_MISS("getAllWithRemoteRegionCacheMissCounter", "Number of total registry with remote region queries seen since startup"),
-    GET_ALL_WITH_REMOTE_REGIONS_CACHE_MISS_DELTA("getAllWithRemoteRegionCacheMissDeltaCounter", "Number of total registry queries for delta with remote region seen since startup"),
+    GET_ALL_CACHE_MISS_DELTA("getAllCacheMissDeltaCounter",
+            "Number of total registery queries for delta seen since startup"),
+    GET_ALL_WITH_REMOTE_REGIONS_CACHE_MISS("getAllWithRemoteRegionCacheMissCounter",
+            "Number of total registry with remote region queries seen since startup"),
+    GET_ALL_WITH_REMOTE_REGIONS_CACHE_MISS_DELTA("getAllWithRemoteRegionCacheMissDeltaCounter",
+            "Number of total registry queries for delta with remote region seen since startup"),
     GET_ALL_DELTA("getAllDeltaCounter", "Number of total deltas since startup"),
-    GET_ALL_DELTA_WITH_REMOTE_REGIONS("getAllDeltaWithRemoteRegionCounter", "Number of total deltas with remote regions since startup"),
+    GET_ALL_DELTA_WITH_REMOTE_REGIONS("getAllDeltaWithRemoteRegionCounter",
+            "Number of total deltas with remote regions since startup"),
     GET_ALL("getAllCounter", "Number of total registry queries seen since startup"),
-    GET_ALL_WITH_REMOTE_REGIONS("getAllWithRemoteRegionCounter", "Number of total registry queries with remote regions, seen since startup"),
+    GET_ALL_WITH_REMOTE_REGIONS("getAllWithRemoteRegionCounter",
+            "Number of total registry queries with remote regions, seen since startup"),
     REGISTER("registerCounter", "Number of total registers seen since startup"),
     EXPIRED("expiredCounter", "Number of total expired leases since startup"),
     STATUS_UPDATE("statusUpdateCounter", "Number of total admin status updates since startup"),
@@ -95,7 +100,7 @@ public enum EurekaMonitors {
      * Increment the counter for the given statistic based on whether this is
      * because of replication from other eureka servers or it is a eureka client
      * initiated action.
-     * 
+     *
      * @param isReplication
      *            true if this a replication, false otherwise.
      */
@@ -109,7 +114,7 @@ public enum EurekaMonitors {
 
     /**
      * Gets the statistic name of this monitor.
-     * 
+     *
      * @return the statistic name.
      */
     public String getName() {
@@ -119,7 +124,7 @@ public enum EurekaMonitors {
     /**
      * Gets the zone specific statistic name of this monitor. Applies only for
      * AWS cloud.
-     * 
+     *
      * @return the zone specific statistic name.
      */
     public String getZoneSpecificName() {
@@ -128,7 +133,7 @@ public enum EurekaMonitors {
 
     /**
      * Gets the description of this statistic means.
-     * 
+     *
      * @return the description of this statistic means.
      */
     public String getDescription() {
@@ -137,7 +142,7 @@ public enum EurekaMonitors {
 
     /**
      * Gets the actual counter value for this statistic.
-     * 
+     *
      * @return the long value representing the number of times this statistic
      *         has occurred.
      */
@@ -148,7 +153,7 @@ public enum EurekaMonitors {
     /**
      * Gets the zone specific counter value for this statistic. This is
      * application only for AWS cloud environment.
-     * 
+     *
      * @return the long value representing the number of times this statistic
      *         has occurred.
      */

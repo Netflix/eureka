@@ -23,8 +23,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Utility class for getting a count in last X milliseconds
- * 
+ * Utility class for getting a count in last X milliseconds.
+ *
  * @author Karthik Ranganathan,Greg Kim
  */
 public class MeasuredRate {
@@ -63,7 +63,7 @@ public class MeasuredRate {
     }
 
     /**
-     * Increments the count in the current sample interval. 
+     * Increments the count in the current sample interval.
      */
     public void increment() {
         currentBucket.incrementAndGet();

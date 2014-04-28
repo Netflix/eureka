@@ -18,7 +18,7 @@ package com.netflix.discovery.shared;
 
 /**
  * An utility class for stores any information that needs to exist as a pair.
- * 
+ *
  * @author Karthik Ranganathan
  *
  * @param <E1> Generics indicating the type information for the first one in the pair.

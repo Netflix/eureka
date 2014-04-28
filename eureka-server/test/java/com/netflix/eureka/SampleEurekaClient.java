@@ -35,9 +35,9 @@ import com.netflix.discovery.DiscoveryManager;
 /**
  * Sample Eureka client that discovers the service using Eureka and sends
  * requests.
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 public class SampleEurekaClient {
     private static final DynamicPropertyFactory configInstance = com.netflix.config.DynamicPropertyFactory
@@ -91,7 +91,7 @@ public class SampleEurekaClient {
         DiscoveryManager.getInstance().shutdownComponent();
     }
 
-    public static void main(String args[]) {
+    public static void main(String[] args) {
         SampleEurekaClient sampleEurekaService = new SampleEurekaClient();
         sampleEurekaService.sendRequestToServiceUsingEureka();
 

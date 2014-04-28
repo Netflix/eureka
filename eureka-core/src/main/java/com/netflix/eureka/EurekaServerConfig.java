@@ -17,23 +17,22 @@
 package com.netflix.eureka;
 
 import javax.annotation.Nullable;
-import java.net.URL;
 import java.util.Map;
 import java.util.Set;
 
 /**
  * Configuration information required by the eureka server to operate.
- * 
+ *
  * <p>
  * Most of the required information is provided by the default configuration
- * {@link DefaultServerConfig}.
- * 
+ * {@link com.netflix.eureka.DefaultEurekaServerConfig}.
+ *
  * Note that all configurations are not effective at runtime unless and
  * otherwise specified.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 public interface EurekaServerConfig {
 
@@ -41,7 +40,7 @@ public interface EurekaServerConfig {
      * Gets the <em>AWS Access Id</em>. This is primarily used for
      * <em>Elastic IP Biding</em>. The access id should be provided with
      * appropriate AWS permissions to bind the EIP.
-     * 
+     *
      * @return
      */
     String getAWSAccessId();
@@ -50,7 +49,7 @@ public interface EurekaServerConfig {
      * Gets the <em>AWS Secret Key</em>. This is primarily used for
      * <em>Elastic IP Biding</em>. The access id should be provided with
      * appropriate AWS permissions to bind the EIP.
-     * 
+     *
      * @return
      */
     String getAWSSecretKey();
@@ -58,11 +57,11 @@ public interface EurekaServerConfig {
     /**
      * Gets the number of times the server should try to bind to the candidate
      * EIP.
-     * 
+     *
      * <p>
      * <em>The changes are effective at runtime.</em>
      * </p>
-     * 
+     *
      * @return the number of times the server should try to bind to the
      *         candidate EIP.
      */
@@ -74,14 +73,14 @@ public interface EurekaServerConfig {
      * <p>
      * <em>The changes are effective at runtime.</em>
      * </p>
-     * 
+     *
      * @return the time in milliseconds.
      */
     int getEIPBindingRetryIntervalMs();
 
     /**
      * Checks to see if the eureka server is enabled for self preservation.
-     * 
+     *
      * <p>
      * When enabled, the server keeps track of the number of <em>renewals</em>
      * it should receive from the server. Any time, the number of renewals drops
@@ -92,7 +91,7 @@ public interface EurekaServerConfig {
      * <p>
      * <em>The changes are effective at runtime.</em>
      * </p>
-     * 
+     *
      * @return true to enable self preservation, false otherwise.
      */
     boolean shouldEnableSelfPreservation();
@@ -102,11 +101,11 @@ public interface EurekaServerConfig {
      * the period specified by {@link #getRenewalThresholdUpdateIntervalMs()}.
      * If the renewals drop below the threshold, the expirations are disabled if
      * the {@link #shouldEnableSelfPreservation()} is enabled.
-     * 
+     *
      * <p>
      * <em>The changes are effective at runtime.</em>
      * </p>
-     * 
+     *
      * @return value between 0 and 1 indicating the percentage. For example,
      *         <code>85%</code> will be specified as <code>0.85</code>.
      */
@@ -115,7 +114,7 @@ public interface EurekaServerConfig {
     /**
      * The interval with which the threshold as specified in
      * {@link #getRenewalPercentThreshold()} needs to be updated.
-     * 
+     *
      * @return time in milliseconds indicating the interval.
      */
     int getRenewalThresholdUpdateIntervalMs();
@@ -128,7 +127,7 @@ public interface EurekaServerConfig {
      * <p>
      * <em>The changes are effective at runtime.</em>
      * </p>
-     * 
+     *
      * @return timer in milliseconds indicating the interval.
      */
     int getPeerEurekaNodesUpdateIntervalMs();
@@ -139,7 +138,7 @@ public interface EurekaServerConfig {
      * <p>
      * <em>The changes are effective at runtime.</em>
      * </p>
-     * 
+     *
      * @return the number of retries.
      */
     int getNumberOfReplicationRetries();
@@ -150,7 +149,7 @@ public interface EurekaServerConfig {
      * <p>
      * <em>The changes are effective at runtime.</em>
      * </p>
-     * 
+     *
      * @return time in milliseconds indicating the interval.
      */
     int getPeerEurekaStatusRefreshTimeIntervalMs();
@@ -160,11 +159,11 @@ public interface EurekaServerConfig {
      * instances from peer nodes. It is better not to start serving rightaway
      * during these scenarios as the information that is stored in the registry
      * may not be complete.
-     * 
+     *
      * When the instance registry starts up empty, it builds over time when the
      * clients start to send heartbeats and the server requests the clients for
      * registration information.
-     * 
+     *
      * @return time in milliseconds.
      */
     int getWaitTimeInMsWhenSyncEmpty();
@@ -172,7 +171,7 @@ public interface EurekaServerConfig {
     /**
      * Gets the timeout value for connecting to peer eureka nodes for
      * replication.
-     * 
+     *
      * @return timeout value in milliseconds.
      */
     int getPeerNodeConnectTimeoutMs();
@@ -180,7 +179,7 @@ public interface EurekaServerConfig {
     /**
      * Gets the timeout value for reading information from peer eureka nodes for
      * replication.
-     * 
+     *
      * @return timeout value in milliseconds.
      */
     int getPeerNodeReadTimeoutMs();
@@ -188,7 +187,7 @@ public interface EurekaServerConfig {
     /**
      * Gets the total number of <em>HTTP</em> connections allowed to peer eureka
      * nodes for replication.
-     * 
+     *
      * @return total number of allowed <em>HTTP</em> connections.
      */
     int getPeerNodeTotalConnections();
@@ -196,7 +195,7 @@ public interface EurekaServerConfig {
     /**
      * Gets the total number of <em>HTTP</em> connections allowed to a
      * particular peer eureka node for replication.
-     * 
+     *
      * @return total number of allowed <em>HTTP</em> connections for a peer
      *         node.
      */
@@ -205,7 +204,7 @@ public interface EurekaServerConfig {
     /**
      * Gets the idle time after which the <em>HTTP</em> connection should be
      * cleaned up.
-     * 
+     *
      * @return idle time in seconds.
      */
     int getPeerNodeConnectionIdleTimeoutSeconds();
@@ -213,7 +212,7 @@ public interface EurekaServerConfig {
     /**
      * Get the time for which the delta information should be cached for the
      * clients to retrieve the value without missing it.
-     * 
+     *
      * @return time in milliseconds
      */
     long getRetentionTimeInMSInDeltaQueue();
@@ -221,7 +220,7 @@ public interface EurekaServerConfig {
     /**
      * Get the time interval with which the clean up task should wake up and
      * check for expired delta information.
-     * 
+     *
      * @return time in milliseconds.
      */
     long getDeltaRetentionTimerIntervalInMs();
@@ -229,7 +228,7 @@ public interface EurekaServerConfig {
     /**
      * Get the time interval with which the task that expires instances should
      * wake up and run.
-     * 
+     *
      * @return time in milliseconds.
      */
     long getEvictionIntervalTimerInMs();
@@ -237,15 +236,15 @@ public interface EurekaServerConfig {
     /**
      * Get the timeout value for querying the <em>AWS</em> for <em>ASG</em>
      * information.
-     * 
+     *
      * @return timeout value in milliseconds.
      */
     int getASGQueryTimeoutMs();
 
     /**
      * Get the time interval with which the <em>ASG</em> information must be
-     * queried from <em>AWS</em>
-     * 
+     * queried from <em>AWS</em>.
+     *
      * @return time in milliseconds.
      */
     long getASGUpdateIntervalMs();
@@ -253,7 +252,7 @@ public interface EurekaServerConfig {
     /**
      * Gets the time for which the registry payload should be kept in the cache
      * if it is not invalidated by change events.
-     * 
+     *
      * @return time in seconds.
      */
     long getResponseCacheAutoExpirationInSeconds();
@@ -261,7 +260,7 @@ public interface EurekaServerConfig {
     /**
      * Gets the time interval with which the payload cache of the client should
      * be updated.
-     * 
+     *
      * @return time in milliseconds.
      */
     long getResponseCacheUpdateIntervalMs();
@@ -271,7 +270,7 @@ public interface EurekaServerConfig {
      * <p>
      * <em>The changes are effective at runtime.</em>
      * </p>
-     * 
+     *
      * @return true if the delta information is allowed to be served, false
      *         otherwise.
      */
@@ -280,21 +279,21 @@ public interface EurekaServerConfig {
     /**
      * Get the idle time for which the status replication threads can stay
      * alive.
-     * 
+     *
      * @return time in minutes.
      */
     long getMaxIdleThreadInMinutesAgeForStatusReplication();
 
     /**
      * Get the minimum number of threads to be used for status replication.
-     * 
+     *
      * @return minimum number of threads to be used for status replication.
      */
     int getMinThreadsForStatusReplication();
 
     /**
      * Get the maximum number of threads to be used for status replication.
-     * 
+     *
      * @return maximum number of threads to be used for status replication.
      */
     int getMaxThreadsForStatusReplication();
@@ -306,7 +305,7 @@ public interface EurekaServerConfig {
      * Depending on the memory allowed, timeout and the replication traffic,
      * this value can vary.
      * </p>
-     * 
+     *
      * @return the maximum number of replication events that can be allowed to
      *         back up.
      */
@@ -317,7 +316,7 @@ public interface EurekaServerConfig {
      * <p>
      * <em>The changes are effective at runtime.</em>
      * </p>
-     * 
+     *
      * @return true, to synchronize, false otherwise.
      */
     boolean shouldSyncWhenTimestampDiffers();
@@ -325,7 +324,7 @@ public interface EurekaServerConfig {
     /**
      * Get the number of times that a eureka node would try to get the registry
      * information from the peers during startup.
-     * 
+     *
      * @return the number of retries
      */
     int getRegistrySyncRetries();
@@ -338,7 +337,7 @@ public interface EurekaServerConfig {
      * Depending on the memory allowed, timeout and the replication traffic,
      * this value can vary.
      * </p>
-     * 
+     *
      * @return the maximum number of replication events that can be allowed to
      *         back up.
      */
@@ -346,21 +345,21 @@ public interface EurekaServerConfig {
 
     /**
      * Get the idle time for which the replication threads can stay alive.
-     * 
+     *
      * @return time in minutes.
      */
     long getMaxIdleThreadAgeInMinutesForPeerReplication();
 
     /**
      * Get the minimum number of threads to be used for replication.
-     * 
+     *
      * @return minimum number of threads to be used for replication.
      */
     int getMinThreadsForPeerReplication();
 
     /**
      * Get the maximum number of threads to be used for replication.
-     * 
+     *
      * @return maximum number of threads to be used for replication.
      */
     int getMaxThreadsForPeerReplication();
@@ -368,7 +367,7 @@ public interface EurekaServerConfig {
     /**
      * Get the time in milliseconds to try to replicate before dropping
      * replication events.
-     * 
+     *
      * @return time in milliseconds
      */
     int getMaxTimeForReplication();
@@ -376,7 +375,7 @@ public interface EurekaServerConfig {
     /**
      * Checks whether the connections to replicas should be primed. In AWS, the
      * firewall requires sometime to establish network connection for new nodes.
-     * 
+     *
      * @return true, if connections should be primed, false otherwise.
      */
     boolean shouldPrimeAwsReplicaConnections();
@@ -387,7 +386,7 @@ public interface EurekaServerConfig {
      * <p>
      * <em>The changes are effective at runtime.</em>
      * </p>
-     * 
+     *
      * @return true if the delta information is allowed to be served, false
      *         otherwise.
      */
@@ -396,7 +395,7 @@ public interface EurekaServerConfig {
     /**
      * Gets the timeout value for connecting to peer eureka nodes for remote
      * regions.
-     * 
+     *
      * @return timeout value in milliseconds.
      */
     int getRemoteRegionConnectTimeoutMs();
@@ -404,7 +403,7 @@ public interface EurekaServerConfig {
     /**
      * Gets the timeout value for reading information from peer eureka nodes for
      * remote regions.
-     * 
+     *
      * @return timeout value in milliseconds.
      */
     int getRemoteRegionReadTimeoutMs();
@@ -412,7 +411,7 @@ public interface EurekaServerConfig {
     /**
      * Gets the total number of <em>HTTP</em> connections allowed to peer eureka
      * nodes for remote regions.
-     * 
+     *
      * @return total number of allowed <em>HTTP</em> connections.
      */
 
@@ -421,7 +420,7 @@ public interface EurekaServerConfig {
     /**
      * Gets the total number of <em>HTTP</em> connections allowed to a
      * particular peer eureka node for remote regions.
-     * 
+     *
      * @return total number of allowed <em>HTTP</em> connections for a peer
      *         node.
      */
@@ -430,7 +429,7 @@ public interface EurekaServerConfig {
     /**
      * Gets the idle time after which the <em>HTTP</em> connection should be
      * cleaned up for remote regions.
-     * 
+     *
      * @return idle time in seconds.
      */
     int getRemoteRegionConnectionIdleTimeoutSeconds();
@@ -440,22 +439,22 @@ public interface EurekaServerConfig {
      * compressed for remote regions whenever it is supported by the server. The
      * registry information from the eureka server is compressed for optimum
      * network traffic.
-     * 
+     *
      * @return true, if the content need to be compressed, false otherwise.
      */
     boolean shouldGZipContentFromRemoteRegion();
-    
+
     /**
      * Get a map of region name against remote region discovery url.
      *
-     * @return - An unmodifiable map of remote region name against remote region discovery url. Empty map if no remote region url
-     * is defined.
+     * @return - An unmodifiable map of remote region name against remote region discovery url. Empty map if no remote
+     * region url is defined.
      */
     Map<String, String> getRemoteRegionUrlsWithName();
 
     /**
-     * Get the list of remote region urls
-     * @return - array of string representing {@link URL}s.
+     * Get the list of remote region urls.
+     * @return - array of string representing {@link java.net.URL}s.
      * @deprecated Use {@link #getRemoteRegionUrlsWithName()}
      */
     String[] getRemoteRegionUrls();
@@ -481,15 +480,15 @@ public interface EurekaServerConfig {
      * @return time in seconds.
      */
     int getRemoteRegionRegistryFetchInterval();
-    
+
     /**
-     * Gets the fully qualified trust store file that will be used for remote region registry fetches
+     * Gets the fully qualified trust store file that will be used for remote region registry fetches.
      * @return
      */
     String getRemoteRegionTrustStore();
-    
+
     /**
-     * Get the remote region trust store's password
+     * Get the remote region trust store's password.
      */
     String getRemoteRegionTrustStorePassword();
 
@@ -502,7 +501,7 @@ public interface EurekaServerConfig {
     boolean disableTransparentFallbackToOtherRegion();
 
     /**
-     * Indicates whether the replication between cluster nodes should be batched for network efficiency
+     * Indicates whether the replication between cluster nodes should be batched for network efficiency.
      * @return {@code true} if the replication needs to be batched.
      */
     boolean shouldBatchReplication();

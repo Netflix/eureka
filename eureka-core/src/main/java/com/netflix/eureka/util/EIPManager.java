@@ -16,7 +16,6 @@
 
 package com.netflix.eureka.util;
 
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -40,21 +39,19 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfigurationManager;
-import com.netflix.eureka.PeerAwareInstanceRegistry;
-import com.netflix.eureka.cluster.PeerEurekaNode;
 import com.netflix.servo.monitor.Monitors;
 
 /**
  * An AWS specific <em>elastic ip</em> binding utility for binding eureka
  * servers for a well known <code>IP address</code>.
- * 
+ *
  * <p>
  * <em>Eureka</em> clients talk to <em>Eureka</em> servers bound with well known
  * <code>IP addresses</code> since that is the most reliable mechanism to
  * discover the <em>Eureka</em> servers. When Eureka servers come up they bind
  * themselves to a well known <em>elastic ip</em>
  * </p>
- * 
+ *
  * <p>
  * This binding mechanism gravitates towards one eureka server per zone for
  * resilience.Atleast one elastic ip should be slotted for each eureka server in
@@ -62,9 +59,9 @@ import com.netflix.servo.monitor.Monitors;
  * enough elastic ips slotted, the server tries to pick a free EIP slotted for other
  * zones and if it still cannot find a free EIP, waits and keeps trying.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
- * 
+ *
  */
 public class EIPManager {
     private static final String US_EAST_1 = "us-east-1";
@@ -90,9 +87,9 @@ public class EIPManager {
                     e);
         }
     }
-    
+
     /**
-     * Checks if an EIP is already bound to the instance
+     * Checks if an EIP is already bound to the instance.
      * @return true if an EIP is bound, false otherwise
      */
     public boolean isEIPBound() {
@@ -119,22 +116,22 @@ public class EIPManager {
 
     /**
      * Checks if an EIP is bound and optionally binds the EIP.
-     * 
+     *
      * The list of EIPs are arranged with the EIPs allocated in the zone first
      * followed by other EIPs.
-     * 
+     *
      * If an EIP is already bound to this instance this method simply returns. Otherwise, this method tries to find
      * an unused EIP based on information from AWS. If it cannot find any unused EIP this method, it will be retried
      * for a specified interval.
-     * 
+     *
      * One of the following scenarios can happen here :
-     * 
+     *
      *  1) If the instance is already bound to an EIP as deemed by AWS, no action is taken.
      *  2) If an EIP is already bound to another instance as deemed by AWS, that EIP is skipped.
-     *  3) If an EIP is not already bound to an instance and if this instance is not bound to an EIP, then 
+     *  3) If an EIP is not already bound to an instance and if this instance is not bound to an EIP, then
      *     the EIP is bound to this instance.
      */
-    public void bindEIP( ) {
+    public void bindEIP() {
         InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
         String myInstanceId = ((AmazonInfo) myInfo.getDataCenterInfo())
         .get(MetaDataKey.instanceId);
@@ -147,8 +144,8 @@ public class EIPManager {
         AmazonEC2 ec2Service = getEC2Service();
         boolean isMyinstanceAssociatedWithEIP = false;
         String selectedEIP = null;
-       
-        
+
+
         for (String eipEntry : candidateEIPs) {
             try {
                 String associatedInstanceId = null;
@@ -170,19 +167,18 @@ public class EIPManager {
                         if (selectedEIP == null) {
                             selectedEIP = eipEntry;
                         }
-                    } 
-                    // This EIP is associated with an instance, check if this is the same as the current instance.
-                    // If it is the same, stop searching for an EIP as this instance is already associated with an EIP
-                    else if (isMyinstanceAssociatedWithEIP = (associatedInstanceId
+                    } else if (isMyinstanceAssociatedWithEIP = (associatedInstanceId
                             .equals(myInstanceId))) {
+                        // This EIP is associated with an instance, check if this is the same as the current instance.
+                        // If it is the same, stop searching for an EIP as this instance is already associated with an
+                        // EIP
                         selectedEIP = eipEntry;
                         break;
-                    } 
-                    // The EIP is used by some other instance, hence skip it
-                    else {
+                    } else {
+                        // The EIP is used by some other instance, hence skip it
                         logger.warn(
-                                "The selected EIP {} is associated with another instance {} according to AWS, hence skipping this",
-                                eipEntry, associatedInstanceId);
+                                "The selected EIP {} is associated with another instance {} according to AWS, hence "
+                                + "skipping this", eipEntry, associatedInstanceId);
                         continue;
                     }
                 }
@@ -200,8 +196,8 @@ public class EIPManager {
             logger.info("\n\n\nAssociated " + myInstanceId
                     + " running in zone: " + myZone + " to elastic IP: "
                     + selectedEIP);
-        
-         } 
+
+         }
             logger.info(
                     "My instance {} seems to be already associated with the EIP {}",
                     myInstanceId, selectedEIP);
@@ -233,8 +229,8 @@ public class EIPManager {
     }
 
     /**
-     * Get the list of EIPs in the order of preference depending on instance zone
-     * 
+     * Get the list of EIPs in the order of preference depending on instance zone.
+     *
      * @param myInstanceId
      *            the instance id for this instance
      * @param myZone
@@ -255,13 +251,13 @@ public class EIPManager {
                     "Could not get any elastic ips from the EIP pool for zone :"
                     + myZone);
         }
-       
+
         return eipCandidates;
     }
 
     /**
      * Get the list of EIPs from the configuration.
-     * 
+     *
      * @param myZone
      *            - the zone in which the instance resides.
      * @return collection of EIPs to choose from for binding.
@@ -274,7 +270,7 @@ public class EIPManager {
 
     /**
      * Get the list of EIPs from the ec2 urls.
-     * 
+     *
      * @param ec2Urls
      *            the ec2urls for which the EIP needs to be obtained.
      * @return collection of EIPs.
@@ -282,7 +278,7 @@ public class EIPManager {
     private Collection<String> getEIPsFromServiceUrls(List<String> ec2Urls) {
         List<String> returnedUrls = new ArrayList<String>();
         String region = DiscoveryManager.getInstance().getEurekaClientConfig().getRegion();
-        String regionPhrase="";
+        String regionPhrase = "";
         if (!US_EAST_1.equals(region)) {
             regionPhrase = "." + region;
         }
@@ -298,16 +294,16 @@ public class EIPManager {
 
     /**
      * Get the list of EIPS from the DNS.
-     * 
+     *
      * <p>
      * This mechanism looks for the EIP pool in the zone the instance is in by
      * looking up the DNS name <code>{zone}.{region}.{domainName}</code>. The
      * zone is fetched from the {@link InstanceInfo} object;the region is picked
      * up from the specified configuration
-     * {@link EurekaServerConfig#getRegion()};the domain name is picked up from
-     * the specified configuration {@link EurekaServerConfig#getDomainName()}.
+     * {@link com.netflix.eureka.EurekaServerConfig#getRegion()};the domain name is picked up from
+     * the specified configuration {@link com.netflix.eureka.EurekaServerConfig#getDomainName()}.
      * </p>
-     * 
+     *
      * @param myZone
      *            the zone where this instance exist in.
      * @return the collection of EIPs that exist in the zone this instance is
@@ -321,7 +317,7 @@ public class EIPManager {
 
     /**
      * Gets the EC2 service object to call AWS APIs.
-     * 
+     *
      * @return the EC2 service object to call AWS APIs.
      */
     private AmazonEC2 getEC2Service() {
@@ -332,13 +328,11 @@ public class EIPManager {
         String aWSSecretKey = eurekaConfig.getAWSSecretKey();
 
         AmazonEC2 ec2Service;
-        if (null != aWSAccessId && !"".equals(aWSAccessId) &&
-                null != aWSSecretKey && !"".equals(aWSSecretKey)) {
+        if (null != aWSAccessId && !"".equals(aWSAccessId)
+                && null != aWSSecretKey && !"".equals(aWSSecretKey)) {
             ec2Service = new AmazonEC2Client(new BasicAWSCredentials(
                     aWSAccessId, aWSSecretKey));
-        }
-        else
-        {
+        } else {
             ec2Service = new AmazonEC2Client(
                     new InstanceProfileCredentialsProvider());
         }

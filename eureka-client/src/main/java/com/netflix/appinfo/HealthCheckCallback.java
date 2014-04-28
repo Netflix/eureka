@@ -16,12 +16,10 @@
 
 package com.netflix.appinfo;
 
-import com.netflix.discovery.DiscoveryClient;
-
 /**
  * Applications can implement this interface and register a callback with the
- * {@link DiscoveryClient#registerHealthCheckCallback(HealthCheckCallback)}.
- * 
+ * {@link com.netflix.discovery.DiscoveryClient#registerHealthCheckCallback(HealthCheckCallback)}.
+ *
  * <p>
  * Your callback will be invoked every
  * {@link EurekaInstanceConfig#getLeaseRenewalIntervalInSeconds()} if the
@@ -30,14 +28,14 @@ import com.netflix.discovery.DiscoveryClient;
  * checkHealth() method will mark the instance
  * {@link InstanceInfo.InstanceStatus#DOWN} with eureka.
  * </p>
- * 
+ *
  * <p>
  * Eureka server normally just relies on <em>heartbeats</em> to identify the
  * <em>status</em> of an instance. Application could decide to implement their
  * own <em>healthpage</em> check here or use the built-in jersey resource
  * {@link HealthCheckResource}.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
  */
 public interface HealthCheckCallback {
@@ -47,7 +45,7 @@ public interface HealthCheckCallback {
      * already marked {@link InstanceInfo.InstanceStatus#DOWN} , returning true
      * here will mark the instance back to
      * {@link InstanceInfo.InstanceStatus#UP}.
-     * 
+     *
      * @return true if the call back returns healthy, false otherwise.
      */
     boolean isHealthy();
