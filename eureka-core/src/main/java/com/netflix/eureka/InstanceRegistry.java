@@ -736,7 +736,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      * @return all application deltas.
      * @deprecated use {@link #getApplicationDeltasFromMultipleRegions(String[])} instead. This method has a
      * flawed behavior of transparently falling back to a remote region if no instances for an app is available locally.
-     * The new behavior is to explictly specify if you need a remote region.
+     * The new behavior is to explicitly specify if you need a remote region.
      */
     @Deprecated
     public Applications getApplicationDeltas() {
