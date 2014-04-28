@@ -85,6 +85,11 @@ public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
         }
     }
 
+    /**
+     * Returns all the zones in the provided region.
+     * @param region the region whose zones you want
+     * @return a set of zones
+     */
     protected abstract Set<String> getZonesForARegion(String region);
 
     @Override
@@ -102,6 +107,11 @@ public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
         setRegionsToFetch(regionsToFetch);
     }
 
+    /**
+     * Tries to determine what region we're in, based on the provided availability zone.
+     * @param availabilityZone the availability zone to inspect
+     * @return the region, if available; null otherwise
+     */
     protected String parseAzToGetRegion(String availabilityZone) {
         // Here we see that whether the availability zone is following a pattern like <region><single letter>
         // If it is then we take ignore the last letter and check if the remaining part is actually a known remote
