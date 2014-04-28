@@ -82,10 +82,19 @@ public class Applications {
 
     private String appsHashCode;
 
+    /**
+     * Create a new, empty Eureka application list.
+     */
     public Applications() {
         this.applications = new ConcurrentLinkedQueue<Application>();
     }
 
+    /**
+     * Create a new Eureka application list, based on the provided applications.  The provided container is
+     * not modified.
+     *
+     * @param apps the initial list of apps to store in this applications list
+     */
     public Applications(List<Application> apps) {
         this.applications = new ConcurrentLinkedQueue<Application>();
         this.applications.addAll(apps);
@@ -180,7 +189,7 @@ public class Applications {
     /**
      * Used by the eureka server. Not for external use.
      *
-     * @param hashCode
+     * @param hashCode the hash code to assign for this app collection
      */
     public void setAppsHashCode(String hashCode) {
         this.appsHashCode = hashCode;
@@ -208,6 +217,11 @@ public class Applications {
         return getReconcileHashCode(instanceCountMap);
     }
 
+    /**
+     * Populates the provided instance count map.  The instance count map is used as part of the general
+     * app list synchronization mechanism.
+     * @param instanceCountMap the map to populate
+     */
     public void populateInstanceCountMap(TreeMap<String, AtomicInteger> instanceCountMap) {
         for (Application app : this.getRegisteredApplications()) {
             for (InstanceInfo info : app.getInstancesAsIsFromEureka()) {
@@ -223,6 +237,12 @@ public class Applications {
         }
     }
 
+    /**
+     * Gets the reconciliation hashcode.  The hashcode is used to determine whether the applications list
+     * has changed since the last time it was acquired.
+     * @param instanceCountMap the instance count map to use for generating the hash
+     * @return the hash code for this instance
+     */
     public static String getReconcileHashCode(TreeMap<String, AtomicInteger> instanceCountMap) {
         String reconcileHashCode = "";
         for (Map.Entry<String, AtomicInteger> mapEntry : instanceCountMap
@@ -361,10 +381,21 @@ public class Applications {
         }
     }
 
+    /**
+     * Shuffles the provided instances so that they will not always be returned in the same order.
+     * @param filterUpInstances whether to return only UP instances
+     */
     public void shuffleInstances(boolean filterUpInstances) {
         shuffleInstances(filterUpInstances, false, null, null, null);
     }
 
+    /**
+     * Shuffles a whole region so that the instances will not always be returned in the same order.
+     * @param remoteRegionsRegistry the map of remote region names to their registries
+     * @param clientConfig the {@link EurekaClientConfig}, whose settings will be used to determine whether to
+     *                     filter to only UP instances
+     * @param instanceRegionChecker the instance region checker
+     */
     public void shuffleAndIndexInstances(Map<String, Applications> remoteRegionsRegistry,
                                          EurekaClientConfig clientConfig, InstanceRegionChecker instanceRegionChecker) {
         shuffleInstances(clientConfig.shouldFilterOnlyUpInstances(), true, remoteRegionsRegistry, clientConfig,

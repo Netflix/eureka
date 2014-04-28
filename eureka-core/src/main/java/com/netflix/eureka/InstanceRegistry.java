@@ -75,7 +75,7 @@ import com.netflix.servo.annotations.DataSourceType;
  *
  * <p>
  * Primary operations that are performed are the
- * <em>Registers,Renewals,Cancels,Expirations and Status Changes</em>. The
+ * <em>Registers</em>, <em>Renewals</em>, <em>Cancels</em>, <em>Expirations</em>, and <em>Status Changes</em>. The
  * registry also stores only the delta operations
  * </p>
  *
@@ -118,6 +118,9 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
     private static final AtomicReference<EvictionTask> evictionTask = new AtomicReference<EvictionTask>();
 
 
+    /**
+     * Create a new, empty instance registry.
+     */
     protected InstanceRegistry() {
         recentCanceledQueue = new CircularQueue<Pair<Long, String>>(1000);
         recentRegisteredQueue = new CircularQueue<Pair<Long, String>>(1000);
@@ -126,6 +129,9 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                 eurekaConfig.getDeltaRetentionTimerIntervalInMs());
     }
 
+    /**
+     * Completely clear the registry.
+     */
     public void clearRegistry() {
         overriddenInstanceStatusMap.clear();
         recentCanceledQueue.clear();
@@ -135,14 +141,13 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
 
     }
 
-    /*
-     * (non-Javadoc)
+    /**
+     * Registers a new instance with a given duration.
      *
      * @see com.netflix.eureka.lease.LeaseManager#register(java.lang.Object,
-     * int, long, boolean)
+     * int, boolean)
      */
-    public void register(InstanceInfo r, int leaseDuration,
-                         boolean isReplication) {
+    public void register(InstanceInfo r, int leaseDuration, boolean isReplication) {
         try {
             read.lock();
             Map<String, Lease<InstanceInfo>> gMap = _registry.get(r
@@ -306,11 +311,12 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         }
     }
 
-    /*
-     * (non-Javadoc)
+    /**
+     * Marks the given instance of the given app name as renewed, and also marks whether it originated from
+     * replication.
      *
      * @see com.netflix.eureka.lease.LeaseManager#renew(java.lang.String,
-     * java.lang.String, long, boolean)
+     * java.lang.String, boolean)
      */
     public boolean renew(String appName, String id, boolean isReplication) {
         RENEW.increment(isReplication);
@@ -454,8 +460,8 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         }
     }
 
-    /*
-     * (non-Javadoc)
+    /**
+     * Evicts everything in the instance registry that has expired, if expiry is enabled.
      *
      * @see com.netflix.eureka.lease.LeaseManager#evict()
      */
@@ -491,11 +497,16 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         }
     }
 
-    /*
-     * (non-Javadoc)
+    /**
+     * Returns the given app that is in this instance only, falling back to other regions transparently only
+     * if specified in this client configuration.
+     *
+     * @param appName
+     *      - the application name of the application
+     * @return the application
      *
      * @see
-     * com.netflix.eureka.shared.LookupService#getApplication(java.lang.String )
+     * com.netflix.discovery.shared.LookupService#getApplication(java.lang.String )
      */
     public Application getApplication(String appName) {
         boolean disableTransparentFallback = eurekaConfig.disableTransparentFallbackToOtherRegion();
@@ -512,7 +523,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      *            as indicated by the region {@link URL} by this property
      *            {@link EurekaServerConfig#getRemoteRegionUrls()}, false
      *            otherwise
-     * @return
+     * @return the application
      */
     public Application getApplication(String appName, boolean includeRemoteRegion) {
         Application app = null;
@@ -540,8 +551,10 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         return app;
     }
 
-    /*
-     * (non-Javadoc)
+    /**
+     * Get all applications in this instance registry, falling back to other regions if allowed in the Eureka config.
+     *
+     * @return the list of all known applications
      *
      * @see com.netflix.discovery.shared.LookupService#getApplications()
      */
@@ -658,7 +671,6 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
     /**
      * Get the registry information about all {@link Applications}.
      *
-     * @return all applications.
      * @param includeRemoteRegion
      *            - true, if we need to include applications from remote regions
      *            as indicated by the region {@link URL} by this property
@@ -910,18 +922,16 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         } else if (includeRemoteRegions) {
             for (RemoteRegionRegistry remoteRegistry : this.regionNameVSRemoteRegistry.values()) {
                 Application application = remoteRegistry.getApplication(appName);
-                InstanceInfo instanceInfo = application.getByInstanceId(id);
-                return instanceInfo;
+                return application.getByInstanceId(id);
             }
         }
         return null;
     }
 
-    /*
-     * (non-Javadoc)
+    /**
+     * Get all instances by ID, including automatically asking other regions if the ID is unknown.
      *
-     * @see com.netflix.eureka.shared.LookupService#getInstancesById(java.lang
-     * .String)
+     * @see com.netflix.discovery.shared.LookupService#getInstancesById(String)
      */
     public List<InstanceInfo> getInstancesById(String id) {
         return this.getInstancesById(id, true);
@@ -979,6 +989,11 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         return list;
     }
 
+    /**
+     * Checks whether lease expiration is enabled.
+     *
+     * @return true if enabled
+     */
     public abstract boolean isLeaseExpirationEnabled();
 
     private InstanceInfo decorateInstanceInfo(Lease<InstanceInfo> lease) {
@@ -1006,6 +1021,11 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         return info;
     }
 
+    /**
+     * Servo route; do not call.
+     *
+     * @return servo data
+     */
     @com.netflix.servo.annotations.Monitor(name = "numOfRenewsInLastMin",
             description = "Number of total heartbeats received in the last minute", type = DataSourceType.GAUGE)
     public long getNumOfRenewsInLastMin() {
@@ -1016,6 +1036,11 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         }
     }
 
+    /**
+     * Get the N instances that are most recently registered.
+     *
+     * @return
+     */
     public List<Pair<Long, String>> getLastNRegisteredInstances() {
         List<Pair<Long, String>> list = new ArrayList<Pair<Long, String>>();
 
@@ -1029,6 +1054,11 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         return list;
     }
 
+    /**
+     * Get the N instances that have most recently canceled.
+     *
+     * @return
+     */
     public List<Pair<Long, String>> getLastNCanceledInstances() {
         List<Pair<Long, String>> list = new ArrayList<Pair<Long, String>>();
         synchronized (recentCanceledQueue) {
