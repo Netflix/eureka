@@ -145,10 +145,8 @@ public class Applications {
      *            returned.
      * @return list of <em>instances</em>.
      */
-    public List<InstanceInfo> getInstancesByVirtualHostName(
-            String virtualHostName) {
-        AtomicReference<List<InstanceInfo>> ref = this.shuffleVirtualHostNameMap
-        .get(virtualHostName.toUpperCase());
+    public List<InstanceInfo> getInstancesByVirtualHostName(String virtualHostName) {
+        AtomicReference<List<InstanceInfo>> ref = this.shuffleVirtualHostNameMap.get(virtualHostName.toUpperCase());
         if (ref == null || ref.get() == null) {
             return new ArrayList<InstanceInfo>();
         } else {
@@ -165,10 +163,9 @@ public class Applications {
      *            returned.
      * @return list of <em>instances</em>.
      */
-    public List<InstanceInfo> getInstancesBySecureVirtualHostName(
-            String secureVirtualHostName) {
+    public List<InstanceInfo> getInstancesBySecureVirtualHostName(String secureVirtualHostName) {
         AtomicReference<List<InstanceInfo>> ref = this.shuffledSecureVirtualHostNameMap
-        .get(secureVirtualHostName.toUpperCase());
+                .get(secureVirtualHostName.toUpperCase());
         if (ref == null || ref.get() == null) {
             return new ArrayList<InstanceInfo>();
         } else {
@@ -225,12 +222,10 @@ public class Applications {
     public void populateInstanceCountMap(TreeMap<String, AtomicInteger> instanceCountMap) {
         for (Application app : this.getRegisteredApplications()) {
             for (InstanceInfo info : app.getInstancesAsIsFromEureka()) {
-                AtomicInteger instanceCount = instanceCountMap.get(info
-                        .getStatus().name());
+                AtomicInteger instanceCount = instanceCountMap.get(info.getStatus().name());
                 if (instanceCount == null) {
                     instanceCount = new AtomicInteger(0);
-                    instanceCountMap
-                    .put(info.getStatus().name(), instanceCount);
+                    instanceCountMap.put(info.getStatus().name(), instanceCount);
                 }
                 instanceCount.incrementAndGet();
             }
@@ -245,8 +240,7 @@ public class Applications {
      */
     public static String getReconcileHashCode(TreeMap<String, AtomicInteger> instanceCountMap) {
         String reconcileHashCode = "";
-        for (Map.Entry<String, AtomicInteger> mapEntry : instanceCountMap
-                .entrySet()) {
+        for (Map.Entry<String, AtomicInteger> mapEntry : instanceCountMap.entrySet()) {
             reconcileHashCode = reconcileHashCode + mapEntry.getKey()
                     + STATUS_DELIMITER + mapEntry.getValue().get()
                     + STATUS_DELIMITER;
@@ -266,8 +260,7 @@ public class Applications {
         Map<String, List<String>> diffMap = new TreeMap<String, List<String>>();
         Set<Pair> allInstanceAppInstanceIds = new HashSet<Pair>();
         for (Application otherApp : apps.getRegisteredApplications()) {
-            Application thisApp = this.getRegisteredApplications(otherApp
-                    .getName());
+            Application thisApp = this.getRegisteredApplications(otherApp.getName());
             if (thisApp == null) {
                 logger.warn("The application %s is not found in local cache :", otherApp.getName());
                 continue;
@@ -277,11 +270,9 @@ public class Applications {
                         instanceInfo.getId()));
             }
             for (InstanceInfo otherInstanceInfo : otherApp.getInstancesAsIsFromEureka()) {
-                InstanceInfo thisInstanceInfo = thisApp
-                .getByInstanceId(otherInstanceInfo.getId());
+                InstanceInfo thisInstanceInfo = thisApp.getByInstanceId(otherInstanceInfo.getId());
                 if (thisInstanceInfo == null) {
-                    List<String> diffList = diffMap.get(ActionType.DELETED
-                            .name());
+                    List<String> diffList = diffMap.get(ActionType.DELETED.name());
                     if (diffList == null) {
                         diffList = new ArrayList<String>();
                         diffMap.put(ActionType.DELETED.name(), diffList);
@@ -289,8 +280,7 @@ public class Applications {
                     diffList.add(otherInstanceInfo.getId());
                 } else if (!thisInstanceInfo.getStatus().name()
                         .equalsIgnoreCase(otherInstanceInfo.getStatus().name())) {
-                    List<String> diffList = diffMap.get(ActionType.MODIFIED
-                            .name());
+                    List<String> diffList = diffMap.get(ActionType.MODIFIED.name());
                     if (diffList == null) {
                         diffList = new ArrayList<String>();
                         diffMap.put(ActionType.MODIFIED.name(), diffList);
@@ -301,14 +291,12 @@ public class Applications {
                             + APP_INSTANCEID_DELIMITER
                             + otherInstanceInfo.getStatus().name());
                 }
-                allInstanceAppInstanceIds.remove(new Pair(otherApp.getName(),
-                        otherInstanceInfo.getId()));
+                allInstanceAppInstanceIds.remove(new Pair(otherApp.getName(), otherInstanceInfo.getId()));
             }
         }
         for (Pair pair : allInstanceAppInstanceIds) {
             Application app = new Application(pair.getItem1());
-            InstanceInfo thisInstanceInfo = app.getByInstanceId(pair
-                    .getItem2());
+            InstanceInfo thisInstanceInfo = app.getByInstanceId(pair.getItem2());
             if (thisInstanceInfo != null) {
                 List<String> diffList = diffMap.get(ActionType.ADDED.name());
                 if (diffList == null) {
@@ -452,11 +440,9 @@ public class Applications {
             Map<String, AbstractQueue<InstanceInfo>> srcMap,
             Map<String, AtomicReference<List<InstanceInfo>>> destMap,
             Map<String, AtomicLong> vipIndexMap, boolean filterUpInstances) {
-        for (Map.Entry<String, AbstractQueue<InstanceInfo>> entries : srcMap
-                .entrySet()) {
+        for (Map.Entry<String, AbstractQueue<InstanceInfo>> entries : srcMap.entrySet()) {
             AbstractQueue<InstanceInfo> instanceInfoQueue = entries.getValue();
-            List<InstanceInfo> l = new ArrayList<InstanceInfo>(
-                    instanceInfoQueue);
+            List<InstanceInfo> l = new ArrayList<InstanceInfo>(instanceInfoQueue);
             if (filterUpInstances) {
                 Iterator<InstanceInfo> it = l.iterator();
 
@@ -468,8 +454,7 @@ public class Applications {
                 }
             }
             Collections.shuffle(l);
-            AtomicReference<List<InstanceInfo>> instanceInfoList = destMap
-            .get(entries.getKey());
+            AtomicReference<List<InstanceInfo>> instanceInfoList = destMap.get(entries.getKey());
             if (instanceInfoList == null) {
                 instanceInfoList = new AtomicReference<List<InstanceInfo>>(l);
                 destMap.put(entries.getKey(), instanceInfoList);
@@ -491,8 +476,7 @@ public class Applications {
             String[] vipAddressArray = vipAddresses.split(",");
             for (String vipAddress : vipAddressArray) {
                 String vipName = vipAddress.toUpperCase();
-                AbstractQueue<InstanceInfo> instanceInfoList = vipMap
-                .get(vipName);
+                AbstractQueue<InstanceInfo> instanceInfoList = vipMap.get(vipName);
                 if (instanceInfoList == null) {
                     instanceInfoList = new ConcurrentLinkedQueue<InstanceInfo>();
                     vipMap.put(vipName, instanceInfoList);

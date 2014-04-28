@@ -113,7 +113,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
     protected volatile int numberOfRenewsPerMinThreshold;
     protected volatile int expectedNumberOfRenewsPerMin;
     protected static final EurekaServerConfig EUREKA_SERVER_CONFIG = EurekaServerConfigurationManager
-    .getInstance().getConfiguration();
+            .getInstance().getConfiguration();
 
     private static final AtomicReference<EvictionTask> evictionTask = new AtomicReference<EvictionTask>();
 
@@ -1125,7 +1125,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
 
 
     private class CircularQueue<E> extends ConcurrentLinkedQueue<E> {
-        int size = 0;
+        private int size = 0;
 
         public CircularQueue(int size) {
             this.size = size;
