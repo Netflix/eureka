@@ -16,13 +16,13 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
 
 /**
  * An utility class for exposing status information of an instance.
- * 
+ *
  * @author Greg Kim
  */
 @Serializer("com.netflix.eureka.converters.EntityBodyConverter")
 @XStreamAlias("status")
 public class StatusInfo {
-    private final static String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss Z";
+    private static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss Z";
 
     public static final class Builder {
 
@@ -109,7 +109,7 @@ public class StatusInfo {
     /**
      * Output the amount of time that has elapsed since the given date in the
      * format x days, xx:xx.
-     * 
+     *
      * @return A string representing the formatted interval.
      */
     public static String getUpTime() {
@@ -121,10 +121,11 @@ public class StatusInfo {
         diff /= 24;
         long days = diff;
         StringBuilder buf = new StringBuilder();
-        if (days == 1)
+        if (days == 1) {
             buf.append("1 day ");
-        else if (days > 1)
+        } else if (days > 1) {
             buf.append(Long.valueOf(days).toString()).append(" days ");
+        }
         DecimalFormat format = new DecimalFormat();
         format.setMinimumIntegerDigits(2);
         buf.append(format.format(hours)).append(":")

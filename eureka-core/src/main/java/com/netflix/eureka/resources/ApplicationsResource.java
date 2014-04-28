@@ -16,7 +16,6 @@
 
 package com.netflix.eureka.resources;
 
-import java.net.URI;
 import java.util.Arrays;
 
 import javax.annotation.Nullable;
@@ -31,12 +30,9 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
-import com.netflix.discovery.shared.Application;
-import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka.CurrentRequestVersion;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfigurationManager;
-import com.netflix.eureka.InstanceRegistry;
 import com.netflix.eureka.PeerAwareInstanceRegistry;
 import com.netflix.eureka.Version;
 import com.netflix.eureka.resources.ResponseCache.Key;
@@ -45,10 +41,10 @@ import com.netflix.eureka.util.EurekaMonitors;
 
 /**
  * A <em>jersey</em> resource that handles request related to all
- * {@link Applications}.
- * 
+ * {@link com.netflix.discovery.shared.Applications}.
+ *
  * @author Karthik Ranganathan, Greg Kim
- * 
+ *
  */
 @Path("/{version}/apps")
 @Produces({ "application/xml", "application/json" })
@@ -62,8 +58,8 @@ public class ApplicationsResource {
     .getInstance().getConfiguration();
 
     /**
-     * Gets information about a particular {@link Application}.
-     * 
+     * Gets information about a particular {@link com.netflix.discovery.shared.Application}.
+     *
      * @param version
      *            the version of the request.
      * @param appId
@@ -80,25 +76,25 @@ public class ApplicationsResource {
     }
 
     /**
-     * Get information about all {@link Applications}.
-     * 
+     * Get information about all {@link com.netflix.discovery.shared.Applications}.
+     *
      * @param version
      *            the version of the request.
      * @param acceptHeader
      *            the accept header of the request to indicate whether to serve
      *            JSON or XML data.
-     * 
+     *
      * @param acceptEncoding
      *            the accept header of the request to indicate whether to serve
      *            compressed or uncompressed data.
      * @param uriInfo
-     *            the {@link URI} information of the request made.
+     *            the {@link java.net.URI} information of the request made.
      * @param regionsStr A comma separated list of remote regions from which the
      *                instances will also be returned. The applications returned
      *                from the remote region can be limited to the applications
      *                returned by {@link EurekaServerConfig#getRemoteRegionAppWhitelist(String)}
-     * @return response containing information about all {@link Applications}
-     *         from the {@link InstanceRegistry}.
+     * @return response containing information about all {@link com.netflix.discovery.shared.Applications}
+     *         from the {@link com.netflix.eureka.InstanceRegistry}.
      */
     @GET
     public Response getContainers(@PathParam("version") String version,
@@ -112,7 +108,7 @@ public class ApplicationsResource {
             EurekaMonitors.GET_ALL.increment();
         } else {
             regions = regionsStr.toLowerCase().split(",");
-            Arrays.sort(regions); // So, that we don't have different caches for same regions queried in different order.
+            Arrays.sort(regions); // So we don't have different caches for same regions queried in different order.
             EurekaMonitors.GET_ALL_WITH_REMOTE_REGIONS.increment();
         }
         // Check if the server allows the access to the registry. The server can
@@ -141,8 +137,8 @@ public class ApplicationsResource {
     }
 
     /**
-     * Get information about all delta changes in {@link Applications}.
-     * 
+     * Get information about all delta changes in {@link com.netflix.discovery.shared.Applications}.
+     *
      * <p>
      * The delta changes represent the registry information change for a period
      * as configured by
@@ -152,27 +148,27 @@ public class ApplicationsResource {
      * the changes to the registry are infrequent and hence getting just the
      * delta will be much more efficient than getting the complete registry.
      * </p>
-     * 
+     *
      * <p>
      * Since the delta information is cached over a period of time, the requests
      * may return the same data multiple times within the window configured by
      * {@link EurekaServerConfig#getRetentionTimeInMSInDeltaQueue()}.The clients
      * are expected to handle this duplicate information.
      * <p>
-     * 
+     *
      * @param version
      *            the version of the request.
      * @param acceptHeader
      *            the accept header of the request to indicate whether to serve
      *            JSON or XML data.
-     * 
+     *
      * @param acceptEncoding
      *            the accept header of the request to indicate whether to serve
      *            compressed or uncompressed data.
      * @param uriInfo
-     *            the {@link URI} information of the request made.
+     *            the {@link java.net.URI} information of the request made.
      * @return response containing the delta information of the
-     *         {@link InstanceRegistry}.z
+     *         {@link com.netflix.eureka.InstanceRegistry}.
      */
     @Path("delta")
     @GET
@@ -195,7 +191,7 @@ public class ApplicationsResource {
             EurekaMonitors.GET_ALL_DELTA.increment();
         } else {
             regions = regionsStr.toLowerCase().split(",");
-            Arrays.sort(regions); // So, that we don't have different caches for same regions queried in different order.
+            Arrays.sort(regions); // So we don't have different caches for same regions queried in different order.
             EurekaMonitors.GET_ALL_DELTA_WITH_REMOTE_REGIONS.increment();
         }
 

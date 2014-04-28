@@ -15,7 +15,6 @@
  */
 package com.netflix.appinfo;
 
-import java.net.URL;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -29,7 +28,6 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.ProvidedBy;
 import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
 import com.netflix.config.DynamicPropertyFactory;
-import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.converters.Auto;
 import com.netflix.discovery.provider.Serializer;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
@@ -42,9 +40,9 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
  * <code>@Auto</code> annotated fields are serialized as is; Other fields are
  * serialized as specified by the <code>@Serializer</code>.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
- * 
+ *
  */
 @ProvidedBy(EurekaConfigBasedInstanceInfoProvider.class)
 @Serializer("com.netflix.discovery.converters.EntityBodyConverter")
@@ -53,9 +51,9 @@ public class InstanceInfo {
     private static final Logger logger = LoggerFactory.getLogger(InstanceInfo.class);
     private static final Pattern VIP_ATTRIBUTES_PATTERN = Pattern.compile("\\$\\{(.*?)\\}");
 
-    public final static int DEFAULT_PORT = 7001;
-    public final static int DEFAULT_SECURE_PORT = 7002;
-    public final static int DEFAULT_COUNTRY_ID = 1; // US
+    public static final int DEFAULT_PORT = 7001;
+    public static final int DEFAULT_SECURE_PORT = 7002;
+    public static final int DEFAULT_COUNTRY_ID = 1; // US
 
     private volatile String appName;
     @Auto private volatile String appGroupName;
@@ -116,13 +114,13 @@ public class InstanceInfo {
     @Auto
     private volatile String asgName;
     private String version = "unknown";
-    
+
     private InstanceInfo() {
     }
 
     /**
      *
-     * shallow copy constructor
+     * shallow copy constructor.
      *
      * @param ii The object to copy
      */
@@ -212,18 +210,23 @@ public class InstanceInfo {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         InstanceInfo other = (InstanceInfo) obj;
         if (getId() == null) {
-            if (other.getId() != null)
+            if (other.getId() != null) {
                 return false;
-        } else if (!getId().equals(other.getId()))
+            }
+        } else if (!getId().equals(other.getId())) {
             return false;
+        }
         return true;
     }
 
@@ -238,7 +241,7 @@ public class InstanceInfo {
 
         @XStreamOmitField
         private InstanceInfo result;
-        
+
         private String namespace;
 
         private Builder() {
@@ -256,7 +259,7 @@ public class InstanceInfo {
         /**
          * Set the application name of the instance.This is mostly used in
          * querying of instances.
-         * 
+         *
          * @param appName
          *            the application name.
          * @return the instance info builder.
@@ -281,9 +284,9 @@ public class InstanceInfo {
 
         /**
          * Sets the fully qualified hostname of this running instance.This is
-         * mostly used in constructing the {@link URL} for communicating with
+         * mostly used in constructing the {@link java.net.URL} for communicating with
          * the instance.
-         * 
+         *
          * @param hostName
          *            the host name of the instance.
          * @return the {@link InstanceInfo} builder.
@@ -302,7 +305,7 @@ public class InstanceInfo {
         /**
          * Sets the status of the instances.If the status is UP, that is when
          * the instance is ready to service requests.
-         * 
+         *
          * @param status
          *            the {@link InstanceStatus} of the instance.
          * @return the {@link InstanceInfo} builder.
@@ -316,7 +319,7 @@ public class InstanceInfo {
          * Sets the status overridden by some other external process.This is
          * mostly used in putting an instance out of service to block traffic to
          * it.
-         * 
+         *
          * @param status
          *            the overridden {@link InstanceStatus} of the instance.
          * @return @return the {@link InstanceInfo} builder.
@@ -328,7 +331,7 @@ public class InstanceInfo {
 
         /**
          * Sets the ip address of this running instance.
-         * 
+         *
          * @param ip
          *            the ip address of the instance.
          * @return the {@link InstanceInfo} builder.
@@ -340,7 +343,7 @@ public class InstanceInfo {
 
         /**
          * Sets the identity of this application instance.
-         * 
+         *
          * @param sid
          *            the sid of the instance.
          * @return the {@link InstanceInfo} builder.
@@ -353,7 +356,7 @@ public class InstanceInfo {
 
         /**
          * Sets the port number that is used to service requests.
-         * 
+         *
          * @param port
          *            the port number that is used to service requests.
          * @return the {@link InstanceInfo} builder.
@@ -365,7 +368,7 @@ public class InstanceInfo {
 
         /**
          * Sets the secure port that is used to service requests.
-         * 
+         *
          * @param port
          *            the secure port that is used to service requests.
          * @return the {@link InstanceInfo} builder.
@@ -377,7 +380,7 @@ public class InstanceInfo {
 
         /**
          * Enabled or disable secure/non-secure ports .
-         * 
+         *
          * @param type
          *            Secure or Non-Secure.
          * @param isEnabled
@@ -400,24 +403,24 @@ public class InstanceInfo {
         }
 
         /**
-         * Sets the absolute home page {@link URL} for this instance. The users
+         * Sets the absolute home page {@link java.net.URL} for this instance. The users
          * can provide the <code>homePageUrlPath</code> if the home page resides
          * in the same instance talking to discovery, else in the cases where
          * the instance is a proxy for some other server, it can provide the
-         * full {@link URL}. If the full {@link URL} is provided it takes
+         * full {@link java.net.URL}. If the full {@link java.net.URL} is provided it takes
          * precedence.
-         * 
+         *
          * <p>
-         * The full {@link URL} should follow the format
+         * The full {@link java.net.URL} should follow the format
          * http://${netflix.appinfo.hostname}:7001/ where the value
          * ${netflix.appinfo.hostname} is replaced at runtime.
          * </p>
-         * 
+         *
          * @param relativeUrl
          *            the relative url path of the home page.
-         * 
+         *
          * @param explicitUrl
-         *            - The full {@link URL} for the home page
+         *            - The full {@link java.net.URL} for the home page
          * @return the instance builder.
          */
         public Builder setHomePageUrl(String relativeUrl, String explicitUrl) {
@@ -433,23 +436,23 @@ public class InstanceInfo {
         }
 
         /**
-         * Sets the absolute status page {@link URL} for this instance. The
+         * Sets the absolute status page {@link java.net.URL} for this instance. The
          * users can provide the <code>statusPageUrlPath</code> if the status
          * page resides in the same instance talking to discovery, else in the
          * cases where the instance is a proxy for some other server, it can
-         * provide the full {@link URL}. If the full {@link URL} is provided it
+         * provide the full {@link java.net.URL}. If the full {@link java.net.URL} is provided it
          * takes precedence.
-         * 
+         *
          * <p>
-         * The full {@link URL} should follow the format
+         * The full {@link java.net.URL} should follow the format
          * http://${netflix.appinfo.hostname}:7001/Status where the value
          * ${netflix.appinfo.hostname} is replaced at runtime.
          * </p>
-         * 
+         *
          * @param relativeUrl
-         *            - The {@link URL} path for status page for this instance
+         *            - The {@link java.net.URL} path for status page for this instance
          * @param explicitUrl
-         *            - The full {@link URL} for the status page
+         *            - The full {@link java.net.URL} for the status page
          * @return - Builder instance
          */
         public Builder setStatusPageUrl(String relativeUrl, String explicitUrl) {
@@ -467,24 +470,24 @@ public class InstanceInfo {
         }
 
         /**
-         * Sets the absolute health check {@link URL} for this instance for both
+         * Sets the absolute health check {@link java.net.URL} for this instance for both
          * secure and non-secure communication The users can provide the
          * <code>healthCheckUrlPath</code> if the healthcheck page resides in
          * the same instance talking to discovery, else in the cases where the
          * instance is a proxy for some other server, it can provide the full
-         * {@link URL}. If the full {@link URL} is provided it takes precedence.
-         * 
+         * {@link java.net.URL}. If the full {@link java.net.URL} is provided it takes precedence.
+         *
          * <p>
-         * The full {@link URL} should follow the format
+         * The full {@link java.net.URL} should follow the format
          * http://${netflix.appinfo.hostname}:7001/healthcheck where the value
          * ${netflix.appinfo.hostname} is replaced at runtime.
          * </p>
-         * 
+         *
          * @param relativeUrl
-         *            - The {@link URL} path for healthcheck page for this
+         *            - The {@link java.net.URL} path for healthcheck page for this
          *            instance.
          * @param explicitUrl
-         *            - The full {@link URL} for the healthcheck page.
+         *            - The full {@link java.net.URL} for the healthcheck page.
          * @param secureExplicitUrl
          *            the full secure explicit url of the healthcheck page.
          * @return the instance builder
@@ -518,7 +521,7 @@ public class InstanceInfo {
          * address should follow the format <code><hostname:port></code> This
          * address needs to be resolved into a real address for communicating
          * with this instance.
-         * 
+         *
          * @param vipAddress
          *            - The Virtual Internet Protocol address of this instance.
          * @return the instance builder.
@@ -534,10 +537,10 @@ public class InstanceInfo {
          * The address should follow the format <hostname:port> This address
          * needs to be resolved into a real address for communicating with this
          * instance.
-         * 
+         *
          * @param secureVIPAddress
          *            the secure VIP address of the instance.
-         * 
+         *
          * @return - Builder instance
          */
         public Builder setSecureVIPAddress(String secureVIPAddress) {
@@ -548,7 +551,7 @@ public class InstanceInfo {
 
         /**
          * Sets the datacenter information.
-         * 
+         *
          * @param datacenter
          *            the datacenter information for where this instance is
          *            running.
@@ -561,7 +564,7 @@ public class InstanceInfo {
 
         /**
          * Set the instance lease information.
-         * 
+         *
          * @param info
          *            the lease information for this instance.
          */
@@ -570,8 +573,8 @@ public class InstanceInfo {
         }
 
         /**
-         * Add arbitrary metadata to running instance
-         * 
+         * Add arbitrary metadata to running instance.
+         *
          * @param key
          *            The key of the metadata.
          * @param val
@@ -585,7 +588,7 @@ public class InstanceInfo {
 
         /**
          * Replace the existing metadata map with a new one.
-         * 
+         *
          * @param mt
          *            the new metadata name.
          * @return instance info builder.
@@ -597,7 +600,7 @@ public class InstanceInfo {
 
         /**
          * Returns the encapsulated instance info even it it is not built fully.
-         * 
+         *
          * @return the existing information about the instance.
          */
         public InstanceInfo getRawInstance() {
@@ -606,7 +609,7 @@ public class InstanceInfo {
 
         /**
          * Build the {@link InstanceInfo} object.
-         * 
+         *
          * @return the {@link InstanceInfo} that was built based on the
          *         information supplied.
          */
@@ -623,7 +626,7 @@ public class InstanceInfo {
 
         /**
          * Sets the AWS ASG name for this instance.
-         * 
+         *
          * @param asgName
          *            the asg name for this instance.
          * @return the instance info builder.
@@ -664,7 +667,7 @@ public class InstanceInfo {
 
     /**
      * Return the name of the application registering with discovery.
-     * 
+     *
      * @return the string denoting the application name.
      */
     public String getAppName() {
@@ -676,8 +679,8 @@ public class InstanceInfo {
     }
 
     /**
-     * Returns the fully qualified hostname of this running instance
-     * 
+     * Returns the fully qualified hostname of this running instance.
+     *
      * @return the hostname.
      */
     public String getHostName() {
@@ -696,9 +699,9 @@ public class InstanceInfo {
     }
 
     /**
-     * 
+     *
      * Returns the unique id of the instance.
-     * 
+     *
      * @return the unique id.
      */
     public String getId() {
@@ -711,7 +714,7 @@ public class InstanceInfo {
 
     /**
      * Returns the ip address of the instance.
-     * 
+     *
      * @return - the ip address, in AWS scenario it is a private IP.
      */
     public String getIPAddr() {
@@ -719,9 +722,9 @@ public class InstanceInfo {
     }
 
     /**
-     * 
+     *
      * Returns the port number that is used for servicing requests.
-     * 
+     *
      * @return - the non-secure port number.
      */
     public int getPort() {
@@ -730,7 +733,7 @@ public class InstanceInfo {
 
     /**
      * Returns the status of the instance.
-     * 
+     *
      * @return the status indicating whether the instance can handle requests.
      */
     public InstanceStatus getStatus() {
@@ -739,7 +742,7 @@ public class InstanceInfo {
 
     /**
      * Returns the overridden status if any of the instance.
-     * 
+     *
      * @return the status indicating whether an external process has changed the
      *         status.
      */
@@ -749,7 +752,7 @@ public class InstanceInfo {
 
     /**
      * Returns data center information identifying if it is AWS or not.
-     * 
+     *
      * @return the data center information.
      */
     public DataCenterInfo getDataCenterInfo() {
@@ -758,7 +761,7 @@ public class InstanceInfo {
 
     /**
      * Returns the lease information regarding when it expires.
-     * 
+     *
      * @return the lease information of this instance.
      */
     public LeaseInfo getLeaseInfo() {
@@ -767,7 +770,7 @@ public class InstanceInfo {
 
     /**
      * Sets the lease information regarding when it expires.
-     * 
+     *
      * @param info
      *            the lease information of this instance.
      */
@@ -777,7 +780,7 @@ public class InstanceInfo {
 
     /**
      * Returns all application specific metadata set on the instance.
-     * 
+     *
      * @return application specific metadata.
      */
     public Map<String, String> getMetadata() {
@@ -791,7 +794,7 @@ public class InstanceInfo {
 
     /**
      * Returns the secure port that is used for servicing requests.
-     * 
+     *
      * @return the secure port.
      */
     public int getSecurePort() {
@@ -800,7 +803,7 @@ public class InstanceInfo {
 
     /**
      * Checks whether a port is enabled for traffic or not.
-     * 
+     *
      * @param type
      *            indicates whether it is secure or non-secure port.
      * @return true if the port is enabled, false otherwise.
@@ -816,7 +819,7 @@ public class InstanceInfo {
     /**
      * Returns the time elapsed since epoch since the instance status has been
      * last updated.
-     * 
+     *
      * @return the time elapsed since epoch since the instance has been last
      *         updated.
      */
@@ -832,18 +835,18 @@ public class InstanceInfo {
     }
 
     /**
-     * Gets the home page {@link URL} set for this instance.
-     * 
-     * @return home page {@link URL}
+     * Gets the home page {@link java.net.URL} set for this instance.
+     *
+     * @return home page {@link java.net.URL}
      */
     public String getHomePageUrl() {
         return homePageUrl;
     }
 
     /**
-     * Gets the status page {@link URL} set for this instance.
-     * 
-     * @return status page {@link URL}
+     * Gets the status page {@link java.net.URL} set for this instance.
+     *
+     * @return status page {@link java.net.URL}
      */
     public String getStatusPageUrl() {
         return statusPageUrl;
@@ -853,7 +856,7 @@ public class InstanceInfo {
      * Gets the absolute URLs for the health check page for both secure and
      * non-secure protocols. If the port is not enabled then the URL is
      * excluded.
-     * 
+     *
      * @return A Set containing the string representation of health check urls
      *         for secure and non secure protocols
      */
@@ -871,7 +874,7 @@ public class InstanceInfo {
     /**
      * Gets the Virtual Internet Protocol address for this instance. Defaults to
      * hostname if not specified.
-     * 
+     *
      * @return - The Virtual Internet Protocol address
      */
     public String getVIPAddress() {
@@ -881,7 +884,7 @@ public class InstanceInfo {
     /**
      * Get the Secure Virtual Internet Protocol address for this instance.
      * Defaults to hostname if not specified.
-     * 
+     *
      * @return - The Secure Virtual Internet Protocol address.
      */
     public String getSecureVipAddress() {
@@ -890,7 +893,7 @@ public class InstanceInfo {
 
     /**
      * Gets the last time stamp when this instance was touched.
-     * 
+     *
      * @return last timestamp when this instance was touched.
      */
     public Long getLastDirtyTimestamp() {
@@ -899,7 +902,7 @@ public class InstanceInfo {
 
     /**
      * Set the time indicating that the instance was touched.
-     * 
+     *
      * @param lastDirtyTimestamp
      *            time when the instance was touched.
      */
@@ -909,7 +912,7 @@ public class InstanceInfo {
 
     /**
      * Set the status for this instance.
-     * 
+     *
      * @param status
      *            status for this instance.
      */
@@ -922,7 +925,7 @@ public class InstanceInfo {
 
     /**
      * Set the status for this instance without updating the dirty timestamp.
-     * 
+     *
      * @param status
      *            status for this instance.
      */
@@ -935,7 +938,7 @@ public class InstanceInfo {
     /**
      * Sets the overridden status for this instance.Normally set by an external
      * process to disable instance from taking traffic.
-     * 
+     *
      * @param status
      *            overridden status for this instance.
      */
@@ -948,7 +951,7 @@ public class InstanceInfo {
     /**
      * Returns whether any state changed so that {@link DiscoveryClient} can
      * check whether to retransmit info or not on the next heartbeat.
-     * 
+     *
      * @return true if the {@link InstanceInfo} is dirty, false otherwise.
      */
     public boolean isDirty() {
@@ -958,7 +961,7 @@ public class InstanceInfo {
     /**
      * Sets the dirty flag so that the instance information can be carried to
      * the discovery server on the next heartbeat.
-     * 
+     *
      * @param b
      *            - true if dirty, false otherwise.
      */
@@ -986,7 +989,7 @@ public class InstanceInfo {
 
     /**
      * Finds if this instance is the coordinating discovery server.
-     * 
+     *
      * @return - true, if this instance is the coordinating discovery server,
      *         false otherwise.
      */
@@ -996,9 +999,9 @@ public class InstanceInfo {
 
     /**
      * Returns the type of action done on the instance in the server.Primarily
-     * used for updating deltas in the {@link DiscoveryClient}
+     * used for updating deltas in the {@link com.netflix.discovery.DiscoveryClient}
      * instance.
-     * 
+     *
      * @return action type done on the instance.
      */
     public ActionType getActionType() {
@@ -1007,7 +1010,7 @@ public class InstanceInfo {
 
     /**
      * Set the action type performed on this instance in the server.
-     * 
+     *
      * @param actionType
      *            action type done on the instance.
      */
@@ -1017,7 +1020,7 @@ public class InstanceInfo {
 
     /**
      * Get AWS autoscaling group name if any.
-     * 
+     *
      * @return autoscaling group name of this instance.
      */
     public String getASGName() {
@@ -1025,8 +1028,8 @@ public class InstanceInfo {
     }
 
     /**
-     * Returns the specification version of this application
-     * 
+     * Returns the specification version of this application.
+     *
      * @return the string indicating the version of the application.
      */
     @Deprecated
@@ -1044,7 +1047,7 @@ public class InstanceInfo {
     /**
      * Register application specific metadata to be sent to the discovery
      * server.
-     * 
+     *
      * @param runtimeMetadata
      *            Map containing key/value pairs.
      */
@@ -1057,7 +1060,7 @@ public class InstanceInfo {
     /**
      * Convert <code>VIPAddress</code> by substituting environment variables if
      * necessary.
-     * 
+     *
      * @param vipAddressMacro
      *            the macro for which the interpolation needs to be made.
      * @return a string representing the final <code>VIPAddress</code> after

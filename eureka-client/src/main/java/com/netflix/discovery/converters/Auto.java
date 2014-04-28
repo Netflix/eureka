@@ -21,21 +21,18 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import com.netflix.appinfo.InstanceInfo;
-import com.netflix.discovery.converters.Converters.InstanceInfoConverter;
-
 /**
  * A field annotation which helps in avoiding changes to
- * {@link InstanceInfoConverter} every time additional fields are added to
- * {@link InstanceInfo}.
- * 
+ * {@link com.netflix.discovery.converters.Converters.InstanceInfoConverter} every time additional fields are added to
+ * {@link com.netflix.appinfo.InstanceInfo}.
+ *
  * <p>
- * This annotation informs the {@link InstanceInfoConverter} to automatically
- * marshall most primitive fields declared in the {@link InstanceInfo} class.
+ * This annotation informs the {@link com.netflix.discovery.converters.Converters.InstanceInfoConverter} to
+ * automatically marshall most primitive fields declared in the {@link com.netflix.appinfo.InstanceInfo} class.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.FIELD })

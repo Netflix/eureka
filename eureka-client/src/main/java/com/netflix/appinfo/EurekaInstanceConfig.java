@@ -15,33 +15,31 @@
  */
 package com.netflix.appinfo;
 
-import java.net.URL;
 import java.util.Map;
 
 import com.google.inject.ImplementedBy;
-import com.netflix.discovery.DiscoveryClient;
 
 /**
  * Configuration information required by the instance to register with Eureka
  * server. Once registered, users can look up information from
- * {@link DiscoveryClient} based on virtual hostname (also called VIPAddress),
+ * {@link com.netflix.discovery.DiscoveryClient} based on virtual hostname (also called VIPAddress),
  * the most common way of doing it or by other means to get the information
  * necessary to talk to other instances registered with <em>Eureka</em>.
- * 
- * 
+ *
+ *
  * <p>
  * Note that all configurations are not effective at runtime unless and
  * otherwise specified.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 @ImplementedBy(CloudInstanceConfig.class)
 public interface EurekaInstanceConfig {
     /**
      * Get the name of the application to be registered with eureka.
-     * 
+     *
      * @return string denoting the name.
      */
     String getAppname();
@@ -57,7 +55,7 @@ public interface EurekaInstanceConfig {
      * Indicates whether the instance should be enabled for taking traffic as
      * soon as it is registered with eureka. Sometimes the application might
      * need to do some pre-processing before it is ready to take traffic.
-     * 
+     *
      * @return true to immediately start taking traffic, false otherwise.
      */
     boolean isInstanceEnabledOnit();
@@ -65,7 +63,7 @@ public interface EurekaInstanceConfig {
     /**
      * Get the <code>non-secure</code> port on which the instance should receive
      * traffic.
-     * 
+     *
      * @return the non-secure port on which the instance should receive traffic.
      */
     int getNonSecurePort();
@@ -73,7 +71,7 @@ public interface EurekaInstanceConfig {
     /**
      * Get the <code>Secure port</code> on which the instance should receive
      * traffic.
-     * 
+     *
      * @return the non-secure port on which the instance should receive traffic.
      */
     int getSecurePort();
@@ -81,7 +79,7 @@ public interface EurekaInstanceConfig {
     /**
      * Indicates whether the <code>non-secure</code> port should be enabled for
      * traffic or not.
-     * 
+     *
      * @return true if the <code>non-secure</code> port is enabled, false
      *         otherwise.
      */
@@ -90,7 +88,7 @@ public interface EurekaInstanceConfig {
     /**
      * Indicates whether the <code>secure</code> port should be enabled for
      * traffic or not.
-     * 
+     *
      * @return true if the <code>secure</code> port is enabled, false otherwise.
      */
     boolean getSecurePortEnabled();
@@ -102,12 +100,12 @@ public interface EurekaInstanceConfig {
      * {@link #getLeaseExpirationDurationInSeconds()}, eureka server will remove
      * the instance from its view, there by disallowing traffic to this
      * instance.
-     * 
+     *
      * <p>
      * Note that the instance could still not take traffic if it implements
      * {@link HealthCheckCallback} and then decides to make itself unavailable.
      * </p>
-     * 
+     *
      * @return time in seconds
      */
     int getLeaseRenewalIntervalInSeconds();
@@ -116,7 +114,7 @@ public interface EurekaInstanceConfig {
      * Indicates the time in seconds that the eureka server waits since it
      * received the last heartbeat before it can remove this instance from its
      * view and there by disallowing traffic to this instance.
-     * 
+     *
      * <p>
      * Setting this value too long could mean that the traffic could be routed
      * to the instance even though the instance is not alive. Setting this value
@@ -125,21 +123,21 @@ public interface EurekaInstanceConfig {
      * the value specified in {@link #getLeaseRenewalIntervalInSeconds()}
      * .
      * </p>
-     * 
+     *
      * @return value indicating time in seconds.
      */
     int getLeaseExpirationDurationInSeconds();
 
     /**
      * Gets the virtual host name defined for this instance.
-     * 
+     *
      * <p>
      * This is typically the way other instance would find this instance by
      * using the virtual host name.Think of this as similar to the fully
      * qualified domain name, that the users of your services will need to find
      * this instance.
      * </p>
-     * 
+     *
      * @return the string indicating the virtual host name which the clients use
      *         to call this service.
      */
@@ -147,14 +145,14 @@ public interface EurekaInstanceConfig {
 
     /**
      * Gets the secure virtual host name defined for this instance.
-     * 
+     *
      * <p>
      * This is typically the way other instance would find this instance by
      * using the secure virtual host name.Think of this as similar to the fully
      * qualified domain name, that the users of your services will need to find
      * this instance.
      * </p>
-     * 
+     *
      * @return the string indicating the secure virtual host name which the
      *         clients use to call this service.
      */
@@ -165,7 +163,7 @@ public interface EurekaInstanceConfig {
      * instance. This information is specifically used in an AWS environment to
      * automatically put an instance out of service after the instance is
      * launched and it has been disabled for traffic..
-     * 
+     *
      * @return the autoscaling group name associated with this instance.
      */
     String getASGName();
@@ -173,7 +171,7 @@ public interface EurekaInstanceConfig {
     /**
      * Gets the hostname associated with this instance. This is the exact name
      * that would be used by other instances to make calls.
-     * 
+     *
      * @param refresh
      *            true if the information needs to be refetched, false
      *            otherwise.
@@ -185,7 +183,7 @@ public interface EurekaInstanceConfig {
     /**
      * Gets the metadata name/value pairs associated with this instance. This
      * information is sent to eureka server and can be used by other instances.
-     * 
+     *
      * @return Map containing application-specific metadata.
      */
     Map<String, String> getMetadataMap();
@@ -194,7 +192,7 @@ public interface EurekaInstanceConfig {
      * Returns the data center this instance is deployed. This information is
      * used to get some AWS specific instance information if the instance is
      * deployed in AWS.
-     * 
+     *
      * @return information that indicates which data center this instance is
      *         deployed in.
      */
@@ -204,138 +202,138 @@ public interface EurekaInstanceConfig {
      * Get the IPAdress of the instance. This information is for academic
      * purposes only as the communication from other instances primarily happen
      * using the information supplied in {@link #getHostName(boolean)}.
-     * 
+     *
      * @return the ip address of this instance.
      */
     String getIpAddress();
 
     /**
-     * Gets the relative status page {@link URL} <em>Path</em> for this
+     * Gets the relative status page {@link java.net.URL} <em>Path</em> for this
      * instance. The status page URL is then constructed out of the
      * {@link #getHostName(boolean)} and the type of communication - secure or
      * unsecure as specified in {@link #getSecurePort()} and
      * {@link #getNonSecurePort()}.
-     * 
+     *
      * <p>
      * It is normally used for informational purposes for other services to find
      * about the status of this instance. Users can provide a simple
      * <code>HTML</code> indicating what is the current status of the instance.
      * </p>
-     * 
+     *
      * @return - relative <code>URL</code> that specifies the status page.
      */
     String getStatusPageUrlPath();
 
     /**
-     * Gets the absolute status page {@link URL} for this instance. The users
+     * Gets the absolute status page {@link java.net.URL} for this instance. The users
      * can provide the {@link #getStatusPageUrlPath()} if the status page
      * resides in the same instance talking to eureka, else in the cases where
      * the instance is a proxy for some other server, users can provide the full
-     * {@link URL}. If the full {@link URL} is provided it takes precedence.
-     * 
+     * {@link java.net.URL}. If the full {@link java.net.URL} is provided it takes precedence.
+     *
      * <p>
      * * It is normally used for informational purposes for other services to
      * find about the status of this instance. Users can provide a simple
      * <code>HTML</code> indicating what is the current status of the instance.
-     * . The full {@link URL} should follow the format
+     * . The full {@link java.net.URL} should follow the format
      * http://${eureka.hostname}:7001/ where the value ${eureka.hostname} is
      * replaced at runtime.
      * </p>
-     * 
+     *
      * @return absolute status page URL of this instance.
      */
     String getStatusPageUrl();
 
     /**
-     * Gets the relative home page {@link URL} <em>Path</em> for this instance.
+     * Gets the relative home page {@link java.net.URL} <em>Path</em> for this instance.
      * The home page URL is then constructed out of the
      * {@link #getHostName(boolean)} and the type of communication - secure or
      * unsecure as specified in {@link #getSecurePort()} and
      * {@link #getNonSecurePort()}.
-     * 
+     *
      * <p>
      * It is normally used for informational purposes for other services to use
      * it as a landing page.
      * </p>
-     * 
+     *
      * @return relative <code>URL</code> that specifies the home page.
      */
     String getHomePageUrlPath();
 
     /**
-     * Gets the absolute home page {@link URL} for this instance. The users can
+     * Gets the absolute home page {@link java.net.URL} for this instance. The users can
      * provide the {@link #getHomePageUrlPath()} if the home page resides in the
      * same instance talking to eureka, else in the cases where the instance is
-     * a proxy for some other server, users can provide the full {@link URL}. If
-     * the full {@link URL} is provided it takes precedence.
-     * 
+     * a proxy for some other server, users can provide the full {@link java.net.URL}. If
+     * the full {@link java.net.URL} is provided it takes precedence.
+     *
      * <p>
      * It is normally used for informational purposes for other services to use
-     * it as a landing page. The full {@link URL} should follow the format
+     * it as a landing page. The full {@link java.net.URL} should follow the format
      * http://${eureka.hostname}:7001/ where the value ${eureka.hostname} is
      * replaced at runtime.
      * </p>
-     * 
+     *
      * @return absolute home page URL of this instance.
      */
     String getHomePageUrl();
 
     /**
-     * Gets the relative health check {@link URL} <em>Path</em> for this
+     * Gets the relative health check {@link java.net.URL} <em>Path</em> for this
      * instance. The health check page URL is then constructed out of the
      * {@link #getHostName(boolean)} and the type of communication - secure or
      * unsecure as specified in {@link #getSecurePort()} and
      * {@link #getNonSecurePort()}.
-     * 
+     *
      * <p>
      * It is normally used for making educated decisions based on the health of
      * the instance - for example, it can be used to determine whether to
      * proceed deployments to an entire farm or stop the deployments without
      * causing further damage.
      * </p>
-     * 
+     *
      * @return - relative <code>URL</code> that specifies the health check page.
      */
     String getHealthCheckUrlPath();
 
     /**
-     * Gets the absolute health check page {@link URL} for this instance. The
+     * Gets the absolute health check page {@link java.net.URL} for this instance. The
      * users can provide the {@link #getHealthCheckUrlPath()} if the health
      * check page resides in the same instance talking to eureka, else in the
      * cases where the instance is a proxy for some other server, users can
-     * provide the full {@link URL}. If the full {@link URL} is provided it
+     * provide the full {@link java.net.URL}. If the full {@link java.net.URL} is provided it
      * takes precedence.
-     * 
+     *
      * <p>
      * It is normally used for making educated decisions based on the health of
      * the instance - for example, it can be used to determine whether to
      * proceed deployments to an entire farm or stop the deployments without
-     * causing further damage.. The full {@link URL} should follow the format
+     * causing further damage.  The full {@link java.net.URL} should follow the format
      * http://${eureka.hostname}:7001/ where the value ${eureka.hostname} is
      * replaced at runtime.
      * </p>
-     * 
+     *
      * @return absolute health check page URL of this instance.
      */
     String getHealthCheckUrl();
 
     /**
-     * Gets the absolute secure health check page {@link URL} for this instance.
+     * Gets the absolute secure health check page {@link java.net.URL} for this instance.
      * The users can provide the {@link #getSecureHealthCheckUrl()} if the
      * health check page resides in the same instance talking to eureka, else in
      * the cases where the instance is a proxy for some other server, users can
-     * provide the full {@link URL}. If the full {@link URL} is provided it
+     * provide the full {@link java.net.URL}. If the full {@link java.net.URL} is provided it
      * takes precedence.
-     * 
+     *
      * <p>
      * It is normally used for making educated decisions based on the health of
      * the instance - for example, it can be used to determine whether to
      * proceed deployments to an entire farm or stop the deployments without
-     * causing further damage. The full {@link URL} should follow the format
+     * causing further damage. The full {@link java.net.URL} should follow the format
      * http://${eureka.hostname}:7001/ where the value ${eureka.hostname} is
      * replaced at runtime.
      * </p>
-     * 
+     *
      * @return absolute health check page URL of this instance.
      */
     String getSecureHealthCheckUrl();

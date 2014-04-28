@@ -7,20 +7,21 @@ import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.EurekaNamespace;
 
 /**
- * This provider is necessary because the namespace is optional
+ * This provider is necessary because the namespace is optional.
  * @author elandau
  */
 public class DefaultEurekaClientConfigProvider implements Provider<EurekaClientConfig> {
 
-    @Inject(optional=true)
-    @EurekaNamespace 
+    @Inject(optional = true)
+    @EurekaNamespace
     private String namespace;
-    
+
     @Override
     public EurekaClientConfig get() {
-        if (namespace == null)
+        if (namespace == null) {
             return new DefaultEurekaClientConfig();
-        else
+        } else {
             return new DefaultEurekaClientConfig(namespace);
+        }
     }
 }

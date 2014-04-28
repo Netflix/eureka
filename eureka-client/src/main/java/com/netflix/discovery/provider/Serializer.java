@@ -22,19 +22,19 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * 
+ *
  * An annotation that helps in specifying the custom serializer/de-serialization
  * implementation for jersey.
- * 
+ *
  * <p>
  * Once the annotation is specified, a custom jersey provider invokes an
  * instance of the class specified as the value and dispatches all objects that
  * needs to be serialized/de-serialized to handle them as and only when it is
  * responsible for handling those.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 @Documented
 @Target({ ElementType.TYPE, ElementType.METHOD })

@@ -40,9 +40,9 @@ import javax.annotation.Nullable;
 /**
  * The application class holds the list of instances for a particular
  * application.
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 @Serializer("com.netflix.discovery.converters.EntityBodyConverter")
 @XStreamAlias("application")
@@ -80,7 +80,7 @@ public class Application {
 
     /**
      * Add the given instance info the list.
-     * 
+     *
      * @param i
      *            the instance info object to be added.
      */
@@ -95,7 +95,7 @@ public class Application {
 
     /**
      * Remove the given instance info the list.
-     * 
+     *
      * @param i
      *            the instance info object to be removed.
      */
@@ -111,22 +111,21 @@ public class Application {
      * shuffling always happens once after every fetch cycle as specified in
      * {@link EurekaClientConfig#getRegistryFetchIntervalSeconds}.
      * </p>
-     * 
+     *
      * @return the list of shuffled instances associated with this application.
      */
     public List<InstanceInfo> getInstances() {
         if (this.shuffledInstances.get() == null) {
             return this.getInstancesAsIsFromEureka();
-        }
-        else {
+        } else {
             return this.shuffledInstances.get();
         }
     }
-    
+
     /**
      * Gets the list of non-shuffled and non-filtered instances associated with this particular
      * application.
-     * 
+     *
      * @return list of non-shuffled and non-filtered instances associated with this particular
      *         application.
      */
@@ -134,10 +133,10 @@ public class Application {
         return new ArrayList<InstanceInfo>(this.instances);
     }
 
-   
+
     /**
      * Get the instance info that matches the given id.
-     * 
+     *
      * @param id
      *            the id for which the instance info needs to be returned.
      * @return the instance info object.
@@ -148,7 +147,7 @@ public class Application {
 
     /**
      * Gets the name of the application.
-     * 
+     *
      * @return the name of the application.
      */
     public String getName() {
@@ -157,7 +156,7 @@ public class Application {
 
     /**
      * Sets the name of the application.
-     * 
+     *
      * @param name
      *            the name of the application.
      */
@@ -168,7 +167,7 @@ public class Application {
     /**
      * Shuffles the list of instances in the application and stores it for
      * future retrievals.
-     * 
+     *
      * @param filterUpInstances
      *            indicates whether only the instances with status
      *            {@link InstanceStatus#UP} needs to be stored.
@@ -207,7 +206,8 @@ public class Application {
                             remoteRegionsRegistry.put(instanceRegion, appsForRemoteRegion);
                         }
 
-                        Application remoteApp = appsForRemoteRegion.getRegisteredApplications(instanceInfo.getAppName());
+                        Application remoteApp =
+                                appsForRemoteRegion.getRegisteredApplications(instanceInfo.getAppName());
                         if (null == remoteApp) {
                             remoteApp = new Application(instanceInfo.getAppName());
                             appsForRemoteRegion.addApplication(remoteApp);

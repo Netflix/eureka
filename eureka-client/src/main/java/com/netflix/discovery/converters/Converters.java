@@ -35,7 +35,6 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.InstanceInfo.PortType;
 import com.netflix.appinfo.LeaseInfo;
-import com.netflix.discovery.provider.Serializer;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.servo.monitor.Counter;
@@ -47,11 +46,11 @@ import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 
 /**
- * The custom {@link Serializer} for serializing and deserializing the registry
+ * The custom {@link com.netflix.discovery.provider.Serializer} for serializing and deserializing the registry
  * information from and to the eureka server.
- * 
+ *
  * <p>
- * The {@link Serializer} used here is an <tt>Xstream</tt> serializer which uses
+ * The {@link com.netflix.discovery.provider.Serializer} used here is an <tt>Xstream</tt> serializer which uses
  * the <tt>JSON</tt> format and custom fields.The XStream deserialization does
  * not handle removal of fields and hence this custom mechanism. Since then
  * {@link Auto} annotation introduced handles any fields that does not exist
@@ -60,9 +59,9 @@ import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
  * alternatives they can do so my implementing their own providers in
  * {@link EntityBodyConverter}.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
- * 
+ *
  */
 public final class Converters {
     private static final String UNMARSHAL_ERROR = "UNMARSHAL_ERROR";
@@ -88,7 +87,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.ConverterMatcher#canConvert(java
          * .lang.Class)
@@ -100,7 +99,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.Converter#marshal(java.lang.Object
          * , com.thoughtworks.xstream.io.HierarchicalStreamWriter,
@@ -125,7 +124,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.Converter#unmarshal(com.thoughtworks
          * .xstream.io.HierarchicalStreamReader,
@@ -163,7 +162,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.ConverterMatcher#canConvert(java
          * .lang.Class)
@@ -174,7 +173,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.Converter#marshal(java.lang.Object
          * , com.thoughtworks.xstream.io.HierarchicalStreamWriter,
@@ -198,7 +197,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.Converter#unmarshal(com.thoughtworks
          * .xstream.io.HierarchicalStreamReader,
@@ -245,7 +244,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.ConverterMatcher#canConvert(java
          * .lang.Class)
@@ -257,7 +256,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.Converter#marshal(java.lang.Object
          * , com.thoughtworks.xstream.io.HierarchicalStreamWriter,
@@ -349,7 +348,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.Converter#unmarshal(com.thoughtworks
          * .xstream.io.HierarchicalStreamReader,
@@ -425,7 +424,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.ConverterMatcher#canConvert(java
          * .lang.Class)
@@ -437,7 +436,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.Converter#marshal(java.lang.Object
          * , com.thoughtworks.xstream.io.HierarchicalStreamWriter,
@@ -468,7 +467,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.Converter#unmarshal(com.thoughtworks
          * .xstream.io.HierarchicalStreamReader,
@@ -526,7 +525,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.ConverterMatcher#canConvert(java
          * .lang.Class)
@@ -539,7 +538,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.Converter#marshal(java.lang.Object
          * , com.thoughtworks.xstream.io.HierarchicalStreamWriter,
@@ -578,7 +577,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.Converter#unmarshal(com.thoughtworks
          * .xstream.io.HierarchicalStreamReader,
@@ -632,7 +631,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.ConverterMatcher#canConvert(java
          * .lang.Class)
@@ -644,7 +643,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.Converter#marshal(java.lang.Object
          * , com.thoughtworks.xstream.io.HierarchicalStreamWriter,
@@ -668,7 +667,7 @@ public final class Converters {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * com.thoughtworks.xstream.converters.Converter#unmarshal(com.thoughtworks
          * .xstream.io.HierarchicalStreamReader,
@@ -704,7 +703,7 @@ public final class Converters {
     /**
      * Marshal all the objects containing an {@link Auto} annotation
      * automatically.
-     * 
+     *
      * @param o
      *            - The object's fields that needs to be marshalled.
      * @param writer
@@ -736,7 +735,7 @@ public final class Converters {
     /**
      * Unmarshal all the elements to their field values if the fields have the
      * {@link Auto} annotation defined.
-     * 
+     *
      * @param reader
      *            - The reader where the elements can be read.
      * @param o

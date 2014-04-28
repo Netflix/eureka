@@ -27,14 +27,13 @@ import javax.ws.rs.core.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.eureka.PeerAwareInstanceRegistry;
 import com.netflix.eureka.cluster.PeerEurekaNode;
 import com.netflix.eureka.util.AwsAsgUtil;
 
 /**
  * A <em>jersey</em> resource for handling updates to {@link ASGStatus}.
- * 
+ *
  * <p>
  * The ASG status is used in <em>AWS</em> environments to automatically
  * enable/disable instance registration based on the status of the ASG. This is
@@ -42,17 +41,17 @@ import com.netflix.eureka.util.AwsAsgUtil;
  * easy to switch to a new version and incase of problems switch back to the old
  * versions of the deployment.
  * </p>
- * 
+ *
  * <p>
  * During such a scenario, when an ASG is disabled and the instances go away and
  * get refilled by an ASG - which is normal in AWS environments,the instances
- * automatically go in the {@link InstanceStatus#OUT_OF_SERVICE} state when they
+ * automatically go in the {@link com.netflix.appinfo.InstanceInfo.InstanceStatus#OUT_OF_SERVICE} state when they
  * are refilled by the ASG and if the ASG is disabled by as indicated by a flag
  * in the ASG as described in {@link AwsAsgUtil#isASGEnabled(String)}
  * </p>
- * 
+ *
  * @author Karthik Ranganathan
- * 
+ *
  */
 @Path("/{version}/asg")
 @Produces({ "application/xml", "application/json" })
@@ -78,7 +77,7 @@ public class ASGResource {
 
     /**
      * Changes the status information of the ASG.
-     * 
+     *
      * @param asgName
      *            the name of the ASG for which the status needs to be changed.
      * @param newStatus
@@ -86,7 +85,7 @@ public class ASGResource {
      * @param isReplication
      *            a header parameter containing information whether this is
      *            replicated from other nodes.
-     * 
+     *
      * @return response which indicates if the operation succeeded or not.
      */
     @PUT

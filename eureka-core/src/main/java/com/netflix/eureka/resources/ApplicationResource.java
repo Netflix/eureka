@@ -30,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.discovery.shared.Application;
 import com.netflix.eureka.CurrentRequestVersion;
 import com.netflix.eureka.PeerAwareInstanceRegistry;
 import com.netflix.eureka.Version;
@@ -40,10 +39,10 @@ import com.netflix.eureka.resources.ResponseCache.KeyType;
 
 /**
  * A <em>jersey</em> resource that handles request related to a particular
- * {@link Application}.
- * 
+ * {@link com.netflix.discovery.shared.Application}.
+ *
  * @author Karthik Ranganathan, Greg Kim
- * 
+ *
  */
 @Produces({ "application/xml", "application/json" })
 public class ApplicationResource {
@@ -60,8 +59,8 @@ public class ApplicationResource {
     }
 
     /**
-     * Gets information about a particular {@link Application}.
-     * 
+     * Gets information about a particular {@link com.netflix.discovery.shared.Application}.
+     *
      * @param version
      *            the version of the request.
      * @param acceptHeader
@@ -97,7 +96,7 @@ public class ApplicationResource {
 
     /**
      * Gets information about a particular instance of an application.
-     * 
+     *
      * @param id
      *            the unique identifier of the instance.
      * @return information about a particular instance.
@@ -109,8 +108,8 @@ public class ApplicationResource {
 
     /**
      * Registers information about a particular instance for an
-     * {@link Application}.
-     * 
+     * {@link com.netflix.discovery.shared.Application}.
+     *
      * @param info
      *            {@link InstanceInfo} information of the instance.
      * @param isReplication
@@ -126,7 +125,7 @@ public class ApplicationResource {
 
     /**
      * Returns the application name of a particular application.
-     * 
+     *
      * @return the application name of a particular application.
      */
     String getName() {

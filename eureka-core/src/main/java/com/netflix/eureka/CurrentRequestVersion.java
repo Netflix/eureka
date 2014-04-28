@@ -26,7 +26,7 @@ package com.netflix.eureka;
  * Rather it is here to support those cases where someplace deep in
  * a library we need to know about the context of the request that
  * initially triggered the current request.</p>
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
  */
 public final class CurrentRequestVersion {
@@ -45,7 +45,7 @@ public final class CurrentRequestVersion {
     }
 
     /**
-     * Sets the current {@link Version}
+     * Sets the current {@link Version}.
      */
     public static void set(Version version) {
         CURRENT_REQ_VERSION.set(version);

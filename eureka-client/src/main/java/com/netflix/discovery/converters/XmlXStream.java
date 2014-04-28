@@ -25,18 +25,18 @@ import com.thoughtworks.xstream.io.xml.DomDriver;
 /**
  * An <tt>Xstream</tt> specific implementation for serializing and deserializing
  * to/from XML format.
- * 
+ *
  * <p>
  * This class also allows configuration of custom serializers with Xstream.
  * </p>
- * 
+ *
  * @author Karthik Ranganathan, Greg Kim
- * 
+ *
  */
 
 public class XmlXStream extends XStream {
 
-    private final static XmlXStream s_instance = new XmlXStream();
+    private static final XmlXStream s_instance = new XmlXStream();
 
     public XmlXStream() {
         super(new DomDriver());
@@ -48,8 +48,8 @@ public class XmlXStream extends XStream {
         registerConverter(new Converters.LeaseInfoConverter());
         registerConverter(new Converters.MetadataConverter());
         setMode(XStream.NO_REFERENCES);
-        processAnnotations(new Class[] { InstanceInfo.class, Application.class,
-                Applications.class });
+        processAnnotations(new Class[] {InstanceInfo.class, Application.class,
+                Applications.class});
     }
 
     public static XmlXStream getInstance() {
