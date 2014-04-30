@@ -72,8 +72,7 @@ public class EurekaBootStrap implements ServletContextListener {
 
     private static final String EUREKA_DATACENTER = "eureka.datacenter";
 
-    private static final Logger logger = LoggerFactory
-    .getLogger(EurekaBootStrap.class);
+    private static final Logger logger = LoggerFactory.getLogger(EurekaBootStrap.class);
 
     private static final int EIP_BIND_SLEEP_TIME_MS = 1000;
     private static final Timer timer = new Timer("Eureka-EIPBinder", true);
@@ -97,8 +96,7 @@ public class EurekaBootStrap implements ServletContextListener {
                     XStream.PRIORITY_VERY_HIGH);
             InstanceInfo info = ApplicationInfoManager.getInstance().getInfo();
 
-            PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry
-            .getInstance();
+            PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry.getInstance();
 
             // Copy registry from neighboring eureka node
             int registryCount = registry.syncUp();
@@ -106,7 +104,7 @@ public class EurekaBootStrap implements ServletContextListener {
 
             // Only in AWS, enable the binding functionality
             if (Name.Amazon.equals(info.getDataCenterInfo().getName())) {
-                handleEIPbinding(registry);
+                handleEIPBinding(registry);
             }
             // Initialize available remote registry
             PeerAwareInstanceRegistry.getInstance().initRemoteRegionRegistry();
@@ -143,8 +141,7 @@ public class EurekaBootStrap implements ServletContextListener {
             ConfigurationManager.getConfigInstance().setProperty(
                     ARCHAIUS_DEPLOYMENT_DATACENTER, dataCenter);
         }
-        String environment = ConfigurationManager.getConfigInstance()
-        .getString(EUREKA_ENVIRONMENT);
+        String environment = ConfigurationManager.getConfigInstance().getString(EUREKA_ENVIRONMENT);
         if (environment == null) {
             ConfigurationManager.getConfigInstance().setProperty(
                     ARCHAIUS_DEPLOYMENT_ENVIRONMENT, TEST);
@@ -176,7 +173,7 @@ public class EurekaBootStrap implements ServletContextListener {
             // Unregister all MBeans associated w/ DSCounters
             EurekaMonitors.shutdown();
             for (int i = 0; i < EurekaServerConfigurationManager.getInstance()
-            .getConfiguration().getEIPBindRebindRetries(); i++) {
+                    .getConfiguration().getEIPBindRebindRetries(); i++) {
                 try {
                     if (Name.Amazon.equals(info.getDataCenterInfo().getName())) {
                         EIPManager.getInstance().unbindEIP();
@@ -185,7 +182,6 @@ public class EurekaBootStrap implements ServletContextListener {
                 } catch (Throwable e) {
                     logger.warn("Cannot unbind the EIP from the instance");
                     Thread.sleep(1000);
-                    continue;
                 }
             }
             PeerAwareInstanceRegistry.getInstance().shutdown();
@@ -210,7 +206,7 @@ public class EurekaBootStrap implements ServletContextListener {
      *
      * @throws InterruptedException
      */
-    private void handleEIPbinding(PeerAwareInstanceRegistry registry)
+    private void handleEIPBinding(PeerAwareInstanceRegistry registry)
     throws InterruptedException {
         EurekaServerConfig eurekaServerConfig = EurekaServerConfigurationManager.getInstance().getConfiguration();
         int retries = eurekaServerConfig.getEIPBindRebindRetries();

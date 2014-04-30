@@ -219,8 +219,7 @@ public class DiscoveryClient implements LookupService {
             }
 
         } catch (Throwable e) {
-            throw new RuntimeException("Failed to initialize DiscoveryClient!",
-                    e);
+            throw new RuntimeException("Failed to initialize DiscoveryClient!", e);
         }
         if (clientConfig.shouldFetchRegistry() && !fetchRegistry(false)) {
             fetchRegistryFromBackup();
@@ -479,8 +478,7 @@ public class DiscoveryClient implements LookupService {
      *         otherwise
      */
     private boolean shouldRegister(InstanceInfo myInfo) {
-        boolean shouldRegister = clientConfig.shouldRegisterWithEureka();
-        if (!shouldRegister) {
+        if (!clientConfig.shouldRegisterWithEureka()) {
             return false;
         } else if ((myInfo != null)
                 && (myInfo.getDataCenterInfo()
@@ -488,7 +486,7 @@ public class DiscoveryClient implements LookupService {
             return true;
         }
 
-        return shouldRegister;
+        return true;
     }
 
     /**
@@ -614,7 +612,7 @@ public class DiscoveryClient implements LookupService {
      *
      * @param forceFullRegistryFetch Forces a full registry fetch.
      *
-     * @return
+     * @return true if the registry was fetched
      */
     private boolean fetchRegistry(boolean forceFullRegistryFetch) {
         ClientResponse response = null;
