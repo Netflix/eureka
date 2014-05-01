@@ -31,7 +31,7 @@ import com.netflix.governator.guice.BootstrapModule;
 import com.netflix.governator.guice.LifecycleInjector;
 
 public class DiscoveryStatusCheckerTest {
-    
+
     public static final String ALL_REGIONS_VIP_ADDR = "myvip";
     public static final String REMOTE_REGION_INSTANCE_1_HOSTNAME = "blah";
     public static final String REMOTE_REGION_INSTANCE_2_HOSTNAME = "blah2";
@@ -48,10 +48,10 @@ public class DiscoveryStatusCheckerTest {
 
     @Rule
     public MockRemoteEurekaServer mockLocalEurekaServer = new MockRemoteEurekaServer();
-    
+
     private InstanceInfo instanceInfo;
     private static EventBus eventBus = new EventBusImpl();
-    
+
     @Before
     public void setUp() throws Exception {
         final int eurekaPort = mockLocalEurekaServer.getPort();
@@ -76,16 +76,16 @@ public class DiscoveryStatusCheckerTest {
                 return Name.MyOwn;
             }
         });
-        
+
         instanceInfo = builder.build();
     }
-    
-    
+
+
     public static class Service {
         final Supplier<Boolean> upStatusSupplier;
         final Supplier<Boolean> dnStatusSupplier;
         final DiscoveryClient client;
-        
+
         @Inject
         public Service(
                 DiscoveryClient client,
@@ -96,13 +96,13 @@ public class DiscoveryStatusCheckerTest {
             this.upStatusSupplier = upStatusSupplier;
             this.dnStatusSupplier = dnStatusSupplier;
         }
-        
+
         public void assertState(boolean state) {
             Assert.assertEquals(state, (boolean)upStatusSupplier.get());
             Assert.assertEquals(state, !dnStatusSupplier.get());
         }
     }
-    
+
     @Test
     public void testStatus() throws Exception {
         Injector injector = LifecycleInjector.builder()
@@ -127,17 +127,17 @@ public class DiscoveryStatusCheckerTest {
                     })
                 .build()
                 .createInjector();
-        
+
         Service service = injector.getInstance(Service.class);
         mockLocalEurekaServer.waitForDeltaToBeRetrieved(CLIENT_REFRESH_RATE);
         service.assertState(true);
-        
+
         DiscoveryClient client = injector.getInstance(DiscoveryClient.class);
         client.unregister();
         mockLocalEurekaServer.waitForDeltaToBeRetrieved(CLIENT_REFRESH_RATE);
         TimeUnit.SECONDS.sleep(CLIENT_REFRESH_RATE * 2);
 //        service.assertState(false);
-        
+
         // TODO: More work needs to be done on the MockEurekaServer to properly support this
         //       This is disabled for now until MockEurekaServer can be updated
 //        System.out.println("****** Re-register");
@@ -146,7 +146,7 @@ public class DiscoveryStatusCheckerTest {
 //        TimeUnit.SECONDS.sleep(CLIENT_REFRESH_RATE * 2);
 //        service.assertState(true);
     }
-    
+
     private void populateLocalRegistryAtStartup() {
         Application myapp = createLocalApps();
         Application myappDelta = createLocalAppsDelta();
@@ -192,7 +192,7 @@ public class DiscoveryStatusCheckerTest {
         azBuilder.addMetadata(AmazonInfo.MetaDataKey.publicHostname, instanceHostName);
         return azBuilder.build();
     }
-    
+
     private void populateRemoteRegistryAtStartup() {
         Application myapp = createRemoteApps();
         Application myappDelta = createRemoteAppsDelta();

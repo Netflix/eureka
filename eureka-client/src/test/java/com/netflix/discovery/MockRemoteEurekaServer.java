@@ -59,12 +59,12 @@ public class MockRemoteEurekaServer extends ExternalResource {
     public int getPort() {
         return port;
     }
-    
+
     public void stop() throws Exception {
         server.stop();
         server = null;
         port = 0;
-        
+
         applicationMap.clear();
         remoteRegionApps.clear();
         remoteRegionAppsDelta.clear();

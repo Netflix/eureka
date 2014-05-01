@@ -8,7 +8,6 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 import javax.annotation.Nullable;
@@ -24,11 +23,9 @@ public class BackUpRegistryTest {
 
     public static final String ALL_REGIONS_VIP_ADDR = "myvip";
     public static final String REMOTE_REGION_INSTANCE_1_HOSTNAME = "blah";
-    public static final String REMOTE_REGION_INSTANCE_2_HOSTNAME = "blah2";
 
     public static final String LOCAL_REGION_APP_NAME = "MYAPP_LOC";
     public static final String LOCAL_REGION_INSTANCE_1_HOSTNAME = "blahloc";
-    public static final String LOCAL_REGION_INSTANCE_2_HOSTNAME = "blahloc2";
 
     public static final String REMOTE_REGION_APP_NAME = "MYAPP";
     public static final String REMOTE_REGION = "myregion";

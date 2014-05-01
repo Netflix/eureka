@@ -256,25 +256,32 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
         // Copy entire entry from neighboring DS node
         LookupService lookupService = DiscoveryManager.getInstance()
                 .getLookupService();
-        int count = 0;
+        int registeredInstances = 0;
+        boolean registerableFound = false;
 
-        for (int i = 0; ((i < EUREKA_SERVER_CONFIG.getRegistrySyncRetries()) && (count == 0)); i++) {
+        for (int i = 0; (i < EUREKA_SERVER_CONFIG.getRegistrySyncRetries()) && (registeredInstances == 0); i++) {
             Applications apps = lookupService.getApplications();
             for (Application app : apps.getRegisteredApplications()) {
                 for (InstanceInfo instance : app.getInstances()) {
                     try {
                         if (isRegisterable(instance)) {
-
+                            registerableFound = true;
                             register(instance, instance.getLeaseInfo()
                                     .getDurationInSecs(), true);
-                            count++;
+                            registeredInstances++;
                         }
                     } catch (Throwable t) {
                         logger.error("During DS init copy", t);
                     }
                 }
             }
-            if (count == 0) {
+
+            if (!registerableFound) {
+                // If we found nothing registerable, there's no reason to continue this loop
+                break;
+            }
+
+            if (registeredInstances == 0) {
                 try {
                     Thread.sleep(REGISTRY_SYNC_RETRY_MS);
                 } catch (InterruptedException e) {
@@ -283,7 +290,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                 }
             }
         }
-        return count;
+        return registeredInstances;
     }
 
     public void openForTraffic(int count) {
@@ -693,8 +700,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
         DataCenterInfo datacenterInfo = instanceInfo.getDataCenterInfo();
         String serverRegion = EUREKA_CLIENT_CONFIG.getRegion();
         if (AmazonInfo.class.isInstance(datacenterInfo)) {
-            AmazonInfo info = AmazonInfo.class.cast(instanceInfo
-                    .getDataCenterInfo());
+            AmazonInfo info = AmazonInfo.class.cast(instanceInfo.getDataCenterInfo());
             String availabilityZone = info.get(MetaDataKey.availabilityZone);
             // Can be null for dev environments in non-AWS data center
             if (availabilityZone == null

@@ -37,9 +37,9 @@ public class DiscoveryClientRegistryTest {
 
     @Rule
     public MockRemoteEurekaServer mockLocalEurekaServer= new MockRemoteEurekaServer();
-    
+
     private DiscoveryClient client;
-    
+
     @Before
     public void setUp() throws Exception {
 
@@ -51,7 +51,7 @@ public class DiscoveryClientRegistryTest {
         ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default",
                                                              "http://localhost:" + mockLocalEurekaServer.getPort() +
                                                              MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
-        
+
         populateLocalRegistryAtStartup();
         populateRemoteRegistryAtStartup();
 
@@ -158,7 +158,7 @@ public class DiscoveryClientRegistryTest {
     private void populateRemoteRegistryAtStartup() {
         Application myapp = createRemoteApps();
         Application myappDelta = createRemoteAppsDelta();
-        
+
         mockLocalEurekaServer.addRemoteRegionApps(REMOTE_REGION_APP_NAME, myapp);
         mockLocalEurekaServer.addRemoteRegionAppsDelta(REMOTE_REGION_APP_NAME, myappDelta);
     }
