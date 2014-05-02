@@ -217,7 +217,9 @@ public final class EurekaJerseyClient {
 
             @Override
             public Thread newThread(Runnable r) {
-                return new Thread(r, "Eureka-JerseyClient-Conn-Cleaner" + threadNumber.incrementAndGet());
+                Thread thread = new Thread(r, "Eureka-JerseyClient-Conn-Cleaner" + threadNumber.incrementAndGet());
+                thread.setDaemon(true);
+                return thread;
             }
         });
 
