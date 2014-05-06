@@ -1148,7 +1148,7 @@ public class DiscoveryClient implements LookupService {
         arrangeListBasedonHostname(serviceUrls);
         serviceUrls.add(0, primaryServiceUrl);
 
-        logger.info(
+        logger.debug(
                 "This client will talk to the following serviceUrls in order : {} ",
                 Arrays.toString(serviceUrls.toArray()));
         t.stop();
@@ -1639,7 +1639,7 @@ public class DiscoveryClient implements LookupService {
                         return;
                     }
                     if (!serviceUrlList.equals(eurekaServiceUrls.get())) {
-                        logger.debug(
+                        logger.info(
                                 "Updating the serviceUrls as they seem to have changed from {} to {} ",
                                 Arrays.toString(eurekaServiceUrls.get()
                                         .toArray()), Arrays
