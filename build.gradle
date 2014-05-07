@@ -2,10 +2,10 @@ ext.githubProjectName = 'eureka'
 
 ext {
     jerseyVersion="1.11"
-    governatorVersion="[1.2.7,2.0["
-    archaiusVersion="[0.3,1.0["
-    ribbonVersion="[0.3,1.0["
-    blitzVersion="[1.18,2.0["
+    governatorVersion="[1.2.7,2.0)"
+    archaiusVersion="[0.3,1.0)"
+    ribbonVersion="[0.3,1.0)"
+    blitzVersion="[1.18,2.0)"
 }
 
 buildscript {
@@ -61,6 +61,7 @@ project(':eureka-client') {
 project(':eureka-core') {
     dependencies {
         compile project(':eureka-client')
+
         compile 'com.amazonaws:aws-java-sdk:1.3.27'
         compile 'javax.servlet:servlet-api:2.4'
         compile 'com.thoughtworks.xstream:xstream:1.4.2'
@@ -70,6 +71,7 @@ project(':eureka-core') {
         testCompile 'junit:junit:4.10'
         testCompile 'org.mortbay.jetty:jetty:6.1H.22'
         testRuntime 'org.slf4j:slf4j-simple:1.7.0'
+        testCompile project(':eureka-client')
     }
 }
 

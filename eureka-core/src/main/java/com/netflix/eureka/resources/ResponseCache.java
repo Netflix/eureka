@@ -16,40 +16,46 @@
 
 package com.netflix.eureka.resources;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.zip.GZIPOutputStream;
-
-import com.netflix.appinfo.InstanceInfo;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.google.common.base.Supplier;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.cache.RemovalListener;
+import com.google.common.cache.RemovalNotification;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
+import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.converters.JsonXStream;
 import com.netflix.discovery.converters.XmlXStream;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
-import com.netflix.eureka.CurrentRequestVersion;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfigurationManager;
 import com.netflix.eureka.InstanceRegistry;
 import com.netflix.eureka.PeerAwareInstanceRegistry;
 import com.netflix.eureka.Version;
 import com.netflix.servo.annotations.DataSourceType;
+import com.netflix.servo.annotations.Monitor;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
+import com.netflix.servo.monitor.Timer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * The class that is responsible for caching registry information that will be
@@ -62,9 +68,7 @@ import javax.annotation.Nullable;
  * network traffic especially when querying all applications.
  *
  * The cache also maintains separate pay load for <em>JSON</em> and <em>XML</em>
- * formats and for multiple versions too. The cache is updated periodically to
- * reflect the latest information configured by
- * {@link EurekaServerConfig#getResponseCacheUpdateIntervalMs()}.
+ * formats and for multiple versions too.
  * </p>
  *
  * @author Karthik Ranganathan, Greg Kim
@@ -79,52 +83,71 @@ public class ResponseCache {
     public static final String ALL_APPS = "ALL_APPS";
     public static final String ALL_APPS_DELTA = "ALL_APPS_DELTA";
 
-    private final com.netflix.servo.monitor.Timer serializeAllAppsTimer = Monitors
+    private final Timer serializeAllAppsTimer = Monitors
             .newTimer("serialize-all");
-    private final com.netflix.servo.monitor.Timer serializeDeltaAppsTimer = Monitors
+    private final Timer serializeDeltaAppsTimer = Monitors
             .newTimer("serialize-all-delta");
-    private final com.netflix.servo.monitor.Timer serializeAllAppsWithRemoteRegionTimer = Monitors
+    private final Timer serializeAllAppsWithRemoteRegionTimer = Monitors
             .newTimer("serialize-all_remote_region");
-    private final com.netflix.servo.monitor.Timer serializeDeltaAppsWithRemoteRegionTimer = Monitors
+    private final Timer serializeDeltaAppsWithRemoteRegionTimer = Monitors
             .newTimer("serialize-all-delta_remote_region");
-    private final com.netflix.servo.monitor.Timer serializeOneApptimer = Monitors
+    private final Timer serializeOneApptimer = Monitors
             .newTimer("serialize-one");
-    private final com.netflix.servo.monitor.Timer serializeViptimer = Monitors.newTimer("serialize-one-vip");
-    private final com.netflix.servo.monitor.Timer compressPayloadTimer = Monitors
+    private final Timer serializeViptimer = Monitors.newTimer("serialize-one-vip");
+    private final Timer compressPayloadTimer = Monitors
             .newTimer("compress-payload");
 
-    private static final Timer timer = new Timer("Eureka -CacheFillTimer", true);
     private static final AtomicLong versionDelta = new AtomicLong(0);
     private static final AtomicLong versionDeltaWithRegions = new AtomicLong(0);
     private static final String EMPTY_PAYLOAD = "";
 
     public enum KeyType {
         JSON, XML
-    };
+    }
 
-    private final ConcurrentMap<Key, Value> readOnlyCacheMap = new ConcurrentHashMap<Key, Value>();
-    private final LoadingCache<Key, Value> readWriteCacheMap = CacheBuilder
-            .newBuilder()
-            .initialCapacity(1000)
-            .expireAfterWrite(
-                    eurekaConfig.getResponseCacheAutoExpirationInSeconds(),
-                    TimeUnit.SECONDS).build(new CacheLoader<Key, Value>() {
-
+    /**
+     * This map holds mapping of keys without regions to a list of keys with region (provided by clients)
+     * Since, during invalidation, triggered by a change in registry for local region, we do not know the regions
+     * requested by clients, we use this mapping to get all the keys with regions to be invalidated.
+     * If we do not do this, any cached user requests containing region keys will not be invalidated and will stick
+     * around till expiry. Github issue: https://github.com/Netflix/eureka/issues/118
+     */
+    private final Multimap<Key, Key> regionSpecificKeys =
+            Multimaps.newListMultimap(new ConcurrentHashMap<Key, Collection<Key>>(), new Supplier<List<Key>>() {
                 @Override
-                public Value load(Key key) throws Exception {
-                    return generatePayload(key);
+                public List<Key> get() {
+                    return new CopyOnWriteArrayList<Key>();
                 }
             });
+
+    private final LoadingCache<Key, Value> readWriteCacheMap =
+            CacheBuilder.newBuilder().initialCapacity(1000)
+                        .expireAfterWrite(eurekaConfig.getResponseCacheAutoExpirationInSeconds(), TimeUnit.SECONDS)
+                        .removalListener(new RemovalListener<Key, Value>() {
+                            @Override
+                            public void onRemoval(RemovalNotification<Key, Value> notification) {
+                                Key removedKey = notification.getKey();
+                                if (removedKey.hasRegions()) {
+                                    Key cloneWithNoRegions = removedKey.cloneWithoutRegions();
+                                    regionSpecificKeys.remove(cloneWithNoRegions, removedKey);
+                                }
+                            }
+                        })
+                        .build(new CacheLoader<Key, Value>() {
+                            @Override
+                            public Value load(Key key) throws Exception {
+                                if (key.hasRegions()) {
+                                    Key cloneWithNoRegions = key.cloneWithoutRegions();
+                                    regionSpecificKeys.put(cloneWithNoRegions, key);
+                                }
+                                Value value = generatePayload(key);
+                                return value;
+                            }
+                        });
 
     private static final ResponseCache s_instance = new ResponseCache();
 
     private ResponseCache() {
-        long responseCacheUpdateIntervalMs = eurekaConfig.getResponseCacheUpdateIntervalMs();
-        timer.schedule(getCacheUpdateTask(),
-                new Date(((System.currentTimeMillis() / responseCacheUpdateIntervalMs) * responseCacheUpdateIntervalMs)
-                        + responseCacheUpdateIntervalMs),
-                responseCacheUpdateIntervalMs);
-
         try {
             Monitors.registerObject(this);
 
@@ -133,22 +156,6 @@ public class ResponseCache {
                     "Cannot register the JMX monitor for the InstanceRegistry :",
                     e);
         }
-    }
-
-    private TimerTask getCacheUpdateTask() {
-        return new TimerTask() {
-
-            @Override
-            public void run() {
-                try {
-                    updateClientCache();
-                } catch (Throwable e) {
-                    logger.error(
-                            "Cannot update client cache from response cache: ",
-                            e);
-                }
-            }
-        };
     }
 
     public static ResponseCache getInstance() {
@@ -228,6 +235,13 @@ public class ResponseCache {
             Object[] args = {key.getEntityType(), key.getName(), key.getVersion(), key.getType()};
             logger.debug("Invalidating the response cache key : {} {} {} {}", args);
             readWriteCacheMap.invalidate(key);
+            Collection<Key> keysWithRegions = regionSpecificKeys.get(key);
+            if (null != keysWithRegions && !keysWithRegions.isEmpty()) {
+                for (Key keysWithRegion : keysWithRegions) {
+                    logger.debug("Invalidating the response cache key : {} {} {} {}", args);
+                    readWriteCacheMap.invalidate(keysWithRegion);
+                }
+            }
         }
     }
 
@@ -254,7 +268,7 @@ public class ResponseCache {
      *
      * @return int value representing the number of items in response cache.
      */
-    @com.netflix.servo.annotations.Monitor(name = "responseCacheSize", type = DataSourceType.GAUGE)
+    @Monitor(name = "responseCacheSize", type = DataSourceType.GAUGE)
     public int getCurrentSize() {
         return readWriteCacheMap.asMap().size();
     }
@@ -263,25 +277,18 @@ public class ResponseCache {
      * Get the payload in both compressed and uncompressed form.
      */
     private Value getValue(final Key key) {
-        Value payload = null;
         try {
-            final Value currentPayload = readOnlyCacheMap.get(key);
-            if (currentPayload != null) {
-                payload = currentPayload;
-            } else {
-                payload = readWriteCacheMap.get(key);
-                readOnlyCacheMap.put(key, payload);
-            }
+            return readWriteCacheMap.get(key);
         } catch (Throwable t) {
             logger.error("Cannot get value for key :" + key, t);
+            return null;
         }
-        return payload;
     }
 
     /**
      * Generate pay load with both JSON and XML formats for all applications.
      */
-    private String getPayLoad(Key key, Applications apps) {
+    private static String getPayLoad(Key key, Applications apps) {
         if (key.getType() == KeyType.JSON) {
             return JsonXStream.getInstance().toXML(apps);
         } else {
@@ -292,7 +299,7 @@ public class ResponseCache {
     /**
      * Generate pay load with both JSON and XML formats for a given application.
      */
-    private String getPayLoad(Key key, Application app) {
+    private static String getPayLoad(Key key, Application app) {
         if (app == null) {
             return EMPTY_PAYLOAD;
         }
@@ -301,31 +308,6 @@ public class ResponseCache {
             return JsonXStream.getInstance().toXML(app);
         } else {
             return XmlXStream.getInstance().toXML(app);
-        }
-    }
-
-    /**
-     * Update the read only cache periodically to the latest pay load.
-     */
-    private void updateClientCache() {
-        logger.debug("Updating the client cache from response cache");
-        for (ResponseCache.Key key : readOnlyCacheMap.keySet()) {
-            Object[] args = {key.getEntityType(), key.getName(), key.getVersion(), key.getType()};
-            logger.debug(
-                    "Updating the client cache from response cache for key : {} {} {} {}",
-                    args);
-            try {
-                CurrentRequestVersion.set(key.getVersion());
-                Value cacheValue = readWriteCacheMap.get(key);
-                Value currentCacheValue = readOnlyCacheMap.get(key);
-                if (cacheValue != currentCacheValue) {
-                    readOnlyCacheMap.put(key, cacheValue);
-                }
-            } catch (Throwable th) {
-                logger.error(
-                        "Error while updating the client cache from response cache",
-                        th);
-            }
         }
     }
 
@@ -343,31 +325,31 @@ public class ResponseCache {
 
                     if (ALL_APPS.equals(key.getName())) {
                         if (isRemoteRegionRequested) {
-                            tracer = this.serializeAllAppsWithRemoteRegionTimer.start();
+                            tracer = serializeAllAppsWithRemoteRegionTimer.start();
                             payload = getPayLoad(key, registry.getApplicationsFromMultipleRegions(key.getRegions()));
                         } else {
-                            tracer = this.serializeAllAppsTimer.start();
+                            tracer = serializeAllAppsTimer.start();
                             payload = getPayLoad(key, registry.getApplications());
                         }
                     } else if (ALL_APPS_DELTA.equals(key.getName())) {
                         if (isRemoteRegionRequested) {
-                            tracer = this.serializeDeltaAppsWithRemoteRegionTimer.start();
+                            tracer = serializeDeltaAppsWithRemoteRegionTimer.start();
                             versionDeltaWithRegions.incrementAndGet();
                             payload = getPayLoad(key,
                                     registry.getApplicationDeltasFromMultipleRegions(key.getRegions()));
                         } else {
-                            tracer = this.serializeDeltaAppsTimer.start();
+                            tracer = serializeDeltaAppsTimer.start();
                             versionDelta.incrementAndGet();
                             payload = getPayLoad(key, registry.getApplicationDeltas());
                         }
                     } else {
-                        tracer = this.serializeOneApptimer.start();
+                        tracer = serializeOneApptimer.start();
                         payload = getPayLoad(key, registry.getApplication(key.getName()));
                     }
                     break;
                 case VIP:
                 case SVIP:
-                    tracer = this.serializeViptimer.start();
+                    tracer = serializeViptimer.start();
                     payload = getPayLoad(key, getApplicationsForVip(key, registry));
                     break;
                 default:
@@ -383,7 +365,7 @@ public class ResponseCache {
         }
     }
 
-    private Applications getApplicationsForVip(Key key, InstanceRegistry registry) {
+    private static Applications getApplicationsForVip(Key key, InstanceRegistry registry) {
         Object[] args = {key.getEntityType(), key.getName(), key.getVersion(), key.getType()};
         logger.debug(
                 "Retrieving applications from registry for key : {} {} {} {}",
@@ -452,7 +434,7 @@ public class ResponseCache {
             this.entityName = entityName;
             requestType = type;
             requestVersion = v;
-            hashKey = this.entityType + this.entityName + ((null != this.regions) ? Arrays.toString(this.regions) : "")
+            hashKey = this.entityType + this.entityName + (null != this.regions ? Arrays.toString(this.regions) : "")
                     + requestType.name() + requestVersion.name();
         }
 
@@ -484,6 +466,10 @@ public class ResponseCache {
             return regions;
         }
 
+        public Key cloneWithoutRegions() {
+            return new Key(entityType, entityName, requestType, requestVersion);
+        }
+
         @Override
         public int hashCode() {
             String hashKey = getHashKey();
@@ -504,7 +490,7 @@ public class ResponseCache {
      * The class that stores payload in both compressed and uncompressed form.
      *
      */
-    private class Value {
+    public class Value {
         private final String payload;
         private byte[] gzipped;
 
@@ -521,25 +507,25 @@ public class ResponseCache {
                     out.finish();
                     out.close();
                     bos.close();
-                    this.gzipped = bos.toByteArray();
+                    gzipped = bos.toByteArray();
                 } catch (IOException e) {
-                    this.gzipped = null;
+                    gzipped = null;
                 } finally {
                     if (tracer != null) {
                         tracer.stop();
                     }
                 }
             } else {
-                this.gzipped = null;
+                gzipped = null;
             }
         }
 
         public String getPayload() {
-            return this.payload;
+            return payload;
         }
 
         public byte[] getGzipped() {
-            return this.gzipped;
+            return gzipped;
         }
 
     }

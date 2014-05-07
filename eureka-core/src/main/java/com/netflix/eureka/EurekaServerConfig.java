@@ -262,7 +262,10 @@ public interface EurekaServerConfig {
      * be updated.
      *
      * @return time in milliseconds.
+     * @deprecated This is not used anymore. The cache entry is removed whenever there is a change in the registry or
+     * it is expired as specified by {@link #getResponseCacheAutoExpirationInSeconds()}
      */
+    @Deprecated
     long getResponseCacheUpdateIntervalMs();
 
     /**

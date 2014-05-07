@@ -25,22 +25,21 @@ public class MockRemoteEurekaServer extends ExternalResource {
 
     public static final String EUREKA_API_BASE_PATH = "/eureka/v2/";
 
-    private int port = 0;
+    private int port;
     private final Map<String, Application> applicationMap        = new HashMap<String, Application>();
     private final Map<String, Application> remoteRegionApps      = new HashMap<String, Application>();
     private final Map<String, Application> remoteRegionAppsDelta = new HashMap<String, Application>();
     private final Map<String, Application> applicationDeltaMap   = new HashMap<String, Application>();
     private Server server;
-    private AtomicBoolean sentDelta = new AtomicBoolean();
-    private AtomicBoolean sentRegistry = new AtomicBoolean();
+    private final AtomicBoolean sentDelta = new AtomicBoolean();
+    private final AtomicBoolean sentRegistry = new AtomicBoolean();
 
-    public MockRemoteEurekaServer() {
-    }
-
+    @Override
     protected void before() throws Throwable {
         start();
     }
 
+    @Override
     protected void after() {
         try {
             stop();
@@ -50,7 +49,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
     }
 
     public void start() throws Exception {
-        server = new Server(this.port);
+        server = new Server(port);
         server.setHandler(new AppsResourceHandler());
         server.start();
         port = server.getConnectors()[0].getLocalPort();
@@ -87,7 +86,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
             String pathInfo = request.getPathInfo();
             System.out.println("Eureka port: " + port + ". " + System.currentTimeMillis() +
                                ". Eureka resource mock, received request on path: " + pathInfo + ". HTTP method: |"
-                               + request.getMethod() + "|" + ", query string: " + request.getQueryString());
+                               + request.getMethod() + '|' + ", query string: " + request.getQueryString());
             boolean handled = false;
             if (null != pathInfo && pathInfo.startsWith("")) {
                 pathInfo = pathInfo.substring(EUREKA_API_BASE_PATH.length());
@@ -95,7 +94,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
 
                 if (pathInfo.startsWith("apps/delta")) {
                     Applications apps = new Applications();
-                    apps.setVersion(100l);
+                    apps.setVersion(100L);
                     if (sentDelta.compareAndSet(false, true)) {
                         addDeltaApps(includeRemote, apps);
                     } else {
@@ -106,7 +105,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
                     handled = true;
                 } else if(pathInfo.startsWith("apps")) {
                     Applications apps = new Applications();
-                    apps.setVersion(100l);
+                    apps.setVersion(100L);
                     for (Application application : applicationMap.values()) {
                         apps.addApplication(application);
                     }
@@ -162,8 +161,9 @@ public class MockRemoteEurekaServer extends ExternalResource {
 
         private boolean isRemoteRequest(HttpServletRequest request) {
             String queryString = request.getQueryString();
-            if (queryString == null)
+            if (queryString == null) {
                 return false;
+            }
             return queryString.contains("regions=");
         }
 
@@ -182,19 +182,19 @@ public class MockRemoteEurekaServer extends ExternalResource {
     }
 
     public void addRemoteRegionApps(String appName, Application app) {
-        this.remoteRegionApps.put(appName, app);
+        remoteRegionApps.put(appName, app);
     }
 
     public void addRemoteRegionAppsDelta(String appName, Application app) {
-        this.remoteRegionAppsDelta.put(appName, app);
+        remoteRegionAppsDelta.put(appName, app);
     }
 
     public void addLocalRegionApps(String appName, Application app) {
-        this.applicationMap.put(appName, app);
+        applicationMap.put(appName, app);
     }
 
     public void addLocalRegionAppsDelta(String appName, Application app) {
-        this.applicationDeltaMap.put(appName, app);
+        applicationDeltaMap.put(appName, app);
     }
 
     public void waitForDeltaToBeRetrieved(int refreshRate) throws InterruptedException {
