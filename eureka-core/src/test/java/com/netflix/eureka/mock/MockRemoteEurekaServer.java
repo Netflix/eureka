@@ -3,6 +3,8 @@ package com.netflix.eureka.mock;
 import com.netflix.discovery.converters.XmlXStream;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import org.junit.Assert;
+import org.junit.rules.ExternalResource;
 import org.mortbay.jetty.Request;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.handler.AbstractHandler;
@@ -16,7 +18,7 @@ import java.util.Map;
 /**
  * @author Nitesh Kant
  */
-public class MockRemoteEurekaServer {
+public class MockRemoteEurekaServer extends ExternalResource {
 
     public static final String EUREKA_API_BASE_PATH = "/eureka/v2/";
 
@@ -24,6 +26,7 @@ public class MockRemoteEurekaServer {
     private final Map<String, Application> applicationDeltaMap;
     private final Server server;
     private boolean sentDelta;
+    private int port;
 
     public MockRemoteEurekaServer(int port, Map<String, Application> applicationMap,
                                   Map<String, Application> applicationDeltaMap) {
@@ -36,8 +39,23 @@ public class MockRemoteEurekaServer {
                 stringifyAppMap(applicationMap), stringifyAppMap(applicationDeltaMap)));
     }
 
+    @Override
+    protected void before() throws Throwable {
+        start();
+    }
+
+    @Override
+    protected void after() {
+        try {
+            stop();
+        } catch (Exception e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
     public void start() throws Exception {
         server.start();
+        port = server.getConnectors()[0].getLocalPort();
     }
 
     public void stop() throws Exception {
@@ -48,7 +66,11 @@ public class MockRemoteEurekaServer {
         return sentDelta;
     }
 
-    private String stringifyAppMap(Map<String, Application> applicationMap) {
+    public int getPort() {
+        return port;
+    }
+
+    private static String stringifyAppMap(Map<String, Application> applicationMap) {
         StringBuilder builder = new StringBuilder();
         for (Map.Entry<String, Application> entry : applicationMap.entrySet()) {
             String entryAsString = String.format("{ name : %s , instance count: %d }", entry.getKey(),
@@ -66,7 +88,7 @@ public class MockRemoteEurekaServer {
             String pathInfo = request.getPathInfo();
             System.out.println(
                     "Eureka resource mock, received request on path: " + pathInfo + ". HTTP method: |" + request
-                            .getMethod() + "|");
+                            .getMethod() + '|');
             boolean handled = false;
             if (null != pathInfo && pathInfo.startsWith("")) {
                 pathInfo = pathInfo.substring(EUREKA_API_BASE_PATH.length());
@@ -104,7 +126,7 @@ public class MockRemoteEurekaServer {
             response.getWriter().flush();
             request.setHandled(true);
             System.out.println("Eureka resource mock, sent response for request path: " + request.getPathInfo() +
-                               " with content" + String.valueOf(content));
+                               " with content" + content);
         }
     }
 

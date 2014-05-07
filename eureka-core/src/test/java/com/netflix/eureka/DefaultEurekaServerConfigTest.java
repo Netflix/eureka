@@ -1,7 +1,7 @@
 package com.netflix.eureka;
 
 import com.netflix.config.ConfigurationManager;
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Map;
@@ -10,7 +10,7 @@ import java.util.Set;
 /**
  * @author Nitesh Kant
  */
-public class TestDefaultEurekaServerConfig {
+public class DefaultEurekaServerConfigTest {
 
     @Test
     public void testRemoteRegionUrlsWithName2Regions() throws Exception {
@@ -19,9 +19,9 @@ public class TestDefaultEurekaServerConfig {
         String region2 = "myregion2";
         String region2url = "http://local:888/eee";
         ConfigurationManager.getConfigInstance().setProperty("eureka.remoteRegionUrlsWithName", region1
-                                                                                                + ";" + region1url
-                                                                                                + "," + region2
-                                                                                                + ";" + region2url);
+                                                                                                + ';' + region1url
+                                                                                                + ',' + region2
+                                                                                                + ';' + region2url);
         DefaultEurekaServerConfig config = new DefaultEurekaServerConfig();
         Map<String,String> remoteRegionUrlsWithName = config.getRemoteRegionUrlsWithName();
 
@@ -38,7 +38,7 @@ public class TestDefaultEurekaServerConfig {
         String region1 = "myregion1";
         String region1url = "http://local:888/eee";
         ConfigurationManager.getConfigInstance().setProperty("eureka.remoteRegionUrlsWithName", region1
-                                                                                                + ";" + region1url);
+                                                                                                + ';' + region1url);
         DefaultEurekaServerConfig config = new DefaultEurekaServerConfig();
         Map<String,String> remoteRegionUrlsWithName = config.getRemoteRegionUrlsWithName();
 

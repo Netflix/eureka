@@ -9,7 +9,7 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.Pair;
 import com.netflix.eureka.mock.MockRemoteEurekaServer;
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,7 +29,7 @@ public class InstanceRegistryTest {
     private final Map<String, Application> remoteRegionApps = new HashMap<String, Application>();
     private final Map<String, Application> remoteRegionAppsDelta = new HashMap<String, Application>();
 
-    private List<Pair<String, String>> registeredApps = new ArrayList<Pair<String, String>>();
+    private final List<Pair<String, String>> registeredApps = new ArrayList<Pair<String, String>>();
     private MockRemoteEurekaServer mockRemoteEurekaServer;
     private InstanceRegistry registry;
     public static final String REMOTE_REGION_APP_NAME = "MYAPP";
@@ -47,7 +47,8 @@ public class InstanceRegistryTest {
         ConfigurationManager.getConfigInstance().setProperty("eureka.remoteRegion.registryFetchIntervalInSeconds",
                                                              "5");
         ConfigurationManager.getConfigInstance().setProperty("eureka.remoteRegionUrlsWithName",
-                                                             REMOTE_REGION_NAME + ";http://localhost:" + REMOTE_REGION_PORT + "/" +
+                                                             REMOTE_REGION_NAME + ";http://localhost:"
+                                                             + REMOTE_REGION_PORT + '/' +
                                                              MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
         populateRemoteRegistryAtStartup();
         mockRemoteEurekaServer = new MockRemoteEurekaServer(REMOTE_REGION_PORT, remoteRegionApps,
@@ -182,7 +183,7 @@ public class InstanceRegistryTest {
         remoteRegionAppsDelta.put(REMOTE_REGION_APP_NAME, myappDelta);
     }
 
-    private Application createRemoteApps() {
+    private static Application createRemoteApps() {
         Application myapp = new Application(REMOTE_REGION_APP_NAME);
         InstanceInfo instanceInfo = createRemoteInstance(REMOTE_REGION_INSTANCE_1_HOSTNAME);
         //instanceInfo.setActionType(InstanceInfo.ActionType.MODIFIED);
@@ -190,14 +191,14 @@ public class InstanceRegistryTest {
         return myapp;
     }
 
-    private Application createRemoteAppsDelta() {
+    private static Application createRemoteAppsDelta() {
         Application myapp = new Application(REMOTE_REGION_APP_NAME);
         InstanceInfo instanceInfo = createRemoteInstance(REMOTE_REGION_INSTANCE_1_HOSTNAME);
         myapp.addInstance(instanceInfo);
         return myapp;
     }
 
-    private InstanceInfo createRemoteInstance(String instanceHostName) {
+    private static InstanceInfo createRemoteInstance(String instanceHostName) {
         InstanceInfo.Builder instanceBuilder = InstanceInfo.Builder.newBuilder();
         instanceBuilder.setAppName(REMOTE_REGION_APP_NAME);
         instanceBuilder.setHostName(instanceHostName);
@@ -211,14 +212,7 @@ public class InstanceRegistryTest {
         return instanceBuilder.build();
     }
 
-    private Application createLocalApps() {
-        Application myapp = new Application(LOCAL_REGION_APP_NAME);
-        InstanceInfo instanceInfo = createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME);
-        myapp.addInstance(instanceInfo);
-        return myapp;
-    }
-
-    private InstanceInfo createLocalInstance(String hostname) {
+    private static InstanceInfo createLocalInstance(String hostname) {
         InstanceInfo.Builder instanceBuilder = InstanceInfo.Builder.newBuilder();
         instanceBuilder.setAppName(LOCAL_REGION_APP_NAME);
         instanceBuilder.setHostName(hostname);
