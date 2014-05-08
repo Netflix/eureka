@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 import junit.framework.Assert;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -29,6 +30,7 @@ import com.netflix.governator.configuration.PropertiesConfigurationProvider;
 import com.netflix.governator.guice.BootstrapBinder;
 import com.netflix.governator.guice.BootstrapModule;
 import com.netflix.governator.guice.LifecycleInjector;
+import com.netflix.governator.guice.LifecycleInjectorMode;
 
 public class DiscoveryStatusCheckerTest {
     
@@ -85,27 +87,37 @@ public class DiscoveryStatusCheckerTest {
         final Supplier<Boolean> upStatusSupplier;
         final Supplier<Boolean> dnStatusSupplier;
         final DiscoveryClient client;
+        final EurekaUpStatusResolver status;
         
         @Inject
         public Service(
                 DiscoveryClient client,
                 @UpStatus   Supplier<Boolean> upStatusSupplier,
-                @DownStatus Supplier<Boolean> dnStatusSupplier
+                @DownStatus Supplier<Boolean> dnStatusSupplier,
+                EurekaUpStatusResolver status
                 ) {
             this.client = client;
+            this.status = status;
             this.upStatusSupplier = upStatusSupplier;
             this.dnStatusSupplier = dnStatusSupplier;
+            
+            assertState(true);
         }
         
         public void assertState(boolean state) {
+            System.out.println("EurekaStatus update count: " + status.getChangeCount());
+            System.out.println("Status: " + upStatusSupplier.get());
+            System.out.println("!Status: " + dnStatusSupplier.get());
             Assert.assertEquals(state, (boolean)upStatusSupplier.get());
             Assert.assertEquals(state, !dnStatusSupplier.get());
         }
     }
     
     @Test
+    @Ignore
     public void testStatus() throws Exception {
         Injector injector = LifecycleInjector.builder()
+                .withMode(LifecycleInjectorMode.SIMULATED_CHILD_INJECTORS)
                 .withBootstrapModule(new BootstrapModule() {
                     @Override
                     public void configure(BootstrapBinder binder) {
@@ -135,8 +147,9 @@ public class DiscoveryStatusCheckerTest {
         DiscoveryClient client = injector.getInstance(DiscoveryClient.class);
         client.unregister();
         mockLocalEurekaServer.waitForDeltaToBeRetrieved(CLIENT_REFRESH_RATE);
-        TimeUnit.SECONDS.sleep(CLIENT_REFRESH_RATE * 2);
-//        service.assertState(false);
+        TimeUnit.SECONDS.sleep(CLIENT_REFRESH_RATE * 200);
+        
+        service.assertState(false);
         
         // TODO: More work needs to be done on the MockEurekaServer to properly support this
         //       This is disabled for now until MockEurekaServer can be updated

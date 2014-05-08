@@ -28,8 +28,7 @@ import com.netflix.governator.guice.lazy.LazySingleton;
  *
  */
 @Singleton
-class InternalEurekaStatusModule extends AbstractModule {
-
+public class InternalEurekaStatusModule extends AbstractModule {
     @LazySingleton
     public static class UpStatusProvider implements Provider<Supplier<Boolean>> {
         @Inject
