@@ -11,16 +11,19 @@ public class MyDataCenterInstanceConfigProvider implements Provider<MyDataCenter
     @EurekaNamespace
     private String namespace;
 
+    private MyDataCenterInstanceConfig config;
+    
     @Override
-    public MyDataCenterInstanceConfig get() {
-        MyDataCenterInstanceConfig config;
-        if (namespace == null) {
-            config = new MyDataCenterInstanceConfig();
-        } else {
-            config = new MyDataCenterInstanceConfig(namespace);
+    public synchronized MyDataCenterInstanceConfig get() {
+        if (config == null) {
+            if (namespace == null) {
+                config = new MyDataCenterInstanceConfig();
+            } else {
+                config = new MyDataCenterInstanceConfig(namespace);
+            }
+    
+            DiscoveryManager.getInstance().setEurekaInstanceConfig(config);
         }
-
-        DiscoveryManager.getInstance().setEurekaInstanceConfig(config);
         return config;
     }
 }

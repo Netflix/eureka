@@ -18,17 +18,20 @@ public class CloudInstanceConfigProvider implements Provider<CloudInstanceConfig
     @EurekaNamespace
     private String namespace;
 
+    private CloudInstanceConfig config;
+    
     @Override
-    public CloudInstanceConfig get() {
-        CloudInstanceConfig config;
-        if (namespace == null) {
-            config = new CloudInstanceConfig();
-        } else {
-            config = new CloudInstanceConfig(namespace);
+    public synchronized CloudInstanceConfig get() {
+        if (config == null) {
+            if (namespace == null) {
+                config = new CloudInstanceConfig();
+            } else {
+                config = new CloudInstanceConfig(namespace);
+            }
+    
+            // TODO: Remove this when DiscoveryManager is finally no longer used
+            DiscoveryManager.getInstance().setEurekaInstanceConfig(config);
         }
-
-        // TODO: Remove this when DiscoveryManager is finally no longer used
-        DiscoveryManager.getInstance().setEurekaInstanceConfig(config);
         return config;
     }
 

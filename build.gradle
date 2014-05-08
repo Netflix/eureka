@@ -93,7 +93,7 @@ project(':eureka-server') {
         from (project(':eureka-resources').file('build/resources/main'))
         webXml = file('WEB-INF/web.xml') // copies a file to WEB-INF/web.xml
     }
-	
+    
     dependencies {
         compile project(':eureka-client')
         compile project(':eureka-core')
