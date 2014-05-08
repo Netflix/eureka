@@ -2,10 +2,10 @@ ext.githubProjectName = 'eureka'
 
 ext {
     jerseyVersion="1.11"
-    governatorVersion="[1.2.7,2.0)"
-    archaiusVersion="[0.3,1.0)"
-    ribbonVersion="[0.3,0.4)"
-    blitzVersion="[1.18,2.0)"
+    governatorVersion="1.2.10"
+    archaiusVersion="0.6.0"
+    ribbonVersion="0.3.12"
+    blitzVersion="1.34"
 }
 
 buildscript {

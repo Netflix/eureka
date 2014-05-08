@@ -78,7 +78,7 @@ public class AbstractTester {
                                                              "http://localhost:" + mockRemoteEurekaServer.getPort() +
                                                              MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
 
-        client = new DiscoveryClient(builder.build(), new DefaultEurekaClientConfig(), new EventBusImpl());
+        client = new DiscoveryClient(builder.build(), new DefaultEurekaClientConfig());
         ApplicationInfoManager.getInstance().initComponent(new MyDataCenterInstanceConfig());
         registry = new InstanceRegistry() {
 
