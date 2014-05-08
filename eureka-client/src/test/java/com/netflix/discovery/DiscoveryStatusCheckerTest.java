@@ -147,7 +147,7 @@ public class DiscoveryStatusCheckerTest {
         DiscoveryClient client = injector.getInstance(DiscoveryClient.class);
         client.unregister();
         mockLocalEurekaServer.waitForDeltaToBeRetrieved(CLIENT_REFRESH_RATE);
-        TimeUnit.SECONDS.sleep(CLIENT_REFRESH_RATE * 200);
+        TimeUnit.SECONDS.sleep(CLIENT_REFRESH_RATE * 2);
         
         service.assertState(false);
         

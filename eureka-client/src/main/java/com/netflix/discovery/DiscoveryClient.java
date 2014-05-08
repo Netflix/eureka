@@ -157,7 +157,7 @@ public class DiscoveryClient implements LookupService {
 
     private final ScheduledExecutorService scheduler;
 
-    private EventBus eventBus;
+    private final EventBus eventBus;
     
     public static class DiscoveryClientOptionalArgs {
         @Inject(optional = true)
