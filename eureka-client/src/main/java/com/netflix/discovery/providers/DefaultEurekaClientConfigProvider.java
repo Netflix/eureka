@@ -16,12 +16,17 @@ public class DefaultEurekaClientConfigProvider implements Provider<EurekaClientC
     @EurekaNamespace
     private String namespace;
 
+    private DefaultEurekaClientConfig config;
+    
     @Override
-    public EurekaClientConfig get() {
-        if (namespace == null) {
-            return new DefaultEurekaClientConfig();
-        } else {
-            return new DefaultEurekaClientConfig(namespace);
+    public synchronized EurekaClientConfig get() {
+        if (config == null) {
+            if (namespace == null) {
+                config = new DefaultEurekaClientConfig();
+            } else {
+                config = new DefaultEurekaClientConfig(namespace);
+            }
         }
+        return config;
     }
 }
