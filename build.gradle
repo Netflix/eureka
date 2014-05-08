@@ -4,7 +4,7 @@ ext {
     jerseyVersion="1.11"
     governatorVersion="[1.2.7,2.0)"
     archaiusVersion="[0.3,1.0)"
-    ribbonVersion="[0.3,1.0)"
+    ribbonVersion="[0.3,0.4)"
     blitzVersion="[1.18,2.0)"
 }
 
@@ -40,11 +40,11 @@ subprojects {
 
 project(':eureka-client') {
     dependencies {
-        compile "com.netflix.netflix-commons:netflix-eventbus:[0.1,)"
+        compile "com.netflix.netflix-commons:netflix-eventbus:[0.1,1.0)"
         compile 'com.thoughtworks.xstream:xstream:1.4.2'
         compile "com.netflix.archaius:archaius-core:$archaiusVersion"
         compile 'javax.ws.rs:jsr311-api:1.1.1'
-        compile 'com.netflix.servo:servo-core:[0.4,)'
+        compile 'com.netflix.servo:servo-core:[0.4,1.0)'
         compile "com.sun.jersey:jersey-core:$jerseyVersion"
         compile "com.sun.jersey:jersey-client:$jerseyVersion"
         compile 'com.sun.jersey.contribs:jersey-apache-client4:1.11'
