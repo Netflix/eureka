@@ -40,6 +40,7 @@ import javax.naming.directory.DirContext;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
+import org.mortbay.log.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -156,17 +157,24 @@ public class DiscoveryClient implements LookupService {
 
     private final ScheduledExecutorService scheduler;
 
-    @Inject(optional = true)
-    private EventBus eventBus;
+    private final EventBus eventBus;
+    
+    public static class DiscoveryClientOptionalArgs {
+        @Inject(optional = true)
+        private EventBus eventBus;
+    }
 
-    public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, EventBus eventBus) {
-        this(myInfo, config);
-        this.eventBus = eventBus;
+    public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config) {
+        this(myInfo, config, null);
     }
 
     @Inject
-    DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config) {
+    public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
         try {
+            if (args != null) 
+                this.eventBus = args.eventBus;
+            else
+                this.eventBus = null;
             scheduler = Executors.newScheduledThreadPool(4);
             clientConfig = config;
             final String zone = getZone(myInfo);
