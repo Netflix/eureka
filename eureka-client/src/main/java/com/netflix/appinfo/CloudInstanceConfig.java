@@ -83,7 +83,7 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
             if (propValidateInstanceId.get()) {
                 throw new RuntimeException(
                         "Your datacenter is defined as cloud but we are not able to get the amazon metadata to "
-                        + "register. \nSet the property" + namespace + "validateInstanceId to false to ignore the"
+                        + "register. \nSet the property " + namespace + "validateInstanceId to false to ignore the"
                         + "metadata call");
             } else {
                 // The property to not validate instance ids may be set for
