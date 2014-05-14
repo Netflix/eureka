@@ -43,6 +43,7 @@ import javax.ws.rs.core.Response.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
@@ -174,7 +175,11 @@ public class DiscoveryClient implements LookupService {
                 this.eventBus = args.eventBus;
             else
                 this.eventBus = null;
-            scheduler = Executors.newScheduledThreadPool(4);
+            scheduler = Executors.newScheduledThreadPool(4, 
+                    new ThreadFactoryBuilder()
+                        .setNameFormat("DiscoveryClient-%d")
+                        .setDaemon(true)
+                        .build());
             clientConfig = config;
             final String zone = getZone(myInfo);
             eurekaServiceUrls.set(getDiscoveryServiceUrls(zone));
