@@ -122,6 +122,14 @@ public class BackUpRegistryTest {
         Assert.assertEquals("Remote region apps not present.", REMOTE_REGION_APP_NAME, registeredApplications.get(0).getName());
     }
 
+    @Test
+    public void testAppsHashCode() throws Exception {
+        setUp(true);
+        Applications applications = client.getApplications();
+
+        Assert.assertEquals("UP_1_", applications.getAppsHashCode());
+    }
+
     private void setupBackupMock() {
         Application localApp = createLocalApps();
         Applications localApps = new Applications();

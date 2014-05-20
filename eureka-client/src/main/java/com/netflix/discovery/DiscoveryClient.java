@@ -666,11 +666,11 @@ public class DiscoveryClient implements LookupService {
                             || clientConfig.shouldLogDeltaDiff()) {
                         response = reconcileAndLogDifference(response, delta,
                                 reconcileHashCode);
-
                     }
                 }
-                logTotalInstances();
             }
+            applications.setAppsHashCode(applications.getReconcileHashCode());
+            logTotalInstances();
 
             logger.debug(PREFIX + appPathIdentifier + " -  refresh status: "
                     + response.getStatus());
@@ -1606,7 +1606,9 @@ public class DiscoveryClient implements LookupService {
                     apps = backupRegistryInstance.fetchRegistry();
                 }
                 if (apps != null) {
-                    localRegionApps.set(this.filterAndShuffle(apps));
+                    final Applications applications = this.filterAndShuffle(apps);
+                    applications.setAppsHashCode(applications.getReconcileHashCode());
+                    localRegionApps.set(applications);
                     logTotalInstances();
                     logger.info("Fetched registry successfully from the backup");
                 }

@@ -24,8 +24,10 @@ public class AbstractDiscoveryClientTester {
     public static final String REMOTE_REGION_INSTANCE_1_HOSTNAME = "blah";
     public static final String REMOTE_REGION_INSTANCE_2_HOSTNAME = "blah2";
     public static final String LOCAL_REGION_APP_NAME = "MYAPP_LOC";
+    public static final String LOCAL_REGION_APP_NAME_2 = "MYAPP_LOC2";
     public static final String LOCAL_REGION_INSTANCE_1_HOSTNAME = "blahloc";
     public static final String LOCAL_REGION_INSTANCE_2_HOSTNAME = "blahloc2";
+    public static final String LOCAL_REGION_INSTANCE_3_HOSTNAME = "blahloc3";
     public static final String REMOTE_REGION_APP_NAME = "MYAPP";
     public static final String REMOTE_REGION = "myregion";
     public static final String REMOTE_ZONE = "myzone";
@@ -119,28 +121,36 @@ public class AbstractDiscoveryClientTester {
         mockLocalEurekaServer.addLocalRegionAppsDelta(LOCAL_REGION_APP_NAME, myappDelta);
     }
 
+    protected void addLocalAppDelta() {
+        Application myappDelta = new Application(LOCAL_REGION_APP_NAME_2);
+        InstanceInfo instanceInfo = createInstance(LOCAL_REGION_APP_NAME_2, ALL_REGIONS_VIP_ADDR, LOCAL_REGION_INSTANCE_3_HOSTNAME, null);
+        instanceInfo.setActionType(InstanceInfo.ActionType.ADDED);
+        myappDelta.addInstance(instanceInfo);
+        mockLocalEurekaServer.addLocalRegionAppsDelta(LOCAL_REGION_APP_NAME_2, myappDelta);
+    }
+
     private static Application createLocalApps() {
         Application myapp = new Application(LOCAL_REGION_APP_NAME);
-        InstanceInfo instanceInfo = createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME);
+        InstanceInfo instanceInfo = createInstance(LOCAL_REGION_APP_NAME, ALL_REGIONS_VIP_ADDR, LOCAL_REGION_INSTANCE_1_HOSTNAME, null);
         myapp.addInstance(instanceInfo);
         return myapp;
     }
 
     private static Application createLocalAppsDelta() {
         Application myapp = new Application(LOCAL_REGION_APP_NAME);
-        InstanceInfo instanceInfo = createLocalInstance(LOCAL_REGION_INSTANCE_2_HOSTNAME);
+        InstanceInfo instanceInfo = createInstance(LOCAL_REGION_APP_NAME, ALL_REGIONS_VIP_ADDR, LOCAL_REGION_INSTANCE_2_HOSTNAME, null);
         instanceInfo.setActionType(InstanceInfo.ActionType.ADDED);
         myapp.addInstance(instanceInfo);
         return myapp;
     }
 
-    private static InstanceInfo createLocalInstance(String instanceHostName) {
+    private static InstanceInfo createInstance(String appName, String vipAddress, String instanceHostName, String zone) {
         InstanceInfo.Builder instanceBuilder = InstanceInfo.Builder.newBuilder();
-        instanceBuilder.setAppName(LOCAL_REGION_APP_NAME);
-        instanceBuilder.setVIPAddress(ALL_REGIONS_VIP_ADDR);
+        instanceBuilder.setAppName(appName);
+        instanceBuilder.setVIPAddress(vipAddress);
         instanceBuilder.setHostName(instanceHostName);
         instanceBuilder.setIPAddr("10.10.101.1");
-        AmazonInfo amazonInfo = getAmazonInfo(null, instanceHostName);
+        AmazonInfo amazonInfo = getAmazonInfo(zone, instanceHostName);
         instanceBuilder.setDataCenterInfo(amazonInfo);
         instanceBuilder.setMetadata(amazonInfo.getMetadata());
         instanceBuilder.setLeaseInfo(LeaseInfo.Builder.newBuilder().build());

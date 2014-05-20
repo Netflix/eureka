@@ -197,9 +197,10 @@ public class RemoteRegionRegistry implements LookupService<String> {
 
                         }
                     }
-                    logTotalInstances();
                 }
             }
+            logTotalInstances();
+
             logger.debug("Remote Registry Fetch Status : {}", null == response ? null : response.getStatus());
         } catch (Throwable e) {
             logger.error(
