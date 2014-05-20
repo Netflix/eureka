@@ -763,16 +763,14 @@ public class DiscoveryClient implements LookupService {
     }
 
     /**
-     * Logs the total number of instances stored locally.
+     * Logs the total number of non-filtered instances stored locally.
      */
     private void logTotalInstances() {
         int totInstances = 0;
-        for (Application application : getApplications()
-                .getRegisteredApplications()) {
-            totInstances += application.getInstances().size();
+        for (Application application : getApplications().getRegisteredApplications()) {
+            totInstances += application.getInstancesAsIsFromEureka().size();
         }
-        logger.debug("The total number of instances in the client now is {}",
-                totInstances);
+        logger.debug("The total number of all instances in the client now is {}", totInstances);
     }
 
     /**
