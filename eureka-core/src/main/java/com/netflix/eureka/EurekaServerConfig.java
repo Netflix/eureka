@@ -508,4 +508,10 @@ public interface EurekaServerConfig {
      * @return {@code true} if the replication needs to be batched.
      */
     boolean shouldBatchReplication();
+    
+    /**
+     * Indicates whether Eureka should accept all registration coming from datacenters
+     * @return true if we want to re-register all instances
+     */
+    boolean shouldAcceptAllDataCenterRegistrations();
 }
