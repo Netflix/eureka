@@ -666,11 +666,11 @@ public class DiscoveryClient implements LookupService {
                             || clientConfig.shouldLogDeltaDiff()) {
                         response = reconcileAndLogDifference(response, delta,
                                 reconcileHashCode);
-
                     }
                 }
-                logTotalInstances();
             }
+            applications.setAppsHashCode(applications.getReconcileHashCode());
+            logTotalInstances();
 
             logger.debug(PREFIX + appPathIdentifier + " -  refresh status: "
                     + response.getStatus());
@@ -763,16 +763,14 @@ public class DiscoveryClient implements LookupService {
     }
 
     /**
-     * Logs the total number of instances stored locally.
+     * Logs the total number of non-filtered instances stored locally.
      */
     private void logTotalInstances() {
         int totInstances = 0;
-        for (Application application : getApplications()
-                .getRegisteredApplications()) {
-            totInstances += application.getInstances().size();
+        for (Application application : getApplications().getRegisteredApplications()) {
+            totInstances += application.getInstancesAsIsFromEureka().size();
         }
-        logger.debug("The total number of instances in the client now is {}",
-                totInstances);
+        logger.debug("The total number of all instances in the client now is {}", totInstances);
     }
 
     /**
@@ -1608,7 +1606,9 @@ public class DiscoveryClient implements LookupService {
                     apps = backupRegistryInstance.fetchRegistry();
                 }
                 if (apps != null) {
-                    localRegionApps.set(this.filterAndShuffle(apps));
+                    final Applications applications = this.filterAndShuffle(apps);
+                    applications.setAppsHashCode(applications.getReconcileHashCode());
+                    localRegionApps.set(applications);
                     logTotalInstances();
                     logger.info("Fetched registry successfully from the backup");
                 }

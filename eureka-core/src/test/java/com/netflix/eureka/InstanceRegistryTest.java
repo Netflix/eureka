@@ -51,6 +51,16 @@ public class InstanceRegistryTest extends AbstractTester {
                             remApplication.getInstances().size());
     }
 
+    @Test
+    public void testAppsHashCodeAfterRefresh() throws InterruptedException {
+        Assert.assertEquals("UP_1_", registry.getApplicationsFromAllRemoteRegions().getAppsHashCode());
+
+        registerInstanceLocally(createLocalInstance(LOCAL_REGION_INSTANCE_2_HOSTNAME));
+        waitForDeltaToBeRetrieved();
+
+        Assert.assertEquals("UP_2_", registry.getApplicationsFromAllRemoteRegions().getAppsHashCode());
+    }
+
     private void waitForDeltaToBeRetrieved() throws InterruptedException {
         int count = 0;
         while (count < 3 && !mockRemoteEurekaServer.isSentDelta()) {
