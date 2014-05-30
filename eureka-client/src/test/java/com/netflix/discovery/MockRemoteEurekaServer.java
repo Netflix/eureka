@@ -1,5 +1,6 @@
 package com.netflix.discovery;
 
+import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.converters.XmlXStream;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
@@ -124,7 +125,28 @@ public class MockRemoteEurekaServer extends ExternalResource {
                     sendOkResponseWithContent((Request) request, response, apps);
                     sentRegistry.set(true);
                     handled = true;
+                } else if (pathInfo.startsWith("vips/")) {
+                    String vipAddress = pathInfo.substring("vips/".length());
+                    Applications apps = new Applications();
+                    apps.setVersion(-1l);
+                    for (Application application : applicationMap.values()) {
+                        Application retApp = new Application(application.getName());
+                        for (InstanceInfo instance : application.getInstances()) {
+                            if (vipAddress.equals(instance.getVIPAddress())) {
+                                retApp.addInstance(instance);
+                            }
+                        }
+
+                        if (retApp.getInstances().size() > 0) {
+                            apps.addApplication(retApp);
+                        }
+                    }
+
+                    apps.setAppsHashCode(apps.getReconcileHashCode());
+                    sendOkResponseWithContent((Request) request, response, apps);
+                    handled = true;
                 }
+
             }
 
             if(!handled) {

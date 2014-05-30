@@ -414,4 +414,13 @@ public interface EurekaClientConfig {
      * @return {@code true} if registry information has to be fetched, {@code false} otherwise.
      */
     boolean shouldFetchRegistry();
+
+    /**
+     * Indicates whether the client is only interested in the registry information for a single VIP.
+     *
+     * @return the address of the VIP (name:port).
+     * <code>null</code> if single VIP interest is not present.
+     */
+    @Nullable
+    String getRegistryRefreshSingleVipAddress();
 }
