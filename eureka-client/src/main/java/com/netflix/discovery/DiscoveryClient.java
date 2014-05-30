@@ -40,6 +40,7 @@ import javax.naming.directory.DirContext;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
+import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -635,12 +636,15 @@ public class DiscoveryClient implements LookupService {
             // applications
             Applications applications = getApplications();
 
-            if (clientConfig.shouldDisableDelta() || forceFullRegistryFetch || (applications == null)
-                    || (applications.getRegisteredApplications().size() == 0)
-                    // The client application does not have the latest library
-                    // supporting delta
-                    || (applications.getVersion() == -1)) {
+            if (clientConfig.shouldDisableDelta()
+                || (!Strings.isNullOrEmpty(clientConfig.getRegistryRefreshSingleVipAddress()))
+                || forceFullRegistryFetch
+                || (applications == null)
+                || (applications.getRegisteredApplications().size() == 0)
+                || (applications.getVersion() == -1)) //Client application does not have latest library supporting delta
+            {
                 logger.info("Disable delta property : {}", clientConfig.shouldDisableDelta());
+                logger.info("Single vip registry refresh property : {}", clientConfig.getRegistryRefreshSingleVipAddress());
                 logger.info("Force full registry fetch : {}", forceFullRegistryFetch);
                 logger.info("Application is null : {}", (applications == null));
                 logger.info("Registered Applications size is zero : {}",
@@ -948,7 +952,8 @@ public class DiscoveryClient implements LookupService {
                 break;
             case Refresh:
                 tracer = REFRESH_TIMER.start();
-                urlPath = "apps/";
+                final String vipAddress = clientConfig.getRegistryRefreshSingleVipAddress();
+                urlPath = vipAddress == null ? "apps/" : "vips/" + vipAddress;
                 if (isFetchingRemoteRegionRegistries()) {
                     urlPath += "?regions=" + remoteRegionsToFetch;
                 }
