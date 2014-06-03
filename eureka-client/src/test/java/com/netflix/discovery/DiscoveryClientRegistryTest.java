@@ -97,12 +97,12 @@ public class DiscoveryClientRegistryTest extends AbstractDiscoveryClientTester {
 
     @Test
     public void testAppsHashCodeAfterRefresh() throws Exception {
-        Assert.assertEquals("UP_2_", client.getApplications().getAppsHashCode());
+        Assert.assertEquals("UP_4_", client.getApplications().getAppsHashCode());
 
         addLocalAppDelta();
         mockLocalEurekaServer.waitForDeltaToBeRetrieved(CLIENT_REFRESH_RATE);
 
-        Assert.assertEquals("UP_3_", client.getApplications().getAppsHashCode());
+        Assert.assertEquals("UP_5_", client.getApplications().getAppsHashCode());
     }
 
     private void checkInstancesFromARegion(String region, String instance1Hostname, String instance2Hostname) {
