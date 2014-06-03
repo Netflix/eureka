@@ -406,4 +406,14 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 namespace + "shouldFetchRegistry", true).get();
     }
 
+    /*
+     * (non-Javadoc)
+     *
+     * @see com.netflix.discovery.EurekaClientConfig#getRegistryRefreshSingleVipAddress()
+     */
+    @Override
+    public String getRegistryRefreshSingleVipAddress() {
+        return configInstance.getStringProperty(
+                namespace + "registryRefreshSingleVipAddress", null).get();
+    }
 }

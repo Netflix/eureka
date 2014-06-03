@@ -13,6 +13,8 @@ import org.junit.Before;
 import org.junit.Rule;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -20,18 +22,30 @@ import java.util.UUID;
  */
 public class AbstractDiscoveryClientTester {
 
-    public static final String ALL_REGIONS_VIP_ADDR = "myvip";
-    public static final String REMOTE_REGION_INSTANCE_1_HOSTNAME = "blah";
-    public static final String REMOTE_REGION_INSTANCE_2_HOSTNAME = "blah2";
-    public static final String LOCAL_REGION_APP_NAME = "MYAPP_LOC";
-    public static final String LOCAL_REGION_APP_NAME_2 = "MYAPP_LOC2";
-    public static final String LOCAL_REGION_INSTANCE_1_HOSTNAME = "blahloc";
-    public static final String LOCAL_REGION_INSTANCE_2_HOSTNAME = "blahloc2";
-    public static final String LOCAL_REGION_INSTANCE_3_HOSTNAME = "blahloc3";
-    public static final String REMOTE_REGION_APP_NAME = "MYAPP";
     public static final String REMOTE_REGION = "myregion";
     public static final String REMOTE_ZONE = "myzone";
     public static final int CLIENT_REFRESH_RATE = 10;
+
+    public static final String ALL_REGIONS_VIP1_ADDR = "myvip1";
+    public static final String REMOTE_REGION_APP1_INSTANCE1_HOSTNAME = "blah1-1";
+    public static final String REMOTE_REGION_APP1_INSTANCE2_HOSTNAME = "blah1-2";
+    public static final String LOCAL_REGION_APP1_NAME = "MYAPP1_LOC";
+    public static final String LOCAL_REGION_APP1_INSTANCE1_HOSTNAME = "blahloc1-1";
+    public static final String LOCAL_REGION_APP1_INSTANCE2_HOSTNAME = "blahloc1-2";
+    public static final String REMOTE_REGION_APP1_NAME = "MYAPP1";
+
+    public static final String ALL_REGIONS_VIP2_ADDR = "myvip2";
+    public static final String REMOTE_REGION_APP2_INSTANCE1_HOSTNAME = "blah2-1";
+    public static final String REMOTE_REGION_APP2_INSTANCE2_HOSTNAME = "blah2-2";
+    public static final String LOCAL_REGION_APP2_NAME = "MYAPP2_LOC";
+    public static final String LOCAL_REGION_APP2_INSTANCE1_HOSTNAME = "blahloc2-1";
+    public static final String LOCAL_REGION_APP2_INSTANCE2_HOSTNAME = "blahloc2-2";
+    public static final String REMOTE_REGION_APP2_NAME = "MYAPP2";
+
+    public static final String ALL_REGIONS_VIP3_ADDR = "myvip3";
+    public static final String LOCAL_REGION_APP3_NAME = "MYAPP3_LOC";
+    public static final String LOCAL_REGION_APP3_INSTANCE1_HOSTNAME = "blahloc3-1";
+
     @Rule
     public MockRemoteEurekaServer mockLocalEurekaServer= new MockRemoteEurekaServer();
     protected DiscoveryClient client;
@@ -52,6 +66,10 @@ public class AbstractDiscoveryClientTester {
         populateLocalRegistryAtStartup();
         populateRemoteRegistryAtStartup();
 
+        setupDiscoveryClient();
+    }
+
+    protected void setupDiscoveryClient() {
         InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder();
         builder.setIPAddr("10.10.101.00");
         builder.setHostName("Hosttt");
@@ -63,6 +81,7 @@ public class AbstractDiscoveryClientTester {
             }
         });
         client = new DiscoveryClient(builder.build(), new DefaultEurekaClientConfig());
+
         ApplicationInfoManager.getInstance().initComponent(new MyDataCenterInstanceConfig());
     }
 
@@ -78,70 +97,93 @@ public class AbstractDiscoveryClientTester {
         ConfigurationManager.getConfigInstance().clearProperty("eureka.serviceUrl.default");
     }
 
-    private void populateRemoteRegistryAtStartup() {
-        Application myapp = createRemoteApps();
-        Application myappDelta = createRemoteAppsDelta();
-
-        mockLocalEurekaServer.addRemoteRegionApps(REMOTE_REGION_APP_NAME, myapp);
-        mockLocalEurekaServer.addRemoteRegionAppsDelta(REMOTE_REGION_APP_NAME, myappDelta);
-    }
-
-    private static Application createRemoteApps() {
-        Application myapp = new Application(REMOTE_REGION_APP_NAME);
-        InstanceInfo instanceInfo = createRemoteInstance(REMOTE_REGION_INSTANCE_1_HOSTNAME);
-        myapp.addInstance(instanceInfo);
-        return myapp;
-    }
-
-    private static Application createRemoteAppsDelta() {
-        Application myapp = new Application(REMOTE_REGION_APP_NAME);
-        InstanceInfo instanceInfo = createRemoteInstance(REMOTE_REGION_INSTANCE_2_HOSTNAME);
+    protected void addLocalAppDelta() {
+        Application myappDelta = new Application(LOCAL_REGION_APP3_NAME);
+        InstanceInfo instanceInfo = createInstance(LOCAL_REGION_APP3_NAME, ALL_REGIONS_VIP3_ADDR,
+                LOCAL_REGION_APP3_INSTANCE1_HOSTNAME, null);
         instanceInfo.setActionType(InstanceInfo.ActionType.ADDED);
-        myapp.addInstance(instanceInfo);
-        return myapp;
-    }
-
-    private static InstanceInfo createRemoteInstance(String instanceHostName) {
-        InstanceInfo.Builder instanceBuilder = InstanceInfo.Builder.newBuilder();
-        instanceBuilder.setAppName(REMOTE_REGION_APP_NAME);
-        instanceBuilder.setVIPAddress(ALL_REGIONS_VIP_ADDR);
-        instanceBuilder.setHostName(instanceHostName);
-        instanceBuilder.setIPAddr("10.10.101.1");
-        AmazonInfo amazonInfo = getAmazonInfo(REMOTE_ZONE, instanceHostName);
-        instanceBuilder.setDataCenterInfo(amazonInfo);
-        instanceBuilder.setMetadata(amazonInfo.getMetadata());
-        instanceBuilder.setLeaseInfo(LeaseInfo.Builder.newBuilder().build());
-        return instanceBuilder.build();
+        myappDelta.addInstance(instanceInfo);
+        mockLocalEurekaServer.addLocalRegionAppsDelta(LOCAL_REGION_APP3_NAME, myappDelta);
     }
 
     private void populateLocalRegistryAtStartup() {
-        Application myapp = createLocalApps();
-        Application myappDelta = createLocalAppsDelta();
-        mockLocalEurekaServer.addLocalRegionApps(LOCAL_REGION_APP_NAME, myapp);
-        mockLocalEurekaServer.addLocalRegionAppsDelta(LOCAL_REGION_APP_NAME, myappDelta);
+        for (Application app : createLocalApps()) {
+            mockLocalEurekaServer.addLocalRegionApps(app.getName(), app);
+        }
+
+        for (Application appDelta : createLocalAppsDelta()) {
+            mockLocalEurekaServer.addLocalRegionAppsDelta(appDelta.getName(), appDelta);
+        }
     }
 
-    protected void addLocalAppDelta() {
-        Application myappDelta = new Application(LOCAL_REGION_APP_NAME_2);
-        InstanceInfo instanceInfo = createInstance(LOCAL_REGION_APP_NAME_2, ALL_REGIONS_VIP_ADDR, LOCAL_REGION_INSTANCE_3_HOSTNAME, null);
-        instanceInfo.setActionType(InstanceInfo.ActionType.ADDED);
-        myappDelta.addInstance(instanceInfo);
-        mockLocalEurekaServer.addLocalRegionAppsDelta(LOCAL_REGION_APP_NAME_2, myappDelta);
+    private void populateRemoteRegistryAtStartup() {
+        for (Application app : createRemoteApps()) {
+            mockLocalEurekaServer.addRemoteRegionApps(app.getName(), app);
+        }
+
+        for (Application appDelta : createRemoteAppsDelta()) {
+            mockLocalEurekaServer.addRemoteRegionAppsDelta(appDelta.getName(), appDelta);
+        }
     }
 
-    private static Application createLocalApps() {
-        Application myapp = new Application(LOCAL_REGION_APP_NAME);
-        InstanceInfo instanceInfo = createInstance(LOCAL_REGION_APP_NAME, ALL_REGIONS_VIP_ADDR, LOCAL_REGION_INSTANCE_1_HOSTNAME, null);
-        myapp.addInstance(instanceInfo);
-        return myapp;
+    private static List<Application> createRemoteApps() {
+        Application myapp1 = new Application(REMOTE_REGION_APP1_NAME);
+        InstanceInfo instanceInfo1 = createInstance(REMOTE_REGION_APP1_NAME, ALL_REGIONS_VIP1_ADDR,
+                REMOTE_REGION_APP1_INSTANCE1_HOSTNAME, REMOTE_ZONE);
+        myapp1.addInstance(instanceInfo1);
+
+        Application myapp2 = new Application(REMOTE_REGION_APP2_NAME);
+        InstanceInfo instanceInfo2 = createInstance(REMOTE_REGION_APP2_NAME, ALL_REGIONS_VIP2_ADDR,
+                REMOTE_REGION_APP2_INSTANCE1_HOSTNAME, REMOTE_ZONE);
+        myapp2.addInstance(instanceInfo2);
+
+        return Arrays.asList(myapp1, myapp2);
     }
 
-    private static Application createLocalAppsDelta() {
-        Application myapp = new Application(LOCAL_REGION_APP_NAME);
-        InstanceInfo instanceInfo = createInstance(LOCAL_REGION_APP_NAME, ALL_REGIONS_VIP_ADDR, LOCAL_REGION_INSTANCE_2_HOSTNAME, null);
-        instanceInfo.setActionType(InstanceInfo.ActionType.ADDED);
-        myapp.addInstance(instanceInfo);
-        return myapp;
+    private static List<Application> createRemoteAppsDelta() {
+        Application myapp1 = new Application(REMOTE_REGION_APP1_NAME);
+        InstanceInfo instanceInfo1 = createInstance(REMOTE_REGION_APP1_NAME, ALL_REGIONS_VIP1_ADDR,
+                REMOTE_REGION_APP1_INSTANCE2_HOSTNAME, REMOTE_ZONE);
+        instanceInfo1.setActionType(InstanceInfo.ActionType.ADDED);
+        myapp1.addInstance(instanceInfo1);
+
+        Application myapp2 = new Application(REMOTE_REGION_APP2_NAME);
+        InstanceInfo instanceInfo2 = createInstance(REMOTE_REGION_APP2_NAME, ALL_REGIONS_VIP2_ADDR,
+                REMOTE_REGION_APP2_INSTANCE2_HOSTNAME, REMOTE_ZONE);
+        instanceInfo2.setActionType(InstanceInfo.ActionType.ADDED);
+        myapp2.addInstance(instanceInfo2);
+
+        return Arrays.asList(myapp1, myapp2);
+    }
+
+    private static List<Application> createLocalApps() {
+        Application myapp1 = new Application(LOCAL_REGION_APP1_NAME);
+        InstanceInfo instanceInfo1 = createInstance(LOCAL_REGION_APP1_NAME, ALL_REGIONS_VIP1_ADDR,
+                LOCAL_REGION_APP1_INSTANCE1_HOSTNAME, null);
+        myapp1.addInstance(instanceInfo1);
+
+        Application myapp2 = new Application(LOCAL_REGION_APP2_NAME);
+        InstanceInfo instanceInfo2 = createInstance(LOCAL_REGION_APP2_NAME, ALL_REGIONS_VIP2_ADDR,
+                LOCAL_REGION_APP2_INSTANCE1_HOSTNAME, null);
+        myapp2.addInstance(instanceInfo2);
+
+        return Arrays.asList(myapp1, myapp2);
+    }
+
+    private static List<Application> createLocalAppsDelta() {
+        Application myapp1 = new Application(LOCAL_REGION_APP1_NAME);
+        InstanceInfo instanceInfo1 = createInstance(LOCAL_REGION_APP1_NAME, ALL_REGIONS_VIP1_ADDR,
+                LOCAL_REGION_APP1_INSTANCE2_HOSTNAME, null);
+        instanceInfo1.setActionType(InstanceInfo.ActionType.ADDED);
+        myapp1.addInstance(instanceInfo1);
+
+        Application myapp2 = new Application(LOCAL_REGION_APP2_NAME);
+        InstanceInfo instanceInfo2 = createInstance(LOCAL_REGION_APP2_NAME, ALL_REGIONS_VIP2_ADDR,
+                LOCAL_REGION_APP2_INSTANCE2_HOSTNAME, null);
+        instanceInfo2.setActionType(InstanceInfo.ActionType.ADDED);
+        myapp2.addInstance(instanceInfo2);
+
+        return Arrays.asList(myapp1, myapp2);
     }
 
     private static InstanceInfo createInstance(String appName, String vipAddress, String instanceHostName, String zone) {
