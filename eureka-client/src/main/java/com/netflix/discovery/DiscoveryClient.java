@@ -1063,7 +1063,7 @@ public class DiscoveryClient implements LookupService {
 
             // InstanceInfo replication timer
             scheduler.scheduleWithFixedDelay(new InstanceInfoReplicator(),
-                    10 + clientConfig.getInstanceInfoReplicationIntervalSeconds(),
+            		clientConfig.getInitialInstanceInfoReplicationIntervalSeconds(),
                     clientConfig.getInstanceInfoReplicationIntervalSeconds(), TimeUnit.SECONDS);
 
         }

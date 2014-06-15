@@ -124,6 +124,12 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
         return configInstance.getIntProperty(
                 namespace + "appinfo.replicate.interval", 30).get();
     }
+    
+	@Override
+	public int getInitialInstanceInfoReplicationIntervalSeconds() {
+        return configInstance.getIntProperty(
+                namespace + "appinfo.initial.replicate.time", 40).get();
+	}
 
     /*
      * (non-Javadoc)
