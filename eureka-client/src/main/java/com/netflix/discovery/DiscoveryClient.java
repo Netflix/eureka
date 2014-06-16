@@ -29,8 +29,11 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nullable;
@@ -140,6 +143,7 @@ public class DiscoveryClient implements LookupService {
     private volatile AtomicReference<List<String>> eurekaServiceUrls = new AtomicReference<List<String>>();
     private volatile AtomicReference<Applications> localRegionApps = new AtomicReference<Applications>();
     private volatile Map<String, Applications> remoteRegionVsApps = new ConcurrentHashMap<String, Applications>();
+    private volatile AtomicLong fetchRegistryCounter;
 
     private InstanceInfo instanceInfo;
     private String appPathIdentifier;
@@ -157,6 +161,10 @@ public class DiscoveryClient implements LookupService {
     }
 
     private final ScheduledExecutorService scheduler;
+
+    // additional executors for executing hearbeat and cacheRefresh tasks
+    private final ThreadPoolExecutor heartbeatExecutor;
+    private final ThreadPoolExecutor cacheRefreshExecutor;
 
     private final EventBus eventBus;
     
@@ -188,6 +196,16 @@ public class DiscoveryClient implements LookupService {
                                              clientConfig.getEurekaServiceUrlPollIntervalSeconds(),
                                              clientConfig.getEurekaServiceUrlPollIntervalSeconds(), TimeUnit.SECONDS);
             localRegionApps.set(new Applications());
+
+            heartbeatExecutor = new ThreadPoolExecutor(
+                    1, clientConfig.getHeartbeatExecutorThreadPoolSize(), 0, TimeUnit.SECONDS,
+                    new SynchronousQueue<Runnable>());  // use direct handoff
+
+            cacheRefreshExecutor = new ThreadPoolExecutor(
+                    1, clientConfig.getCacheRefreshExecutorThreadPoolSize(), 0, TimeUnit.SECONDS,
+                    new SynchronousQueue<Runnable>());  // use direct handoff
+
+            fetchRegistryCounter = new AtomicLong(0);
 
             if (myInfo != null) {
                 instanceInfo = myInfo;
@@ -513,7 +531,6 @@ public class DiscoveryClient implements LookupService {
             isRegisteredWithDiscovery = true;
             logger.info(PREFIX + appPathIdentifier + " - registration status: "
                     + (response != null ? response.getStatus() : "not sent"));
-
         } catch (Throwable e) {
             logger.error(PREFIX + appPathIdentifier + " - registration failed"
                     + e.getMessage(), e);
@@ -652,26 +669,7 @@ public class DiscoveryClient implements LookupService {
                 logger.info("Application version is -1: {}", (applications.getVersion() == -1));
                 response = getAndStoreFullRegistry();
             } else {
-                Applications delta = null;
-                response = makeRemoteCall(Action.Refresh_Delta);
-                if (response.getStatus() == Status.OK.getStatusCode()) {
-                    delta = response.getEntity(Applications.class);
-                }
-                if (delta == null) {
-                    logger.warn("The server does not allow the delta revision to be applied because it is not safe. "
-                            + "Hence got the full registry.");
-                    this.closeResponse(response);
-                    response = getAndStoreFullRegistry();
-                } else {
-                    updateDelta(delta);
-                    String reconcileHashCode = getReconcileHashCode(applications);
-                    // There is a diff in number of instances for some reason
-                    if ((!reconcileHashCode.equals(delta.getAppsHashCode()))
-                            || clientConfig.shouldLogDeltaDiff()) {
-                        response = reconcileAndLogDifference(response, delta,
-                                reconcileHashCode);
-                    }
-                }
+                response = getAndUpdateDelta(applications);
             }
             applications.setAppsHashCode(applications.getReconcileHashCode());
             logTotalInstances();
@@ -753,16 +751,58 @@ public class DiscoveryClient implements LookupService {
      *             on error.
      */
     private ClientResponse getAndStoreFullRegistry() throws Throwable {
-        ClientResponse response;
-        response = makeRemoteCall(Action.Refresh);
+        long currentUpdateCounter = fetchRegistryCounter.get();
+        ClientResponse response = makeRemoteCall(Action.Refresh);
         logger.info("Getting all instance registry info from the eureka server");
-        Applications apps = response.getEntity(Applications.class);
+
+        Applications apps = null;
+        if (response.getStatus() == Status.OK.getStatusCode()) {
+            apps = response.getEntity(Applications.class);
+        }
+
         if (apps == null) {
             logger.error("The application is null for some reason. Not storing this information");
-        } else {
+        } else if (fetchRegistryCounter.compareAndSet(currentUpdateCounter, currentUpdateCounter + 1)) {
             localRegionApps.set(this.filterAndShuffle(apps));
+        } else {
+            logger.warn("Not updating applications as a later update already succeeded.");
         }
         logger.info("The response status is {}", response.getStatus());
+        return response;
+    }
+
+    /**
+     * Get the delta registry information from the eureka server and update it locally
+     *
+     * @return the client response
+     * @throws Throwable on error
+     */
+    private ClientResponse getAndUpdateDelta(Applications applications) throws Throwable {
+        long currentUpdateCounter = fetchRegistryCounter.get();
+        ClientResponse response = makeRemoteCall(Action.Refresh_Delta);
+
+        Applications delta = null;
+        if (response.getStatus() == Status.OK.getStatusCode()) {
+            delta = response.getEntity(Applications.class);
+        }
+        if (delta == null) {
+            logger.warn("The server does not allow the delta revision to be applied because it is not safe. "
+                    + "Hence got the full registry.");
+            this.closeResponse(response);
+            response = getAndStoreFullRegistry();
+        } else if (fetchRegistryCounter.compareAndSet(currentUpdateCounter, currentUpdateCounter + 1)) {
+            updateDelta(delta);
+            String reconcileHashCode = getReconcileHashCode(applications);
+            // There is a diff in number of instances for some reason
+            if ((!reconcileHashCode.equals(delta.getAppsHashCode()))
+                    || clientConfig.shouldLogDeltaDiff()) {
+                response = reconcileAndLogDifference(response, delta,
+                        reconcileHashCode);
+            }
+        } else {
+            logger.warn("Not updating applications as a later update already succeeded.");
+        }
+
         return response;
     }
 
@@ -938,6 +978,7 @@ public class DiscoveryClient implements LookupService {
                 return null;
             }
             WebResource r = discoveryApacheClient.resource(serviceUrl);
+            String remoteRegionsToFetchStr;
             switch (action) {
             case Renew:
                 tracer = RENEW_TIMER.start();
@@ -954,16 +995,18 @@ public class DiscoveryClient implements LookupService {
                 tracer = REFRESH_TIMER.start();
                 final String vipAddress = clientConfig.getRegistryRefreshSingleVipAddress();
                 urlPath = vipAddress == null ? "apps/" : "vips/" + vipAddress;
-                if (isFetchingRemoteRegionRegistries()) {
-                    urlPath += "?regions=" + remoteRegionsToFetch;
+                remoteRegionsToFetchStr = remoteRegionsToFetch.get();
+                if (!Strings.isNullOrEmpty(remoteRegionsToFetchStr)) {
+                    urlPath += "?regions=" + remoteRegionsToFetchStr;
                 }
                 response = getUrl(serviceUrl + urlPath);
                 break;
             case Refresh_Delta:
                 tracer = REFRESH_DELTA_TIMER.start();
                 urlPath = "apps/delta";
-                if (isFetchingRemoteRegionRegistries()) {
-                    urlPath += "?regions=" + remoteRegionsToFetch;
+                remoteRegionsToFetchStr = remoteRegionsToFetch.get();
+                if (!Strings.isNullOrEmpty(remoteRegionsToFetchStr)) {
+                    urlPath += "?regions=" + remoteRegionsToFetchStr;
                 }
                 response = getUrl(serviceUrl + urlPath);
                 break;
@@ -1045,21 +1088,26 @@ public class DiscoveryClient implements LookupService {
      * Initializes all scheduled tasks.
      */
     private void initScheduledTasks() {
-        // Registry fetch timer
         if (clientConfig.shouldFetchRegistry()) {
-            scheduler.scheduleWithFixedDelay(new CacheRefreshThread(),
-                                             clientConfig.getRegistryFetchIntervalSeconds(),
-                                             clientConfig.getRegistryFetchIntervalSeconds(), TimeUnit.SECONDS);
+            // registry cache refresh timer
+            int registryFetchIntervalSeconds = clientConfig.getRegistryFetchIntervalSeconds();
+            scheduler.scheduleWithFixedDelay(
+                    new TimedSupervisorTask(
+                            cacheRefreshExecutor, registryFetchIntervalSeconds, new CacheRefreshThread()),
+                    registryFetchIntervalSeconds,
+                    registryFetchIntervalSeconds, TimeUnit.SECONDS);
         }
 
         if (shouldRegister(instanceInfo)) {
-            logger.info("Starting heartbeat executor: " + "renew interval is: "
-                    + instanceInfo.getLeaseInfo().getRenewalIntervalInSecs());
+            int renewalIntervalInSecs = instanceInfo.getLeaseInfo().getRenewalIntervalInSecs();
+            logger.info("Starting heartbeat executor: " + "renew interval is: " + renewalIntervalInSecs);
 
             // Heartbeat timer
-            scheduler.scheduleWithFixedDelay(new HeartbeatThread(),
-                    instanceInfo.getLeaseInfo().getRenewalIntervalInSecs(),
-                    instanceInfo.getLeaseInfo().getRenewalIntervalInSecs(), TimeUnit.SECONDS);
+            scheduler.scheduleWithFixedDelay(
+                    new TimedSupervisorTask(
+                            heartbeatExecutor, renewalIntervalInSecs, new HeartbeatThread()),
+                    renewalIntervalInSecs,
+                    renewalIntervalInSecs, TimeUnit.SECONDS);
 
             // InstanceInfo replication timer
             scheduler.scheduleWithFixedDelay(new InstanceInfoReplicator(),
@@ -1070,6 +1118,8 @@ public class DiscoveryClient implements LookupService {
     }
 
     private void cancelScheduledTasks() {
+        heartbeatExecutor.shutdownNow();
+        cacheRefreshExecutor.shutdownNow();
         scheduler.shutdownNow();
     }
 
@@ -1397,7 +1447,7 @@ public class DiscoveryClient implements LookupService {
      * The heartbeat task that renews the lease in the given intervals.
      *
      */
-    private class HeartbeatThread extends TimerTask {
+    private class HeartbeatThread implements Runnable {
 
         public void run() {
             ClientResponse response = null;
@@ -1500,39 +1550,45 @@ public class DiscoveryClient implements LookupService {
     }
 
     /**
-     *
      * The task that fetches the registry information at specified intervals.
      *
      */
-    class CacheRefreshThread extends TimerTask {
+    class CacheRefreshThread implements Runnable {
         public void run() {
             try {
+                boolean isFetchingRemoteRegionRegistries = isFetchingRemoteRegionRegistries();
+
                 boolean remoteRegionsModified = false;
                 // This makes sure that a dynamic change to remote regions to fetch is honored.
                 String latestRemoteRegions = clientConfig.fetchRegistryForRemoteRegions();
                 if (null != latestRemoteRegions) {
                     String currentRemoteRegions = remoteRegionsToFetch.get();
                     if (!latestRemoteRegions.equals(currentRemoteRegions)) {
-                        if (remoteRegionsToFetch.compareAndSet(currentRemoteRegions, latestRemoteRegions)) {
-                            String[] remoteRegions = latestRemoteRegions.split(",");
-                            instanceRegionChecker.getAzToRegionMapper().setRegionsToFetch(remoteRegions);
-                            remoteRegionsModified = true;
-                        } else {
-                            logger.info("Remote regions to fetch modified concurrently, ignoring change from {} to {}",
-                                        currentRemoteRegions, latestRemoteRegions);
+                        // Both remoteRegionsToFetch and AzToRegionMapper.regionsToFetch need to be in sync
+                        synchronized (instanceRegionChecker.getAzToRegionMapper()) {
+                            if (remoteRegionsToFetch.compareAndSet(currentRemoteRegions, latestRemoteRegions)) {
+                                String[] remoteRegions = latestRemoteRegions.split(",");
+                                instanceRegionChecker.getAzToRegionMapper().setRegionsToFetch(remoteRegions);
+                                remoteRegionsModified = true;
+                            } else {
+                                logger.info("Remote regions to fetch modified concurrently," +
+                                        " ignoring change from {} to {}", currentRemoteRegions, latestRemoteRegions);
+                            }
                         }
                     } else {
                         // Just refresh mapping to reflect any DNS/Property change
                         instanceRegionChecker.getAzToRegionMapper().refreshMapping();
                     }
                 }
+
                 fetchRegistry(remoteRegionsModified);
+
                 if (logger.isInfoEnabled()) {
                     StringBuilder allAppsHashCodes = new StringBuilder();
                     allAppsHashCodes.append("Local region apps hashcode: ");
                     allAppsHashCodes.append(localRegionApps.get().getAppsHashCode());
                     allAppsHashCodes.append(", is fetching remote regions? ");
-                    allAppsHashCodes.append(isFetchingRemoteRegionRegistries());
+                    allAppsHashCodes.append(isFetchingRemoteRegionRegistries);
                     for (Map.Entry<String, Applications> entry : remoteRegionVsApps.entrySet()) {
                         allAppsHashCodes.append(", Remote region: ");
                         allAppsHashCodes.append(entry.getKey());

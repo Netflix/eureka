@@ -70,6 +70,10 @@ public class AbstractDiscoveryClientTester {
     }
 
     protected void setupDiscoveryClient() {
+        this.setupDiscoveryClient(30);
+    }
+
+    protected void setupDiscoveryClient(int renewalIntervalInSecs) {
         InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder();
         builder.setIPAddr("10.10.101.00");
         builder.setHostName("Hosttt");
@@ -80,16 +84,22 @@ public class AbstractDiscoveryClientTester {
                 return Name.MyOwn;
             }
         });
+        builder.setLeaseInfo(LeaseInfo.Builder.newBuilder().setRenewalIntervalInSecs(renewalIntervalInSecs).build());
         client = new DiscoveryClient(builder.build(), new DefaultEurekaClientConfig());
 
         ApplicationInfoManager.getInstance().initComponent(new MyDataCenterInstanceConfig());
     }
 
-    @After
-    public void tearDown() throws Exception {
+    protected void shutdownDiscoveryClient() {
         if (client != null) {
             client.shutdown();
         }
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        shutdownDiscoveryClient();
+
         ConfigurationManager.getConfigInstance().clearProperty("eureka.client.refresh.interval");
         ConfigurationManager.getConfigInstance().clearProperty("eureka.registration.enabled");
         ConfigurationManager.getConfigInstance().clearProperty("eureka.fetchRemoteRegionsRegistry");

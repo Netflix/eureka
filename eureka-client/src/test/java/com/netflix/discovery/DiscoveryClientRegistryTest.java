@@ -2,11 +2,13 @@ package com.netflix.discovery;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.config.ConfigurationManager;
+import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -43,10 +45,7 @@ public class DiscoveryClientRegistryTest extends AbstractDiscoveryClientTester {
     public void testCacheRefreshSingleAppForLocalRegion() throws Exception {
         final String propertyName = "eureka.registryRefreshSingleVipAddress";
         try {
-            if (client != null) {
-                client.shutdown();  // shutdown and restart the client to pick up the config
-            }
-
+            shutdownDiscoveryClient();  // shutdown and restart to pick up new configs
             ConfigurationManager.getConfigInstance().setProperty(propertyName, ALL_REGIONS_VIP1_ADDR);
             setupDiscoveryClient();
 
@@ -60,6 +59,67 @@ public class DiscoveryClientRegistryTest extends AbstractDiscoveryClientTester {
             Assert.assertEquals(1, instances.size());
         } finally {
             ConfigurationManager.getConfigInstance().clearProperty(propertyName);
+        }
+    }
+
+    @Test
+    public void testEurekaClientPeriodicHeartbeat() throws Exception {
+        final String shouldFetchRegistryPropName = "eureka.shouldFetchRegistry";
+        final String fetchRegistryOrigValue =
+                (String) ConfigurationManager.getConfigInstance().getProperty(shouldFetchRegistryPropName);
+
+        final String enableHeartbeartPropName = "eureka.registration.enabled";
+        final String heartbeatOrigValue =
+                (String) ConfigurationManager.getConfigInstance().getProperty(enableHeartbeartPropName);
+
+        try {
+            shutdownDiscoveryClient();  // shutdown and restart to pick up new configs
+            ConfigurationManager.getConfigInstance().setProperty(shouldFetchRegistryPropName, "false");
+            ConfigurationManager.getConfigInstance().setProperty(enableHeartbeartPropName, "true");
+            setupDiscoveryClient(3);
+
+            Assert.assertEquals(0, mockLocalEurekaServer.heartbeatCount.get());
+
+            // let the test run for just over 6 seconds to get two heartbeats
+            Thread.sleep(7*1000);
+
+            Assert.assertEquals(2, mockLocalEurekaServer.heartbeatCount.get());
+
+        } finally {
+            ConfigurationManager.getConfigInstance().setProperty(enableHeartbeartPropName, heartbeatOrigValue);
+            ConfigurationManager.getConfigInstance().setProperty(shouldFetchRegistryPropName, fetchRegistryOrigValue);
+        }
+    }
+
+    @Test
+    public void testEurekaClientPeriodicCacheRefresh() throws Exception {
+        final String shouldFetchRegistryPropName = "eureka.shouldFetchRegistry";
+        final String fetchRegistryOrigValue =
+                (String) ConfigurationManager.getConfigInstance().getProperty(shouldFetchRegistryPropName);
+
+        final String fetchRegistryIntervalPropName = "eureka.client.refresh.interval";
+        final int fetchRegistryIntervalOrigValue =
+                (Integer) ConfigurationManager.getConfigInstance().getProperty(fetchRegistryIntervalPropName);
+
+        try {
+            shutdownDiscoveryClient();  // shutdown and restart to pick up new configs
+            ConfigurationManager.getConfigInstance().setProperty(shouldFetchRegistryPropName, "true");
+            ConfigurationManager.getConfigInstance().setProperty(fetchRegistryIntervalPropName, 3);
+            setupDiscoveryClient();
+
+            // initial setup calls getFull, and we setup the client twice
+            Assert.assertEquals(2, mockLocalEurekaServer.getFullRegistryCount.get());
+            Assert.assertEquals(0, mockLocalEurekaServer.getDeltaCount.get());
+
+            // let the test run for just over 6 seconds to get two registry (delta) fetches
+            Thread.sleep(7*1000);
+
+            Assert.assertEquals(2, mockLocalEurekaServer.getFullRegistryCount.get());  // assert no more calls
+            Assert.assertEquals(2, mockLocalEurekaServer.getDeltaCount.get());
+
+        } finally {
+            ConfigurationManager.getConfigInstance().setProperty(fetchRegistryIntervalPropName, fetchRegistryIntervalOrigValue);
+            ConfigurationManager.getConfigInstance().setProperty(shouldFetchRegistryPropName, fetchRegistryOrigValue);
         }
     }
 
