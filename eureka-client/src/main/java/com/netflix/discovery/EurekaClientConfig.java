@@ -69,6 +69,12 @@ public interface EurekaClientConfig {
      * @return the instance replication interval in seconds.
      */
     int getInstanceInfoReplicationIntervalSeconds();
+    
+    /**
+     * Indicates how long initially (in seconds) to replicate instance info
+     * to the eureka server
+     */
+    int getInitialInstanceInfoReplicationIntervalSeconds();
 
     /**
      * Indicates how often(in seconds) to poll for changes to eureka server
