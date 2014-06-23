@@ -422,4 +422,26 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
         return configInstance.getStringProperty(
                 namespace + "registryRefreshSingleVipAddress", null).get();
     }
+
+    /**
+     * (non-Javadoc)
+     *
+     * @see com.netflix.discovery.EurekaClientConfig#getHeartbeatExecutorThreadPoolSize()
+     */
+    @Override
+    public int getHeartbeatExecutorThreadPoolSize() {
+        return configInstance.getIntProperty(
+                namespace + "client.heartbeat.threadPoolSize", 2).get();
+    }
+
+    /**
+     * (non-Javadoc)
+     *
+     * @see com.netflix.discovery.EurekaClientConfig#getCacheRefreshExecutorThreadPoolSize()
+     */
+    @Override
+    public int getCacheRefreshExecutorThreadPoolSize() {
+        return configInstance.getIntProperty(
+                namespace + "client.cacheRefresh.threadPoolSize", 2).get();
+    }
 }

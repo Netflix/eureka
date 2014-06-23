@@ -46,7 +46,7 @@ public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
     }
 
     @Override
-    public void setRegionsToFetch(String[] regionsToFetch) {
+    public synchronized void setRegionsToFetch(String[] regionsToFetch) {
         if (null != regionsToFetch) {
             this.regionsToFetch = regionsToFetch;
             logger.info("Fetching availability zone to region mapping for regions {}", Arrays.toString(regionsToFetch));
@@ -102,7 +102,7 @@ public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
     }
 
     @Override
-    public void refreshMapping() {
+    public synchronized void refreshMapping() {
         logger.info("Refreshing availability zone to region mappings.");
         setRegionsToFetch(regionsToFetch);
     }

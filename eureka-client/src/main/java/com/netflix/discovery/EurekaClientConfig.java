@@ -429,4 +429,18 @@ public interface EurekaClientConfig {
      */
     @Nullable
     String getRegistryRefreshSingleVipAddress();
+
+    /**
+     * The thread pool size for the heartbeatExecutor to initialise with
+     *
+     * @return the heartbeatExecutor thread pool size
+     */
+    int getHeartbeatExecutorThreadPoolSize();
+
+    /**
+     * The thread pool size for the cacheRefreshExecutor to initialise with
+     *
+     * @return the cacheRefreshExecutor thread pool size
+     */
+    int getCacheRefreshExecutorThreadPoolSize();
 }

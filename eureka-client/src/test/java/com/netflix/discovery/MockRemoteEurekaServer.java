@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author Nitesh Kant
@@ -34,6 +35,11 @@ public class MockRemoteEurekaServer extends ExternalResource {
     private Server server;
     private final AtomicBoolean sentDelta = new AtomicBoolean();
     private final AtomicBoolean sentRegistry = new AtomicBoolean();
+
+    public AtomicLong heartbeatCount = new AtomicLong(0);
+    public AtomicLong getFullRegistryCount = new AtomicLong(0);
+    public AtomicLong getSingleVipCount = new AtomicLong(0);
+    public AtomicLong getDeltaCount = new AtomicLong(0);
 
     @Override
     protected void before() throws Throwable {
@@ -79,130 +85,6 @@ public class MockRemoteEurekaServer extends ExternalResource {
         return sentRegistry.get();
     }
 
-    private class AppsResourceHandler extends AbstractHandler {
-
-        @Override
-        public void handle(String target, HttpServletRequest request, HttpServletResponse response, int dispatch)
-                throws IOException, ServletException {
-            String pathInfo = request.getPathInfo();
-            System.out.println("Eureka port: " + port + ". " + System.currentTimeMillis() +
-                               ". Eureka resource mock, received request on path: " + pathInfo + ". HTTP method: |"
-                               + request.getMethod() + '|' + ", query string: " + request.getQueryString());
-            boolean handled = false;
-            if (null != pathInfo && pathInfo.startsWith("")) {
-                pathInfo = pathInfo.substring(EUREKA_API_BASE_PATH.length());
-                boolean includeRemote = isRemoteRequest(request);
-
-                if (pathInfo.startsWith("apps/delta")) {
-                    Applications apps = new Applications();
-                    apps.setVersion(100L);
-                    if (sentDelta.compareAndSet(false, true)) {
-                        addDeltaApps(includeRemote, apps);
-                    } else {
-                        System.out.println("Eureka port: " +  port + ". " + System.currentTimeMillis() +". Not including delta as it has already been sent.");
-                    }
-                    apps.setAppsHashCode(getDeltaAppsHashCode(includeRemote));
-                    sendOkResponseWithContent((Request) request, response, apps);
-                    handled = true;
-                } else if(pathInfo.startsWith("apps")) {
-                    Applications apps = new Applications();
-                    apps.setVersion(100L);
-                    for (Application application : applicationMap.values()) {
-                        apps.addApplication(application);
-                    }
-                    if (includeRemote) {
-                        for (Application application : remoteRegionApps.values()) {
-                            apps.addApplication(application);
-                        }
-                    }
-
-                    if (sentDelta.get()) {
-                        addDeltaApps(includeRemote, apps);
-                    } else {
-                        System.out.println("Eureka port: " + port + ". " + System.currentTimeMillis() +". Not including delta apps in /apps response, as delta has not been sent.");
-                    }
-                    apps.setAppsHashCode(apps.getReconcileHashCode());
-                    sendOkResponseWithContent((Request) request, response, apps);
-                    sentRegistry.set(true);
-                    handled = true;
-                } else if (pathInfo.startsWith("vips/")) {
-                    String vipAddress = pathInfo.substring("vips/".length());
-                    Applications apps = new Applications();
-                    apps.setVersion(-1l);
-                    for (Application application : applicationMap.values()) {
-                        Application retApp = new Application(application.getName());
-                        for (InstanceInfo instance : application.getInstances()) {
-                            if (vipAddress.equals(instance.getVIPAddress())) {
-                                retApp.addInstance(instance);
-                            }
-                        }
-
-                        if (retApp.getInstances().size() > 0) {
-                            apps.addApplication(retApp);
-                        }
-                    }
-
-                    apps.setAppsHashCode(apps.getReconcileHashCode());
-                    sendOkResponseWithContent((Request) request, response, apps);
-                    handled = true;
-                }
-
-            }
-
-            if(!handled) {
-                response.sendError(HttpServletResponse.SC_NOT_FOUND,
-                                   "Request path: " + pathInfo + " not supported by eureka resource mock.");
-            }
-        }
-
-        private void addDeltaApps(boolean includeRemote, Applications apps) {
-            for (Application application : applicationDeltaMap.values()) {
-                apps.addApplication(application);
-            }
-            if (includeRemote) {
-                for (Application application : remoteRegionAppsDelta.values()) {
-                    apps.addApplication(application);
-                }
-            }
-        }
-
-        private String getDeltaAppsHashCode(boolean includeRemote) {
-            Applications allApps = new Applications();
-            for (Application application : applicationMap.values()) {
-                allApps.addApplication(application);
-            }
-
-            if (includeRemote) {
-                for (Application application : remoteRegionApps.values()) {
-                    allApps.addApplication(application);
-                }
-            }
-            addDeltaApps(includeRemote, allApps);
-            return allApps.getReconcileHashCode();
-        }
-
-        private boolean isRemoteRequest(HttpServletRequest request) {
-            String queryString = request.getQueryString();
-            if (queryString == null) {
-                return false;
-            }
-            return queryString.contains("regions=");
-        }
-
-        private void sendOkResponseWithContent(Request request, HttpServletResponse response, Applications apps)
-                throws IOException {
-            String content = XmlXStream.getInstance().toXML(apps);
-            response.setContentType("application/xml");
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.getWriter().println(content);
-            response.getWriter().flush();
-            request.setHandled(true);
-            System.out.println("Eureka port: " + port + ". " + System.currentTimeMillis() +
-                               ". Eureka resource mock, sent response for request path: " + request.getPathInfo() +
-                               ", apps count: " + apps.getRegisteredApplications().size());
-        }
-    }
-
     public void addRemoteRegionApps(String appName, Application app) {
         remoteRegionApps.put(appName, app);
     }
@@ -230,4 +112,149 @@ public class MockRemoteEurekaServer extends ExternalResource {
         System.out.println("Sleeping for extra " + refreshRate + " seconds for the client to update delta in memory.");
     }
 
+    //
+    // A base default resource handler for the mock server
+    //
+    private class AppsResourceHandler extends AbstractHandler {
+
+        @Override
+        public void handle(String target, HttpServletRequest request, HttpServletResponse response, int dispatch)
+                throws IOException, ServletException {
+            String pathInfo = request.getPathInfo();
+            System.out.println("Eureka port: " + port + ". " + System.currentTimeMillis() +
+                    ". Eureka resource mock, received request on path: " + pathInfo + ". HTTP method: |"
+                    + request.getMethod() + '|' + ", query string: " + request.getQueryString());
+            boolean handled = false;
+            if (null != pathInfo && pathInfo.startsWith("")) {
+                pathInfo = pathInfo.substring(EUREKA_API_BASE_PATH.length());
+                boolean includeRemote = isRemoteRequest(request);
+
+                if (pathInfo.startsWith("apps/delta")) {
+                    getDeltaCount.getAndIncrement();
+
+                    Applications apps = new Applications();
+                    apps.setVersion(100L);
+                    if (sentDelta.compareAndSet(false, true)) {
+                        addDeltaApps(includeRemote, apps);
+                    } else {
+                        System.out.println("Eureka port: " +  port + ". " + System.currentTimeMillis() +". Not including delta as it has already been sent.");
+                    }
+                    apps.setAppsHashCode(getDeltaAppsHashCode(includeRemote));
+                    sendOkResponseWithContent((Request) request, response, apps);
+                    handled = true;
+                } else if(pathInfo.equals("apps/")) {
+                    getFullRegistryCount.getAndIncrement();
+
+                    Applications apps = new Applications();
+                    apps.setVersion(100L);
+                    for (Application application : applicationMap.values()) {
+                        apps.addApplication(application);
+                    }
+                    if (includeRemote) {
+                        for (Application application : remoteRegionApps.values()) {
+                            apps.addApplication(application);
+                        }
+                    }
+
+                    if (sentDelta.get()) {
+                        addDeltaApps(includeRemote, apps);
+                    } else {
+                        System.out.println("Eureka port: " + port + ". " + System.currentTimeMillis() +". Not including delta apps in /apps response, as delta has not been sent.");
+                    }
+                    apps.setAppsHashCode(apps.getReconcileHashCode());
+                    sendOkResponseWithContent((Request) request, response, apps);
+                    sentRegistry.set(true);
+                    handled = true;
+                } else if (pathInfo.startsWith("vips/")) {
+                    getSingleVipCount.getAndIncrement();
+
+                    String vipAddress = pathInfo.substring("vips/".length());
+                    Applications apps = new Applications();
+                    apps.setVersion(-1l);
+                    for (Application application : applicationMap.values()) {
+                        Application retApp = new Application(application.getName());
+                        for (InstanceInfo instance : application.getInstances()) {
+                            if (vipAddress.equals(instance.getVIPAddress())) {
+                                retApp.addInstance(instance);
+                            }
+                        }
+
+                        if (retApp.getInstances().size() > 0) {
+                            apps.addApplication(retApp);
+                        }
+                    }
+
+                    apps.setAppsHashCode(apps.getReconcileHashCode());
+                    sendOkResponseWithContent((Request) request, response, apps);
+                    handled = true;
+                } else if (pathInfo.startsWith("apps")) {  // assume this is the renewal heartbeat
+                    heartbeatCount.getAndIncrement();
+
+                    sendOkResponseWithContent((Request) request, response, new Applications());
+                } else {
+                    System.out.println("Not handling request: " + pathInfo);
+                }
+            }
+
+            if(!handled) {
+                response.sendError(HttpServletResponse.SC_NOT_FOUND,
+                        "Request path: " + pathInfo + " not supported by eureka resource mock.");
+            }
+        }
+
+        protected void addDeltaApps(boolean includeRemote, Applications apps) {
+            for (Application application : applicationDeltaMap.values()) {
+                apps.addApplication(application);
+            }
+            if (includeRemote) {
+                for (Application application : remoteRegionAppsDelta.values()) {
+                    apps.addApplication(application);
+                }
+            }
+        }
+
+        protected String getDeltaAppsHashCode(boolean includeRemote) {
+            Applications allApps = new Applications();
+            for (Application application : applicationMap.values()) {
+                allApps.addApplication(application);
+            }
+
+            if (includeRemote) {
+                for (Application application : remoteRegionApps.values()) {
+                    allApps.addApplication(application);
+                }
+            }
+            addDeltaApps(includeRemote, allApps);
+            return allApps.getReconcileHashCode();
+        }
+
+        protected boolean isRemoteRequest(HttpServletRequest request) {
+            String queryString = request.getQueryString();
+            if (queryString == null) {
+                return false;
+            }
+            return queryString.contains("regions=");
+        }
+
+        protected void sendOkResponseWithContent(Request request, HttpServletResponse response, Applications apps)
+                throws IOException {
+            String content = XmlXStream.getInstance().toXML(apps);
+            response.setContentType("application/xml");
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.getWriter().println(content);
+            response.getWriter().flush();
+            request.setHandled(true);
+            System.out.println("Eureka port: " + port + ". " + System.currentTimeMillis() +
+                    ". Eureka resource mock, sent response for request path: " + request.getPathInfo() +
+                    ", apps count: " + apps.getRegisteredApplications().size());
+        }
+
+        protected void sleep(int seconds) {
+            try {
+                Thread.sleep(seconds);
+            } catch (InterruptedException e) {
+                System.out.println("Interrupted: " + e);
+            }
+        }
+    }
 }
