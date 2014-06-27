@@ -528,4 +528,14 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     public boolean shouldBatchReplication() {
         return configInstance.getBooleanProperty(namespace + "shouldBatchReplication", false).get();
     }
+
+    @Override
+    public boolean shouldLogAuthHeaders() {
+        return configInstance.getBooleanProperty(namespace + "auth.shouldLogAuthHeaders", false).get();
+    }
+
+    @Override
+    public boolean shouldEnableServerAuthHeaders() {
+        return configInstance.getBooleanProperty(namespace + "auth.shouldEnableServerAuthHeaders", true).get();
+    }
 }

@@ -444,4 +444,15 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
         return configInstance.getIntProperty(
                 namespace + "client.cacheRefresh.threadPoolSize", 2).get();
     }
+
+    /**
+     * (non-Javadoc)
+     *
+     * @see com.netflix.discovery.EurekaClientConfig#shouldEnableClientAuthHeaders()
+     */
+    @Override
+    public boolean shouldEnableClientAuthHeaders() {
+        return configInstance.getBooleanProperty(
+                namespace + "auth.shouldEnableClientAuthHeaders", true).get();
+    }
 }

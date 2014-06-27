@@ -15,7 +15,9 @@
  */
 package com.netflix.eureka;
 
+import java.net.InetAddress;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
+import com.netflix.discovery.RequestAuthHeaderFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,16 +98,25 @@ public class RemoteRegionRegistry implements LookupService<String> {
         }
         discoveryApacheClient = discoveryJerseyClient.getClient();
 
-        boolean enableGZIPContentEncodingFilter = EUREKA_SERVER_CONFIG
-                .shouldGZipContentFromRemoteRegion();
         // should we enable GZip decoding of responses based on Response
         // Headers?
-        if (enableGZIPContentEncodingFilter) {
+        if (EUREKA_SERVER_CONFIG.shouldGZipContentFromRemoteRegion()) {
             // compressed only if there exists a 'Content-Encoding' header
             // whose value is "gzip"
             discoveryApacheClient
                     .addFilter(new GZIPContentEncodingFilter(false));
         }
+
+        if (EUREKA_SERVER_CONFIG.shouldEnableServerAuthHeaders()) {
+            String ip = null;
+            try {
+                ip = InetAddress.getLocalHost().getHostAddress();
+            } catch (UnknownHostException e) {
+                logger.warn("Cannot find localhost ip", e);
+            }
+            discoveryApacheClient.addFilter(new RequestAuthHeaderFilter(new EurekaServerAuthInfo(ip)));
+        }
+
         applications.set(new Applications());
         try {
             if (fetchRegistry()) {
