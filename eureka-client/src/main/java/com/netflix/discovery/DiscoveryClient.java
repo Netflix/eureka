@@ -806,7 +806,7 @@ public class DiscoveryClient implements LookupService {
                 fetchRegistryUpdateLock.unlock();
             }
         } else {
-            logger.warn("Not updating applications as another thread is updating it already");
+            logger.warn("Not updating application delta as another thread is updating it already");
         }
 
         return response;
