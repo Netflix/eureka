@@ -35,6 +35,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
@@ -143,7 +145,7 @@ public class DiscoveryClient implements LookupService {
     private volatile AtomicReference<List<String>> eurekaServiceUrls = new AtomicReference<List<String>>();
     private volatile AtomicReference<Applications> localRegionApps = new AtomicReference<Applications>();
     private volatile Map<String, Applications> remoteRegionVsApps = new ConcurrentHashMap<String, Applications>();
-    private volatile AtomicLong fetchRegistryCounter;
+    private final Lock fetchRegistryUpdateLock = new ReentrantLock();
 
     private InstanceInfo instanceInfo;
     private String appPathIdentifier;
@@ -204,8 +206,6 @@ public class DiscoveryClient implements LookupService {
             cacheRefreshExecutor = new ThreadPoolExecutor(
                     1, clientConfig.getCacheRefreshExecutorThreadPoolSize(), 0, TimeUnit.SECONDS,
                     new SynchronousQueue<Runnable>());  // use direct handoff
-
-            fetchRegistryCounter = new AtomicLong(0);
 
             if (myInfo != null) {
                 instanceInfo = myInfo;
@@ -751,7 +751,6 @@ public class DiscoveryClient implements LookupService {
      *             on error.
      */
     private ClientResponse getAndStoreFullRegistry() throws Throwable {
-        long currentUpdateCounter = fetchRegistryCounter.get();
         ClientResponse response = makeRemoteCall(Action.Refresh);
         logger.info("Getting all instance registry info from the eureka server");
 
@@ -762,10 +761,14 @@ public class DiscoveryClient implements LookupService {
 
         if (apps == null) {
             logger.error("The application is null for some reason. Not storing this information");
-        } else if (fetchRegistryCounter.compareAndSet(currentUpdateCounter, currentUpdateCounter + 1)) {
-            localRegionApps.set(this.filterAndShuffle(apps));
+        } else if (fetchRegistryUpdateLock.tryLock()) {
+            try {
+                localRegionApps.set(this.filterAndShuffle(apps));
+            } finally {
+                fetchRegistryUpdateLock.unlock();
+            }
         } else {
-            logger.warn("Not updating applications as a later update already succeeded.");
+            logger.warn("Not updating applications as another thread is updating it already");
         }
         logger.info("The response status is {}", response.getStatus());
         return response;
@@ -778,7 +781,6 @@ public class DiscoveryClient implements LookupService {
      * @throws Throwable on error
      */
     private ClientResponse getAndUpdateDelta(Applications applications) throws Throwable {
-        long currentUpdateCounter = fetchRegistryCounter.get();
         ClientResponse response = makeRemoteCall(Action.Refresh_Delta);
 
         Applications delta = null;
@@ -790,17 +792,21 @@ public class DiscoveryClient implements LookupService {
                     + "Hence got the full registry.");
             this.closeResponse(response);
             response = getAndStoreFullRegistry();
-        } else if (fetchRegistryCounter.compareAndSet(currentUpdateCounter, currentUpdateCounter + 1)) {
-            updateDelta(delta);
-            String reconcileHashCode = getReconcileHashCode(applications);
-            // There is a diff in number of instances for some reason
-            if ((!reconcileHashCode.equals(delta.getAppsHashCode()))
-                    || clientConfig.shouldLogDeltaDiff()) {
-                response = reconcileAndLogDifference(response, delta,
-                        reconcileHashCode);
+        } else if (fetchRegistryUpdateLock.tryLock()) {
+            try {
+                updateDelta(delta);
+                String reconcileHashCode = getReconcileHashCode(applications);
+                // There is a diff in number of instances for some reason
+                if ((!reconcileHashCode.equals(delta.getAppsHashCode()))
+                        || clientConfig.shouldLogDeltaDiff()) {
+                    response = reconcileAndLogDifference(response, delta,
+                            reconcileHashCode);
+                }
+            } finally {
+                fetchRegistryUpdateLock.unlock();
             }
         } else {
-            logger.warn("Not updating applications as a later update already succeeded.");
+            logger.warn("Not updating applications as another thread is updating it already");
         }
 
         return response;
