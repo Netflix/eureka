@@ -1153,6 +1153,8 @@ public class DiscoveryClient implements LookupService {
             		clientConfig.getInitialInstanceInfoReplicationIntervalSeconds(),
                     clientConfig.getInstanceInfoReplicationIntervalSeconds(), TimeUnit.SECONDS);
 
+        } else {
+            logger.info("Not registering with Eureka server per configuration");
         }
     }
 
