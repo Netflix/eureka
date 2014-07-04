@@ -15,10 +15,9 @@
  */
 package com.netflix.appinfo;
 
-import javax.inject.Singleton;
-
 import com.google.inject.ProvidedBy;
 import com.netflix.appinfo.providers.MyDataCenterInstanceConfigProvider;
+import com.netflix.governator.guice.lazy.FineGrainedLazySingleton;
 
 /**
  * An {@link InstanceInfo} configuration for the non-AWS datacenter.
@@ -26,7 +25,7 @@ import com.netflix.appinfo.providers.MyDataCenterInstanceConfigProvider;
  * @author Karthik Ranganathan
  *
  */
-@Singleton
+@FineGrainedLazySingleton
 @ProvidedBy(MyDataCenterInstanceConfigProvider.class)
 public class MyDataCenterInstanceConfig extends PropertiesInstanceConfig
 implements EurekaInstanceConfig {

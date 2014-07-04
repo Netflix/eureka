@@ -62,6 +62,7 @@ import com.netflix.discovery.shared.EurekaJerseyClient;
 import com.netflix.discovery.shared.EurekaJerseyClient.JerseyClient;
 import com.netflix.discovery.shared.LookupService;
 import com.netflix.eventbus.spi.EventBus;
+import com.netflix.governator.guice.lazy.FineGrainedLazySingleton;
 import com.netflix.servo.monitor.Counter;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
@@ -95,7 +96,7 @@ import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
  * @author Karthik Ranganathan, Greg Kim
  *
  */
-@Singleton
+@FineGrainedLazySingleton
 public class DiscoveryClient implements LookupService {
     private static final Logger logger = LoggerFactory.getLogger(DiscoveryClient.class);
     private static final DynamicPropertyFactory configInstance = DynamicPropertyFactory.getInstance();
@@ -163,6 +164,9 @@ public class DiscoveryClient implements LookupService {
     public static class DiscoveryClientOptionalArgs {
         @Inject(optional = true)
         private EventBus eventBus;
+        
+        @Inject(optional = true)
+        private HealthCheckCallback healthCheckCallback;
     }
 
     public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config) {
@@ -171,11 +175,11 @@ public class DiscoveryClient implements LookupService {
 
     @Inject
     public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
+        this.healthCheckCallback = args.healthCheckCallback;
+        
         try {
-            if (args != null) 
-                this.eventBus = args.eventBus;
-            else
-                this.eventBus = null;
+            this.eventBus = args.eventBus;
+            
             scheduler = Executors.newScheduledThreadPool(4, 
                     new ThreadFactoryBuilder()
                         .setNameFormat("DiscoveryClient-%d")
