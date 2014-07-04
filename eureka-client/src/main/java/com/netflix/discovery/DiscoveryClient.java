@@ -35,6 +35,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
@@ -143,7 +145,9 @@ public class DiscoveryClient implements LookupService {
     private volatile AtomicReference<List<String>> eurekaServiceUrls = new AtomicReference<List<String>>();
     private volatile AtomicReference<Applications> localRegionApps = new AtomicReference<Applications>();
     private volatile Map<String, Applications> remoteRegionVsApps = new ConcurrentHashMap<String, Applications>();
-    private volatile AtomicLong fetchRegistryCounter;
+    private final Lock fetchRegistryUpdateLock = new ReentrantLock();
+    // monotonically increasing generation counter to ensure stale threads do not reset registry to an older version
+    private volatile AtomicLong fetchRegistryGeneration;
 
     private InstanceInfo instanceInfo;
     private String appPathIdentifier;
@@ -205,7 +209,7 @@ public class DiscoveryClient implements LookupService {
                     1, clientConfig.getCacheRefreshExecutorThreadPoolSize(), 0, TimeUnit.SECONDS,
                     new SynchronousQueue<Runnable>());  // use direct handoff
 
-            fetchRegistryCounter = new AtomicLong(0);
+            fetchRegistryGeneration = new AtomicLong(0);
 
             if (myInfo != null) {
                 instanceInfo = myInfo;
@@ -743,15 +747,19 @@ public class DiscoveryClient implements LookupService {
     }
 
     /**
-     * Gets the full registry information from the eureka server and stores it
-     * locally.
+     * Gets the full registry information from the eureka server and stores it locally.
+     * When applying the full registry, the following flow is observed:
+     *
+     * if (update generation have not advanced (due to another thread))
+     *   atomically set the registry to the new registry
+     * fi
      *
      * @return the full registry information.
      * @throws Throwable
      *             on error.
      */
     private ClientResponse getAndStoreFullRegistry() throws Throwable {
-        long currentUpdateCounter = fetchRegistryCounter.get();
+        long currentUpdateGeneration = fetchRegistryGeneration.get();
         ClientResponse response = makeRemoteCall(Action.Refresh);
         logger.info("Getting all instance registry info from the eureka server");
 
@@ -762,23 +770,30 @@ public class DiscoveryClient implements LookupService {
 
         if (apps == null) {
             logger.error("The application is null for some reason. Not storing this information");
-        } else if (fetchRegistryCounter.compareAndSet(currentUpdateCounter, currentUpdateCounter + 1)) {
+        } else if (fetchRegistryGeneration.compareAndSet(currentUpdateGeneration, currentUpdateGeneration + 1)) {
             localRegionApps.set(this.filterAndShuffle(apps));
         } else {
-            logger.warn("Not updating applications as a later update already succeeded.");
+            logger.warn("Not updating applications as another thread is updating it already");
         }
         logger.info("The response status is {}", response.getStatus());
         return response;
     }
 
     /**
-     * Get the delta registry information from the eureka server and update it locally
+     * Get the delta registry information from the eureka server and update it locally.
+     * When applying the delta, the following flow is observed:
+     *
+     * if (update generation have not advanced (due to another thread))
+     *   atomically try to: update application with the delta and get reconcileHashCode
+     *   abort entire processing otherwise
+     *   do reconciliation if reconcileHashCode clash
+     * fi
      *
      * @return the client response
      * @throws Throwable on error
      */
     private ClientResponse getAndUpdateDelta(Applications applications) throws Throwable {
-        long currentUpdateCounter = fetchRegistryCounter.get();
+        long currentUpdateGeneration = fetchRegistryGeneration.get();
         ClientResponse response = makeRemoteCall(Action.Refresh_Delta);
 
         Applications delta = null;
@@ -790,17 +805,26 @@ public class DiscoveryClient implements LookupService {
                     + "Hence got the full registry.");
             this.closeResponse(response);
             response = getAndStoreFullRegistry();
-        } else if (fetchRegistryCounter.compareAndSet(currentUpdateCounter, currentUpdateCounter + 1)) {
-            updateDelta(delta);
-            String reconcileHashCode = getReconcileHashCode(applications);
+        } else if (fetchRegistryGeneration.compareAndSet(currentUpdateGeneration, currentUpdateGeneration + 1)) {
+            String reconcileHashCode = "";
+            if (fetchRegistryUpdateLock.tryLock()) {
+                try {
+                    updateDelta(delta);
+                    reconcileHashCode = getReconcileHashCode(applications);
+                } finally {
+                    fetchRegistryUpdateLock.unlock();
+                }
+            } else {
+                logger.warn("Cannot acquire update lock, aborting getAndUpdateDelta");
+                return response;
+            }
             // There is a diff in number of instances for some reason
             if ((!reconcileHashCode.equals(delta.getAppsHashCode()))
                     || clientConfig.shouldLogDeltaDiff()) {
-                response = reconcileAndLogDifference(response, delta,
-                        reconcileHashCode);
+                response = reconcileAndLogDifference(response, delta, reconcileHashCode);  // this makes a remoteCall
             }
         } else {
-            logger.warn("Not updating applications as a later update already succeeded.");
+            logger.warn("Not updating application delta as another thread is updating it already");
         }
 
         return response;
@@ -818,8 +842,14 @@ public class DiscoveryClient implements LookupService {
     }
 
     /**
-     * Reconcile the eureka server and client registry information and logs the
-     * differences if any.
+     * Reconcile the eureka server and client registry information and logs the differences if any.
+     * When reconciling, the following flow is observed:
+     *
+     * make a remote call to the server for the full registry
+     * calculate and log differences
+     * if (update generation have not advanced (due to another thread))
+     *   atomically set the registry to the new registry
+     * fi
      *
      * @param response
      *            the HTTP response after getting the full registry.
@@ -839,8 +869,11 @@ public class DiscoveryClient implements LookupService {
                 reconcileHashCode, delta.getAppsHashCode());
 
         this.closeResponse(response);
+
+        long currentUpdateGeneration = fetchRegistryGeneration.get();
         response = makeRemoteCall(Action.Refresh);
         Applications serverApps = response.getEntity(Applications.class);
+
         try {
             Map<String, List<String>> reconcileDiffMap = getApplications().getReconcileMapDiff(serverApps);
             String reconcileString = "";
@@ -855,12 +888,18 @@ public class DiscoveryClient implements LookupService {
         } catch (Throwable e) {
             logger.error("Could not calculate reconcile string ", e);
         }
-        localRegionApps.set(this.filterAndShuffle(serverApps));
-        getApplications().setVersion(delta.getVersion());
-        logger.warn(
-                "The Reconcile hashcodes after complete sync up, client : {}, server : {}.",
-                getApplications().getReconcileHashCode(),
-                delta.getAppsHashCode());
+
+        if (fetchRegistryGeneration.compareAndSet(currentUpdateGeneration, currentUpdateGeneration + 1)) {
+            localRegionApps.set(this.filterAndShuffle(serverApps));
+            getApplications().setVersion(delta.getVersion());
+            logger.warn(
+                    "The Reconcile hashcodes after complete sync up, client : {}, server : {}.",
+                    getApplications().getReconcileHashCode(),
+                    delta.getAppsHashCode());
+        } else {
+            logger.warn("Not setting the applications map as another thread has advanced the update generation");
+        }
+
         return response;
     }
 
@@ -1114,6 +1153,8 @@ public class DiscoveryClient implements LookupService {
             		clientConfig.getInitialInstanceInfoReplicationIntervalSeconds(),
                     clientConfig.getInstanceInfoReplicationIntervalSeconds(), TimeUnit.SECONDS);
 
+        } else {
+            logger.info("Not registering with Eureka server per configuration");
         }
     }
 
