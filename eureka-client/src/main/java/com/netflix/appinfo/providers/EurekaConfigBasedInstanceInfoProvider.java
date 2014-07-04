@@ -14,6 +14,7 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.LeaseInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.InstanceInfo.PortType;
+import com.netflix.governator.guice.lazy.LazySingleton;
 
 /**
  * InstanceInfo provider that constructs the InstanceInfo this this instance using
@@ -22,7 +23,7 @@ import com.netflix.appinfo.InstanceInfo.PortType;
  * @author elandau
  *
  */
-@Singleton
+@LazySingleton
 public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceInfo> {
     private static final Logger LOG = LoggerFactory.getLogger(EurekaConfigBasedInstanceInfoProvider.class);
 

@@ -19,8 +19,6 @@ package com.netflix.appinfo;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.inject.Singleton;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +28,7 @@ import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.appinfo.providers.CloudInstanceConfigProvider;
 import com.netflix.config.DynamicBooleanProperty;
 import com.netflix.config.DynamicPropertyFactory;
+import com.netflix.governator.guice.lazy.FineGrainedLazySingleton;
 
 /**
  * An {@link InstanceInfo} configuration for AWS cloud deployments.
@@ -45,7 +44,7 @@ import com.netflix.config.DynamicPropertyFactory;
  * @author Karthik Ranganathan
  *
  */
-@Singleton
+@FineGrainedLazySingleton
 @ProvidedBy(CloudInstanceConfigProvider.class)
 public class CloudInstanceConfig extends PropertiesInstanceConfig {
     private static final Logger logger = LoggerFactory.getLogger(CloudInstanceConfig.class);

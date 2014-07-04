@@ -40,17 +40,17 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
-import javax.inject.Singleton;
 import javax.naming.directory.DirContext;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
-import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.ApplicationInfoManager;
@@ -67,6 +67,7 @@ import com.netflix.discovery.shared.EurekaJerseyClient;
 import com.netflix.discovery.shared.EurekaJerseyClient.JerseyClient;
 import com.netflix.discovery.shared.LookupService;
 import com.netflix.eventbus.spi.EventBus;
+import com.netflix.governator.guice.lazy.FineGrainedLazySingleton;
 import com.netflix.servo.monitor.Counter;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
@@ -100,7 +101,7 @@ import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
  * @author Karthik Ranganathan, Greg Kim
  *
  */
-@Singleton
+@FineGrainedLazySingleton
 public class DiscoveryClient implements LookupService {
     private static final Logger logger = LoggerFactory.getLogger(DiscoveryClient.class);
     private static final DynamicPropertyFactory configInstance = DynamicPropertyFactory.getInstance();
@@ -142,6 +143,7 @@ public class DiscoveryClient implements LookupService {
 
     // instance variables
     private volatile HealthCheckCallback healthCheckCallback;
+    private final Provider<HealthCheckCallback> healthCheckCallbackProvider;
     private volatile AtomicReference<List<String>> eurekaServiceUrls = new AtomicReference<List<String>>();
     private volatile AtomicReference<Applications> localRegionApps = new AtomicReference<Applications>();
     private volatile Map<String, Applications> remoteRegionVsApps = new ConcurrentHashMap<String, Applications>();
@@ -175,6 +177,9 @@ public class DiscoveryClient implements LookupService {
     public static class DiscoveryClientOptionalArgs {
         @Inject(optional = true)
         private EventBus eventBus;
+        
+        @Inject(optional = true)
+        private Provider<HealthCheckCallback> healthCheckCallbackProvider;
     }
 
     public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config) {
@@ -183,11 +188,16 @@ public class DiscoveryClient implements LookupService {
 
     @Inject
     public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
+        if (args != null) {
+            this.healthCheckCallbackProvider = args.healthCheckCallbackProvider;
+            this.eventBus = args.eventBus;
+        }
+        else {
+            this.healthCheckCallbackProvider = null;
+            this.eventBus = null;
+        }
+        
         try {
-            if (args != null) 
-                this.eventBus = args.eventBus;
-            else
-                this.eventBus = null;
             scheduler = Executors.newScheduledThreadPool(4, 
                     new ThreadFactoryBuilder()
                         .setNameFormat("DiscoveryClient-%d")
@@ -1585,6 +1595,9 @@ public class DiscoveryClient implements LookupService {
      *
      */
     private boolean isHealthCheckEnabled() {
+        if (healthCheckCallbackProvider != null && healthCheckCallback == null) {
+            healthCheckCallback = healthCheckCallbackProvider.get();
+        }
         return (healthCheckCallback != null && (InstanceInfo.InstanceStatus.STARTING != instanceInfo
                 .getStatus() && InstanceInfo.InstanceStatus.OUT_OF_SERVICE != instanceInfo
                 .getStatus()));

@@ -19,13 +19,13 @@ package com.netflix.appinfo;
 import java.util.Map;
 
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
+import com.netflix.governator.guice.lazy.FineGrainedLazySingleton;
 
 /**
  * The class that initializes information required for registration with
@@ -44,7 +44,7 @@ import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
  * @author Karthik Ranganathan, Greg Kim
  *
  */
-@Singleton
+@FineGrainedLazySingleton
 public class ApplicationInfoManager {
     private static final Logger logger = LoggerFactory.getLogger(ApplicationInfoManager.class);
     private static ApplicationInfoManager instance = new ApplicationInfoManager();
