@@ -35,17 +35,17 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
-import javax.inject.Singleton;
 import javax.naming.directory.DirContext;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
-import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.ApplicationInfoManager;
@@ -138,6 +138,7 @@ public class DiscoveryClient implements LookupService {
 
     // instance variables
     private volatile HealthCheckCallback healthCheckCallback;
+    private final Provider<HealthCheckCallback> healthCheckCallbackProvider;
     private volatile AtomicReference<List<String>> eurekaServiceUrls = new AtomicReference<List<String>>();
     private volatile AtomicReference<Applications> localRegionApps = new AtomicReference<Applications>();
     private volatile Map<String, Applications> remoteRegionVsApps = new ConcurrentHashMap<String, Applications>();
@@ -166,7 +167,7 @@ public class DiscoveryClient implements LookupService {
         private EventBus eventBus;
         
         @Inject(optional = true)
-        private HealthCheckCallback healthCheckCallback;
+        private Provider<HealthCheckCallback> healthCheckCallbackProvider;
     }
 
     public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config) {
@@ -175,7 +176,7 @@ public class DiscoveryClient implements LookupService {
 
     @Inject
     public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
-        this.healthCheckCallback = args.healthCheckCallback;
+        this.healthCheckCallbackProvider = args.healthCheckCallbackProvider;
         
         try {
             this.eventBus = args.eventBus;
@@ -1498,6 +1499,9 @@ public class DiscoveryClient implements LookupService {
      *
      */
     private boolean isHealthCheckEnabled() {
+        if (healthCheckCallbackProvider != null && healthCheckCallback == null) {
+            healthCheckCallback = healthCheckCallbackProvider.get();
+        }
         return (healthCheckCallback != null && (InstanceInfo.InstanceStatus.STARTING != instanceInfo
                 .getStatus() && InstanceInfo.InstanceStatus.OUT_OF_SERVICE != instanceInfo
                 .getStatus()));
