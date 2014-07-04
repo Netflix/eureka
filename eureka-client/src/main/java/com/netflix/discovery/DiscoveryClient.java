@@ -176,11 +176,16 @@ public class DiscoveryClient implements LookupService {
 
     @Inject
     public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
-        this.healthCheckCallbackProvider = args.healthCheckCallbackProvider;
+        if (args != null) {
+            this.healthCheckCallbackProvider = args.healthCheckCallbackProvider;
+            this.eventBus = args.eventBus;
+        }
+        else {
+            this.healthCheckCallbackProvider = null;
+            this.eventBus = null;
+        }
         
         try {
-            this.eventBus = args.eventBus;
-            
             scheduler = Executors.newScheduledThreadPool(4, 
                     new ThreadFactoryBuilder()
                         .setNameFormat("DiscoveryClient-%d")
