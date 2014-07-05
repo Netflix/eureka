@@ -53,6 +53,15 @@ public class AbstractDiscoveryClientTester {
     @Before
     public void setUp() throws Exception {
 
+        setupProperties();
+
+        populateLocalRegistryAtStartup();
+        populateRemoteRegistryAtStartup();
+
+        setupDiscoveryClient();
+    }
+
+    protected void setupProperties() {
         ConfigurationManager.getConfigInstance().setProperty("eureka.shouldFetchRegistry", "true");
         ConfigurationManager.getConfigInstance().setProperty("eureka.responseCacheAutoExpirationInSeconds", "10");
         ConfigurationManager.getConfigInstance().setProperty("eureka.client.refresh.interval", CLIENT_REFRESH_RATE);
@@ -62,18 +71,20 @@ public class AbstractDiscoveryClientTester {
         ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default",
                                                              "http://localhost:" + mockLocalEurekaServer.getPort() +
                                                              MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
-
-        populateLocalRegistryAtStartup();
-        populateRemoteRegistryAtStartup();
-
-        setupDiscoveryClient();
     }
 
     protected void setupDiscoveryClient() {
-        this.setupDiscoveryClient(30);
+        setupDiscoveryClient(30);
     }
 
     protected void setupDiscoveryClient(int renewalIntervalInSecs) {
+        InstanceInfo.Builder builder = newInstanceInfoBuilder(renewalIntervalInSecs);
+        client = new DiscoveryClient(builder.build(), new DefaultEurekaClientConfig());
+
+        ApplicationInfoManager.getInstance().initComponent(new MyDataCenterInstanceConfig());
+    }
+
+    protected InstanceInfo.Builder newInstanceInfoBuilder(int renewalIntervalInSecs) {
         InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder();
         builder.setIPAddr("10.10.101.00");
         builder.setHostName("Hosttt");
@@ -85,9 +96,7 @@ public class AbstractDiscoveryClientTester {
             }
         });
         builder.setLeaseInfo(LeaseInfo.Builder.newBuilder().setRenewalIntervalInSecs(renewalIntervalInSecs).build());
-        client = new DiscoveryClient(builder.build(), new DefaultEurekaClientConfig());
-
-        ApplicationInfoManager.getInstance().initComponent(new MyDataCenterInstanceConfig());
+        return builder;
     }
 
     protected void shutdownDiscoveryClient() {
