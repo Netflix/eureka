@@ -36,8 +36,10 @@ package com.netflix.appinfo;
  * {@link HealthCheckResource}.
  * </p>
  *
+ * @deprecated Use {@link com.netflix.appinfo.HealthCheckHandler} instead.
  * @author Karthik Ranganathan, Greg Kim
  */
+@Deprecated
 public interface HealthCheckCallback {
     /**
      * If false, the instance will be marked

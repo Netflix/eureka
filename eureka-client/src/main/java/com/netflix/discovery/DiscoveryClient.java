@@ -44,6 +44,9 @@ import javax.naming.directory.DirContext;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.netflix.appinfo.HealthCheckCallbackToHandlerBridge;
+import com.netflix.appinfo.HealthCheckHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -142,7 +145,8 @@ public class DiscoveryClient implements LookupService {
             + "Reregister");
 
     // instance variables
-    private volatile HealthCheckCallback healthCheckCallback;
+    private volatile HealthCheckHandler healthCheckHandler;
+    private final Provider<HealthCheckHandler> healthCheckHandlerProvider;
     private final Provider<HealthCheckCallback> healthCheckCallbackProvider;
     private volatile AtomicReference<List<String>> eurekaServiceUrls = new AtomicReference<List<String>>();
     private volatile AtomicReference<Applications> localRegionApps = new AtomicReference<Applications>();
@@ -161,6 +165,7 @@ public class DiscoveryClient implements LookupService {
     private final AtomicReference<String> remoteRegionsToFetch;
     private final InstanceRegionChecker instanceRegionChecker;
     private volatile InstanceInfo.InstanceStatus lastRemoteInstanceStatus = InstanceInfo.InstanceStatus.UNKNOWN;
+    private InstanceInfoReplicator instanceInfoReplicator;
 
     private enum Action {
         Register, Cancel, Renew, Refresh, Refresh_Delta
@@ -180,6 +185,9 @@ public class DiscoveryClient implements LookupService {
         
         @Inject(optional = true)
         private Provider<HealthCheckCallback> healthCheckCallbackProvider;
+
+        @Inject(optional = true)
+        private Provider<HealthCheckHandler> healthCheckHandlerProvider;
     }
 
     public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config) {
@@ -189,12 +197,14 @@ public class DiscoveryClient implements LookupService {
     @Inject
     public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
         if (args != null) {
-            this.healthCheckCallbackProvider = args.healthCheckCallbackProvider;
-            this.eventBus = args.eventBus;
+            healthCheckHandlerProvider = args.healthCheckHandlerProvider;
+            healthCheckCallbackProvider = args.healthCheckCallbackProvider;
+            eventBus = args.eventBus;
         }
         else {
-            this.healthCheckCallbackProvider = null;
-            this.eventBus = null;
+            healthCheckCallbackProvider = null;
+            healthCheckHandlerProvider = null;
+            eventBus = null;
         }
         
         try {
@@ -342,15 +352,26 @@ public class DiscoveryClient implements LookupService {
      * {@link HealthCheckCallback} in intervals specified by
      * {@link EurekaClientConfig#getInstanceInfoReplicationIntervalSeconds()}.
      *
-     * @param callback
-     *            -- app specific healthcheck.
+     * @param callback app specific healthcheck.
+     *
+     * @deprecated Use
      */
+    @Deprecated
     public void registerHealthCheckCallback(HealthCheckCallback callback) {
         if (instanceInfo == null) {
             logger.error("Cannot register a listener for instance info since it is null!");
         }
         if (callback != null) {
-            healthCheckCallback = callback;
+            healthCheckHandler = new HealthCheckCallbackToHandlerBridge(callback);
+        }
+    }
+
+    public void registerHealthCheck(HealthCheckHandler healthCheckHandler) {
+        if (instanceInfo == null) {
+            logger.error("Cannot register a healthcheck handler when instance info is null!");
+        }
+        if (healthCheckHandler != null) {
+            this.healthCheckHandler = healthCheckHandler;
         }
     }
 
@@ -1159,7 +1180,8 @@ public class DiscoveryClient implements LookupService {
                     renewalIntervalInSecs, TimeUnit.SECONDS);
 
             // InstanceInfo replication timer
-            scheduler.scheduleWithFixedDelay(new InstanceInfoReplicator(),
+            instanceInfoReplicator = new InstanceInfoReplicator();
+            scheduler.scheduleWithFixedDelay(instanceInfoReplicator,
             		clientConfig.getInitialInstanceInfoReplicationIntervalSeconds(),
                     clientConfig.getInstanceInfoReplicationIntervalSeconds(), TimeUnit.SECONDS);
 
@@ -1534,7 +1556,8 @@ public class DiscoveryClient implements LookupService {
      * the eureka server at specified intervals.
      *
      */
-    private class InstanceInfoReplicator extends TimerTask {
+    @VisibleForTesting
+    class InstanceInfoReplicator extends TimerTask {
 
         public void run() {
             try {
@@ -1566,11 +1589,10 @@ public class DiscoveryClient implements LookupService {
                     }
                 }
 
-                if (isHealthCheckEnabled()) {
-                    boolean isHealthy = healthCheckCallback.isHealthy();
-                    instanceInfo
-                            .setStatus(isHealthy ? InstanceInfo.InstanceStatus.UP
-                                    : InstanceInfo.InstanceStatus.DOWN);
+                final HealthCheckHandler handler = getHealthCheckHandler();
+                InstanceStatus status = handler.getStatus(instanceInfo.getStatus());
+                if (null != status) {
+                    instanceInfo.setStatus(status);
                 }
 
                 if (instanceInfo.isDirty()) {
@@ -1582,25 +1604,33 @@ public class DiscoveryClient implements LookupService {
                     instanceInfo.setIsDirty(false);
                 }
             } catch (Throwable t) {
-                logger.error(
-                        "There was a problem with the instance info replicator :",
-                        t);
+                logger.error("There was a problem with the instance info replicator :", t);
+            }
+        }
+    }
+
+    @VisibleForTesting InstanceInfoReplicator getInstanceInfoReplicator() {
+        return instanceInfoReplicator;
+    }
+
+    @VisibleForTesting InstanceInfo getInstanceInfo() {
+        return instanceInfo;
+    }
+
+    public HealthCheckHandler getHealthCheckHandler() {
+        if (healthCheckHandler == null) {
+            if (null != healthCheckHandlerProvider) {
+                healthCheckHandler = healthCheckHandlerProvider.get();
+            } else if (null != healthCheckCallbackProvider) {
+                healthCheckHandler = new HealthCheckCallbackToHandlerBridge(healthCheckCallbackProvider.get());
+            }
+
+            if (null == healthCheckHandler) {
+                healthCheckHandler = new HealthCheckCallbackToHandlerBridge(null);
             }
         }
 
-    }
-
-    /**
-     * Checks if a {@link HealthCheckCallback} is registered.
-     *
-     */
-    private boolean isHealthCheckEnabled() {
-        if (healthCheckCallbackProvider != null && healthCheckCallback == null) {
-            healthCheckCallback = healthCheckCallbackProvider.get();
-        }
-        return (healthCheckCallback != null && (InstanceInfo.InstanceStatus.STARTING != instanceInfo
-                .getStatus() && InstanceInfo.InstanceStatus.OUT_OF_SERVICE != instanceInfo
-                .getStatus()));
+        return healthCheckHandler;
     }
 
     /**
