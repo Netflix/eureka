@@ -16,6 +16,7 @@
 
 package com.netflix.eureka.resources;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -29,6 +30,7 @@ import com.netflix.discovery.converters.JsonXStream;
 import com.netflix.discovery.converters.XmlXStream;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.eureka.CurrentRequestVersion;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfigurationManager;
 import com.netflix.eureka.InstanceRegistry;
@@ -47,11 +49,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
-import java.util.Set;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -120,6 +122,9 @@ public class ResponseCache {
                 }
             });
 
+    private final ConcurrentMap<Key, Value> readOnlyCacheMap = new ConcurrentHashMap<Key, Value>();
+    private static final java.util.Timer timer = new java.util.Timer("Eureka -CacheFillTimer", true);
+
     private final LoadingCache<Key, Value> readWriteCacheMap =
             CacheBuilder.newBuilder().initialCapacity(1000)
                         .expireAfterWrite(eurekaConfig.getResponseCacheAutoExpirationInSeconds(), TimeUnit.SECONDS)
@@ -148,6 +153,11 @@ public class ResponseCache {
     private static final ResponseCache s_instance = new ResponseCache();
 
     private ResponseCache() {
+        long responseCacheUpdateIntervalMs = eurekaConfig.getResponseCacheUpdateIntervalMs();
+        timer.schedule(getCacheUpdateTask(),
+                       new Date(((System.currentTimeMillis() / responseCacheUpdateIntervalMs) * responseCacheUpdateIntervalMs)
+                                + responseCacheUpdateIntervalMs),
+                       responseCacheUpdateIntervalMs);
         try {
             Monitors.registerObject(this);
 
@@ -157,6 +167,32 @@ public class ResponseCache {
                     e);
         }
     }
+
+    private TimerTask getCacheUpdateTask() {
+        return new TimerTask() {
+            @Override
+            public void run() {
+                logger.debug("Updating the client cache from response cache");
+                for (Key key : readOnlyCacheMap.keySet()) {
+                    if (logger.isDebugEnabled()) {
+                        Object[] args = {key.getEntityType(), key.getName(), key.getVersion(), key.getType()};
+                        logger.debug("Updating the client cache from response cache for key : {} {} {} {}", args);
+                    }
+                    try {
+                        CurrentRequestVersion.set(key.getVersion());
+                        Value cacheValue = readWriteCacheMap.get(key);
+                        Value currentCacheValue = readOnlyCacheMap.get(key);
+                        if (cacheValue != currentCacheValue) {
+                            readOnlyCacheMap.put(key, cacheValue);
+                        }
+                    } catch (Throwable th) {
+                        logger.error("Error while updating the client cache from response cache", th);
+                    }
+                }
+            }
+        };
+    }
+
 
     public static ResponseCache getInstance() {
         return s_instance;
@@ -176,7 +212,11 @@ public class ResponseCache {
      * @return payload which contains information about the applications.
      */
     public String get(final Key key) {
-        Value payload = getValue(key);
+        return get(key, false);
+    }
+
+    @VisibleForTesting String get(final Key key, boolean ignoreReadOnlyCache) {
+        Value payload = getValue(key, ignoreReadOnlyCache);
         if (payload == null || payload.getPayload() == EMPTY_PAYLOAD) {
             return null;
         } else {
@@ -194,7 +234,7 @@ public class ResponseCache {
      *         applications.
      */
     public byte[] getGZIP(Key key) {
-        Value payload = getValue(key);
+        Value payload = getValue(key, false);
         if (payload == null) {
             return null;
         }
@@ -276,13 +316,24 @@ public class ResponseCache {
     /**
      * Get the payload in both compressed and uncompressed form.
      */
-    private Value getValue(final Key key) {
+    @VisibleForTesting Value getValue(final Key key, boolean ignoreReadOnlyCache) {
+        Value payload = null;
         try {
-            return readWriteCacheMap.get(key);
+            if (ignoreReadOnlyCache) {
+                payload = readWriteCacheMap.get(key);
+            } else {
+                final Value currentPayload = readOnlyCacheMap.get(key);
+                if (currentPayload != null) {
+                    payload = currentPayload;
+                } else {
+                    payload = readWriteCacheMap.get(key);
+                    readOnlyCacheMap.put(key, payload);
+                }
+            }
         } catch (Throwable t) {
             logger.error("Cannot get value for key :" + key, t);
-            return null;
         }
+        return payload;
     }
 
     /**
