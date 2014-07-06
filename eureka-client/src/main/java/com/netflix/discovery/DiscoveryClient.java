@@ -1589,11 +1589,10 @@ public class DiscoveryClient implements LookupService {
                     }
                 }
 
-                if (isHealthCheckEnabled()) {
-                    InstanceStatus status = healthCheckHandler.getStatus(instanceInfo.getStatus());
-                    if (null != status) {
-                        instanceInfo.setStatus(status);
-                    }
+                final HealthCheckHandler handler = getHealthCheckHandler();
+                InstanceStatus status = handler.getStatus(instanceInfo.getStatus());
+                if (null != status) {
+                    instanceInfo.setStatus(status);
                 }
 
                 if (instanceInfo.isDirty()) {
@@ -1605,19 +1604,8 @@ public class DiscoveryClient implements LookupService {
                     instanceInfo.setIsDirty(false);
                 }
             } catch (Throwable t) {
-                logger.error(
-                        "There was a problem with the instance info replicator :",
-                        t);
+                logger.error("There was a problem with the instance info replicator :", t);
             }
-        }
-
-
-        /**
-         * Checks if a {@link HealthCheckCallback} is registered.
-         *
-         */
-        private boolean isHealthCheckEnabled() {
-            return null != getHealthCheckHandler();
         }
     }
 
@@ -1635,6 +1623,10 @@ public class DiscoveryClient implements LookupService {
                 healthCheckHandler = healthCheckHandlerProvider.get();
             } else if (null != healthCheckCallbackProvider) {
                 healthCheckHandler = new HealthCheckCallbackToHandlerBridge(healthCheckCallbackProvider.get());
+            }
+
+            if (null == healthCheckHandler) {
+                healthCheckHandler = new HealthCheckCallbackToHandlerBridge(null);
             }
         }
 

@@ -8,6 +8,10 @@ public class HealthCheckCallbackToHandlerBridge implements HealthCheckHandler {
 
     private final HealthCheckCallback callback;
 
+    public HealthCheckCallbackToHandlerBridge() {
+        callback = null;
+    }
+
     public HealthCheckCallbackToHandlerBridge(HealthCheckCallback callback) {
         this.callback = callback;
     }
