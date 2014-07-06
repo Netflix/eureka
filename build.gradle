@@ -30,6 +30,13 @@ apply from: file('gradle/release.gradle')
 
 subprojects {
     group = "com.netflix.${githubProjectName}"
+
+    test {
+        forkEvery = 1
+        // setting this property prevents java from grabbing focus when running the tests under osx
+        systemProperty 'java.awt.headless', 'true'
+    }
+
     jar {
         manifest {
             attributes("Implementation-Title": name, "Implementation-Version": version,'Build-Time-ISO-8601': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"))
@@ -59,6 +66,12 @@ project(':eureka-client') {
 }
 
 project(':eureka-core') {
+    test {
+        forkEvery = 1
+        // setting this property prevents java from grabbing focus when running the tests under osx
+        systemProperty 'java.awt.headless', 'true'
+    }
+
     dependencies {
         compile project(':eureka-client')
 
@@ -113,4 +126,3 @@ project(':eureka-server') {
         include 'WEB-INF/lib/'
     }
 }
-
