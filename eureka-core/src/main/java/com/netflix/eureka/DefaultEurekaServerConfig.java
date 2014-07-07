@@ -530,12 +530,7 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     }
 
     @Override
-    public boolean shouldLogAuthHeaders() {
-        return configInstance.getBooleanProperty(namespace + "auth.shouldLogAuthHeaders", false).get();
-    }
-
-    @Override
-    public boolean shouldEnableServerAuthHeaders() {
-        return configInstance.getBooleanProperty(namespace + "auth.shouldEnableServerAuthHeaders", true).get();
+    public boolean shouldLogIdentityHeaders() {
+        return configInstance.getBooleanProperty(namespace + "auth.shouldLogIdentityHeaders", true).get();
     }
 }

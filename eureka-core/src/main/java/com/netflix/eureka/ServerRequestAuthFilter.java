@@ -41,7 +41,7 @@ public class ServerRequestAuthFilter implements Filter {
     }
 
     protected void logAuth(ServletRequest request) {
-        if ( EurekaServerConfigurationManager.getInstance().getConfiguration().shouldLogAuthHeaders() ) {
+        if ( EurekaServerConfigurationManager.getInstance().getConfiguration().shouldLogIdentityHeaders() ) {
             if (request instanceof HttpServletRequest) {
                 HttpServletRequest httpRequest = (HttpServletRequest) request;
 

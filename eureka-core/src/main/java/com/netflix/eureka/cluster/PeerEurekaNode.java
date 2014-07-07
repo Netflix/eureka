@@ -124,15 +124,14 @@ public class PeerEurekaNode {
                 }
             }
 
-            if (config.shouldEnableServerAuthHeaders()) {
-                String ip = null;
-                try {
-                   ip = InetAddress.getLocalHost().getHostAddress();
-                } catch (UnknownHostException e) {
-                    logger.warn("Cannot find localhost ip", e);
-                }
-                jerseyApacheClient.addFilter(new EurekaIdentityHeaderFilter(new EurekaServerIdentity(ip)));
+            String ip = null;
+            try {
+               ip = InetAddress.getLocalHost().getHostAddress();
+            } catch (UnknownHostException e) {
+                logger.warn("Cannot find localhost ip", e);
             }
+            EurekaServerIdentity identity = new EurekaServerIdentity(ip);
+            jerseyApacheClient.addFilter(new EurekaIdentityHeaderFilter(identity));
         }
         try {
             String serviceUrlHost = new URL(serviceUrl).getHost();

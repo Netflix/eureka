@@ -107,15 +107,14 @@ public class RemoteRegionRegistry implements LookupService<String> {
                     .addFilter(new GZIPContentEncodingFilter(false));
         }
 
-        if (EUREKA_SERVER_CONFIG.shouldEnableServerAuthHeaders()) {
-            String ip = null;
-            try {
-                ip = InetAddress.getLocalHost().getHostAddress();
-            } catch (UnknownHostException e) {
-                logger.warn("Cannot find localhost ip", e);
-            }
-            discoveryApacheClient.addFilter(new EurekaIdentityHeaderFilter(new EurekaServerIdentity(ip)));
+        String ip = null;
+        try {
+            ip = InetAddress.getLocalHost().getHostAddress();
+        } catch (UnknownHostException e) {
+            logger.warn("Cannot find localhost ip", e);
         }
+        EurekaServerIdentity identity = new EurekaServerIdentity(ip);
+        discoveryApacheClient.addFilter(new EurekaIdentityHeaderFilter(identity));
 
         applications.set(new Applications());
         try {

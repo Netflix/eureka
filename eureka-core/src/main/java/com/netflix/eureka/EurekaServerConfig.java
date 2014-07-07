@@ -510,11 +510,5 @@ public interface EurekaServerConfig {
      * Indicates whether the eureka server should log/metric clientAuthHeaders
      * @return {@code true} if the clientAuthHeaders should be logged and/or emitted as metrics
      */
-    boolean shouldLogAuthHeaders();
-
-    /**
-     * Indicates whether the eureka server should add auth headers when talking to peers as clients
-     * @return {@code true} if the AuthHeaders should be added to the request
-     */
-    boolean shouldEnableServerAuthHeaders();
+    boolean shouldLogIdentityHeaders();
 }

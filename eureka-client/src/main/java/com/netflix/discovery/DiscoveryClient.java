@@ -269,10 +269,12 @@ public class DiscoveryClient implements LookupService {
                 discoveryApacheClient.addFilter(new GZIPContentEncodingFilter(
                         false));
             }
-            if (config.shouldEnableClientAuthHeaders()) {
-                String ip = instanceInfo == null ? null : instanceInfo.getIPAddr();
-                discoveryApacheClient.addFilter(new EurekaIdentityHeaderFilter(new EurekaClientIdentity(ip)));
-            }
+
+            // always enable client identity headers
+            String ip = instanceInfo == null ? null : instanceInfo.getIPAddr();
+            EurekaClientIdentity identity = new EurekaClientIdentity(ip);
+            discoveryApacheClient.addFilter(new EurekaIdentityHeaderFilter(identity));
+
             if (proxyHost != null && proxyPort != null) {
                 cc.getProperties().put(
                         DefaultApacheHttpClient4Config.PROPERTY_PROXY_URI,

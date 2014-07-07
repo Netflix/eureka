@@ -443,11 +443,4 @@ public interface EurekaClientConfig {
      * @return the cacheRefreshExecutor thread pool size
      */
     int getCacheRefreshExecutorThreadPoolSize();
-
-    /**
-     * The default client will send along additional headers to the eureka server for identification and auth
-     *
-     * @return {@code true} if the client should send some identification headers when connecting to eureka server
-     */
-    boolean shouldEnableClientAuthHeaders();
 }
