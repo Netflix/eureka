@@ -528,4 +528,9 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     public boolean shouldBatchReplication() {
         return configInstance.getBooleanProperty(namespace + "shouldBatchReplication", false).get();
     }
+
+    @Override
+    public boolean shouldAcceptAllDataCenterRegistrations() {
+        return configInstance.getBooleanProperty(namespace + "shouldAcceptAllDataCenterRegistrations", true).get();
+    }
 }

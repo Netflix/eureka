@@ -706,6 +706,8 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                 // registerable
                 return true;
             }
+        } else {
+            return EUREKA_SERVER_CONFIG.shouldAcceptAllDataCenterRegistrations();
         }
         return false;
     }
