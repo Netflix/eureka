@@ -12,7 +12,6 @@ import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Pair;
 import com.netflix.eureka.mock.MockRemoteEurekaServer;
-import com.netflix.eventbus.impl.EventBusImpl;
 import org.junit.After;
 import org.junit.Before;
 

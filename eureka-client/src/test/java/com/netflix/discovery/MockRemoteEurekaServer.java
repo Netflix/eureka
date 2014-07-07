@@ -1,5 +1,7 @@
 package com.netflix.discovery;
 
+import com.netflix.appinfo.AbstractEurekaIdentity;
+import com.netflix.appinfo.EurekaClientIdentity;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.converters.XmlXStream;
 import com.netflix.discovery.shared.Application;
@@ -120,6 +122,14 @@ public class MockRemoteEurekaServer extends ExternalResource {
         @Override
         public void handle(String target, HttpServletRequest request, HttpServletResponse response, int dispatch)
                 throws IOException, ServletException {
+            String authName = request.getHeader(AbstractEurekaIdentity.AUTH_NAME_HEADER_KEY);
+            String authVersion = request.getHeader(AbstractEurekaIdentity.AUTH_VERSION_HEADER_KEY);
+            String authId = request.getHeader(AbstractEurekaIdentity.AUTH_ID_HEADER_KEY);
+
+            Assert.assertEquals(EurekaClientIdentity.DEFAULT_CLIENT_NAME, authName);
+            Assert.assertNotNull(authVersion);
+            Assert.assertNotNull(authId);
+
             String pathInfo = request.getPathInfo();
             System.out.println("Eureka port: " + port + ". " + System.currentTimeMillis() +
                     ". Eureka resource mock, received request on path: " + pathInfo + ". HTTP method: |"

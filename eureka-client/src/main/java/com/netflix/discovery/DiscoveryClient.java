@@ -45,6 +45,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.netflix.appinfo.EurekaClientIdentity;
 import com.netflix.appinfo.HealthCheckCallbackToHandlerBridge;
 import com.netflix.appinfo.HealthCheckHandler;
 import org.slf4j.Logger;
@@ -236,6 +237,7 @@ public class DiscoveryClient implements LookupService {
                 appPathIdentifier = instanceInfo.getAppName() + "/"
                                     + instanceInfo.getId();
             }
+
             String proxyHost = clientConfig.getProxyHost();
             String proxyPort = clientConfig.getProxyPort();
             discoveryJerseyClient = EurekaJerseyClient.createJerseyClient(
@@ -267,6 +269,12 @@ public class DiscoveryClient implements LookupService {
                 discoveryApacheClient.addFilter(new GZIPContentEncodingFilter(
                         false));
             }
+
+            // always enable client identity headers
+            String ip = instanceInfo == null ? null : instanceInfo.getIPAddr();
+            EurekaClientIdentity identity = new EurekaClientIdentity(ip);
+            discoveryApacheClient.addFilter(new EurekaIdentityHeaderFilter(identity));
+
             if (proxyHost != null && proxyPort != null) {
                 cc.getProperties().put(
                         DefaultApacheHttpClient4Config.PROPERTY_PROXY_URI,
@@ -516,16 +524,16 @@ public class DiscoveryClient implements LookupService {
         ClientResponse response = null;
         Applications apps = null;
         try {
-            response = getUrl(serviceUrl + "apps/");
+            response = makeRemoteCall(Action.Refresh);
             apps = response.getEntity(Applications.class);
             logger.debug(PREFIX + appPathIdentifier + " -  refresh status: "
                     + response.getStatus());
             return apps;
-        } catch (Exception e) {
+        } catch (Throwable th) {
             logger.error(
                     PREFIX + appPathIdentifier
                             + " - was unable to refresh its cache! status = "
-                            + e.getMessage(), e);
+                            + th.getMessage(), th);
 
         } finally {
             if (response != null) {

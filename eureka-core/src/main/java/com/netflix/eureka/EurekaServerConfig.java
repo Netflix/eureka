@@ -505,4 +505,10 @@ public interface EurekaServerConfig {
      * @return {@code true} if the replication needs to be batched.
      */
     boolean shouldBatchReplication();
+
+    /**
+     * Indicates whether the eureka server should log/metric clientAuthHeaders
+     * @return {@code true} if the clientAuthHeaders should be logged and/or emitted as metrics
+     */
+    boolean shouldLogIdentityHeaders();
 }

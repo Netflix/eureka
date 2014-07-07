@@ -17,8 +17,10 @@
 package com.netflix.eureka.cluster;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -26,6 +28,8 @@ import java.util.List;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
+import com.netflix.discovery.EurekaIdentityHeaderFilter;
+import com.netflix.eureka.EurekaServerIdentity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,6 +123,15 @@ public class PeerEurekaNode {
                             "Cannot Create new Replica Node :" + name);
                 }
             }
+
+            String ip = null;
+            try {
+               ip = InetAddress.getLocalHost().getHostAddress();
+            } catch (UnknownHostException e) {
+                logger.warn("Cannot find localhost ip", e);
+            }
+            EurekaServerIdentity identity = new EurekaServerIdentity(ip);
+            jerseyApacheClient.addFilter(new EurekaIdentityHeaderFilter(identity));
         }
         try {
             String serviceUrlHost = new URL(serviceUrl).getHost();

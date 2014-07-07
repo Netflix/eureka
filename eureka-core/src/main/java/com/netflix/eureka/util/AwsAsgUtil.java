@@ -25,6 +25,7 @@ import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -178,6 +179,10 @@ public class AwsAsgUtil {
      * @return - The auto scaling group information.
      */
     private AutoScalingGroup retrieveAutoScalingGroup(String asgName) {
+        if (Strings.isNullOrEmpty(asgName)) {
+            logger.warn("null asgName specified, not attempting to retrieve AutoScalingGroup from AWS");
+            return null;
+        }
         // You can pass one name or a list of names in the request
         DescribeAutoScalingGroupsRequest request = new DescribeAutoScalingGroupsRequest()
                 .withAutoScalingGroupNames(asgName);
