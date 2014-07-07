@@ -28,8 +28,8 @@ import java.util.List;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
-import com.netflix.discovery.RequestAuthHeaderFilter;
-import com.netflix.eureka.EurekaServerAuthInfo;
+import com.netflix.discovery.EurekaIdentityHeaderFilter;
+import com.netflix.eureka.EurekaServerIdentity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,7 +131,7 @@ public class PeerEurekaNode {
                 } catch (UnknownHostException e) {
                     logger.warn("Cannot find localhost ip", e);
                 }
-                jerseyApacheClient.addFilter(new RequestAuthHeaderFilter(new EurekaServerAuthInfo(ip)));
+                jerseyApacheClient.addFilter(new EurekaIdentityHeaderFilter(new EurekaServerIdentity(ip)));
             }
         }
         try {

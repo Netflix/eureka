@@ -1,17 +1,14 @@
 package com.netflix.eureka.mock;
 
-import com.netflix.appinfo.AbstractEurekaAuthInfo;
-import com.netflix.appinfo.EurekaClientAuthInfo;
+import com.netflix.appinfo.AbstractEurekaIdentity;
 import com.netflix.discovery.converters.XmlXStream;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
-import com.netflix.eureka.EurekaServerAuthInfo;
-import com.netflix.eureka.RequestAuthFilter;
+import com.netflix.eureka.ServerRequestAuthFilter;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 import org.mortbay.jetty.Request;
 import org.mortbay.jetty.Server;
-import org.mortbay.jetty.handler.AbstractHandler;
 import org.mortbay.jetty.servlet.FilterHolder;
 import org.mortbay.jetty.servlet.ServletHandler;
 
@@ -42,7 +39,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
         this.applicationMap = applicationMap;
         this.applicationDeltaMap = applicationDeltaMap;
         ServletHandler handler = new AppsResourceHandler();
-        handler.addFilterWithMapping(RequestAuthFilter.class, "/*", 1);
+        handler.addFilterWithMapping(ServerRequestAuthFilter.class, "/*", 1);
         server = new Server(port);
         server.addHandler(handler);
         System.out.println(String.format(
@@ -97,17 +94,17 @@ public class MockRemoteEurekaServer extends ExternalResource {
         public void handle(String target, HttpServletRequest request, HttpServletResponse response, int dispatch)
                 throws IOException, ServletException {
 
-            String authName = request.getHeader(AbstractEurekaAuthInfo.AUTH_NAME_HEADER_KEY);
-            String authVersion = request.getHeader(AbstractEurekaAuthInfo.AUTH_VERSION_HEADER_KEY);
-            String authId = request.getHeader(AbstractEurekaAuthInfo.AUTH_ID_HEADER_KEY);
+            String authName = request.getHeader(AbstractEurekaIdentity.AUTH_NAME_HEADER_KEY);
+            String authVersion = request.getHeader(AbstractEurekaIdentity.AUTH_VERSION_HEADER_KEY);
+            String authId = request.getHeader(AbstractEurekaIdentity.AUTH_ID_HEADER_KEY);
 
             Assert.assertNotNull(authName);
             Assert.assertNotNull(authVersion);
             Assert.assertNotNull(authId);
 
-            Assert.assertTrue( !authName.equals(RequestAuthFilter.UNKNOWN) );
-            Assert.assertTrue( !authVersion.equals(RequestAuthFilter.UNKNOWN) );
-            Assert.assertTrue( !authId.equals(RequestAuthFilter.UNKNOWN) );
+            Assert.assertTrue( !authName.equals(ServerRequestAuthFilter.UNKNOWN) );
+            Assert.assertTrue( !authVersion.equals(ServerRequestAuthFilter.UNKNOWN) );
+            Assert.assertTrue( !authId.equals(ServerRequestAuthFilter.UNKNOWN) );
 
             for (FilterHolder filterHolder : this.getFilters()) {
                 filterHolder.getFilter().doFilter(request, response, new FilterChain() {

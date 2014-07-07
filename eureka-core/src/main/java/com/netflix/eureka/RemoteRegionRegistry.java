@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
-import com.netflix.discovery.RequestAuthHeaderFilter;
+import com.netflix.discovery.EurekaIdentityHeaderFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,7 +114,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
             } catch (UnknownHostException e) {
                 logger.warn("Cannot find localhost ip", e);
             }
-            discoveryApacheClient.addFilter(new RequestAuthHeaderFilter(new EurekaServerAuthInfo(ip)));
+            discoveryApacheClient.addFilter(new EurekaIdentityHeaderFilter(new EurekaServerIdentity(ip)));
         }
 
         applications.set(new Applications());

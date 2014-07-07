@@ -3,13 +3,13 @@ package com.netflix.appinfo;
 /**
  * This class holds metadata information related to eureka client auth with the eureka server
  */
-public class EurekaClientAuthInfo extends AbstractEurekaAuthInfo {
+public class EurekaClientIdentity extends AbstractEurekaIdentity {
     public static final String DEFAULT_CLIENT_NAME = "DefaultClient";
 
     private final String clientVersion = "1.0";
     private final String id;
 
-    public EurekaClientAuthInfo(String id) {
+    public EurekaClientIdentity(String id) {
         this.id = id;
     }
 

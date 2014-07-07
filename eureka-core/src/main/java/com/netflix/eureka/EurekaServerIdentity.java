@@ -1,18 +1,17 @@
 package com.netflix.eureka;
 
-import com.netflix.appinfo.AbstractEurekaAuthInfo;
-import com.netflix.appinfo.InstanceInfo;
+import com.netflix.appinfo.AbstractEurekaIdentity;
 
 /**
  * This class holds metadata information related to eureka server auth with peer eureka servers
  */
-public class EurekaServerAuthInfo extends AbstractEurekaAuthInfo {
+public class EurekaServerIdentity extends AbstractEurekaIdentity {
     public static final String DEFAULT_SERVER_NAME = "DefaultServer";
 
     private final String serverVersion = "1.0";
     private final String id;
 
-    public EurekaServerAuthInfo(String id) {
+    public EurekaServerIdentity(String id) {
         this.id = id;
     }
 

@@ -15,7 +15,7 @@
 
   <filter>
      <filter-name>requestAuthFilter</filter-name>
-     <filter-class>com.netflix.eureka.RequestAuthFilter</filter-class>
+     <filter-class>com.netflix.eureka.ServerRequestAuthFilter</filter-class>
   </filter>
 
   <filter>

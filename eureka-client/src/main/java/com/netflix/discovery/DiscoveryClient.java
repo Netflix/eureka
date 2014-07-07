@@ -45,7 +45,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.netflix.appinfo.EurekaClientAuthInfo;
+import com.netflix.appinfo.EurekaClientIdentity;
 import com.netflix.appinfo.HealthCheckCallbackToHandlerBridge;
 import com.netflix.appinfo.HealthCheckHandler;
 import org.slf4j.Logger;
@@ -271,7 +271,7 @@ public class DiscoveryClient implements LookupService {
             }
             if (config.shouldEnableClientAuthHeaders()) {
                 String ip = instanceInfo == null ? null : instanceInfo.getIPAddr();
-                discoveryApacheClient.addFilter(new RequestAuthHeaderFilter(new EurekaClientAuthInfo(ip)));
+                discoveryApacheClient.addFilter(new EurekaIdentityHeaderFilter(new EurekaClientIdentity(ip)));
             }
             if (proxyHost != null && proxyPort != null) {
                 cc.getProperties().put(
