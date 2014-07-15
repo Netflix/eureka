@@ -1109,10 +1109,9 @@ public class DiscoveryClient implements LookupService {
                 break;
             }
 
-            if (logger.isInfoEnabled()) {
-                logger.info("Finished a call to service url {} and url path {} with status code {}.",
+            logger.debug("Finished a call to service url {} and url path {} with status code {}.",
                             new String[] {serviceUrl, urlPath, String.valueOf(response.getStatus())});
-            }
+
             if (isOk(action, response.getStatus())) {
                 return response;
             } else {
@@ -1687,7 +1686,7 @@ public class DiscoveryClient implements LookupService {
                         allAppsHashCodes.append(" , apps hashcode: ");
                         allAppsHashCodes.append(entry.getValue().getAppsHashCode());
                     }
-                    logger.info("Completed cache refresh task for discovery. All Apps hash code is {} ",
+                    logger.debug("Completed cache refresh task for discovery. All Apps hash code is {} ",
                                 allAppsHashCodes.toString());
                 }
             } catch (Throwable th) {
