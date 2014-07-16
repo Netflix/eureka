@@ -418,7 +418,7 @@ public class DiscoveryClient implements LookupService {
         } else {
             applications = remoteRegionVsApps.get(region);
             if (null == applications) {
-                logger.debug("No applications are defined for region {}, so returning an empty instance list for vip "
+                logDebug("No applications are defined for region {}, so returning an empty instance list for vip "
                         + "address {}.", region, vipAddress);
                 return Collections.emptyList();
             }
@@ -526,7 +526,7 @@ public class DiscoveryClient implements LookupService {
         try {
             response = makeRemoteCall(Action.Refresh);
             apps = response.getEntity(Applications.class);
-            logger.debug(PREFIX + appPathIdentifier + " -  refresh status: "
+            logDebug(PREFIX + appPathIdentifier + " -  refresh status: "
                     + response.getStatus());
             return apps;
         } catch (Throwable th) {
@@ -605,7 +605,7 @@ public class DiscoveryClient implements LookupService {
             availZones = new String[1];
             availZones[0] = "default";
         }
-        logger.debug("The availability zone for the given region {} are %s",
+        logDebug("The availability zone for the given region {} are %s",
                 region, Arrays.toString(availZones));
         int myZoneOffset = getZoneOffset(instanceZone, preferSameZone,
                 availZones);
@@ -717,9 +717,7 @@ public class DiscoveryClient implements LookupService {
             applications.setAppsHashCode(applications.getReconcileHashCode());
             logTotalInstances();
 
-            logger.debug(PREFIX + appPathIdentifier + " -  refresh status: "
-                    + response.getStatus());
-
+            logDebug(PREFIX + appPathIdentifier + " -  refresh status: " + response.getStatus());
             updateInstanceRemoteStatus();
 
         } catch (Throwable e) {
@@ -877,7 +875,7 @@ public class DiscoveryClient implements LookupService {
         for (Application application : getApplications().getRegisteredApplications()) {
             totInstances += application.getInstancesAsIsFromEureka().size();
         }
-        logger.debug("The total number of all instances in the client now is {}", totInstances);
+        logDebug("The total number of all instances in the client now is {}", totInstances);
     }
 
     /**
@@ -972,7 +970,7 @@ public class DiscoveryClient implements LookupService {
                     if (existingApp == null) {
                         applications.addApplication(app);
                     }
-                    logger.debug("Added instance {} to the existing apps in region {}",
+                    logDebug("Added instance {} to the existing apps in region {}",
                             instance.getId(), instanceRegion);
                     applications.getRegisteredApplications(
                             instance.getAppName()).addInstance(instance);
@@ -982,8 +980,8 @@ public class DiscoveryClient implements LookupService {
                     if (existingApp == null) {
                         applications.addApplication(app);
                     }
-                    logger.debug("Modified instance {} to the existing apps ",
-                                 instance.getId());
+                    logDebug("Modified instance {} to the existing apps ",
+                            instance.getId());
 
                     applications.getRegisteredApplications(
                             instance.getAppName()).addInstance(instance);
@@ -994,14 +992,14 @@ public class DiscoveryClient implements LookupService {
                     if (existingApp == null) {
                         applications.addApplication(app);
                     }
-                    logger.debug("Deleted instance {} to the existing apps ",
-                                 instance.getId());
+                    logDebug("Deleted instance {} to the existing apps ",
+                            instance.getId());
                     applications.getRegisteredApplications(
                             instance.getAppName()).removeInstance(instance);
                 }
             }
         }
-        logger.debug(
+        logDebug(
                 "The total number of instances fetched by the delta processor : {}",
                 deltaCount);
 
@@ -1046,7 +1044,7 @@ public class DiscoveryClient implements LookupService {
         Stopwatch tracer = null;
         String serviceUrl = eurekaServiceUrls.get().get(serviceUrlIndex);
         ClientResponse response = null;
-        logger.debug("Discovery Client talking to the server {}", serviceUrl);
+        logDebug("Discovery Client talking to the server {}", serviceUrl);
         try {
             // If the application is unknown do not register/renew/cancel but
             // refresh
@@ -1109,8 +1107,8 @@ public class DiscoveryClient implements LookupService {
                 break;
             }
 
-            logger.debug("Finished a call to service url {} and url path {} with status code {}.",
-                            new String[] {serviceUrl, urlPath, String.valueOf(response.getStatus())});
+            logDebug("Finished a call to service url {} and url path {} with status code {}.",
+                    new String[]{serviceUrl, urlPath, String.valueOf(response.getStatus())});
 
             if (isOk(action, response.getStatus())) {
                 return response;
@@ -1232,7 +1230,7 @@ public class DiscoveryClient implements LookupService {
         int zoneIndex = 0;
         boolean zoneFound = false;
         for (String zone : zones) {
-            logger.debug(
+            logDebug(
                     "Checking if the instance zone {} is the same as the zone from DNS {}",
                     instanceZone, zone);
             if (preferSameZone) {
@@ -1246,7 +1244,7 @@ public class DiscoveryClient implements LookupService {
             }
             if (zoneFound) {
                 Object[] args = {zones, instanceZone, zoneIndex};
-                logger.debug(
+                logDebug(
                         "The zone index from the list {} that matches the instance zone {} is {}",
                         args);
                 break;
@@ -1283,7 +1281,7 @@ public class DiscoveryClient implements LookupService {
 
                     + "/" + clientConfig.getEurekaServerURLContext()
                     + "/";
-                    logger.debug("The EC2 url is {}", serviceUrl);
+                    logDebug("The EC2 url is {}", serviceUrl);
                     serviceUrls.add(serviceUrl);
                 }
             }
@@ -1293,7 +1291,7 @@ public class DiscoveryClient implements LookupService {
         arrangeListBasedonHostname(serviceUrls);
         serviceUrls.add(0, primaryServiceUrl);
 
-        logger.debug(
+        logDebug(
                 "This client will talk to the following serviceUrls in order : {} ",
                 Arrays.toString(serviceUrls.toArray()));
         t.stop();
@@ -1369,7 +1367,7 @@ public class DiscoveryClient implements LookupService {
             discoveryDnsName = "txt." + region + "."
                     + clientConfig.getEurekaServerDNSName();
 
-            logger.debug("The region url to be looked up is {} :",
+            logDebug("The region url to be looked up is {} :",
                     discoveryDnsName);
             Set<String> zoneCnamesForRegion = new TreeSet<String>(
                     DiscoveryClient.getCnamesFromDirContext(dirContext,
@@ -1386,7 +1384,7 @@ public class DiscoveryClient implements LookupService {
                 } else {
                     String[] cnameTokens = zoneCname.split("\\.");
                     zone = cnameTokens[0];
-                    logger.debug("The zoneName mapped to region {} is {}",
+                    logDebug("The zoneName mapped to region {} is {}",
                             region, zone);
                 }
                 List<String> zoneCnamesSet = zoneCnameMapForRegion.get(zone);
@@ -1421,11 +1419,11 @@ public class DiscoveryClient implements LookupService {
         Set<String> eipsForZone = null;
         try {
             dnsName = "txt." + dnsName;
-            logger.debug("The zone url to be looked up is {} :", dnsName);
+            logDebug("The zone url to be looked up is {} :", dnsName);
             Set<String> ec2UrlsForZone = DiscoveryClient
                     .getCnamesFromDirContext(dirContext, dnsName);
             for (String ec2Url : ec2UrlsForZone) {
-                logger.debug("The eureka url for the dns name {} is {}",
+                logDebug("The eureka url for the dns name {} is {}",
                         dnsName, ec2Url);
                 ec2UrlsForZone.add(ec2Url);
             }
@@ -1446,7 +1444,7 @@ public class DiscoveryClient implements LookupService {
                 }
                 eipsForZone.add(eipBuffer.toString());
             }
-            logger.debug("The EIPS for {} is {} :", dnsName, eipsForZone);
+            logDebug("The EIPS for {} is {} :", dnsName, eipsForZone);
         } catch (Throwable e) {
             throw new RuntimeException("Cannot get cnames bound to the region:"
                     + dnsName, e);
@@ -1533,7 +1531,7 @@ public class DiscoveryClient implements LookupService {
             ClientResponse response = null;
             try {
                 response = makeRemoteCall(Action.Renew);
-                logger.debug(PREFIX
+                logDebug(PREFIX
                         + appPathIdentifier
                         + " - Heartbeat status: "
                         + (response != null ? response.getStatus() : "not sent"));
@@ -1674,7 +1672,7 @@ public class DiscoveryClient implements LookupService {
 
                 fetchRegistry(remoteRegionsModified);
 
-                if (logger.isInfoEnabled()) {
+                if (logger.isDebugEnabled()) {
                     StringBuilder allAppsHashCodes = new StringBuilder();
                     allAppsHashCodes.append("Local region apps hashcode: ");
                     allAppsHashCodes.append(localRegionApps.get().getAppsHashCode());
@@ -1686,8 +1684,8 @@ public class DiscoveryClient implements LookupService {
                         allAppsHashCodes.append(" , apps hashcode: ");
                         allAppsHashCodes.append(entry.getValue().getAppsHashCode());
                     }
-                    logger.debug("Completed cache refresh task for discovery. All Apps hash code is {} ",
-                                allAppsHashCodes.toString());
+                    logDebug("Completed cache refresh task for discovery. All Apps hash code is {} ",
+                            allAppsHashCodes.toString());
                 }
             } catch (Throwable th) {
                 logger.error("Cannot fetch registry from server", th);
@@ -1876,4 +1874,21 @@ public class DiscoveryClient implements LookupService {
         }
     }
 
+    private static void logDebug(String msg) {
+        if (logger.isDebugEnabled()) {
+            logger.debug(msg);
+        }
+    }
+
+    private static void logDebug(String msg, Object arg) {
+        if (logger.isDebugEnabled()) {
+            logger.debug(msg, arg);
+        }
+    }
+
+    private static void logDebug(String msg, Object arg1, Object arg2) {
+        if (logger.isDebugEnabled()) {
+            logger.debug(msg, arg1, arg2);
+        }
+    }
 }
