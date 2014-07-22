@@ -707,7 +707,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                 return true;
             }
         }
-        return false;
+        return true; // Everything non-amazon is registrable.
     }
 
     /**
