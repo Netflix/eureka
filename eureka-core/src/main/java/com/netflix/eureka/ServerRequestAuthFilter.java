@@ -21,7 +21,6 @@ public class ServerRequestAuthFilter implements Filter {
     public static final String UNKNOWN = "unknown";
 
     private static final String NAME_PREFIX = "DiscoveryServerRequestAuth_Name_";
-    private static final String ID_PREFIX = "DiscoveryServerRequestAuth_Id_";
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
@@ -47,10 +46,8 @@ public class ServerRequestAuthFilter implements Filter {
 
                 String clientName = getHeader(httpRequest, AbstractEurekaIdentity.AUTH_NAME_HEADER_KEY);
                 String clientVersion = getHeader(httpRequest, AbstractEurekaIdentity.AUTH_VERSION_HEADER_KEY);
-                String clientId = getHeader(httpRequest, AbstractEurekaIdentity.AUTH_ID_HEADER_KEY);
 
                 DynamicCounter.increment(MonitorConfig.builder(NAME_PREFIX + clientName + "-" + clientVersion).build());
-                DynamicCounter.increment(MonitorConfig.builder(ID_PREFIX + clientId).build());
             }
         }
     }
