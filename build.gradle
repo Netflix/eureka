@@ -1,128 +1,35 @@
-ext.githubProjectName = 'eureka'
-
-ext {
-    jerseyVersion="1.11"
-    governatorVersion="1.2.10"
-    archaiusVersion="0.6.0"
-    ribbonVersion="0.3.12"
-    blitzVersion="1.34"
-}
+ext.githubProjectName = "eureka"
 
 buildscript {
     repositories {
         mavenLocal()
         mavenCentral() // maven { url 'http://jcenter.bintray.com' }
     }
-    apply from: file('gradle/buildscript.gradle'), to: buildscript 
+    apply from: file('gradle/buildscript.gradle'), to: buildscript
 }
 
 allprojects {
-    repositories { 
+    repositories {
+        mavenLocal()
         mavenCentral() // maven { url: 'http://jcenter.bintray.com' }
     }
 }
 
 apply from: file('gradle/convention.gradle')
 apply from: file('gradle/maven.gradle')
-apply from: file('gradle/check.gradle')
+//apply from: file('gradle/check.gradle')
 apply from: file('gradle/license.gradle')
 apply from: file('gradle/release.gradle')
 
 subprojects {
-    group = "com.netflix.${githubProjectName}"
+    group = "com.netflix.eureka"
 
-    test {
-        forkEvery = 1
-        // setting this property prevents java from grabbing focus when running the tests under osx
-        systemProperty 'java.awt.headless', 'true'
-    }
-
-    jar {
-        manifest {
-            attributes("Implementation-Title": name, "Implementation-Version": version,'Build-Time-ISO-8601': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"))
-        }
-    }
-}
-
-
-project(':eureka-client') {
-    dependencies {
-        compile "com.netflix.netflix-commons:netflix-eventbus:0.1.2"
-        compile 'com.thoughtworks.xstream:xstream:1.4.2'
-        compile "com.netflix.archaius:archaius-core:$archaiusVersion"
-        compile 'javax.ws.rs:jsr311-api:1.1.1'
-        compile 'com.netflix.servo:servo-core:0.7.4'
-        compile "com.sun.jersey:jersey-core:$jerseyVersion"
-        compile "com.sun.jersey:jersey-client:$jerseyVersion"
-        compile 'com.sun.jersey.contribs:jersey-apache-client4:1.11'
-        compile 'org.apache.httpcomponents:httpclient:4.2.1'
-        compile "com.netflix.ribbon:ribbon-httpclient:$ribbonVersion"
-        compile "com.netflix.governator:governator:$governatorVersion"
-        runtime 'org.codehaus.jettison:jettison:1.2'
-
-        testCompile 'junit:junit:4.10'
-        testCompile 'org.mortbay.jetty:jetty:6.1H.22'
-    }
-}
-
-project(':eureka-core') {
-    test {
-        forkEvery = 1
-        // setting this property prevents java from grabbing focus when running the tests under osx
-        systemProperty 'java.awt.headless', 'true'
-    }
+    apply plugin: 'java'
+    apply plugin: 'eclipse'
+    apply plugin: 'idea'
 
     dependencies {
-        compile project(':eureka-client')
-
-        compile 'com.amazonaws:aws-java-sdk:1.3.27'
-        compile 'javax.servlet:servlet-api:2.4'
-        compile 'com.thoughtworks.xstream:xstream:1.4.2'
-        compile 'javax.ws.rs:jsr311-api:1.1.1'
-        compile "com.netflix.blitz4j:blitz4j:$blitzVersion"
-
-        testCompile 'junit:junit:4.10'
-        testCompile 'org.mortbay.jetty:jetty:6.1H.22'
-        testRuntime 'org.slf4j:slf4j-simple:1.7.0'
-        testCompile project(':eureka-client')
+        compile "org.slf4j:slf4j-api:${slf4j_version}"
     }
 }
 
-project(':eureka-resources') {
-}
-
-project(':eureka-server') {
-    apply plugin: 'war'
-
-    sourceSets.main.java.srcDir 'test/java'
-  
-    war {
-        from('conf')  {
-            include 'eureka-server*'
-            include 'eureka-client*'
-            include 'log4j.properties'
-            into 'WEB-INF/classes/'
-        }
-        from (project(':eureka-resources').file('build/resources/main'))
-        webXml = file('WEB-INF/web.xml') // copies a file to WEB-INF/web.xml
-    }
-	
-    dependencies {
-        compile project(':eureka-client')
-        compile project(':eureka-core')
-        runtime 'xerces:xercesImpl:2.4.0'
-        runtime 'asm:asm:3.1'
-        compile "com.sun.jersey:jersey-server:$jerseyVersion"
-        compile "com.sun.jersey:jersey-servlet:$jerseyVersion"
-        compile 'org.slf4j:slf4j-log4j12:1.6.1'
-        runtime 'org.codehaus.jettison:jettison:1.2' 
-        providedCompile 'javax.servlet:servlet-api:2.4'
-    }
-
-    delete 'testlibs'
-    copy { 
-        from zipTree('build/libs/'+ war.archiveName)
-        into 'testlibs' 
-        include 'WEB-INF/lib/'
-    }
-}
