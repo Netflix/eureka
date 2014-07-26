@@ -195,9 +195,9 @@ public class EIPManager {
             AssociateAddressRequest associateAddressRequest = new AssociateAddressRequest()
             .withInstanceId(myInstanceId);
 
-            String allocationId = selectedEIP.getAllocationId();
-            if (null != allocationId) {
-                associateAddressRequest.setAllocationId(allocationId);
+            String domain = selectedEIP.getDomain();
+            if ("vpc".equals(domain)) {
+                associateAddressRequest.setAllocationId(selectedEIP.getAllocationId());
             } else {
                 associateAddressRequest.setPublicIp(publicIp);
             }
@@ -233,12 +233,13 @@ public class EIPManager {
                         && (!result.getAddresses().isEmpty())) {
                     Address eipAddress = result.getAddresses().get(0);
                     DisassociateAddressRequest dissociateRequest = new DisassociateAddressRequest();
-                    String associationId = eipAddress.getAssociationId();
-                    if (null != associationId) {
-                        dissociateRequest.setAssociationId(associationId);
+                    String domain = eipAddress.getDomain();
+                    if ("vpc".equals(domain)) {
+                        dissociateRequest.setAssociationId(eipAddress.getAssociationId());
                     } else {
                         dissociateRequest.setPublicIp(eipAddress.getPublicIp());
                     }
+
                     ec2Service.disassociateAddress(dissociateRequest);
                     logger.info("Dissociated the EIP {} from this instance",
                             myPublicIP);
