@@ -27,6 +27,7 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2Client;
+import com.amazonaws.services.ec2.model.Address;
 import com.amazonaws.services.ec2.model.AssociateAddressRequest;
 import com.amazonaws.services.ec2.model.DescribeAddressesRequest;
 import com.amazonaws.services.ec2.model.DescribeAddressesResult;
@@ -143,7 +144,7 @@ public class EIPManager {
 
         AmazonEC2 ec2Service = getEC2Service();
         boolean isMyinstanceAssociatedWithEIP = false;
-        String selectedEIP = null;
+        Address selectedEIP = null;
 
 
         for (String eipEntry : candidateEIPs) {
@@ -158,21 +159,21 @@ public class EIPManager {
                 .describeAddresses(describeAddressRequest);
                 if ((result.getAddresses() != null)
                         && (!result.getAddresses().isEmpty())) {
-                    associatedInstanceId = result.getAddresses().get(0)
-                    .getInstanceId();
+                    Address eipAddress = result.getAddresses().get(0);
+                    associatedInstanceId = eipAddress.getInstanceId();
                     // This EIP is not used by any other instance, hence mark it for selection if it is not
                     // already marked.
                     if (((associatedInstanceId == null) || (associatedInstanceId
                             .isEmpty()))) {
                         if (selectedEIP == null) {
-                            selectedEIP = eipEntry;
+                            selectedEIP = eipAddress;
                         }
                     } else if (isMyinstanceAssociatedWithEIP = (associatedInstanceId
                             .equals(myInstanceId))) {
                         // This EIP is associated with an instance, check if this is the same as the current instance.
                         // If it is the same, stop searching for an EIP as this instance is already associated with an
                         // EIP
-                        selectedEIP = eipEntry;
+                        selectedEIP = eipAddress;
                         break;
                     } else {
                         // The EIP is used by some other instance, hence skip it
@@ -189,18 +190,27 @@ public class EIPManager {
         }
         // Only bind if the EIP is already associated
         if (!isMyinstanceAssociatedWithEIP) {
-            AssociateAddressRequest associateAddressRequest = new AssociateAddressRequest(
-                    myInstanceId, selectedEIP);
+            String publicIp = selectedEIP.getPublicIp();
+
+            AssociateAddressRequest associateAddressRequest = new AssociateAddressRequest()
+            .withInstanceId(myInstanceId);
+
+            String domain = selectedEIP.getDomain();
+            if ("vpc".equals(domain)) {
+                associateAddressRequest.setAllocationId(selectedEIP.getAllocationId());
+            } else {
+                associateAddressRequest.setPublicIp(publicIp);
+            }
 
             ec2Service.associateAddress(associateAddressRequest);
             logger.info("\n\n\nAssociated " + myInstanceId
                     + " running in zone: " + myZone + " to elastic IP: "
-                    + selectedEIP);
+                    + publicIp);
 
          }
             logger.info(
                     "My instance {} seems to be already associated with the EIP {}",
-                    myInstanceId, selectedEIP);
+                    myInstanceId, selectedEIP.getPublicIp());
     }
 
     /**
@@ -215,11 +225,25 @@ public class EIPManager {
             .get(MetaDataKey.publicIpv4);
             try {
                 AmazonEC2 ec2Service = getEC2Service();
-                DisassociateAddressRequest dissociateRequest = new DisassociateAddressRequest()
-                .withPublicIp(myPublicIP);
-                ec2Service.disassociateAddress(dissociateRequest);
-                logger.info("Dissociated the EIP {} from this instance",
-                        myPublicIP);
+                DescribeAddressesRequest describeAddressRequest = new DescribeAddressesRequest()
+                .withPublicIps(myPublicIP);
+                DescribeAddressesResult result = ec2Service
+                .describeAddresses(describeAddressRequest);
+                if ((result.getAddresses() != null)
+                        && (!result.getAddresses().isEmpty())) {
+                    Address eipAddress = result.getAddresses().get(0);
+                    DisassociateAddressRequest dissociateRequest = new DisassociateAddressRequest();
+                    String domain = eipAddress.getDomain();
+                    if ("vpc".equals(domain)) {
+                        dissociateRequest.setAssociationId(eipAddress.getAssociationId());
+                    } else {
+                        dissociateRequest.setPublicIp(eipAddress.getPublicIp());
+                    }
+
+                    ec2Service.disassociateAddress(dissociateRequest);
+                    logger.info("Dissociated the EIP {} from this instance",
+                            myPublicIP);
+                }
             } catch (Throwable e) {
                 throw new RuntimeException("Cannot dissociate address"
                         + myPublicIP + "from this instance", e);
