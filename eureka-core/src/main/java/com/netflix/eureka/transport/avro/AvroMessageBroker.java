@@ -156,7 +156,15 @@ public class AvroMessageBroker implements MessageBroker {
 
         @Override
         public int compareTo(Delayed o) {
-            return Long.compare(getDelay(TimeUnit.MILLISECONDS), o.getDelay(TimeUnit.MILLISECONDS));
+            long d1 = getDelay(TimeUnit.MILLISECONDS);
+            long d2 = o.getDelay(TimeUnit.MILLISECONDS);
+            if (d1 < d2) {
+                return -1;
+            }
+            if (d1 > d2) {
+                return 1;
+            }
+            return 0;
         }
     }
 }
