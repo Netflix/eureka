@@ -1,10 +1,11 @@
-package com.netflix.eureka.transport;
+package com.netflix.eureka.transport.utils;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import com.netflix.eureka.transport.MessageBroker;
 import rx.Observable;
 import rx.functions.Action1;
 

@@ -1,18 +1,27 @@
 package com.netflix.eureka.protocol.registration;
 
-import java.util.Map;
-
 /**
  * @author Tomasz Bak
  */
 public class Update {
-    private final Map<String, String> fieldUpdates;
+    private final String key;
+    private final String value;
 
-    public Update(Map<String, String> fieldUpdates) {
-        this.fieldUpdates = fieldUpdates;
+    // For serialization framework
+    protected Update() {
+        key = value = null;
     }
 
-    public Map<String, String> getFieldUpdates() {
-        return fieldUpdates;
+    public Update(String key, String value) {
+        this.key = key;
+        this.value = value;
+    }
+
+    public String getKey() {
+        return key;
+    }
+
+    public String getValue() {
+        return value;
     }
 }

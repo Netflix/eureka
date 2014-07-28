@@ -5,7 +5,7 @@ import java.util.Iterator;
 import java.util.concurrent.TimeoutException;
 
 import com.netflix.eureka.transport.Acknowledgement;
-import com.netflix.eureka.transport.BrokerUtils.BrokerPair;
+import com.netflix.eureka.transport.utils.BrokerUtils.BrokerPair;
 import com.netflix.eureka.transport.Message;
 import com.netflix.eureka.transport.MessageBroker;
 import com.netflix.eureka.transport.UserContent;

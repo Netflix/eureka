@@ -7,4 +7,5 @@ package com.netflix.eureka.protocol;
  * @author Tomasz Bak
  */
 public class Heartbeat {
+    public static final Heartbeat HEART_BEAT = new Heartbeat();
 }
