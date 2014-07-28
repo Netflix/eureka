@@ -26,8 +26,9 @@ tasks.withType(Javadoc).each {
 }
 
 dependencies {
-    compile 'com.netflix.rxnetty:rx-netty:0.3.10'
-    testCompile 'junit:junit:4.10'
+    compile "com.netflix.rxnetty:rx-netty:${rx_netty_version}"
+    compile "org.apache.avro:avro:${avro_version}"
+    testCompile "junit:junit:${junit_version}"
 }
 
 eclipse {

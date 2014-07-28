@@ -52,7 +52,6 @@ public class HttpRegistrationClient implements RegistrationClient {
         } finally {
             statusSubject.onCompleted();
         }
-
     }
 
     @Override
