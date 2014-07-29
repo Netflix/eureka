@@ -12,6 +12,7 @@ import com.netflix.eureka.transport.UserContent;
 import com.netflix.eureka.transport.UserContentWithAck;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import rx.Notification;
 import rx.Observable;
@@ -63,6 +64,7 @@ public class AvroMessageBrokerTest {
         assertNotNull("expected message on server side", incomingMessages.next());
     }
 
+    @Ignore
     @Test
     public void testSubmitUserContentWithAck() throws Exception {
         Iterator<Message> serverIncoming = serverBroker.incoming().toBlocking().getIterator();
