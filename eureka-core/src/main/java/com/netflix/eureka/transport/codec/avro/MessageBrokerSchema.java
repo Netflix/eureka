@@ -1,4 +1,4 @@
-package com.netflix.eureka.transport.avro;
+package com.netflix.eureka.transport.codec.avro;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,7 +18,7 @@ import org.apache.avro.reflect.ReflectData;
  * type set.
  *
  * Alternatively we could expect a client to define schema in Avro text file, and pass it as a
- * parameter when constructing {@link AvroMessageBroker}. This would take however more effort, and
+ * parameter when constructing {@link com.netflix.eureka.transport.base.BaseMessageBroker}. This would take however more effort, and
  * is more error prone.
  *
  * @author Tomasz Bak

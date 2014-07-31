@@ -1,4 +1,4 @@
-package com.netflix.eureka.transport.avro;
+package com.netflix.eureka.transport.base;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,7 +24,7 @@ import rx.subjects.ReplaySubject;
 /**
  * @author Tomasz Bak
  */
-public class AvroMessageBroker implements MessageBroker {
+public class BaseMessageBroker implements MessageBroker {
 
     private final ObservableConnection<Message, Message> connection;
     private final PublishSubject<Void> lifecycleSubject = PublishSubject.create();
@@ -50,7 +50,7 @@ public class AvroMessageBroker implements MessageBroker {
         }
     };
 
-    public AvroMessageBroker(ObservableConnection<Message, Message> connection) {
+    public BaseMessageBroker(ObservableConnection<Message, Message> connection) {
         this.connection = connection;
         installAcknowledgementHandler();
     }

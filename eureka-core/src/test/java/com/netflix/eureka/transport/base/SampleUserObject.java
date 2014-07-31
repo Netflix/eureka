@@ -1,4 +1,4 @@
-package com.netflix.eureka.transport.avro;
+package com.netflix.eureka.transport.base;
 
 /**
 * @author Tomasz Bak

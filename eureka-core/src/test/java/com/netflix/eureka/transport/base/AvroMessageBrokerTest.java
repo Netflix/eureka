@@ -1,15 +1,17 @@
-package com.netflix.eureka.transport.avro;
+package com.netflix.eureka.transport.base;
 
 import java.net.InetSocketAddress;
 import java.util.Iterator;
 import java.util.concurrent.TimeoutException;
 
 import com.netflix.eureka.transport.Acknowledgement;
-import com.netflix.eureka.transport.utils.BrokerUtils.BrokerPair;
 import com.netflix.eureka.transport.Message;
 import com.netflix.eureka.transport.MessageBroker;
+import com.netflix.eureka.transport.MessageBrokerServer;
 import com.netflix.eureka.transport.UserContent;
 import com.netflix.eureka.transport.UserContentWithAck;
+import com.netflix.eureka.transport.codec.avro.AvroPipelineConfigurator;
+import com.netflix.eureka.transport.utils.BrokerUtils.BrokerPair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,20 +27,20 @@ public class AvroMessageBrokerTest {
 
     private static final UserContent CONTENT = new UserContent(new SampleUserObject("stringValue", 123));
 
-    AvroMessageBrokerServer server;
+    MessageBrokerServer server;
     MessageBroker serverBroker;
     MessageBroker clientBroker;
 
     @Before
     public void setUp() throws Exception {
-        server = new AvroMessageBrokerBuilder(new InetSocketAddress(0))
-                .withTypes(SampleUserObject.class)
+        server = new TcpMessageBrokerBuilder(new InetSocketAddress(0))
+                .withCodecPipeline(new AvroPipelineConfigurator(SampleUserObject.class))
                 .buildServer().start();
         Observable<MessageBroker> serverObservable = server.clientConnections();
-        int port = server.server.getServerPort();
+        int port = server.getServerPort();
 
-        Observable<MessageBroker> clientObservable = new AvroMessageBrokerBuilder(new InetSocketAddress("localhost", port))
-                .withTypes(SampleUserObject.class)
+        Observable<MessageBroker> clientObservable = new TcpMessageBrokerBuilder(new InetSocketAddress("localhost", port))
+                .withCodecPipeline(new AvroPipelineConfigurator(SampleUserObject.class))
                 .buildClient();
 
         BrokerPair brokerPair = new BrokerPair(serverObservable, clientObservable);

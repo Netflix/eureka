@@ -1,4 +1,4 @@
-package com.netflix.eureka.transport.avro;
+package com.netflix.eureka.transport.codec.avro;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.netflix.eureka.transport.UserContent;
 import com.netflix.eureka.transport.UserContentWithAck;
+import com.netflix.eureka.transport.base.SampleUserObject;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.apache.avro.Schema;
 import org.junit.BeforeClass;

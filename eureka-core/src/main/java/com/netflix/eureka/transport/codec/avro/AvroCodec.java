@@ -1,4 +1,4 @@
-package com.netflix.eureka.transport.avro;
+package com.netflix.eureka.transport.codec.avro;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;

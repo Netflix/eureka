@@ -13,7 +13,8 @@ import com.netflix.eureka.protocol.registration.Unregister;
 import com.netflix.eureka.protocol.registration.Update;
 import com.netflix.eureka.transport.MessageBroker;
 import com.netflix.eureka.transport.MessageBrokerServer;
-import com.netflix.eureka.transport.avro.AvroMessageBrokerBuilder;
+import com.netflix.eureka.transport.base.TcpMessageBrokerBuilder;
+import com.netflix.eureka.transport.codec.avro.AvroPipelineConfigurator;
 import rx.Observable;
 
 /**
@@ -32,26 +33,26 @@ public class EurekaEndpoints {
     };
 
     public static Observable<MessageBroker> tcpRegistrationClient(String host, int port) {
-        return new AvroMessageBrokerBuilder(new InetSocketAddress(host, port))
-                .withTypes(REGISTRATION_MODEL)
+        return new TcpMessageBrokerBuilder(new InetSocketAddress(host, port))
+                .withCodecPipeline(new AvroPipelineConfigurator(REGISTRATION_MODEL))
                 .buildClient();
     }
 
     public static MessageBrokerServer tcpRegistrationServer(int port) {
-        return new AvroMessageBrokerBuilder(new InetSocketAddress(port))
-                .withTypes(REGISTRATION_MODEL)
+        return new TcpMessageBrokerBuilder(new InetSocketAddress(port))
+                .withCodecPipeline(new AvroPipelineConfigurator(REGISTRATION_MODEL))
                 .buildServer();
     }
 
     public static Observable<MessageBroker> tcpDiscoveryClient(String host, int port) {
-        return new AvroMessageBrokerBuilder(new InetSocketAddress(host, port))
-                .withTypes(DISCOVERY_MODEL)
+        return new TcpMessageBrokerBuilder(new InetSocketAddress(host, port))
+                .withCodecPipeline(new AvroPipelineConfigurator(DISCOVERY_MODEL))
                 .buildClient();
     }
 
     public static MessageBrokerServer tcpDiscoveryServer(int port) {
-        return new AvroMessageBrokerBuilder(new InetSocketAddress(port))
-                .withTypes(DISCOVERY_MODEL)
+        return new TcpMessageBrokerBuilder(new InetSocketAddress(port))
+                .withCodecPipeline(new AvroPipelineConfigurator(DISCOVERY_MODEL))
                 .buildServer();
     }
 }
