@@ -126,7 +126,6 @@ public class AvroMessageBroker implements MessageBroker {
     public void shutdown() {
         Observable<Void> closeObservable = connection.close();
         closeObservable.subscribe(lifecycleSubject);
-        closeObservable.toBlocking().firstOrDefault(null);
         expiryScheduler.shutdown();
     }
 

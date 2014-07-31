@@ -12,7 +12,6 @@ import com.netflix.eureka.transport.UserContent;
 import com.netflix.eureka.transport.UserContentWithAck;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import rx.Notification;
 import rx.Observable;
@@ -54,7 +53,6 @@ public class AvroMessageBrokerTest {
         server.shutdown();
     }
 
-    @Ignore
     @Test
     public void testSubmitUserContent() throws Exception {
         Iterator<Message> incomingMessages = serverBroker.incoming().toBlocking().getIterator();
@@ -65,7 +63,6 @@ public class AvroMessageBrokerTest {
         assertNotNull("expected message on server side", incomingMessages.next());
     }
 
-    @Ignore
     @Test
     public void testSubmitUserContentWithAck() throws Exception {
         Iterator<Message> serverIncoming = serverBroker.incoming().toBlocking().getIterator();
@@ -83,7 +80,6 @@ public class AvroMessageBrokerTest {
         assertTrue("Expected Acknowledgement instance", ackIterator.next() instanceof Acknowledgement);
     }
 
-    @Ignore
     @Test
     public void testAckTimeout() throws Exception {
         Iterator<Message> serverIncoming = serverBroker.incoming().toBlocking().getIterator();
