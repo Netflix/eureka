@@ -7,5 +7,17 @@ package com.netflix.eureka.protocol;
  * @author Tomasz Bak
  */
 public class Heartbeat {
-    public static final Heartbeat HEART_BEAT = new Heartbeat();
+    public static final Heartbeat INSTANCE = new Heartbeat();
+
+    private static final int HASH = 98656312;
+
+    @Override
+    public int hashCode() {
+        return HASH;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof Heartbeat;
+    }
 }

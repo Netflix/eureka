@@ -37,7 +37,7 @@ public class AvroCodecTest {
         ch.writeInbound(ch.readOutbound());
         Object received = ch.readInbound();
         assertTrue("Expected instance of UserContent", received instanceof UserContentWithAck);
-        assertEquals("Encoded/decoded shall produce identical object", message.getBody(), ((UserContentWithAck) received).getBody());
+        assertEquals("Encoded/decoded shall produce identical object", message.getContent(), ((UserContentWithAck) received).getContent());
     }
 
     public static void main(String[] args) throws Exception {

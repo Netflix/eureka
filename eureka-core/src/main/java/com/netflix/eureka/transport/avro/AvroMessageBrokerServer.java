@@ -44,6 +44,11 @@ class AvroMessageBrokerServer implements MessageBrokerServer {
     }
 
     @Override
+    public int getServerPort() {
+        return server.getServerPort();
+    }
+
+    @Override
     public void shutdown() throws InterruptedException {
         server.shutdown();
     }

@@ -27,7 +27,7 @@ public class AsyncRegistrationClient implements RegistrationClient {
         heartbeatClient = new HeartBeatHandler.HeartbeatClient<Heartbeat>(messageBroker, heatbeatInterval, heartbeatUnit) {
             @Override
             protected Heartbeat heartbeatMessage() {
-                return Heartbeat.HEART_BEAT;
+                return Heartbeat.INSTANCE;
             }
         };
     }

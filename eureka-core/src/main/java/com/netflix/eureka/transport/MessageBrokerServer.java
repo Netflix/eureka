@@ -13,6 +13,8 @@ public interface MessageBrokerServer {
 
     Observable<MessageBroker> clientConnections();
 
+    int getServerPort();
+
     MessageBrokerServer start();
 
     void shutdown() throws InterruptedException;

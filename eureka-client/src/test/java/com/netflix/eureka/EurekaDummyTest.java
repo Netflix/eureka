@@ -7,7 +7,7 @@ import org.junit.Test;
  *
  * @author Nitesh Kant
  */
-public class DummyTest {
+public class EurekaDummyTest {
 
     //TODO: Remove me.
     @Test

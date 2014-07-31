@@ -36,7 +36,7 @@ class MessageBrokerSchema {
 
     private static Schema userContentSchema(Schema userSchemas) {
         List<Field> fields = new ArrayList<Field>();
-        fields.add(new Field("body", userSchemas, null, null));
+        fields.add(new Field("content", userSchemas, null, null));
 
         Schema schema = Schema.createRecord(UserContent.class.getSimpleName(), null, UserContent.class.getPackage().getName(), false);
         schema.setFields(fields);
@@ -46,7 +46,7 @@ class MessageBrokerSchema {
 
     private static Schema userContentWithAckSchema(Schema userSchemas) {
         List<Field> fields = new ArrayList<Field>();
-        fields.add(new Field("body", userSchemas, null, null));
+        fields.add(new Field("content", userSchemas, null, null));
         fields.add(new Field("correlationId", Schema.create(Type.STRING), null, null));
         fields.add(new Field("timeout", Schema.create(Type.LONG), null, null));
 

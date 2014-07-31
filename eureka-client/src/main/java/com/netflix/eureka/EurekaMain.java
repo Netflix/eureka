@@ -5,7 +5,7 @@ package com.netflix.eureka;
  *
  * @author Nitesh Kant
  */
-public class Main {
+public class EurekaMain {
 
     // TODO: Remove me.
 }

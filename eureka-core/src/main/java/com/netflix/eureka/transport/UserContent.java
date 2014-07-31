@@ -6,18 +6,18 @@ package com.netflix.eureka.transport;
 public class UserContent extends Message {
 
     // We do not use type parameter here, as we cannot handle generics on the wire
-    private final Object body;
+    private final Object content;
 
     // For dynamic object creation
     protected UserContent() {
-        body = null;
+        content = null;
     }
 
-    public UserContent(Object body) {
-        this.body = body;
+    public UserContent(Object content) {
+        this.content = content;
     }
 
-    public Object getBody() {
-        return body;
+    public Object getContent() {
+        return content;
     }
 }

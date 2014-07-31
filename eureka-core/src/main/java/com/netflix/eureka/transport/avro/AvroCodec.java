@@ -17,6 +17,7 @@ import org.apache.avro.reflect.ReflectDatumWriter;
 
 /**
  * TODO Possibly we can do some optimizations here. For now lets keep it simple.
+ * TODO Error handling in case message cannot be encoded/decoded.
  *
  * @author Tomasz Bak
  */
@@ -35,17 +36,21 @@ class AvroCodec extends ByteToMessageCodec<Message> {
 
     @Override
     protected void encode(ChannelHandlerContext ctx, Message msg, ByteBuf out) throws Exception {
-        ReflectDatumWriter writer = new ReflectDatumWriter<Message>(schema);
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        Encoder encoder = EncoderFactory.get().binaryEncoder(bos, null);
+        try {
+            ReflectDatumWriter writer = new ReflectDatumWriter<Message>(schema);
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            Encoder encoder = EncoderFactory.get().binaryEncoder(bos, null);
 
-        writer.write(msg, encoder);
-        encoder.flush();
-        bos.close();
+            writer.write(msg, encoder);
+            encoder.flush();
+            bos.close();
 
-        byte[] bytes = bos.toByteArray();
-        out.ensureWritable(bytes.length);
-        out.writeBytes(bytes);
+            byte[] bytes = bos.toByteArray();
+            out.ensureWritable(bytes.length);
+            out.writeBytes(bytes);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

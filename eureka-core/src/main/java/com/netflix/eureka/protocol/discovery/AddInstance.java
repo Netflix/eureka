@@ -1,19 +1,19 @@
-package com.netflix.eureka.protocol.registration;
+package com.netflix.eureka.protocol.discovery;
 
 import com.netflix.eureka.registry.InstanceInfo;
 
 /**
  * @author Tomasz Bak
  */
-public class Register {
+public class AddInstance {
     private final InstanceInfo instanceInfo;
 
     // For serialization frameworks
-    protected Register() {
+    protected AddInstance() {
         instanceInfo = null;
     }
 
-    public Register(InstanceInfo instanceInfo) {
+    public AddInstance(InstanceInfo instanceInfo) {
         this.instanceInfo = instanceInfo;
     }
 
@@ -30,9 +30,9 @@ public class Register {
             return false;
         }
 
-        Register register = (Register) o;
+        AddInstance that = (AddInstance) o;
 
-        if (instanceInfo != null ? !instanceInfo.equals(register.instanceInfo) : register.instanceInfo != null) {
+        if (instanceInfo != null ? !instanceInfo.equals(that.instanceInfo) : that.instanceInfo != null) {
             return false;
         }
 
@@ -46,6 +46,6 @@ public class Register {
 
     @Override
     public String toString() {
-        return "Register{instanceInfo=" + instanceInfo + '}';
+        return "AddInstance{instanceInfo=" + instanceInfo + '}';
     }
 }

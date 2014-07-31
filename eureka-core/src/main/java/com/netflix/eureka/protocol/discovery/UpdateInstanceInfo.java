@@ -1,18 +1,19 @@
-package com.netflix.eureka.protocol.registration;
+package com.netflix.eureka.protocol.discovery;
 
 /**
  * @author Tomasz Bak
  */
-public class Update {
+public class UpdateInstanceInfo {
+
     private final String key;
     private final String value;
 
     // For serialization framework
-    protected Update() {
+    protected UpdateInstanceInfo() {
         key = value = null;
     }
 
-    public Update(String key, String value) {
+    public UpdateInstanceInfo(String key, String value) {
         this.key = key;
         this.value = value;
     }
@@ -34,12 +35,12 @@ public class Update {
             return false;
         }
 
-        Update update = (Update) o;
+        UpdateInstanceInfo that = (UpdateInstanceInfo) o;
 
-        if (key != null ? !key.equals(update.key) : update.key != null) {
+        if (key != null ? !key.equals(that.key) : that.key != null) {
             return false;
         }
-        if (value != null ? !value.equals(update.value) : update.value != null) {
+        if (value != null ? !value.equals(that.value) : that.value != null) {
             return false;
         }
 
@@ -51,5 +52,10 @@ public class Update {
         int result = key != null ? key.hashCode() : 0;
         result = 31 * result + (value != null ? value.hashCode() : 0);
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return "UpdateInstanceInfo{key='" + key + '\'' + ", value='" + value + '\'' + '}';
     }
 }

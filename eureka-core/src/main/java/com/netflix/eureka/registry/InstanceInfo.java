@@ -199,8 +199,99 @@ public class InstanceInfo implements Item, Serializable {
     // ------------------------------------------
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        InstanceInfo that = (InstanceInfo) o;
+
+        if (app != null ? !app.equals(that.app) : that.app != null) {
+            return false;
+        }
+        if (appGroup != null ? !appGroup.equals(that.appGroup) : that.appGroup != null) {
+            return false;
+        }
+        if (asg != null ? !asg.equals(that.asg) : that.asg != null) {
+            return false;
+        }
+        if (healthCheckUrls != null ? !healthCheckUrls.equals(that.healthCheckUrls) : that.healthCheckUrls != null) {
+            return false;
+        }
+        if (homePageUrl != null ? !homePageUrl.equals(that.homePageUrl) : that.homePageUrl != null) {
+            return false;
+        }
+        if (hostname != null ? !hostname.equals(that.hostname) : that.hostname != null) {
+            return false;
+        }
+        if (id != null ? !id.equals(that.id) : that.id != null) {
+            return false;
+        }
+        if (ip != null ? !ip.equals(that.ip) : that.ip != null) {
+            return false;
+        }
+        if (ports != null ? !ports.equals(that.ports) : that.ports != null) {
+            return false;
+        }
+        if (securePorts != null ? !securePorts.equals(that.securePorts) : that.securePorts != null) {
+            return false;
+        }
+        if (secureVipAddress != null ? !secureVipAddress.equals(that.secureVipAddress) : that.secureVipAddress != null) {
+            return false;
+        }
+        if (status != that.status) {
+            return false;
+        }
+        if (statusPageUrl != null ? !statusPageUrl.equals(that.statusPageUrl) : that.statusPageUrl != null) {
+            return false;
+        }
+        if (vipAddress != null ? !vipAddress.equals(that.vipAddress) : that.vipAddress != null) {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = id != null ? id.hashCode() : 0;
+        result = 31 * result + (appGroup != null ? appGroup.hashCode() : 0);
+        result = 31 * result + (app != null ? app.hashCode() : 0);
+        result = 31 * result + (asg != null ? asg.hashCode() : 0);
+        result = 31 * result + (vipAddress != null ? vipAddress.hashCode() : 0);
+        result = 31 * result + (secureVipAddress != null ? secureVipAddress.hashCode() : 0);
+        result = 31 * result + (hostname != null ? hostname.hashCode() : 0);
+        result = 31 * result + (ip != null ? ip.hashCode() : 0);
+        result = 31 * result + (ports != null ? ports.hashCode() : 0);
+        result = 31 * result + (securePorts != null ? securePorts.hashCode() : 0);
+        result = 31 * result + (status != null ? status.hashCode() : 0);
+        result = 31 * result + (homePageUrl != null ? homePageUrl.hashCode() : 0);
+        result = 31 * result + (statusPageUrl != null ? statusPageUrl.hashCode() : 0);
+        result = 31 * result + (healthCheckUrls != null ? healthCheckUrls.hashCode() : 0);
+        return result;
+    }
+
+    @Override
     public String toString() {
-        return id;
+        return "InstanceInfo{" +
+                "id='" + id + '\'' +
+                ", appGroup='" + appGroup + '\'' +
+                ", app='" + app + '\'' +
+                ", asg='" + asg + '\'' +
+                ", vipAddress='" + vipAddress + '\'' +
+                ", secureVipAddress='" + secureVipAddress + '\'' +
+                ", hostname='" + hostname + '\'' +
+                ", ip='" + ip + '\'' +
+                ", ports=" + ports +
+                ", securePorts=" + securePorts +
+                ", status=" + status +
+                ", homePageUrl='" + homePageUrl + '\'' +
+                ", statusPageUrl='" + statusPageUrl + '\'' +
+                ", healthCheckUrls=" + healthCheckUrls +
+                '}';
     }
 
     public <T> boolean match(Index index, T value) {

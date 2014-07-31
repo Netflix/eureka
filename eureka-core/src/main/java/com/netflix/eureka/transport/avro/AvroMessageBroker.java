@@ -95,7 +95,7 @@ public class AvroMessageBroker implements MessageBroker {
             expiryQueue.put(new AckExpiry(correlationId, timeout));
         }
 
-        submit(new UserContentWithAck(message.getBody(), correlationId, timeout));
+        submit(new UserContentWithAck(message.getContent(), correlationId, timeout));
 
         return ackObservable;
     }
