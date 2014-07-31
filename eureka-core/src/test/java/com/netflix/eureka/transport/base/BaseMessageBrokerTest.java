@@ -23,7 +23,7 @@ import static org.junit.Assert.*;
 /**
  * @author Tomasz Bak
  */
-public class AvroMessageBrokerTest {
+public class BaseMessageBrokerTest {
 
     private static final UserContent CONTENT = new UserContent(new SampleUserObject("stringValue", 123));
 

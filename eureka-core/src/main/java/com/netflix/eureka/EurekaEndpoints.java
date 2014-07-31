@@ -11,10 +11,13 @@ import com.netflix.eureka.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka.protocol.registration.Register;
 import com.netflix.eureka.protocol.registration.Unregister;
 import com.netflix.eureka.protocol.registration.Update;
+import com.netflix.eureka.transport.Message;
 import com.netflix.eureka.transport.MessageBroker;
 import com.netflix.eureka.transport.MessageBrokerServer;
 import com.netflix.eureka.transport.base.TcpMessageBrokerBuilder;
 import com.netflix.eureka.transport.codec.avro.AvroPipelineConfigurator;
+import com.netflix.eureka.transport.codec.json.JsonPipelineConfigurator;
+import io.reactivex.netty.pipeline.PipelineConfigurator;
 import rx.Observable;
 
 /**
@@ -24,35 +27,66 @@ import rx.Observable;
  */
 public class EurekaEndpoints {
 
-    private static final Class<?>[] REGISTRATION_MODEL = {
+    public enum Codec {
+        Avro,
+        Json
+    }
+
+    static final Class<?>[] REGISTRATION_MODEL = {
             Register.class, Unregister.class, Heartbeat.class, Update.class
     };
-    private static final Class<?>[] DISCOVERY_MODEL = {
+    static final Class<?>[] DISCOVERY_MODEL = {
             RegisterInterestSet.class, UnregisterInterestSet.class, Heartbeat.class,
             AddInstance.class, DeleteInstance.class, UpdateInstanceInfo.class
     };
 
-    public static Observable<MessageBroker> tcpRegistrationClient(String host, int port) {
+    public static Observable<MessageBroker> tcpRegistrationClient(String host, int port, Codec codec) {
         return new TcpMessageBrokerBuilder(new InetSocketAddress(host, port))
-                .withCodecPipeline(new AvroPipelineConfigurator(REGISTRATION_MODEL))
+                .withCodecPipeline(piplineFor(codec, REGISTRATION_MODEL))
                 .buildClient();
+    }
+
+    public static MessageBrokerServer tcpRegistrationServer(int port, Codec codec) {
+        return new TcpMessageBrokerBuilder(new InetSocketAddress(port))
+                .withCodecPipeline(piplineFor(codec, REGISTRATION_MODEL))
+                .buildServer();
+    }
+
+    public static Observable<MessageBroker> tcpDiscoveryClient(String host, int port, Codec codec) {
+        return new TcpMessageBrokerBuilder(new InetSocketAddress(host, port))
+                .withCodecPipeline(piplineFor(codec, DISCOVERY_MODEL))
+                .buildClient();
+    }
+
+    public static MessageBrokerServer tcpDiscoveryServer(int port, Codec codec) {
+        return new TcpMessageBrokerBuilder(new InetSocketAddress(port))
+                .withCodecPipeline(piplineFor(codec, DISCOVERY_MODEL))
+                .buildServer();
+    }
+
+    public static Observable<MessageBroker> tcpRegistrationClient(String host, int port) {
+        return tcpRegistrationClient(host, port, Codec.Avro);
     }
 
     public static MessageBrokerServer tcpRegistrationServer(int port) {
-        return new TcpMessageBrokerBuilder(new InetSocketAddress(port))
-                .withCodecPipeline(new AvroPipelineConfigurator(REGISTRATION_MODEL))
-                .buildServer();
+        return tcpRegistrationServer(port, Codec.Avro);
     }
 
     public static Observable<MessageBroker> tcpDiscoveryClient(String host, int port) {
-        return new TcpMessageBrokerBuilder(new InetSocketAddress(host, port))
-                .withCodecPipeline(new AvroPipelineConfigurator(DISCOVERY_MODEL))
-                .buildClient();
+        return tcpDiscoveryClient(host, port, Codec.Avro);
     }
 
     public static MessageBrokerServer tcpDiscoveryServer(int port) {
-        return new TcpMessageBrokerBuilder(new InetSocketAddress(port))
-                .withCodecPipeline(new AvroPipelineConfigurator(DISCOVERY_MODEL))
-                .buildServer();
+        return tcpDiscoveryServer(port, Codec.Avro);
+    }
+
+    static PipelineConfigurator<Message, Message> piplineFor(Codec codec, Class<?>[] model) {
+        switch (codec) {
+            case Avro:
+                return new AvroPipelineConfigurator(model);
+            case Json:
+                return new JsonPipelineConfigurator();
+        }
+        throw new IllegalArgumentException("internal error - missing pipelinie implementation for codec " + codec);
     }
 }
