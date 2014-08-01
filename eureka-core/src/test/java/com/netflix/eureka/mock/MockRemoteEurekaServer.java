@@ -33,6 +33,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
     private final Server server;
     private boolean sentDelta;
     private int port;
+    private volatile boolean simulateNotReady;
 
     public MockRemoteEurekaServer(int port, Map<String, Application> applicationMap,
                                   Map<String, Application> applicationDeltaMap) {
@@ -78,6 +79,10 @@ public class MockRemoteEurekaServer extends ExternalResource {
         return port;
     }
 
+    public void simulateNotReady(boolean simulateNotReady) {
+        this.simulateNotReady = simulateNotReady;
+    }
+
     private static String stringifyAppMap(Map<String, Application> applicationMap) {
         StringBuilder builder = new StringBuilder();
         for (Map.Entry<String, Application> entry : applicationMap.entrySet()) {
@@ -94,6 +99,10 @@ public class MockRemoteEurekaServer extends ExternalResource {
         public void handle(String target, HttpServletRequest request, HttpServletResponse response, int dispatch)
                 throws IOException, ServletException {
 
+            if (simulateNotReady) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                return;
+            }
             String authName = request.getHeader(AbstractEurekaIdentity.AUTH_NAME_HEADER_KEY);
             String authVersion = request.getHeader(AbstractEurekaIdentity.AUTH_VERSION_HEADER_KEY);
             String authId = request.getHeader(AbstractEurekaIdentity.AUTH_ID_HEADER_KEY);
@@ -102,14 +111,15 @@ public class MockRemoteEurekaServer extends ExternalResource {
             Assert.assertNotNull(authVersion);
             Assert.assertNotNull(authId);
 
-            Assert.assertTrue( !authName.equals(ServerRequestAuthFilter.UNKNOWN) );
-            Assert.assertTrue( !authVersion.equals(ServerRequestAuthFilter.UNKNOWN) );
-            Assert.assertTrue( !authId.equals(ServerRequestAuthFilter.UNKNOWN) );
+            Assert.assertTrue(!authName.equals(ServerRequestAuthFilter.UNKNOWN));
+            Assert.assertTrue(!authVersion.equals(ServerRequestAuthFilter.UNKNOWN));
+            Assert.assertTrue(!authId.equals(ServerRequestAuthFilter.UNKNOWN));
 
             for (FilterHolder filterHolder : this.getFilters()) {
                 filterHolder.getFilter().doFilter(request, response, new FilterChain() {
                     @Override
-                    public void doFilter(ServletRequest request, ServletResponse response) throws IOException, ServletException {
+                    public void doFilter(ServletRequest request, ServletResponse response)
+                            throws IOException, ServletException {
                         // do nothing;
                     }
                 });
@@ -131,7 +141,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
                     sendOkResponseWithContent((Request) request, response, XmlXStream.getInstance().toXML(apps));
                     handled = true;
                     sentDelta = true;
-                } else if(pathInfo.startsWith("apps")) {
+                } else if (pathInfo.startsWith("apps")) {
                     Applications apps = new Applications();
                     for (Application application : applicationMap.values()) {
                         apps.addApplication(application);
@@ -142,7 +152,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
                 }
             }
 
-            if(!handled) {
+            if (!handled) {
                 response.sendError(HttpServletResponse.SC_NOT_FOUND,
                                    "Request path: " + pathInfo + " not supported by eureka resource mock.");
             }

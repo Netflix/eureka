@@ -35,4 +35,9 @@
     <h4 id="uptime"><font size="+1" color="red"><b>THE SELF PRESERVATION MODE IS TURNED OFF.THIS MAY NOT PROTECT INSTANCE EXPIRY IN CASE OF NETWORK/OTHER PROBLEMS.</b></font></h4>
     <%}%>
   </h4>
+  <% if (!registry.shouldAllowAccess(false)) { %>
+    <h4 id="uptime"><font size="+1" color="red"><b>This server is not allowing registry fetch for local registry.</b></font></h4>
+  <% } else if (!registry.shouldAllowAccess(true)) { %>
+    <h4 id="uptime"><font size="+1" color="red"><b>This server is not allowing registry fetch for local and remote registry.</b></font></h4>
+  <%}%>
 </div>

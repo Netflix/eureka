@@ -6,6 +6,7 @@ import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.LeaseInfo;
 import com.netflix.appinfo.MyDataCenterInstanceConfig;
+import com.netflix.blitz4j.LoggingConfiguration;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.DiscoveryClient;
@@ -27,6 +28,10 @@ import java.util.UUID;
  */
 public class AbstractTester {
 
+    static {
+        LoggingConfiguration.getInstance().configure();
+    }
+
     public static final int REMOTE_REGION_PORT = 7777;
     public static final String REMOTE_REGION_NAME = "us-east-1";
     public static final String REMOTE_REGION_APP_NAME = "MYAPP";
@@ -38,7 +43,7 @@ public class AbstractTester {
     private final Map<String, Application> remoteRegionApps = new HashMap<String, Application>();
     private final Map<String, Application> remoteRegionAppsDelta = new HashMap<String, Application>();
     protected MockRemoteEurekaServer mockRemoteEurekaServer;
-    protected InstanceRegistry registry;
+    protected PeerAwareInstanceRegistry registry;
     protected DiscoveryClient client;
     public static final String REMOTE_ZONE = "us-east-1c";
 
@@ -55,8 +60,7 @@ public class AbstractTester {
                                                              + REMOTE_REGION_PORT + '/' +
                                                              MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
         populateRemoteRegistryAtStartup();
-        mockRemoteEurekaServer = new MockRemoteEurekaServer(REMOTE_REGION_PORT, remoteRegionApps,
-                                                            remoteRegionAppsDelta);
+        mockRemoteEurekaServer = newMockRemoteServer();
         mockRemoteEurekaServer.start();
 
         EurekaServerConfig serverConfig = new DefaultEurekaServerConfig();
@@ -79,7 +83,7 @@ public class AbstractTester {
 
         client = new DiscoveryClient(builder.build(), new DefaultEurekaClientConfig());
         ApplicationInfoManager.getInstance().initComponent(new MyDataCenterInstanceConfig());
-        registry = new InstanceRegistry() {
+        registry = new PeerAwareInstanceRegistry() {
 
             @Override
             public boolean isLeaseExpirationEnabled() {
@@ -92,6 +96,10 @@ public class AbstractTester {
             }
         };
         registry.initRemoteRegionRegistry();
+    }
+
+    protected MockRemoteEurekaServer newMockRemoteServer() {
+        return new MockRemoteEurekaServer(REMOTE_REGION_PORT, remoteRegionApps, remoteRegionAppsDelta);
     }
 
     @After
