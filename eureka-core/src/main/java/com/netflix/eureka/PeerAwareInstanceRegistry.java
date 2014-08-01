@@ -388,19 +388,25 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
      *         zero and if the wait time has not elapsed, o otherwise returns
      *         true
      */
-    public boolean shouldAllowAccess() {
+    public boolean shouldAllowAccess(boolean remoteRegionRequired) {
         if (this.peerInstancesTransferEmptyOnStartup) {
             if (!(System.currentTimeMillis() > this.startupTime
-                    + EUREKA_SERVER_CONFIG.getWaitTimeInMsWhenSyncEmpty())) {
+                                               + EUREKA_SERVER_CONFIG.getWaitTimeInMsWhenSyncEmpty())) {
                 return false;
             }
         }
-        for (RemoteRegionRegistry remoteRegionRegistry : this.regionNameVSRemoteRegistry.values()) {
-            if (!remoteRegionRegistry.isReadyForServingData()) {
-                return false;
+        if (remoteRegionRequired) {
+            for (RemoteRegionRegistry remoteRegionRegistry : this.regionNameVSRemoteRegistry.values()) {
+                if (!remoteRegionRegistry.isReadyForServingData()) {
+                    return false;
+                }
             }
         }
         return true;
+    }
+
+    public boolean shouldAllowAccess() {
+        return shouldAllowAccess(true);
     }
 
     /**

@@ -15,6 +15,12 @@ import java.util.List;
 public class InstanceRegistryTest extends AbstractTester {
 
     @Test
+    public void testSoftDepRemoteUp() throws Exception {
+        Assert.assertTrue("Registry access disallowed when remote region is UP.", registry.shouldAllowAccess(false));
+        Assert.assertTrue("Registry access disallowed when remote region is UP.", registry.shouldAllowAccess(true));
+    }
+
+    @Test
     public void testGetAppsFromAllRemoteRegions() throws Exception {
         Applications apps = registry.getApplicationsFromAllRemoteRegions();
         List<Application> registeredApplications = apps.getRegisteredApplications();

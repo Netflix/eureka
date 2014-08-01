@@ -35,7 +35,7 @@ abstract class AbstractVIPResource {
 
     protected Response getVipResponse(String version, String entityName, String acceptHeader,
                                       ResponseCache.Key.EntityType entityType) {
-        if (!PeerAwareInstanceRegistry.getInstance().shouldAllowAccess()) {
+        if (!PeerAwareInstanceRegistry.getInstance().shouldAllowAccess(false)) {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
         CurrentRequestVersion.set(Version.toEnum(version));

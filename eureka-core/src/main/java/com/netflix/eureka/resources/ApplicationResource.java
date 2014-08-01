@@ -72,7 +72,7 @@ public class ApplicationResource {
     @GET
     public Response getApplication(@PathParam("version") String version,
             @HeaderParam("Accept") final String acceptHeader) {
-        if (!PeerAwareInstanceRegistry.getInstance().shouldAllowAccess()) {
+        if (!PeerAwareInstanceRegistry.getInstance().shouldAllowAccess(false)) {
             return Response.status(Status.FORBIDDEN).build();
         }
         CurrentRequestVersion.set(Version.toEnum(version));
