@@ -1,3 +1,19 @@
+/*
+ * Copyright 2014 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.netflix.eureka.transport;
 
 /**
@@ -6,18 +22,18 @@ package com.netflix.eureka.transport;
 public class UserContent extends Message {
 
     // We do not use type parameter here, as we cannot handle generics on the wire
-    private final Object body;
+    private final Object content;
 
     // For dynamic object creation
     protected UserContent() {
-        body = null;
+        content = null;
     }
 
-    public UserContent(Object body) {
-        this.body = body;
+    public UserContent(Object content) {
+        this.content = content;
     }
 
-    public Object getBody() {
-        return body;
+    public Object getContent() {
+        return content;
     }
 }
