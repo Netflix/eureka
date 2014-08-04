@@ -1,6 +1,7 @@
 package com.netflix.eureka.registry;
 
 import com.netflix.eureka.datastore.Store;
+import com.netflix.eureka.interests.Interest;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Func1;
