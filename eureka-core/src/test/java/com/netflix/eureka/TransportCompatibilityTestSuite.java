@@ -1,5 +1,6 @@
 package com.netflix.eureka;
 
+import java.util.Arrays;
 import java.util.Iterator;
 
 import com.netflix.eureka.protocol.Heartbeat;
@@ -12,8 +13,8 @@ import com.netflix.eureka.protocol.registration.Register;
 import com.netflix.eureka.protocol.registration.Unregister;
 import com.netflix.eureka.protocol.registration.Update;
 import com.netflix.eureka.registry.Index;
-import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.registry.Interest;
+import com.netflix.eureka.registry.SampleInstanceInfo;
 import com.netflix.eureka.transport.Acknowledgement;
 import com.netflix.eureka.transport.Message;
 import com.netflix.eureka.transport.MessageBroker;
@@ -42,7 +43,7 @@ public abstract class TransportCompatibilityTestSuite {
 
     public <T> void runClientToServer(T content) {
         clientBroker.submit(new UserContent(content));
-        UserContent receivedMsg = (UserContent)serverIterator.next();
+        UserContent receivedMsg = (UserContent) serverIterator.next();
         assertEquals(content, receivedMsg.getContent());
     }
 
@@ -80,9 +81,7 @@ public abstract class TransportCompatibilityTestSuite {
         }
 
         private void registrationTest() {
-            InstanceInfo instanceInfo = new InstanceInfo();
-            instanceInfo.setId("id1");
-            runClientToServerWithAck(new Register(instanceInfo));
+            runClientToServerWithAck(new Register(SampleInstanceInfo.DiscoveryServer.build()));
         }
 
         private void unregisterTest() {
@@ -117,7 +116,7 @@ public abstract class TransportCompatibilityTestSuite {
 
         private void registerInterestSetTest() {
             Interest[] interests = {new Interest(Index.App, "app1"), new Interest(Index.VipAddress, "vip1")};
-            runClientToServerWithAck(new RegisterInterestSet(interests));
+            runClientToServerWithAck(new RegisterInterestSet(Arrays.asList(interests)));
         }
 
         private void unregisterInterestSetTest() {
@@ -129,9 +128,7 @@ public abstract class TransportCompatibilityTestSuite {
         }
 
         private void addInstanceTest() {
-            InstanceInfo instanceInfo = new InstanceInfo();
-            instanceInfo.setId("id1");
-            runServerToClientWithAck(new AddInstance(instanceInfo));
+            runServerToClientWithAck(new AddInstance(SampleInstanceInfo.DiscoveryServer.build()));
         }
 
         private void deleteInstanceTest() {

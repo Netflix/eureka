@@ -1,12 +1,28 @@
-package com.netflix.eureka.client.registration.transport;
+/*
+ * Copyright 2014 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.netflix.eureka.client.transport.registration.protocol.asynchronous;
 
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka.client.registration.RegistrationClient;
+import com.netflix.eureka.client.transport.registration.RegistrationClient;
 import com.netflix.eureka.protocol.Heartbeat;
-import com.netflix.eureka.protocol.registration.Register;
 import com.netflix.eureka.protocol.registration.Unregister;
 import com.netflix.eureka.protocol.registration.Update;
+import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.transport.Acknowledgement;
 import com.netflix.eureka.transport.MessageBroker;
 import com.netflix.eureka.transport.UserContent;
@@ -33,17 +49,17 @@ public class AsyncRegistrationClient implements RegistrationClient {
     }
 
     @Override
-    public Observable<Void> register(Register registryInfo) {
-        return executeCommand(new UserContent(registryInfo));
+    public Observable<Void> register(InstanceInfo instanceInfo) {
+        return executeCommand(new UserContent(instanceInfo));
     }
 
     @Override
-    public Observable<Void> update(Update update) {
+    public Observable<Void> update(InstanceInfo instanceInfo, Update update) {
         return executeCommand(new UserContent(update));
     }
 
     @Override
-    public Observable<Void> unregister() {
+    public Observable<Void> unregister(InstanceInfo instanceInfo) {
         return executeCommand(new UserContent(new Unregister()));
     }
 
