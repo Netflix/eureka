@@ -16,15 +16,12 @@
 
 package com.netflix.eureka.client.transport.discovery.protocol.asynchronous;
 
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import com.netflix.eureka.client.transport.discovery.DiscoveryClient;
+import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.protocol.Heartbeat;
 import com.netflix.eureka.protocol.discovery.InterestSetNotification;
 import com.netflix.eureka.protocol.discovery.RegisterInterestSet;
 import com.netflix.eureka.protocol.discovery.UnregisterInterestSet;
-import com.netflix.eureka.registry.Interest;
 import com.netflix.eureka.transport.Acknowledgement;
 import com.netflix.eureka.transport.Message;
 import com.netflix.eureka.transport.MessageBroker;
@@ -33,6 +30,9 @@ import com.netflix.eureka.transport.utils.HeartBeatHandler;
 import com.netflix.eureka.transport.utils.HeartBeatHandler.HeartbeatClient;
 import rx.Observable;
 import rx.functions.Func1;
+
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Tomasz Bak

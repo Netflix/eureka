@@ -20,6 +20,10 @@ public final class Interests {
         return new VipsInterest(vip);
     }
 
+    public static Interest<InstanceInfo> forApplication(String applicationName) {
+        return new ApplicationInterest(applicationName);
+    }
+
     public static Interest<InstanceInfo> forInstance(String instanceId) {
         return new InstanceInterest(instanceId);
     }

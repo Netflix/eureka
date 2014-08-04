@@ -16,11 +16,11 @@
 
 package com.netflix.eureka.client.transport.discovery;
 
-import java.util.List;
-
+import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.protocol.discovery.InterestSetNotification;
-import com.netflix.eureka.registry.Interest;
 import rx.Observable;
+
+import java.util.List;
 
 /**
  * @author Tomasz Bak
