@@ -1,12 +1,12 @@
 package com.netflix.eureka.registry;
 
+import com.netflix.eureka.datastore.NotificationsSubject;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.IndexRegistry;
 import com.netflix.eureka.interests.InstanceInfoInitStateHolder;
 import com.netflix.eureka.interests.Interest;
 import rx.Observable;
 import rx.Subscriber;
-import rx.subjects.PublishSubject;
 
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -15,15 +15,15 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class EurekaRegistryImpl implements EurekaRegistry {
 
-    // TODO: Event notifications and registry.iterator() should be consistent.
     private final ConcurrentHashMap<String, ChangeNotification<InstanceInfo>> registry;
+    private final NotificationsSubject<InstanceInfo> notificationSubject;
+
     private final IndexRegistry<InstanceInfo> indexRegistry;
-    private final PublishSubject<ChangeNotification<InstanceInfo>> notificationSubject;
 
     public EurekaRegistryImpl() {
         registry = new ConcurrentHashMap<String, ChangeNotification<InstanceInfo>>();
         indexRegistry = new IndexRegistry<InstanceInfo>();
-        notificationSubject = PublishSubject.create();
+        notificationSubject = NotificationsSubject.create();
     }
 
     @Override
@@ -88,7 +88,12 @@ public class EurekaRegistryImpl implements EurekaRegistry {
 
     @Override
     public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest) {
-        return indexRegistry.forInterest(interest, notificationSubject,
-                                         new InstanceInfoInitStateHolder(registry.values()));
+        try {
+            notificationSubject.pause(); // Pause notifications till we get a snapshot of current registry (registry.values())
+            return indexRegistry.forInterest(interest, notificationSubject,
+                                             new InstanceInfoInitStateHolder(registry.values()));
+        } finally {
+            notificationSubject.resume();
+        }
     }
 }
