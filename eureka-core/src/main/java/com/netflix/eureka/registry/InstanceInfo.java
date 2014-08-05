@@ -25,6 +25,8 @@ import java.util.Set;
 
 /**
  * TODO: remove avro specific Nullable
+ * TODO: add data versioning
+ * TODO: add ability to diff InstanceInfos
  * JavaBean for InstanceInfo.
  * @author David Liu
  */

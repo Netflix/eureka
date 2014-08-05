@@ -16,8 +16,4 @@ public class EurekaRegistryException extends Exception {
     public EurekaRegistryException(String msg, Throwable th) {
         super(msg, th);
     }
-
-    public static EurekaRegistryException instanceNotFound(String instanceId) {
-        return new EurekaRegistryException("Instance " + instanceId + "cannot be found");
-    }
 }

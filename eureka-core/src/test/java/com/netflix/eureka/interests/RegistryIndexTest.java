@@ -3,8 +3,8 @@ package com.netflix.eureka.interests;
 import com.netflix.eureka.SampleChangeNotification;
 import com.netflix.eureka.SampleInstanceInfo;
 import com.netflix.eureka.registry.EurekaRegistry;
-import com.netflix.eureka.registry.EurekaRegistryImpl;
 import com.netflix.eureka.registry.InstanceInfo;
+import com.netflix.eureka.registry.LeasedInstanceRegistry;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
@@ -29,7 +29,7 @@ public class RegistryIndexTest {
 
         @Override
         protected void before() throws Throwable {
-            registry = new EurekaRegistryImpl();
+            registry = new LeasedInstanceRegistry();
         }
 
         @Override

@@ -16,8 +16,9 @@
 
 package com.netflix.eureka.registry;
 
+import com.netflix.eureka.interests.ChangeNotification;
+
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Represent a lease over an element E
@@ -29,7 +30,8 @@ public class Lease<E> {
 
     public static final int DEFAULT_LEASE_DURATION_MILLIS = 90 * 1000;  // TODO: get default via config
 
-    private final AtomicReference<E> holderRef;
+    private E holder;
+    private ChangeNotification<E> snapshot;
 
     private final AtomicLong lastRenewalTimestamp;  // timestamp of last renewal
     private final AtomicLong leaseDurationMillis;  // duration of this lease in millis
@@ -39,19 +41,23 @@ public class Lease<E> {
     }
 
     public Lease(E holder, long durationMillis) {
-        holderRef = new AtomicReference<E>(holder);
+        set(holder);
 
         lastRenewalTimestamp = new AtomicLong(System.currentTimeMillis());
         leaseDurationMillis = new AtomicLong(durationMillis);
     }
 
-    // TODO make this less expensive than a full compare on InstanceInfo
-    public boolean compareAndSet(E expected, E update) {
-        return holderRef.compareAndSet(expected, update);
+    public synchronized void set(E holder) {
+        this.holder = holder;
+        snapshot = new ChangeNotification<E>(ChangeNotification.Kind.Add, holder);
     }
 
     public E getHolder() {
-        return holderRef.get();
+        return holder;
+    }
+
+    public ChangeNotification<E> getHolderSnapshot() {
+        return snapshot;
     }
 
     public long getLastRenewalTimestamp() {
