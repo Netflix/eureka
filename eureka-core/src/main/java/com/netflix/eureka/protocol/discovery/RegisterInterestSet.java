@@ -16,10 +16,10 @@
 
 package com.netflix.eureka.protocol.discovery;
 
+import com.netflix.eureka.interests.Interest;
+
 import java.util.Arrays;
 import java.util.List;
-
-import com.netflix.eureka.registry.Interest;
 
 /**
  * @author Tomasz Bak

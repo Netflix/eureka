@@ -16,12 +16,12 @@
 
 package com.netflix.eureka.server.transport.discovery;
 
-import java.util.List;
-
+import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.protocol.discovery.InterestSetNotification;
-import com.netflix.eureka.registry.Interest;
 import com.netflix.eureka.server.transport.Context;
 import rx.Observable;
+
+import java.util.List;
 
 /**
  * A server side mirror interface of {@code DiscoveryClient} interface from eureka-client module.
