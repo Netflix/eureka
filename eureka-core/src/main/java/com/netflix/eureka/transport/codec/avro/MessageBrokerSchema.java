@@ -23,10 +23,10 @@ import java.util.List;
 import com.netflix.eureka.transport.Acknowledgement;
 import com.netflix.eureka.transport.UserContent;
 import com.netflix.eureka.transport.UserContentWithAck;
+import com.netflix.eureka.transport.utils.TransportModel;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Field;
 import org.apache.avro.Schema.Type;
-import org.apache.avro.reflect.ReflectData;
 
 /**
  * Avro schema is generated from Java class. Since {@link UserContent} and {@link UserContentWithAck}
@@ -41,10 +41,12 @@ import org.apache.avro.reflect.ReflectData;
  */
 class MessageBrokerSchema {
 
-    private static final Schema ACKNOWLEDGEMENT_SCHEMA = ReflectData.get().getSchema(Acknowledgement.class);
+    private static final Schema ACKNOWLEDGEMENT_SCHEMA = ConfigurableReflectData.get().getSchema(Acknowledgement.class);
 
-    static Schema brokerSchemaFrom(List<Class<?>> userTypes) {
-        Schema userSchemas = unionOf(userTypes);
+    static Schema brokerSchemaFrom(TransportModel model) {
+        ConfigurableReflectData reflectData = new ConfigurableReflectData(model);
+
+        Schema userSchemas = unionOf(reflectData, model.getMessageTypes());
         return Schema.createUnion(Arrays.asList(
                 ACKNOWLEDGEMENT_SCHEMA, userContentSchema(userSchemas), userContentWithAckSchema(userSchemas)
         ));
@@ -72,10 +74,10 @@ class MessageBrokerSchema {
         return schema;
     }
 
-    private static Schema unionOf(List<Class<?>> types) {
+    private static Schema unionOf(ConfigurableReflectData reflectData, List<Class<?>> types) {
         List<Schema> schemas = new ArrayList<Schema>();
         for (Class<?> c : types) {
-            schemas.add(ReflectData.get().getSchema(c));
+            schemas.add(reflectData.getSchema(c));
         }
         return Schema.createUnion(schemas);
     }

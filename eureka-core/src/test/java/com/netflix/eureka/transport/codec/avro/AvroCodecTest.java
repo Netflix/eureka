@@ -25,7 +25,7 @@ public class AvroCodecTest {
     public static void setUpClasss() throws Exception {
         List<Class<?>> types = new ArrayList<Class<?>>();
         types.add(SampleUserObject.class);
-        schema = MessageBrokerSchema.brokerSchemaFrom(Arrays.<Class<?>>asList(SampleUserObject.class));
+        schema = MessageBrokerSchema.brokerSchemaFrom(SampleUserObject.TRANSPORT_MODEL);
     }
 
     @Test

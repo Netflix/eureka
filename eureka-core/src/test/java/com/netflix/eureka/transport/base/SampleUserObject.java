@@ -1,9 +1,15 @@
 package com.netflix.eureka.transport.base;
 
+import com.netflix.eureka.transport.utils.TransportModel;
+import com.netflix.eureka.transport.utils.TransportModel.TransportModelBuilder;
+
 /**
 * @author Tomasz Bak
 */
 public class SampleUserObject {
+
+    public static TransportModel TRANSPORT_MODEL = new TransportModelBuilder(SampleUserObject.class).build();
+
     private String value1;
     private int value2;
 

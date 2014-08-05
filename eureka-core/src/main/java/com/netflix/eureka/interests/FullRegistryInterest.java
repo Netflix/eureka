@@ -9,11 +9,21 @@ public class FullRegistryInterest extends Interest<InstanceInfo> {
 
     public static final FullRegistryInterest DEFAULT_INSTANCE = new FullRegistryInterest();
 
-    public FullRegistryInterest() {
-    }
+    private static final int HASH = 234234128;
 
     @Override
     public boolean matches(InstanceInfo data) {
         return true;
     }
+
+    @Override
+    public int hashCode() {
+        return HASH;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof FullRegistryInterest;
+    }
+
 }

@@ -18,10 +18,10 @@ package com.netflix.eureka.server.transport.discovery.protocol.asynchronous;
 
 import java.util.Arrays;
 
+import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.protocol.discovery.InterestSetNotification;
 import com.netflix.eureka.protocol.discovery.RegisterInterestSet;
 import com.netflix.eureka.protocol.discovery.UnregisterInterestSet;
-import com.netflix.eureka.registry.Interest;
 import com.netflix.eureka.server.transport.Context;
 import com.netflix.eureka.server.transport.TransportServer;
 import com.netflix.eureka.server.transport.discovery.DiscoveryHandler;

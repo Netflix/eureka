@@ -22,12 +22,12 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.netflix.eureka.SampleInstanceInfo;
+import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.protocol.discovery.AddInstance;
 import com.netflix.eureka.protocol.discovery.InterestSetNotification;
 import com.netflix.eureka.protocol.discovery.RegisterInterestSet;
 import com.netflix.eureka.protocol.discovery.UnregisterInterestSet;
-import com.netflix.eureka.registry.Interest;
-import com.netflix.eureka.registry.SampleInstanceInfo;
 import com.netflix.eureka.server.transport.Context;
 import com.netflix.eureka.server.transport.discovery.DiscoveryHandler;
 import com.netflix.eureka.transport.Acknowledgement;
@@ -58,9 +58,9 @@ public class AsyncDiscoveryServerTest {
 
     @Before
     public void setUp() throws Exception {
-        brokerServer = EurekaTransports.tcpDiscoveryServer(0, Codec.Json).start();
+        brokerServer = EurekaTransports.tcpDiscoveryServer(0, Codec.Avro).start();
         discoveryServer = new AsyncDiscoveryServer(brokerServer, handler);
-        brokerClient = EurekaTransports.tcpDiscoveryClient("localhost", brokerServer.getServerPort(), Codec.Json).toBlocking().first();
+        brokerClient = EurekaTransports.tcpDiscoveryClient("localhost", brokerServer.getServerPort(), Codec.Avro).toBlocking().first();
     }
 
     @After

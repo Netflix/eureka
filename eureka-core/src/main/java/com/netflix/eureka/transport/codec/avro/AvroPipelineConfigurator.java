@@ -16,9 +16,8 @@
 
 package com.netflix.eureka.transport.codec.avro;
 
-import java.util.Arrays;
-
 import com.netflix.eureka.transport.Message;
+import com.netflix.eureka.transport.utils.TransportModel;
 import io.netty.channel.ChannelPipeline;
 import io.reactivex.netty.pipeline.PipelineConfigurator;
 import org.apache.avro.Schema;
@@ -30,8 +29,8 @@ public class AvroPipelineConfigurator implements PipelineConfigurator<Message, M
 
     private final Schema schema;
 
-    public AvroPipelineConfigurator(Class<?>... types) {
-        schema = MessageBrokerSchema.brokerSchemaFrom(Arrays.asList(types));
+    public AvroPipelineConfigurator(TransportModel model) {
+        schema = MessageBrokerSchema.brokerSchemaFrom(model);
     }
 
     @Override

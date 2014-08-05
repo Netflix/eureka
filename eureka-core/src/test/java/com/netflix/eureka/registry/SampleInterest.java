@@ -19,6 +19,10 @@ package com.netflix.eureka.registry;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.netflix.eureka.interests.ApplicationInterest;
+import com.netflix.eureka.interests.Interest;
+import com.netflix.eureka.interests.VipsInterest;
+
 /**
  * @author Tomasz Bak
  */
@@ -27,13 +31,13 @@ public enum SampleInterest {
     ZuulVip() {
         @Override
         public Interest build() {
-            return new Interest(Index.VipAddress, "zuul.addr:7001");
+            return new VipsInterest("zuul.addr:7001");
         }
     },
     DiscoveryApp() {
         @Override
         public Interest build() {
-            return new Interest(Index.App.App, "discovery001");
+            return new ApplicationInterest("discovery001");
         }
     };
 

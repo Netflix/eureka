@@ -34,13 +34,13 @@ public class BaseMessageBrokerTest {
     @Before
     public void setUp() throws Exception {
         server = new TcpMessageBrokerBuilder(new InetSocketAddress(0))
-                .withCodecPipeline(new AvroPipelineConfigurator(SampleUserObject.class))
+                .withCodecPipeline(new AvroPipelineConfigurator(SampleUserObject.TRANSPORT_MODEL))
                 .buildServer().start();
         Observable<MessageBroker> serverObservable = server.clientConnections();
         int port = server.getServerPort();
 
         Observable<MessageBroker> clientObservable = new TcpMessageBrokerBuilder(new InetSocketAddress("localhost", port))
-                .withCodecPipeline(new AvroPipelineConfigurator(SampleUserObject.class))
+                .withCodecPipeline(new AvroPipelineConfigurator(SampleUserObject.TRANSPORT_MODEL))
                 .buildClient();
 
         BrokerPair brokerPair = new BrokerPair(serverObservable, clientObservable);
