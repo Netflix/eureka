@@ -1,6 +1,5 @@
 package com.netflix.eureka.interests;
 
-import com.netflix.eureka.ChangeNotifications;
 import com.netflix.eureka.SampleChangeNotification;
 import com.netflix.eureka.SampleInstanceInfo;
 import com.netflix.eureka.registry.EurekaRegistry;
@@ -59,7 +58,7 @@ public class RegistryIndexTest {
 
         assertThat(notifications, hasSize(2));
         assertThat(notifications,
-                contains(SampleChangeNotification.DiscoveryAddNotification.newNotification(discoveryServer),
-                         SampleChangeNotification.ZuulAddNotification.newNotification(zuulServer))); // Checks the order of notifications.
+                contains(SampleChangeNotification.DiscoveryAdd.newNotification(discoveryServer),
+                         SampleChangeNotification.ZuulAdd.newNotification(zuulServer))); // Checks the order of notifications.
     }
 }
