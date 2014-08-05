@@ -2,6 +2,7 @@ package com.netflix.eureka.registry;
 
 import static org.junit.Assert.*;
 
+import com.netflix.eureka.SampleInstanceInfo;
 import org.junit.Test;
 import rx.functions.Action1;
 
@@ -15,31 +16,98 @@ public class InstanceRegistryTest {
 
     @Test
     public void shouldReturnMatchingInstanceInfos() {
-        InstanceInfo info1 = new InstanceInfo.Builder()
-                .withId("1").withApp("APP-1")
-                .build();
-        InstanceInfo info2 = new InstanceInfo.Builder()
-                .withId("2").withApp("APP-1")
-                .build();
-        InstanceInfo info3 = new InstanceInfo.Builder()
-                .withId("3").withApp("APP-1")
-                .build();
-        InstanceInfo info4 = new InstanceInfo.Builder()
-                .withId("4").withApp("APP-2")
-                .build();
+        InstanceInfo discovery1 = SampleInstanceInfo.DiscoveryServer.build();
+        InstanceInfo discovery2 = SampleInstanceInfo.DiscoveryServer.build();
+        InstanceInfo discovery3 = SampleInstanceInfo.DiscoveryServer.build();
+        InstanceInfo zuul1 = SampleInstanceInfo.ZuulServer.build();
 
         InstanceRegistry registry = new InstanceRegistry();
-        registry.add(info1).subscribe();
-        registry.add(info2).subscribe();
-        registry.add(info3).subscribe();
-        registry.add(info4).subscribe();
+        registry.register(discovery1);
+        registry.register(discovery2);
+        registry.register(discovery3);
+        registry.register(zuul1);
 
-        final List<String> matchingIds = Arrays.asList("1","2","3");
-        registry.allMatching(Index.App, "APP-1").subscribe(new Action1<InstanceInfo>() {
-            @Override
-            public void call(InstanceInfo instanceInfo) {
-                assertTrue(matchingIds.contains(instanceInfo.getId()));
-            }
-        });
+        final List<String> matchingIds = Arrays.asList(discovery1.getId(), discovery2.getId(), discovery3.getId());
+        registry.allMatching(Index.App, discovery1.valueForIndex(Index.App))
+                .toBlocking()
+                .forEach(new Action1<InstanceInfo>() {
+                    @Override
+                    public void call(InstanceInfo instanceInfo) {
+                        assertTrue(matchingIds.contains(instanceInfo.getId()));
+                    }
+                });
+    }
+
+    @Test
+    public void shouldRenewLeaseWithDuration() throws Exception {
+        InstanceRegistry registry = new InstanceRegistry();
+
+        InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
+                .withStatus(InstanceInfo.Status.UP)
+                .build();
+        registry.register(original, 1);
+        Thread.sleep(10);  // let time pass enough
+        assertTrue(registry.hasExpired(original.getId()).toBlocking().lastOrDefault(null));
+
+        registry.renewLease(original.getId(), 5000);
+        assertFalse(registry.hasExpired(original.getId()).toBlocking().lastOrDefault(null));
+    }
+
+    @Test
+    public void shouldCancelLease() {
+        InstanceRegistry registry = new InstanceRegistry();
+
+        InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
+                .withStatus(InstanceInfo.Status.UP)
+                .build();
+        registry.register(original, 90 * 1000).toBlocking().lastOrDefault(null);
+
+        registry.cancelLease(original.getId());
+        assertFalse(registry.contains(original.getId()).toBlocking().lastOrDefault(null));
+    }
+
+    @Test
+    public void shouldUpdateInstanceStatus() {
+        InstanceRegistry registry = new InstanceRegistry();
+
+        InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
+                .withStatus(InstanceInfo.Status.UP)
+                .build();
+        registry.register(original, 90 * 1000).toBlocking().lastOrDefault(null);
+
+        Lease<InstanceInfo> lease = registry.getLease(original.getId()).toBlocking().lastOrDefault(null);
+        assertTrue(lease != null);
+        assertEquals(InstanceInfo.Status.UP, lease.getHolder().getStatus());
+
+        registry.updateStatus(original.getId(), InstanceInfo.Status.OUT_OF_SERVICE);
+        lease = registry.getLease(original.getId()).toBlocking().lastOrDefault(null);
+        assertTrue(lease != null);
+        assertEquals(InstanceInfo.Status.OUT_OF_SERVICE, lease.getHolder().getStatus());
+    }
+
+    @Test
+    public void shouldRegisterExistingInstanceOverwritingExisting() throws Exception {
+        InstanceRegistry registry = new InstanceRegistry();
+
+        InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
+                .withStatus(InstanceInfo.Status.UP)
+                .build();
+        registry.register(original, 90 * 1000).toBlocking().lastOrDefault(null);
+
+        Lease<InstanceInfo> lease = registry.getLease(original.getId()).toBlocking().lastOrDefault(null);
+        assertTrue(lease != null);
+        assertEquals(InstanceInfo.Status.UP, lease.getHolder().getStatus());
+        long lastRenewalTimestamp = lease.getLastRenewalTimestamp();
+        Thread.sleep(10);  // let time pass a bit
+
+        InstanceInfo newInstance = SampleInstanceInfo.DiscoveryServer.builder()
+                .withStatus(InstanceInfo.Status.DOWN)
+                .build();
+        registry.register(newInstance, 90 * 1000).toBlocking().lastOrDefault(null);
+
+        lease = registry.getLease(newInstance.getId()).toBlocking().lastOrDefault(null);
+        assertTrue(lease != null);
+        assertEquals(InstanceInfo.Status.DOWN, lease.getHolder().getStatus());
+        assertNotEquals(lastRenewalTimestamp, lease.getLastRenewalTimestamp(), 0.00001);
     }
 }

@@ -1,5 +1,6 @@
 package com.netflix.eureka;
 
+import com.netflix.eureka.registry.Index;
 import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.registry.InstanceInfo.Builder;
 import com.netflix.eureka.registry.InstanceInfo.Status;
@@ -8,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 
 /**
  * @author Tomasz Bak
@@ -27,13 +29,13 @@ public enum SampleInstanceInfo {
             securePorts.add(443);
             securePorts.add(8443);
             return new Builder()
+                    .withId("id#ZuulServer"+UUID.randomUUID().toString())
                     .withApp("app#ZuulServer")
                     .withAppGroup("group#ZuulServer")
                     .withAsg("asg#ZuulServer")
                     .withHealthCheckUrls(healthCheckUrls)
                     .withHomePageUrl("http://eureka/home/ZuulServer")
                     .withHostname("ZuulServer.test")
-                    .withId("id#ZuulServer")
                     .withIp("192.168.0.1")
                     .withPorts(ports)
                     .withSecurePorts(securePorts)
@@ -41,6 +43,22 @@ public enum SampleInstanceInfo {
                     .withStatus(Status.UP)
                     .withStatusPageUrl("http://eureka/status/ZuulServer")
                     .withVipAddress("vip#ZuulServer");
+        }
+
+        @Override
+        public String valueForIndex(Index index) {
+            switch (index) {
+                case AppGroup:
+                    return "group#ZuulServer";
+                case App:
+                    return "app#ZuulServer";
+                case Asg:
+                    return "asg#ZuulServer";
+                case VipAddress:
+                    return "vip#ZuulServer";
+                default:
+                    return null;
+            }
         }
     },
     DiscoveryServer() {
@@ -56,13 +74,13 @@ public enum SampleInstanceInfo {
             securePorts.add(443);
             securePorts.add(8443);
             return new Builder()
+                    .withId("id#DiscoveryServer"+UUID.randomUUID().toString())
                     .withApp("app#DiscoveryServer")
                     .withAppGroup("group#DiscoveryServer")
                     .withAsg("asg#DiscoveryServer")
                     .withHealthCheckUrls(healthCheckUrls)
                     .withHomePageUrl("http://eureka/home/DiscoveryServer")
                     .withHostname("DiscoveryServer.test")
-                    .withId("id#DiscoveryServer")
                     .withIp("192.168.0.1")
                     .withPorts(ports)
                     .withSecurePorts(securePorts)
@@ -71,9 +89,27 @@ public enum SampleInstanceInfo {
                     .withStatusPageUrl("http://eureka/status/DiscoveryServer")
                     .withVipAddress("vip#DiscoveryServer");
         }
+
+        @Override
+        public String valueForIndex(Index index) {
+            switch (index) {
+                case AppGroup:
+                    return "group#DiscoveryServer";
+                case App:
+                    return "app#DiscoveryServer";
+                case Asg:
+                    return "asg#DiscoveryServer";
+                case VipAddress:
+                    return "vip#DiscoveryServer";
+                default:
+                    return null;
+            }
+        }
     };
 
     public abstract Builder builder();
+
+    abstract String valueForIndex(Index index);
 
     public InstanceInfo build() {
         return builder().build();

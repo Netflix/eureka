@@ -2,6 +2,7 @@ package com.netflix.eureka.registry;
 
 import static org.junit.Assert.*;
 
+import com.netflix.eureka.SampleInstanceInfo;
 import org.apache.avro.Schema;
 import org.apache.avro.io.DatumReader;
 import org.apache.avro.io.DatumWriter;
@@ -15,7 +16,6 @@ import org.apache.avro.reflect.ReflectDatumWriter;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
-import java.util.HashSet;
 
 /**
  * @author David Liu
@@ -24,17 +24,7 @@ public class InstanceInfoTest {
 
     @Test
     public void testInstanceInfoSerializationWithAvro() throws Exception {
-        HashSet<Integer> ports = new HashSet<Integer>();
-        ports.add(7001);
-        ports.add(8077);
-
-        InstanceInfo instanceInfo = new InstanceInfo.Builder()
-                .withId("test")
-                .withAppGroup("appGroup")
-                .withApp("app")
-                .withPorts(ports)
-                .withStatus(InstanceInfo.Status.DOWN)
-                .build();
+        InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();
 
         Schema schema = ReflectData.get().getSchema(InstanceInfo.class);
 
@@ -50,10 +40,6 @@ public class InstanceInfoTest {
         Decoder decoder = DecoderFactory.get().binaryDecoder(bos.toByteArray(), null);
         InstanceInfo newInstanceInfo = datumReader.read(null, decoder);
 
-        assertEquals(instanceInfo.getId(), newInstanceInfo.getId());
-        assertEquals(instanceInfo.getAppGroup(), newInstanceInfo.getAppGroup());
-        assertEquals(instanceInfo.getApp(), newInstanceInfo.getApp());
-        assertEquals(instanceInfo.getPorts(), newInstanceInfo.getPorts());
-        assertEquals(instanceInfo.getStatus(), newInstanceInfo.getStatus());
+        assertEquals(instanceInfo, newInstanceInfo);
     }
 }

@@ -17,6 +17,7 @@
 package com.netflix.eureka.registry;
 
 /**
+ * TODO make this better
  * @author David Liu
  */
 public enum Index {

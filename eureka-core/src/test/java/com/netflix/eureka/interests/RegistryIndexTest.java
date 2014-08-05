@@ -1,6 +1,7 @@
 package com.netflix.eureka.interests;
 
 import com.netflix.eureka.ChangeNotifications;
+import com.netflix.eureka.SampleChangeNotification;
 import com.netflix.eureka.SampleInstanceInfo;
 import com.netflix.eureka.registry.EurekaRegistry;
 import com.netflix.eureka.registry.EurekaRegistryImpl;
@@ -42,7 +43,10 @@ public class RegistryIndexTest {
     public void testBasicIndex() throws Exception {
         final List<ChangeNotification<InstanceInfo>> notifications = new ArrayList<ChangeNotification<InstanceInfo>>();
 
-        registry.register(SampleInstanceInfo.DiscoveryServer.build()).toBlocking().lastOrDefault(null);
+        InstanceInfo discoveryServer = SampleInstanceInfo.DiscoveryServer.build();
+        InstanceInfo zuulServer = SampleInstanceInfo.ZuulServer.build();
+
+        registry.register(discoveryServer).toBlocking().lastOrDefault(null);
         registry.forInterest(Interests.forFullRegistry())
                 .subscribe(new Action1<ChangeNotification<InstanceInfo>>() {
                     @Override
@@ -51,10 +55,11 @@ public class RegistryIndexTest {
                         notifications.add(notification);
                     }
                 });
-        registry.register(SampleInstanceInfo.ZuulServer.build()).toBlocking().lastOrDefault(null);
+        registry.register(zuulServer).toBlocking().lastOrDefault(null);
 
         assertThat(notifications, hasSize(2));
-        assertThat(notifications, contains(ChangeNotifications.DiscoveryAddNotification,
-                                           ChangeNotifications.ZuulAddNotification)); // Checks the order of notifications.
+        assertThat(notifications,
+                contains(SampleChangeNotification.DiscoveryAddNotification.newNotification(discoveryServer),
+                         SampleChangeNotification.ZuulAddNotification.newNotification(zuulServer))); // Checks the order of notifications.
     }
 }
