@@ -6,9 +6,7 @@ import com.netflix.eureka.interests.InstanceInfoInitStateHolder;
 import com.netflix.eureka.interests.Interest;
 import rx.Observable;
 import rx.Subscriber;
-import rx.functions.Action0;
 import rx.subjects.PublishSubject;
-import rx.subscriptions.Subscriptions;
 
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -34,16 +32,15 @@ public class EurekaRegistryImpl implements EurekaRegistry {
         return Observable.create(new Observable.OnSubscribe<Void>() {
             @Override
             public void call(Subscriber<? super Void> subscriber) {
-                subscriber.add(Subscriptions.create(new Action0() {
-                    @Override
-                    public void call() {
-                        unregister(instanceId);
-                    }
-                }));
-                ChangeNotification<InstanceInfo> addNotification =
-                        new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Add, instanceInfo);
-                registry.put(instanceId, addNotification);
-                notificationSubject.onNext(addNotification);
+                try {
+                    ChangeNotification<InstanceInfo> addNotification =
+                            new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Add, instanceInfo);
+                    registry.put(instanceId, addNotification);
+                    notificationSubject.onNext(addNotification);
+                    subscriber.onCompleted();
+                } catch (Exception e) {
+                    subscriber.onError(e);
+                }
             }
         });
     }

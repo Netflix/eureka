@@ -11,7 +11,6 @@ import com.netflix.eureka.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka.protocol.registration.Register;
 import com.netflix.eureka.protocol.registration.Unregister;
 import com.netflix.eureka.protocol.registration.Update;
-import com.netflix.eureka.registry.SampleInstanceInfo;
 import com.netflix.eureka.transport.Acknowledgement;
 import com.netflix.eureka.transport.Message;
 import com.netflix.eureka.transport.MessageBroker;

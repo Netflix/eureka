@@ -1,12 +1,10 @@
 package com.netflix.eureka.client.transport.registration.protocol.http;
 
-import java.util.Iterator;
-
+import com.netflix.eureka.SampleInstanceInfo;
 import com.netflix.eureka.client.transport.registration.RegistrationClient;
 import com.netflix.eureka.client.transport.registration.RegistrationClients;
 import com.netflix.eureka.protocol.registration.Update;
 import com.netflix.eureka.registry.InstanceInfo;
-import com.netflix.eureka.registry.SampleInstanceInfo;
 import com.netflix.eureka.testkit.MockHttpRxServer;
 import com.netflix.eureka.testkit.MockHttpRxServer.FromStringTransformer;
 import com.netflix.eureka.testkit.MockHttpRxServer.RequestContext;
@@ -17,7 +15,10 @@ import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
 
-import static org.junit.Assert.*;
+import java.util.Iterator;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Tomasz Bak

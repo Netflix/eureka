@@ -1,12 +1,13 @@
-package com.netflix.eureka.registry;
+package com.netflix.eureka;
+
+import com.netflix.eureka.registry.InstanceInfo;
+import com.netflix.eureka.registry.InstanceInfo.Builder;
+import com.netflix.eureka.registry.InstanceInfo.Status;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
-
-import com.netflix.eureka.registry.InstanceInfo.Builder;
-import com.netflix.eureka.registry.InstanceInfo.Status;
 
 /**
  * @author Tomasz Bak
@@ -15,7 +16,7 @@ public enum SampleInstanceInfo {
 
     ZuulServer() {
         @Override
-        Builder builder() {
+        public Builder builder() {
             HashSet<String> healthCheckUrls = new HashSet<String>();
             healthCheckUrls.add("http://eureka/healthCheck/ZuulServer1");
             healthCheckUrls.add("http://eureka/healthCheck/ZuulServer2");
@@ -44,7 +45,7 @@ public enum SampleInstanceInfo {
     },
     DiscoveryServer() {
         @Override
-        Builder builder() {
+        public Builder builder() {
             HashSet<String> healthCheckUrls = new HashSet<String>();
             healthCheckUrls.add("http://eureka/healthCheck/DiscoveryServer1");
             healthCheckUrls.add("http://eureka/healthCheck/DiscoveryServer2");
@@ -72,7 +73,7 @@ public enum SampleInstanceInfo {
         }
     };
 
-    abstract Builder builder();
+    public abstract Builder builder();
 
     public InstanceInfo build() {
         return builder().build();
