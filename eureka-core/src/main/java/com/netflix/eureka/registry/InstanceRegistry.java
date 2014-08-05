@@ -19,13 +19,13 @@ package com.netflix.eureka.registry;
 import com.netflix.eureka.datastore.Store;
 import com.netflix.eureka.interests.Interest;
 import rx.Observable;
-import rx.Subscriber;
 import rx.functions.Func1;
 
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * TODO: registry lifecycle management APIs
+ * TODO: threadpool for async add/put to internalStore?
  * @author David Liu
  */
 public class InstanceRegistry extends Store<InstanceInfo> {
@@ -44,7 +44,7 @@ public class InstanceRegistry extends Store<InstanceInfo> {
     }
 
     public int getSize() {
-        return 0;
+        return internalStore.size();
     }
 
     // -------------------------------------------------
@@ -56,8 +56,8 @@ public class InstanceRegistry extends Store<InstanceInfo> {
      * @param instanceId
      * @return true if successfully renewed
      */
-    public Observable<Boolean> renewLease(String instanceId) {
-        return Observable.empty();
+    public Observable<Void> renewLease(final String instanceId) {
+        return renewLease(instanceId, Lease.DEFAULT_LEASE_DURATION_MILLIS);
     }
 
     /**
@@ -66,7 +66,12 @@ public class InstanceRegistry extends Store<InstanceInfo> {
      * @param durationMillis
      * @return true if successfully renewed
      */
-    public Observable<Boolean> renewLease(String instanceId, long durationMillis) {
+    public Observable<Void> renewLease(final String instanceId, final long durationMillis) {
+        Lease<InstanceInfo> lease = internalStore.get(instanceId);
+        if (lease != null) {
+            lease.renew(durationMillis);
+        }
+
         return Observable.empty();
     }
 
@@ -75,7 +80,12 @@ public class InstanceRegistry extends Store<InstanceInfo> {
      * @param instanceId
      * @return true of successfully canceled
      */
-    public Observable<Boolean> cancelLease(String instanceId) {
+    public Observable<Void> cancelLease(final String instanceId) {
+        Lease<InstanceInfo> lease = internalStore.remove(instanceId);
+        if (lease != null) {
+            lease.cancel();
+        }
+
         return Observable.empty();
     }
 
@@ -84,8 +94,14 @@ public class InstanceRegistry extends Store<InstanceInfo> {
      * @param instanceId the instanceId of the instance to check
      * @return true if instance exist and has expired, false if exist and not expired
      */
-    public Observable<Boolean> hasExpired(String instanceId) {
-        return Observable.empty();
+    public Observable<Boolean> hasExpired(final String instanceId) {
+        Lease<InstanceInfo> lease = internalStore.get(instanceId);
+
+        if (lease != null) {
+            return Observable.just(lease.hasExpired());
+        } else {
+            return Observable.error(EurekaRegistryException.instanceNotFound(instanceId));
+        }
     }
 
     /**
@@ -94,15 +110,22 @@ public class InstanceRegistry extends Store<InstanceInfo> {
      * @return
      */
     public Observable<Lease<InstanceInfo>> getLease(String instanceId) {
-        return Observable.empty();
+        return Observable.just(internalStore.get(instanceId));
     }
 
-    public Observable<Boolean> register(InstanceInfo instanceInfo, long durationMillis) {
-        return Observable.empty();
+    public Observable<Boolean> register(final InstanceInfo instanceInfo) {
+        return register(instanceInfo, Lease.DEFAULT_LEASE_DURATION_MILLIS);
     }
 
-    public Observable<Boolean> unregister(String instanceId) {
-        return Observable.empty();
+    public Observable<Boolean> register(final InstanceInfo instanceInfo, final long durationMillis) {
+        Lease<InstanceInfo> lease = new Lease<InstanceInfo>(instanceInfo, durationMillis);
+        internalStore.put(instanceInfo.getId(), lease);
+
+        return Observable.just(true);
+    }
+
+    public Observable<Void> unregister(String instanceId) {
+        return cancelLease(instanceId);
     }
     /**
      * Update the status of the instance with the given id
@@ -111,7 +134,19 @@ public class InstanceRegistry extends Store<InstanceInfo> {
      * @return true of successfully updated
      */
     public Observable<Boolean> updateStatus(String instanceId, InstanceInfo.Status status) {
-        return Observable.empty();
+        Lease<InstanceInfo> lease = internalStore.get(instanceId);
+
+        if (lease == null) {
+            return Observable.error(EurekaRegistryException.instanceNotFound(instanceId));
+        }
+
+        InstanceInfo current = lease.getHolder();
+        InstanceInfo update = new InstanceInfo.Builder()
+                .withInstanceInfo(current)
+                .withStatus(status)
+                .build();
+
+        return Observable.just(lease.compareAndSet(current, update));
     }
 
     /**
@@ -167,22 +202,14 @@ public class InstanceRegistry extends Store<InstanceInfo> {
 
     @Override
     protected Observable<Boolean> add(final InstanceInfo item) {
-        return Observable.create(new Observable.OnSubscribe<Boolean>() {
-            @Override
-            public void call(Subscriber<? super Boolean> subscriber) {
-                internalStore.put(item.getId(), new Lease<InstanceInfo>(item));
-            }
-        });
+        Lease<InstanceInfo> previous = internalStore.putIfAbsent(item.getId(), new Lease<InstanceInfo>(item));
+        return Observable.just(previous == null);
     }
 
     @Override
     protected Observable<Void> set(final InstanceInfo item) {
-        return Observable.create(new Observable.OnSubscribe<Void>() {
-            @Override
-            public void call(Subscriber<? super Void> subscriber) {
-                internalStore.put(item.getId(), new Lease<InstanceInfo>(item));
-            }
-        });
+        internalStore.put(item.getId(), new Lease<InstanceInfo>(item));
+        return Observable.empty();
     }
 
     @Override

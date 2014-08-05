@@ -47,6 +47,7 @@ public class InstanceInfo implements Item, Serializable {
     @Nullable private String statusPageUrl;
     @Nullable private HashSet<String> healthCheckUrls;
 
+    // for serializers
     public InstanceInfo() {}
 
     /**
@@ -141,7 +142,7 @@ public class InstanceInfo implements Item, Serializable {
     /**
      * @return the port numbers that is used for servicing requests
      */
-    public Set<Integer> getPorts() {
+    public HashSet<Integer> getPorts() {
         return ports;
     }
 
@@ -152,7 +153,7 @@ public class InstanceInfo implements Item, Serializable {
     /**
      * @return the secure port numbers that is used for servicing requests
      */
-    public Set<Integer> getSecurePorts() {
+    public HashSet<Integer> getSecurePorts() {
         return securePorts;
     }
 
@@ -201,7 +202,7 @@ public class InstanceInfo implements Item, Serializable {
      * @return A Set containing the string representation of health check urls
      *         for secure and non secure protocols
      */
-    public Set<String> getHealthCheckUrls() {
+    public HashSet<String> getHealthCheckUrls() {
         return healthCheckUrls;
     }
 
@@ -325,6 +326,21 @@ public class InstanceInfo implements Item, Serializable {
         }
     }
 
+    public String valueForIndex(Index index) {
+        switch (index) {
+            case AppGroup:
+                return getAppGroup();
+            case App:
+                return getApp();
+            case Asg:
+                return getAsg();
+            case VipAddress:
+                return getVipAddress();
+            default:
+                return null;
+        }
+    }
+
     // ------------------------------------------
     // Instance Status
     // ------------------------------------------
@@ -358,10 +374,22 @@ public class InstanceInfo implements Item, Serializable {
             info = new InstanceInfo();
         }
 
-        // copy builder
-        public Builder(InstanceInfo another) {
-            this();
-            // copy another into info;
+        public Builder withInstanceInfo(InstanceInfo another) {
+            info.setId(another.getId());
+            info.setAppGroup(another.getAppGroup());
+            info.setApp(another.getApp());
+            info.setAsg(another.getAsg());
+            info.setVipAddress(another.getVipAddress());
+            info.setSecureVipAddress(another.getSecureVipAddress());
+            info.setHostname(another.getHostname());
+            info.setIp(another.getIp());
+            info.setPorts(another.getPorts());
+            info.setSecurePorts(another.getSecurePorts());
+            info.setStatus(another.getStatus());
+            info.setHomePageUrl(another.getHomePageUrl());
+            info.setStatusPageUrl(another.getStatusPageUrl());
+            info.setHealthCheckUrls(another.getHealthCheckUrls());
+            return this;
         }
 
         public Builder withId(String id) {
