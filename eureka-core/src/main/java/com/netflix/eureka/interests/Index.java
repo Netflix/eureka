@@ -1,7 +1,6 @@
 package com.netflix.eureka.interests;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.netflix.eureka.datastore.NotificationsSubject;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Func1;
@@ -10,8 +9,6 @@ import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 
 import java.util.Iterator;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 /**
@@ -25,7 +22,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * The "real time data" is piped from the source of data for this index and the "initial data" is an optional set of
  * data that is sent to any {@link Subscriber} of this index before any {@link ChangeNotification} is sent.
  *
- * If the initial data source (implemented as {@link Index.InitStateHolder} is empty, then it is assumed that the real
+ * If the initial data source (implemented as {@link Index.InitStateHolder}) is empty, then it is assumed that the real
  * time data source replays all initial data which will be required for any subscriber of this interest to create the
  * complete view of the data.
  *
@@ -62,13 +59,16 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * <h2>How does this guarantee ordering between sources?</h2>
  *
+ * We cache all change notifications from the real time data source, till all the notifications from the initial data
+ * source is sent to the subscriber. Hence, the change notifications from the real time data source never reaches the
+ * subscriber till the init state is completed.
+ *
  * @author Nitesh Kant
  */
 public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<T>> {
 
     private final Interest<T> interest;
-    private final InitStateHolder<T> initStateHolder;
-    private final PublishSubject<ChangeNotification<T>> realTimeSource;
+    private final NotificationsSubject<T> notificationsSubject;
 
     protected Index(final Interest<T> interest, final InitStateHolder<T> initStateHolder,
                     final PublishSubject<ChangeNotification<T>> realTimeSource) {
@@ -84,8 +84,9 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
             }
         });
         this.interest = interest;
-        this.initStateHolder = initStateHolder;
-        this.realTimeSource = realTimeSource;
+        this.notificationsSubject = initStateHolder.getNotificationSubject();
+        this.notificationsSubject.subscribe(initStateHolder);// It is important to ALWAYS update init state first otherwise, we will lose data (see class javadoc)
+        this.notificationsSubject.subscribe(realTimeSource);
     }
 
     public Interest getInterest() {
@@ -94,26 +95,22 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
 
     @Override
     public void onCompleted() {
-        initStateHolder.onCompleted();
-        realTimeSource.onCompleted();
+        notificationsSubject.onCompleted();
     }
 
     @Override
     public void onError(Throwable e) {
-        initStateHolder.onError(e);
-        realTimeSource.onError(e);
+        notificationsSubject.onError(e);
     }
 
     @Override
     public void onNext(ChangeNotification<T> notification) {
-        initStateHolder.onNext(notification); // It is important to ALWAYS update init state first otherwise, we will lose data (see class javadoc)
-        realTimeSource.onNext(notification);
+        notificationsSubject.onNext(notification);
     }
 
     public static <T> Index<T> forInterest(final Interest<T> interest,
                                            final Observable<ChangeNotification<T>> dataSource,
                                            final InitStateHolder<T> initStateHolder) {
-
         PublishSubject<ChangeNotification<T>> realTimeSource = PublishSubject.create();
         Index<T> toReturn = new Index<T>(interest, initStateHolder, realTimeSource);
 
@@ -130,21 +127,25 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
      * An initial data source for {@link com.netflix.eureka.interests.Index}.
      *
      * <h2>Producer</h2>
+     * There will always be a single producer (even if multiple the updates will be sequenced out of this context of
+     * this holder) queue.
+     *
+     * The producer will always be the {@link com.netflix.eureka.interests.Index}, the updates to which
+     * (onNext/onError/onComplete) are always sequence i.e. it is not invoked concurrently.
      *
      * <h2>Consumers</h2>
-     *
-     * This should be implemented as a single producer multiple consumer queue as updates to this
-     * (via {@link Subscriber}) are always sequential.
+     * There will be multiple consumers of this data i.e. multiple consumers can call {@link #iterator()} on this class.
      *
      * <h2>Consistency guarantees</h2>
      *
+     * This implementation should always have a consistency between the data written by
+     * {@link #onNext(ChangeNotification)} and what is returned in the {@link #iterator()}. There should not be any
+     * missed notifications even if {@link #onNext(ChangeNotification)} and {@link #iterator()} are called concurrently.
      *
      * @param <T> Type of data that this holds.
      */
     protected static abstract class InitStateHolder<T> extends Subscriber<ChangeNotification<T>>
             implements Iterable<ChangeNotification<T>> {
-
-        protected static final Logger logger = LoggerFactory.getLogger(InstanceInfoInitStateHolder.class);
 
         protected final Iterator<ChangeNotification<T>> EMPTY_ITERATOR = new Iterator<ChangeNotification<T>>() {
             @Override
@@ -162,8 +163,12 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
             }
         };
 
-        private final ReentrantReadWriteLock iteratorGuard = new ReentrantReadWriteLock(); //Guards writes when creating an iterator.
         private volatile boolean done;
+        private final NotificationsSubject<T> notificationSubject;
+
+        protected InitStateHolder(NotificationsSubject<T> notificationSubject) {
+            this.notificationSubject = notificationSubject;
+        }
 
         @Override
         public Iterator<ChangeNotification<T>> iterator() {
@@ -172,16 +177,11 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
                 return EMPTY_ITERATOR;
             }
 
-            final ReentrantReadWriteLock.ReadLock readLock = iteratorGuard.readLock();
             try {
-                readLock.tryLock(1, TimeUnit.SECONDS);
+                notificationSubject.pause();
                 return _newIterator();
-            } catch (InterruptedException e) {
-                logger.warn("Interrupted while waiting for a read lock for iterator creation.", e);
-                Thread.currentThread().interrupt(); // Reset the interrupt flag for the upstream to interpret.
-                throw new IteratorCreationFailed(e);
             } finally {
-                readLock.unlock();
+                notificationSubject.resume();
             }
         }
 
@@ -201,24 +201,12 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
 
         @Override
         public final void onNext(ChangeNotification<T> notification) {
+            // Since we pause notifications during iterator creation, we will not get an onNext when iterator creation is in progress.
+            addNotification(notification);
+        }
 
-            // TODO: DO we need locking. Alt: Cache notifications when writes are happening & relay when write is done.
-            // This is a single producer queue so the overhead of write lock is negligible as there will not be any
-            // contention apart from readers, which is required.
-            // This is always called in a different thread (than the event loop) as this blocks.
-            final ReentrantReadWriteLock.WriteLock writeLock = iteratorGuard.writeLock();
-            try {
-                writeLock.lockInterruptibly();
-                addNotification(notification);
-            } catch (InterruptedException e) {
-                logger.error("Interrupted while waiting for write lock on init state.");
-                Thread.currentThread().interrupt(); // Reset the interrupt flag for the upstream to interpret.
-                onError(e); // We can not proceed by skipping a notification.
-            } finally {
-                if (writeLock.isHeldByCurrentThread()) {
-                    writeLock.unlock();
-                }
-            }
+        protected NotificationsSubject<T> getNotificationSubject() {
+            return notificationSubject;
         }
 
         protected boolean isDone() {
@@ -230,12 +218,5 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
         protected abstract void clearAllNotifications();
 
         protected abstract Iterator<ChangeNotification<T>> _newIterator();
-
-        public static class IteratorCreationFailed extends RuntimeException {
-
-            public IteratorCreationFailed(Throwable cause) {
-                super(cause);
-            }
-        }
     }
 }
