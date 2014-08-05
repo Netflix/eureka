@@ -23,13 +23,11 @@ import com.netflix.eureka.transport.Acknowledgement;
 import com.netflix.eureka.transport.Message;
 import com.netflix.eureka.transport.UserContent;
 import com.netflix.eureka.transport.UserContentWithAck;
+import com.netflix.eureka.utils.Json;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
 import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.annotate.JsonAutoDetect.Visibility;
-import org.codehaus.jackson.annotate.JsonMethod;
-import org.codehaus.jackson.map.ObjectMapper;
 
 /**
  * Codec useful for development purposes. It could be also used by WEB browser
@@ -38,12 +36,6 @@ import org.codehaus.jackson.map.ObjectMapper;
  * @author Tomasz Bak
  */
 public class JsonCodec extends ByteToMessageCodec<Message> {
-
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-
-    static {
-        MAPPER.setVisibility(JsonMethod.FIELD, Visibility.ANY);
-    }
 
     static class Envelope {
         final String messageType;
@@ -98,7 +90,7 @@ public class JsonCodec extends ByteToMessageCodec<Message> {
             throw new IllegalArgumentException("unexpected message of type " + msg.getClass());
         }
         try {
-            byte[] bytes = MAPPER.writeValueAsBytes(envelope);
+            byte[] bytes = Json.getMapper().writeValueAsBytes(envelope);
             out.writeBytes(bytes);
         } catch (Exception e) {
             e.printStackTrace();
@@ -111,7 +103,7 @@ public class JsonCodec extends ByteToMessageCodec<Message> {
         in.readBytes(array);
 
         String json = new String(array, Charset.defaultCharset());
-        JsonNode jsonNode = MAPPER.readTree(json);
+        JsonNode jsonNode = Json.getMapper().readTree(json);
 
         String messageType = jsonNode.get("messageType").asText();
         Message output;
@@ -120,7 +112,7 @@ public class JsonCodec extends ByteToMessageCodec<Message> {
         } else {
             String contentType = jsonNode.get("contentType").asText();
             Class<?> contentClass = Class.forName(contentType);
-            Object content = MAPPER.readValue(jsonNode.get("content"), contentClass);
+            Object content = Json.getMapper().readValue(jsonNode.get("content"), contentClass);
 
             if (messageType.equals(UserContent.class.getName())) {
                 output = new UserContent(content);

@@ -22,6 +22,12 @@ import io.reactivex.netty.channel.ObservableConnection;
 import rx.Observable;
 
 /**
+ * FIXME Get rid of message envelope
+ * FIXME Do we need backpressure for interest stream?
+ * FIXME Lifecycle concept exists at multiple levels. Can we abstract it away and share the implementation?
+ * FIXME What to do with unrecognized messages - dead letter mailbox?
+ *
+ *
  * One to one bidirectional communication endpoint. Equivalent to {@link ObservableConnection}
  * in RxNetty, with higher level message passing semantics.
  *

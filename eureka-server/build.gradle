@@ -28,6 +28,7 @@ tasks.withType(Javadoc).each {
 dependencies {
     compile project(':eureka-client')
     testCompile 'junit:junit:4.10'
+    testCompile project(path: ':eureka-core', configuration: 'tests')
 }
 
 eclipse {
