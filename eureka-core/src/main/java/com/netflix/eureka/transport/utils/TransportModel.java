@@ -50,7 +50,11 @@ public class TransportModel {
         return classHierarchies.containsKey(type);
     }
 
-    public List<Class<?>> getClassHierarchies(Class<?> type) {
+    public Set<Class<?>> getBaseClasses() {
+        return classHierarchies.keySet();
+    }
+
+    public List<Class<?>> getDerivedClasses(Class<?> type) {
         return classHierarchies.get(type);
     }
 

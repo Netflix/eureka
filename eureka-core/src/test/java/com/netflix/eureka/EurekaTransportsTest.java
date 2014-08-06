@@ -32,7 +32,7 @@ public class EurekaTransportsTest {
         discoveryProtocolTest(Codec.Avro);
     }
 
-    // @Test FIXME
+    @Test
     public void testDiscoveryProtocolWithJson() throws Exception {
         discoveryProtocolTest(Codec.Json);
     }

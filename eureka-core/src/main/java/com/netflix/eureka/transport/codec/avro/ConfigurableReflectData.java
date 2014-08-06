@@ -66,6 +66,6 @@ public class ConfigurableReflectData extends ReflectData {
         } else if (type instanceof ParameterizedType) {
             rawClass = (Class<?>) ((ParameterizedType) type).getRawType();
         }
-        return rawClass == null ? null : model.getClassHierarchies(rawClass);
+        return rawClass == null ? null : model.getDerivedClasses(rawClass);
     }
 }

@@ -3,7 +3,8 @@ package com.netflix.eureka.transport.codec.avro;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.netflix.eureka.transport.base.SampleUserObject;
+import com.netflix.eureka.transport.base.SampleObject;
+import com.netflix.eureka.transport.base.SampleObject.InternalA;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.apache.avro.Schema;
 import org.junit.BeforeClass;
@@ -21,20 +22,20 @@ public class AvroCodecTest {
     @BeforeClass
     public static void setUpClasss() throws Exception {
         List<Class<?>> types = new ArrayList<Class<?>>();
-        types.add(SampleUserObject.class);
-        schema = MessageBrokerSchema.brokerSchemaFrom(SampleUserObject.TRANSPORT_MODEL);
+        types.add(SampleObject.class);
+        schema = MessageBrokerSchema.brokerSchemaFrom(SampleObject.TRANSPORT_MODEL);
     }
 
     @Test
     public void testEncodeDecode() throws Exception {
-        EmbeddedChannel ch = new EmbeddedChannel(new AvroCodec(schema, SampleUserObject.TRANSPORT_MODEL));
+        EmbeddedChannel ch = new EmbeddedChannel(new AvroCodec(schema, SampleObject.TRANSPORT_MODEL));
 
-        SampleUserObject message = new SampleUserObject("stringValue", 123);
+        SampleObject message = new SampleObject(new InternalA("stringValue"));
         assertTrue("Message should be written successfuly to the channel", ch.writeOutbound(message));
 
         ch.writeInbound(ch.readOutbound());
         Object received = ch.readInbound();
-        assertTrue("Expected instance of SampleUserObject", received instanceof SampleUserObject);
+        assertTrue("Expected instance of SampleUserObject", received instanceof SampleObject);
         assertEquals("Encoded/decoded shall produce identical object", message, received);
     }
 
