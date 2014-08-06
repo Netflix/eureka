@@ -37,9 +37,9 @@ import rx.subjects.ReplaySubject;
 /**
  * @author Tomasz Bak
  */
-public class BaseMessageBroker<I, O> implements MessageBroker<I, O> {
+public class BaseMessageBroker implements MessageBroker {
 
-    private final ObservableConnection<I, O> connection;
+    private final ObservableConnection<Object, Object> connection;
     private final PublishSubject<Void> lifecycleSubject = PublishSubject.create();
 
     private final Map<String, ReplaySubject<Void>> pendingAck = new ConcurrentHashMap<String, ReplaySubject<Void>>();
@@ -63,15 +63,15 @@ public class BaseMessageBroker<I, O> implements MessageBroker<I, O> {
         }
     };
 
-    public BaseMessageBroker(ObservableConnection<I, O> connection) {
+    public BaseMessageBroker(ObservableConnection<Object, Object> connection) {
         this.connection = connection;
         installAcknowledgementHandler();
     }
 
     private void installAcknowledgementHandler() {
-        connection.getInput().subscribe(new Action1<I>() {
+        connection.getInput().subscribe(new Action1<Object>() {
             @Override
-            public void call(I message) {
+            public void call(Object message) {
                 if (!(message instanceof Acknowledgement)) {
                     return;
                 }
@@ -87,17 +87,17 @@ public class BaseMessageBroker<I, O> implements MessageBroker<I, O> {
     }
 
     @Override
-    public Observable<Void> submit(O message) {
+    public Observable<Void> submit(Object message) {
         return connection.writeAndFlush(message);
     }
 
     @Override
-    public Observable<Void> submitWithAck(O message) {
+    public Observable<Void> submitWithAck(Object message) {
         return submitWithAck(message, 0);
     }
 
     @Override
-    public Observable<Void> submitWithAck(O message, long timeout) {
+    public Observable<Void> submitWithAck(Object message, long timeout) {
         String correlationId = correlationIdFor(message);
 
         ReplaySubject<Void> ackObservable = ReplaySubject.create();
@@ -113,15 +113,15 @@ public class BaseMessageBroker<I, O> implements MessageBroker<I, O> {
     }
 
     @Override
-    public Observable<Void> acknowledge(I message) {
-        return connection.writeAndFlush((O) new Acknowledgement(correlationIdFor(message)));
+    public Observable<Void> acknowledge(Object message) {
+        return connection.writeAndFlush(new Acknowledgement(correlationIdFor(message)));
     }
 
     @Override
-    public Observable<I> incoming() {
-        return connection.getInput().filter(new Func1<I, Boolean>() {
+    public Observable<Object> incoming() {
+        return connection.getInput().filter(new Func1<Object, Boolean>() {
             @Override
-            public Boolean call(I message) {
+            public Boolean call(Object message) {
                 return !(message instanceof Acknowledgement);
             }
         });

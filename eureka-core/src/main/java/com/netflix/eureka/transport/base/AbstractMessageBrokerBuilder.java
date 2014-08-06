@@ -25,21 +25,21 @@ import rx.Observable;
 /**
  * @author Tomasz Bak
  */
-public abstract class AbstractMessageBrokerBuilder<I, O, B extends AbstractMessageBrokerBuilder<I, O, B>> {
+public abstract class AbstractMessageBrokerBuilder<B extends AbstractMessageBrokerBuilder<B>> {
 
     protected final InetSocketAddress address;
-    protected PipelineConfigurator codecPipeline;
+    protected PipelineConfigurator<Object, Object> codecPipeline;
 
     protected AbstractMessageBrokerBuilder(InetSocketAddress address) {
         this.address = address;
     }
 
-    public B withCodecPiepline(PipelineConfigurator codecPipeline) {
+    public B withCodecPiepline(PipelineConfigurator<Object, Object> codecPipeline) {
         this.codecPipeline = codecPipeline;
         return (B) this;
     }
 
-    public abstract BaseMessageBrokerServer<O, I> buildServer();
+    public abstract BaseMessageBrokerServer buildServer();
 
-    public abstract Observable<MessageBroker<I, O>> buildClient();
+    public abstract Observable<MessageBroker> buildClient();
 }

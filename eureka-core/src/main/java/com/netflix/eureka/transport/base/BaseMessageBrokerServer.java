@@ -25,24 +25,24 @@ import rx.subjects.PublishSubject;
 /**
  * @author Tomasz Bak
  */
-public class BaseMessageBrokerServer<I, O> implements MessageBrokerServer<I, O> {
+public class BaseMessageBrokerServer implements MessageBrokerServer {
     // Package private for testing purposes.
-    final RxServer<I, O> server;
-    private final PublishSubject<MessageBroker<I, O>> brokersSubject;
+    final RxServer<Object, Object> server;
+    private final PublishSubject<MessageBroker> brokersSubject;
 
-    public BaseMessageBrokerServer(RxServer<I, O> server, PublishSubject<MessageBroker<I, O>> brokersSubject) {
+    public BaseMessageBrokerServer(RxServer<Object, Object> server, PublishSubject<MessageBroker> brokersSubject) {
         this.server = server;
         this.brokersSubject = brokersSubject;
     }
 
     @Override
-    public BaseMessageBrokerServer<I, O> start() {
+    public BaseMessageBrokerServer start() {
         server.start();
         return this;
     }
 
     @Override
-    public Observable<MessageBroker<I, O>> clientConnections() {
+    public Observable<MessageBroker> clientConnections() {
         return brokersSubject;
     }
 

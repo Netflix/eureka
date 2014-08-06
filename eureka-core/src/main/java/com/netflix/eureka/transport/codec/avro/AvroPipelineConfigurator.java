@@ -24,7 +24,7 @@ import org.apache.avro.Schema;
 /**
  * @author Tomasz Bak
  */
-public class AvroPipelineConfigurator<I, O> implements PipelineConfigurator<I, O> {
+public class AvroPipelineConfigurator implements PipelineConfigurator<Object, Object> {
 
     private final Schema schema;
     private final TransportModel model;

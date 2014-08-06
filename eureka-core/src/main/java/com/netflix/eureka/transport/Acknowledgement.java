@@ -17,6 +17,8 @@
 package com.netflix.eureka.transport;
 
 /**
+ * Internal message used for sending acknowledgements over the wire.
+ *
  * @author Tomasz Bak
  */
 public class Acknowledgement {

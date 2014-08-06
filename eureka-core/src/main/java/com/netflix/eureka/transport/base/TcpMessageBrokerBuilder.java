@@ -35,7 +35,7 @@ import rx.subjects.PublishSubject;
 /**
  * @author Tomasz Bak
  */
-public class TcpMessageBrokerBuilder<I, O> extends AbstractMessageBrokerBuilder<I, O, TcpMessageBrokerBuilder<I, O>> {
+public class TcpMessageBrokerBuilder extends AbstractMessageBrokerBuilder<TcpMessageBrokerBuilder> {
     // We should set it to a reasonable level, so we rather fail
     // than accumulate data indefinitely.
     private static final int MAX_FRAME_LENGTH = 65536;
@@ -44,38 +44,38 @@ public class TcpMessageBrokerBuilder<I, O> extends AbstractMessageBrokerBuilder<
         super(address);
     }
 
-    public BaseMessageBrokerServer<O, I> buildServer() {
-        final PublishSubject<MessageBroker<O, I>> brokersSubject = PublishSubject.create();
-        RxServer<O, I> server = RxNetty.newTcpServerBuilder(address.getPort(), new ConnectionHandler<O, I>() {
+    public BaseMessageBrokerServer buildServer() {
+        final PublishSubject<MessageBroker> brokersSubject = PublishSubject.create();
+        RxServer server = RxNetty.newTcpServerBuilder(address.getPort(), new ConnectionHandler<Object, Object>() {
             @Override
-            public Observable<Void> handle(ObservableConnection<O, I> newConnection) {
-                BaseMessageBroker<O, I> broker = new BaseMessageBroker<O, I>(newConnection);
+            public Observable<Void> handle(ObservableConnection<Object, Object> newConnection) {
+                BaseMessageBroker broker = new BaseMessageBroker(newConnection);
                 brokersSubject.onNext(broker);
                 return broker.lifecycleObservable();
             }
-        }).pipelineConfigurator(new TcpPipelineConfigurator<O, I>())
+        }).pipelineConfigurator(new TcpPipelineConfigurator())
                 .appendPipelineConfigurator(codecPipeline)
                 .enableWireLogging(LogLevel.ERROR).build();
 
-        return new BaseMessageBrokerServer<O, I>(server, brokersSubject);
+        return new BaseMessageBrokerServer(server, brokersSubject);
     }
 
-    public Observable<MessageBroker<I, O>> buildClient() {
-        return RxNetty.<O, I>newTcpClientBuilder(address.getHostName(), address.getPort())
-                .pipelineConfigurator(new TcpPipelineConfigurator<I, O>())
+    public Observable<MessageBroker> buildClient() {
+        return RxNetty.newTcpClientBuilder(address.getHostName(), address.getPort())
+                .pipelineConfigurator(new TcpPipelineConfigurator())
                 .appendPipelineConfigurator(codecPipeline)
                 .enableWireLogging(LogLevel.ERROR)
                 .build()
                 .connect()
-                .map(new Func1<ObservableConnection<I, O>, MessageBroker<I, O>>() {
+                .map(new Func1<ObservableConnection, MessageBroker>() {
                     @Override
-                    public MessageBroker<I, O> call(ObservableConnection<I, O> observableConnection) {
-                        return new BaseMessageBroker<I, O>(observableConnection);
+                    public MessageBroker call(ObservableConnection observableConnection) {
+                        return new BaseMessageBroker(observableConnection);
                     }
                 });
     }
 
-    static class TcpPipelineConfigurator<I, O> implements PipelineConfigurator<I, O> {
+    static class TcpPipelineConfigurator implements PipelineConfigurator<Object, Object> {
         @Override
         public void configureNewPipeline(ChannelPipeline pipeline) {
             pipeline.addLast(new LengthFieldBasedFrameDecoder(MAX_FRAME_LENGTH, 0, 4, 0, 4));

@@ -35,16 +35,16 @@ public class BrokerUtils {
     /**
      * Orchestrate client - server broker connection setup.
      */
-    public static class BrokerPair<I, O> {
+    public static class BrokerPair {
 
-        private final MessageBroker<I, O> clientBroker;
-        private final MessageBroker<O, I> serverBroker;
+        private final MessageBroker clientBroker;
+        private final MessageBroker serverBroker;
 
-        public BrokerPair(Observable<MessageBroker<O, I>> serverObservable, Observable<MessageBroker<I, O>> clientObservable) throws InterruptedException, TimeoutException {
-            final BlockingQueue<MessageBroker<O, I>> queue = new LinkedBlockingQueue<MessageBroker<O, I>>(1);
-            serverObservable.subscribe(new Action1<MessageBroker<O, I>>() {
+        public BrokerPair(Observable<MessageBroker> serverObservable, Observable<MessageBroker> clientObservable) throws InterruptedException, TimeoutException {
+            final BlockingQueue<MessageBroker> queue = new LinkedBlockingQueue<MessageBroker>(1);
+            serverObservable.subscribe(new Action1<MessageBroker>() {
                 @Override
-                public void call(MessageBroker<O, I> messageBroker) {
+                public void call(MessageBroker messageBroker) {
                     queue.add(messageBroker);
                 }
             });
@@ -55,11 +55,11 @@ public class BrokerUtils {
             }
         }
 
-        public MessageBroker<I, O> getClientBroker() {
+        public MessageBroker getClientBroker() {
             return clientBroker;
         }
 
-        public MessageBroker<O, I> getServerBroker() {
+        public MessageBroker getServerBroker() {
             return serverBroker;
         }
     }

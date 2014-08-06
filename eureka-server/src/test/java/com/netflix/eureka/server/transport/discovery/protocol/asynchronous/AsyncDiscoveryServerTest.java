@@ -90,11 +90,11 @@ public class AsyncDiscoveryServerTest {
 
     @Test
     public void testReceiveUpdates() throws Exception {
-        Iterator<AddInstance> updateIterator = brokerClient.incoming().toBlocking().getIterator();
+        Iterator updateIterator = brokerClient.incoming().toBlocking().getIterator();
         AddInstance updateAction = new AddInstance(SampleInstanceInfo.DiscoveryServer.build());
         handler.updateSubject.onNext(updateAction);
 
-        AddInstance nextUpdate = updateIterator.next();
+        AddInstance nextUpdate = (AddInstance) updateIterator.next();
         assertEquals("Unexpected update action", updateAction, nextUpdate);
     }
 

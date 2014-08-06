@@ -23,7 +23,7 @@ import io.reactivex.netty.pipeline.PipelineConfigurator;
 /**
  * @author Tomasz Bak
  */
-public class JsonPipelineConfigurator<I, O> implements PipelineConfigurator<I, O> {
+public class JsonPipelineConfigurator implements PipelineConfigurator<Object, Object> {
 
     private final TransportModel model;
 

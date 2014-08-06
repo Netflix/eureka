@@ -22,52 +22,51 @@ import io.reactivex.netty.channel.ObservableConnection;
 import rx.Observable;
 
 /**
- * FIXME Get rid of message envelope
- * FIXME Do we need backpressure for interest stream?
- * FIXME Lifecycle concept exists at multiple levels. Can we abstract it away and share the implementation?
- * FIXME What to do with unrecognized messages - dead letter mailbox?
- *
- *
+ * <p>FIXME Lifecycle concept exists at multiple levels. Can we abstract it away and share the implementation?
+ * <p>FIXME What to do with unrecognized messages - dead letter mailbox?
+ * <p>
  * One to one bidirectional communication endpoint. Equivalent to {@link ObservableConnection}
  * in RxNetty, with higher level message passing semantics.
  *
- * Submit with acknowledgement:
- * 1. generate correlaction id, and re-package user object with {@link UserContentWithAck}
- * 2. encode message with avro codec (configuered with protocol that knows our data model)
- * 3. create subscription for this message and return to the user
+ * Messages can be send with and without acknowledgement. If acknowledgment is not received within
+ * defined timeout period, the corresponding observable is completed with a {@link TimeoutException} error.
  *
- * Acknowledge a message:
- * 1. Extract correlaction id, and create Acknowledgment object
- * 2. encode message with avro codec
- *
- * Receive a message:
- * 1. Decode object using avro codec
- * 2a) If received UserContent pass to subscriber directly
- * 2b) If received UserContentWithAck, register internally, and pass to subscriber
- * 2c) If received Acknowledgement, forward to the corresponding observable
- *
- * Handling timeouts on sender side:
- * If acknowledgment is not received within timeout period, cancel subscriptions and remove observable
- *
- * Handling timeouts on receiver side:
- * Ignore {@link #acknowledge(UserContentWithAck)} if timeout happened.
+ * <h2>Why {@link MessageBroker} has no type parameters?</h2>
+ * Initially {@link MessageBroker} was a parametrized interface with input/output message
+ * type parameters. It was dropped, as the overhead it introduced diminished the benefits:
+ * <ul>
+ * <li>
+ *     A common base type must be used for all messages, as Java does not support union types.
+ * </li>
+ * <li>
+ *     Related to the above, not posibile code reuse (for example heartbeat message would have to be
+ *     declered separately for each protocol).
+ * </li>
+ * <li>
+ *     Extreamly long parametrized type declarations, considerable limiting code readibility.
+ * </li>
+ * </ul>
  *
  * @author Tomasz Bak
  */
-public interface MessageBroker<I, O> {
+public interface MessageBroker {
 
     /**
-     * Submit a message with a user content one-way.
+     * Submit a message one-way.
+     *
+     * @return observable completing normally if acknowledgement was received, or with
+     *         exception if message could not be delivered
      */
-    Observable<Void> submit(O message);
+    Observable<Void> submit(Object message);
 
     /**
-     * Submit a message with a user content and expect acknowledgement in return. Acknowledgement does not
+     * Submit a message and expect acknowledgement in return. Acknowledgements do not
      * provide any insight into processing status on the other side (success or failure).
      *
-     * @return observable that returns exactly one {@link Acknowledgement} object.
+     * @return observable completing normally if acknowledgement was received, or with
+     *         exception if message could not be delivered or acknowledgement timeout happened
      */
-    Observable<Void> submitWithAck(O message);
+    Observable<Void> submitWithAck(Object message);
 
     /**
      * Submit a message with a user content and expect acknowledgement in return. Acknowledgement does not
@@ -79,21 +78,20 @@ public interface MessageBroker<I, O> {
      * @return observable that returns exactly one {@link Acknowledgement} object or {@link TimeoutException}
      *         if no acknowledgment received on time
      */
-    Observable<Void> submitWithAck(O message, long timeout);
+    Observable<Void> submitWithAck(Object message, long timeout);
 
     /**
-     * For a received message, send back an acknowledgement. {@link UserContentWithAck} contains a correlation id
-     * that is used on the sender side to find an original client request, and {@code Observable<Acknowledgement>}
-     * instance. Acknowledgement request is ignored if a timeout expired.
+     * Send back an acknowledgement. Acknowledgement request is ignored if a timeout expired.
      *
-     * @return if acknowledgement was successfuly submitted
+     * @return observable completing normally if acknowledgement was successfuly submitted,
+     *         or with exception if message could not be delivered
      */
-    Observable<Void> acknowledge(I message);
+    Observable<Void> acknowledge(Object message);
 
     /**
      * @return observable of messages send by the other side of a connection
      */
-    Observable<I> incoming();
+    Observable<Object> incoming();
 
     /**
      * Close a connection.

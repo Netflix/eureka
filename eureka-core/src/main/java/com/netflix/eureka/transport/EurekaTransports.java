@@ -106,7 +106,7 @@ public class EurekaTransports {
         return tcpDiscoveryServer(port, Codec.Avro);
     }
 
-    static PipelineConfigurator piplineFor(Codec codec, TransportModel model) {
+    static PipelineConfigurator<Object, Object> piplineFor(Codec codec, TransportModel model) {
         switch (codec) {
             case Avro:
                 return new AvroPipelineConfigurator(model);
