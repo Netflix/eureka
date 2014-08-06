@@ -8,7 +8,7 @@ import com.netflix.eureka.registry.InstanceInfo;
  */
 public enum SampleChangeNotification {
 
-    ZuulAddNotification() {
+    ZuulAdd() {
         @Override
         public ChangeNotification<InstanceInfo> newNotification() {
             return newNotification(SampleInstanceInfo.ZuulServer.build());
@@ -19,7 +19,7 @@ public enum SampleChangeNotification {
             return new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Add, seed);
         }
     },
-    ZuulDeleteNotification() {
+    ZuulDelete() {
         @Override
         public ChangeNotification<InstanceInfo> newNotification() {
             return newNotification(SampleInstanceInfo.ZuulServer.build());
@@ -30,7 +30,7 @@ public enum SampleChangeNotification {
             return new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Delete, seed);
         }
     },
-    DiscoveryAddNotification() {
+    DiscoveryAdd() {
         @Override
         public ChangeNotification<InstanceInfo> newNotification() {
             return newNotification(SampleInstanceInfo.DiscoveryServer.build());
@@ -41,7 +41,7 @@ public enum SampleChangeNotification {
             return new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Add, seed);
         }
     },
-    DiscoveryDeleteNotification() {
+    DiscoveryDelete() {
         @Override
         public ChangeNotification<InstanceInfo> newNotification() {
             return newNotification(SampleInstanceInfo.DiscoveryServer.build());

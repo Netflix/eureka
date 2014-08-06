@@ -2,6 +2,7 @@ package com.netflix.eureka.registry;
 
 import static org.junit.Assert.*;
 
+import com.netflix.eureka.interests.ChangeNotification;
 import org.junit.Test;
 
 /**
@@ -24,15 +25,13 @@ public class LeaseTest {
     }
 
     @Test
-    public void testCompareAndSetLeaseHolder() {
+    public void testSetHolder() {
         Lease<String> lease = new Lease<String>("abc", 5000);
         String current = lease.getHolder();
         assertTrue(current.equals("abc"));
-
-        String str1 = "foo";
-        String str2 = "bar";
-        assertTrue(lease.compareAndSet(current, str1));
-        assertFalse(lease.compareAndSet(current, str2));
+        ChangeNotification<String> snapshot = lease.getHolderSnapshot();
+        assertEquals(current, snapshot.getData());
+        assertEquals(ChangeNotification.Kind.Add, snapshot.getKind());
     }
 
     @Test

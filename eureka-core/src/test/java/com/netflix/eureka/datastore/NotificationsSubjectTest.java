@@ -1,6 +1,6 @@
 package com.netflix.eureka.datastore;
 
-import com.netflix.eureka.ChangeNotifications;
+import com.netflix.eureka.SampleChangeNotification;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.registry.InstanceInfo;
 import org.junit.Rule;
@@ -25,6 +25,9 @@ public class NotificationsSubjectTest {
     private NotificationsSubject<InstanceInfo> notificationsSubject;
     private List<ChangeNotification<InstanceInfo>> receivedNotifications;
 
+    private ChangeNotification<InstanceInfo> discoveryAdd = SampleChangeNotification.DiscoveryAdd.newNotification();
+    private ChangeNotification<InstanceInfo> zuulAdd = SampleChangeNotification.ZuulAdd.newNotification();
+
     @Rule public TestName testName = new TestName();
     @Rule public final ExternalResource subjectResource = new ExternalResource() {
 
@@ -38,6 +41,9 @@ public class NotificationsSubjectTest {
                     receivedNotifications.add(notification);
                 }
             });
+
+            discoveryAdd = SampleChangeNotification.DiscoveryAdd.newNotification();
+            zuulAdd = SampleChangeNotification.ZuulAdd.newNotification();
         }
 
         @Override
@@ -49,22 +55,20 @@ public class NotificationsSubjectTest {
 
     @Test
     public void testNoPause() throws Exception {
-        notificationsSubject.onNext(ChangeNotifications.DiscoveryAddNotification);
-        notificationsSubject.onNext(ChangeNotifications.ZuulAddNotification);
+        notificationsSubject.onNext(discoveryAdd);
+        notificationsSubject.onNext(zuulAdd);
 
         assertThat(receivedNotifications, hasSize(2));
-        assertThat(receivedNotifications, contains(ChangeNotifications.DiscoveryAddNotification,
-                                                   ChangeNotifications.ZuulAddNotification)); // Checks the order of notifications.
+        assertThat(receivedNotifications, contains(discoveryAdd, zuulAdd)); // Checks the order of notifications.
     }
 
     @Test
     public void testPause() throws Exception {
-        notificationsSubject.onNext(ChangeNotifications.DiscoveryAddNotification);
-        notificationsSubject.onNext(ChangeNotifications.ZuulAddNotification);
+        notificationsSubject.onNext(discoveryAdd);
+        notificationsSubject.onNext(zuulAdd);
 
         assertThat(receivedNotifications, hasSize(2));
-        assertThat(receivedNotifications, contains(ChangeNotifications.DiscoveryAddNotification,
-                                                   ChangeNotifications.ZuulAddNotification)); // Checks the order of notifications.
+        assertThat(receivedNotifications, contains(discoveryAdd, zuulAdd)); // Checks the order of notifications.
 
         receivedNotifications.clear(); // Reset before pause so that assertion is easier later.
 
@@ -72,14 +76,14 @@ public class NotificationsSubjectTest {
         notificationsSubject.pause();
         assertThat(notificationsSubject.isPaused(), is(true));
 
-        notificationsSubject.onNext(ChangeNotifications.ZuulAddNotification);
+        notificationsSubject.onNext(zuulAdd);
 
         assertThat(receivedNotifications, hasSize(0));
         notificationsSubject.resume();
         assertThat(notificationsSubject.isPaused(), is(false));
 
         assertThat(receivedNotifications, hasSize(1));
-        assertThat(receivedNotifications, contains(ChangeNotifications.ZuulAddNotification)); // Checks the order of notifications.
+        assertThat(receivedNotifications, contains(zuulAdd)); // Checks the order of notifications.
     }
 
     @Test
@@ -89,16 +93,16 @@ public class NotificationsSubjectTest {
         notificationsSubject.pause();
         assertThat(notificationsSubject.isPaused(), is(true));
 
-        notificationsSubject.onNext(ChangeNotifications.ZuulAddNotification);
+        notificationsSubject.onNext(zuulAdd);
         notificationsSubject.onCompleted();
-        notificationsSubject.onNext(ChangeNotifications.DiscoveryAddNotification); // Should not honor this.
+        notificationsSubject.onNext(discoveryAdd); // Should not honor this.
 
         assertThat(receivedNotifications, hasSize(0));
         notificationsSubject.resume();
         assertThat(notificationsSubject.isPaused(), is(false));
 
         assertThat(receivedNotifications, hasSize(1));
-        assertThat(receivedNotifications, contains(ChangeNotifications.ZuulAddNotification)); // Checks the order of notifications.
+        assertThat(receivedNotifications, contains(zuulAdd)); // Checks the order of notifications.
     }
 
     @Test
@@ -108,16 +112,16 @@ public class NotificationsSubjectTest {
         notificationsSubject.pause();
         assertThat(notificationsSubject.isPaused(), is(true));
 
-        notificationsSubject.onNext(ChangeNotifications.ZuulAddNotification);
+        notificationsSubject.onNext(zuulAdd);
         notificationsSubject.onError(new NullPointerException());
-        notificationsSubject.onNext(ChangeNotifications.DiscoveryAddNotification); // Should not honor this.
+        notificationsSubject.onNext(discoveryAdd); // Should not honor this.
 
         assertThat(receivedNotifications, hasSize(0));
         notificationsSubject.resume();
         assertThat(notificationsSubject.isPaused(), is(false));
 
         assertThat(receivedNotifications, hasSize(1));
-        assertThat(receivedNotifications, contains(ChangeNotifications.ZuulAddNotification)); // Checks the order of notifications.
+        assertThat(receivedNotifications, contains(zuulAdd)); // Checks the order of notifications.
     }
 
     @Test

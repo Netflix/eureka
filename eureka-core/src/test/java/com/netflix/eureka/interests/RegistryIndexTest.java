@@ -1,11 +1,10 @@
 package com.netflix.eureka.interests;
 
-import com.netflix.eureka.ChangeNotifications;
 import com.netflix.eureka.SampleChangeNotification;
 import com.netflix.eureka.SampleInstanceInfo;
 import com.netflix.eureka.registry.EurekaRegistry;
-import com.netflix.eureka.registry.EurekaRegistryImpl;
 import com.netflix.eureka.registry.InstanceInfo;
+import com.netflix.eureka.registry.LeasedInstanceRegistry;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
@@ -30,7 +29,7 @@ public class RegistryIndexTest {
 
         @Override
         protected void before() throws Throwable {
-            registry = new EurekaRegistryImpl();
+            registry = new LeasedInstanceRegistry();
         }
 
         @Override
@@ -59,7 +58,7 @@ public class RegistryIndexTest {
 
         assertThat(notifications, hasSize(2));
         assertThat(notifications,
-                contains(SampleChangeNotification.DiscoveryAddNotification.newNotification(discoveryServer),
-                         SampleChangeNotification.ZuulAddNotification.newNotification(zuulServer))); // Checks the order of notifications.
+                contains(SampleChangeNotification.DiscoveryAdd.newNotification(discoveryServer),
+                         SampleChangeNotification.ZuulAdd.newNotification(zuulServer))); // Checks the order of notifications.
     }
 }

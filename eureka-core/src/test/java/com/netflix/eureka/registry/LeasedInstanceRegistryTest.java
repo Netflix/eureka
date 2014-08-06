@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * @author David Liu
  */
-public class InstanceRegistryTest {
+public class LeasedInstanceRegistryTest {
 
     @Test
     public void shouldReturnMatchingInstanceInfos() {
@@ -21,7 +21,7 @@ public class InstanceRegistryTest {
         InstanceInfo discovery3 = SampleInstanceInfo.DiscoveryServer.build();
         InstanceInfo zuul1 = SampleInstanceInfo.ZuulServer.build();
 
-        InstanceRegistry registry = new InstanceRegistry();
+        LeasedInstanceRegistry registry = new LeasedInstanceRegistry();
         registry.register(discovery1);
         registry.register(discovery2);
         registry.register(discovery3);
@@ -40,7 +40,7 @@ public class InstanceRegistryTest {
 
     @Test
     public void shouldRenewLeaseWithDuration() throws Exception {
-        InstanceRegistry registry = new InstanceRegistry();
+        LeasedInstanceRegistry registry = new LeasedInstanceRegistry();
 
         InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
                 .withStatus(InstanceInfo.Status.UP)
@@ -55,7 +55,7 @@ public class InstanceRegistryTest {
 
     @Test
     public void shouldCancelLease() {
-        InstanceRegistry registry = new InstanceRegistry();
+        LeasedInstanceRegistry registry = new LeasedInstanceRegistry();
 
         InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
                 .withStatus(InstanceInfo.Status.UP)
@@ -63,12 +63,12 @@ public class InstanceRegistryTest {
         registry.register(original, 90 * 1000).toBlocking().lastOrDefault(null);
 
         registry.cancelLease(original.getId());
-        assertFalse(registry.contains(original.getId()).toBlocking().lastOrDefault(null));
+        assertFalse(registry.contains(original.getId()));
     }
 
     @Test
     public void shouldUpdateInstanceStatus() {
-        InstanceRegistry registry = new InstanceRegistry();
+        LeasedInstanceRegistry registry = new LeasedInstanceRegistry();
 
         InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
                 .withStatus(InstanceInfo.Status.UP)
@@ -87,7 +87,7 @@ public class InstanceRegistryTest {
 
     @Test
     public void shouldRegisterExistingInstanceOverwritingExisting() throws Exception {
-        InstanceRegistry registry = new InstanceRegistry();
+        LeasedInstanceRegistry registry = new LeasedInstanceRegistry();
 
         InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
                 .withStatus(InstanceInfo.Status.UP)
