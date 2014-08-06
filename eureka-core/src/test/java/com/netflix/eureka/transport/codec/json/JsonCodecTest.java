@@ -1,9 +1,8 @@
 package com.netflix.eureka.transport.codec.json;
 
-import com.netflix.eureka.transport.Acknowledgement;
-import com.netflix.eureka.transport.UserContent;
-import com.netflix.eureka.transport.UserContentWithAck;
-import com.netflix.eureka.transport.base.SampleUserObject;
+import com.netflix.eureka.transport.base.SampleObject;
+import com.netflix.eureka.transport.base.SampleObject.InternalA;
+import com.netflix.eureka.transport.base.SampleObject.InternalB;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
@@ -15,43 +14,15 @@ import static org.junit.Assert.*;
 public class JsonCodecTest {
 
     @Test
-    public void testUserContent() throws Exception {
-        EmbeddedChannel ch = new EmbeddedChannel(new JsonCodec());
+    public void testCodec() throws Exception {
+        EmbeddedChannel ch = new EmbeddedChannel(new JsonCodec(SampleObject.TRANSPORT_MODEL));
 
-        UserContent message = new UserContent(new SampleUserObject("stringValue", 123));
+        SampleObject message = new SampleObject(new InternalA("stringValue"), new InternalB(123));
         assertTrue("Message should be written successfuly to the channel", ch.writeOutbound(message));
 
         ch.writeInbound(ch.readOutbound());
-        UserContent received = (UserContent) ch.readInbound();
+        Object received = ch.readInbound();
 
-        assertEquals(message.getContent(), received.getContent());
-    }
-
-    @Test
-    public void testUserContentWithAck() throws Exception {
-        EmbeddedChannel ch = new EmbeddedChannel(new JsonCodec());
-
-        UserContentWithAck message = new UserContentWithAck(new SampleUserObject("stringValue", 123), "cid123", 100);
-        assertTrue("Message should be written successfuly to the channel", ch.writeOutbound(message));
-
-        ch.writeInbound(ch.readOutbound());
-        UserContentWithAck received = (UserContentWithAck) ch.readInbound();
-
-        assertEquals(message.getCorrelationId(), received.getCorrelationId());
-        assertEquals(message.getTimeout(), received.getTimeout());
-        assertEquals(message.getContent(), received.getContent());
-    }
-
-    @Test
-    public void testAcknowledgement() throws Exception {
-        EmbeddedChannel ch = new EmbeddedChannel(new JsonCodec());
-
-        Acknowledgement message = new Acknowledgement("cid123");
-        assertTrue("Message should be written successfuly to the channel", ch.writeOutbound(message));
-
-        ch.writeInbound(ch.readOutbound());
-        Acknowledgement received = (Acknowledgement) ch.readInbound();
-
-        assertEquals(message.getCorrelationId(), received.getCorrelationId());
+        assertEquals(message, received);
     }
 }

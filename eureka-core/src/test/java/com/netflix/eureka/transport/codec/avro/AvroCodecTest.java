@@ -1,12 +1,10 @@
 package com.netflix.eureka.transport.codec.avro;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-import com.netflix.eureka.transport.UserContent;
-import com.netflix.eureka.transport.UserContentWithAck;
-import com.netflix.eureka.transport.base.SampleUserObject;
+import com.netflix.eureka.transport.base.SampleObject;
+import com.netflix.eureka.transport.base.SampleObject.InternalA;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.apache.avro.Schema;
 import org.junit.BeforeClass;
@@ -24,21 +22,21 @@ public class AvroCodecTest {
     @BeforeClass
     public static void setUpClasss() throws Exception {
         List<Class<?>> types = new ArrayList<Class<?>>();
-        types.add(SampleUserObject.class);
-        schema = MessageBrokerSchema.brokerSchemaFrom(Arrays.<Class<?>>asList(SampleUserObject.class));
+        types.add(SampleObject.class);
+        schema = MessageBrokerSchema.brokerSchemaFrom(SampleObject.TRANSPORT_MODEL);
     }
 
     @Test
     public void testEncodeDecode() throws Exception {
-        EmbeddedChannel ch = new EmbeddedChannel(new AvroCodec(schema));
+        EmbeddedChannel ch = new EmbeddedChannel(new AvroCodec(schema, SampleObject.TRANSPORT_MODEL));
 
-        UserContent message = new UserContentWithAck(new SampleUserObject("stringValue", 123), "id123", 0);
+        SampleObject message = new SampleObject(new InternalA("stringValue"));
         assertTrue("Message should be written successfuly to the channel", ch.writeOutbound(message));
 
         ch.writeInbound(ch.readOutbound());
         Object received = ch.readInbound();
-        assertTrue("Expected instance of UserContent", received instanceof UserContentWithAck);
-        assertEquals("Encoded/decoded shall produce identical object", message.getContent(), ((UserContentWithAck) received).getContent());
+        assertTrue("Expected instance of SampleUserObject", received instanceof SampleObject);
+        assertEquals("Encoded/decoded shall produce identical object", message, received);
     }
 
     public static void main(String[] args) throws Exception {

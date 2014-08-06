@@ -25,6 +25,8 @@ import io.netty.buffer.UnpooledByteBufAllocator;
 import org.codehaus.jackson.annotate.JsonAutoDetect.Visibility;
 import org.codehaus.jackson.annotate.JsonMethod;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.SerializationConfig;
+import org.codehaus.jackson.map.SerializationConfig.Feature;
 
 /**
  * FIXME Do we need to abstract from a specific JSON parser implementation?
@@ -36,6 +38,7 @@ public class Json {
 
     static {
         MAPPER.setVisibility(JsonMethod.FIELD, Visibility.ANY);
+        MAPPER.configure(Feature.FAIL_ON_EMPTY_BEANS, false);
     }
 
     public static ObjectMapper getMapper() {

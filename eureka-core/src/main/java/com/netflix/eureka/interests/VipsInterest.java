@@ -12,10 +12,15 @@ import java.util.Set;
  */
 public class VipsInterest extends Interest<InstanceInfo> {
 
-    private final Set<String> vips;
+    private final HashSet<String> vips;
+
+    protected VipsInterest() {
+        vips = null;
+    }
 
     public VipsInterest(String... vips) {
-        this.vips = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(vips)));
+        this.vips = new HashSet<String>(vips.length);
+        Collections.addAll(this.vips, vips);
     }
 
     /**
@@ -30,5 +35,33 @@ public class VipsInterest extends Interest<InstanceInfo> {
     @Override
     public boolean matches(InstanceInfo data) {
         return vips.contains(data.getVipAddress());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        VipsInterest that = (VipsInterest) o;
+
+        if (vips != null ? !vips.equals(that.vips) : that.vips != null) {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return vips != null ? vips.hashCode() : 0;
+    }
+
+    @Override
+    public String toString() {
+        return "VipsInterest{vips=" + vips + '}';
     }
 }

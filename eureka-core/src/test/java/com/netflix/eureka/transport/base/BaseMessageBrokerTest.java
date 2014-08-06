@@ -4,12 +4,9 @@ import java.net.InetSocketAddress;
 import java.util.Iterator;
 import java.util.concurrent.TimeoutException;
 
-import com.netflix.eureka.transport.Acknowledgement;
-import com.netflix.eureka.transport.Message;
 import com.netflix.eureka.transport.MessageBroker;
 import com.netflix.eureka.transport.MessageBrokerServer;
-import com.netflix.eureka.transport.UserContent;
-import com.netflix.eureka.transport.UserContentWithAck;
+import com.netflix.eureka.transport.base.SampleObject.InternalA;
 import com.netflix.eureka.transport.codec.avro.AvroPipelineConfigurator;
 import com.netflix.eureka.transport.utils.BrokerUtils.BrokerPair;
 import org.junit.After;
@@ -18,6 +15,7 @@ import org.junit.Test;
 import rx.Notification;
 import rx.Observable;
 
+import static com.netflix.eureka.rx.RxSniffer.*;
 import static org.junit.Assert.*;
 
 /**
@@ -25,7 +23,7 @@ import static org.junit.Assert.*;
  */
 public class BaseMessageBrokerTest {
 
-    private static final UserContent CONTENT = new UserContent(new SampleUserObject("stringValue", 123));
+    private static final SampleObject CONTENT = new SampleObject(new InternalA("abc"));
 
     MessageBrokerServer server;
     MessageBroker serverBroker;
@@ -33,15 +31,19 @@ public class BaseMessageBrokerTest {
 
     @Before
     public void setUp() throws Exception {
+        AvroPipelineConfigurator codecPipeline =
+                new AvroPipelineConfigurator(SampleObject.TRANSPORT_MODEL);
+
         server = new TcpMessageBrokerBuilder(new InetSocketAddress(0))
-                .withCodecPipeline(new AvroPipelineConfigurator(SampleUserObject.class))
+                .withCodecPiepline(codecPipeline)
                 .buildServer().start();
         Observable<MessageBroker> serverObservable = server.clientConnections();
         int port = server.getServerPort();
 
-        Observable<MessageBroker> clientObservable = new TcpMessageBrokerBuilder(new InetSocketAddress("localhost", port))
-                .withCodecPipeline(new AvroPipelineConfigurator(SampleUserObject.class))
-                .buildClient();
+        Observable<MessageBroker> clientObservable =
+                new TcpMessageBrokerBuilder(new InetSocketAddress("localhost", port))
+                        .withCodecPiepline(codecPipeline)
+                        .buildClient();
 
         BrokerPair brokerPair = new BrokerPair(serverObservable, clientObservable);
         serverBroker = brokerPair.getServerBroker();
@@ -50,16 +52,23 @@ public class BaseMessageBrokerTest {
 
     @After
     public void tearDown() throws Exception {
-        clientBroker.shutdown();
-        serverBroker.shutdown();
-        server.shutdown();
+        if (clientBroker != null) {
+            clientBroker.shutdown();
+        }
+        if (serverBroker != null) {
+            serverBroker.shutdown();
+        }
+        if (server != null) {
+            server.shutdown();
+        }
     }
 
     @Test
     public void testSubmitUserContent() throws Exception {
-        Iterator<Message> incomingMessages = serverBroker.incoming().toBlocking().getIterator();
+        Iterator incomingMessages = serverBroker.incoming().toBlocking().getIterator();
 
-        clientBroker.submit(CONTENT);
+        Observable<Void> submitObservable = clientBroker.submit(CONTENT);
+        assertTrue("Submit operation failed", submitObservable.materialize().toBlocking().first().isOnCompleted());
 
         assertTrue("No message received", incomingMessages.hasNext());
         assertNotNull("expected message on server side", incomingMessages.next());
@@ -67,37 +76,34 @@ public class BaseMessageBrokerTest {
 
     @Test
     public void testSubmitUserContentWithAck() throws Exception {
-        Iterator<Message> serverIncoming = serverBroker.incoming().toBlocking().getIterator();
+        Iterator serverIncoming = serverBroker.incoming().toBlocking().getIterator();
 
-        Observable<Acknowledgement> acknowledgementObservable = clientBroker.submitWithAck(CONTENT);
-        Iterator<Acknowledgement> ackIterator = acknowledgementObservable.toBlocking().getIterator();
+        Observable<Void> ackObservable = sniff("ack", clientBroker.submitWithAck(CONTENT));
+        Iterator<Notification<Void>> ackIterator = ackObservable.materialize().toBlocking().getIterator();
 
         assertTrue("No message received", serverIncoming.hasNext());
-        UserContentWithAck receivedMessage = (UserContentWithAck) serverIncoming.next();
+        SampleObject receivedMessage = (SampleObject) serverIncoming.next();
         assertNotNull("expected message on server side", receivedMessage);
 
         serverBroker.acknowledge(receivedMessage);
 
         assertTrue("Ack not received", ackIterator.hasNext());
-        assertTrue("Expected Acknowledgement instance", ackIterator.next() instanceof Acknowledgement);
+        assertTrue("Expected completed ack observable", ackIterator.next().isOnCompleted());
     }
 
     @Test
     public void testAckTimeout() throws Exception {
-        Iterator<Message> serverIncoming = serverBroker.incoming().toBlocking().getIterator();
+        Iterator serverIncoming = serverBroker.incoming().toBlocking().getIterator();
 
-        Observable<Acknowledgement> acknowledgementObservable = clientBroker.submitWithAck(CONTENT, 1);
-        Iterator<Notification<Acknowledgement>> ackIterator = acknowledgementObservable.materialize().toBlocking().getIterator();
+        Observable<Void> acknowledgementObservable = clientBroker.submitWithAck(CONTENT, 1);
+        Iterator<Notification<Void>> ackIterator = acknowledgementObservable.materialize().toBlocking().getIterator();
 
         assertTrue("No message received", serverIncoming.hasNext());
-        UserContentWithAck receivedMessage = (UserContentWithAck) serverIncoming.next();
+        SampleObject receivedMessage = (SampleObject) serverIncoming.next();
         assertNotNull("expected message on server side", receivedMessage);
 
         // Client side timeout
         assertTrue("Ack not received", ackIterator.hasNext());
         assertTrue("Expected Acknowledgement instance", ackIterator.next().getThrowable() instanceof TimeoutException);
-
-        // Server side timeout
-        //assertFalse("Acknowledgement should be rejected", serverBroker.acknowledge(receivedMessage));
     }
 }

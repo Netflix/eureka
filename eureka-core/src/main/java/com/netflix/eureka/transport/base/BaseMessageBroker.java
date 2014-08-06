@@ -26,10 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.netflix.eureka.transport.Acknowledgement;
-import com.netflix.eureka.transport.Message;
 import com.netflix.eureka.transport.MessageBroker;
-import com.netflix.eureka.transport.UserContent;
-import com.netflix.eureka.transport.UserContentWithAck;
 import io.reactivex.netty.channel.ObservableConnection;
 import rx.Observable;
 import rx.functions.Action1;
@@ -42,10 +39,10 @@ import rx.subjects.ReplaySubject;
  */
 public class BaseMessageBroker implements MessageBroker {
 
-    private final ObservableConnection<Message, Message> connection;
+    private final ObservableConnection<Object, Object> connection;
     private final PublishSubject<Void> lifecycleSubject = PublishSubject.create();
 
-    private final Map<String, ReplaySubject<Acknowledgement>> pendingAck = new ConcurrentHashMap<String, ReplaySubject<Acknowledgement>>();
+    private final Map<String, ReplaySubject<Void>> pendingAck = new ConcurrentHashMap<String, ReplaySubject<Void>>();
     private final DelayQueue<AckExpiry> expiryQueue = new DelayQueue<AckExpiry>();
     private final ScheduledExecutorService expiryScheduler = Executors.newSingleThreadScheduledExecutor();
 
@@ -55,7 +52,7 @@ public class BaseMessageBroker implements MessageBroker {
             try {
                 while (!expiryQueue.isEmpty()) {
                     String correlationId = expiryQueue.poll().getCorrelationId();
-                    ReplaySubject<Acknowledgement> ackSubject = pendingAck.get(correlationId);
+                    ReplaySubject<Void> ackSubject = pendingAck.get(correlationId);
                     ackSubject.onError(new TimeoutException("acknowledgement timeout for message with correlation id " + correlationId));
                 }
             } catch (Exception e) {
@@ -66,23 +63,22 @@ public class BaseMessageBroker implements MessageBroker {
         }
     };
 
-    public BaseMessageBroker(ObservableConnection<Message, Message> connection) {
+    public BaseMessageBroker(ObservableConnection<Object, Object> connection) {
         this.connection = connection;
         installAcknowledgementHandler();
     }
 
     private void installAcknowledgementHandler() {
-        connection.getInput().subscribe(new Action1<Message>() {
+        connection.getInput().subscribe(new Action1<Object>() {
             @Override
-            public void call(Message message) {
+            public void call(Object message) {
                 if (!(message instanceof Acknowledgement)) {
                     return;
                 }
                 Acknowledgement ack = (Acknowledgement) message;
                 String correlationId = ack.getCorrelationId();
-                ReplaySubject<Acknowledgement> observable = pendingAck.get(correlationId);
+                ReplaySubject<Void> observable = pendingAck.get(correlationId);
                 if (observable != null) {
-                    observable.onNext(ack);
                     observable.onCompleted();
                 }
             }
@@ -91,49 +87,42 @@ public class BaseMessageBroker implements MessageBroker {
     }
 
     @Override
-    public void submit(UserContent message) {
-        connection.write(message);
-        connection.flush();
+    public Observable<Void> submit(Object message) {
+        return connection.writeAndFlush(message);
     }
 
     @Override
-    public Observable<Acknowledgement> submitWithAck(UserContent message) {
+    public Observable<Void> submitWithAck(Object message) {
         return submitWithAck(message, 0);
     }
 
     @Override
-    public Observable<Acknowledgement> submitWithAck(UserContent message, long timeout) {
-        String correlationId = Long.toString(System.currentTimeMillis());
+    public Observable<Void> submitWithAck(Object message, long timeout) {
+        String correlationId = correlationIdFor(message);
 
-        ReplaySubject<Acknowledgement> ackObservable = ReplaySubject.create();
+        ReplaySubject<Void> ackObservable = ReplaySubject.create();
         pendingAck.put(correlationId, ackObservable);
         if (timeout > 0) {
             expiryQueue.put(new AckExpiry(correlationId, timeout));
         }
 
-        submit(new UserContentWithAck(message.getContent(), correlationId, timeout));
-
-        return ackObservable;
+        return Observable.concat(
+                connection.writeAndFlush(message),
+                ackObservable
+        );
     }
 
     @Override
-    public boolean acknowledge(UserContentWithAck message) {
-        connection.write(new Acknowledgement(message.getCorrelationId()));
-        connection.flush();
-        return true;
+    public Observable<Void> acknowledge(Object message) {
+        return connection.writeAndFlush(new Acknowledgement(correlationIdFor(message)));
     }
 
     @Override
-    public Observable<Message> incoming() {
-        return connection.getInput().filter(new Func1<Message, Boolean>() {
+    public Observable<Object> incoming() {
+        return connection.getInput().filter(new Func1<Object, Boolean>() {
             @Override
-            public Boolean call(Message message) {
+            public Boolean call(Object message) {
                 return !(message instanceof Acknowledgement);
-            }
-        }).doOnNext(new Action1<Message>() {
-            @Override
-            public void call(Message message) {
-
             }
         });
     }
@@ -148,6 +137,10 @@ public class BaseMessageBroker implements MessageBroker {
     @Override
     public Observable<Void> lifecycleObservable() {
         return lifecycleSubject;
+    }
+
+    private String correlationIdFor(Object message) {
+        return Integer.toString(message.hashCode());
     }
 
     private static class AckExpiry implements Delayed {
