@@ -16,7 +16,6 @@
 
 package com.netflix.eureka.transport.codec.avro;
 
-import com.netflix.eureka.transport.Message;
 import com.netflix.eureka.transport.utils.TransportModel;
 import io.netty.channel.ChannelPipeline;
 import io.reactivex.netty.pipeline.PipelineConfigurator;
@@ -25,16 +24,18 @@ import org.apache.avro.Schema;
 /**
  * @author Tomasz Bak
  */
-public class AvroPipelineConfigurator implements PipelineConfigurator<Message, Message> {
+public class AvroPipelineConfigurator<I, O> implements PipelineConfigurator<I, O> {
 
     private final Schema schema;
+    private final TransportModel model;
 
     public AvroPipelineConfigurator(TransportModel model) {
+        this.model = model;
         schema = MessageBrokerSchema.brokerSchemaFrom(model);
     }
 
     @Override
     public void configureNewPipeline(ChannelPipeline pipeline) {
-        pipeline.addLast(new AvroCodec(schema));
+        pipeline.addLast(new AvroCodec(schema, model));
     }
 }

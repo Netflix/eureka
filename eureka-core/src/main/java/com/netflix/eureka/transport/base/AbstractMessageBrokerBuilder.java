@@ -18,7 +18,6 @@ package com.netflix.eureka.transport.base;
 
 import java.net.InetSocketAddress;
 
-import com.netflix.eureka.transport.Message;
 import com.netflix.eureka.transport.MessageBroker;
 import io.reactivex.netty.pipeline.PipelineConfigurator;
 import rx.Observable;
@@ -26,21 +25,21 @@ import rx.Observable;
 /**
  * @author Tomasz Bak
  */
-public abstract class AbstractMessageBrokerBuilder<T extends Message, B extends AbstractMessageBrokerBuilder<T, B>> {
+public abstract class AbstractMessageBrokerBuilder<I, O, B extends AbstractMessageBrokerBuilder<I, O, B>> {
 
     protected final InetSocketAddress address;
-    protected PipelineConfigurator<Message, Message> codecPipeline;
+    protected PipelineConfigurator codecPipeline;
 
-    public AbstractMessageBrokerBuilder(InetSocketAddress address) {
+    protected AbstractMessageBrokerBuilder(InetSocketAddress address) {
         this.address = address;
     }
 
-    public B withCodecPipeline(PipelineConfigurator<Message, Message> codecPipeline) {
+    public B withCodecPiepline(PipelineConfigurator codecPipeline) {
         this.codecPipeline = codecPipeline;
         return (B) this;
     }
 
-    public abstract BaseMessageBrokerServer buildServer();
+    public abstract BaseMessageBrokerServer<O, I> buildServer();
 
-    public abstract Observable<MessageBroker> buildClient();
+    public abstract Observable<MessageBroker<I, O>> buildClient();
 }

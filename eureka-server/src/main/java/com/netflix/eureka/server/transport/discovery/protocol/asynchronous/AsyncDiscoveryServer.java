@@ -25,11 +25,8 @@ import com.netflix.eureka.protocol.discovery.UnregisterInterestSet;
 import com.netflix.eureka.server.transport.Context;
 import com.netflix.eureka.server.transport.TransportServer;
 import com.netflix.eureka.server.transport.discovery.DiscoveryHandler;
-import com.netflix.eureka.transport.Message;
 import com.netflix.eureka.transport.MessageBroker;
 import com.netflix.eureka.transport.MessageBrokerServer;
-import com.netflix.eureka.transport.UserContent;
-import com.netflix.eureka.transport.UserContentWithAck;
 import rx.Subscriber;
 import rx.functions.Action1;
 
@@ -47,7 +44,7 @@ public class AsyncDiscoveryServer implements TransportServer {
             public void call(MessageBroker messageBroker) {
                 // FIXME What is the best way to identify active client connection?
                 Context clientContext = new Context();
-                handler.updates(clientContext).forEach(new NotificationForwarded(messageBroker));
+                handler.updates(clientContext).forEach(new NotificationForwarder(messageBroker));
                 messageBroker.incoming().forEach(new ClientMessageDispatcher(messageBroker, clientContext, handler));
             }
         });
@@ -58,7 +55,7 @@ public class AsyncDiscoveryServer implements TransportServer {
         brokerServer.shutdown();
     }
 
-    static class ClientMessageDispatcher implements Action1<Message> {
+    static class ClientMessageDispatcher implements Action1<Object> {
 
         private final MessageBroker messageBroker;
         private final Context clientContext;
@@ -71,14 +68,11 @@ public class AsyncDiscoveryServer implements TransportServer {
         }
 
         @Override
-        public void call(final Message message) {
-            if (!(message instanceof UserContentWithAck)) {
-                return;
-            }
+        public void call(final Object message) {
             Subscriber<Void> ackSubscriber = new Subscriber<Void>() {
                 @Override
                 public void onCompleted() {
-                    messageBroker.acknowledge((UserContentWithAck) message);
+                    messageBroker.acknowledge(message);
                 }
 
                 @Override
@@ -89,26 +83,25 @@ public class AsyncDiscoveryServer implements TransportServer {
                 public void onNext(Void aVoid) {
                 }
             };
-            Object content = ((UserContent) message).getContent();
-            if (content instanceof RegisterInterestSet) {
-                Interest[] interests = ((RegisterInterestSet) content).getInterestSet();
+            if (message instanceof RegisterInterestSet) {
+                Interest[] interests = ((RegisterInterestSet) message).getInterestSet();
                 handler.registerInterestSet(clientContext, Arrays.asList(interests)).subscribe(ackSubscriber);
-            } else if (content instanceof UnregisterInterestSet) {
+            } else if (message instanceof UnregisterInterestSet) {
                 handler.unregisterInterestSet(clientContext).subscribe(ackSubscriber);
             }
         }
     }
 
-    static class NotificationForwarded implements Action1<InterestSetNotification> {
+    static class NotificationForwarder implements Action1<InterestSetNotification> {
         private final MessageBroker messageBroker;
 
-        NotificationForwarded(MessageBroker messageBroker) {
+        NotificationForwarder(MessageBroker messageBroker) {
             this.messageBroker = messageBroker;
         }
 
         @Override
         public void call(InterestSetNotification notification) {
-            messageBroker.submit(new UserContent(notification));
+            messageBroker.submit(notification);
         }
     }
 }

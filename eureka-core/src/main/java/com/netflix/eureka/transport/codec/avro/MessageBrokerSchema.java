@@ -17,16 +17,11 @@
 package com.netflix.eureka.transport.codec.avro;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import com.netflix.eureka.transport.Acknowledgement;
-import com.netflix.eureka.transport.UserContent;
-import com.netflix.eureka.transport.UserContentWithAck;
 import com.netflix.eureka.transport.utils.TransportModel;
 import org.apache.avro.Schema;
-import org.apache.avro.Schema.Field;
-import org.apache.avro.Schema.Type;
 
 /**
  * Avro schema is generated from Java class. Since {@link UserContent} and {@link UserContentWithAck}
@@ -41,42 +36,13 @@ import org.apache.avro.Schema.Type;
  */
 class MessageBrokerSchema {
 
-    private static final Schema ACKNOWLEDGEMENT_SCHEMA = ConfigurableReflectData.get().getSchema(Acknowledgement.class);
-
     static Schema brokerSchemaFrom(TransportModel model) {
         ConfigurableReflectData reflectData = new ConfigurableReflectData(model);
 
-        Schema userSchemas = unionOf(reflectData, model.getMessageTypes());
-        return Schema.createUnion(Arrays.asList(
-                ACKNOWLEDGEMENT_SCHEMA, userContentSchema(userSchemas), userContentWithAckSchema(userSchemas)
-        ));
-    }
-
-    private static Schema userContentSchema(Schema userSchemas) {
-        List<Field> fields = new ArrayList<Field>();
-        fields.add(new Field("content", userSchemas, null, null));
-
-        Schema schema = Schema.createRecord(UserContent.class.getSimpleName(), null, UserContent.class.getPackage().getName(), false);
-        schema.setFields(fields);
-
-        return schema;
-    }
-
-    private static Schema userContentWithAckSchema(Schema userSchemas) {
-        List<Field> fields = new ArrayList<Field>();
-        fields.add(new Field("content", userSchemas, null, null));
-        fields.add(new Field("correlationId", Schema.create(Type.STRING), null, null));
-        fields.add(new Field("timeout", Schema.create(Type.LONG), null, null));
-
-        Schema schema = Schema.createRecord(UserContentWithAck.class.getSimpleName(), null, UserContentWithAck.class.getPackage().getName(), false);
-        schema.setFields(fields);
-
-        return schema;
-    }
-
-    private static Schema unionOf(ConfigurableReflectData reflectData, List<Class<?>> types) {
         List<Schema> schemas = new ArrayList<Schema>();
-        for (Class<?> c : types) {
+        schemas.add(reflectData.getSchema(Acknowledgement.class));
+
+        for (Class<?> c : model.getProtocolTypes()) {
             schemas.add(reflectData.getSchema(c));
         }
         return Schema.createUnion(schemas);

@@ -16,16 +16,23 @@
 
 package com.netflix.eureka.transport.codec.json;
 
-import com.netflix.eureka.transport.Message;
+import com.netflix.eureka.transport.utils.TransportModel;
 import io.netty.channel.ChannelPipeline;
 import io.reactivex.netty.pipeline.PipelineConfigurator;
 
 /**
  * @author Tomasz Bak
  */
-public class JsonPipelineConfigurator implements PipelineConfigurator<Message, Message> {
+public class JsonPipelineConfigurator<I, O> implements PipelineConfigurator<I, O> {
+
+    private final TransportModel model;
+
+    public JsonPipelineConfigurator(TransportModel model) {
+        this.model = model;
+    }
+
     @Override
     public void configureNewPipeline(ChannelPipeline pipeline) {
-        pipeline.addLast(new JsonCodec());
+        pipeline.addLast(new JsonCodec(model));
     }
 }

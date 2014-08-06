@@ -23,13 +23,10 @@ import com.netflix.eureka.protocol.Heartbeat;
 import com.netflix.eureka.protocol.registration.Unregister;
 import com.netflix.eureka.protocol.registration.Update;
 import com.netflix.eureka.registry.InstanceInfo;
-import com.netflix.eureka.transport.Acknowledgement;
 import com.netflix.eureka.transport.MessageBroker;
-import com.netflix.eureka.transport.UserContent;
 import com.netflix.eureka.transport.utils.HeartBeatHandler;
 import com.netflix.eureka.transport.utils.HeartBeatHandler.HeartbeatClient;
 import rx.Observable;
-import rx.functions.Func1;
 
 /**
  * @author Tomasz Bak
@@ -50,17 +47,17 @@ public class AsyncRegistrationClient implements RegistrationClient {
 
     @Override
     public Observable<Void> register(InstanceInfo instanceInfo) {
-        return executeCommand(new UserContent(instanceInfo));
+        return messageBroker.submitWithAck(instanceInfo);
     }
 
     @Override
     public Observable<Void> update(InstanceInfo instanceInfo, Update update) {
-        return executeCommand(new UserContent(update));
+        return messageBroker.submitWithAck(update);
     }
 
     @Override
     public Observable<Void> unregister(InstanceInfo instanceInfo) {
-        return executeCommand(new UserContent(new Unregister()));
+        return messageBroker.submitWithAck(new Unregister());
     }
 
     @Override
@@ -74,13 +71,4 @@ public class AsyncRegistrationClient implements RegistrationClient {
         return heartbeatClient.connectionStatus();
     }
 
-    private Observable<Void> executeCommand(UserContent command) {
-        Observable<Acknowledgement> ack = messageBroker.submitWithAck(command);
-        return ack.map(new Func1<Acknowledgement, Void>() {
-            @Override
-            public Void call(Acknowledgement acknowledgement) {
-                return null;
-            }
-        });
-    }
 }

@@ -30,16 +30,14 @@ import com.netflix.eureka.protocol.discovery.RegisterInterestSet;
 import com.netflix.eureka.protocol.discovery.UnregisterInterestSet;
 import com.netflix.eureka.server.transport.Context;
 import com.netflix.eureka.server.transport.discovery.DiscoveryHandler;
-import com.netflix.eureka.transport.Acknowledgement;
 import com.netflix.eureka.transport.EurekaTransports;
 import com.netflix.eureka.transport.EurekaTransports.Codec;
-import com.netflix.eureka.transport.Message;
 import com.netflix.eureka.transport.MessageBroker;
 import com.netflix.eureka.transport.MessageBrokerServer;
-import com.netflix.eureka.transport.UserContent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import rx.Notification;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
@@ -74,28 +72,30 @@ public class AsyncDiscoveryServerTest {
     public void testRegisterInteresetSet() throws Exception {
         RegisterInterestSet request = new RegisterInterestSet(interestCollectionOf(ZuulVip, DiscoveryApp));
 
-        Observable<Acknowledgement> ackObservable = brokerClient.submitWithAck(new UserContent(request));
-        ackObservable.toBlocking().last();
+        Observable<Void> ackObservable = brokerClient.submitWithAck(request);
+        Notification<Void> ackNotification = ackObservable.materialize().toBlocking().single();
+        assertTrue("Acknowledgement failure", ackNotification.isOnCompleted());
 
         assertEquals("Invalid interest set received", Arrays.asList(request.getInterestSet()), handler.interestRef.get());
     }
 
     @Test
     public void testUnregisterInterestSet() throws Exception {
-        Observable<Acknowledgement> ackObservable = brokerClient.submitWithAck(new UserContent(new UnregisterInterestSet()));
-        ackObservable.toBlocking().last();
+        Observable<Void> ackObservable = brokerClient.submitWithAck(new UnregisterInterestSet());
+        Notification<Void> ackNotification = ackObservable.materialize().toBlocking().last();
+        assertTrue("Acknowledgement failure", ackNotification.isOnCompleted());
 
         assertTrue("Unregister status not set", handler.unregistered.get());
     }
 
     @Test
     public void testReceiveUpdates() throws Exception {
-        Iterator<Message> updateIterator = brokerClient.incoming().toBlocking().getIterator();
+        Iterator<AddInstance> updateIterator = brokerClient.incoming().toBlocking().getIterator();
         AddInstance updateAction = new AddInstance(SampleInstanceInfo.DiscoveryServer.build());
         handler.updateSubject.onNext(updateAction);
 
-        Message nextUpdate = updateIterator.next();
-        assertEquals("Unexpected update action", updateAction, ((UserContent) nextUpdate).getContent());
+        AddInstance nextUpdate = updateIterator.next();
+        assertEquals("Unexpected update action", updateAction, nextUpdate);
     }
 
     static class TestDiscoveryHandler implements DiscoveryHandler {

@@ -1,5 +1,8 @@
 package com.netflix.eureka;
 
+import java.util.Arrays;
+import java.util.Iterator;
+
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.interests.Interests;
 import com.netflix.eureka.protocol.Heartbeat;
@@ -11,17 +14,12 @@ import com.netflix.eureka.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka.protocol.registration.Register;
 import com.netflix.eureka.protocol.registration.Unregister;
 import com.netflix.eureka.protocol.registration.Update;
-import com.netflix.eureka.transport.Acknowledgement;
-import com.netflix.eureka.transport.Message;
 import com.netflix.eureka.transport.MessageBroker;
-import com.netflix.eureka.transport.UserContent;
-import com.netflix.eureka.transport.UserContentWithAck;
+import rx.Notification;
 import rx.Observable;
 
-import java.util.Arrays;
-import java.util.Iterator;
-
-import static org.junit.Assert.assertEquals;
+import static com.netflix.eureka.rx.RxSniffer.*;
+import static org.junit.Assert.*;
 
 /**
  * @author Tomasz Bak
@@ -30,8 +28,8 @@ public abstract class TransportCompatibilityTestSuite {
 
     protected final MessageBroker clientBroker;
     protected final MessageBroker serverBroker;
-    protected final Iterator<Message> serverIterator;
-    protected final Iterator<Message> clientIterator;
+    protected final Iterator<Object> serverIterator;
+    protected final Iterator<Object> clientIterator;
 
     protected TransportCompatibilityTestSuite(MessageBroker clientBroker, MessageBroker serverBroker) {
         this.clientBroker = clientBroker;
@@ -41,9 +39,9 @@ public abstract class TransportCompatibilityTestSuite {
     }
 
     public <T> void runClientToServer(T content) {
-        clientBroker.submit(new UserContent(content));
-        UserContent receivedMsg = (UserContent) serverIterator.next();
-        assertEquals(content, receivedMsg.getContent());
+        sniff("submit", clientBroker.submit(content));
+        T receivedMsg = (T) serverIterator.next();
+        assertEquals(content, receivedMsg);
     }
 
     public <T> void runClientToServerWithAck(T content) {
@@ -54,16 +52,16 @@ public abstract class TransportCompatibilityTestSuite {
         runWithAck(serverBroker, clientBroker, clientIterator, content);
     }
 
-    private <T> void runWithAck(MessageBroker source, MessageBroker dest, Iterator<Message> destIt, T content) {
-        Observable<Acknowledgement> ack = source.submitWithAck(new UserContent(content));
-        Iterator<Acknowledgement> ackIterator = ack.toBlocking().getIterator();
+    private <T> void runWithAck(MessageBroker source, MessageBroker dest, Iterator<Object> destIt, T content) {
+        Observable<Void> ack = sniff("ack", source.submitWithAck(content));
+        Iterator<Notification<Void>> ackIterator = ack.materialize().toBlocking().getIterator();
 
-        UserContentWithAck receivedMsg = (UserContentWithAck) destIt.next();
-        assertEquals(content, receivedMsg.getContent());
+        T receivedMsg = (T) destIt.next();
+        assertEquals(content, receivedMsg);
 
         dest.acknowledge(receivedMsg);
 
-        assertEquals(receivedMsg.getCorrelationId(), ackIterator.next().getCorrelationId());
+        assertTrue("Expected successful acknowledgement", ackIterator.next().isOnCompleted());
     }
 
     public static class RegistrationProtocolTest extends TransportCompatibilityTestSuite {

@@ -54,12 +54,12 @@ import rx.Observable;
  *
  * @author Tomasz Bak
  */
-public interface MessageBroker {
+public interface MessageBroker<I, O> {
 
     /**
      * Submit a message with a user content one-way.
      */
-    void submit(UserContent message);
+    Observable<Void> submit(O message);
 
     /**
      * Submit a message with a user content and expect acknowledgement in return. Acknowledgement does not
@@ -67,7 +67,7 @@ public interface MessageBroker {
      *
      * @return observable that returns exactly one {@link Acknowledgement} object.
      */
-    Observable<Acknowledgement> submitWithAck(UserContent message);
+    Observable<Void> submitWithAck(O message);
 
     /**
      * Submit a message with a user content and expect acknowledgement in return. Acknowledgement does not
@@ -79,7 +79,7 @@ public interface MessageBroker {
      * @return observable that returns exactly one {@link Acknowledgement} object or {@link TimeoutException}
      *         if no acknowledgment received on time
      */
-    Observable<Acknowledgement> submitWithAck(UserContent message, long timeout);
+    Observable<Void> submitWithAck(O message, long timeout);
 
     /**
      * For a received message, send back an acknowledgement. {@link UserContentWithAck} contains a correlation id
@@ -88,12 +88,12 @@ public interface MessageBroker {
      *
      * @return if acknowledgement was successfuly submitted
      */
-    boolean acknowledge(UserContentWithAck message);
+    Observable<Void> acknowledge(I message);
 
     /**
      * @return observable of messages send by the other side of a connection
      */
-    Observable<Message> incoming();
+    Observable<I> incoming();
 
     /**
      * Close a connection.

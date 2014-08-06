@@ -25,13 +25,13 @@ import rx.Observable;
  *
  * @author Tomasz Bak
  */
-public interface MessageBrokerServer {
+public interface MessageBrokerServer<I, O> {
 
-    Observable<MessageBroker> clientConnections();
+    Observable<MessageBroker<I, O>> clientConnections();
 
     int getServerPort();
 
-    MessageBrokerServer start();
+    MessageBrokerServer<I, O> start();
 
     void shutdown() throws InterruptedException;
 }

@@ -68,25 +68,25 @@ public class EurekaTransports {
 
     public static Observable<MessageBroker> tcpRegistrationClient(String host, int port, Codec codec) {
         return new TcpMessageBrokerBuilder(new InetSocketAddress(host, port))
-                .withCodecPipeline(piplineFor(codec, REGISTRATION_MODEL))
+                .withCodecPiepline(piplineFor(codec, REGISTRATION_MODEL))
                 .buildClient();
     }
 
     public static MessageBrokerServer tcpRegistrationServer(int port, Codec codec) {
         return new TcpMessageBrokerBuilder(new InetSocketAddress(port))
-                .withCodecPipeline(piplineFor(codec, REGISTRATION_MODEL))
+                .withCodecPiepline(piplineFor(codec, REGISTRATION_MODEL))
                 .buildServer();
     }
 
     public static Observable<MessageBroker> tcpDiscoveryClient(String host, int port, Codec codec) {
         return new TcpMessageBrokerBuilder(new InetSocketAddress(host, port))
-                .withCodecPipeline(piplineFor(codec, DISCOVERY_MODEL))
+                .withCodecPiepline(piplineFor(codec, DISCOVERY_MODEL))
                 .buildClient();
     }
 
     public static MessageBrokerServer tcpDiscoveryServer(int port, Codec codec) {
         return new TcpMessageBrokerBuilder(new InetSocketAddress(port))
-                .withCodecPipeline(piplineFor(codec, DISCOVERY_MODEL))
+                .withCodecPiepline(piplineFor(codec, DISCOVERY_MODEL))
                 .buildServer();
     }
 
@@ -106,12 +106,12 @@ public class EurekaTransports {
         return tcpDiscoveryServer(port, Codec.Avro);
     }
 
-    static PipelineConfigurator<Message, Message> piplineFor(Codec codec, TransportModel model) {
+    static PipelineConfigurator piplineFor(Codec codec, TransportModel model) {
         switch (codec) {
             case Avro:
                 return new AvroPipelineConfigurator(model);
             case Json:
-                return new JsonPipelineConfigurator();
+                return new JsonPipelineConfigurator(model);
         }
         throw new IllegalArgumentException("internal error - missing pipelinie implementation for codec " + codec);
     }

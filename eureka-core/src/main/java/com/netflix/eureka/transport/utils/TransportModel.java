@@ -17,25 +17,33 @@
 package com.netflix.eureka.transport.utils;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Tomasz Bak
  */
 public class TransportModel {
 
-    private final List<Class<?>> messageTypes;
+    private final Set<Class<?>> protocolTypes;
     private final Map<Class<?>, List<Class<?>>> classHierarchies;
 
-    public TransportModel(Class<?>[] messageTypes, Map<Class<?>, List<Class<?>>> classHierarchies) {
-        this.messageTypes = Arrays.asList(messageTypes);
+    public TransportModel(Class<?>[] protocolTypes, Map<Class<?>, List<Class<?>>> classHierarchies) {
+        this.protocolTypes = new HashSet<Class<?>>(protocolTypes.length);
+        Collections.addAll(this.protocolTypes, protocolTypes);
         this.classHierarchies = classHierarchies;
     }
 
-    public List<Class<?>> getMessageTypes() {
-        return messageTypes;
+    public boolean isProtocolMessage(Object msg) {
+        return protocolTypes.contains(msg.getClass());
+    }
+
+    public Set<Class<?>> getProtocolTypes() {
+        return protocolTypes;
     }
 
     public <T> boolean isKnownAbstract(Class<T> type) {

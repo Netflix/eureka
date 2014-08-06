@@ -1,11 +1,8 @@
 package com.netflix.eureka.transport.codec.avro;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-import com.netflix.eureka.transport.UserContent;
-import com.netflix.eureka.transport.UserContentWithAck;
 import com.netflix.eureka.transport.base.SampleUserObject;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.apache.avro.Schema;
@@ -30,15 +27,15 @@ public class AvroCodecTest {
 
     @Test
     public void testEncodeDecode() throws Exception {
-        EmbeddedChannel ch = new EmbeddedChannel(new AvroCodec(schema));
+        EmbeddedChannel ch = new EmbeddedChannel(new AvroCodec(schema, SampleUserObject.TRANSPORT_MODEL));
 
-        UserContent message = new UserContentWithAck(new SampleUserObject("stringValue", 123), "id123", 0);
+        SampleUserObject message = new SampleUserObject("stringValue", 123);
         assertTrue("Message should be written successfuly to the channel", ch.writeOutbound(message));
 
         ch.writeInbound(ch.readOutbound());
         Object received = ch.readInbound();
-        assertTrue("Expected instance of UserContent", received instanceof UserContentWithAck);
-        assertEquals("Encoded/decoded shall produce identical object", message.getContent(), ((UserContentWithAck) received).getContent());
+        assertTrue("Expected instance of SampleUserObject", received instanceof SampleUserObject);
+        assertEquals("Encoded/decoded shall produce identical object", message, received);
     }
 
     public static void main(String[] args) throws Exception {

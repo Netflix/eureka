@@ -19,7 +19,7 @@ package com.netflix.eureka.transport;
 /**
  * @author Tomasz Bak
  */
-public class Acknowledgement extends Message {
+public class Acknowledgement {
     private final String correlationId;
 
     protected Acknowledgement() {
