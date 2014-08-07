@@ -17,17 +17,26 @@
 package com.netflix.eureka.server.transport.registration;
 
 import com.netflix.eureka.server.transport.TransportServer;
+import com.netflix.eureka.server.transport.registration.protocol.asynchronous.AsyncRegistrationServer;
+import com.netflix.eureka.transport.EurekaTransports;
 
 /**
  * @author Tomasz Bak
  */
 public class RegistrationServers {
 
-    public static TransportServer tcpRegistrationServer(String host, int port, RegistrationHandler handler) {
-        return null;
+    public static TransportServer tcpRegistrationServer(int port, RegistrationHandler handler) {
+        return new AsyncRegistrationServer(
+                EurekaTransports.tcpRegistrationServer(port),
+                handler
+        );
     }
 
-    public static TransportServer httpRegistrationServer(String host, int port, RegistrationHandler handler) {
-        return null;
+    public static TransportServer httpRegistrationServer(int port, RegistrationHandler handler) {
+        throw new RuntimeException("not implemented");
+    }
+
+    public static TransportServer websocketRegistrationServer(int port, RegistrationHandler handler) {
+        throw new RuntimeException("not implemented");
     }
 }

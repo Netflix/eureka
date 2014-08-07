@@ -112,6 +112,11 @@ public class AsyncDiscoveryServerTest {
         }
 
         @Override
+        public Observable<Void> heartbeat(Context context) {
+            return Observable.empty();
+        }
+
+        @Override
         public Observable<Void> unregisterInterestSet(Context context) {
             unregistered.set(true);
             return Observable.empty();

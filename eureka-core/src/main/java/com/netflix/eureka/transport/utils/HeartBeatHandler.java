@@ -21,6 +21,9 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka.transport.MessageBroker;
 import rx.Observable;
+import rx.Subscription;
+import rx.functions.Func1;
+import rx.subjects.PublishSubject;
 
 /**
  * Client/server heartbeat implementation on top of {@link MessageBroker}.
@@ -30,43 +33,30 @@ import rx.Observable;
 public class HeartBeatHandler {
 
     public abstract static class HeartbeatClient<T> {
-        public HeartbeatClient(MessageBroker from, long timeout, TimeUnit unit) {
+
+        private final PublishSubject<Void> statusObservable = PublishSubject.create();
+        private final Subscription heartbeatSubscription;
+
+        protected HeartbeatClient(final MessageBroker clientBroker, long interval, TimeUnit unit) {
+            heartbeatSubscription = Observable.interval(interval, unit).flatMap(new Func1<Long, Observable<Void>>() {
+                @Override
+                public Observable<Void> call(Long aLong) {
+                    return clientBroker.submit(heartbeatMessage());
+                }
+            }).subscribe(statusObservable);
         }
 
         /**
          * Set on error if client/server communication is broken.
          */
         public Observable<Void> connectionStatus() {
-            throw new IllegalStateException("not implemented yet");
+            return statusObservable;
         }
 
         public void shutdown() {
-            throw new IllegalStateException("not implemented yet");
+            heartbeatSubscription.unsubscribe();
         }
 
         protected abstract T heartbeatMessage();
-    }
-
-    public static class HeartbeatServer<T> {
-        public HeartbeatServer(MessageBroker to, long timeout, TimeUnit unit) {
-        }
-
-        /**
-         * Returns heartbeat messages, or sets error if there is a timeout.
-         */
-        public Observable<T> receivedHeartbeats() {
-            throw new IllegalStateException("not implemented yet");
-        }
-
-        /**
-         * Set on error if client/server communication is broken.
-         */
-        public Observable<Void> connectionStatus() {
-            throw new IllegalStateException("not implemented yet");
-        }
-
-        public void shutdown() {
-            throw new IllegalStateException("not implemented yet");
-        }
     }
 }
