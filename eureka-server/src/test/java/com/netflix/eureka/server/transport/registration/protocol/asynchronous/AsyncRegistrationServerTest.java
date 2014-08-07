@@ -97,8 +97,7 @@ public class AsyncRegistrationServerTest {
 
     @Test
     public void testHeartbeat() throws Exception {
-        Heartbeat request = new Heartbeat();
-        brokerClient.submit(request);
+        brokerClient.submit(Heartbeat.INSTANCE);
         assertTrue("Heartbeat not delivered", handler.heartbeatLatch.await(100, TimeUnit.MILLISECONDS));
     }
 

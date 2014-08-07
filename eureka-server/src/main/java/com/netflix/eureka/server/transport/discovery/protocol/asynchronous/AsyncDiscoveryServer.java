@@ -19,6 +19,7 @@ package com.netflix.eureka.server.transport.discovery.protocol.asynchronous;
 import java.util.Arrays;
 
 import com.netflix.eureka.interests.Interest;
+import com.netflix.eureka.protocol.Heartbeat;
 import com.netflix.eureka.protocol.discovery.InterestSetNotification;
 import com.netflix.eureka.protocol.discovery.RegisterInterestSet;
 import com.netflix.eureka.protocol.discovery.UnregisterInterestSet;
@@ -103,6 +104,8 @@ public class AsyncDiscoveryServer implements TransportServer {
                 response = handler.registerInterestSet(clientContext, Arrays.asList(interests));
             } else if (message instanceof UnregisterInterestSet) {
                 response = handler.unregisterInterestSet(clientContext);
+            } else if (message instanceof Heartbeat) {
+                return handler.heartbeat(clientContext);
             } else {
                 return Observable.empty();
             }
