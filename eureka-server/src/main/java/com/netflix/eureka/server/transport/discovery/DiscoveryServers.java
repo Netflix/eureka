@@ -17,14 +17,22 @@
 package com.netflix.eureka.server.transport.discovery;
 
 import com.netflix.eureka.server.transport.TransportServer;
+import com.netflix.eureka.server.transport.discovery.protocol.asynchronous.AsyncDiscoveryServer;
+import com.netflix.eureka.transport.EurekaTransports;
 
 /**
  * @author Tomasz Bak
  */
 public class DiscoveryServers {
 
-    public static TransportServer tcpDiscoveryServer(String host, int port, DiscoveryHandler handler) {
-        return null;
+    public static TransportServer tcpDiscoveryServer(int port, DiscoveryHandler handler) {
+        return new AsyncDiscoveryServer(
+                EurekaTransports.tcpDiscoveryServer(port),
+                handler
+        );
     }
 
+    public static TransportServer websocketDiscoveryServer(int port, DiscoveryHandler handler) {
+        throw new RuntimeException("not implemented");
+    }
 }

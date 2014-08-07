@@ -19,11 +19,14 @@ package com.netflix.eureka.server.transport.discovery.protocol.asynchronous;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.eureka.SampleInstanceInfo;
 import com.netflix.eureka.interests.Interest;
+import com.netflix.eureka.protocol.Heartbeat;
 import com.netflix.eureka.protocol.discovery.AddInstance;
 import com.netflix.eureka.protocol.discovery.InterestSetNotification;
 import com.netflix.eureka.protocol.discovery.RegisterInterestSet;
@@ -56,9 +59,9 @@ public class AsyncDiscoveryServerTest {
 
     @Before
     public void setUp() throws Exception {
-        brokerServer = EurekaTransports.tcpDiscoveryServer(0, Codec.Avro).start();
+        brokerServer = EurekaTransports.tcpDiscoveryServer(0, Codec.Json).start();
         discoveryServer = new AsyncDiscoveryServer(brokerServer, handler);
-        brokerClient = EurekaTransports.tcpDiscoveryClient("localhost", brokerServer.getServerPort(), Codec.Avro).toBlocking().first();
+        brokerClient = EurekaTransports.tcpDiscoveryClient("localhost", brokerServer.getServerPort(), Codec.Json).toBlocking().first();
     }
 
     @After
@@ -90,6 +93,8 @@ public class AsyncDiscoveryServerTest {
 
     @Test
     public void testReceiveUpdates() throws Exception {
+        brokerClient.submit(Heartbeat.INSTANCE).materialize().toBlocking().last(); // Make sure we are connected
+
         Iterator updateIterator = brokerClient.incoming().toBlocking().getIterator();
         AddInstance updateAction = new AddInstance(SampleInstanceInfo.DiscoveryServer.build());
         handler.updateSubject.onNext(updateAction);
@@ -98,16 +103,27 @@ public class AsyncDiscoveryServerTest {
         assertEquals("Unexpected update action", updateAction, nextUpdate);
     }
 
+    @Test
+    public void testHeartbeat() throws Exception {
+        brokerClient.submit(Heartbeat.INSTANCE);
+        assertTrue("Heartbeat not delivered", handler.heartbeatLatch.await(100, TimeUnit.MILLISECONDS));
+    }
+
     static class TestDiscoveryHandler implements DiscoveryHandler {
         AtomicReference<List<Interest>> interestRef = new AtomicReference<List<Interest>>();
-
         AtomicBoolean unregistered = new AtomicBoolean();
-
         PublishSubject<InterestSetNotification> updateSubject = PublishSubject.create();
+        CountDownLatch heartbeatLatch = new CountDownLatch(1);
 
         @Override
         public Observable<Void> registerInterestSet(Context context, List<Interest> interests) {
             interestRef.set(interests);
+            return Observable.empty();
+        }
+
+        @Override
+        public Observable<Void> heartbeat(Context context) {
+            heartbeatLatch.countDown();
             return Observable.empty();
         }
 

@@ -36,5 +36,7 @@ public interface RegistrationHandler {
 
     Observable<Void> unregister(Context context);
 
+    Observable<Void> heartbeat(Context context);
+
     void shutdown();
 }

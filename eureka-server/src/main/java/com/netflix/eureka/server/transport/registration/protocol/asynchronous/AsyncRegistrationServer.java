@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka.server.transport.discovery.protocol.asynchronous;
+package com.netflix.eureka.server.transport.registration.protocol.asynchronous;
 
-import java.util.Arrays;
-
-import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.protocol.Heartbeat;
-import com.netflix.eureka.protocol.discovery.InterestSetNotification;
-import com.netflix.eureka.protocol.discovery.RegisterInterestSet;
-import com.netflix.eureka.protocol.discovery.UnregisterInterestSet;
+import com.netflix.eureka.protocol.registration.Register;
+import com.netflix.eureka.protocol.registration.Unregister;
+import com.netflix.eureka.protocol.registration.Update;
+import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.server.transport.Context;
 import com.netflix.eureka.server.transport.TransportServer;
-import com.netflix.eureka.server.transport.discovery.DiscoveryHandler;
+import com.netflix.eureka.server.transport.registration.RegistrationHandler;
 import com.netflix.eureka.transport.MessageBroker;
 import com.netflix.eureka.transport.MessageBrokerServer;
 import rx.Observable;
@@ -37,11 +35,11 @@ import rx.functions.Func1;
 /**
  * @author Tomasz Bak
  */
-public class AsyncDiscoveryServer implements TransportServer {
+public class AsyncRegistrationServer implements TransportServer {
 
     private final MessageBrokerServer brokerServer;
 
-    public AsyncDiscoveryServer(MessageBrokerServer brokerServer, final DiscoveryHandler handler) {
+    public AsyncRegistrationServer(MessageBrokerServer brokerServer, final RegistrationHandler handler) {
         this.brokerServer = brokerServer;
         brokerServer.clientConnections().doOnTerminate(new Action0() {
             @Override
@@ -57,24 +55,22 @@ public class AsyncDiscoveryServer implements TransportServer {
             public void call(final MessageBroker messageBroker) {
                 // FIXME What is the best way to identify active client connection?
                 Context clientContext = new Context();
-                Observable.amb(
-                        handler.updates(clientContext).flatMap(new NotificationForwarder(messageBroker)),
-                        messageBroker.incoming().flatMap(new ClientMessageDispatcher(messageBroker, clientContext, handler))
-                ).subscribe(new Subscriber<Void>() {
-                    @Override
-                    public void onCompleted() {
-                        messageBroker.shutdown();
-                    }
+                messageBroker.incoming().flatMap(new ClientMessageDispatcher(messageBroker, clientContext, handler))
+                        .subscribe(new Subscriber<Void>() {
+                            @Override
+                            public void onCompleted() {
+                                messageBroker.shutdown();
+                            }
 
-                    @Override
-                    public void onError(Throwable e) {
-                    }
+                            @Override
+                            public void onError(Throwable e) {
+                            }
 
-                    @Override
-                    public void onNext(Void aVoid) {
-                        messageBroker.shutdown();
-                    }
-                });
+                            @Override
+                            public void onNext(Void aVoid) {
+                                messageBroker.shutdown();
+                            }
+                        });
             }
         });
     }
@@ -88,9 +84,9 @@ public class AsyncDiscoveryServer implements TransportServer {
 
         private final MessageBroker messageBroker;
         private final Context clientContext;
-        private final DiscoveryHandler handler;
+        private final RegistrationHandler handler;
 
-        ClientMessageDispatcher(MessageBroker messageBroker, Context clientContext, DiscoveryHandler handler) {
+        ClientMessageDispatcher(MessageBroker messageBroker, Context clientContext, RegistrationHandler handler) {
             this.messageBroker = messageBroker;
             this.clientContext = clientContext;
             this.handler = handler;
@@ -99,11 +95,12 @@ public class AsyncDiscoveryServer implements TransportServer {
         @Override
         public Observable<Void> call(final Object message) {
             Observable<Void> response;
-            if (message instanceof RegisterInterestSet) {
-                Interest[] interests = ((RegisterInterestSet) message).getInterestSet();
-                response = handler.registerInterestSet(clientContext, Arrays.asList(interests));
-            } else if (message instanceof UnregisterInterestSet) {
-                response = handler.unregisterInterestSet(clientContext);
+            if (message instanceof Register) {
+                response = handler.register(clientContext, ((Register) message).getInstanceInfo());
+            } else if (message instanceof Unregister) {
+                response = handler.unregister(clientContext);
+            } else if (message instanceof Update) {
+                response = handler.update(clientContext, (Update) message);
             } else if (message instanceof Heartbeat) {
                 return handler.heartbeat(clientContext);
             } else {
@@ -118,16 +115,4 @@ public class AsyncDiscoveryServer implements TransportServer {
         }
     }
 
-    static class NotificationForwarder implements Func1<InterestSetNotification, Observable<Void>> {
-        private final MessageBroker messageBroker;
-
-        NotificationForwarder(MessageBroker messageBroker) {
-            this.messageBroker = messageBroker;
-        }
-
-        @Override
-        public Observable<Void> call(InterestSetNotification notification) {
-            return messageBroker.submit(notification);
-        }
-    }
 }

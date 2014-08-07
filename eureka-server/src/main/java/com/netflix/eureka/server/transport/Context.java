@@ -16,14 +16,10 @@
 
 package com.netflix.eureka.server.transport;
 
-import java.net.SocketAddress;
-
 /**
+ * Context identifies a server side connection from a client.
+ *
  * @author Tomasz Bak
  */
 public class Context {
-
-    public SocketAddress clientAddress() {
-        return null;
-    }
 }

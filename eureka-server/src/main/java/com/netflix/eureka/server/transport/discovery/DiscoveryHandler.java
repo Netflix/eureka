@@ -34,6 +34,8 @@ public interface DiscoveryHandler {
 
     Observable<Void> registerInterestSet(Context context, List<Interest> interests);
 
+    Observable<Void> heartbeat(Context context);
+
     Observable<Void> unregisterInterestSet(Context context);
 
     /**
