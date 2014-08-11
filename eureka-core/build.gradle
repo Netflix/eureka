@@ -15,40 +15,10 @@
  */
 
 
-apply plugin: 'osgi'
-apply plugin: 'groovy'
-
-sourceCompatibility = JavaVersion.VERSION_1_6
-targetCompatibility = JavaVersion.VERSION_1_6
-
-tasks.withType(Javadoc).each {
-    it.classpath = sourceSets.main.compileClasspath
-}
-
 dependencies {
     compile "com.netflix.rxnetty:rx-netty:${rx_netty_version}"
     compile "org.apache.avro:avro:${avro_version}"
-    testCompile "junit:junit:${junit_version}"
-    testCompile 'org.hamcrest:hamcrest-library:1.3'
     testCompile project(':eureka-test-utils')
-}
-
-eclipse {
-    classpath {
-        // include 'provided' dependencies on the classpath
-        plusConfigurations += configurations.provided
-
-        downloadSources = true
-        downloadJavadoc = true
-    }
-}
-
-idea {
-    module {
-        // include 'provided' dependencies on the classpath
-        scopes.PROVIDED.plus += configurations.provided
-        scopes.PROVIDED.plus += configurations.provided
-    }
 }
 
 jar {
