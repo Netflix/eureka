@@ -33,19 +33,6 @@ dependencies {
     testCompile project(':eureka-test-utils')
 }
 
-task testJar(type: Jar, dependsOn: testClasses) {
-    baseName = "${project.archivesBaseName}-test"
-    from sourceSets.test.output
-}
-
-configurations {
-    tests
-}
-
-artifacts {
-    tests testJar
-}
-
 eclipse {
     classpath {
         // include 'provided' dependencies on the classpath

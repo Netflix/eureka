@@ -1,4 +1,4 @@
-package com.netflix.eureka.testkit;
+package com.netflix.eureka.rx;
 
 import java.nio.charset.Charset;
 import java.util.Iterator;
