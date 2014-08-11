@@ -17,6 +17,7 @@
 package com.netflix.eureka.transport.codec.avro;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.List;
 
 import com.netflix.eureka.transport.Acknowledgement;
@@ -24,6 +25,8 @@ import com.netflix.eureka.transport.utils.TransportModel;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
+import io.netty.handler.codec.DecoderException;
+import io.netty.handler.codec.EncoderException;
 import org.apache.avro.Schema;
 import org.apache.avro.io.BinaryDecoder;
 import org.apache.avro.io.DecoderFactory;
@@ -34,7 +37,6 @@ import org.apache.avro.reflect.ReflectDatumWriter;
 
 /**
  * TODO Possibly we can do some optimizations here. For now lets keep it simple.
- * TODO Error handling in case message cannot be encoded/decoded.
  *
  * @author Tomasz Bak
  */
@@ -54,14 +56,18 @@ class AvroCodec extends ByteToMessageCodec<Object> {
     }
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, Object msg, ByteBuf out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, Object msg, ByteBuf out) {
         ReflectDatumWriter<Object> writer = new ReflectDatumWriter<Object>(schema);
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         Encoder encoder = EncoderFactory.get().binaryEncoder(bos, null);
 
-        writer.write(msg, encoder);
-        encoder.flush();
-        bos.close();
+        try {
+            writer.write(msg, encoder);
+            encoder.flush();
+            bos.close();
+        } catch (IOException e) {
+            throw new EncoderException("Avro encoding failure of object of type " + msg.getClass().getName(), e);
+        }
 
         byte[] bytes = bos.toByteArray();
         out.ensureWritable(bytes.length);
@@ -69,14 +75,17 @@ class AvroCodec extends ByteToMessageCodec<Object> {
     }
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+    protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
         byte[] array = new byte[in.readableBytes()];
         in.readBytes(array);
 
         ReflectDatumReader<Object> reader = new ReflectDatumReader<Object>(schema);
         BinaryDecoder decoder = DecoderFactory.get().binaryDecoder(array, null);
-        Object msg = reader.read(null, decoder);
 
-        out.add(msg);
+        try {
+            out.add(reader.read(null, decoder));
+        } catch (IOException e) {
+            throw new DecoderException("Avro decoding failure", e);
+        }
     }
 }
