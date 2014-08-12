@@ -15,8 +15,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -35,7 +34,7 @@ public class LeasedInstanceRegistryTest {
 
         @Override
         protected void before() throws Throwable {
-            registry = new LeasedInstanceRegistry();
+            registry = new LeasedInstanceRegistry(SampleInstanceInfo.DiscoveryServer.build());
         }
 
         @Override
@@ -45,13 +44,56 @@ public class LeasedInstanceRegistryTest {
     };
 
     @Test
+    public void shouldReturnSnapshotOfInstanceInfos() throws InterruptedException {
+        InstanceInfo discovery1 = SampleInstanceInfo.DiscoveryServer.build();
+        InstanceInfo discovery2 = SampleInstanceInfo.DiscoveryServer.build();
+        InstanceInfo discovery3 = SampleInstanceInfo.DiscoveryServer.build();
+
+        registry.register(discovery1);
+        registry.register(discovery2);
+        registry.register(discovery3);
+
+        Observable<InstanceInfo> snapshot = registry.snapshotForInterest(Interests.forFullRegistry());
+
+        final List<InstanceInfo> returnedInstanceInfos = new ArrayList<InstanceInfo>();
+        final CountDownLatch completionLatch = new CountDownLatch(1);
+
+        snapshot.subscribe(new Subscriber<InstanceInfo>() {
+            @Override
+            public void onCompleted() {
+                completionLatch.countDown();
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                completionLatch.countDown();
+            }
+
+            @Override
+            public void onNext(InstanceInfo instanceInfo) {
+                returnedInstanceInfos.add(instanceInfo);
+                registry.register(SampleInstanceInfo.ZuulServer.build());
+            }
+        });
+
+        registry.shutdown(); // finishes the index.
+
+        completionLatch.await(1, TimeUnit.MINUTES);
+        assertThat(returnedInstanceInfos.size(), greaterThanOrEqualTo(3));
+        assertThat(returnedInstanceInfos, hasItems(discovery1, discovery2, discovery3));
+
+        for (int i = 3; i < returnedInstanceInfos.size(); i++) {
+            assertThat(returnedInstanceInfos.get(i).getApp(), equalTo(SampleInstanceInfo.ZuulServer.build().getApp()));
+        }
+    }
+
+    @Test
     public void shouldReturnMatchingInstanceInfos() throws InterruptedException {
         InstanceInfo discovery1 = SampleInstanceInfo.DiscoveryServer.build();
         InstanceInfo discovery2 = SampleInstanceInfo.DiscoveryServer.build();
         InstanceInfo discovery3 = SampleInstanceInfo.DiscoveryServer.build();
         InstanceInfo zuul1 = SampleInstanceInfo.ZuulServer.build();
 
-        LeasedInstanceRegistry registry = new LeasedInstanceRegistry();
         registry.register(discovery1);
         registry.register(discovery2);
         registry.register(discovery3);

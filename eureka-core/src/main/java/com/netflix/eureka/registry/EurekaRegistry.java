@@ -9,6 +9,8 @@ import rx.Observable;
  */
 public interface EurekaRegistry {
 
+    InstanceLocation getRegistryLocation();
+
     Observable<Void> register(InstanceInfo instanceInfo);
 
     Observable<Void> unregister(String instanceId);
