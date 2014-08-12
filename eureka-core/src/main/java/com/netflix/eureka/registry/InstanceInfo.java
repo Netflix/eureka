@@ -17,14 +17,11 @@
 package com.netflix.eureka.registry;
 
 import com.netflix.eureka.datastore.Item;
-import org.apache.avro.reflect.Nullable;
 
 import java.io.Serializable;
 import java.util.HashSet;
 
 /**
- * TODO: remove avro specific Nullable
- * TODO: add data versioning
  * TODO: add ability to diff InstanceInfos
  * JavaBean for InstanceInfo.
  * @author David Liu
@@ -34,19 +31,20 @@ public class InstanceInfo implements Item, Serializable {
     private static final long serialVersionUID = 331L;
 
     private String id;
-    @Nullable private String appGroup;
-    @Nullable private String app;
-    @Nullable private String asg;
-    @Nullable private String vipAddress;
-    @Nullable private String secureVipAddress;
-    @Nullable private String hostname;
-    @Nullable private String ip;
-    @Nullable private HashSet<Integer> ports;
-    @Nullable private HashSet<Integer> securePorts;
-    @Nullable private Status status;
-    @Nullable private String homePageUrl;
-    @Nullable private String statusPageUrl;
-    @Nullable private HashSet<String> healthCheckUrls;
+    private String appGroup;
+    private String app;
+    private String asg;
+    private String vipAddress;
+    private String secureVipAddress;
+    private String hostname;
+    private String ip;
+    private HashSet<Integer> ports;
+    private HashSet<Integer> securePorts;
+    private Status status;
+    private String homePageUrl;
+    private String statusPageUrl;
+    private HashSet<String> healthCheckUrls;
+    private InstanceLocation instanceLocation;
 
     // for serializers
     public InstanceInfo() {}
@@ -211,6 +209,13 @@ public class InstanceInfo implements Item, Serializable {
         this.healthCheckUrls = healthCheckUrls;
     }
 
+    public InstanceLocation getInstanceLocation() {
+        return instanceLocation;
+    }
+
+    public void setInstanceLocation(InstanceLocation instanceLocation) {
+        this.instanceLocation = instanceLocation;
+    }
 
     // ------------------------------------------
     // Non-bean methods
@@ -430,6 +435,11 @@ public class InstanceInfo implements Item, Serializable {
 
         public Builder withHealthCheckUrls(HashSet<String> healthCheckUrls) {
             info.setHealthCheckUrls(healthCheckUrls);
+            return this;
+        }
+
+        public Builder withInstanceLocation(InstanceLocation location) {
+            info.setInstanceLocation(location);
             return this;
         }
 
