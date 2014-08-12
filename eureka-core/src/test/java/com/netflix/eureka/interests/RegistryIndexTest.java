@@ -29,7 +29,7 @@ public class RegistryIndexTest {
 
         @Override
         protected void before() throws Throwable {
-            registry = new LeasedInstanceRegistry();
+            registry = new LeasedInstanceRegistry(SampleInstanceInfo.DiscoveryServer.build());
         }
 
         @Override

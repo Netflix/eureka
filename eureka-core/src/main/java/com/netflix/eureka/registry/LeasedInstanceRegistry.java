@@ -23,6 +23,7 @@ import com.netflix.eureka.interests.InstanceInfoInitStateHolder;
 import com.netflix.eureka.interests.Interest;
 import rx.Observable;
 import rx.Subscriber;
+import rx.functions.Func1;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -42,10 +43,17 @@ public class LeasedInstanceRegistry implements EurekaRegistry {
     private final NotificationsSubject<InstanceInfo> notificationSubject;  // subject for all changes in the registry
     private final IndexRegistry<InstanceInfo> indexRegistry;
 
-    public LeasedInstanceRegistry() {
+    private final InstanceInfo myInstanceInfo;
+
+    public LeasedInstanceRegistry(InstanceInfo myInstanceInfo) {
         internalStore = new ConcurrentHashMap<String, Lease<InstanceInfo>>();
         indexRegistry = new IndexRegistry<InstanceInfo>();
         notificationSubject = NotificationsSubject.create();
+        this.myInstanceInfo = myInstanceInfo;
+    }
+
+    public InstanceLocation getRegistryLocation() {
+        return myInstanceInfo.getInstanceLocation();
     }
 
     // -------------------------------------------------
@@ -181,10 +189,34 @@ public class LeasedInstanceRegistry implements EurekaRegistry {
     }
 
     /**
-     * Returns a stream of {@link ChangeNotification}s for the passed {@code interest}
+     * Return a snapshot of the current registry for the passed {@code interest} as a stream of {@link InstanceInfo}s.
+     * This view of the snapshot is eventual consistent and any instances that successfully registers while the
+     * stream is being processed might be added to the stream.
      *
-     * @return A stream of {@link ChangeNotification}s for the passed {@code interest}. The stream only completes when
-     * this registry is shutdown.
+     * @return A stream of {@link InstanceInfo}s for the passed {@code interest}. The stream represent a snapshot
+     * of the registry for the interest.
+     */
+    public Observable<InstanceInfo> snapshotForInterest(final Interest<InstanceInfo> interest) {
+        return Observable.from(internalStore.values())
+                .map(new Func1<Lease<InstanceInfo>, InstanceInfo>() {
+                    @Override
+                    public InstanceInfo call(Lease<InstanceInfo> lease) {
+                        return lease.getHolder();
+                    }
+                })
+                .filter(new Func1<InstanceInfo, Boolean>() {
+                    @Override
+                    public Boolean call(InstanceInfo instanceInfo) {
+                        return interest.matches(instanceInfo);
+                    }
+                });
+    }
+
+    /**
+     * Return an observable of all matching InstanceInfo for the current registry snapshot,
+     * as {@link ChangeNotification}s
+     * @param interest
+     * @return
      */
     public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest) {
         try {
