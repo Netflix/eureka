@@ -21,7 +21,6 @@ import org.apache.avro.reflect.Nullable;
 
 import java.io.Serializable;
 import java.util.HashSet;
-import java.util.Set;
 
 /**
  * TODO: remove avro specific Nullable
@@ -311,36 +310,6 @@ public class InstanceInfo implements Item, Serializable {
                 ", statusPageUrl='" + statusPageUrl + '\'' +
                 ", healthCheckUrls=" + healthCheckUrls +
                 '}';
-    }
-
-    public <T> boolean match(Index index, T value) {
-        switch (index) {
-            case AppGroup:
-                return value.equals(getAppGroup());
-            case App:
-                return value.equals(getApp());
-            case Asg:
-                return value.equals(getAsg());
-            case VipAddress:
-                return value.equals(getVipAddress());
-            default:
-                return false;
-        }
-    }
-
-    public String valueForIndex(Index index) {
-        switch (index) {
-            case AppGroup:
-                return getAppGroup();
-            case App:
-                return getApp();
-            case Asg:
-                return getAsg();
-            case VipAddress:
-                return getVipAddress();
-            default:
-                return null;
-        }
     }
 
     // ------------------------------------------

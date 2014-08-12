@@ -1,6 +1,5 @@
 package com.netflix.eureka;
 
-import com.netflix.eureka.registry.Index;
 import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.registry.InstanceInfo.Builder;
 import com.netflix.eureka.registry.InstanceInfo.Status;
@@ -44,23 +43,8 @@ public enum SampleInstanceInfo {
                     .withStatusPageUrl("http://eureka/status/ZuulServer")
                     .withVipAddress("vip#ZuulServer");
         }
-
-        @Override
-        public String valueForIndex(Index index) {
-            switch (index) {
-                case AppGroup:
-                    return "group#ZuulServer";
-                case App:
-                    return "app#ZuulServer";
-                case Asg:
-                    return "asg#ZuulServer";
-                case VipAddress:
-                    return "vip#ZuulServer";
-                default:
-                    return null;
-            }
-        }
     },
+
     DiscoveryServer() {
         @Override
         public Builder builder() {
@@ -89,32 +73,15 @@ public enum SampleInstanceInfo {
                     .withStatusPageUrl("http://eureka/status/DiscoveryServer")
                     .withVipAddress("vip#DiscoveryServer");
         }
-
-        @Override
-        public String valueForIndex(Index index) {
-            switch (index) {
-                case AppGroup:
-                    return "group#DiscoveryServer";
-                case App:
-                    return "app#DiscoveryServer";
-                case Asg:
-                    return "asg#DiscoveryServer";
-                case VipAddress:
-                    return "vip#DiscoveryServer";
-                default:
-                    return null;
-            }
-        }
     };
 
     public abstract Builder builder();
-
-    abstract String valueForIndex(Index index);
 
     public InstanceInfo build() {
         return builder().build();
     }
 
+    @SuppressWarnings("unused")
     public static List<InstanceInfo> collectionOf(int n) {
         return collectionOf(n, ZuulServer.builder(), DiscoveryServer.builder());
     }

@@ -16,14 +16,6 @@
 
 package com.netflix.eureka.server.transport.discovery.protocol.asynchronous;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-
 import com.netflix.eureka.SampleInstanceInfo;
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.protocol.Heartbeat;
@@ -44,8 +36,19 @@ import rx.Notification;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
-import static com.netflix.eureka.registry.SampleInterest.*;
-import static org.junit.Assert.*;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static com.netflix.eureka.registry.SampleInterest.DiscoveryApp;
+import static com.netflix.eureka.registry.SampleInterest.ZuulVip;
+import static com.netflix.eureka.registry.SampleInterest.interestCollectionOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Tomasz Bak
@@ -106,7 +109,7 @@ public class AsyncDiscoveryServerTest {
     @Test
     public void testHeartbeat() throws Exception {
         brokerClient.submit(Heartbeat.INSTANCE);
-        assertTrue("Heartbeat not delivered", handler.heartbeatLatch.await(100, TimeUnit.MILLISECONDS));
+        assertTrue("Heartbeat not delivered", handler.heartbeatLatch.await(1, TimeUnit.MINUTES));
     }
 
     static class TestDiscoveryHandler implements DiscoveryHandler {

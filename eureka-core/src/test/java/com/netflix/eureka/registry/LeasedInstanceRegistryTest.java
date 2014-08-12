@@ -1,21 +1,51 @@
 package com.netflix.eureka.registry;
 
-import static org.junit.Assert.*;
-
 import com.netflix.eureka.SampleInstanceInfo;
+import com.netflix.eureka.interests.ChangeNotification;
+import com.netflix.eureka.interests.Interests;
+import org.junit.Rule;
 import org.junit.Test;
-import rx.functions.Action1;
+import org.junit.rules.ExternalResource;
+import rx.Observable;
+import rx.Subscriber;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+
 
 /**
  * @author David Liu
  */
 public class LeasedInstanceRegistryTest {
 
+    private LeasedInstanceRegistry registry;
+
+    @Rule
+    public final ExternalResource registryResource = new ExternalResource() {
+
+        @Override
+        protected void before() throws Throwable {
+            registry = new LeasedInstanceRegistry();
+        }
+
+        @Override
+        protected void after() {
+            registry.shutdown();
+        }
+    };
+
     @Test
-    public void shouldReturnMatchingInstanceInfos() {
+    public void shouldReturnMatchingInstanceInfos() throws InterruptedException {
         InstanceInfo discovery1 = SampleInstanceInfo.DiscoveryServer.build();
         InstanceInfo discovery2 = SampleInstanceInfo.DiscoveryServer.build();
         InstanceInfo discovery3 = SampleInstanceInfo.DiscoveryServer.build();
@@ -27,20 +57,38 @@ public class LeasedInstanceRegistryTest {
         registry.register(discovery3);
         registry.register(zuul1);
 
-        final List<String> matchingIds = Arrays.asList(discovery1.getId(), discovery2.getId(), discovery3.getId());
-        registry.allMatching(Index.App, discovery1.valueForIndex(Index.App))
-                .toBlocking()
-                .forEach(new Action1<InstanceInfo>() {
-                    @Override
-                    public void call(InstanceInfo instanceInfo) {
-                        assertTrue(matchingIds.contains(instanceInfo.getId()));
-                    }
-                });
+        final List<String> returnedIds = new ArrayList<String>();
+
+        Observable<ChangeNotification<InstanceInfo>> interestStream =
+                registry.forInterest(Interests.forApplication(discovery1.getApp()));
+
+        final CountDownLatch completionLatch = new CountDownLatch(1);
+        interestStream.subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
+            @Override
+            public void onCompleted() {
+                completionLatch.countDown();
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                completionLatch.countDown();
+            }
+
+            @Override
+            public void onNext(ChangeNotification<InstanceInfo> notification) {
+                returnedIds.add(notification.getData().getId());
+            }
+        });
+
+        registry.shutdown(); // finishes the index.
+
+        completionLatch.await(1, TimeUnit.MINUTES);
+        assertThat(returnedIds, hasSize(3));
+        assertThat(returnedIds, containsInAnyOrder(discovery1.getId(), discovery2.getId(), discovery3.getId()));
     }
 
     @Test
     public void shouldRenewLeaseWithDuration() throws Exception {
-        LeasedInstanceRegistry registry = new LeasedInstanceRegistry();
 
         InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
                 .withStatus(InstanceInfo.Status.UP)
@@ -55,8 +103,6 @@ public class LeasedInstanceRegistryTest {
 
     @Test
     public void shouldCancelLease() {
-        LeasedInstanceRegistry registry = new LeasedInstanceRegistry();
-
         InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
                 .withStatus(InstanceInfo.Status.UP)
                 .build();
@@ -68,8 +114,6 @@ public class LeasedInstanceRegistryTest {
 
     @Test
     public void shouldUpdateInstanceStatus() {
-        LeasedInstanceRegistry registry = new LeasedInstanceRegistry();
-
         InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
                 .withStatus(InstanceInfo.Status.UP)
                 .build();
@@ -87,8 +131,6 @@ public class LeasedInstanceRegistryTest {
 
     @Test
     public void shouldRegisterExistingInstanceOverwritingExisting() throws Exception {
-        LeasedInstanceRegistry registry = new LeasedInstanceRegistry();
-
         InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
                 .withStatus(InstanceInfo.Status.UP)
                 .build();

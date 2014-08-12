@@ -25,11 +25,18 @@ public class IndexRegistry<T> {
             index = Index.forInterest(interest, dataSource, initStateHolder);
             Index<T> existing = interestVsIndex.putIfAbsent(interest, index);
             if (null != existing) {
-                // TODO: Dispose new index.
+                index.onCompleted(); // Shutdown for index.
                 return existing;
             } else {
                 return index;
             }
         }
+    }
+
+    public Observable<Void> shutdown() {
+        for (Index<T> index : interestVsIndex.values()) {
+            index.onCompleted();
+        }
+        return Observable.empty();
     }
 }
