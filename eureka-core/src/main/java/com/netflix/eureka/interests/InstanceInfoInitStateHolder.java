@@ -3,7 +3,6 @@ package com.netflix.eureka.interests;
 import com.netflix.eureka.datastore.NotificationsSubject;
 import com.netflix.eureka.registry.InstanceInfo;
 
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -17,9 +16,12 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
     // TODO: Implement compaction
     private final ConcurrentLinkedQueue<ChangeNotification<InstanceInfo>> notifications;
 
-    public InstanceInfoInitStateHolder(Collection<ChangeNotification<InstanceInfo>> initialRegistry) {
+    public InstanceInfoInitStateHolder(Iterator<ChangeNotification<InstanceInfo>> initialRegistry) {
         super(NotificationsSubject.<InstanceInfo>create());
-        notifications = new ConcurrentLinkedQueue<ChangeNotification<InstanceInfo>>(initialRegistry);
+        notifications = new ConcurrentLinkedQueue<ChangeNotification<InstanceInfo>>();
+        while (initialRegistry.hasNext()) {
+            notifications.add(initialRegistry.next());
+        }
     }
 
     @Override

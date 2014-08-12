@@ -23,10 +23,10 @@ import com.netflix.eureka.interests.InstanceInfoInitStateHolder;
 import com.netflix.eureka.interests.Interest;
 import rx.Observable;
 import rx.Subscriber;
-import rx.functions.Func1;
 
-import java.util.AbstractCollection;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -38,27 +38,14 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class LeasedInstanceRegistry implements EurekaRegistry {
 
-    protected final ConcurrentHashMap<String, Lease<InstanceInfo>> internalStore;
-    private final RegistrySnapshot internalSnapshot;
+    private final ConcurrentHashMap<String, Lease<InstanceInfo>> internalStore;
     private final NotificationsSubject<InstanceInfo> notificationSubject;  // subject for all changes in the registry
     private final IndexRegistry<InstanceInfo> indexRegistry;
 
     public LeasedInstanceRegistry() {
         internalStore = new ConcurrentHashMap<String, Lease<InstanceInfo>>();
-        internalSnapshot = new RegistrySnapshot();
         indexRegistry = new IndexRegistry<InstanceInfo>();
         notificationSubject = NotificationsSubject.create();
-    }
-
-    // -------------------------------------------------
-    // Registry metadata
-    // -------------------------------------------------
-    public String getRegion() {
-        return null;
-    }
-
-    public int getSize() {
-        return internalStore.size();
     }
 
     // -------------------------------------------------
@@ -66,18 +53,10 @@ public class LeasedInstanceRegistry implements EurekaRegistry {
     // -------------------------------------------------
 
     /**
-     * Renewal the lease for instance with the given id
-     * @param instanceId
-     * @return true if successfully renewed
-     */
-    public Observable<Void> renewLease(final String instanceId) {
-        return renewLease(instanceId, Lease.DEFAULT_LEASE_DURATION_MILLIS);
-    }
-
-    /**
      * Renewal the lease for instance with the given id for the given duration
-     * @param instanceId
-     * @param durationMillis
+     * @param instanceId Instance Id for which the lease is to be renewed.
+     * @param durationMillis Duration for which the lease is to be renewed.
+     *
      * @return true if successfully renewed
      */
     public Observable<Void> renewLease(final String instanceId, final long durationMillis) {
@@ -91,7 +70,8 @@ public class LeasedInstanceRegistry implements EurekaRegistry {
 
     /**
      * Cancel the lease for the instance with the given id
-     * @param instanceId
+     * @param instanceId Instance Id for which lease is to be cancelled.
+     *
      * @return true of successfully canceled
      */
     public Observable<Void> cancelLease(final String instanceId) {
@@ -115,26 +95,12 @@ public class LeasedInstanceRegistry implements EurekaRegistry {
 
     /**
      * get the lease for the instance specified
-     * @param instanceId
-     * @return
+     * @param instanceId Instance Id for which the lease is to be returned.
+     *
+     * @return Lease for the passed instance Id.
      */
     public Observable<Lease<InstanceInfo>> getLease(final String instanceId) {
         return Observable.just(internalStore.get(instanceId));
-    }
-
-    public Observable<InstanceInfo> getInstanceInfo(final String instanceId) {
-        return Observable.create(new Observable.OnSubscribe<InstanceInfo>() {
-            @Override
-            public void call(Subscriber<? super InstanceInfo> subscriber) {
-                Lease<InstanceInfo> lease = internalStore.get(instanceId);
-                if (lease != null) {
-                    subscriber.onNext(lease.getHolder());
-                } else {
-                    subscriber.onError(new InstanceNotRegisteredException(instanceId));
-                }
-                subscriber.onCompleted();
-            }
-        });
     }
 
     public boolean contains(final String instanceId) {
@@ -193,8 +159,9 @@ public class LeasedInstanceRegistry implements EurekaRegistry {
 
     /**
      * Update the status of the instance with the given id
-     * @param instanceId
-     * @param status
+     * @param instanceId Instance Id for which the status is to be updated.
+     * @param status New status.
+     *
      * @return true of successfully updated
      */
     public Observable<Void> updateStatus(String instanceId, InstanceInfo.Status status) {
@@ -214,75 +181,71 @@ public class LeasedInstanceRegistry implements EurekaRegistry {
     }
 
     /**
-     * Return an observable of all matching InstanceInfo for the current registry snapshot
-     * @param key
-     * @param value
-     * @param <T>
-     * @return
-     */
-    public <T> Observable<InstanceInfo> allMatching(final Index key, final T value) {
-        return Observable.from(internalStore.values())
-                .map(new Func1<Lease<InstanceInfo>, InstanceInfo>() {
-                    @Override
-                    public InstanceInfo call(Lease<InstanceInfo> lease) {
-                        return lease.getHolder();
-                    }
-                })
-                .filter(new Func1<InstanceInfo, Boolean>() {
-                    @Override
-                    public Boolean call(InstanceInfo instanceInfo) {
-                        return instanceInfo.match(key, value);
-                    }
-                });
-    }
-
-    /**
-     * Return an observable of all matching InstanceInfo for the current registry snapshot,
-     * as {@link ChangeNotification}s
-     * @param interest
-     * @return
+     * Returns a stream of {@link ChangeNotification}s for the passed {@code interest}
+     *
+     * @return A stream of {@link ChangeNotification}s for the passed {@code interest}. The stream only completes when
+     * this registry is shutdown.
      */
     public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest) {
         try {
             notificationSubject.pause(); // Pause notifications till we get a snapshot of current registry (registry.values())
             return indexRegistry.forInterest(interest, notificationSubject,
-                    new InstanceInfoInitStateHolder(internalSnapshot));
+                                             new InstanceInfoInitStateHolder(getSnapshotForInterest(interest)));
         } finally {
-            internalStore.values();
             notificationSubject.resume();
         }
     }
 
-    /**
-     * Delegate collection to return iterables of ChangeNotification<InstanceInfo> of the internalStore values
-     */
-    private class RegistrySnapshot extends AbstractCollection<ChangeNotification<InstanceInfo>> {
+    @Override
+    public Observable<Void> shutdown() {
+        return indexRegistry.shutdown();
+    }
 
-        @Override
-        public Iterator<ChangeNotification<InstanceInfo>> iterator() {
-            final Iterator<Lease<InstanceInfo>> internalStoreIterator = internalStore.values().iterator();
+    private Iterator<ChangeNotification<InstanceInfo>> getSnapshotForInterest(final Interest<InstanceInfo> interest) {
+        final Collection<Lease<InstanceInfo>> leases = internalStore.values();
+        return new FilteredIterator(interest, leases.iterator());
+    }
 
-            return new Iterator<ChangeNotification<InstanceInfo>>() {
-                @Override
-                public boolean hasNext() {
-                    return internalStoreIterator.hasNext();
-                }
+    private static class FilteredIterator implements Iterator<ChangeNotification<InstanceInfo>> {
 
-                @Override
-                public ChangeNotification<InstanceInfo> next() {
-                    return internalStoreIterator.next().getHolderSnapshot();
-                }
+        private final Interest<InstanceInfo> interest;
+        private final Iterator<Lease<InstanceInfo>> delegate;
+        private ChangeNotification<InstanceInfo> next;
 
-                @Override
-                public void remove() {
-                    internalStoreIterator.remove();
-                }
-            };
+        private FilteredIterator(Interest<InstanceInfo> interest, Iterator<Lease<InstanceInfo>> delegate) {
+            this.interest = interest;
+            this.delegate = delegate;
         }
 
         @Override
-        public int size() {
-            return internalStore.size();
+        public boolean hasNext() {
+            if (null != next) {
+                return true;
+            }
+
+            while (delegate.hasNext()) { // Iterate till we get a matching item.
+                Lease<InstanceInfo> possibleNext = delegate.next();
+                if (interest.matches(possibleNext.getHolder())) {
+                    next = possibleNext.getHolderSnapshot();
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public ChangeNotification<InstanceInfo> next() {
+            if (hasNext()) {
+                ChangeNotification<InstanceInfo> next = this.next;
+                this.next = null; // Forces hasNext() to peek the next item.
+                return next;
+            }
+            throw new NoSuchElementException("No more notifications.");
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException("Remove not supported for this iterator.");
         }
     }
 }

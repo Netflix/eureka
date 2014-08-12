@@ -34,7 +34,7 @@ public class RegistryIndexTest {
 
         @Override
         protected void after() {
-            //shutdown registry
+            registry.shutdown();
         }
     };
 

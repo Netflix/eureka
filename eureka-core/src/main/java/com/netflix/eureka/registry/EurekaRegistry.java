@@ -17,4 +17,5 @@ public interface EurekaRegistry {
 
     Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest);
 
+    Observable<Void> shutdown();
 }
