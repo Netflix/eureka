@@ -274,6 +274,9 @@ public class InstanceInfo implements Item, Serializable {
         if (vipAddress != null ? !vipAddress.equals(that.vipAddress) : that.vipAddress != null) {
             return false;
         }
+        if (instanceLocation != null ? !instanceLocation.equals(that.instanceLocation) : that.instanceLocation != null) {
+            return false;
+        }
 
         return true;
     }
@@ -294,6 +297,7 @@ public class InstanceInfo implements Item, Serializable {
         result = 31 * result + (homePageUrl != null ? homePageUrl.hashCode() : 0);
         result = 31 * result + (statusPageUrl != null ? statusPageUrl.hashCode() : 0);
         result = 31 * result + (healthCheckUrls != null ? healthCheckUrls.hashCode() : 0);
+        result = 31 * result + (instanceLocation != null ? instanceLocation.hashCode() : 0);
         return result;
     }
 
@@ -314,6 +318,7 @@ public class InstanceInfo implements Item, Serializable {
                 ", homePageUrl='" + homePageUrl + '\'' +
                 ", statusPageUrl='" + statusPageUrl + '\'' +
                 ", healthCheckUrls=" + healthCheckUrls +
+                ", instanceLocation=" + instanceLocation +
                 '}';
     }
 
@@ -365,6 +370,7 @@ public class InstanceInfo implements Item, Serializable {
             info.setHomePageUrl(another.getHomePageUrl());
             info.setStatusPageUrl(another.getStatusPageUrl());
             info.setHealthCheckUrls(another.getHealthCheckUrls());
+            info.setInstanceLocation(another.getInstanceLocation());
             return this;
         }
 
