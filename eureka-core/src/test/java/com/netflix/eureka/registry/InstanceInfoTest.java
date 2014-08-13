@@ -57,13 +57,9 @@ public class InstanceInfoTest {
         DeltaInstanceInfo delta = new DeltaInstanceInfo();
         delta.addDelta("status", InstanceInfo.Status.OUT_OF_SERVICE);
         delta.addDelta("ports", new HashSet<Integer>(Arrays.asList(111, 222)));
-        String timestamp = ""+System.currentTimeMillis();
-        delta.addDelta("version", timestamp);
 
         InstanceInfo afterDelta = instanceInfo.applyDelta(delta);
         assertThat(afterDelta.getStatus(), equalTo(InstanceInfo.Status.OUT_OF_SERVICE));
         assertThat(afterDelta.getPorts(), containsInAnyOrder(111, 222));
-        assertThat(afterDelta.getVersion(), equalTo(timestamp));
-        assertThat(afterDelta.getVersion(), not(equalTo(instanceInfo.getVersion())));
     }
 }

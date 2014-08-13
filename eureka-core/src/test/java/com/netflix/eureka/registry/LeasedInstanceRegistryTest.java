@@ -82,8 +82,12 @@ public class LeasedInstanceRegistryTest {
         assertThat(returnedInstanceInfos.size(), greaterThanOrEqualTo(3));
         assertThat(returnedInstanceInfos, hasItems(discovery1, discovery2, discovery3));
 
-        for (int i = 3; i < returnedInstanceInfos.size(); i++) {
-            assertThat(returnedInstanceInfos.get(i).getApp(), equalTo(SampleInstanceInfo.ZuulServer.build().getApp()));
+        returnedInstanceInfos.remove(discovery1);
+        returnedInstanceInfos.remove(discovery2);
+        returnedInstanceInfos.remove(discovery3);
+
+        for (InstanceInfo remaining : returnedInstanceInfos) {
+            assertThat(remaining.getApp(), equalTo(SampleInstanceInfo.ZuulServer.build().getApp()));
         }
     }
 

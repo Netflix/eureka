@@ -34,6 +34,11 @@ public class DeltaInstanceInfo {
         return new InstanceInfo.Builder().withInstanceInfo(instanceInfo).withDeltaInstanceInfo(this).build();
     }
 
+    /**
+     * Return a stream of {@link ChangeNotification}s with InstanceInfo data each containing a single delta change
+     * @param baseInstanceInfo the base InstanceInfo from which the deltas should be applied
+     * @return a stream of {@link ChangeNotification}s with InstanceInfo data each containing a single delta change
+     */
     public Observable<ChangeNotification<InstanceInfo>> forChanges(final InstanceInfo baseInstanceInfo) {
         return Observable.from(deltas.keySet())
                 .map(new Func1<String, ChangeNotification<InstanceInfo>>() {
@@ -44,6 +49,29 @@ public class DeltaInstanceInfo {
                                 .withDelta(s, deltas.get(s))
                                 .build();
                         return new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Modify, instanceInfo);
+                    }
+                });
+    }
+
+    /**
+     * Return a stream of {@link ChangeNotification}s with DeltaInstanceInfo data each containing a single delta change
+     * @return a stream of {@link ChangeNotification}s with DeltaInstanceInfo data each containing a single delta change
+     */
+    public Observable<ChangeNotification<DeltaInstanceInfo>> forChanges() {
+        return Observable.from(deltas.keySet())
+                .map(new Func1<String, ChangeNotification<DeltaInstanceInfo>>() {
+                    @Override
+                    public ChangeNotification<DeltaInstanceInfo> call(String name) {
+                        DeltaInstanceInfo singleDelta = new DeltaInstanceInfo();
+                        if (!singleDelta.addDelta(name, deltas.get(name))) {
+                            return null;
+                        }
+                        return new ChangeNotification<DeltaInstanceInfo>(ChangeNotification.Kind.Modify, singleDelta);
+                    }
+                }).filter(new Func1<ChangeNotification<DeltaInstanceInfo>, Boolean>() {
+                    @Override
+                    public Boolean call(ChangeNotification<DeltaInstanceInfo> deltaInstanceInfoChangeNotification) {
+                        return (deltaInstanceInfoChangeNotification != null);
                     }
                 });
     }
