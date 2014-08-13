@@ -17,19 +17,23 @@
 package com.netflix.eureka.registry;
 
 /**
+ * A matching pair of field:value that denotes a delta change to an InstanceInfo
+ * @param <T> the type of the delta value
+ *
  * @author David Liu
  */
-public class EurekaRegistryException extends Exception {
+public class Delta<T> {
+    private final InstanceInfoField<T> field;
+    private final T value;
 
-    public EurekaRegistryException(Throwable th) {
-        super(th);
+    public Delta(InstanceInfoField<T> field, T value) {
+        this.field = field;
+        this.value = value;
     }
 
-    public EurekaRegistryException(String msg) {
-        super(msg);
-    }
-
-    public EurekaRegistryException(String msg, Throwable th) {
-        super(msg, th);
+    public void applyTo(InstanceInfo instanceInfo) throws IllegalArgumentException, IllegalAccessException {
+        if (field != null) {
+            field.set(instanceInfo, value);
+        }
     }
 }

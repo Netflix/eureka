@@ -54,9 +54,10 @@ public class InstanceInfoTest {
         assertThat(instanceInfo.getStatus(), equalTo(InstanceInfo.Status.UP));
         assertThat(instanceInfo.getPorts(), containsInAnyOrder(80, 8080));
 
-        DeltaInstanceInfo delta = new DeltaInstanceInfo();
-        delta.addDelta("status", InstanceInfo.Status.OUT_OF_SERVICE);
-        delta.addDelta("ports", new HashSet<Integer>(Arrays.asList(111, 222)));
+        DeltaInstanceInfo delta = new DeltaInstanceInfo.Builder()
+                .withDelta(InstanceInfoField.STATUS, InstanceInfo.Status.OUT_OF_SERVICE)
+                .withDelta(InstanceInfoField.PORTS, new HashSet<Integer>(Arrays.asList(111, 222)))
+                .build();
 
         InstanceInfo afterDelta = instanceInfo.applyDelta(delta);
         assertThat(afterDelta.getStatus(), equalTo(InstanceInfo.Status.OUT_OF_SERVICE));
