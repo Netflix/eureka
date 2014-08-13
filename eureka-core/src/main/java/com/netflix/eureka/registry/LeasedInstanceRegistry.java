@@ -206,7 +206,8 @@ public class LeasedInstanceRegistry implements EurekaRegistry {
      * Return an observable of all matching InstanceInfo for the current registry snapshot,
      * as {@link ChangeNotification}s
      * @param interest
-     * @return
+     * @return an observable of all matching InstanceInfo for the current registry snapshot,
+     * as {@link ChangeNotification}s
      */
     public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest) {
         try {
