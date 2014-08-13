@@ -144,17 +144,6 @@ public class LeasedInstanceRegistryTest {
     }
 
     @Test
-    public void shouldCancelLease() {
-        InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
-                .withStatus(InstanceInfo.Status.UP)
-                .build();
-        registry.register(original, 90 * 1000).toBlocking().lastOrDefault(null);
-
-        registry.cancelLease(original.getId());
-        assertFalse(registry.contains(original.getId()));
-    }
-
-    @Test
     public void shouldUpdateInstanceStatus() {
         InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
                 .withStatus(InstanceInfo.Status.UP)

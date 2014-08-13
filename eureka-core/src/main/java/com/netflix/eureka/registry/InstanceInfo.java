@@ -17,9 +17,14 @@
 package com.netflix.eureka.registry;
 
 import com.netflix.eureka.datastore.Item;
+import rx.Observable;
 
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 
 /**
  * TODO: add ability to diff InstanceInfos
@@ -29,6 +34,16 @@ import java.util.HashSet;
 public class InstanceInfo implements Item, Serializable {
 
     private static final long serialVersionUID = 331L;
+
+    public static final Map<String, Method> SETTERS;
+    static {
+        SETTERS = new HashMap<String, Method>();
+        for (Method method : InstanceInfo.class.getDeclaredMethods()) {
+            if (method.getName().startsWith("set")) {
+                SETTERS.put(method.getName().substring(3).toLowerCase(), method);
+            }
+        }
+    }
 
     private String id;
     private String appGroup;
@@ -44,6 +59,7 @@ public class InstanceInfo implements Item, Serializable {
     private String homePageUrl;
     private String statusPageUrl;
     private HashSet<String> healthCheckUrls;
+    private String version;
     private InstanceLocation instanceLocation;
 
     // for serializers
@@ -209,6 +225,20 @@ public class InstanceInfo implements Item, Serializable {
         this.healthCheckUrls = healthCheckUrls;
     }
 
+    /**
+     * All InstanceInfo instances contain a version string that can be used to determine timeline ordering
+     * for InstanceInfo records with the same id.
+     *
+     * @return the version string for this InstanceInfo
+     */
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
     public InstanceLocation getInstanceLocation() {
         return instanceLocation;
     }
@@ -220,6 +250,16 @@ public class InstanceInfo implements Item, Serializable {
     // ------------------------------------------
     // Non-bean methods
     // ------------------------------------------
+
+    /**
+     * Apply the delta info to the current InstanceInfo
+     * @param delta the delta changes to apply
+     * @return a new InstanceInfo with the deltas applied
+     */
+    public InstanceInfo applyDelta(DeltaInstanceInfo delta) {
+        return new Builder().withInstanceInfo(this).withDeltaInstanceInfo(delta).build();
+    }
+
 
     @Override
     public boolean equals(Object o) {
@@ -274,6 +314,9 @@ public class InstanceInfo implements Item, Serializable {
         if (vipAddress != null ? !vipAddress.equals(that.vipAddress) : that.vipAddress != null) {
             return false;
         }
+        if (version != null ? !version.equals(that.version) : that.version != null) {
+            return false;
+        }
         if (instanceLocation != null ? !instanceLocation.equals(that.instanceLocation) : that.instanceLocation != null) {
             return false;
         }
@@ -297,6 +340,7 @@ public class InstanceInfo implements Item, Serializable {
         result = 31 * result + (homePageUrl != null ? homePageUrl.hashCode() : 0);
         result = 31 * result + (statusPageUrl != null ? statusPageUrl.hashCode() : 0);
         result = 31 * result + (healthCheckUrls != null ? healthCheckUrls.hashCode() : 0);
+        result = 31 * result + (version != null ? version.hashCode() : 0);
         result = 31 * result + (instanceLocation != null ? instanceLocation.hashCode() : 0);
         return result;
     }
@@ -318,6 +362,7 @@ public class InstanceInfo implements Item, Serializable {
                 ", homePageUrl='" + homePageUrl + '\'' +
                 ", statusPageUrl='" + statusPageUrl + '\'' +
                 ", healthCheckUrls=" + healthCheckUrls +
+                ", version=" + version +
                 ", instanceLocation=" + instanceLocation +
                 '}';
     }
@@ -370,7 +415,27 @@ public class InstanceInfo implements Item, Serializable {
             info.setHomePageUrl(another.getHomePageUrl());
             info.setStatusPageUrl(another.getStatusPageUrl());
             info.setHealthCheckUrls(another.getHealthCheckUrls());
+            info.setVersion(another.getVersion());
             info.setInstanceLocation(another.getInstanceLocation());
+            return this;
+        }
+
+        public Builder withDeltaInstanceInfo(DeltaInstanceInfo deltaInstanceInfo) {
+            for (Map.Entry<String, Object> delta : deltaInstanceInfo.getDeltas().entrySet()) {
+                withDelta(delta.getKey(), delta.getValue());
+            }
+            return this;
+        }
+
+        public Builder withDelta(String name, Object value) {
+            Method method = SETTERS.get(name);
+            try {
+                method.invoke(info, value);
+            } catch (IllegalAccessException e) {
+                // log
+            } catch (InvocationTargetException e) {
+                // log
+            }
             return this;
         }
 
@@ -441,6 +506,11 @@ public class InstanceInfo implements Item, Serializable {
 
         public Builder withHealthCheckUrls(HashSet<String> healthCheckUrls) {
             info.setHealthCheckUrls(healthCheckUrls);
+            return this;
+        }
+
+        public Builder withVersion(String version) {
+            info.setVersion(version);
             return this;
         }
 

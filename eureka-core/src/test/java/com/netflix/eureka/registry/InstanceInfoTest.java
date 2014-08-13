@@ -1,6 +1,8 @@
 package com.netflix.eureka.registry;
 
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertEquals;
 
 import com.netflix.eureka.SampleInstanceInfo;
 import org.apache.avro.Schema;
@@ -16,6 +18,8 @@ import org.apache.avro.reflect.ReflectDatumWriter;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
+import java.util.HashSet;
 
 /**
  * @author David Liu
@@ -41,5 +45,25 @@ public class InstanceInfoTest {
         InstanceInfo newInstanceInfo = datumReader.read(null, decoder);
 
         assertEquals(instanceInfo, newInstanceInfo);
+    }
+
+    @Test
+    public void testApplyDelta() {
+        InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();
+
+        assertThat(instanceInfo.getStatus(), equalTo(InstanceInfo.Status.UP));
+        assertThat(instanceInfo.getPorts(), containsInAnyOrder(80, 8080));
+
+        DeltaInstanceInfo delta = new DeltaInstanceInfo();
+        delta.addDelta("status", InstanceInfo.Status.OUT_OF_SERVICE);
+        delta.addDelta("ports", new HashSet<Integer>(Arrays.asList(111, 222)));
+        String timestamp = ""+System.currentTimeMillis();
+        delta.addDelta("version", timestamp);
+
+        InstanceInfo afterDelta = instanceInfo.applyDelta(delta);
+        assertThat(afterDelta.getStatus(), equalTo(InstanceInfo.Status.OUT_OF_SERVICE));
+        assertThat(afterDelta.getPorts(), containsInAnyOrder(111, 222));
+        assertThat(afterDelta.getVersion(), equalTo(timestamp));
+        assertThat(afterDelta.getVersion(), not(equalTo(instanceInfo.getVersion())));
     }
 }
