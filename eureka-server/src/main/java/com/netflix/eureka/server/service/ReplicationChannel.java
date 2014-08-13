@@ -1,7 +1,8 @@
-package com.netflix.eureka.service;
+package com.netflix.eureka.server.service;
 
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.registry.InstanceInfo;
+import com.netflix.eureka.service.ServiceChannel;
 import rx.Observable;
 
 /**

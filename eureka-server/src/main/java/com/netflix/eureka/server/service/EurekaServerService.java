@@ -1,9 +1,10 @@
-package com.netflix.eureka.service;
+package com.netflix.eureka.server.service;
 
 import com.netflix.eureka.registry.InstanceInfo;
+import com.netflix.eureka.service.EurekaService;
 
 /**
- * An extension of {@link EurekaService} for eureka servers.
+ * An extension of {@link com.netflix.eureka.service.EurekaService} for eureka servers.
  *
  * @author Nitesh Kant
  */
