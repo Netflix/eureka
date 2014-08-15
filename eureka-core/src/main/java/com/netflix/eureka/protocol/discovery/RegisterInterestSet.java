@@ -16,10 +16,11 @@
 
 package com.netflix.eureka.protocol.discovery;
 
-import com.netflix.eureka.interests.Interest;
-
 import java.util.Arrays;
 import java.util.List;
+
+import com.netflix.eureka.interests.Interest;
+import com.netflix.eureka.registry.InstanceInfo;
 
 /**
  * @author Tomasz Bak
@@ -32,12 +33,12 @@ public class RegisterInterestSet {
         interestSet = null;
     }
 
-    public RegisterInterestSet(List<Interest> interestSet) {
+    public RegisterInterestSet(List<Interest<InstanceInfo>> interestSet) {
         this.interestSet = new Interest[interestSet.size()];
         interestSet.toArray(this.interestSet);
     }
 
-    public Interest[] getInterestSet() {
+    public Interest<InstanceInfo>[] getInterestSet() {
         return interestSet;
     }
 

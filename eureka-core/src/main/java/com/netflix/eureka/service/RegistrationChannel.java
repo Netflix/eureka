@@ -13,6 +13,8 @@ import rx.Observable;
  */
 public interface RegistrationChannel extends ServiceChannel {
 
+    Observable<Void> register(InstanceInfo newInfo);
+
     /**
      * Updates the {@link InstanceInfo} registered with this channel.
      *

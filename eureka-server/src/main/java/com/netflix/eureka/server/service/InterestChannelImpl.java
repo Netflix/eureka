@@ -46,4 +46,9 @@ public class InterestChannelImpl extends AbstractChannel implements InterestChan
     public void _close() {
         allSubscriptions.unsubscribe(); // Unsubscribes all the subscriptions.
     }
+
+    @Override
+    public Observable<Void> asLifecycleObservable() {
+        throw new RuntimeException("not implemented yet");
+    }
 }

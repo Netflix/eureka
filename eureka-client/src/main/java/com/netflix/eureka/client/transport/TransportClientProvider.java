@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka;
+package com.netflix.eureka.client.transport;
+
+import rx.Observable;
 
 /**
- * A place holder for the build to pass.
- *
- * @author Nitesh Kant
+ * @author Tomasz Bak
  */
-public class Main {
-
-    // TODO: Remove me.
+public interface TransportClientProvider<T> {
+    Observable<T> connect();
 }

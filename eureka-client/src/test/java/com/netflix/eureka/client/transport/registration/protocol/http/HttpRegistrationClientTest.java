@@ -1,31 +1,35 @@
 package com.netflix.eureka.client.transport.registration.protocol.http;
 
+import java.net.InetSocketAddress;
+import java.util.Iterator;
+
 import com.netflix.eureka.SampleInstanceInfo;
 import com.netflix.eureka.client.transport.registration.RegistrationClient;
-import com.netflix.eureka.client.transport.registration.RegistrationClients;
+import com.netflix.eureka.client.transport.registration.RegistrationClientProvider;
 import com.netflix.eureka.protocol.registration.Update;
 import com.netflix.eureka.registry.InstanceInfo;
-import com.netflix.eureka.testkit.MockHttpRxServer;
-import com.netflix.eureka.testkit.MockHttpRxServer.FromStringTransformer;
-import com.netflix.eureka.testkit.MockHttpRxServer.RequestContext;
-import com.netflix.eureka.testkit.MockHttpRxServer.ToStringTransformer;
+import com.netflix.eureka.registry.InstanceInfo.Builder;
+import com.netflix.eureka.rx.MockHttpRxServer;
+import com.netflix.eureka.rx.MockHttpRxServer.FromStringTransformer;
+import com.netflix.eureka.rx.MockHttpRxServer.RequestContext;
+import com.netflix.eureka.rx.MockHttpRxServer.ToStringTransformer;
 import io.netty.handler.codec.http.HttpMethod;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
 
-import java.util.Iterator;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static com.netflix.eureka.SampleInstanceInfo.DiscoveryServer;
+import static com.netflix.eureka.client.bootstrap.StaticBootstrapResolver.*;
+import static com.netflix.eureka.client.transport.registration.RegistrationClientProvider.*;
+import static org.junit.Assert.*;
 
 /**
  * @author Tomasz Bak
  */
 public class HttpRegistrationClientTest {
 
-    private static final InstanceInfo INSTANCE_INFO = SampleInstanceInfo.DiscoveryServer.build();
+    private static final InstanceInfo INSTANCE_INFO = DiscoveryServer.build();
 
     private MockHttpRxServer<String, String> server;
     private Iterator<RequestContext<String, String>> requestContextIterator;
@@ -39,7 +43,8 @@ public class HttpRegistrationClientTest {
                 .withResultTransformer(new FromStringTransformer())
                 .start();
 
-        client = RegistrationClients.httpRegistrationClient("localhost", server.getServerPort());
+        RegistrationClientProvider<InetSocketAddress> clientProvider = httpClientProvider(singleHostResolver("localhost", server.getServerPort()));
+        client = clientProvider.connect().toBlocking().first();
         requestContextIterator = server.contextIterator();
     }
 
@@ -63,12 +68,17 @@ public class HttpRegistrationClientTest {
 
     @Test
     public void testUpdate() throws Exception {
-        Observable<Void> reply = client.update(INSTANCE_INFO, new Update("someKey", "someValue"));
+        Builder instanceInfoBuilder = DiscoveryServer.builder();
+        InstanceInfo beforeUpdate = instanceInfoBuilder.build();
+        Observable<Void> reply = client.update(
+                beforeUpdate,
+                new Update(instanceInfoBuilder.withHostname("myNewHostName").build())
+        );
         Iterator<Void> responseIterator = reply.toBlocking().getIterator();
 
         RequestContext<String, String> pendingRequest = requestContextIterator.next();
-        assertTrue("Invalid request path", pendingRequest.getHttpServerRequest().getPath().endsWith("apps/" + INSTANCE_INFO.getId()));
-        assertTrue("Expected instanceinfo JSON", pendingRequest.getRequestContent().contains("someKey"));
+        assertTrue("Invalid request path", pendingRequest.getHttpServerRequest().getPath().endsWith("apps/" + beforeUpdate.getId()));
+        assertTrue("Expected instanceinfo JSON", pendingRequest.getRequestContent().contains("myNewHostName"));
         pendingRequest.submitResponse();
 
         assertTrue("No response body expected", !responseIterator.hasNext());

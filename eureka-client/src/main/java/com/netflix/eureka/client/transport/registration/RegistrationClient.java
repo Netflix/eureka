@@ -34,6 +34,8 @@ public interface RegistrationClient {
 
     Observable<Void> unregister(InstanceInfo instanceInfo);
 
+    Observable<Void> heartbeat(InstanceInfo instanceInfo);
+
     void shutdown();
 
     /**

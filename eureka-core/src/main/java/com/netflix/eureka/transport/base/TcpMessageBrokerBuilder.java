@@ -75,7 +75,7 @@ public class TcpMessageBrokerBuilder extends AbstractMessageBrokerBuilder<TcpMes
                 });
     }
 
-    static class TcpPipelineConfigurator implements PipelineConfigurator<Object, Object> {
+    public static class TcpPipelineConfigurator implements PipelineConfigurator<Object, Object> {
         @Override
         public void configureNewPipeline(ChannelPipeline pipeline) {
             pipeline.addLast(new LengthFieldBasedFrameDecoder(MAX_FRAME_LENGTH, 0, 4, 0, 4));

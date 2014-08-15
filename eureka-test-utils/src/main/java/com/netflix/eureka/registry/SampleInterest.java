@@ -30,21 +30,21 @@ public enum SampleInterest {
 
     ZuulVip() {
         @Override
-        public Interest build() {
+        public Interest<InstanceInfo> build() {
             return new VipsInterest("zuul.addr:7001");
         }
     },
     DiscoveryApp() {
         @Override
-        public Interest build() {
+        public Interest<InstanceInfo> build() {
             return new ApplicationInterest("discovery001");
         }
     };
 
-    public abstract Interest build();
+    public abstract Interest<InstanceInfo> build();
 
-    public static List<Interest> interestCollectionOf(SampleInterest... interests) {
-        List<Interest> result = new ArrayList<Interest>(interests.length);
+    public static List<Interest<InstanceInfo>> interestCollectionOf(SampleInterest... interests) {
+        List<Interest<InstanceInfo>> result = new ArrayList<Interest<InstanceInfo>>(interests.length);
         for (SampleInterest intr : interests) {
             result.add(intr.build());
         }

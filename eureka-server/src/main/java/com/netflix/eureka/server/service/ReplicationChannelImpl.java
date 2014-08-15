@@ -19,4 +19,9 @@ public class ReplicationChannelImpl extends AbstractChannel implements Replicati
     public Observable<ChangeNotification<InstanceInfo>> asObservable() {
         return Observable.error(new UnsupportedOperationException("Replication not implemented yet.")); // TODO: Replication
     }
+
+    @Override
+    public Observable<Void> asLifecycleObservable() {
+        throw new RuntimeException("not implemented yet");
+    }
 }

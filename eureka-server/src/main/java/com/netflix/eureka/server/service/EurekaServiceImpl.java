@@ -1,5 +1,7 @@
 package com.netflix.eureka.server.service;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.registry.EurekaRegistry;
@@ -11,10 +13,12 @@ import rx.Observable;
 /**
  * @author Nitesh Kant
  */
+@Singleton
 public class EurekaServiceImpl implements EurekaServerService {
 
     private final EurekaRegistry registry;
 
+    @Inject
     public EurekaServiceImpl(EurekaRegistry registry) {
         this.registry = registry;
     }
@@ -26,7 +30,7 @@ public class EurekaServiceImpl implements EurekaServerService {
     }
 
     @Override
-    public RegistrationChannel forRegistration(InstanceInfo instanceToRegister) {
+    public RegistrationChannel newRegistrationChannel() {
         return new RegistrationChannelImpl(registry);
     }
 

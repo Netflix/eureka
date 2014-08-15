@@ -20,6 +20,11 @@ public class RegistrationChannelImpl extends AbstractChannel implements Registra
     }
 
     @Override
+    public Observable<Void> register(InstanceInfo newInfo) {
+        throw new RuntimeException("not implemented yet");
+    }
+
+    @Override
     public Observable<Void> update(final InstanceInfo newInfo) {
         // TODO: Where does ordering of UPDATE -> ACK -> UPDATE happen? So that we don't do UPDATE -> UPDATE -> ACK -> ACK
         return registry.update(newInfo)
@@ -34,5 +39,10 @@ public class RegistrationChannelImpl extends AbstractChannel implements Registra
     @Override
     public void _close() {
         registry.unregister(currentInfo.getId());
+    }
+
+    @Override
+    public Observable<Void> asLifecycleObservable() {
+        return null;
     }
 }

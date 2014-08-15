@@ -21,17 +21,23 @@ package com.netflix.eureka.protocol.discovery;
  */
 public class UpdateInstanceInfo implements InterestSetNotification {
 
+    private final String instanceId;
     private final String key;
     private final String value;
 
     // For serialization framework
     protected UpdateInstanceInfo() {
-        key = value = null;
+        instanceId = key = value = null;
     }
 
-    public UpdateInstanceInfo(String key, String value) {
+    public UpdateInstanceInfo(String instanceId, String key, String value) {
+        this.instanceId = instanceId;
         this.key = key;
         this.value = value;
+    }
+
+    public String getInstanceId() {
+        return instanceId;
     }
 
     public String getKey() {
@@ -53,6 +59,9 @@ public class UpdateInstanceInfo implements InterestSetNotification {
 
         UpdateInstanceInfo that = (UpdateInstanceInfo) o;
 
+        if (instanceId != null ? !instanceId.equals(that.instanceId) : that.instanceId != null) {
+            return false;
+        }
         if (key != null ? !key.equals(that.key) : that.key != null) {
             return false;
         }
@@ -65,13 +74,15 @@ public class UpdateInstanceInfo implements InterestSetNotification {
 
     @Override
     public int hashCode() {
-        int result = key != null ? key.hashCode() : 0;
+        int result = instanceId != null ? instanceId.hashCode() : 0;
+        result = 31 * result + (key != null ? key.hashCode() : 0);
         result = 31 * result + (value != null ? value.hashCode() : 0);
         return result;
     }
 
     @Override
     public String toString() {
-        return "UpdateInstanceInfo{key='" + key + '\'' + ", value='" + value + '\'' + '}';
+        return "UpdateInstanceInfo{instanceId='" + instanceId + '\'' + ", key='" + key + '\'' +
+                ", value='" + value + '\'' + '}';
     }
 }
