@@ -41,6 +41,7 @@ import com.netflix.eureka.transport.utils.TransportModel.TransportModelBuilder;
 import io.netty.handler.logging.LogLevel;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ConnectionHandler;
+import io.reactivex.netty.client.ClientBuilder;
 import io.reactivex.netty.pipeline.PipelineConfigurator;
 import io.reactivex.netty.server.ServerBuilder;
 import rx.Observable;
@@ -75,6 +76,13 @@ public class EurekaTransports {
         return new TcpMessageBrokerBuilder(new InetSocketAddress(host, port))
                 .withCodecPiepline(piplineFor(codec, REGISTRATION_MODEL))
                 .buildClient();
+    }
+
+    public static ClientBuilder<Object, Object> tcpRegistrationClientBuilder(String host, int port, Codec codec) {
+        return RxNetty.newTcpClientBuilder(host, port)
+                .pipelineConfigurator(new TcpPipelineConfigurator())
+                .appendPipelineConfigurator(piplineFor(codec, REGISTRATION_MODEL))
+                .enableWireLogging(LogLevel.ERROR);
     }
 
     public static ServerBuilder<Object, Object> tcpRegistrationServerBuilder(int port, Codec codec, ConnectionHandler<Object, Object> connectionHandler) {
