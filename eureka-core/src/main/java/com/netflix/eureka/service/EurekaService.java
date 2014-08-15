@@ -27,9 +27,7 @@ public interface EurekaService {
     /**
      * Returns a {@link RegistrationChannel} for the registration of the passed {@code instanceToRegister}.
      *
-     * @param instanceToRegister Instance to register.
-     *
      * @return A {@link RegistrationChannel} for the registration of the passed {@code instanceToRegister}.
      */
-    RegistrationChannel forRegistration(InstanceInfo instanceToRegister);
+    RegistrationChannel newRegistrationChannel();
 }

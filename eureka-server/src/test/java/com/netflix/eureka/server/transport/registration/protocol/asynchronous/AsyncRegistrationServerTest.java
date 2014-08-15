@@ -77,7 +77,7 @@ public class AsyncRegistrationServerTest {
 
     @Test
     public void testUpdate() throws Exception {
-        Update request = new Update("someKey", "someValue");
+        Update request = new Update(DiscoveryServer.build());
         Observable<Void> ackObservable = brokerClient.submitWithAck(request);
         Notification<Void> ackNotification = ackObservable.materialize().toBlocking().single();
         assertTrue("Acknowledgement failure", ackNotification.isOnCompleted());

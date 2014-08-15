@@ -20,8 +20,13 @@ import com.google.inject.AbstractModule;
 import com.google.inject.binder.AnnotatedBindingBuilder;
 import com.google.inject.name.Names;
 import com.netflix.adminresources.resources.KaryonWebAdminModule;
+import com.netflix.eureka.registry.EurekaRegistry;
+import com.netflix.eureka.registry.InstanceInfo;
+import com.netflix.eureka.registry.LeasedInstanceRegistry;
 import com.netflix.eureka.server.EurekaServer.EurekaServerModule;
 import com.netflix.eureka.server.EurekaServer.EurekaWebModule;
+import com.netflix.eureka.server.service.EurekaServiceImpl;
+import com.netflix.eureka.service.EurekaService;
 import com.netflix.governator.annotations.Modules;
 import com.netflix.karyon.KaryonBootstrap;
 import com.netflix.karyon.KaryonServer;
@@ -43,7 +48,11 @@ import rx.Observable;
 @ArchaiusBootstrap
 @KaryonBootstrap(name = "eureka-server")
 @Modules(include = EurekaServerModule.class)
-@Submodules(include = {EurekaWebModule.class, KaryonWebAdminModule.class})
+@Submodules(include = {
+        EurekaWebModule.class,
+        KaryonWebAdminModule.class,
+        AvroRegistrationModule.class
+})
 public class EurekaServer extends KaryonServer {
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaServer.class);
@@ -72,6 +81,9 @@ public class EurekaServer extends KaryonServer {
         @Override
         protected void configure() {
             bind(ServerPort.class).annotatedWith(Names.named("shutdown")).toInstance(new ServerPort(8089));
+            bind(EurekaService.class).to(EurekaServiceImpl.class);
+            // TODO Fix registry construction.
+            bind(EurekaRegistry.class).toInstance(new LeasedInstanceRegistry(new InstanceInfo()));
         }
     }
 

@@ -1,6 +1,7 @@
 package com.netflix.eureka.service;
 
 import com.netflix.eureka.registry.EurekaRegistry;
+import rx.Observable;
 
 /**
  * A {@link ServiceChannel} is a medium to define eureka protocols for modification to the {@link EurekaRegistry}.
@@ -26,4 +27,11 @@ public interface ServiceChannel {
      * Closes this channel.
      */
     void close();
+
+    /**
+     * Returns an {@link Observable} for the lifecycle of this channel.
+     *
+     * @return An {@link Observable} for the lifecycle of this channel which completes when the channel closes.
+     */
+    Observable<Void> asLifecycleObservable();
 }

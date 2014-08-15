@@ -26,7 +26,7 @@ buildscript {
 
 allprojects {
     repositories {
-        //mavenLocal()
+        mavenLocal()
         mavenCentral() // maven { url: 'http://jcenter.bintray.com' }
     }
 }

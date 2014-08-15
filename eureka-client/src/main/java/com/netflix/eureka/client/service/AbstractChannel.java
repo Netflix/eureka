@@ -8,6 +8,7 @@ import rx.Scheduler;
 import rx.Subscriber;
 import rx.Subscription;
 import rx.schedulers.Schedulers;
+import rx.subjects.PublishSubject;
 
 import java.util.concurrent.TimeUnit;
 
@@ -22,6 +23,7 @@ public abstract class AbstractChannel implements ServiceChannel {
 
     private final Subscription heartbeatTickSubscription;
     private final boolean heartbeatsEnabled;
+    private final PublishSubject<Void> lifecycleSubject = PublishSubject.create();
 
     protected AbstractChannel() {
         // No Heartbeats.
@@ -45,9 +47,20 @@ public abstract class AbstractChannel implements ServiceChannel {
         _close();
         heartbeatTickSubscription.unsubscribe(); // Unsubscribe is idempotent so even though it is called as a result
                                                  // of completion of this subscription, it is safe to call it here.
+        lifecycleSubject.onCompleted();
+    }
+
+    @Override
+    public Observable<Void> asLifecycleObservable() {
+        return lifecycleSubject;
     }
 
     protected void _close() {
+    }
+
+    protected void close(Throwable throwable) {
+        lifecycleSubject.onError(throwable);
+        close();
     }
 
     private class HeartbeatSender extends Subscriber<Long> {

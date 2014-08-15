@@ -1,5 +1,6 @@
 package com.netflix.eureka.client.service;
 
+import com.netflix.eureka.client.transport.TransportClientProvider;
 import com.netflix.eureka.client.transport.discovery.DiscoveryClient;
 import com.netflix.eureka.client.transport.registration.RegistrationClient;
 import com.netflix.eureka.interests.Interest;
@@ -13,21 +14,27 @@ import com.netflix.eureka.service.RegistrationChannel;
  */
 public class EurekaServiceImpl implements EurekaService {
 
-    private final DiscoveryClient discoveryClient;
-    private final RegistrationClient registrationClient;
+    private final RegistrationChannelMonitor registrationChannelMonitor;
+    private final DiscoveryChannelMonitor discoveryChannelMonitor;
 
-    public EurekaServiceImpl(DiscoveryClient discoveryClient, RegistrationClient registrationClient) {
-        this.discoveryClient = discoveryClient;
-        this.registrationClient = registrationClient;
+    public EurekaServiceImpl(TransportClientProvider<DiscoveryClient> discoveryClientProvider,
+                             TransportClientProvider<RegistrationClient> registrationClientProvider) {
+        registrationChannelMonitor = new RegistrationChannelMonitor(registrationClientProvider);
+        registrationChannelMonitor.start();
+
+        discoveryChannelMonitor = new DiscoveryChannelMonitor(discoveryClientProvider);
+        discoveryChannelMonitor.start();
     }
 
     @Override
     public InterestChannel forInterest(Interest<InstanceInfo> interest) {
-        return new InterestChannelImpl(discoveryClient, null); // TODO: Use the correct change notification in the client.
+        InterestChannel interestChannel = discoveryChannelMonitor.activeChannel();
+        interestChannel.upgrade(interest);
+        return interestChannel;
     }
 
     @Override
-    public RegistrationChannel forRegistration(InstanceInfo instanceToRegister) {
-        return new RegistrationChannelImpl(registrationClient, instanceToRegister);
+    public RegistrationChannel newRegistrationChannel() {
+        return registrationChannelMonitor.activeChannel();
     }
 }

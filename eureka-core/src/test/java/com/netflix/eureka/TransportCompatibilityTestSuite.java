@@ -14,10 +14,12 @@ import com.netflix.eureka.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka.protocol.registration.Register;
 import com.netflix.eureka.protocol.registration.Unregister;
 import com.netflix.eureka.protocol.registration.Update;
+import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.transport.MessageBroker;
 import rx.Notification;
 import rx.Observable;
 
+import static com.netflix.eureka.SampleInstanceInfo.*;
 import static com.netflix.eureka.rx.RxSniffer.*;
 import static org.junit.Assert.*;
 
@@ -78,7 +80,7 @@ public abstract class TransportCompatibilityTestSuite {
         }
 
         private void registrationTest() {
-            runClientToServerWithAck(new Register(SampleInstanceInfo.DiscoveryServer.build()));
+            runClientToServerWithAck(new Register(DiscoveryServer.build()));
         }
 
         private void unregisterTest() {
@@ -86,7 +88,7 @@ public abstract class TransportCompatibilityTestSuite {
         }
 
         private void updateTest() {
-            runClientToServerWithAck(new Update("key", "value123"));
+            runClientToServerWithAck(new Update(DiscoveryServer.build()));
         }
 
         private void hearbeatTest() {
@@ -112,7 +114,7 @@ public abstract class TransportCompatibilityTestSuite {
         }
 
         private void registerInterestSetTest() {
-            Interest[] interests = {Interests.forApplication("app1"), Interests.forVip("vip1")};
+            Interest<InstanceInfo>[] interests = new Interest[]{Interests.forApplication("app1"), Interests.forVip("vip1")};
             runClientToServerWithAck(new RegisterInterestSet(Arrays.asList(interests)));
         }
 
@@ -125,7 +127,7 @@ public abstract class TransportCompatibilityTestSuite {
         }
 
         private void addInstanceTest() {
-            runServerToClientWithAck(new AddInstance(SampleInstanceInfo.DiscoveryServer.build()));
+            runServerToClientWithAck(new AddInstance(DiscoveryServer.build()));
         }
 
         private void deleteInstanceTest() {
@@ -133,7 +135,7 @@ public abstract class TransportCompatibilityTestSuite {
         }
 
         private void updateInstanceInfoTest() {
-            runServerToClientWithAck(new UpdateInstanceInfo("someKey", "someValue"));
+            runServerToClientWithAck(new UpdateInstanceInfo("id1", "someKey", "someValue"));
         }
     }
 }

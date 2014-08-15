@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka.client.transport.registration.protocol.http;
+package com.netflix.eureka.client.transport.registration.http;
 
 import com.netflix.eureka.client.transport.common.http.HttpErrorHandler;
 import com.netflix.eureka.client.transport.registration.RegistrationClient;
@@ -35,6 +35,14 @@ import rx.subjects.ReplaySubject;
  */
 public class HttpRegistrationClient implements RegistrationClient {
 
+    // TODO: change this to operator
+    private static final Func1<HttpClientResponse<ByteBuf>, Observable<Void>> VOID_OBSERVABLE = new Func1<HttpClientResponse<ByteBuf>, Observable<Void>>() {
+        @Override
+        public Observable<Void> call(HttpClientResponse<ByteBuf> response) {
+            return Observable.empty();
+        }
+    };
+
     private static final Operator<HttpClientResponse<ByteBuf>, HttpClientResponse<ByteBuf>> errorHandler = new HttpErrorHandler<ByteBuf>();
 
     private final String baseURI;
@@ -53,12 +61,7 @@ public class HttpRegistrationClient implements RegistrationClient {
                 .withContent(Json.toByteBufJson(instanceInfo))
                 .withHeader("ContentType", "application/json"))
                 .lift(errorHandler)
-                .flatMap(new Func1<HttpClientResponse<ByteBuf>, Observable<Void>>() {
-                    @Override
-                    public Observable<Void> call(HttpClientResponse<ByteBuf> response) {
-                        return Observable.empty();
-                    }
-                });
+                .flatMap(VOID_OBSERVABLE);
     }
 
     @Override
@@ -67,24 +70,21 @@ public class HttpRegistrationClient implements RegistrationClient {
                 .withContent(Json.toByteBufJson(update))
                 .withHeader("ContentType", "application/json"))
                 .lift(errorHandler)
-                .flatMap(new Func1<HttpClientResponse<ByteBuf>, Observable<Void>>() {
-                    @Override
-                    public Observable<Void> call(HttpClientResponse<ByteBuf> response) {
-                        return Observable.empty();
-                    }
-                });
+                .flatMap(VOID_OBSERVABLE);
     }
 
     @Override
     public Observable<Void> unregister(InstanceInfo instanceInfo) {
         return httpClient.submit(HttpClientRequest.createDelete(baseURI + "/apps/" + instanceInfo.getId()))
                 .lift(errorHandler)
-                .flatMap(new Func1<HttpClientResponse<ByteBuf>, Observable<Void>>() {
-                    @Override
-                    public Observable<Void> call(HttpClientResponse<ByteBuf> response) {
-                        return Observable.empty();
-                    }
-                });
+                .flatMap(VOID_OBSERVABLE);
+    }
+
+    @Override
+    public Observable<Void> heartbeat(InstanceInfo instanceInfo) {
+        return httpClient.submit(HttpClientRequest.createGet(baseURI + "/apps/" + instanceInfo.getId()))
+                .lift(errorHandler)
+                .flatMap(VOID_OBSERVABLE);
     }
 
     @Override

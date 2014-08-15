@@ -14,10 +14,26 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka.client.transport.discovery;
+package com.netflix.eureka;
+
+import com.netflix.eureka.interests.ChangeNotification;
+import com.netflix.eureka.interests.Interest;
+import rx.Observable;
+
+import com.netflix.eureka.registry.InstanceInfo;
 
 /**
- * @author Tomasz Bak
+ *
+ *
+ * @author Nitesh Kant
  */
-public class DiscoveryClients {
+public abstract class EurekaClient {
+
+    public abstract Observable<Void> update(InstanceInfo instanceInfo);
+
+    public abstract Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest);
+
+    public abstract Observable<ChangeNotification<InstanceInfo>> forVips(String... vips);
+
+    public abstract Observable<Void> close();
 }

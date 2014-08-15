@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka;
+package com.netflix.eureka.protocol;
 
 /**
- * A place holder for the build to pass.
+ * Exception used to communicate Eureka protocol level errors, like unexpected message
+ * received, invalid order of messages, etc. Transport layer errors are excluded from it.
  *
- * @author Nitesh Kant
+ * @author Tomasz Bak
  */
-public class EurekaMain {
-
-    // TODO: Remove me.
+public class EurekaProtocolError extends RuntimeException {
+    public EurekaProtocolError(String message) {
+        super(message);
+    }
 }

@@ -33,11 +33,16 @@ import com.netflix.eureka.protocol.registration.Register;
 import com.netflix.eureka.protocol.registration.Unregister;
 import com.netflix.eureka.protocol.registration.Update;
 import com.netflix.eureka.transport.base.TcpMessageBrokerBuilder;
+import com.netflix.eureka.transport.base.TcpMessageBrokerBuilder.TcpPipelineConfigurator;
 import com.netflix.eureka.transport.codec.avro.AvroPipelineConfigurator;
 import com.netflix.eureka.transport.codec.json.JsonPipelineConfigurator;
 import com.netflix.eureka.transport.utils.TransportModel;
 import com.netflix.eureka.transport.utils.TransportModel.TransportModelBuilder;
+import io.netty.handler.logging.LogLevel;
+import io.reactivex.netty.RxNetty;
+import io.reactivex.netty.channel.ConnectionHandler;
 import io.reactivex.netty.pipeline.PipelineConfigurator;
+import io.reactivex.netty.server.ServerBuilder;
 import rx.Observable;
 
 /**
@@ -70,6 +75,12 @@ public class EurekaTransports {
         return new TcpMessageBrokerBuilder(new InetSocketAddress(host, port))
                 .withCodecPiepline(piplineFor(codec, REGISTRATION_MODEL))
                 .buildClient();
+    }
+
+    public static ServerBuilder<Object, Object> tcpRegistrationServerBuilder(int port, Codec codec, ConnectionHandler<Object, Object> connectionHandler) {
+        return RxNetty.newTcpServerBuilder(port, connectionHandler).pipelineConfigurator(new TcpPipelineConfigurator())
+                .appendPipelineConfigurator(piplineFor(codec, REGISTRATION_MODEL))
+                .enableWireLogging(LogLevel.ERROR);
     }
 
     public static MessageBrokerServer tcpRegistrationServer(int port, Codec codec) {

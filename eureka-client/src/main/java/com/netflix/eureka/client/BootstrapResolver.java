@@ -24,6 +24,6 @@ import java.util.List;
  *
  * @author Tomasz Bak
  */
-public interface BootstrapResolver {
-    List<SocketAddress> resolveWriteClusterServers();
+public interface BootstrapResolver<A extends SocketAddress> {
+    List<A> resolveWriteClusterServers();
 }

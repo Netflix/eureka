@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka.client.transport.registration.protocol.asynchronous;
-
-import java.util.concurrent.TimeUnit;
+package com.netflix.eureka.client.transport.registration.asynchronous;
 
 import com.netflix.eureka.client.transport.registration.RegistrationClient;
 import com.netflix.eureka.protocol.Heartbeat;
@@ -24,8 +22,6 @@ import com.netflix.eureka.protocol.registration.Unregister;
 import com.netflix.eureka.protocol.registration.Update;
 import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.transport.MessageBroker;
-import com.netflix.eureka.transport.utils.HeartBeatHandler;
-import com.netflix.eureka.transport.utils.HeartBeatHandler.HeartbeatClient;
 import rx.Observable;
 
 /**
@@ -33,16 +29,9 @@ import rx.Observable;
  */
 public class AsyncRegistrationClient implements RegistrationClient {
     private final MessageBroker messageBroker;
-    private final HeartbeatClient<Heartbeat> heartbeatClient;
 
-    public AsyncRegistrationClient(MessageBroker messageBroker, long heatbeatInterval, TimeUnit heartbeatUnit) {
+    public AsyncRegistrationClient(MessageBroker messageBroker) {
         this.messageBroker = messageBroker;
-        heartbeatClient = new HeartBeatHandler.HeartbeatClient<Heartbeat>(messageBroker, heatbeatInterval, heartbeatUnit) {
-            @Override
-            protected Heartbeat heartbeatMessage() {
-                return Heartbeat.INSTANCE;
-            }
-        };
     }
 
     @Override
@@ -61,14 +50,18 @@ public class AsyncRegistrationClient implements RegistrationClient {
     }
 
     @Override
+    public Observable<Void> heartbeat(InstanceInfo instanceInfo) {
+        return messageBroker.submit(Heartbeat.INSTANCE);
+    }
+
+    @Override
     public void shutdown() {
-        heartbeatClient.shutdown();
         messageBroker.shutdown();
     }
 
     @Override
     public Observable<Void> lifecycleObservable() {
-        return heartbeatClient.connectionStatus();
+        return null;
     }
 
 }
