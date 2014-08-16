@@ -84,7 +84,9 @@ public class AsyncDiscoveryClient implements DiscoveryClient {
             public ChangeNotification<InstanceInfo> call(Object message) {
                 InterestSetNotification notification = (InterestSetNotification) message;
                 if (notification instanceof AddInstance) {
-                    return new ChangeNotification<InstanceInfo>(Kind.Add, ((AddInstance) notification).getInstanceInfo());
+                    InstanceInfo instanceInfo = ((AddInstance) notification).getInstanceInfo();
+                    cachedInstances.put(instanceInfo.getId(), instanceInfo);
+                    return new ChangeNotification<InstanceInfo>(Kind.Add, instanceInfo);
                 }
                 if (notification instanceof UpdateInstanceInfo) {
                     UpdateInstanceInfo update = (UpdateInstanceInfo) notification;
