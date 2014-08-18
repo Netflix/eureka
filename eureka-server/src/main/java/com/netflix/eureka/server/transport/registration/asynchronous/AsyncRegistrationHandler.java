@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka.server;
+package com.netflix.eureka.server.transport.registration.asynchronous;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -34,16 +34,17 @@ import io.reactivex.netty.channel.ObservableConnection;
 import rx.Observable;
 import rx.functions.Action0;
 import rx.functions.Func1;
+import rx.subjects.PublishSubject;
 
 /**
  * @author Tomasz Bak
  */
-public class RegistrationHandler implements ConnectionHandler<Object, Object> {
+public class AsyncRegistrationHandler implements ConnectionHandler<Object, Object> {
 
     private final EurekaService eurekaService;
 
     @Inject
-    public RegistrationHandler(EurekaService eurekaService) {
+    public AsyncRegistrationHandler(EurekaService eurekaService) {
         this.eurekaService = eurekaService;
     }
 
@@ -52,17 +53,15 @@ public class RegistrationHandler implements ConnectionHandler<Object, Object> {
         final MessageBroker broker = new BaseMessageBroker(connection);
         final RequestDispatcher dispatcher = new RequestDispatcher(broker);
 
-        return broker.incoming().flatMap(new Func1<Object, Observable<Void>>() {
+        PublishSubject<Void> statusObservable = PublishSubject.create();
+        broker.incoming().flatMap(new Func1<Object, Observable<Void>>() {
             @Override
             public Observable<Void> call(final Object message) {
                 return dispatcher.dispatch(message);
             }
-        }).doOnTerminate(new Action0() {
-            @Override
-            public void call() {
-                broker.shutdown();
-            }
-        });
+        }).subscribe(statusObservable);
+
+        return statusObservable;
     }
 
     private class RequestDispatcher {
@@ -80,7 +79,6 @@ public class RegistrationHandler implements ConnectionHandler<Object, Object> {
             } else {
                 if (registrationChannelRef.get() == null) {
                     if (message instanceof Unregister) {
-                        broker.shutdown();
                         return Observable.empty();
                     }
                     return Observable.error(new EurekaProtocolError("Expected registration message prior to " + message));
@@ -106,7 +104,9 @@ public class RegistrationHandler implements ConnectionHandler<Object, Object> {
 
         private Observable<Void> handleRegistration(InstanceInfo instanceInfo) {
             destroyChannel();
-            registrationChannelRef.set(eurekaService.newRegistrationChannel());
+            RegistrationChannel registrationChannel = eurekaService.newRegistrationChannel();
+            registrationChannelRef.set(registrationChannel);
+            registrationChannel.register(instanceInfo);
             return Observable.empty();
         }
 
@@ -116,8 +116,7 @@ public class RegistrationHandler implements ConnectionHandler<Object, Object> {
         }
 
         private Observable<Void> handleUpdate(Update message) {
-            // FIXME Interface incompatibility.
-            return registrationChannelRef.get().update(null);
+            return registrationChannelRef.get().update(message.getInstanceInfo());
         }
 
         private Observable<Void> handleUnregistration() {
@@ -126,7 +125,10 @@ public class RegistrationHandler implements ConnectionHandler<Object, Object> {
         }
 
         private void destroyChannel() {
-            registrationChannelRef.get().close();
+            RegistrationChannel oldValue = registrationChannelRef.getAndSet(null);
+            if (oldValue != null) {
+                oldValue.close();
+            }
         }
     }
 }

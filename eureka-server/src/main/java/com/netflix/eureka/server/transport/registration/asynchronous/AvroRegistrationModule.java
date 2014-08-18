@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka.server;
+package com.netflix.eureka.server.transport.registration.asynchronous;
 
 import com.google.inject.util.Types;
 import com.netflix.eureka.transport.EurekaTransports;
@@ -32,7 +32,7 @@ import io.reactivex.netty.server.ServerMetricsEvent.EventType;
 public class AvroRegistrationModule{}
 //public class AvroRegistrationModule extends TcpRxNettyModule<Object, Object> {
 //    public AvroRegistrationModule() {
-//        super(Object.class, Object.class, Types.newParameterizedType(RegistrationHandler.class));
+//        super(Object.class, Object.class, Types.newParameterizedType(AsyncRegistrationHandler.class));
 //    }
 //
 //    @Override

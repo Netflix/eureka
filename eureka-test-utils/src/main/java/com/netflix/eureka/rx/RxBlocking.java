@@ -41,15 +41,21 @@ import rx.Subscriber;
  */
 public class RxBlocking {
 
+    /**
+     * Interface for getting a value from observable. The call can be blocked up
+     * to the configured timeout value, which runs independent from when this method
+     * is called.
+     */
     public interface RxItem<T> {
         T item() throws TimeoutException, InterruptedException;
     }
 
-    public interface RxCompleted {
-        boolean completed() throws TimeoutException;
-    }
-
-    public static boolean isCompleted(int timeout, TimeUnit timeUnit, Observable<?> observable) {
+    /**
+     * Returns true if a given observable is completed.
+     *
+     * @throws RuntimeException if an observable is on error, with cause field storing the original exception.
+     */
+    public static <T> boolean isCompleted(int timeout, TimeUnit timeUnit, Observable<T> observable) {
         return !iteratorFrom(timeout, timeUnit, observable).hasNext();
     }
 
@@ -73,6 +79,9 @@ public class RxBlocking {
         return new ListRxItem<T>(TimeUnit.MILLISECONDS.convert(timeout, timeUnit), firstItems);
     }
 
+    /**
+     * Iterator from observable, where each hasNext/next method calls is guarded by a timeout.
+     */
     public static <T> Iterator<T> iteratorFrom(final long timeout, final TimeUnit timeUnit, final Observable<T> observable) {
         return new Iterator<T>() {
 
