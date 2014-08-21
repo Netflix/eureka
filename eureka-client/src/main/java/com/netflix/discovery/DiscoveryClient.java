@@ -605,7 +605,7 @@ public class DiscoveryClient implements LookupService {
             availZones = new String[1];
             availZones[0] = "default";
         }
-        logger.debug("The availability zone for the given region {} are %s",
+        logger.debug("The availability zone for the given region {} are {}",
                 region, Arrays.toString(availZones));
         int myZoneOffset = getZoneOffset(instanceZone, preferSameZone,
                 availZones);
