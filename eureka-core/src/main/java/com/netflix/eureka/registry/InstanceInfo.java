@@ -17,6 +17,8 @@
 package com.netflix.eureka.registry;
 
 import com.netflix.eureka.datastore.Item;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.HashSet;
@@ -44,7 +46,7 @@ public class InstanceInfo implements Item, Serializable {
     protected String homePageUrl;
     protected String statusPageUrl;
     protected HashSet<String> healthCheckUrls;
-    protected String version;
+    protected Long version;
     protected InstanceLocation instanceLocation;
 
     // for serializers
@@ -160,7 +162,7 @@ public class InstanceInfo implements Item, Serializable {
      *
      * @return the version string for this InstanceInfo
      */
-    public String getVersion() {
+    public Long getVersion() {
         return version;
     }
 
@@ -172,75 +174,33 @@ public class InstanceInfo implements Item, Serializable {
     // Non-bean methods
     // ------------------------------------------
 
-    /**
-     * Apply the delta info to the current InstanceInfo
-     * @param delta the delta changes to applyTo
-     * @return a new InstanceInfo with the deltas applied
-     */
-    public InstanceInfo applyDelta(DeltaInstanceInfo delta) {
-        return new Builder().withInstanceInfo(this).withDeltaInstanceInfo(delta).build();
-    }
-
-
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
+        if (this == o) return true;
+        if (!(o instanceof InstanceInfo)) return false;
 
         InstanceInfo that = (InstanceInfo) o;
 
-        if (app != null ? !app.equals(that.app) : that.app != null) {
+        if (app != null ? !app.equals(that.app) : that.app != null) return false;
+        if (appGroup != null ? !appGroup.equals(that.appGroup) : that.appGroup != null) return false;
+        if (asg != null ? !asg.equals(that.asg) : that.asg != null) return false;
+        if (healthCheckUrls != null ? !healthCheckUrls.equals(that.healthCheckUrls) : that.healthCheckUrls != null)
             return false;
-        }
-        if (appGroup != null ? !appGroup.equals(that.appGroup) : that.appGroup != null) {
+        if (homePageUrl != null ? !homePageUrl.equals(that.homePageUrl) : that.homePageUrl != null) return false;
+        if (hostname != null ? !hostname.equals(that.hostname) : that.hostname != null) return false;
+        if (id != null ? !id.equals(that.id) : that.id != null) return false;
+        if (instanceLocation != null ? !instanceLocation.equals(that.instanceLocation) : that.instanceLocation != null)
             return false;
-        }
-        if (asg != null ? !asg.equals(that.asg) : that.asg != null) {
+        if (ip != null ? !ip.equals(that.ip) : that.ip != null) return false;
+        if (ports != null ? !ports.equals(that.ports) : that.ports != null) return false;
+        if (securePorts != null ? !securePorts.equals(that.securePorts) : that.securePorts != null) return false;
+        if (secureVipAddress != null ? !secureVipAddress.equals(that.secureVipAddress) : that.secureVipAddress != null)
             return false;
-        }
-        if (healthCheckUrls != null ? !healthCheckUrls.equals(that.healthCheckUrls) : that.healthCheckUrls != null) {
+        if (status != that.status) return false;
+        if (statusPageUrl != null ? !statusPageUrl.equals(that.statusPageUrl) : that.statusPageUrl != null)
             return false;
-        }
-        if (homePageUrl != null ? !homePageUrl.equals(that.homePageUrl) : that.homePageUrl != null) {
-            return false;
-        }
-        if (hostname != null ? !hostname.equals(that.hostname) : that.hostname != null) {
-            return false;
-        }
-        if (id != null ? !id.equals(that.id) : that.id != null) {
-            return false;
-        }
-        if (ip != null ? !ip.equals(that.ip) : that.ip != null) {
-            return false;
-        }
-        if (ports != null ? !ports.equals(that.ports) : that.ports != null) {
-            return false;
-        }
-        if (securePorts != null ? !securePorts.equals(that.securePorts) : that.securePorts != null) {
-            return false;
-        }
-        if (secureVipAddress != null ? !secureVipAddress.equals(that.secureVipAddress) : that.secureVipAddress != null) {
-            return false;
-        }
-        if (status != that.status) {
-            return false;
-        }
-        if (statusPageUrl != null ? !statusPageUrl.equals(that.statusPageUrl) : that.statusPageUrl != null) {
-            return false;
-        }
-        if (vipAddress != null ? !vipAddress.equals(that.vipAddress) : that.vipAddress != null) {
-            return false;
-        }
-        if (version != null ? !version.equals(that.version) : that.version != null) {
-            return false;
-        }
-        if (instanceLocation != null ? !instanceLocation.equals(that.instanceLocation) : that.instanceLocation != null) {
-            return false;
-        }
+        if (version != null ? !version.equals(that.version) : that.version != null) return false;
+        if (vipAddress != null ? !vipAddress.equals(that.vipAddress) : that.vipAddress != null) return false;
 
         return true;
     }
@@ -288,6 +248,16 @@ public class InstanceInfo implements Item, Serializable {
                 '}';
     }
 
+    /**
+     * Apply the delta info to the current InstanceInfo
+     *
+     * @param delta the delta changes to applyTo
+     * @return a new InstanceInfo with the deltas applied
+     */
+    public InstanceInfo applyDelta(Delta delta) throws Exception {
+        return new Builder().withInstanceInfo(this).withDelta(delta).build();
+    }
+
     // ------------------------------------------
     // Instance Status
     // ------------------------------------------
@@ -314,6 +284,7 @@ public class InstanceInfo implements Item, Serializable {
     // ------------------------------------------
 
     public static final class Builder {
+        private static final Logger logger = LoggerFactory.getLogger(InstanceInfo.Builder.class);
 
         private InstanceInfo info;
 
@@ -341,20 +312,11 @@ public class InstanceInfo implements Item, Serializable {
             return this;
         }
 
-        public Builder withDeltaInstanceInfo(DeltaInstanceInfo deltaInstanceInfo) {
-            for (Delta delta : deltaInstanceInfo.getDeltas()) {
-                withDelta(delta);
-            }
-            return this;
-        }
-
-        public <T> Builder withDelta(Delta<T> delta) {
+        public Builder withDelta(Delta delta) throws Exception {
             try {
                 delta.applyTo(info);
-            } catch (IllegalArgumentException e) {
-                // log.error
-            } catch (IllegalAccessException e) {
-                // log.error
+            } catch (Exception e) {
+                logger.error("Error applying delta", e);
             }
             return this;
         }
@@ -429,7 +391,7 @@ public class InstanceInfo implements Item, Serializable {
             return this;
         }
 
-        public Builder withVersion(String version) {
+        public Builder withVersion(Long version) {
             info.version = version;
             return this;
         }

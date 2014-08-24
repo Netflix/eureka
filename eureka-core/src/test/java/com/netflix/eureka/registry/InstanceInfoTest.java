@@ -18,8 +18,8 @@ import org.apache.avro.reflect.ReflectDatumWriter;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
-import java.util.Arrays;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author David Liu
@@ -48,19 +48,23 @@ public class InstanceInfoTest {
     }
 
     @Test
-    public void testApplyDelta() {
+    public void testApplyDelta() throws Exception {
         InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();
 
         assertThat(instanceInfo.getStatus(), equalTo(InstanceInfo.Status.UP));
-        assertThat(instanceInfo.getPorts(), containsInAnyOrder(80, 8080));
+        List<Integer> ports = new ArrayList<Integer>();
+        for (int i : instanceInfo.getPorts()) {
+            ports.add(i);
+        }
+        assertThat(ports, containsInAnyOrder(80, 8080));
 
-        DeltaInstanceInfo delta = new DeltaInstanceInfo.Builder()
+        Delta delta = new Delta.Builder()
+                .withId(instanceInfo.getId())
+                .withVersion(instanceInfo.getVersion()+1)
                 .withDelta(InstanceInfoField.STATUS, InstanceInfo.Status.OUT_OF_SERVICE)
-                .withDelta(InstanceInfoField.PORTS, new HashSet<Integer>(Arrays.asList(111, 222)))
                 .build();
 
         InstanceInfo afterDelta = instanceInfo.applyDelta(delta);
         assertThat(afterDelta.getStatus(), equalTo(InstanceInfo.Status.OUT_OF_SERVICE));
-        assertThat(afterDelta.getPorts(), containsInAnyOrder(111, 222));
     }
 }

@@ -20,12 +20,14 @@ import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import com.netflix.eureka.transport.utils.TransportModel;
 import org.apache.avro.Schema;
 import org.apache.avro.reflect.ReflectData;
+import sun.reflect.generics.reflectiveObjects.TypeVariableImpl;
 
 /**
  * @author Tomasz Bak
@@ -46,15 +48,29 @@ public class ConfigurableReflectData extends ReflectData {
     @Override
     protected Schema createSchema(Type type, Map<String, Schema> names) {
         Schema schema;
-        List<Class<?>> derivedClasses = findHierarchy(type);
-        if (derivedClasses != null) {
-            List<Schema> schemas = new ArrayList<Schema>(derivedClasses.size());
-            for (Class<?> c : derivedClasses) {
-                schemas.add(getSchema(c));
+        if (type instanceof TypeVariableImpl) {
+            Collection<Type> concreteTypes = model.getFieldTypes(type);
+            if (concreteTypes != null) {
+                List<Schema> schemas = new ArrayList<Schema>(concreteTypes.size());
+                for (Type t : concreteTypes) {
+                    schemas.add(getSchema(t));
+                }
+                schema = Schema.createUnion(schemas);
+            } else {
+                schema = super.createSchema(type, names);
             }
-            schema = Schema.createUnion(schemas);
-        } else {
-            schema = super.createSchema(type, names);
+        }
+        else {
+            List<Class<?>> derivedClasses = findHierarchy(type);
+            if (derivedClasses != null) {
+                List<Schema> schemas = new ArrayList<Schema>(derivedClasses.size());
+                for (Class<?> c : derivedClasses) {
+                    schemas.add(getSchema(c));
+                }
+                schema = Schema.createUnion(schemas);
+            } else {
+                schema = super.createSchema(type, names);
+            }
         }
         return schema;
     }

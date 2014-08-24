@@ -16,7 +16,15 @@
 
 package com.netflix.eureka.transport;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import com.netflix.eureka.interests.ApplicationInterest;
 import com.netflix.eureka.interests.FullRegistryInterest;
@@ -32,6 +40,8 @@ import com.netflix.eureka.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka.protocol.registration.Register;
 import com.netflix.eureka.protocol.registration.Unregister;
 import com.netflix.eureka.protocol.registration.Update;
+import com.netflix.eureka.registry.Delta;
+import com.netflix.eureka.registry.InstanceInfoTypes;
 import com.netflix.eureka.transport.base.TcpMessageBrokerBuilder;
 import com.netflix.eureka.transport.base.TcpMessageBrokerBuilder.TcpPipelineConfigurator;
 import com.netflix.eureka.transport.codec.avro.AvroPipelineConfigurator;
@@ -71,6 +81,17 @@ public class EurekaTransports {
     static final TransportModel DISCOVERY_MODEL = new TransportModelBuilder(DISCOVERY_PROTOCOL_MODEL)
             .withHierarchy(Interest.class, VipsInterest.class, ApplicationInterest.class, InstanceInterest.class, FullRegistryInterest.class)
             .build();
+
+    static final TransportModel DELTA_VALUE_TYPE_MODEL;
+    static {
+        Map<Type, Collection<Type>> valueTypeMap = new HashMap<Type, Collection<Type>>();
+        for (TypeVariable typeVariable : Delta.class.getTypeParameters()) {
+            valueTypeMap.put(typeVariable, InstanceInfoTypes.VALUE_TYPES);
+        }
+        DELTA_VALUE_TYPE_MODEL = new TransportModel.TransportModelBuilder(Delta.class)
+                .withFieldUnions(valueTypeMap)
+                .build();
+    }
 
     public static Observable<MessageBroker> tcpRegistrationClient(String host, int port, Codec codec) {
         return new TcpMessageBrokerBuilder(new InetSocketAddress(host, port))

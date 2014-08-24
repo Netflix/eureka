@@ -16,13 +16,21 @@
 
 package com.netflix.eureka.registry;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.reflect.Field;
-import java.util.Set;
+import java.lang.reflect.Type;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 
 /**
  * @author David Liu
  */
 public class InstanceInfoField<T> {
+    private static final Logger logger = LoggerFactory.getLogger(InstanceInfoField.class);
+
     public static final InstanceInfoField<String> ID
             = new InstanceInfoField<String>("id");
 
@@ -47,11 +55,11 @@ public class InstanceInfoField<T> {
     public static final InstanceInfoField<String> IP
             = new InstanceInfoField<String>("ip");
 
-    public static final InstanceInfoField<Set<Integer>> PORTS
-            = new InstanceInfoField<Set<Integer>>("ports");
+    public static final InstanceInfoField<HashSet<Integer>> PORTS
+            = new InstanceInfoField<HashSet<Integer>>("ports");
 
-    public static final InstanceInfoField<Set<Integer>> SECURE_PORTS
-            = new InstanceInfoField<Set<Integer>>("securePorts");
+    public static final InstanceInfoField<HashSet<Integer>> SECURE_PORTS
+            = new InstanceInfoField<HashSet<Integer>>("securePorts");
 
     public static final InstanceInfoField<InstanceInfo.Status> STATUS
             = new InstanceInfoField<InstanceInfo.Status>("status");
@@ -62,36 +70,70 @@ public class InstanceInfoField<T> {
     public static final InstanceInfoField<String> STATUS_PAGE_URL
             = new InstanceInfoField<String>("statusPageUrl");
 
-    public static final InstanceInfoField<Set<String>> HEALTHCHECK_URLS
-            = new InstanceInfoField<Set<String>>("healthCheckUrls");
+    public static final InstanceInfoField<HashSet<String>> HEALTHCHECK_URLS
+            = new InstanceInfoField<HashSet<String>>("healthCheckUrls");
 
-    public static final InstanceInfoField<String> VERSION
-            = new InstanceInfoField<String>("version");
+    public static final InstanceInfoField<Long> VERSION
+            = new InstanceInfoField<Long>("version");
 
     public static final InstanceInfoField<InstanceLocation> INSTANCE_LOCATION
             = new InstanceInfoField<InstanceLocation>("instanceLocation");
 
+    private static final Map<String, InstanceInfoField> fieldMap;
+    static {
+        fieldMap = new HashMap<String, InstanceInfoField>();
 
+        Field[] instanceInfoFields = InstanceInfoField.class.getFields();  // get only public ones
+        for (Field field : instanceInfoFields) {
+            try {
+                InstanceInfoField iif = (InstanceInfoField) field.get(null);
+                fieldMap.put(iif.fieldName, iif);
+            } catch (IllegalAccessException e) {
+                logger.error("Error creating InstanceInfoFields map", e);
+            }
+        }
+    }
+
+    private final String fieldName;
     private final Field field;
 
     private InstanceInfoField(String fieldName) {
+        this.fieldName = fieldName;
+
         Field tempField;
         try {
             tempField = InstanceInfo.class.getDeclaredField(fieldName);
         } catch (NoSuchFieldException e) {
-            // log.error
+            logger.error("The specified field does not exist: " + fieldName, e);
             tempField = null;
         }
         this.field = tempField;
     }
 
-    public Field getField() {
+    public String getFieldName() {
+        return fieldName;
+    }
+
+    Type getType() {
+        return field.getGenericType();
+    }
+
+    Field getField() {
         return field;
     }
 
-    public void set(InstanceInfo instanceInfo, T value) throws IllegalArgumentException, IllegalAccessException {
+    private void set(InstanceInfo instanceInfo, T value) throws IllegalArgumentException, IllegalAccessException {
         if (field != null) {
             field.set(instanceInfo, value);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> void applyTo(InstanceInfo instanceInfo, String fieldName, T value) throws IllegalAccessException {
+        if (!fieldMap.containsKey(fieldName)) {
+            throw new RuntimeException("This field name does not exist: " + fieldName);
+        }
+        InstanceInfoField<T> field = fieldMap.get(fieldName);
+        field.set(instanceInfo, value);
     }
 }
