@@ -77,16 +77,6 @@ public class LeasedInstanceRegistry implements EurekaRegistry {
     }
 
     /**
-     * Cancel the lease for the instance with the given id
-     * @param instanceId Instance Id for which lease is to be cancelled.
-     *
-     * @return true of successfully canceled
-     */
-    public Observable<Void> cancelLease(final String instanceId) {
-        return unregister(instanceId);
-    }
-
-    /**
      * check to see if the lease of the specified instance has expired.
      * @param instanceId the instanceId of the instance to check
      * @return true if instance exist and has expired, false if exist and not expired
@@ -216,7 +206,8 @@ public class LeasedInstanceRegistry implements EurekaRegistry {
      * Return an observable of all matching InstanceInfo for the current registry snapshot,
      * as {@link ChangeNotification}s
      * @param interest
-     * @return
+     * @return an observable of all matching InstanceInfo for the current registry snapshot,
+     * as {@link ChangeNotification}s
      */
     public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest) {
         try {
