@@ -17,6 +17,7 @@
 package com.netflix.eureka.client.transport.discovery.asynchronous;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,6 +34,7 @@ import com.netflix.eureka.protocol.discovery.InterestSetNotification;
 import com.netflix.eureka.protocol.discovery.RegisterInterestSet;
 import com.netflix.eureka.protocol.discovery.UnregisterInterestSet;
 import com.netflix.eureka.protocol.discovery.UpdateInstanceInfo;
+import com.netflix.eureka.registry.Delta;
 import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.transport.MessageBroker;
 import org.slf4j.Logger;
@@ -41,6 +43,8 @@ import rx.Observable;
 import rx.functions.Func1;
 
 /**
+ * Implementation of {@link DiscoveryClient} over asynchronus channel (TCP, WebSockets, etc).
+ *
  * @author Tomasz Bak
  */
 public class AsyncDiscoveryClient implements DiscoveryClient {
@@ -69,6 +73,16 @@ public class AsyncDiscoveryClient implements DiscoveryClient {
     }
 
     @Override
+    public Observable<Void> heartbeat() {
+        return messageBroker.submit(Heartbeat.INSTANCE);
+    }
+
+    @Override
+    public void shutdown() {
+        messageBroker.shutdown();
+    }
+
+    @Override
     public Observable<ChangeNotification<InstanceInfo>> updates() {
         return messageBroker.incoming().filter(new Func1<Object, Boolean>() {
             @Override
@@ -84,38 +98,44 @@ public class AsyncDiscoveryClient implements DiscoveryClient {
             public ChangeNotification<InstanceInfo> call(Object message) {
                 InterestSetNotification notification = (InterestSetNotification) message;
                 if (notification instanceof AddInstance) {
-                    InstanceInfo instanceInfo = ((AddInstance) notification).getInstanceInfo();
-                    cachedInstances.put(instanceInfo.getId(), instanceInfo);
-                    return new ChangeNotification<InstanceInfo>(Kind.Add, instanceInfo);
+                    return handleAddInstance((AddInstance) notification);
                 }
                 if (notification instanceof UpdateInstanceInfo) {
-                    UpdateInstanceInfo update = (UpdateInstanceInfo) notification;
-                    InstanceInfo instanceInfo = cachedInstances.get(update.getInstanceId());
-                    if (instanceInfo != null) {
-                        // TODO: add delta once the delta model is merged in
-                        return new ModifyNotification<InstanceInfo>(instanceInfo, null);
-                    } else {
-                        logger.warn("Received update notification for unknown server instance " + update.getInstanceId());
-                    }
+                    return handleUpdateInstanceInfo((UpdateInstanceInfo) notification);
                 } else if (notification instanceof DeleteInstance) {
-                    DeleteInstance delete = (DeleteInstance) notification;
-                    InstanceInfo instanceInfo = cachedInstances.remove(delete.getInstanceId());
-                    if (instanceInfo != null) {
-                        return new ChangeNotification<InstanceInfo>(Kind.Delete, instanceInfo);
-                    }
+                    return handleDeleteInstance((DeleteInstance) notification);
                 }
                 return null;
+            }
+        }).filter(new Func1<ChangeNotification<InstanceInfo>, Boolean>() {
+            @Override
+            public Boolean call(ChangeNotification<InstanceInfo> notification) {
+                return notification != null;
             }
         });
     }
 
-    @Override
-    public Observable<Void> heartbeat() {
-        return messageBroker.submit(Heartbeat.INSTANCE);
+    private ChangeNotification<InstanceInfo> handleAddInstance(AddInstance notification) {
+        InstanceInfo instanceInfo = notification.getInstanceInfo();
+        cachedInstances.put(instanceInfo.getId(), instanceInfo);
+        return new ChangeNotification<InstanceInfo>(Kind.Add, instanceInfo);
     }
 
-    @Override
-    public void shutdown() {
-        messageBroker.shutdown();
+    private ModifyNotification<InstanceInfo> handleUpdateInstanceInfo(UpdateInstanceInfo update) {
+        Delta delta = update.getDelta();
+        InstanceInfo instanceInfo = cachedInstances.get(delta.getId());
+        if (instanceInfo != null) {
+            return new ModifyNotification<InstanceInfo>(instanceInfo, Collections.singleton(delta));
+        }
+        logger.warn("Received update notification for unknown server instance " + delta.getId());
+        return null;
+    }
+
+    private ChangeNotification<InstanceInfo> handleDeleteInstance(DeleteInstance delete) {
+        InstanceInfo instanceInfo = cachedInstances.remove(delete.getInstanceId());
+        if (instanceInfo != null) {
+            return new ChangeNotification<InstanceInfo>(Kind.Delete, instanceInfo);
+        }
+        return null;
     }
 }

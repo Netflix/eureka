@@ -16,36 +16,26 @@
 
 package com.netflix.eureka.protocol.discovery;
 
+import com.netflix.eureka.registry.Delta;
+
 /**
  * @author Tomasz Bak
  */
 public class UpdateInstanceInfo implements InterestSetNotification {
 
-    private final String instanceId;
-    private final String key;
-    private final String value;
+    private final Delta<?> delta;
 
     // For serialization framework
     protected UpdateInstanceInfo() {
-        instanceId = key = value = null;
+        delta = null;
     }
 
-    public UpdateInstanceInfo(String instanceId, String key, String value) {
-        this.instanceId = instanceId;
-        this.key = key;
-        this.value = value;
+    public UpdateInstanceInfo(Delta<?> delta) {
+        this.delta = delta;
     }
 
-    public String getInstanceId() {
-        return instanceId;
-    }
-
-    public String getKey() {
-        return key;
-    }
-
-    public String getValue() {
-        return value;
+    public Delta<?> getDelta() {
+        return delta;
     }
 
     @Override
@@ -59,13 +49,7 @@ public class UpdateInstanceInfo implements InterestSetNotification {
 
         UpdateInstanceInfo that = (UpdateInstanceInfo) o;
 
-        if (instanceId != null ? !instanceId.equals(that.instanceId) : that.instanceId != null) {
-            return false;
-        }
-        if (key != null ? !key.equals(that.key) : that.key != null) {
-            return false;
-        }
-        if (value != null ? !value.equals(that.value) : that.value != null) {
+        if (delta != null ? !delta.equals(that.delta) : that.delta != null) {
             return false;
         }
 
@@ -74,15 +58,11 @@ public class UpdateInstanceInfo implements InterestSetNotification {
 
     @Override
     public int hashCode() {
-        int result = instanceId != null ? instanceId.hashCode() : 0;
-        result = 31 * result + (key != null ? key.hashCode() : 0);
-        result = 31 * result + (value != null ? value.hashCode() : 0);
-        return result;
+        return delta != null ? delta.hashCode() : 0;
     }
 
     @Override
     public String toString() {
-        return "UpdateInstanceInfo{instanceId='" + instanceId + '\'' + ", key='" + key + '\'' +
-                ", value='" + value + '\'' + '}';
+        return "UpdateInstanceInfo{delta=" + delta + '}';
     }
 }
