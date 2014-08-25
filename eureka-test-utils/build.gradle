@@ -27,6 +27,7 @@ tasks.withType(Javadoc).each {
 
 dependencies {
     compile project(':eureka-core')
+    compile project(':eureka-server')
     testCompile "junit:junit:${junit_version}"
 }
 
