@@ -16,6 +16,7 @@
 
 package com.netflix.eureka.registry;
 
+import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.HashSet;
@@ -27,7 +28,9 @@ import java.util.HashSet;
  *
  * @author David Liu
  */
-public class Delta<ValueType> {
+public class Delta<ValueType> implements Serializable {
+    private static final long serialVersionUID = 337L;
+
     private String id;
     private Long version;
 
