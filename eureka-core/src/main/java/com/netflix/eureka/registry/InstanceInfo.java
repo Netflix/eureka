@@ -17,12 +17,14 @@
 package com.netflix.eureka.registry;
 
 import com.netflix.eureka.datastore.Item;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.HashSet;
 
 /**
- * TODO: add ability to diff InstanceInfos
+ * TODO: add ability to diff InstanceInfos into Deltas
  * JavaBean for InstanceInfo.
  * @author David Liu
  */
@@ -30,24 +32,25 @@ public class InstanceInfo implements Item, Serializable {
 
     private static final long serialVersionUID = 331L;
 
-    private String id;
-    private String appGroup;
-    private String app;
-    private String asg;
-    private String vipAddress;
-    private String secureVipAddress;
-    private String hostname;
-    private String ip;
-    private HashSet<Integer> ports;
-    private HashSet<Integer> securePorts;
-    private Status status;
-    private String homePageUrl;
-    private String statusPageUrl;
-    private HashSet<String> healthCheckUrls;
-    private InstanceLocation instanceLocation;
+    protected String id;
+    protected String appGroup;
+    protected String app;
+    protected String asg;
+    protected String vipAddress;
+    protected String secureVipAddress;
+    protected String hostname;
+    protected String ip;
+    protected HashSet<Integer> ports;
+    protected HashSet<Integer> securePorts;
+    protected Status status;
+    protected String homePageUrl;
+    protected String statusPageUrl;
+    protected HashSet<String> healthCheckUrls;
+    protected Long version;
+    protected InstanceLocation instanceLocation;
 
     // for serializers
-    public InstanceInfo() {}
+    private InstanceInfo() {}
 
     /**
      * @return unique identifier of this instance
@@ -57,19 +60,11 @@ public class InstanceInfo implements Item, Serializable {
         return id;
     }
 
-    public void setId(String id) {
-        this.id = id;
-    }
-
     /**
      * @return the appgroup this instance belong to
      */
     public String getAppGroup() {
         return appGroup;
-    }
-
-    public void setAppGroup(String appGroup) {
-        this.appGroup = appGroup;
     }
 
     /**
@@ -79,19 +74,11 @@ public class InstanceInfo implements Item, Serializable {
         return app;
     }
 
-    public void setApp(String app) {
-        this.app = app;
-    }
-
     /**
      * @return the asg this instance belong to
      */
     public String getAsg() {
         return asg;
-    }
-
-    public void setAsg(String asg) {
-        this.asg = asg;
     }
 
     /**
@@ -101,19 +88,11 @@ public class InstanceInfo implements Item, Serializable {
         return vipAddress;
     }
 
-    public void setVipAddress(String vipAddress) {
-        this.vipAddress = vipAddress;
-    }
-
     /**
      * @return the secure vip address of this instance
      */
     public String getSecureVipAddress() {
         return secureVipAddress;
-    }
-
-    public void setSecureVipAddress(String secureVipAddress) {
-        this.secureVipAddress = secureVipAddress;
     }
 
     /**
@@ -123,19 +102,11 @@ public class InstanceInfo implements Item, Serializable {
         return hostname;
     }
 
-    public void setHostname(String hostname) {
-        this.hostname = hostname;
-    }
-
     /**
      * @return ip address of this instance
      */
     public String getIp() {
         return ip;
-    }
-
-    public void setIp(String ip) {
-        this.ip = ip;
     }
 
     /**
@@ -145,19 +116,11 @@ public class InstanceInfo implements Item, Serializable {
         return ports;
     }
 
-    public void setPorts(HashSet<Integer> ports) {
-        this.ports = ports;
-    }
-
     /**
      * @return the secure port numbers that is used for servicing requests
      */
     public HashSet<Integer> getSecurePorts() {
         return securePorts;
-    }
-
-    public void setSecurePorts(HashSet<Integer> securePorts) {
-        this.securePorts = securePorts;
     }
 
     /**
@@ -167,10 +130,6 @@ public class InstanceInfo implements Item, Serializable {
         return status;
     }
 
-    public void setStatus(Status status) {
-        this.status = status;
-    }
-
     /**
      * @return home page {@link java.net.URL}
      */
@@ -178,19 +137,11 @@ public class InstanceInfo implements Item, Serializable {
         return homePageUrl;
     }
 
-    public void setHomePageUrl(String homePageUrl) {
-        this.homePageUrl = homePageUrl;
-    }
-
     /**
      * @return status page {@link java.net.URL}
      */
     public String getStatusPageUrl() {
         return statusPageUrl;
-    }
-
-    public void setStatusPageUrl(String statusPageUrl) {
-        this.statusPageUrl = statusPageUrl;
     }
 
     /**
@@ -205,16 +156,18 @@ public class InstanceInfo implements Item, Serializable {
         return healthCheckUrls;
     }
 
-    public void setHealthCheckUrls(HashSet<String> healthCheckUrls) {
-        this.healthCheckUrls = healthCheckUrls;
+    /**
+     * All InstanceInfo instances contain a version string that can be used to determine timeline ordering
+     * for InstanceInfo records with the same id.
+     *
+     * @return the version string for this InstanceInfo
+     */
+    public Long getVersion() {
+        return version;
     }
 
     public InstanceLocation getInstanceLocation() {
         return instanceLocation;
-    }
-
-    public void setInstanceLocation(InstanceLocation instanceLocation) {
-        this.instanceLocation = instanceLocation;
     }
 
     // ------------------------------------------
@@ -223,60 +176,31 @@ public class InstanceInfo implements Item, Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
+        if (this == o) return true;
+        if (!(o instanceof InstanceInfo)) return false;
 
         InstanceInfo that = (InstanceInfo) o;
 
-        if (app != null ? !app.equals(that.app) : that.app != null) {
+        if (app != null ? !app.equals(that.app) : that.app != null) return false;
+        if (appGroup != null ? !appGroup.equals(that.appGroup) : that.appGroup != null) return false;
+        if (asg != null ? !asg.equals(that.asg) : that.asg != null) return false;
+        if (healthCheckUrls != null ? !healthCheckUrls.equals(that.healthCheckUrls) : that.healthCheckUrls != null)
             return false;
-        }
-        if (appGroup != null ? !appGroup.equals(that.appGroup) : that.appGroup != null) {
+        if (homePageUrl != null ? !homePageUrl.equals(that.homePageUrl) : that.homePageUrl != null) return false;
+        if (hostname != null ? !hostname.equals(that.hostname) : that.hostname != null) return false;
+        if (id != null ? !id.equals(that.id) : that.id != null) return false;
+        if (instanceLocation != null ? !instanceLocation.equals(that.instanceLocation) : that.instanceLocation != null)
             return false;
-        }
-        if (asg != null ? !asg.equals(that.asg) : that.asg != null) {
+        if (ip != null ? !ip.equals(that.ip) : that.ip != null) return false;
+        if (ports != null ? !ports.equals(that.ports) : that.ports != null) return false;
+        if (securePorts != null ? !securePorts.equals(that.securePorts) : that.securePorts != null) return false;
+        if (secureVipAddress != null ? !secureVipAddress.equals(that.secureVipAddress) : that.secureVipAddress != null)
             return false;
-        }
-        if (healthCheckUrls != null ? !healthCheckUrls.equals(that.healthCheckUrls) : that.healthCheckUrls != null) {
+        if (status != that.status) return false;
+        if (statusPageUrl != null ? !statusPageUrl.equals(that.statusPageUrl) : that.statusPageUrl != null)
             return false;
-        }
-        if (homePageUrl != null ? !homePageUrl.equals(that.homePageUrl) : that.homePageUrl != null) {
-            return false;
-        }
-        if (hostname != null ? !hostname.equals(that.hostname) : that.hostname != null) {
-            return false;
-        }
-        if (id != null ? !id.equals(that.id) : that.id != null) {
-            return false;
-        }
-        if (ip != null ? !ip.equals(that.ip) : that.ip != null) {
-            return false;
-        }
-        if (ports != null ? !ports.equals(that.ports) : that.ports != null) {
-            return false;
-        }
-        if (securePorts != null ? !securePorts.equals(that.securePorts) : that.securePorts != null) {
-            return false;
-        }
-        if (secureVipAddress != null ? !secureVipAddress.equals(that.secureVipAddress) : that.secureVipAddress != null) {
-            return false;
-        }
-        if (status != that.status) {
-            return false;
-        }
-        if (statusPageUrl != null ? !statusPageUrl.equals(that.statusPageUrl) : that.statusPageUrl != null) {
-            return false;
-        }
-        if (vipAddress != null ? !vipAddress.equals(that.vipAddress) : that.vipAddress != null) {
-            return false;
-        }
-        if (instanceLocation != null ? !instanceLocation.equals(that.instanceLocation) : that.instanceLocation != null) {
-            return false;
-        }
+        if (version != null ? !version.equals(that.version) : that.version != null) return false;
+        if (vipAddress != null ? !vipAddress.equals(that.vipAddress) : that.vipAddress != null) return false;
 
         return true;
     }
@@ -297,6 +221,7 @@ public class InstanceInfo implements Item, Serializable {
         result = 31 * result + (homePageUrl != null ? homePageUrl.hashCode() : 0);
         result = 31 * result + (statusPageUrl != null ? statusPageUrl.hashCode() : 0);
         result = 31 * result + (healthCheckUrls != null ? healthCheckUrls.hashCode() : 0);
+        result = 31 * result + (version != null ? version.hashCode() : 0);
         result = 31 * result + (instanceLocation != null ? instanceLocation.hashCode() : 0);
         return result;
     }
@@ -318,8 +243,19 @@ public class InstanceInfo implements Item, Serializable {
                 ", homePageUrl='" + homePageUrl + '\'' +
                 ", statusPageUrl='" + statusPageUrl + '\'' +
                 ", healthCheckUrls=" + healthCheckUrls +
+                ", version=" + version +
                 ", instanceLocation=" + instanceLocation +
                 '}';
+    }
+
+    /**
+     * Apply the delta info to the current InstanceInfo
+     *
+     * @param delta the delta changes to applyTo
+     * @return a new InstanceInfo with the deltas applied
+     */
+    public InstanceInfo applyDelta(Delta delta) throws Exception {
+        return new Builder().withInstanceInfo(this).withDelta(delta).build();
     }
 
     // ------------------------------------------
@@ -348,6 +284,7 @@ public class InstanceInfo implements Item, Serializable {
     // ------------------------------------------
 
     public static final class Builder {
+        private static final Logger logger = LoggerFactory.getLogger(InstanceInfo.Builder.class);
 
         private InstanceInfo info;
 
@@ -356,96 +293,111 @@ public class InstanceInfo implements Item, Serializable {
         }
 
         public Builder withInstanceInfo(InstanceInfo another) {
-            info.setId(another.getId());
-            info.setAppGroup(another.getAppGroup());
-            info.setApp(another.getApp());
-            info.setAsg(another.getAsg());
-            info.setVipAddress(another.getVipAddress());
-            info.setSecureVipAddress(another.getSecureVipAddress());
-            info.setHostname(another.getHostname());
-            info.setIp(another.getIp());
-            info.setPorts(another.getPorts());
-            info.setSecurePorts(another.getSecurePorts());
-            info.setStatus(another.getStatus());
-            info.setHomePageUrl(another.getHomePageUrl());
-            info.setStatusPageUrl(another.getStatusPageUrl());
-            info.setHealthCheckUrls(another.getHealthCheckUrls());
-            info.setInstanceLocation(another.getInstanceLocation());
+            info.id = another.id;
+            info.appGroup = another.appGroup;
+            info.app = another.app;
+            info.asg = another.asg;
+            info.vipAddress = another.vipAddress;
+            info.secureVipAddress = another.secureVipAddress;
+            info.hostname = another.hostname;
+            info.ip = another.ip;
+            info.ports = another.ports;
+            info.securePorts = another.securePorts;
+            info.status = another.status;
+            info.homePageUrl = another.homePageUrl;
+            info.statusPageUrl = another.statusPageUrl;
+            info.healthCheckUrls = another.healthCheckUrls;
+            info.version = another.version;
+            info.instanceLocation = another.instanceLocation;
+            return this;
+        }
+
+        public Builder withDelta(Delta delta) throws Exception {
+            try {
+                delta.applyTo(info);
+            } catch (Exception e) {
+                logger.error("Error applying delta", e);
+            }
             return this;
         }
 
         public Builder withId(String id) {
-            info.setId(id);
+            info.id = id;
             return this;
         }
 
         public Builder withAppGroup(String appGroup) {
-            info.setAppGroup(appGroup);
+            info.appGroup = appGroup;
             return this;
         }
 
         public Builder withApp(String app) {
-            info.setApp(app);
+            info.app = app;
             return this;
         }
 
         public Builder withAsg(String asg) {
-            info.setAsg(asg);
+            info.asg = asg;
             return this;
         }
 
         public Builder withVipAddress(String vipAddress) {
-            info.setVipAddress(vipAddress);
+            info.vipAddress = vipAddress;
             return this;
         }
 
         public Builder withSecureVipAddress(String secureVipAddress) {
-            info.setSecureVipAddress(secureVipAddress);
+            info.secureVipAddress = secureVipAddress;
             return this;
         }
 
         public Builder withHostname(String hostname) {
-            info.setHostname(hostname);
+            info.hostname = hostname;
             return this;
         }
 
         public Builder withIp(String ip) {
-            info.setIp(ip);
+            info.ip = ip;
             return this;
         }
 
         public Builder withPorts(HashSet<Integer> ports) {
-            info.setPorts(ports);
+            info.ports = ports;
             return this;
         }
 
         public Builder withSecurePorts(HashSet<Integer> securePorts) {
-            info.setSecurePorts(securePorts);
+            info.securePorts = securePorts;
             return this;
         }
 
         public Builder withStatus(Status status) {
-            info.setStatus(status);
+            info.status = status;
             return this;
         }
 
         public Builder withHomePageUrl(String homePageUrl) {
-            info.setHomePageUrl(homePageUrl);
+            info.homePageUrl = homePageUrl;
             return this;
         }
 
         public Builder withStatusPageUrl(String statusPageUrl) {
-            info.setStatusPageUrl(statusPageUrl);
+            info.statusPageUrl = statusPageUrl;
             return this;
         }
 
         public Builder withHealthCheckUrls(HashSet<String> healthCheckUrls) {
-            info.setHealthCheckUrls(healthCheckUrls);
+            info.healthCheckUrls = healthCheckUrls;
+            return this;
+        }
+
+        public Builder withVersion(Long version) {
+            info.version = version;
             return this;
         }
 
         public Builder withInstanceLocation(InstanceLocation location) {
-            info.setInstanceLocation(location);
+            info.instanceLocation = location;
             return this;
         }
 

@@ -82,8 +82,12 @@ public class LeasedInstanceRegistryTest {
         assertThat(returnedInstanceInfos.size(), greaterThanOrEqualTo(3));
         assertThat(returnedInstanceInfos, hasItems(discovery1, discovery2, discovery3));
 
-        for (int i = 3; i < returnedInstanceInfos.size(); i++) {
-            assertThat(returnedInstanceInfos.get(i).getApp(), equalTo(SampleInstanceInfo.ZuulServer.build().getApp()));
+        returnedInstanceInfos.remove(discovery1);
+        returnedInstanceInfos.remove(discovery2);
+        returnedInstanceInfos.remove(discovery3);
+
+        for (InstanceInfo remaining : returnedInstanceInfos) {
+            assertThat(remaining.getApp(), equalTo(SampleInstanceInfo.ZuulServer.build().getApp()));
         }
     }
 
@@ -141,17 +145,6 @@ public class LeasedInstanceRegistryTest {
 
         registry.renewLease(original.getId(), 5000);
         assertFalse(registry.hasExpired(original.getId()).toBlocking().lastOrDefault(null));
-    }
-
-    @Test
-    public void shouldCancelLease() {
-        InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
-                .withStatus(InstanceInfo.Status.UP)
-                .build();
-        registry.register(original, 90 * 1000).toBlocking().lastOrDefault(null);
-
-        registry.cancelLease(original.getId());
-        assertFalse(registry.contains(original.getId()));
     }
 
     @Test

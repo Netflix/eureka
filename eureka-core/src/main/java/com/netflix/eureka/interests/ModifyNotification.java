@@ -1,5 +1,7 @@
 package com.netflix.eureka.interests;
 
+import com.netflix.eureka.registry.Delta;
+
 import java.util.Collection;
 
 /**
@@ -28,24 +30,5 @@ public class ModifyNotification<T> extends ChangeNotification<T> {
 
     public Collection<Delta> getDelta() {
         return delta;
-    }
-
-    public class Delta<E extends Enum<E>> {
-
-        private final E field;
-        private final Object value;
-
-        public Delta(E field, Object value) {
-            this.field = field;
-            this.value = value;
-        }
-
-        public E getField() {
-            return field;
-        }
-
-        public Object getValue() {
-            return value;
-        }
     }
 }
