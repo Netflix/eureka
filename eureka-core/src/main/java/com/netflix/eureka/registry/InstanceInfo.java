@@ -369,6 +369,7 @@ public class InstanceInfo implements Item {
         public Builder withDelta(Delta delta) throws Exception {
             try {
                 delta.applyTo(info);
+                info.version = delta.getVersion();
             } catch (Exception e) {
                 logger.error("Error applying delta", e);
             }
@@ -442,11 +443,6 @@ public class InstanceInfo implements Item {
 
         public Builder withHealthCheckUrls(HashSet<String> healthCheckUrls) {
             info.healthCheckUrls = healthCheckUrls;
-            return this;
-        }
-
-        public Builder withVersion(Long version) {
-            info.version = version;
             return this;
         }
 

@@ -80,6 +80,8 @@ public class InstanceInfoTest {
     @Test
     public void testProduceSetOfDeltas() throws Exception {
         InstanceInfo oldInstanceInfo = SampleInstanceInfo.DiscoveryServer.build();
+        Thread.sleep(2);  // let time elapse a bit for version timestamp to advance
+
         // fake a new InstanceInfo that is different in all fields (except id)
         InstanceInfo newInstanceInfo = SampleInstanceInfo.ZuulServer.builder()
                 .withId(oldInstanceInfo.getId())
