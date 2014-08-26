@@ -63,6 +63,25 @@ project(':eureka-client') {
         testCompile 'junit:junit:4.10'
         testCompile 'org.mortbay.jetty:jetty:6.1H.22'
     }
+
+    task testJar(type: Jar) {
+        classifier = 'tests'
+        from sourceSets.test.output
+    }
+
+    configurations {
+        tests
+        published.extendsFrom tests, archives
+    }
+
+    artifacts {
+        tests testJar
+    }
+
+    install {
+        configuration = configurations.published
+    }
+
 }
 
 project(':eureka-core') {
