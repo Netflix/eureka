@@ -3,7 +3,6 @@ package com.netflix.eureka.registry;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
-import com.netflix.eureka.SampleInstanceInfo;
 import com.netflix.eureka.Sets;
 import org.junit.Rule;
 import org.junit.Test;
@@ -75,22 +74,6 @@ public class DeltaTest {
 
         assertThat(instanceInfo.getHomePageUrl(), equalTo(newHomepage));
         assertThat(instanceInfo.getHomePageUrl(), not(equalTo(original.getHomePageUrl())));
-        assertThat(instanceInfo.getId(), equalTo(original.getId()));
-    }
-
-    @Test
-    public void testSettingFieldOnInstanceInfo_Long() throws Exception {
-        Long newVersion = instanceInfo.getVersion() + 2l;
-        Delta<?> delta = new Delta.Builder()
-                .withId(instanceInfo.getId())
-                .withVersion(instanceInfo.getVersion() + 1)
-                .withDelta(InstanceInfoField.VERSION, newVersion)
-                .build();
-
-        delta.applyTo(instanceInfo);
-
-        assertThat(instanceInfo.getVersion(), equalTo(newVersion));
-        assertThat(instanceInfo.getVersion(), not(equalTo(original.getVersion())));
         assertThat(instanceInfo.getId(), equalTo(original.getId()));
     }
 

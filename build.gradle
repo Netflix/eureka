@@ -18,7 +18,7 @@ ext.githubProjectName = "eureka"
 
 buildscript {
     repositories {
-        //mavenLocal()
+//        mavenLocal()
         mavenCentral() // maven { url 'http://jcenter.bintray.com' }
     }
     apply from: file('gradle/buildscript.gradle'), to: buildscript
@@ -26,7 +26,7 @@ buildscript {
 
 allprojects {
     repositories {
-        mavenLocal()
+//        mavenLocal()
         mavenCentral() // maven { url: 'http://jcenter.bintray.com' }
     }
 }

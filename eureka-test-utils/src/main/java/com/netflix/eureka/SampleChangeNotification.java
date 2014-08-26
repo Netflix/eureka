@@ -2,6 +2,7 @@ package com.netflix.eureka;
 
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.registry.InstanceInfo;
+import com.netflix.eureka.registry.SampleInstanceInfo;
 
 /**
  * @author David Liu

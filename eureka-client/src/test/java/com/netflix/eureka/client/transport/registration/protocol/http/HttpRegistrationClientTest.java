@@ -3,7 +3,6 @@ package com.netflix.eureka.client.transport.registration.protocol.http;
 import java.net.InetSocketAddress;
 import java.util.Iterator;
 
-import com.netflix.eureka.SampleInstanceInfo;
 import com.netflix.eureka.client.transport.registration.RegistrationClient;
 import com.netflix.eureka.client.transport.registration.RegistrationClientProvider;
 import com.netflix.eureka.protocol.registration.Update;
@@ -19,7 +18,7 @@ import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
 
-import static com.netflix.eureka.SampleInstanceInfo.DiscoveryServer;
+import static com.netflix.eureka.registry.SampleInstanceInfo.DiscoveryServer;
 import static com.netflix.eureka.client.bootstrap.StaticBootstrapResolver.*;
 import static com.netflix.eureka.client.transport.registration.RegistrationClientProvider.*;
 import static org.junit.Assert.*;
