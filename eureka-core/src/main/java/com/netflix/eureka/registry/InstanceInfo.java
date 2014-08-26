@@ -20,7 +20,6 @@ import com.netflix.eureka.datastore.Item;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -29,9 +28,7 @@ import java.util.Set;
  * JavaBean for InstanceInfo.
  * @author David Liu
  */
-public class InstanceInfo implements Item, Serializable {
-
-    private static final long serialVersionUID = 331L;
+public class InstanceInfo implements Item {
 
     protected String id;
     protected String appGroup;
