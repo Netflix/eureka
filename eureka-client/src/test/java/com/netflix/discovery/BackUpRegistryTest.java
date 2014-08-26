@@ -1,5 +1,6 @@
 package com.netflix.discovery;
 
+import com.google.inject.Provider;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
@@ -8,12 +9,10 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 import javax.annotation.Nullable;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -65,14 +64,13 @@ public class BackUpRegistryTest {
 
         backupRegistry = new MockBackupRegistry();
         setupBackupMock();
-        client = new DiscoveryClient(builder.build(), new DefaultEurekaClientConfig()) {
-            @Nullable
-            @Override
-            protected BackupRegistry newBackupRegistryInstance()
-                    throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-                return backupRegistry;
-            }
-        };
+        client = new DiscoveryClient(builder.build(), new DefaultEurekaClientConfig(), null,
+                                     new Provider<BackupRegistry>() {
+                                         @Override
+                                         public BackupRegistry get() {
+                                             return backupRegistry;
+                                         }
+                                     });
     }
 
     @After

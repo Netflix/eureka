@@ -16,6 +16,48 @@
 
 package com.netflix.discovery;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.netflix.appinfo.AmazonInfo;
+import com.netflix.appinfo.AmazonInfo.MetaDataKey;
+import com.netflix.appinfo.ApplicationInfoManager;
+import com.netflix.appinfo.DataCenterInfo;
+import com.netflix.appinfo.DataCenterInfo.Name;
+import com.netflix.appinfo.EurekaClientIdentity;
+import com.netflix.appinfo.HealthCheckCallback;
+import com.netflix.appinfo.HealthCheckCallbackToHandlerBridge;
+import com.netflix.appinfo.HealthCheckHandler;
+import com.netflix.appinfo.InstanceInfo;
+import com.netflix.appinfo.InstanceInfo.ActionType;
+import com.netflix.appinfo.InstanceInfo.InstanceStatus;
+import com.netflix.config.DynamicPropertyFactory;
+import com.netflix.discovery.shared.Application;
+import com.netflix.discovery.shared.Applications;
+import com.netflix.discovery.shared.EurekaJerseyClient;
+import com.netflix.discovery.shared.EurekaJerseyClient.JerseyClient;
+import com.netflix.discovery.shared.LookupService;
+import com.netflix.eventbus.spi.EventBus;
+import com.netflix.governator.guice.lazy.FineGrainedLazySingleton;
+import com.netflix.servo.monitor.Counter;
+import com.netflix.servo.monitor.Monitors;
+import com.netflix.servo.monitor.Stopwatch;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.api.client.config.ClientConfig;
+import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
+import com.sun.jersey.client.apache4.ApacheHttpClient4;
+import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
+import javax.annotation.PreDestroy;
+import javax.naming.directory.DirContext;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response.Status;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -37,50 +79,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
-import javax.annotation.Nullable;
-import javax.annotation.PreDestroy;
-import javax.naming.directory.DirContext;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response.Status;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.netflix.appinfo.EurekaClientIdentity;
-import com.netflix.appinfo.HealthCheckCallbackToHandlerBridge;
-import com.netflix.appinfo.HealthCheckHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Strings;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.google.inject.Inject;
-import com.google.inject.Provider;
-import com.netflix.appinfo.AmazonInfo;
-import com.netflix.appinfo.AmazonInfo.MetaDataKey;
-import com.netflix.appinfo.ApplicationInfoManager;
-import com.netflix.appinfo.DataCenterInfo;
-import com.netflix.appinfo.DataCenterInfo.Name;
-import com.netflix.appinfo.HealthCheckCallback;
-import com.netflix.appinfo.InstanceInfo;
-import com.netflix.appinfo.InstanceInfo.ActionType;
-import com.netflix.appinfo.InstanceInfo.InstanceStatus;
-import com.netflix.config.DynamicPropertyFactory;
-import com.netflix.discovery.shared.Application;
-import com.netflix.discovery.shared.Applications;
-import com.netflix.discovery.shared.EurekaJerseyClient;
-import com.netflix.discovery.shared.EurekaJerseyClient.JerseyClient;
-import com.netflix.discovery.shared.LookupService;
-import com.netflix.eventbus.spi.EventBus;
-import com.netflix.governator.guice.lazy.FineGrainedLazySingleton;
-import com.netflix.servo.monitor.Counter;
-import com.netflix.servo.monitor.Monitors;
-import com.netflix.servo.monitor.Stopwatch;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.api.client.config.ClientConfig;
-import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
-import com.sun.jersey.client.apache4.ApacheHttpClient4;
-import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
 
 /**
  * The class that is instrumental for interactions with <tt>Eureka Server</tt>.
@@ -145,6 +143,8 @@ public class DiscoveryClient implements LookupService {
     private final Counter REREGISTER_COUNTER = Monitors.newCounter(PREFIX
             + "Reregister");
 
+    private final Provider<BackupRegistry> backupRegistryProvider;
+
     // instance variables
     private volatile HealthCheckHandler healthCheckHandler;
     private final Provider<HealthCheckHandler> healthCheckHandlerProvider;
@@ -192,11 +192,31 @@ public class DiscoveryClient implements LookupService {
     }
 
     public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config) {
-        this(myInfo, config, null);
+        this(myInfo, config, null, new Provider<BackupRegistry>() {
+            @Override
+            public BackupRegistry get() {
+                String backupRegistryClassName = clientConfig.getBackupRegistryImpl();
+                if (null != backupRegistryClassName) {
+                    try {
+                        return (BackupRegistry) Class.forName(backupRegistryClassName).newInstance();
+                    } catch (InstantiationException e) {
+                        logger.error("Error instantiating BackupRegistry.", e);
+                    } catch (IllegalAccessException e) {
+                        logger.error("Error instantiating BackupRegistry.", e);
+                    } catch (ClassNotFoundException e) {
+                        logger.error("Error instantiating BackupRegistry.", e);
+                    }
+                }
+
+                logger.warn("Using default backup registry implementation which does not do anything.");
+                return new NotImplementedRegistryImpl();
+            }
+        });
     }
 
     @Inject
-    public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
+    public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, DiscoveryClientOptionalArgs args,
+                           Provider<BackupRegistry> backupRegistryProvider) {
         if (args != null) {
             healthCheckHandlerProvider = args.healthCheckHandlerProvider;
             healthCheckCallbackProvider = args.healthCheckCallbackProvider;
@@ -207,7 +227,9 @@ public class DiscoveryClient implements LookupService {
             healthCheckHandlerProvider = null;
             eventBus = null;
         }
-        
+
+        this.backupRegistryProvider = backupRegistryProvider;
+
         try {
             scheduler = Executors.newScheduledThreadPool(4, 
                     new ThreadFactoryBuilder()
@@ -1747,7 +1769,12 @@ public class DiscoveryClient implements LookupService {
      */
     private void fetchRegistryFromBackup() {
         try {
+            @SuppressWarnings("deprecation")
             BackupRegistry backupRegistryInstance = newBackupRegistryInstance();
+            if (null == backupRegistryInstance) { // backward compatibility with the old protected method, in case it is being used.
+                backupRegistryInstance = backupRegistryProvider.get();
+            }
+
             if (null != backupRegistryInstance) {
                 Applications apps = null;
                 if (isFetchingRemoteRegionRegistries()) {
@@ -1769,21 +1796,18 @@ public class DiscoveryClient implements LookupService {
                 logger.warn("No backup registry instance defined & unable to find any discovery servers.");
             }
         } catch (Throwable e) {
-            logger.warn(
-                    "Cannot fetch applications from apps although backup registry was specified",
-                    e);
+            logger.warn("Cannot fetch applications from apps although backup registry was specified", e);
         }
     }
 
+    /**
+     * @deprecated Use injection to provide {@link BackupRegistry} implementation.
+     */
+    @Deprecated
     @Nullable
     protected BackupRegistry newBackupRegistryInstance()
             throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-        String backupRegistryClassName = clientConfig.getBackupRegistryImpl();
-        if (null != backupRegistryClassName) {
-            return (BackupRegistry) Class.forName(backupRegistryClassName).newInstance();
-        } else {
-            return null;
-        }
+        return null;
     }
 
     /**

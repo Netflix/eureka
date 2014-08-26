@@ -16,13 +16,6 @@
 
 package com.netflix.eureka.util;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.services.ec2.AmazonEC2;
@@ -41,6 +34,12 @@ import com.netflix.discovery.DiscoveryManager;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfigurationManager;
 import com.netflix.servo.monitor.Monitors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * An AWS specific <em>elastic ip</em> binding utility for binding eureka
@@ -134,13 +133,10 @@ public class EIPManager {
      */
     public void bindEIP() {
         InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
-        String myInstanceId = ((AmazonInfo) myInfo.getDataCenterInfo())
-        .get(MetaDataKey.instanceId);
-        String myZone = ((AmazonInfo) myInfo.getDataCenterInfo())
-        .get(MetaDataKey.availabilityZone);
+        String myInstanceId = ((AmazonInfo) myInfo.getDataCenterInfo()).get(MetaDataKey.instanceId);
+        String myZone = ((AmazonInfo) myInfo.getDataCenterInfo()).get(MetaDataKey.availabilityZone);
 
-        Collection<String> candidateEIPs = getCandidateEIPs(myInstanceId,
-                myZone);
+        Collection<String> candidateEIPs = getCandidateEIPs(myInstanceId, myZone);
 
         AmazonEC2 ec2Service = getEC2Service();
         boolean isMyinstanceAssociatedWithEIP = false;
@@ -149,27 +145,21 @@ public class EIPManager {
 
         for (String eipEntry : candidateEIPs) {
             try {
-                String associatedInstanceId = null;
+                String associatedInstanceId;
 
-                // Check with AWS, if this EIP is already been used by another
-                // instance
-                DescribeAddressesRequest describeAddressRequest = new DescribeAddressesRequest()
-                .withPublicIps(eipEntry);
-                DescribeAddressesResult result = ec2Service
-                .describeAddresses(describeAddressRequest);
-                if ((result.getAddresses() != null)
-                        && (!result.getAddresses().isEmpty())) {
+                // Check with AWS, if this EIP is already been used by another instance
+                DescribeAddressesRequest describeAddressRequest = new DescribeAddressesRequest().withPublicIps(eipEntry);
+                DescribeAddressesResult result = ec2Service.describeAddresses(describeAddressRequest);
+                if ((result.getAddresses() != null) && (!result.getAddresses().isEmpty())) {
                     Address eipAddress = result.getAddresses().get(0);
                     associatedInstanceId = eipAddress.getInstanceId();
                     // This EIP is not used by any other instance, hence mark it for selection if it is not
                     // already marked.
-                    if (((associatedInstanceId == null) || (associatedInstanceId
-                            .isEmpty()))) {
+                    if (((associatedInstanceId == null) || (associatedInstanceId.isEmpty()))) {
                         if (selectedEIP == null) {
                             selectedEIP = eipAddress;
                         }
-                    } else if (isMyinstanceAssociatedWithEIP = (associatedInstanceId
-                            .equals(myInstanceId))) {
+                    } else if (isMyinstanceAssociatedWithEIP = (associatedInstanceId.equals(myInstanceId))) {
                         // This EIP is associated with an instance, check if this is the same as the current instance.
                         // If it is the same, stop searching for an EIP as this instance is already associated with an
                         // EIP
@@ -180,7 +170,6 @@ public class EIPManager {
                         logger.warn(
                                 "The selected EIP {} is associated with another instance {} according to AWS, hence "
                                 + "skipping this", eipEntry, associatedInstanceId);
-                        continue;
                     }
                 }
             } catch (Throwable t) {
@@ -188,29 +177,29 @@ public class EIPManager {
                         + myInstanceId, t);
             }
         }
-        // Only bind if the EIP is already associated
-        if (!isMyinstanceAssociatedWithEIP) {
+        if (null != selectedEIP) {
             String publicIp = selectedEIP.getPublicIp();
+            // Only bind if the EIP is not already associated
+            if (!isMyinstanceAssociatedWithEIP) {
 
-            AssociateAddressRequest associateAddressRequest = new AssociateAddressRequest()
-            .withInstanceId(myInstanceId);
+                AssociateAddressRequest associateAddressRequest = new AssociateAddressRequest().withInstanceId(
+                        myInstanceId);
 
-            String domain = selectedEIP.getDomain();
-            if ("vpc".equals(domain)) {
-                associateAddressRequest.setAllocationId(selectedEIP.getAllocationId());
-            } else {
-                associateAddressRequest.setPublicIp(publicIp);
+                String domain = selectedEIP.getDomain();
+                if ("vpc".equals(domain)) {
+                    associateAddressRequest.setAllocationId(selectedEIP.getAllocationId());
+                } else {
+                    associateAddressRequest.setPublicIp(publicIp);
+                }
+
+                ec2Service.associateAddress(associateAddressRequest);
+                logger.info("\n\n\nAssociated " + myInstanceId + " running in zone: " + myZone + " to elastic IP: "
+                            + publicIp);
             }
-
-            ec2Service.associateAddress(associateAddressRequest);
-            logger.info("\n\n\nAssociated " + myInstanceId
-                    + " running in zone: " + myZone + " to elastic IP: "
-                    + publicIp);
-
-         }
-            logger.info(
-                    "My instance {} seems to be already associated with the EIP {}",
-                    myInstanceId, selectedEIP.getPublicIp());
+            logger.info("My instance {} seems to be already associated with the EIP {}", myInstanceId, publicIp);
+        } else {
+            logger.info("No EIP is free to be associated with this instance. Candidate EIPs are: " + candidateEIPs);
+        }
     }
 
     /**
