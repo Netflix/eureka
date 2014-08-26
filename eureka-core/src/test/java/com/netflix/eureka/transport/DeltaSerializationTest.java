@@ -127,27 +127,6 @@ public class DeltaSerializationTest {
     }
 
     @Test
-    public void testDeltaSerializationWithAvro_Long() throws Exception {
-        Long newVersion = instanceInfo.getVersion() + 2l;
-        Delta<?> delta = new Delta.Builder()
-                .withId(instanceInfo.getId())
-                .withVersion(instanceInfo.getVersion() + 1)
-                .withDelta(InstanceInfoField.VERSION, newVersion)
-                .build();
-
-        writer.write(delta, encoder);
-        encoder.flush();
-
-        Decoder decoder = DecoderFactory.get().binaryDecoder(bos.toByteArray(), null);
-        Delta newDelta = datumReader.read(null, decoder);
-
-        InstanceInfo newInstanceInfo = instanceInfo.applyDelta(newDelta);
-        assertThat(newInstanceInfo.getVersion(), equalTo(newVersion));
-        assertThat(newInstanceInfo.getVersion(), not(equalTo(instanceInfo.getVersion())));
-        assertThat(newInstanceInfo.getId(), equalTo(instanceInfo.getId()));
-    }
-
-    @Test
     public void testDeltaSerializationWithAvro_InstanceStatus() throws Exception {
         InstanceInfo.Status newStatus = InstanceInfo.Status.OUT_OF_SERVICE;
         Delta<?> delta = new Delta.Builder()

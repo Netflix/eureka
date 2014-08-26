@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.HashSet;
+import java.util.Set;
 
 /**
  * TODO: add ability to diff InstanceInfos into Deltas
@@ -258,6 +259,62 @@ public class InstanceInfo implements Item, Serializable {
         return new Builder().withInstanceInfo(this).withDelta(delta).build();
     }
 
+    /**
+     * Diff the current instanceInfo with another "newer" InstanceInfo, returning the results as a set of Deltas
+     * iff the two instanceInfo have matching ids.
+     * The version of the delta will be the version of the other ("newer") instanceInfo
+     *
+     * @param another the "newer" instanceInfo
+     * @return the set of deltas, or null if the diff is invalid (InstanceInfos are null or id mismatch)
+     */
+    public Set<Delta<?>> diffNewer(InstanceInfo another) throws Exception {
+        return diff(this, another);
+    }
+
+    /**
+     * Diff the current instanceInfo with another "older" InstanceInfo, returning the results as a set of Deltas
+     * iff the two instanceInfo have matching ids.
+     * The version of the delta will be the version of the current ("newer") instanceInfo
+     *
+     * @param another the "older" instanceInfo
+     * @return the set of deltas, or null if the diff is invalid (InstanceInfos are null or id mismatch)
+     */
+    public Set<Delta<?>> diffOlder(InstanceInfo another) throws Exception {
+        return diff(another, this);
+    }
+
+    private static Set<Delta<?>> diff(InstanceInfo oldInstanceInfo, InstanceInfo newInstanceInfo) throws Exception {
+        if (oldInstanceInfo == null || newInstanceInfo == null) {
+            return null;
+        }
+
+        if (!oldInstanceInfo.getId().equals(newInstanceInfo.getId())) {
+            return null;
+        }
+
+        Set<Delta<?>> deltas = new HashSet<Delta<?>>();
+
+        Long newVersion = newInstanceInfo.getVersion();
+        for (InstanceInfoField field : InstanceInfoField.FIELD_MAP.values()) {
+            if (field.isUpdateable()) {
+                Object oldValue = field.getValue(oldInstanceInfo);
+                Object newValue = field.getValue(newInstanceInfo);
+
+                if (oldValue == null || !oldValue.equals(newValue)) {  // there is a difference
+                    Delta<?> delta = new Delta.Builder()
+                            .withId(newInstanceInfo.getId())
+                            .withVersion(newVersion)
+                            .withDelta(field, newValue)
+                            .build();
+                    deltas.add(delta);
+                }
+            }
+        }
+
+        return deltas;
+    }
+
+
     // ------------------------------------------
     // Instance Status
     // ------------------------------------------
@@ -403,6 +460,9 @@ public class InstanceInfo implements Item, Serializable {
 
         public InstanceInfo build() {
             // validate and sanitize
+            if (info.version == null) {
+                info.version = System.currentTimeMillis();
+            }
             return info;
         }
     }
