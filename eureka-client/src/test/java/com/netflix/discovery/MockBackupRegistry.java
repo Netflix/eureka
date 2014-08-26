@@ -1,5 +1,6 @@
 package com.netflix.discovery;
 
+import com.google.inject.Singleton;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 
@@ -9,6 +10,7 @@ import java.util.Map;
 /**
  * @author Nitesh Kant
  */
+@Singleton
 public class MockBackupRegistry implements BackupRegistry {
 
     private Map<String, Applications> remoteRegionVsApps = new HashMap<String, Applications>();

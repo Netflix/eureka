@@ -16,6 +16,7 @@
 
 package com.netflix.discovery;
 
+import com.google.inject.ImplementedBy;
 import com.netflix.discovery.shared.Applications;
 
 /**
@@ -31,6 +32,7 @@ import com.netflix.discovery.shared.Applications;
  * @author Karthik Ranganathan
  *
  */
+@ImplementedBy(NotImplementedRegistryImpl.class)
 public interface BackupRegistry {
 
     Applications fetchRegistry();

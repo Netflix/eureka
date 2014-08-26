@@ -1,16 +1,17 @@
 package com.netflix.discovery;
 
-import junit.framework.Assert;
-
-import org.junit.After;
-import org.junit.Test;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
+import com.netflix.appinfo.InstanceInfo;
 import com.netflix.config.ConfigurationManager;
+import com.netflix.discovery.shared.Application;
+import com.netflix.discovery.shared.Applications;
 import com.netflix.governator.guice.BootstrapBinder;
 import com.netflix.governator.guice.BootstrapModule;
 import com.netflix.governator.guice.LifecycleInjector;
+import junit.framework.Assert;
+import org.junit.After;
+import org.junit.Test;
 
 public class EurekaLifecycleTest {
     @After
@@ -32,7 +33,37 @@ public class EurekaLifecycleTest {
         DiscoveryClient client = injector.getInstance(DiscoveryClient.class);
         Assert.assertEquals(client, DiscoveryManager.getInstance().getDiscoveryClient());
     }
-    
+
+    @Test
+    public void testBackupRegistryInjection() {
+        ConfigurationManager.getConfigInstance().setProperty("eureka.validateInstanceId", "false");
+        ConfigurationManager.getConfigInstance().setProperty("eureka.shouldFetchRegistry", "true");
+        ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", "false");
+        ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default", "http://localhost:8080/");
+
+        Injector injector = LifecycleInjector.builder()
+                                             .withAdditionalModules(new AbstractModule() {
+                                                 @Override
+                                                 protected void configure() {
+                                                     bind(BackupRegistry.class).to(MockBackupRegistry.class);
+                                                 }
+                                             }).build()
+                                             .createInjector();
+
+        MockBackupRegistry backupRegistry = (MockBackupRegistry) injector.getInstance(BackupRegistry.class);
+        Applications apps = new Applications();
+        String dummyappName = "dummyapp";
+        Application dummyapp = new Application(dummyappName);
+        apps.addApplication(dummyapp);
+        dummyapp.addInstance(InstanceInfo.Builder.newBuilder().setHostName("host").setAppName(dummyappName).build());
+        backupRegistry.setLocalRegionApps(apps);
+
+        DiscoveryClient client = injector.getInstance(DiscoveryClient.class);
+
+        Assert.assertEquals(client, DiscoveryManager.getInstance().getDiscoveryClient());
+        Assert.assertNotNull("Application not returned from the backup.", client.getApplication(dummyappName));
+    }
+
     @Test
     public void testNamespaceOverride() {
         ConfigurationManager.getConfigInstance().setProperty("testnamespace.validateInstanceId", "false");
