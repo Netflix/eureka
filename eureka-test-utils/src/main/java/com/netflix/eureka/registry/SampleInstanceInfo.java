@@ -1,4 +1,4 @@
-package com.netflix.eureka;
+package com.netflix.eureka.registry;
 
 import com.netflix.eureka.registry.InstanceInfo.Builder;
 import com.netflix.eureka.registry.InstanceInfo;

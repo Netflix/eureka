@@ -16,7 +16,7 @@
 
 package com.netflix.eureka.server.transport.discovery.protocol.asynchronous;
 
-import com.netflix.eureka.SampleInstanceInfo;
+import com.netflix.eureka.registry.SampleInstanceInfo;
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.protocol.Heartbeat;
 import com.netflix.eureka.protocol.discovery.AddInstance;

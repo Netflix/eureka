@@ -1,6 +1,6 @@
 package com.netflix.eureka.transport;
 
-import com.netflix.eureka.SampleInstanceInfo;
+import com.netflix.eureka.registry.SampleInstanceInfo;
 import com.netflix.eureka.Sets;
 import com.netflix.eureka.registry.Delta;
 import com.netflix.eureka.registry.InstanceInfo;

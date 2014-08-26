@@ -1,6 +1,5 @@
 package com.netflix.eureka.registry;
 
-import com.netflix.eureka.SampleInstanceInfo;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interests;
 import org.junit.Rule;

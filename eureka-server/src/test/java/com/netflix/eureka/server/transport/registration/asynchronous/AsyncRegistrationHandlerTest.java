@@ -34,7 +34,7 @@ import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
 
-import static com.netflix.eureka.SampleInstanceInfo.*;
+import static com.netflix.eureka.registry.SampleInstanceInfo.*;
 import static org.junit.Assert.*;
 
 /**

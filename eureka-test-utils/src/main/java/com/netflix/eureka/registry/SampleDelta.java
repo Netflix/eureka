@@ -29,8 +29,8 @@ public enum SampleDelta {
         public Builder builder() {
             try {
                 return new Builder()
-                        .withId("id1")
-                        .withVersion(100L)
+                        .withId(this.baseInstanceInfo.getId())
+                        .withVersion(this.baseInstanceInfo.getVersion() + 1)
                         .withDelta(InstanceInfoField.STATUS, Status.UP);
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -42,8 +42,8 @@ public enum SampleDelta {
         public Builder builder() {
             try {
                 return new Builder()
-                        .withId("id1")
-                        .withVersion(200L)
+                        .withId(this.baseInstanceInfo.getId())
+                        .withVersion(this.baseInstanceInfo.getVersion() + 1)
                         .withDelta(InstanceInfoField.STATUS, Status.DOWN);
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -51,7 +51,21 @@ public enum SampleDelta {
         }
     };
 
+    final InstanceInfo baseInstanceInfo;
+
+    SampleDelta() {
+        this(SampleInstanceInfo.DiscoveryServer.build());
+    }
+
+    SampleDelta(InstanceInfo baseInstanceInfo) {
+        this.baseInstanceInfo = baseInstanceInfo;
+    }
+
     public abstract Builder builder();
+
+    public InstanceInfo getBaseInstanceInfo() {
+        return baseInstanceInfo;
+    }
 
     public <T> Delta<T> build() {
         return (Delta<T>) builder().build();
