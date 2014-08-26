@@ -51,7 +51,7 @@ public class RegistrationHttpRequestRouterTest {
 
     private RegistrationHttpRequestRouter router = new RegistrationHttpRequestRouter(eurekaService, BASE_URI);
 
-    @Test
+    @Test(timeout = 10000)
     public void testRegistrationAndUnregistration() throws Exception {
         InstanceInfo instanceInfo = DiscoveryServer.build();
         HttpServerRequest<Object> registerRequest = createHttpRequestMock(HttpMethod.POST, BASE_URI + "/apps", new Register(instanceInfo));
@@ -72,7 +72,7 @@ public class RegistrationHttpRequestRouterTest {
         verify(eurekaService);
     }
 
-    @Test
+    @Test(timeout = 10000)
     public void testUpdate() throws Exception {
         Builder instanceInfoBuilder = DiscoveryServer.builder();
         InstanceInfo firstVersion = instanceInfoBuilder.build();

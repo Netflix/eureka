@@ -57,7 +57,7 @@ public class AsyncRegistrationHandlerTest {
         RxSniffer.sniff("ObservableConnection status", handleObservable);
     }
 
-    @Test
+    @Test(timeout = 10000)
     public void testRegistrationAndUnregistration() throws Exception {
         // Register
         observableConnection.testableChannelRead().onNext(new Register(DiscoveryServer.build()));
@@ -70,7 +70,7 @@ public class AsyncRegistrationHandlerTest {
         assertTrue("Interest channel shall be closed by now", RxBlocking.isCompleted(1, TimeUnit.SECONDS, registrationChannel.viewClose()));
     }
 
-    @Test
+    @Test(timeout = 10000)
     public void testUpdate() throws Exception {
         Builder instanceInfoBuilder = DiscoveryServer.builder();
 
@@ -86,7 +86,7 @@ public class AsyncRegistrationHandlerTest {
         assertEquals("Updated record differes from the one in update request", updated, storedUpdate);
     }
 
-    @Test
+    @Test(timeout = 10000)
     public void testHeartbeat() throws Exception {
         // Register
         observableConnection.testableChannelRead().onNext(new Register(DiscoveryServer.build()));
