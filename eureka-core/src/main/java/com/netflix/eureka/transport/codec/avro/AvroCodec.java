@@ -27,7 +27,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.EncoderException;
-import org.apache.avro.Schema;
 import org.apache.avro.io.BinaryDecoder;
 import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.io.Encoder;
@@ -42,12 +41,12 @@ import org.apache.avro.reflect.ReflectDatumWriter;
  */
 class AvroCodec extends ByteToMessageCodec<Object> {
 
-    private Schema schema;
     private final TransportModel model;
+    private final AvroSchemaArtifacts avroSchemaArtifacts;
 
-    public AvroCodec(Schema schema, TransportModel model) {
-        this.schema = schema;
+    public AvroCodec(TransportModel model) {
         this.model = model;
+        avroSchemaArtifacts = new AvroSchemaArtifacts(model);
     }
 
     @Override
@@ -57,7 +56,7 @@ class AvroCodec extends ByteToMessageCodec<Object> {
 
     @Override
     protected void encode(ChannelHandlerContext ctx, Object msg, ByteBuf out) {
-        ReflectDatumWriter<Object> writer = new ReflectDatumWriter<Object>(schema);
+        ReflectDatumWriter<Object> writer = new ReflectDatumWriter<Object>(avroSchemaArtifacts.getRootSchema(), avroSchemaArtifacts.getReflectData());
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         Encoder encoder = EncoderFactory.get().binaryEncoder(bos, null);
 
@@ -79,7 +78,10 @@ class AvroCodec extends ByteToMessageCodec<Object> {
         byte[] array = new byte[in.readableBytes()];
         in.readBytes(array);
 
-        ReflectDatumReader<Object> reader = new ReflectDatumReader<Object>(schema);
+        ReflectDatumReader<Object> reader = new ReflectDatumReader<Object>(
+                avroSchemaArtifacts.getRootSchema(),
+                avroSchemaArtifacts.getRootSchema(),
+                avroSchemaArtifacts.getReflectData());
         BinaryDecoder decoder = DecoderFactory.get().binaryDecoder(array, null);
 
         try {

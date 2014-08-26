@@ -19,6 +19,7 @@ package com.netflix.eureka.transport.codec.json;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.charset.Charset;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -38,6 +39,7 @@ import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.DeserializationContext;
 import org.codehaus.jackson.map.DeserializerFactory;
 import org.codehaus.jackson.map.JsonDeserializer;
+import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.JsonSerializer;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
@@ -50,6 +52,7 @@ import org.codehaus.jackson.map.deser.BeanDeserializerModifier;
 import org.codehaus.jackson.map.deser.SettableBeanProperty;
 import org.codehaus.jackson.map.deser.StdDeserializerProvider;
 import org.codehaus.jackson.map.introspect.BasicBeanDescription;
+import org.codehaus.jackson.map.module.SimpleSerializers;
 import org.codehaus.jackson.map.ser.BeanSerializerFactory;
 import org.codehaus.jackson.map.ser.BeanSerializerModifier;
 import org.codehaus.jackson.map.ser.std.BeanSerializerBase;
@@ -71,9 +74,13 @@ public class JsonCodec extends ByteToMessageCodec<Object> {
 
         mapper = new ObjectMapper();
 
+        SimpleSerializers serializers = new SimpleSerializers();
+        serializers.addSerializer(Enum.class, new EnumSerializer());
         SerializerFactory serializerFactory = BeanSerializerFactory
                 .instance
+                .withAdditionalSerializers(serializers)
                 .withSerializerModifier(new TypeInjectingModifier());
+
         DeserializerFactory deserializerFactory = BeanDeserializerFactory
                 .instance
                 .withDeserializerModifier(new TypeResolvingModifier(model, mapper));
@@ -108,6 +115,17 @@ public class JsonCodec extends ByteToMessageCodec<Object> {
         Class<?> contentClass = Class.forName(messageType);
         Object content = mapper.readValue(jsonNode, contentClass);
         out.add(content);
+    }
+
+
+    static class EnumSerializer extends JsonSerializer<Enum> {
+        @Override
+        public void serialize(Enum value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+            jgen.writeStartObject();
+            jgen.writeStringField("_type", value.getClass().getName());
+            jgen.writeStringField("value", value.toString());
+            jgen.writeEndObject();
+        }
     }
 
     static class TypeInjectingModifier extends BeanSerializerModifier {
@@ -164,15 +182,11 @@ public class JsonCodec extends ByteToMessageCodec<Object> {
         }
 
         private Object handleObject(JsonParser jp, JsonNode tree) throws IOException {
-            String type = tree.get("_type").asText();
-            Class<?> objectClass;
-            try {
-                objectClass = Class.forName(type);
-            } catch (ClassNotFoundException e) {
-                throw new JsonParseException("Cannot instantiate type " + type, jp.getCurrentLocation());
+            Class<?> objectClass = getObjectType(jp, tree);
+            if (objectClass.isEnum()) {
+                return deserializeEnum(jp, tree);
             }
-            Object result = mapper.readValue(tree, objectClass);
-            return result;
+            return mapper.readValue(tree, objectClass);
         }
 
         private Object handleArray(JsonParser jp, ArrayNode arrayNode) throws IOException {
@@ -188,6 +202,7 @@ public class JsonCodec extends ByteToMessageCodec<Object> {
     static class TypeResolvingModifier extends BeanDeserializerModifier {
 
         private final TransportModel model;
+
         private final ObjectMapper mapper;
 
         TypeResolvingModifier(TransportModel model, ObjectMapper mapper) {
@@ -201,7 +216,7 @@ public class JsonCodec extends ByteToMessageCodec<Object> {
             while (beanPropertyIterator.hasNext()) {
                 SettableBeanProperty settableBeanProperty = beanPropertyIterator.next();
                 Class<?> rawClass = settableBeanProperty.getType().getRawClass();
-                if (isKnownAbstract(rawClass)) {
+                if (!isBasicType(rawClass)) {
                     SettableBeanProperty newSettableBeanProperty = settableBeanProperty.withValueDeserializer(new PolymorphicDeserializer(rawClass, mapper));
                     builder.addOrReplaceProperty(newSettableBeanProperty, true);
                     break;
@@ -210,9 +225,50 @@ public class JsonCodec extends ByteToMessageCodec<Object> {
             return builder;
         }
 
-        private boolean isKnownAbstract(Class<?> rawClass) {
+        private boolean isBasicType(Class<?> rawClass) {
             Class<?> type = rawClass.isArray() ? rawClass.getComponentType() : rawClass;
-            return model.isKnownAbstract(type);
+            if (type.isPrimitive() || type.equals(String.class)) {
+                return true;
+            }
+            if (Number.class.isAssignableFrom(rawClass)) {
+                return true;
+            }
+            if (Collection.class.isAssignableFrom(rawClass)) {
+                return true;
+            }
+
+            return false;
         }
+    }
+
+    static class EnumDeserializer extends JsonDeserializer<Enum> {
+
+        @Override
+        public Enum deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
+            JsonNode tree = jp.readValueAsTree();
+            return deserializeEnum(jp, tree);
+        }
+    }
+
+    private static Class<?> getObjectType(JsonParser jp, JsonNode tree) throws JsonParseException {
+        String type = tree.get("_type").asText();
+        Class<?> objectClass;
+        try {
+            objectClass = Class.forName(type);
+        } catch (ClassNotFoundException e) {
+            throw new JsonParseException("Cannot instantiate type " + type, jp.getCurrentLocation());
+        }
+        return objectClass;
+    }
+
+    private static Enum deserializeEnum(JsonParser jp, JsonNode tree) throws IOException {
+        Class<Enum> enumType = (Class<Enum>) getObjectType(jp, tree);
+        String enumValue = tree.get("value").asText();
+        for (Enum value : enumType.getEnumConstants()) {
+            if (value.name().equals(enumValue)) {
+                return value;
+            }
+        }
+        throw new JsonMappingException(String.format("Unrecognized enum value for type %s for type %s", enumValue, enumType));
     }
 }

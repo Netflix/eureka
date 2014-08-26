@@ -15,7 +15,9 @@ import com.netflix.eureka.protocol.discovery.DeleteInstance;
 import com.netflix.eureka.protocol.discovery.RegisterInterestSet;
 import com.netflix.eureka.protocol.discovery.UnregisterInterestSet;
 import com.netflix.eureka.protocol.discovery.UpdateInstanceInfo;
+import com.netflix.eureka.registry.Delta;
 import com.netflix.eureka.registry.InstanceInfo;
+import com.netflix.eureka.registry.SampleDelta;
 import com.netflix.eureka.registry.SampleInterest;
 import com.netflix.eureka.rx.RxBlocking;
 import com.netflix.eureka.rx.RxBlocking.RxItem;
@@ -116,8 +118,10 @@ public class AsyncDiscoveryClientTest {
         Iterator<ChangeNotification<InstanceInfo>> notificationIterator = RxBlocking.iteratorFrom(1, TimeUnit.SECONDS, discoveryClient.updates());
 
         InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();
+        Delta<?> delta = SampleDelta.StatusUp.builder().withId(instanceInfo.getId()).build();
+
         serverBroker.submit(new AddInstance(instanceInfo));
-        serverBroker.submit(new UpdateInstanceInfo(instanceInfo.getId(), "key", "value"));
+        serverBroker.submit(new UpdateInstanceInfo(delta));
 
         notificationIterator.next();
         ChangeNotification<InstanceInfo> notification = notificationIterator.next();

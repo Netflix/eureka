@@ -74,7 +74,7 @@ public class AsyncDiscoveryServerTest {
         }
     }
 
-    @Test
+    @Test(timeout = 10000)
     public void testRegisterInteresetSet() throws Exception {
         RegisterInterestSet request = new RegisterInterestSet(interestCollectionOf(ZuulVip, DiscoveryApp));
 
@@ -85,7 +85,7 @@ public class AsyncDiscoveryServerTest {
         assertEquals("Invalid interest set received", Arrays.asList(request.getInterestSet()), handler.interestRef.get());
     }
 
-    @Test
+    @Test(timeout = 10000)
     public void testUnregisterInterestSet() throws Exception {
         Observable<Void> ackObservable = brokerClient.submitWithAck(new UnregisterInterestSet());
         Notification<Void> ackNotification = ackObservable.materialize().toBlocking().last();
@@ -94,7 +94,7 @@ public class AsyncDiscoveryServerTest {
         assertTrue("Unregister status not set", handler.unregistered.get());
     }
 
-    @Test
+    @Test(timeout = 10000)
     public void testReceiveUpdates() throws Exception {
         brokerClient.submit(Heartbeat.INSTANCE).materialize().toBlocking().last(); // Make sure we are connected
 
@@ -106,7 +106,7 @@ public class AsyncDiscoveryServerTest {
         assertEquals("Unexpected update action", updateAction, nextUpdate);
     }
 
-    @Test
+    @Test(timeout = 10000)
     public void testHeartbeat() throws Exception {
         brokerClient.submit(Heartbeat.INSTANCE);
         assertTrue("Heartbeat not delivered", handler.heartbeatLatch.await(1, TimeUnit.MINUTES));

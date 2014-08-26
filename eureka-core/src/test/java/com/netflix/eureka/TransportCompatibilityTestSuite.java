@@ -15,6 +15,7 @@ import com.netflix.eureka.protocol.registration.Register;
 import com.netflix.eureka.protocol.registration.Unregister;
 import com.netflix.eureka.protocol.registration.Update;
 import com.netflix.eureka.registry.InstanceInfo;
+import com.netflix.eureka.registry.SampleDelta;
 import com.netflix.eureka.transport.MessageBroker;
 import rx.Notification;
 import rx.Observable;
@@ -135,7 +136,7 @@ public abstract class TransportCompatibilityTestSuite {
         }
 
         private void updateInstanceInfoTest() {
-            runServerToClientWithAck(new UpdateInstanceInfo("id1", "someKey", "someValue"));
+            runServerToClientWithAck(new UpdateInstanceInfo(SampleDelta.StatusUp.build()));
         }
     }
 }

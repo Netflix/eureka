@@ -45,7 +45,7 @@ public class DeltaSerializationTest {
         @Override
         protected void before() throws Throwable {
             instanceInfo = SampleInstanceInfo.DiscoveryServer.build();
-            Schema schema = new ConfigurableReflectData(EurekaTransports.DELTA_VALUE_TYPE_MODEL).getSchema(Delta.class);
+            Schema schema = new ConfigurableReflectData(EurekaTransports.DISCOVERY_MODEL).getSchema(Delta.class);
 
             writer = new ReflectDatumWriter<Delta>(schema);
             bos = new ByteArrayOutputStream();

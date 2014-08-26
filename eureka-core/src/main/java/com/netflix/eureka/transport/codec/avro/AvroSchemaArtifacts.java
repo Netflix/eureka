@@ -22,22 +22,20 @@ import java.util.List;
 import com.netflix.eureka.transport.Acknowledgement;
 import com.netflix.eureka.transport.utils.TransportModel;
 import org.apache.avro.Schema;
+import org.apache.avro.reflect.ReflectData;
 
 /**
- * Avro schema is generated from Java class. Since {@link UserContent} and {@link UserContentWithAck}
- * contain an arbitrary body, we need to construct schema for them explicitly with proper union
- * type set.
- *
- * Alternatively we could expect a client to define schema in Avro text file, and pass it as a
- * parameter when constructing {@link com.netflix.eureka.transport.base.BaseMessageBroker}. This would take however more effort, and
- * is more error prone.
+ * Avro schema is generated from Java classes, based on the {@link TransportModel}.
  *
  * @author Tomasz Bak
  */
-class MessageBrokerSchema {
+class AvroSchemaArtifacts {
 
-    static Schema brokerSchemaFrom(TransportModel model) {
-        ConfigurableReflectData reflectData = new ConfigurableReflectData(model);
+    private final Schema rootSchema;
+    private final ConfigurableReflectData reflectData;
+
+    AvroSchemaArtifacts(TransportModel model) {
+        reflectData = new ConfigurableReflectData(model);
 
         List<Schema> schemas = new ArrayList<Schema>();
         schemas.add(reflectData.getSchema(Acknowledgement.class));
@@ -45,6 +43,14 @@ class MessageBrokerSchema {
         for (Class<?> c : model.getProtocolTypes()) {
             schemas.add(reflectData.getSchema(c));
         }
-        return Schema.createUnion(schemas);
+        rootSchema = Schema.createUnion(schemas);
+    }
+
+    public Schema getRootSchema() {
+        return rootSchema;
+    }
+
+    public ReflectData getReflectData() {
+        return reflectData;
     }
 }
