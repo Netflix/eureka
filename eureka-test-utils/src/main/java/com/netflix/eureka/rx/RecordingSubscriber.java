@@ -21,6 +21,7 @@ import java.util.List;
 
 import rx.Observable;
 import rx.Subscriber;
+import rx.Subscription;
 
 /**
  * An observer that stores observable results and exposes them to a user.
@@ -29,12 +30,14 @@ import rx.Subscriber;
  */
 public class RecordingSubscriber<T> {
 
+    private final Subscription subscription;
+
+    private final List<T> itemList = new ArrayList<T>();
     private volatile boolean done;
     private volatile Throwable error;
-    private final List<T> itemList = new ArrayList<T>();
 
     protected RecordingSubscriber(Observable<T> observable) {
-        observable.subscribe(new Subscriber<T>() {
+        subscription = observable.subscribe(new Subscriber<T>() {
             @Override
             public void onCompleted() {
                 done = true;
@@ -53,6 +56,10 @@ public class RecordingSubscriber<T> {
                 }
             }
         });
+    }
+
+    public Subscription getSubscription() {
+        return subscription;
     }
 
     public boolean isDone() {

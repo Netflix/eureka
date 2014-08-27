@@ -14,19 +14,23 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka.server.transport.registration.asynchronous;
+package com.netflix.eureka.server.transport.discovery.asynchronous;
 
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.inject.Inject;
+import com.netflix.eureka.interests.ChangeNotification;
+import com.netflix.eureka.interests.ModifyNotification;
 import com.netflix.eureka.protocol.EurekaProtocolError;
-import com.netflix.eureka.protocol.Heartbeat;
-import com.netflix.eureka.protocol.registration.Register;
-import com.netflix.eureka.protocol.registration.Unregister;
-import com.netflix.eureka.protocol.registration.Update;
+import com.netflix.eureka.protocol.discovery.AddInstance;
+import com.netflix.eureka.protocol.discovery.DeleteInstance;
+import com.netflix.eureka.protocol.discovery.RegisterInterestSet;
+import com.netflix.eureka.protocol.discovery.UnregisterInterestSet;
+import com.netflix.eureka.protocol.discovery.UpdateInstanceInfo;
+import com.netflix.eureka.registry.Delta;
 import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.service.EurekaService;
-import com.netflix.eureka.service.RegistrationChannel;
+import com.netflix.eureka.service.InterestChannel;
 import com.netflix.eureka.transport.MessageBroker;
 import com.netflix.eureka.transport.base.BaseMessageBroker;
 import io.reactivex.netty.channel.ConnectionHandler;
@@ -41,12 +45,12 @@ import rx.subscriptions.Subscriptions;
 /**
  * @author Tomasz Bak
  */
-public class AsyncRegistrationHandler implements ConnectionHandler<Object, Object> {
+public class AsyncDiscoveryHandler implements ConnectionHandler<Object, Object> {
 
     private final EurekaService eurekaService;
 
     @Inject
-    public AsyncRegistrationHandler(EurekaService eurekaService) {
+    public AsyncDiscoveryHandler(EurekaService eurekaService) {
         this.eurekaService = eurekaService;
     }
 
@@ -83,7 +87,7 @@ public class AsyncRegistrationHandler implements ConnectionHandler<Object, Objec
 
     private class RequestDispatcher {
         private final MessageBroker broker;
-        private final AtomicReference<RegistrationChannel> registrationChannelRef = new AtomicReference<RegistrationChannel>();
+        private final AtomicReference<InterestChannel> interestChannelRef = new AtomicReference<InterestChannel>();
 
         private RequestDispatcher(MessageBroker broker) {
             this.broker = broker;
@@ -91,26 +95,14 @@ public class AsyncRegistrationHandler implements ConnectionHandler<Object, Objec
 
         public Observable<Void> dispatch(final Object message) {
             Observable<Void> response;
-            if (message instanceof Register) {
-                response = handleRegistration(((Register) message).getInstanceInfo());
+            if (message instanceof RegisterInterestSet) {
+                response = handleInterestSetRegistration((RegisterInterestSet) message);
+            } else if (message instanceof UnregisterInterestSet) {
+                response = handleInterestSetUnregistration();
             } else {
-                if (registrationChannelRef.get() == null) {
-                    if (message instanceof Unregister) {
-                        return Observable.empty();
-                    }
-                    return Observable.error(new EurekaProtocolError("Expected registration message prior to " + message));
-                }
-
-                if (message instanceof Unregister) {
-                    response = handleUnregistration();
-                } else if (message instanceof Update) {
-                    response = handleUpdate((Update) message);
-                } else if (message instanceof Heartbeat) {
-                    return handleHeartbeat();
-                } else {
-                    return Observable.empty();
-                }
+                return Observable.error(new EurekaProtocolError("Unexpected message " + message));
             }
+
             return response.doOnCompleted(new Action0() {
                 @Override
                 public void call() {
@@ -119,32 +111,47 @@ public class AsyncRegistrationHandler implements ConnectionHandler<Object, Objec
             });
         }
 
-        private Observable<Void> handleRegistration(InstanceInfo instanceInfo) {
+        private Observable<Void> handleInterestSetRegistration(RegisterInterestSet message) {
             shutdownActiveChannel();
-            RegistrationChannel registrationChannel = eurekaService.newRegistrationChannel();
-            registrationChannelRef.set(registrationChannel);
-            registrationChannel.register(instanceInfo);
-            return Observable.empty();
+            // TODO: we do not need set, just one element
+            final InterestChannel interestChannel = eurekaService.forInterest(message.toComposite());
+            interestChannelRef.set(interestChannel);
+
+            return interestChannel.asObservable().flatMap(new Func1<ChangeNotification<InstanceInfo>, Observable<Void>>() {
+                @Override
+                public Observable<Void> call(ChangeNotification<InstanceInfo> notification) {
+                    switch (notification.getKind()) {
+                        case Add:
+                            return broker.submit(new AddInstance(notification.getData()));
+                        case Delete:
+                            return broker.submit(new DeleteInstance(notification.getData().getId()));
+                        case Modify:
+                            Observable<Void> last = null;
+                            ModifyNotification<InstanceInfo> modifyNotification = (ModifyNotification<InstanceInfo>) notification;
+                            for (Delta<?> delta : modifyNotification.getDelta()) {
+                                last = broker.submit(new UpdateInstanceInfo(delta));
+                            }
+                            return last;
+                    }
+                    return null;
+                }
+            }).doOnTerminate(new Action0() {
+                @Override
+                public void call() {
+                    interestChannelRef.compareAndSet(interestChannel, null);
+                }
+            });
         }
 
-        private Observable<Void> handleHeartbeat() {
-            registrationChannelRef.get().heartbeat();
-            return Observable.empty();
-        }
-
-        private Observable<Void> handleUpdate(Update message) {
-            return registrationChannelRef.get().update(message.getInstanceInfo());
-        }
-
-        private Observable<Void> handleUnregistration() {
+        private Observable<Void> handleInterestSetUnregistration() {
             shutdownActiveChannel();
             return Observable.empty();
         }
 
         private void shutdownActiveChannel() {
-            RegistrationChannel oldValue = registrationChannelRef.getAndSet(null);
-            if (oldValue != null) {
-                oldValue.close();
+            InterestChannel activeChannel = interestChannelRef.getAndSet(null);
+            if (activeChannel != null) {
+                activeChannel.close();
             }
         }
     }

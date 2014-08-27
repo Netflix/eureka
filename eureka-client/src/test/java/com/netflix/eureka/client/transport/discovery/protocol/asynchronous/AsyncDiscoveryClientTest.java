@@ -74,7 +74,7 @@ public class AsyncDiscoveryClientTest {
         Observable<Void> reply = discoveryClient.registerInterestSet(intrest);
 
         RegisterInterestSet message = (RegisterInterestSet) serverMessageIt.next();
-        assertEquals("Expected registration message", message.getInterestSet()[0], intrest);
+        assertEquals("Expected registration message", intrest, message.toComposite());
 
         serverBroker.acknowledge(message);
 

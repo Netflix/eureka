@@ -16,9 +16,7 @@
 
 package com.netflix.eureka.client.transport.discovery.asynchronous;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -62,9 +60,7 @@ public class AsyncDiscoveryClient implements DiscoveryClient {
 
     @Override
     public Observable<Void> registerInterestSet(Interest<InstanceInfo> interest) {
-        List<Interest<InstanceInfo>> interests = new ArrayList<Interest<InstanceInfo>>();
-        interests.add(interest);
-        return messageBroker.submitWithAck(new RegisterInterestSet(interests));
+        return messageBroker.submitWithAck(new RegisterInterestSet(interest));
     }
 
     @Override
