@@ -4,7 +4,8 @@ status = project.hasProperty('preferredStatus')?project.preferredStatus:(version
 subprojects { project ->
     apply plugin: 'java' // Plugin as major conventions
 
-    sourceCompatibility = 1.6
+    sourceCompatibility = JavaVersion.VERSION_1_7
+    targetCompatibility = JavaVersion.VERSION_1_7
 
     // Restore status after Java plugin
     status = rootProject.status

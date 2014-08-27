@@ -14,52 +14,10 @@
  * limitations under the License.
  */
 
-
-apply plugin: 'osgi'
-apply plugin: 'groovy'
-
-sourceCompatibility = JavaVersion.VERSION_1_6
-targetCompatibility = JavaVersion.VERSION_1_6
-
-tasks.withType(Javadoc).each {
-    it.classpath = sourceSets.main.compileClasspath
-}
-
 dependencies {
     compile project(':eureka-core')
     compile project(':eureka-server')
     testCompile "junit:junit:${junit_version}"
-}
-
-task testJar(type: Jar, dependsOn: testClasses) {
-    baseName = "${project.archivesBaseName}-test"
-    from sourceSets.test.output
-}
-
-configurations {
-    tests
-}
-
-artifacts {
-    tests testJar
-}
-
-eclipse {
-    classpath {
-        // include 'provided' dependencies on the classpath
-        plusConfigurations += configurations.provided
-
-        downloadSources = true
-        downloadJavadoc = true
-    }
-}
-
-idea {
-    module {
-        // include 'provided' dependencies on the classpath
-        scopes.PROVIDED.plus += configurations.provided
-        scopes.PROVIDED.plus += configurations.provided
-    }
 }
 
 jar {
