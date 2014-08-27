@@ -19,16 +19,18 @@ public class InstanceInfoFieldTest {
         Field[] allFields = InstanceInfo.class.getDeclaredFields();
         Set<String> expectedFields = new HashSet<String>();
         for (Field field : allFields) {
-            if ( !field.getName().equals("serialVersionUID")) {
-                expectedFields.add(field.getName());
-            }
+            expectedFields.add(field.getName());
         }
+
+        // remove non-settable fields
+        expectedFields.remove("id");
+        expectedFields.remove("version");
 
         Field[] instanceInfoFields = InstanceInfoField.class.getFields();  // get only public ones
         Set<String> actualFields = new HashSet<String>();
         for (Field field : instanceInfoFields) {
             InstanceInfoField iif = (InstanceInfoField) field.get(null);
-            actualFields.add(iif.getField().getName());
+            actualFields.add(iif.getFieldName());
         }
 
         assertThat(expectedFields.size(), equalTo(actualFields.size()));

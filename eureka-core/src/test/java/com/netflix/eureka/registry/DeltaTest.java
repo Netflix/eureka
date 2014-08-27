@@ -17,6 +17,7 @@ public class DeltaTest {
 
     InstanceInfo original;
     InstanceInfo instanceInfo;
+    InstanceInfo.Builder instanceInfoBuilder;
 
     @Rule
     public final ExternalResource testResource = new ExternalResource() {
@@ -24,7 +25,8 @@ public class DeltaTest {
         @Override
         protected void before() throws Throwable {
             original = SampleInstanceInfo.DiscoveryServer.build();
-            instanceInfo = new InstanceInfo.Builder().withInstanceInfo(original).build();
+            instanceInfoBuilder = new InstanceInfo.Builder().withInstanceInfo(original);
+            instanceInfo = instanceInfoBuilder.build();
         }
 
     };
@@ -38,7 +40,7 @@ public class DeltaTest {
                 .withDelta(InstanceInfoField.PORTS, newPorts)
                 .build();
 
-        delta.applyTo(instanceInfo);
+        delta.applyTo(instanceInfoBuilder);
 
         assertThat(instanceInfo.getPorts(), equalTo(newPorts));
         assertThat(instanceInfo.getPorts(), not(equalTo(original.getPorts())));
@@ -54,7 +56,7 @@ public class DeltaTest {
                 .withDelta(InstanceInfoField.HEALTHCHECK_URLS, newHealthCheckUrls)
                 .build();
 
-        delta.applyTo(instanceInfo);
+        delta.applyTo(instanceInfoBuilder);
 
         assertThat(instanceInfo.getHealthCheckUrls(), equalTo(newHealthCheckUrls));
         assertThat(instanceInfo.getHealthCheckUrls(), not(equalTo(original.getHealthCheckUrls())));
@@ -70,7 +72,7 @@ public class DeltaTest {
                 .withDelta(InstanceInfoField.HOMEPAGE_URL, newHomepage)
                 .build();
 
-        delta.applyTo(instanceInfo);
+        delta.applyTo(instanceInfoBuilder);
 
         assertThat(instanceInfo.getHomePageUrl(), equalTo(newHomepage));
         assertThat(instanceInfo.getHomePageUrl(), not(equalTo(original.getHomePageUrl())));
@@ -86,7 +88,7 @@ public class DeltaTest {
                 .withDelta(InstanceInfoField.STATUS, newStatus)
                 .build();
 
-        delta.applyTo(instanceInfo);
+        delta.applyTo(instanceInfoBuilder);
 
         assertThat(instanceInfo.getStatus(), equalTo(newStatus));
         assertThat(instanceInfo.getStatus(), not(equalTo(original.getStatus())));

@@ -37,11 +37,11 @@ public class Delta<ValueType> {
 
     private Delta()  {} // for serializer
 
-    void applyTo(InstanceInfo instanceInfo) throws Exception {
+    InstanceInfo.Builder applyTo(InstanceInfo.Builder instanceInfoBuilder) throws Exception {
         if (value instanceof TypeWrapper) { // TODO: remove once we move off avro
-            InstanceInfoField.applyTo(instanceInfo, fieldName, ((TypeWrapper) value).getValue());
+            return InstanceInfoField.applyTo(instanceInfoBuilder, fieldName, ((TypeWrapper) value).getValue());
         } else {
-            InstanceInfoField.applyTo(instanceInfo, fieldName, value);
+            return InstanceInfoField.applyTo(instanceInfoBuilder, fieldName, value);
         }
     }
 
@@ -118,8 +118,8 @@ public class Delta<ValueType> {
         // TODO: Once/when we move off avro, revisit this and remove if possible
         @SuppressWarnings("unchecked")
         public <ValueType> Builder withDelta(InstanceInfoField<HashSet<ValueType>> field, HashSet<ValueType> value) {
-            if (field.getType() instanceof ParameterizedType) {
-                ParameterizedType ptype = (ParameterizedType)field.getType();
+            if (field.getValueType() instanceof ParameterizedType) {
+                ParameterizedType ptype = (ParameterizedType)field.getValueType();
                 Type[] types = ptype.getActualTypeArguments();
                 if (types[0].equals(String.class)) {
                     Delta<TypeWrapper.HashSetString> delta = new Delta<TypeWrapper.HashSetString>();
