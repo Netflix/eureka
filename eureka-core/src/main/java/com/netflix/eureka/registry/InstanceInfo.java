@@ -16,7 +16,6 @@
 
 package com.netflix.eureka.registry;
 
-import com.netflix.eureka.datastore.Item;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,11 +23,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * TODO: add ability to diff InstanceInfos into Deltas
+ * TODO: merge this and Delta into an abstract superclass that deal with id and version?
  * JavaBean for InstanceInfo.
  * @author David Liu
  */
-public class InstanceInfo implements Item {
+public class InstanceInfo {
 
     protected String id;
     protected String appGroup;
@@ -53,7 +52,6 @@ public class InstanceInfo implements Item {
     /**
      * @return unique identifier of this instance
      */
-    @Override
     public String getId() {
         return id;
     }
@@ -253,7 +251,14 @@ public class InstanceInfo implements Item {
      * @return a new InstanceInfo with the deltas applied
      */
     public InstanceInfo applyDelta(Delta delta) throws Exception {
-        return new Builder().withInstanceInfo(this).withDelta(delta).build();
+        if (!id.equals(delta.getId())) {
+            throw new UnsupportedOperationException("Cannot apply delta to instanceInfo with non-matching id: "
+                    + delta.getId() + ", " + id);
+        }
+
+        InstanceInfo.Builder newInstanceInfoBuilder = new InstanceInfo.Builder().withInstanceInfo(this);
+        newInstanceInfoBuilder.withVersion(delta.getVersion());
+        return delta.applyTo(newInstanceInfoBuilder).build();
     }
 
     /**
@@ -293,18 +298,16 @@ public class InstanceInfo implements Item {
 
         Long newVersion = newInstanceInfo.getVersion();
         for (InstanceInfoField field : InstanceInfoField.FIELD_MAP.values()) {
-            if (field.isUpdateable()) {
-                Object oldValue = field.getValue(oldInstanceInfo);
-                Object newValue = field.getValue(newInstanceInfo);
+            Object oldValue = field.getValue(oldInstanceInfo);
+            Object newValue = field.getValue(newInstanceInfo);
 
-                if (oldValue == null || !oldValue.equals(newValue)) {  // there is a difference
-                    Delta<?> delta = new Delta.Builder()
-                            .withId(newInstanceInfo.getId())
-                            .withVersion(newVersion)
-                            .withDelta(field, newValue)
-                            .build();
-                    deltas.add(delta);
-                }
+            if (oldValue == null || !oldValue.equals(newValue)) {  // there is a difference
+                Delta<?> delta = new Delta.Builder()
+                        .withId(newInstanceInfo.getId())
+                        .withVersion(newVersion)
+                        .withDelta(field, newValue)
+                        .build();
+                deltas.add(delta);
             }
         }
 
@@ -366,18 +369,13 @@ public class InstanceInfo implements Item {
             return this;
         }
 
-        public Builder withDelta(Delta delta) throws Exception {
-            try {
-                delta.applyTo(info);
-                info.version = delta.getVersion();
-            } catch (Exception e) {
-                logger.error("Error applying delta", e);
-            }
+        public Builder withId(String id) {
+            info.id = id;
             return this;
         }
 
-        public Builder withId(String id) {
-            info.id = id;
+        protected Builder withVersion(Long version) {
+            info.version = version;
             return this;
         }
 
