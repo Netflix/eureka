@@ -1,4 +1,4 @@
-package com.netflix.eureka;
+package com.netflix.eureka.registry;
 
 import com.netflix.eureka.registry.InstanceInfo.Builder;
 import com.netflix.eureka.registry.InstanceInfo;
@@ -43,7 +43,6 @@ public enum SampleInstanceInfo {
                     .withStatus(Status.UP)
                     .withStatusPageUrl("http://eureka/status/ZuulServer")
                     .withVipAddress("vip#ZuulServer")
-                    .withVersion(System.currentTimeMillis())
                     .withInstanceLocation(new InstanceLocation.AmazonBuilder()
                             .withRegion("us-east-1")
                             .withZone("us-east-1a")
@@ -71,14 +70,13 @@ public enum SampleInstanceInfo {
                     .withHealthCheckUrls(healthCheckUrls)
                     .withHomePageUrl("http://eureka/home/DiscoveryServer")
                     .withHostname("DiscoveryServer.test")
-                    .withIp("192.168.0.1")
+                    .withIp("192.101.0.1")
                     .withPorts(ports)
                     .withSecurePorts(securePorts)
                     .withSecureVipAddress("vipSecure#DiscoveryServer")
                     .withStatus(Status.UP)
                     .withStatusPageUrl("http://eureka/status/DiscoveryServer")
                     .withVipAddress("vip#DiscoveryServer")
-                    .withVersion(System.currentTimeMillis())
                     .withInstanceLocation(new InstanceLocation.AmazonBuilder()
                             .withRegion("us-east-1")
                             .withZone("us-east-1b")

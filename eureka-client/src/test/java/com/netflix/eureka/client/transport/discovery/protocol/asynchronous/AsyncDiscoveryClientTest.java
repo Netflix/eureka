@@ -3,7 +3,7 @@ package com.netflix.eureka.client.transport.discovery.protocol.asynchronous;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka.SampleInstanceInfo;
+import com.netflix.eureka.registry.SampleInstanceInfo;
 import com.netflix.eureka.client.transport.discovery.DiscoveryClient;
 import com.netflix.eureka.client.transport.discovery.DiscoveryClientProvider;
 import com.netflix.eureka.interests.ChangeNotification;

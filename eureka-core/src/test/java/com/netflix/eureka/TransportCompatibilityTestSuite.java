@@ -17,7 +17,7 @@ import com.netflix.eureka.transport.MessageBroker;
 import rx.Notification;
 import rx.Observable;
 
-import static com.netflix.eureka.SampleInstanceInfo.*;
+import static com.netflix.eureka.registry.SampleInstanceInfo.*;
 import static com.netflix.eureka.rx.RxSniffer.*;
 import static org.junit.Assert.*;
 

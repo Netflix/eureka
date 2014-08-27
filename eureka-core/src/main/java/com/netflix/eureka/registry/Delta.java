@@ -28,6 +28,7 @@ import java.util.HashSet;
  * @author David Liu
  */
 public class Delta<ValueType> {
+
     private String id;
     private Long version;
 

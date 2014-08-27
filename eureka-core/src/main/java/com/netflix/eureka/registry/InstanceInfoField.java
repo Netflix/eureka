@@ -32,7 +32,10 @@ public class InstanceInfoField<T> {
     private static final Logger logger = LoggerFactory.getLogger(InstanceInfoField.class);
 
     public static final InstanceInfoField<String> ID
-            = new InstanceInfoField<String>("id");
+            = new InstanceInfoField<String>("id", false);
+
+    public static final InstanceInfoField<Long> VERSION
+            = new InstanceInfoField<Long>("version", false);
 
     public static final InstanceInfoField<String> APPLICATION_GROUP
             = new InstanceInfoField<String>("appGroup");
@@ -73,21 +76,18 @@ public class InstanceInfoField<T> {
     public static final InstanceInfoField<HashSet<String>> HEALTHCHECK_URLS
             = new InstanceInfoField<HashSet<String>>("healthCheckUrls");
 
-    public static final InstanceInfoField<Long> VERSION
-            = new InstanceInfoField<Long>("version");
-
     public static final InstanceInfoField<InstanceLocation> INSTANCE_LOCATION
             = new InstanceInfoField<InstanceLocation>("instanceLocation");
 
-    private static final Map<String, InstanceInfoField> fieldMap;
+    static final Map<String, InstanceInfoField> FIELD_MAP;
     static {
-        fieldMap = new HashMap<String, InstanceInfoField>();
+        FIELD_MAP = new HashMap<String, InstanceInfoField>();
 
         Field[] instanceInfoFields = InstanceInfoField.class.getFields();  // get only public ones
         for (Field field : instanceInfoFields) {
             try {
                 InstanceInfoField iif = (InstanceInfoField) field.get(null);
-                fieldMap.put(iif.fieldName, iif);
+                FIELD_MAP.put(iif.fieldName, iif);
             } catch (IllegalAccessException e) {
                 logger.error("Error creating InstanceInfoFields map", e);
             }
@@ -96,9 +96,15 @@ public class InstanceInfoField<T> {
 
     private final String fieldName;
     private final Field field;
+    private final boolean updateable;  // denote whether a field is updateable or not (id, version)
 
     private InstanceInfoField(String fieldName) {
+        this(fieldName, true);
+    }
+
+    private InstanceInfoField(String fieldName, boolean updateable) {
         this.fieldName = fieldName;
+        this.updateable = updateable;
 
         Field tempField;
         try {
@@ -110,7 +116,7 @@ public class InstanceInfoField<T> {
         this.field = tempField;
     }
 
-    public String getFieldName() {
+    String getFieldName() {
         return fieldName;
     }
 
@@ -122,18 +128,26 @@ public class InstanceInfoField<T> {
         return field;
     }
 
+    boolean isUpdateable() {
+        return updateable;
+    }
+
+    Object getValue(InstanceInfo instanceInfo) throws Exception {
+        return field.get(instanceInfo);
+    }
+
     private void set(InstanceInfo instanceInfo, T value) throws IllegalArgumentException, IllegalAccessException {
-        if (field != null) {
+        if (field != null && updateable) {
             field.set(instanceInfo, value);
         }
     }
 
     @SuppressWarnings("unchecked")
     public static <T> void applyTo(InstanceInfo instanceInfo, String fieldName, T value) throws IllegalAccessException {
-        if (!fieldMap.containsKey(fieldName)) {
+        if (!FIELD_MAP.containsKey(fieldName)) {
             throw new RuntimeException("This field name does not exist: " + fieldName);
         }
-        InstanceInfoField<T> field = fieldMap.get(fieldName);
+        InstanceInfoField<T> field = FIELD_MAP.get(fieldName);
         field.set(instanceInfo, value);
     }
 }

@@ -1,6 +1,6 @@
 package com.netflix.eureka.transport;
 
-import com.netflix.eureka.SampleInstanceInfo;
+import com.netflix.eureka.registry.SampleInstanceInfo;
 import com.netflix.eureka.Sets;
 import com.netflix.eureka.registry.Delta;
 import com.netflix.eureka.registry.InstanceInfo;
@@ -123,27 +123,6 @@ public class DeltaSerializationTest {
         InstanceInfo newInstanceInfo = instanceInfo.applyDelta(newDelta);
         assertThat(newInstanceInfo.getHomePageUrl(), equalTo(newHomepage));
         assertThat(newInstanceInfo.getHomePageUrl(), not(equalTo(instanceInfo.getHomePageUrl())));
-        assertThat(newInstanceInfo.getId(), equalTo(instanceInfo.getId()));
-    }
-
-    @Test
-    public void testDeltaSerializationWithAvro_Long() throws Exception {
-        Long newVersion = instanceInfo.getVersion() + 2l;
-        Delta<?> delta = new Delta.Builder()
-                .withId(instanceInfo.getId())
-                .withVersion(instanceInfo.getVersion() + 1)
-                .withDelta(InstanceInfoField.VERSION, newVersion)
-                .build();
-
-        writer.write(delta, encoder);
-        encoder.flush();
-
-        Decoder decoder = DecoderFactory.get().binaryDecoder(bos.toByteArray(), null);
-        Delta newDelta = datumReader.read(null, decoder);
-
-        InstanceInfo newInstanceInfo = instanceInfo.applyDelta(newDelta);
-        assertThat(newInstanceInfo.getVersion(), equalTo(newVersion));
-        assertThat(newInstanceInfo.getVersion(), not(equalTo(instanceInfo.getVersion())));
         assertThat(newInstanceInfo.getId(), equalTo(instanceInfo.getId()));
     }
 

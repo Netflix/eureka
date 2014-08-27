@@ -21,7 +21,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka.SampleInstanceInfo;
+import com.netflix.eureka.registry.SampleInstanceInfo;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.ChangeNotification.Kind;
 import com.netflix.eureka.interests.ModifyNotification;
