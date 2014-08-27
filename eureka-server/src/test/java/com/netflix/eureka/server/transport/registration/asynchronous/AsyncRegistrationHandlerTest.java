@@ -26,11 +26,9 @@ import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.registry.InstanceInfo.Builder;
 import com.netflix.eureka.rx.RecordingSubscriber;
 import com.netflix.eureka.rx.RxBlocking;
-import com.netflix.eureka.rx.RxSniffer;
 import com.netflix.eureka.rx.TestableObservableConnection;
 import com.netflix.eureka.server.service.TestableEurekaService;
 import com.netflix.eureka.server.service.TestableRegistrationChannel;
-import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
 
@@ -52,18 +50,10 @@ public class AsyncRegistrationHandlerTest {
 
     private final RecordingSubscriber<Void> handlerStatus = RecordingSubscriber.subscribeTo(handleObservable);
 
-    @Before
-    public void setUp() throws Exception {
-        RxSniffer.sniff("ObservableConnection status", handleObservable);
-    }
-
     @Test(timeout = 10000)
     public void testRegistrationAndUnregistration() throws Exception {
         // Register
-        observableConnection.testableChannelRead().onNext(new Register(DiscoveryServer.build()));
-        TestableRegistrationChannel registrationChannel = (TestableRegistrationChannel) eurekaService.viewNewRegistrationChannels().poll(1, TimeUnit.SECONDS);
-        assertTrue("Active connection expected", !handlerStatus.isDone());
-        assertNotNull("Expected registered channel instance", registrationChannel);
+        TestableRegistrationChannel registrationChannel = doRegister();
 
         // Unregister
         observableConnection.testableChannelRead().onNext(new Unregister());
@@ -71,12 +61,21 @@ public class AsyncRegistrationHandlerTest {
     }
 
     @Test(timeout = 10000)
+    public void testClientDisconnect() throws Exception {
+        // Register
+        TestableRegistrationChannel registrationChannel = doRegister();
+
+        // Simulate client disconnect.
+        handlerStatus.getSubscription().unsubscribe();
+        assertTrue("Channel should be closed by now", RxBlocking.isCompleted(1, TimeUnit.SECONDS, registrationChannel.viewClose()));
+    }
+
+    @Test(timeout = 10000)
     public void testUpdate() throws Exception {
         Builder instanceInfoBuilder = DiscoveryServer.builder();
 
         // Register
-        observableConnection.testableChannelRead().onNext(new Register(instanceInfoBuilder.build()));
-        TestableRegistrationChannel registrationChannel = (TestableRegistrationChannel) eurekaService.viewNewRegistrationChannels().poll(1, TimeUnit.SECONDS);
+        TestableRegistrationChannel registrationChannel = doRegister();
 
         // Update
         InstanceInfo updated = instanceInfoBuilder.withApp("my_new_app").build();
@@ -89,12 +88,19 @@ public class AsyncRegistrationHandlerTest {
     @Test(timeout = 10000)
     public void testHeartbeat() throws Exception {
         // Register
-        observableConnection.testableChannelRead().onNext(new Register(DiscoveryServer.build()));
-        TestableRegistrationChannel registrationChannel = (TestableRegistrationChannel) eurekaService.viewNewRegistrationChannels().poll(1, TimeUnit.SECONDS);
+        TestableRegistrationChannel registrationChannel = doRegister();
 
         // Heartbeat
         observableConnection.testableChannelRead().onNext(new Heartbeat());
         Long heartbeatTime = registrationChannel.viewHeartbeats().poll(1, TimeUnit.SECONDS);
         assertNotNull("Heartbeat not received", heartbeatTime);
+    }
+
+    private TestableRegistrationChannel doRegister() throws InterruptedException {
+        observableConnection.testableChannelRead().onNext(new Register(DiscoveryServer.build()));
+        TestableRegistrationChannel registrationChannel = (TestableRegistrationChannel) eurekaService.viewNewRegistrationChannels().poll(1, TimeUnit.SECONDS);
+        assertTrue("Active connection expected", !handlerStatus.isDone());
+        assertNotNull("Expected registered channel instance", registrationChannel);
+        return registrationChannel;
     }
 }

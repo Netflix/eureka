@@ -16,12 +16,8 @@
 
 package com.netflix.eureka.registry;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import com.netflix.eureka.interests.ApplicationInterest;
 import com.netflix.eureka.interests.Interest;
-import com.netflix.eureka.interests.VipsInterest;
+import com.netflix.eureka.interests.Interests;
 
 /**
  * @author Tomasz Bak
@@ -31,23 +27,27 @@ public enum SampleInterest {
     ZuulVip() {
         @Override
         public Interest<InstanceInfo> build() {
-            return new VipsInterest("zuul.addr:7001");
+            return Interests.forVip("zuul.addr:7001");
+        }
+    },
+    ZuulApp() {
+        @Override
+        public Interest<InstanceInfo> build() {
+            return Interests.forApplication("zuul001");
         }
     },
     DiscoveryApp() {
         @Override
         public Interest<InstanceInfo> build() {
-            return new ApplicationInterest("discovery001");
+            return Interests.forApplication("discovery001");
+        }
+    },
+    MultipleApps() {
+        @Override
+        public Interest<InstanceInfo> build() {
+            return Interests.forSome(ZuulApp.build(), DiscoveryApp.build());
         }
     };
 
     public abstract Interest<InstanceInfo> build();
-
-    public static List<Interest<InstanceInfo>> interestCollectionOf(SampleInterest... interests) {
-        List<Interest<InstanceInfo>> result = new ArrayList<Interest<InstanceInfo>>(interests.length);
-        for (SampleInterest intr : interests) {
-            result.add(intr.build());
-        }
-        return result;
-    }
 }

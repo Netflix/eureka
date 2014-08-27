@@ -58,7 +58,10 @@ import rx.Observable;
  *
  * @author Tomasz Bak
  */
-public class EurekaTransports {
+public final class EurekaTransports {
+
+    private EurekaTransports() {
+    }
 
     public enum Codec {
         Avro,

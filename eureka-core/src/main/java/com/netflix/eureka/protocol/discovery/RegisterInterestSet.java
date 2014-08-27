@@ -16,30 +16,52 @@
 
 package com.netflix.eureka.protocol.discovery;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import com.netflix.eureka.interests.Interest;
+import com.netflix.eureka.interests.MultipleInterests;
 import com.netflix.eureka.registry.InstanceInfo;
 
 /**
+ * Discovery protocol message representing registration request. The {@link Interest} class hierarchy
+ * which can be a composite structure of arbitrary depth is flattened prior to sending over the wire.
+ *
  * @author Tomasz Bak
  */
 public class RegisterInterestSet {
 
-    private final Interest[] interestSet;
+    private final Interest[] interests;
 
     public RegisterInterestSet() {
-        interestSet = null;
+        interests = null;
     }
 
-    public RegisterInterestSet(List<Interest<InstanceInfo>> interestSet) {
-        this.interestSet = new Interest[interestSet.size()];
-        interestSet.toArray(this.interestSet);
+    public RegisterInterestSet(Interest<InstanceInfo> interest) {
+        ArrayList<Interest<InstanceInfo>> collector = new ArrayList<Interest<InstanceInfo>>();
+        flatten(interest, collector);
+        this.interests = collector.toArray(new Interest[collector.size()]);
     }
 
-    public Interest<InstanceInfo>[] getInterestSet() {
-        return interestSet;
+    private void flatten(Interest<InstanceInfo> interest, ArrayList<Interest<InstanceInfo>> collector) {
+        if (interest instanceof MultipleInterests) {
+            for (Interest<InstanceInfo> i : ((MultipleInterests<InstanceInfo>) interest).getInterests()) {
+                flatten(i, collector);
+            }
+        } else {
+            collector.add(interest);
+        }
+    }
+
+    public Interest<InstanceInfo>[] getInterests() {
+        return interests;
+    }
+
+    public Interest<InstanceInfo> toComposite() {
+        if (interests.length > 1) {
+            return new MultipleInterests<InstanceInfo>(interests);
+        }
+        return interests[0];
     }
 
     @Override
@@ -53,7 +75,7 @@ public class RegisterInterestSet {
 
         RegisterInterestSet that = (RegisterInterestSet) o;
 
-        if (!Arrays.equals(interestSet, that.interestSet)) {
+        if (!Arrays.equals(interests, that.interests)) {
             return false;
         }
 
@@ -62,11 +84,11 @@ public class RegisterInterestSet {
 
     @Override
     public int hashCode() {
-        return interestSet != null ? Arrays.hashCode(interestSet) : 0;
+        return interests != null ? Arrays.hashCode(interests) : 0;
     }
 
     @Override
     public String toString() {
-        return "RegisterInterestSet{interestSet=" + interestSet + '}';
+        return "RegisterInterestSet{interests=" + Arrays.toString(interests) + '}';
     }
 }

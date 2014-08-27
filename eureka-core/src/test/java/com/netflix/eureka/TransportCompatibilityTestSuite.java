@@ -1,10 +1,7 @@
 package com.netflix.eureka;
 
-import java.util.Arrays;
 import java.util.Iterator;
 
-import com.netflix.eureka.interests.Interest;
-import com.netflix.eureka.interests.Interests;
 import com.netflix.eureka.protocol.Heartbeat;
 import com.netflix.eureka.protocol.discovery.AddInstance;
 import com.netflix.eureka.protocol.discovery.DeleteInstance;
@@ -14,8 +11,8 @@ import com.netflix.eureka.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka.protocol.registration.Register;
 import com.netflix.eureka.protocol.registration.Unregister;
 import com.netflix.eureka.protocol.registration.Update;
-import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.registry.SampleDelta;
+import com.netflix.eureka.registry.SampleInterest;
 import com.netflix.eureka.transport.MessageBroker;
 import rx.Notification;
 import rx.Observable;
@@ -115,8 +112,7 @@ public abstract class TransportCompatibilityTestSuite {
         }
 
         private void registerInterestSetTest() {
-            Interest<InstanceInfo>[] interests = new Interest[]{Interests.forApplication("app1"), Interests.forVip("vip1")};
-            runClientToServerWithAck(new RegisterInterestSet(Arrays.asList(interests)));
+            runClientToServerWithAck(new RegisterInterestSet(SampleInterest.MultipleApps.build()));
         }
 
         private void unregisterInterestSetTest() {

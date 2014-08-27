@@ -32,4 +32,7 @@ public final class Interests {
         return FullRegistryInterest.DEFAULT_INSTANCE;
     }
 
+    public static Interest<InstanceInfo> forSome(Interest<InstanceInfo>... interests) {
+        return new MultipleInterests<InstanceInfo>(interests);
+    }
 }

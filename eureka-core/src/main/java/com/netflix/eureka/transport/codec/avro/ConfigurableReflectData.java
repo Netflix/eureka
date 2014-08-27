@@ -16,7 +16,6 @@
 
 package com.netflix.eureka.transport.codec.avro;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -41,11 +40,6 @@ public class ConfigurableReflectData extends ReflectData {
     }
 
     @Override
-    protected Schema createFieldSchema(Field field, Map<String, Schema> names) {
-        return super.createFieldSchema(field, names);
-    }
-
-    @Override
     protected Schema createSchema(Type type, Map<String, Schema> names) {
         Schema schema;
         if (type instanceof TypeVariable) {
@@ -59,8 +53,7 @@ public class ConfigurableReflectData extends ReflectData {
             } else {
                 schema = super.createSchema(type, names);
             }
-        }
-        else {
+        } else {
             List<Class<?>> derivedClasses = findHierarchy(type);
             if (derivedClasses != null) {
                 List<Schema> schemas = new ArrayList<Schema>(derivedClasses.size());
