@@ -192,7 +192,11 @@ public class DiscoveryClient implements LookupService {
     }
 
     public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config) {
-        this(myInfo, config, null, new Provider<BackupRegistry>() {
+        this(myInfo, config, null);
+    }
+
+    public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
+        this(myInfo, config, args, new Provider<BackupRegistry>() {
             @Override
             public BackupRegistry get() {
                 String backupRegistryClassName = clientConfig.getBackupRegistryImpl();
@@ -215,8 +219,8 @@ public class DiscoveryClient implements LookupService {
     }
 
     @Inject
-    public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, DiscoveryClientOptionalArgs args,
-                           Provider<BackupRegistry> backupRegistryProvider) {
+    DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, DiscoveryClientOptionalArgs args,
+                              Provider<BackupRegistry> backupRegistryProvider) {
         if (args != null) {
             healthCheckHandlerProvider = args.healthCheckHandlerProvider;
             healthCheckCallbackProvider = args.healthCheckCallbackProvider;
