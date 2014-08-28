@@ -16,7 +16,6 @@
 
 package com.netflix.eureka.client.transport.registration;
 
-import com.netflix.eureka.protocol.registration.Update;
 import com.netflix.eureka.registry.InstanceInfo;
 import rx.Observable;
 
@@ -30,7 +29,7 @@ public interface RegistrationClient {
 
     Observable<Void> register(InstanceInfo instanceInfo);
 
-    Observable<Void> update(InstanceInfo instanceInfo, Update update);
+    Observable<Void> update(InstanceInfo instanceInfo);
 
     Observable<Void> unregister(InstanceInfo instanceInfo);
 

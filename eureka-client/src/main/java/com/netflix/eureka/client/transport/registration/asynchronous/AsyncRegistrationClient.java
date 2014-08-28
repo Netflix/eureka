@@ -18,6 +18,7 @@ package com.netflix.eureka.client.transport.registration.asynchronous;
 
 import com.netflix.eureka.client.transport.registration.RegistrationClient;
 import com.netflix.eureka.protocol.Heartbeat;
+import com.netflix.eureka.protocol.registration.Register;
 import com.netflix.eureka.protocol.registration.Unregister;
 import com.netflix.eureka.protocol.registration.Update;
 import com.netflix.eureka.registry.InstanceInfo;
@@ -36,12 +37,12 @@ public class AsyncRegistrationClient implements RegistrationClient {
 
     @Override
     public Observable<Void> register(InstanceInfo instanceInfo) {
-        return messageBroker.submitWithAck(instanceInfo);
+        return messageBroker.submitWithAck(new Register(instanceInfo));
     }
 
     @Override
-    public Observable<Void> update(InstanceInfo instanceInfo, Update update) {
-        return messageBroker.submitWithAck(update);
+    public Observable<Void> update(InstanceInfo instanceInfo) {
+        return messageBroker.submitWithAck(new Update(instanceInfo));
     }
 
     @Override

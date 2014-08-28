@@ -19,14 +19,10 @@ package com.netflix.eureka.transport.base;
 import java.net.InetSocketAddress;
 
 import com.netflix.eureka.transport.MessageBroker;
-import io.netty.channel.ChannelPipeline;
-import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.logging.LogLevel;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ConnectionHandler;
 import io.reactivex.netty.channel.ObservableConnection;
-import io.reactivex.netty.pipeline.PipelineConfigurator;
 import io.reactivex.netty.server.RxServer;
 import rx.Observable;
 import rx.functions.Func1;
@@ -36,10 +32,6 @@ import rx.subjects.PublishSubject;
  * @author Tomasz Bak
  */
 public class TcpMessageBrokerBuilder extends AbstractMessageBrokerBuilder<TcpMessageBrokerBuilder> {
-    // We should set it to a reasonable level, so we rather fail
-    // than accumulate data indefinitely.
-    private static final int MAX_FRAME_LENGTH = 65536;
-
     public TcpMessageBrokerBuilder(InetSocketAddress address) {
         super(address);
     }
@@ -53,8 +45,7 @@ public class TcpMessageBrokerBuilder extends AbstractMessageBrokerBuilder<TcpMes
                 brokersSubject.onNext(broker);
                 return broker.lifecycleObservable();
             }
-        }).pipelineConfigurator(new TcpPipelineConfigurator())
-                .appendPipelineConfigurator(codecPipeline)
+        }).pipelineConfigurator(codecPipeline)
                 .enableWireLogging(LogLevel.ERROR).build();
 
         return new BaseMessageBrokerServer(server, brokersSubject);
@@ -62,8 +53,7 @@ public class TcpMessageBrokerBuilder extends AbstractMessageBrokerBuilder<TcpMes
 
     public Observable<MessageBroker> buildClient() {
         return RxNetty.newTcpClientBuilder(address.getHostName(), address.getPort())
-                .pipelineConfigurator(new TcpPipelineConfigurator())
-                .appendPipelineConfigurator(codecPipeline)
+                .pipelineConfigurator(codecPipeline)
                 .enableWireLogging(LogLevel.ERROR)
                 .build()
                 .connect()
@@ -73,13 +63,5 @@ public class TcpMessageBrokerBuilder extends AbstractMessageBrokerBuilder<TcpMes
                         return new BaseMessageBroker(observableConnection);
                     }
                 });
-    }
-
-    public static class TcpPipelineConfigurator implements PipelineConfigurator<Object, Object> {
-        @Override
-        public void configureNewPipeline(ChannelPipeline pipeline) {
-            pipeline.addLast(new LengthFieldBasedFrameDecoder(MAX_FRAME_LENGTH, 0, 4, 0, 4));
-            pipeline.addLast(new LengthFieldPrepender(4));
-        }
     }
 }

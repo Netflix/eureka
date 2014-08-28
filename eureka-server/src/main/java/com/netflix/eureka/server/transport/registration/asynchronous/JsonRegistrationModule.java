@@ -14,24 +14,27 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka.server.transport.discovery.asynchronous;
+package com.netflix.eureka.server.transport.registration.asynchronous;
 
+import com.netflix.eureka.transport.EurekaTransports;
+import com.netflix.eureka.transport.codec.json.JsonPipelineConfigurator;
 import com.netflix.karyon.transport.tcp.KaryonTcpModule;
 import io.reactivex.netty.servo.ServoEventsListenerFactory;
 
 /**
  * @author Tomasz Bak
  */
-public class AvroDiscoveryModule extends KaryonTcpModule<Object, Object> {
+public class JsonRegistrationModule extends KaryonTcpModule<Object, Object> {
 
-    public AvroDiscoveryModule() {
-        super("avroDiscoveryServer", Object.class, Object.class);
+    public JsonRegistrationModule() {
+        super("jsonRegistrationServer", Object.class, Object.class);
     }
 
     @Override
     protected void configureServer() {
-        bindConnectionHandler().to(AsyncDiscoveryHandler.class);
+        bindPipelineConfigurator().toInstance(new JsonPipelineConfigurator(EurekaTransports.REGISTRATION_MODEL));
+        bindConnectionHandler().to(AsyncRegistrationHandler.class);
         bindEventsListenerFactory().to(ServoEventsListenerFactory.class);
-        server().port(7003);
+        server().port(7002);
     }
 }

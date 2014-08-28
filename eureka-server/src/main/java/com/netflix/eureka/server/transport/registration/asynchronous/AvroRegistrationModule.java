@@ -16,37 +16,25 @@
 
 package com.netflix.eureka.server.transport.registration.asynchronous;
 
-import com.google.inject.util.Types;
 import com.netflix.eureka.transport.EurekaTransports;
-import com.netflix.eureka.transport.EurekaTransports.Codec;
-//import com.netflix.karyon.transport.MetricEventsListenerFactory;
-//import com.netflix.karyon.transport.tcp.TcpRxNettyModule;
-import io.reactivex.netty.channel.ConnectionHandler;
-import io.reactivex.netty.server.ServerBuilder;
-import io.reactivex.netty.server.ServerMetricsEvent;
-import io.reactivex.netty.server.ServerMetricsEvent.EventType;
+import com.netflix.eureka.transport.codec.avro.AvroPipelineConfigurator;
+import com.netflix.karyon.transport.tcp.KaryonTcpModule;
+import io.reactivex.netty.servo.ServoEventsListenerFactory;
 
 /**
  * @author Tomasz Bak
  */
-public class AvroRegistrationModule{}
-//public class AvroRegistrationModule extends TcpRxNettyModule<Object, Object> {
-//    public AvroRegistrationModule() {
-//        super(Object.class, Object.class, Types.newParameterizedType(AsyncRegistrationHandler.class));
-//    }
-//
-//    @Override
-//    public int serverPort() {
-//        return 8850;
-//    }
-//
-//    @Override
-//    protected ServerBuilder<Object, Object> newServerBuilder(int port, ConnectionHandler<Object, Object> connectionHandler) {
-//        return EurekaTransports.tcpRegistrationServerBuilder(port, Codec.Avro, connectionHandler);
-//    }
-//
-//    @Override
-//    public MetricEventsListenerFactory<Object, Object, ServerMetricsEvent<EventType>> metricsEventsListenerFactory() {
-//        return new MetricEventsListenerFactory.TcpMetricEventsListenerFactory<Object, Object>();
-//    }
-//}
+public class AvroRegistrationModule extends KaryonTcpModule<Object, Object> {
+
+    public AvroRegistrationModule() {
+        super("avroRegistrationServer", Object.class, Object.class);
+    }
+
+    @Override
+    protected void configureServer() {
+        bindPipelineConfigurator().toInstance(new AvroPipelineConfigurator(EurekaTransports.REGISTRATION_MODEL));
+        bindConnectionHandler().to(AsyncRegistrationHandler.class);
+        bindEventsListenerFactory().to(ServoEventsListenerFactory.class);
+        server().port(7002);
+    }
+}

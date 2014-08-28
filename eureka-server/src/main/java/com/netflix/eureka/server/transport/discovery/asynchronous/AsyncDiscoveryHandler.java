@@ -29,7 +29,7 @@ import com.netflix.eureka.protocol.discovery.UnregisterInterestSet;
 import com.netflix.eureka.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka.registry.Delta;
 import com.netflix.eureka.registry.InstanceInfo;
-import com.netflix.eureka.service.EurekaService;
+import com.netflix.eureka.server.service.EurekaServerService;
 import com.netflix.eureka.service.InterestChannel;
 import com.netflix.eureka.transport.MessageBroker;
 import com.netflix.eureka.transport.base.BaseMessageBroker;
@@ -47,10 +47,10 @@ import rx.subscriptions.Subscriptions;
  */
 public class AsyncDiscoveryHandler implements ConnectionHandler<Object, Object> {
 
-    private final EurekaService eurekaService;
+    private final EurekaServerService eurekaService;
 
     @Inject
-    public AsyncDiscoveryHandler(EurekaService eurekaService) {
+    public AsyncDiscoveryHandler(EurekaServerService eurekaService) {
         this.eurekaService = eurekaService;
     }
 
