@@ -17,6 +17,7 @@
 dependencies {
     compile project(':eureka-core')
     compile project(':eureka-server')
+    compile "jline:jline:${jline_version}"
     testCompile "junit:junit:${junit_version}"
 }
 
@@ -27,4 +28,22 @@ jar {
         instruction 'Bundle-DocURL', 'https://github.com/Netflix/eureka'
         instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
     }
+}
+
+// Why not gradle task? Because of issue https://issues.gradle.org/browse/GRADLE-1147
+build << {
+    buildDir.mkdirs()
+    File script = new File(buildDir, 'cli.sh')
+
+    script.withPrintWriter {
+        it.println '#!/bin/sh'
+        it.println "java -cp ${getRuntimeClasspath()} com.netflix.eureka.cmd.EurekaCLI \"\$@\""
+    }
+
+    // make it executable
+    ant.chmod(file: script.absolutePath, perm: 'u+x')
+}
+
+String getRuntimeClasspath() {
+    sourceSets.main.runtimeClasspath.collect { it.absolutePath }.join(':')
 }

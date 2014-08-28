@@ -5,7 +5,6 @@ import java.util.Iterator;
 
 import com.netflix.eureka.client.transport.registration.RegistrationClient;
 import com.netflix.eureka.client.transport.registration.RegistrationClientProvider;
-import com.netflix.eureka.protocol.registration.Update;
 import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.registry.InstanceInfo.Builder;
 import com.netflix.eureka.rx.MockHttpRxServer;
@@ -18,9 +17,9 @@ import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
 
-import static com.netflix.eureka.registry.SampleInstanceInfo.DiscoveryServer;
 import static com.netflix.eureka.client.bootstrap.StaticBootstrapResolver.*;
 import static com.netflix.eureka.client.transport.registration.RegistrationClientProvider.*;
+import static com.netflix.eureka.registry.SampleInstanceInfo.*;
 import static org.junit.Assert.*;
 
 /**
@@ -69,10 +68,7 @@ public class HttpRegistrationClientTest {
     public void testUpdate() throws Exception {
         Builder instanceInfoBuilder = DiscoveryServer.builder();
         InstanceInfo beforeUpdate = instanceInfoBuilder.build();
-        Observable<Void> reply = client.update(
-                beforeUpdate,
-                new Update(instanceInfoBuilder.withHostname("myNewHostName").build())
-        );
+        Observable<Void> reply = client.update(instanceInfoBuilder.withHostname("myNewHostName").build());
         Iterator<Void> responseIterator = reply.toBlocking().getIterator();
 
         RequestContext<String, String> pendingRequest = requestContextIterator.next();

@@ -17,7 +17,7 @@
 dependencies {
     compile project(':eureka-client')
     compile "com.netflix.karyon:karyon-governator:${karyon_version}"
-//    compile "com.netflix.karyon:karyon-archaius:${karyon_version}"
+    compile "com.netflix.karyon:karyon-archaius:${karyon_version}"
 
     // Karyon admin and its dependencies
     compile "com.netflix.karyon:karyon-admin-web:${karyon_version}"
@@ -33,4 +33,15 @@ jar {
         instruction 'Bundle-DocURL', 'https://github.com/Netflix/eureka'
         instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
     }
+}
+
+task runWriteServer (dependsOn: [classes], type: JavaExec) {
+    group = "Run tasks"
+    description = "Run Eureka 2.0 write server"
+
+    main = "com.netflix.eureka.server.EurekaWriteServer"
+    classpath = sourceSets.main.runtimeClasspath
+
+    systemProperty 'java.awt.headless', 'true'
+    systemProperty 'archaius.deployment.environment', 'dev'
 }

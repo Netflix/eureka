@@ -25,7 +25,7 @@ import com.netflix.eureka.protocol.registration.Register;
 import com.netflix.eureka.protocol.registration.Unregister;
 import com.netflix.eureka.protocol.registration.Update;
 import com.netflix.eureka.registry.InstanceInfo;
-import com.netflix.eureka.service.EurekaService;
+import com.netflix.eureka.server.service.EurekaServerService;
 import com.netflix.eureka.service.RegistrationChannel;
 import com.netflix.eureka.transport.MessageBroker;
 import com.netflix.eureka.transport.base.BaseMessageBroker;
@@ -43,10 +43,10 @@ import rx.subscriptions.Subscriptions;
  */
 public class AsyncRegistrationHandler implements ConnectionHandler<Object, Object> {
 
-    private final EurekaService eurekaService;
+    private final EurekaServerService eurekaService;
 
     @Inject
-    public AsyncRegistrationHandler(EurekaService eurekaService) {
+    public AsyncRegistrationHandler(EurekaServerService eurekaService) {
         this.eurekaService = eurekaService;
     }
 

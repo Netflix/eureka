@@ -40,17 +40,11 @@ import com.netflix.eureka.protocol.registration.Update;
 import com.netflix.eureka.registry.Delta;
 import com.netflix.eureka.registry.InstanceInfoTypes;
 import com.netflix.eureka.transport.base.TcpMessageBrokerBuilder;
-import com.netflix.eureka.transport.base.TcpMessageBrokerBuilder.TcpPipelineConfigurator;
 import com.netflix.eureka.transport.codec.avro.AvroPipelineConfigurator;
 import com.netflix.eureka.transport.codec.json.JsonPipelineConfigurator;
 import com.netflix.eureka.transport.utils.TransportModel;
 import com.netflix.eureka.transport.utils.TransportModel.TransportModelBuilder;
-import io.netty.handler.logging.LogLevel;
-import io.reactivex.netty.RxNetty;
-import io.reactivex.netty.channel.ConnectionHandler;
-import io.reactivex.netty.client.ClientBuilder;
 import io.reactivex.netty.pipeline.PipelineConfigurator;
-import io.reactivex.netty.server.ServerBuilder;
 import rx.Observable;
 
 /**
@@ -76,9 +70,9 @@ public final class EurekaTransports {
             AddInstance.class, DeleteInstance.class, UpdateInstanceInfo.class
     };
 
-    static final TransportModel REGISTRATION_MODEL = new TransportModelBuilder(REGISTRATION_PROTOCOL_MODEL).build();
+    public static final TransportModel REGISTRATION_MODEL = new TransportModelBuilder(REGISTRATION_PROTOCOL_MODEL).build();
 
-    static final TransportModel DISCOVERY_MODEL;
+    public static final TransportModel DISCOVERY_MODEL;
 
     static {
         TransportModelBuilder builder = new TransportModelBuilder(DISCOVERY_PROTOCOL_MODEL);
@@ -97,19 +91,6 @@ public final class EurekaTransports {
                 .buildClient();
     }
 
-    public static ClientBuilder<Object, Object> tcpRegistrationClientBuilder(String host, int port, Codec codec) {
-        return RxNetty.newTcpClientBuilder(host, port)
-                .pipelineConfigurator(new TcpPipelineConfigurator())
-                .appendPipelineConfigurator(piplineFor(codec, REGISTRATION_MODEL))
-                .enableWireLogging(LogLevel.ERROR);
-    }
-
-    public static ServerBuilder<Object, Object> tcpRegistrationServerBuilder(int port, Codec codec, ConnectionHandler<Object, Object> connectionHandler) {
-        return RxNetty.newTcpServerBuilder(port, connectionHandler).pipelineConfigurator(new TcpPipelineConfigurator())
-                .appendPipelineConfigurator(piplineFor(codec, REGISTRATION_MODEL))
-                .enableWireLogging(LogLevel.ERROR);
-    }
-
     public static MessageBrokerServer tcpRegistrationServer(int port, Codec codec) {
         return new TcpMessageBrokerBuilder(new InetSocketAddress(port))
                 .withCodecPiepline(piplineFor(codec, REGISTRATION_MODEL))
@@ -126,22 +107,6 @@ public final class EurekaTransports {
         return new TcpMessageBrokerBuilder(new InetSocketAddress(port))
                 .withCodecPiepline(piplineFor(codec, DISCOVERY_MODEL))
                 .buildServer();
-    }
-
-    public static Observable<MessageBroker> tcpRegistrationClient(String host, int port) {
-        return tcpRegistrationClient(host, port, Codec.Avro);
-    }
-
-    public static MessageBrokerServer tcpRegistrationServer(int port) {
-        return tcpRegistrationServer(port, Codec.Avro);
-    }
-
-    public static Observable<MessageBroker> tcpDiscoveryClient(String host, int port) {
-        return tcpDiscoveryClient(host, port, Codec.Avro);
-    }
-
-    public static MessageBrokerServer tcpDiscoveryServer(int port) {
-        return tcpDiscoveryServer(port, Codec.Avro);
     }
 
     static PipelineConfigurator<Object, Object> piplineFor(Codec codec, TransportModel model) {

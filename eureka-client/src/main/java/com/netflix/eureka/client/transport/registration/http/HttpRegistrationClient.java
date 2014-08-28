@@ -18,7 +18,6 @@ package com.netflix.eureka.client.transport.registration.http;
 
 import com.netflix.eureka.client.transport.common.http.HttpErrorHandler;
 import com.netflix.eureka.client.transport.registration.RegistrationClient;
-import com.netflix.eureka.protocol.registration.Update;
 import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.utils.Json;
 import io.netty.buffer.ByteBuf;
@@ -56,9 +55,9 @@ public class HttpRegistrationClient implements RegistrationClient {
     }
 
     @Override
-    public Observable<Void> update(InstanceInfo instanceInfo, Update update) {
+    public Observable<Void> update(InstanceInfo instanceInfo) {
         return httpClient.submit(HttpClientRequest.createPut(baseURI + "/apps/" + instanceInfo.getId())
-                .withContent(Json.toByteBufJson(update))
+                .withContent(Json.toByteBufJson(instanceInfo))
                 .withHeader("ContentType", "application/json"))
                 .lift(errorHandler)
                 .ignoreElements().cast(Void.class);

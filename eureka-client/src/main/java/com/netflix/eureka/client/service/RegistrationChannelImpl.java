@@ -1,7 +1,6 @@
 package com.netflix.eureka.client.service;
 
 import com.netflix.eureka.client.transport.registration.RegistrationClient;
-import com.netflix.eureka.protocol.registration.Update;
 import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.service.RegistrationChannel;
 import rx.Observable;
@@ -35,7 +34,7 @@ public class RegistrationChannelImpl extends AbstractChannel implements Registra
 
     @Override
     public Observable<Void> update(final InstanceInfo newInfo) {
-        return registrationClient.update(newInfo, new Update(newInfo))
+        return registrationClient.update(newInfo)
                 .doOnCompleted(new Action0() {
                     @Override
                     public void call() {
