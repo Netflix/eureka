@@ -272,7 +272,7 @@ public class InstanceInfo implements Item {
      * @param another the "newer" instanceInfo
      * @return the set of deltas, or null if the diff is invalid (InstanceInfos are null or id mismatch)
      */
-    public Set<Delta<?>> diffNewer(InstanceInfo another) throws Exception {
+    public Set<Delta<?>> diffNewer(InstanceInfo another) {
         return diff(this, another);
     }
 
@@ -284,11 +284,11 @@ public class InstanceInfo implements Item {
      * @param another the "older" instanceInfo
      * @return the set of deltas, or null if the diff is invalid (InstanceInfos are null or id mismatch)
      */
-    public Set<Delta<?>> diffOlder(InstanceInfo another) throws Exception {
+    public Set<Delta<?>> diffOlder(InstanceInfo another) {
         return diff(another, this);
     }
 
-    private static Set<Delta<?>> diff(InstanceInfo oldInstanceInfo, InstanceInfo newInstanceInfo) throws Exception {
+    private static Set<Delta<?>> diff(InstanceInfo oldInstanceInfo, InstanceInfo newInstanceInfo) {
         if (oldInstanceInfo == null || newInstanceInfo == null) {
             return null;
         }
@@ -301,16 +301,20 @@ public class InstanceInfo implements Item {
 
         Long newVersion = newInstanceInfo.getVersion();
         for (InstanceInfoField field : InstanceInfoField.FIELD_MAP.values()) {
-            Object oldValue = field.getValue(oldInstanceInfo);
-            Object newValue = field.getValue(newInstanceInfo);
+            try {
+                Object oldValue = field.getValue(oldInstanceInfo);
+                Object newValue = field.getValue(newInstanceInfo);
 
-            if (oldValue == null || !oldValue.equals(newValue)) {  // there is a difference
-                Delta<?> delta = new Delta.Builder()
-                        .withId(newInstanceInfo.getId())
-                        .withVersion(newVersion)
-                        .withDelta(field, newValue)
-                        .build();
-                deltas.add(delta);
+                if (oldValue == null || !oldValue.equals(newValue)) {  // there is a difference
+                    Delta<?> delta = new Delta.Builder()
+                            .withId(newInstanceInfo.getId())
+                            .withVersion(newVersion)
+                            .withDelta(field, newValue)
+                            .build();
+                    deltas.add(delta);
+                }
+            } catch (Exception e) {
+                // TODO: handle
             }
         }
 

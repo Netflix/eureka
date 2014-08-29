@@ -19,6 +19,7 @@ package com.netflix.eureka.server.transport.discovery.asynchronous;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.inject.Inject;
+import com.netflix.eureka.datastore.Item;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.ModifyNotification;
 import com.netflix.eureka.protocol.EurekaProtocolError;
@@ -117,21 +118,16 @@ public class AsyncDiscoveryHandler implements ConnectionHandler<Object, Object> 
             final InterestChannel interestChannel = eurekaService.forInterest(message.toComposite());
             interestChannelRef.set(interestChannel);
 
-            return interestChannel.asObservable().flatMap(new Func1<ChangeNotification<InstanceInfo>, Observable<Void>>() {
+            return interestChannel.asObservable().map(new Func1<ChangeNotification<? extends Item>, Void>() {
                 @Override
-                public Observable<Void> call(ChangeNotification<InstanceInfo> notification) {
+                public Void call(ChangeNotification<? extends Item> notification) {
                     switch (notification.getKind()) {
                         case Add:
-                            return broker.submit(new AddInstance(notification.getData()));
+                            broker.submit(new AddInstance((InstanceInfo)notification.getData()));
                         case Delete:
-                            return broker.submit(new DeleteInstance(notification.getData().getId()));
+                            broker.submit(new DeleteInstance(notification.getData().getId()));
                         case Modify:
-                            Observable<Void> last = null;
-                            ModifyNotification<InstanceInfo> modifyNotification = (ModifyNotification<InstanceInfo>) notification;
-                            for (Delta<?> delta : modifyNotification.getDelta()) {
-                                last = broker.submit(new UpdateInstanceInfo(delta));
-                            }
-                            return last;
+                            broker.submit(new UpdateInstanceInfo((Delta<?>)notification.getData()));
                     }
                     return null;
                 }

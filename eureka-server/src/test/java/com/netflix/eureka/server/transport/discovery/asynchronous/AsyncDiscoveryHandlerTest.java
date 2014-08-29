@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import com.netflix.eureka.datastore.Item;
 import com.netflix.eureka.registry.SampleInstanceInfo;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.ChangeNotification.Kind;
@@ -103,10 +104,10 @@ public class AsyncDiscoveryHandlerTest {
         List<Delta> deltas = new ArrayList<Delta>(1);
         deltas.add(SampleDelta.StatusUp.build());
 
-        sendInterestUpdate(interestChannel, new ModifyNotification<InstanceInfo>(SampleInstanceInfo.DiscoveryServer.build(), deltas));
+        sendInterestUpdate(interestChannel, new ChangeNotification<Delta<?>>(Kind.Modify, deltas.get(0)));
     }
 
-    private void sendInterestUpdate(TestableInterestChannel interestChannel, ChangeNotification<InstanceInfo> notification) {
+    private void sendInterestUpdate(TestableInterestChannel interestChannel, ChangeNotification<? extends Item> notification) {
         Iterator updatesIterator = RxBlocking.iteratorFrom(1, TimeUnit.SECONDS, observableConnection.testableChannelWrite());
         interestChannel.submitNotification(notification);
 
@@ -114,14 +115,14 @@ public class AsyncDiscoveryHandlerTest {
         assertEquals("Unexpected or missing protocol message", expectedMessage, updatesIterator.next());
     }
 
-    private InterestSetNotification protocolMessageFrom(ChangeNotification<InstanceInfo> notification) {
+    private InterestSetNotification protocolMessageFrom(ChangeNotification<? extends Item> notification) {
         switch (notification.getKind()) {
             case Add:
-                return new AddInstance(notification.getData());
+                return new AddInstance((InstanceInfo) notification.getData());
             case Delete:
                 return new DeleteInstance(notification.getData().getId());
             case Modify:
-                return new UpdateInstanceInfo(((ModifyNotification<InstanceInfo>) notification).getDelta().iterator().next());
+                return new UpdateInstanceInfo((Delta<?>) notification.getData());
         }
         return null;
     }

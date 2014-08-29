@@ -1,5 +1,6 @@
 package com.netflix.eureka.server.service;
 
+import com.netflix.eureka.datastore.Item;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.registry.InstanceInfo;
@@ -16,15 +17,15 @@ import rx.subscriptions.CompositeSubscription;
 public class InterestChannelImpl extends AbstractChannel implements InterestChannel {
 
     private final CompositeSubscription allSubscriptions;
-    private final Observable<ChangeNotification<InstanceInfo>> sourceStream;
+    private final Observable<ChangeNotification<? extends Item>> sourceStream;
 
-    public InterestChannelImpl(Observable<ChangeNotification<InstanceInfo>> interestStream) {
+    public InterestChannelImpl(Observable<ChangeNotification<? extends Item>> interestStream) {
         super(3, 30000);
         sourceStream = interestStream.lift(
-                new Observable.Operator<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
+                new Observable.Operator<ChangeNotification<? extends Item>, ChangeNotification<? extends Item>>() {
                     @Override
-                    public Subscriber<? super ChangeNotification<InstanceInfo>> call(
-                            Subscriber<? super ChangeNotification<InstanceInfo>> child) {
+                    public Subscriber<? super ChangeNotification<? extends Item>> call(
+                            Subscriber<? super ChangeNotification<? extends Item>> child) {
                         allSubscriptions.add(child); // Adds all subscriptions so they can be unsubscribed on close()
                         return child;
                     }
@@ -38,7 +39,7 @@ public class InterestChannelImpl extends AbstractChannel implements InterestChan
     }
 
     @Override
-    public Observable<ChangeNotification<InstanceInfo>> asObservable() {
+    public Observable<ChangeNotification<? extends Item>> asObservable() {
         return sourceStream;
     }
 

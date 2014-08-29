@@ -16,15 +16,11 @@
 
 package com.netflix.eureka.client.transport.discovery.asynchronous;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import com.netflix.eureka.client.transport.discovery.DiscoveryClient;
+import com.netflix.eureka.datastore.Item;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.ChangeNotification.Kind;
 import com.netflix.eureka.interests.Interest;
-import com.netflix.eureka.interests.ModifyNotification;
 import com.netflix.eureka.protocol.Heartbeat;
 import com.netflix.eureka.protocol.discovery.AddInstance;
 import com.netflix.eureka.protocol.discovery.DeleteInstance;
@@ -33,6 +29,7 @@ import com.netflix.eureka.protocol.discovery.RegisterInterestSet;
 import com.netflix.eureka.protocol.discovery.UnregisterInterestSet;
 import com.netflix.eureka.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka.registry.Delta;
+import com.netflix.eureka.registry.InstanceIdentifier;
 import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.transport.MessageBroker;
 import org.slf4j.Logger;
@@ -49,9 +46,6 @@ public class AsyncDiscoveryClient implements DiscoveryClient {
 
     private static Logger logger = LoggerFactory.getLogger(AsyncDiscoveryClient.class);
 
-    // TODO: we need to cache all instances so we can produce ModifyNotification objects from field-level updates.
-    // Can we move it somewhere else? If not we need to maintain this cache properly.
-    private Map<String, InstanceInfo> cachedInstances = new ConcurrentHashMap<String, InstanceInfo>();
     private final MessageBroker messageBroker;
 
     public AsyncDiscoveryClient(MessageBroker messageBroker) {
@@ -79,7 +73,7 @@ public class AsyncDiscoveryClient implements DiscoveryClient {
     }
 
     @Override
-    public Observable<ChangeNotification<InstanceInfo>> updates() {
+    public Observable<ChangeNotification<? extends Item>> updates() {
         return messageBroker.incoming().filter(new Func1<Object, Boolean>() {
             @Override
             public Boolean call(Object message) {
@@ -89,9 +83,9 @@ public class AsyncDiscoveryClient implements DiscoveryClient {
                 }
                 return isKnown;
             }
-        }).map(new Func1<Object, ChangeNotification<InstanceInfo>>() {
+        }).map(new Func1<Object, ChangeNotification<? extends Item>>() {
             @Override
-            public ChangeNotification<InstanceInfo> call(Object message) {
+            public ChangeNotification<? extends Item> call(Object message) {
                 InterestSetNotification notification = (InterestSetNotification) message;
                 if (notification instanceof AddInstance) {
                     return handleAddInstance((AddInstance) notification);
@@ -103,9 +97,9 @@ public class AsyncDiscoveryClient implements DiscoveryClient {
                 }
                 return null;
             }
-        }).filter(new Func1<ChangeNotification<InstanceInfo>, Boolean>() {
+        }).filter(new Func1<ChangeNotification<? extends Item>, Boolean>() {
             @Override
-            public Boolean call(ChangeNotification<InstanceInfo> notification) {
+            public Boolean call(ChangeNotification<? extends Item> notification) {
                 return notification != null;
             }
         });
@@ -113,25 +107,15 @@ public class AsyncDiscoveryClient implements DiscoveryClient {
 
     private ChangeNotification<InstanceInfo> handleAddInstance(AddInstance notification) {
         InstanceInfo instanceInfo = notification.getInstanceInfo();
-        cachedInstances.put(instanceInfo.getId(), instanceInfo);
         return new ChangeNotification<InstanceInfo>(Kind.Add, instanceInfo);
     }
 
-    private ModifyNotification<InstanceInfo> handleUpdateInstanceInfo(UpdateInstanceInfo update) {
+    private ChangeNotification<Delta<?>> handleUpdateInstanceInfo(UpdateInstanceInfo update) {
         Delta delta = update.getDelta();
-        InstanceInfo instanceInfo = cachedInstances.get(delta.getId());
-        if (instanceInfo != null) {
-            return new ModifyNotification<InstanceInfo>(instanceInfo, Collections.singleton(delta));
-        }
-        logger.warn("Received update notification for unknown server instance " + delta.getId());
-        return null;
+        return new ChangeNotification<Delta<?>>(Kind.Modify, delta);
     }
 
-    private ChangeNotification<InstanceInfo> handleDeleteInstance(DeleteInstance delete) {
-        InstanceInfo instanceInfo = cachedInstances.remove(delete.getInstanceId());
-        if (instanceInfo != null) {
-            return new ChangeNotification<InstanceInfo>(Kind.Delete, instanceInfo);
-        }
-        return null;
+    private ChangeNotification<InstanceIdentifier> handleDeleteInstance(DeleteInstance delete) {
+        return new ChangeNotification<InstanceIdentifier>(Kind.Delete, new InstanceIdentifier(delete.getInstanceId()));
     }
 }

@@ -16,6 +16,7 @@
 
 package com.netflix.eureka;
 
+import com.netflix.eureka.datastore.Item;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
 import rx.Observable;
@@ -31,9 +32,9 @@ public abstract class EurekaClient {
 
     public abstract Observable<Void> update(InstanceInfo instanceInfo);
 
-    public abstract Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest);
+    public abstract Observable<ChangeNotification<? extends Item>> forInterest(Interest<InstanceInfo> interest);
 
-    public abstract Observable<ChangeNotification<InstanceInfo>> forVips(String... vips);
+    public abstract Observable<ChangeNotification<? extends Item>> forVips(String... vips);
 
     public abstract Observable<Void> close();
 }

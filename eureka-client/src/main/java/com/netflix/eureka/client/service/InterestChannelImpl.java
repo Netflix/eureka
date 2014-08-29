@@ -1,6 +1,7 @@
 package com.netflix.eureka.client.service;
 
 import com.netflix.eureka.client.transport.discovery.DiscoveryClient;
+import com.netflix.eureka.datastore.Item;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.registry.InstanceInfo;
@@ -16,7 +17,7 @@ import rx.functions.Action1;
 public class InterestChannelImpl extends AbstractChannel implements InterestChannel {
 
     private final DiscoveryClient discoveryClient;
-    private final Observable<ChangeNotification<InstanceInfo>> interestStream;
+    private final Observable<ChangeNotification<? extends Item>> interestStream;
 
     public InterestChannelImpl(DiscoveryClient discoveryClient) {
         super(30000);
@@ -36,7 +37,7 @@ public class InterestChannelImpl extends AbstractChannel implements InterestChan
     }
 
     @Override
-    public Observable<ChangeNotification<InstanceInfo>> asObservable() {
+    public Observable<ChangeNotification<? extends Item>> asObservable() {
         return interestStream;
     }
 
