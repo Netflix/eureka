@@ -16,6 +16,7 @@
 
 package com.netflix.eureka.registry;
 
+import com.netflix.eureka.datastore.Item;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +28,7 @@ import java.util.Set;
  * JavaBean for InstanceInfo.
  * @author David Liu
  */
-public class InstanceInfo {
+public class InstanceInfo implements Item {
 
     protected String id;
     protected String appGroup;
@@ -52,8 +53,20 @@ public class InstanceInfo {
     /**
      * @return unique identifier of this instance
      */
+    @Override
     public String getId() {
         return id;
+    }
+
+    /**
+     * All InstanceInfo instances contain a version string that can be used to determine timeline ordering
+     * for InstanceInfo records with the same id.
+     *
+     * @return the version string for this InstanceInfo
+     */
+    @Override
+    public Long getVersion() {
+        return version;
     }
 
     /**
@@ -150,16 +163,6 @@ public class InstanceInfo {
      */
     public HashSet<String> getHealthCheckUrls() {
         return healthCheckUrls;
-    }
-
-    /**
-     * All InstanceInfo instances contain a version string that can be used to determine timeline ordering
-     * for InstanceInfo records with the same id.
-     *
-     * @return the version string for this InstanceInfo
-     */
-    public Long getVersion() {
-        return version;
     }
 
     public InstanceLocation getInstanceLocation() {
