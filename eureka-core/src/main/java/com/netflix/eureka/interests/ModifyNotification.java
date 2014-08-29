@@ -1,9 +1,5 @@
 package com.netflix.eureka.interests;
 
-import com.netflix.eureka.registry.Delta;
-
-import java.util.Collection;
-
 /**
  * A specific {@link ChangeNotification} class for modifications. This adds a metadata about the change that was applied
  * to the existing value which returned in the value associated with the notification.
@@ -15,20 +11,20 @@ import java.util.Collection;
  */
 public class ModifyNotification<T> extends ChangeNotification<T> {
 
-    private final Collection<Delta> delta;
+    private final T prev;
 
     /**
      * Creates a new notification.
      *
-     * @param data Data which resulted after applying the passed delta to the existing data.
-     * @param delta Delta which resulted in the passed {@code data}. The collection should typically be immutable.
+     * @param data the latest version of the data
+     * @param prev the prev version of the data
      */
-    public ModifyNotification(T data, Collection<Delta> delta) {
+    public ModifyNotification(T data, T prev) {
         super(Kind.Modify, data);
-        this.delta = delta;
+        this.prev = prev;
     }
 
-    public Collection<Delta> getDelta() {
-        return delta;
+    public T getPrev() {
+        return prev;
     }
 }

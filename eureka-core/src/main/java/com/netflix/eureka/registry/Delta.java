@@ -16,6 +16,8 @@
 
 package com.netflix.eureka.registry;
 
+import com.netflix.eureka.datastore.Item;
+
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.HashSet;
@@ -27,7 +29,7 @@ import java.util.HashSet;
  *
  * @author David Liu
  */
-public class Delta<ValueType> {
+public class Delta<ValueType> implements Item {
 
     private String id;
     private Long version;
@@ -45,10 +47,12 @@ public class Delta<ValueType> {
         }
     }
 
+    @Override
     public String getId() {
         return id;
     }
 
+    @Override
     public Long getVersion() {
         return version;
     }

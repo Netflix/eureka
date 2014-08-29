@@ -18,6 +18,7 @@ package com.netflix.eureka.client.service;
 
 import com.netflix.eureka.client.transport.CommunicationFailure;
 import com.netflix.eureka.client.transport.CommunicationFailure.Reason;
+import com.netflix.eureka.datastore.Item;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.registry.InstanceInfo;
@@ -40,7 +41,7 @@ public class UnavailableInterestChannel implements InterestChannel {
     }
 
     @Override
-    public Observable<ChangeNotification<InstanceInfo>> asObservable() {
+    public Observable<ChangeNotification<? extends Item>> asObservable() {
         return Observable.error(new CommunicationFailure("Communication with Eureka server not established", Reason.Temporary));
     }
 

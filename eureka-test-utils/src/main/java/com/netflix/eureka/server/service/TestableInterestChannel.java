@@ -19,6 +19,7 @@ package com.netflix.eureka.server.service;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import com.netflix.eureka.datastore.Item;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.registry.InstanceInfo;
@@ -37,7 +38,7 @@ public class TestableInterestChannel implements InterestChannel {
 
     private final BlockingQueue<Long> heartbeatsQueue = new LinkedBlockingQueue<Long>();
 
-    private PublishSubject<ChangeNotification<InstanceInfo>> notificationsObservable = PublishSubject.create();
+    private PublishSubject<ChangeNotification<? extends Item>> notificationsObservable = PublishSubject.create();
 
     private PublishSubject<Void> closeObservable = PublishSubject.create();
 
@@ -48,7 +49,7 @@ public class TestableInterestChannel implements InterestChannel {
     }
 
     @Override
-    public Observable<ChangeNotification<InstanceInfo>> asObservable() {
+    public Observable<ChangeNotification<? extends Item>> asObservable() {
         return notificationsObservable;
     }
 
@@ -71,7 +72,7 @@ public class TestableInterestChannel implements InterestChannel {
      * Test methods.
      */
 
-    public void submitNotification(ChangeNotification<InstanceInfo> notification) {
+    public void submitNotification(ChangeNotification<? extends Item> notification) {
         notificationsObservable.onNext(notification);
     }
 

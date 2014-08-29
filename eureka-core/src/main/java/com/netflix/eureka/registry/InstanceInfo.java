@@ -16,6 +16,7 @@
 
 package com.netflix.eureka.registry;
 
+import com.netflix.eureka.datastore.Item;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +28,7 @@ import java.util.Set;
  * JavaBean for InstanceInfo.
  * @author David Liu
  */
-public class InstanceInfo {
+public class InstanceInfo implements Item {
 
     protected String id;
     protected String appGroup;
@@ -52,8 +53,20 @@ public class InstanceInfo {
     /**
      * @return unique identifier of this instance
      */
+    @Override
     public String getId() {
         return id;
+    }
+
+    /**
+     * All InstanceInfo instances contain a version string that can be used to determine timeline ordering
+     * for InstanceInfo records with the same id.
+     *
+     * @return the version string for this InstanceInfo
+     */
+    @Override
+    public Long getVersion() {
+        return version;
     }
 
     /**
@@ -150,16 +163,6 @@ public class InstanceInfo {
      */
     public HashSet<String> getHealthCheckUrls() {
         return healthCheckUrls;
-    }
-
-    /**
-     * All InstanceInfo instances contain a version string that can be used to determine timeline ordering
-     * for InstanceInfo records with the same id.
-     *
-     * @return the version string for this InstanceInfo
-     */
-    public Long getVersion() {
-        return version;
     }
 
     public InstanceLocation getInstanceLocation() {
@@ -269,7 +272,7 @@ public class InstanceInfo {
      * @param another the "newer" instanceInfo
      * @return the set of deltas, or null if the diff is invalid (InstanceInfos are null or id mismatch)
      */
-    public Set<Delta<?>> diffNewer(InstanceInfo another) throws Exception {
+    public Set<Delta<?>> diffNewer(InstanceInfo another) {
         return diff(this, another);
     }
 
@@ -281,11 +284,11 @@ public class InstanceInfo {
      * @param another the "older" instanceInfo
      * @return the set of deltas, or null if the diff is invalid (InstanceInfos are null or id mismatch)
      */
-    public Set<Delta<?>> diffOlder(InstanceInfo another) throws Exception {
+    public Set<Delta<?>> diffOlder(InstanceInfo another) {
         return diff(another, this);
     }
 
-    private static Set<Delta<?>> diff(InstanceInfo oldInstanceInfo, InstanceInfo newInstanceInfo) throws Exception {
+    private static Set<Delta<?>> diff(InstanceInfo oldInstanceInfo, InstanceInfo newInstanceInfo) {
         if (oldInstanceInfo == null || newInstanceInfo == null) {
             return null;
         }
@@ -298,16 +301,20 @@ public class InstanceInfo {
 
         Long newVersion = newInstanceInfo.getVersion();
         for (InstanceInfoField field : InstanceInfoField.FIELD_MAP.values()) {
-            Object oldValue = field.getValue(oldInstanceInfo);
-            Object newValue = field.getValue(newInstanceInfo);
+            try {
+                Object oldValue = field.getValue(oldInstanceInfo);
+                Object newValue = field.getValue(newInstanceInfo);
 
-            if (oldValue == null || !oldValue.equals(newValue)) {  // there is a difference
-                Delta<?> delta = new Delta.Builder()
-                        .withId(newInstanceInfo.getId())
-                        .withVersion(newVersion)
-                        .withDelta(field, newValue)
-                        .build();
-                deltas.add(delta);
+                if (oldValue == null || !oldValue.equals(newValue)) {  // there is a difference
+                    Delta<?> delta = new Delta.Builder()
+                            .withId(newInstanceInfo.getId())
+                            .withVersion(newVersion)
+                            .withDelta(field, newValue)
+                            .build();
+                    deltas.add(delta);
+                }
+            } catch (Exception e) {
+                // TODO: handle
             }
         }
 

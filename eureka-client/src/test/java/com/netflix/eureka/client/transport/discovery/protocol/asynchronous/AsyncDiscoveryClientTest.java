@@ -3,6 +3,7 @@ package com.netflix.eureka.client.transport.discovery.protocol.asynchronous;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
+import com.netflix.eureka.datastore.Item;
 import com.netflix.eureka.registry.SampleInstanceInfo;
 import com.netflix.eureka.client.transport.discovery.DiscoveryClient;
 import com.netflix.eureka.client.transport.discovery.DiscoveryClientProvider;
@@ -104,18 +105,18 @@ public class AsyncDiscoveryClientTest {
 
     @Test
     public void testUpdateForAdd() throws Exception {
-        Iterator<ChangeNotification<InstanceInfo>> notificationIterator = RxBlocking.iteratorFrom(1, TimeUnit.SECONDS, discoveryClient.updates());
+        Iterator<ChangeNotification<? extends Item>> notificationIterator = RxBlocking.iteratorFrom(1, TimeUnit.SECONDS, discoveryClient.updates());
 
         InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();
         serverBroker.submit(new AddInstance(instanceInfo));
 
-        ChangeNotification<InstanceInfo> notification = notificationIterator.next();
+        ChangeNotification<? extends Item> notification = notificationIterator.next();
         assertEquals("Identical instanceinfo expected", instanceInfo, notification.getData());
     }
 
     @Test
     public void testUpdateForModify() throws Exception {
-        Iterator<ChangeNotification<InstanceInfo>> notificationIterator = RxBlocking.iteratorFrom(1, TimeUnit.SECONDS, discoveryClient.updates());
+        Iterator<ChangeNotification<? extends Item>> notificationIterator = RxBlocking.iteratorFrom(1, TimeUnit.SECONDS, discoveryClient.updates());
 
         InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();
         Delta<?> delta = SampleDelta.StatusUp.builder().withId(instanceInfo.getId()).build();
@@ -124,20 +125,20 @@ public class AsyncDiscoveryClientTest {
         serverBroker.submit(new UpdateInstanceInfo(delta));
 
         notificationIterator.next();
-        ChangeNotification<InstanceInfo> notification = notificationIterator.next();
+        ChangeNotification<? extends Item> notification = notificationIterator.next();
         assertEquals("Expected modify notification", Kind.Modify, notification.getKind());
     }
 
     @Test
     public void testUpdateForDelete() throws Exception {
-        Iterator<ChangeNotification<InstanceInfo>> notificationIterator = RxBlocking.iteratorFrom(1, TimeUnit.SECONDS, discoveryClient.updates());
+        Iterator<ChangeNotification<? extends Item>> notificationIterator = RxBlocking.iteratorFrom(1, TimeUnit.SECONDS, discoveryClient.updates());
 
         InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();
         serverBroker.submit(new AddInstance(instanceInfo));
         serverBroker.submit(new DeleteInstance(instanceInfo.getId()));
 
         notificationIterator.next();
-        ChangeNotification<InstanceInfo> notification = notificationIterator.next();
+        ChangeNotification<? extends Item> notification = notificationIterator.next();
         assertEquals("Expected delete notification", Kind.Delete, notification.getKind());
     }
 }

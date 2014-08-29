@@ -22,7 +22,7 @@ import com.netflix.eureka.registry.InstanceInfo;
  * @author Tomasz Bak
  */
 public class AddInstance implements InterestSetNotification {
-    private final InstanceInfo instanceInfo;
+    private final InstanceInfo instanceInfo;  // TODO: genericize this here with UpdateInstance
 
     // For serialization frameworks
     protected AddInstance() {

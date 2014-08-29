@@ -16,6 +16,7 @@
 
 package com.netflix.eureka.client.transport.discovery;
 
+import com.netflix.eureka.datastore.Item;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.protocol.discovery.InterestSetNotification;
@@ -33,7 +34,7 @@ public interface DiscoveryClient {
 
     Observable<Void> unregisterInterestSet();
 
-    Observable<ChangeNotification<InstanceInfo>> updates();
+    Observable<ChangeNotification<? extends Item>> updates();
 
     Observable<Void> heartbeat();
 

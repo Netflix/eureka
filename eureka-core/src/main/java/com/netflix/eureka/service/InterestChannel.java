@@ -1,5 +1,6 @@
 package com.netflix.eureka.service;
 
+import com.netflix.eureka.datastore.Item;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.registry.EurekaRegistry;
@@ -31,5 +32,5 @@ public interface InterestChannel extends ServiceChannel {
      *
      * @return The stream of {@link ChangeNotification}s for this channel.
      */
-    Observable<ChangeNotification<InstanceInfo>> asObservable();
+    Observable<ChangeNotification<? extends Item>> asObservable();
 }
