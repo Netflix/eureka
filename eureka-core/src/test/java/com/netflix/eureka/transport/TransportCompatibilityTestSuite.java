@@ -100,9 +100,9 @@ public abstract class TransportCompatibilityTestSuite {
 
         public void runTestSuite() {
             // Client
-//            registerInterestSetTest();
-//            unregisterInterestSetTest();
-//            hearbeatTest();
+            registerInterestSetTest();
+            unregisterInterestSetTest();
+            hearbeatTest();
 
             // Server
             addInstanceTest();
