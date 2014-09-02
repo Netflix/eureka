@@ -16,8 +16,8 @@
 
 package com.netflix.eureka.cmd;
 
-import com.netflix.eureka.EurekaClient;
-import com.netflix.eureka.EurekaClientImpl;
+import com.netflix.eureka.client.EurekaClient;
+import com.netflix.eureka.client.EurekaClientImpl;
 import com.netflix.eureka.client.bootstrap.StaticServerResolver;
 import com.netflix.eureka.client.service.EurekaServiceImpl;
 import com.netflix.eureka.client.transport.TransportClient;
@@ -115,10 +115,10 @@ public class EurekaCLI {
         InetSocketAddress readHost = new InetSocketAddress(host, discoveryPort);
 
         TransportClient writeClient =
-                TransportClients.newTcpRegistrationClient(new StaticServerResolver<InetSocketAddress>(writeHost));
+                TransportClients.newTcpRegistrationClient(new StaticServerResolver<>(writeHost));
 
         TransportClient readClient =
-                TransportClients.newTcpDiscoveryClient(new StaticServerResolver<InetSocketAddress>(readHost));
+                TransportClients.newTcpDiscoveryClient(new StaticServerResolver<>(readHost));
 
         EurekaService eurekaService = EurekaServiceImpl.forReadAndWriteServer(readClient, writeClient);
 

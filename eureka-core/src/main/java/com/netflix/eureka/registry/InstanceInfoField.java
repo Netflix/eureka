@@ -47,7 +47,7 @@ public class InstanceInfoField<T> {
         HomepageUrl("homePageUrl"),
         StatusPageUrl("statusPageUrl"),
         HealthcheckUrls("healthCheckUrls"),
-        InstanceLocation("instanceLocation")
+        DataCenterInfo("dataCenterInfo")
         ;
 
         private static final Map<String, Name> nameStrVsName = new HashMap<String, Name>();
@@ -255,7 +255,7 @@ public class InstanceInfoField<T> {
 
     // ==================================================================
     public static final InstanceInfoField<DataCenterInfo> DATA_CENTER_INFO
-            = new InstanceInfoField<DataCenterInfo>("dataCenterInfo", new Accessor<DataCenterInfo>() {
+            = new InstanceInfoField<DataCenterInfo>(Name.DataCenterInfo, new Accessor<DataCenterInfo>() {
         @Override
         public InstanceInfo.Builder update(InstanceInfo.Builder builder, DataCenterInfo value) {
             return builder.withInstanceLocation(value);
@@ -325,8 +325,8 @@ public class InstanceInfoField<T> {
                 return (InstanceInfoField<T>) STATUS_PAGE_URL;
             case HealthcheckUrls:
                 return (InstanceInfoField<T>) HEALTHCHECK_URLS;
-            case InstanceLocation:
-                return (InstanceInfoField<T>) INSTANCE_LOCATION;
+            case DataCenterInfo:
+                return (InstanceInfoField<T>) DATA_CENTER_INFO;
         }
         throw new IllegalArgumentException("Unhandled name: " + name);
     }

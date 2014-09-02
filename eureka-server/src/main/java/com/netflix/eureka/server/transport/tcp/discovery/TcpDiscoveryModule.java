@@ -32,7 +32,7 @@ public class TcpDiscoveryModule extends KaryonTcpModule<Object, Object> {
 
     @Override
     protected void configureServer() {
-        bindPipelineConfigurator().toInstance(new AvroPipelineConfigurator(EurekaTransports.DISCOVERY_MODEL));
+        bindPipelineConfigurator().toInstance(EurekaTransports.discoveryPipeline(EurekaTransports.Codec.Avro));
         bindConnectionHandler().to(TcpDiscoveryHandler.class);
         bindEventsListenerFactory().to(ServoEventsListenerFactory.class);
         server().port(7003);
