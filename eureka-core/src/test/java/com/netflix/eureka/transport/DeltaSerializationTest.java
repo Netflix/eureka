@@ -1,67 +1,36 @@
 package com.netflix.eureka.transport;
 
-import com.netflix.eureka.registry.SampleInstanceInfo;
+import java.util.HashSet;
+
 import com.netflix.eureka.Sets;
+import com.netflix.eureka.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka.registry.Delta;
 import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.registry.InstanceInfoField;
-import com.netflix.eureka.transport.codec.avro.ConfigurableReflectData;
+import com.netflix.eureka.registry.SampleInstanceInfo;
+import com.netflix.eureka.transport.codec.avro.AvroCodec;
+import com.netflix.eureka.transport.utils.AvroUtils;
+import io.netty.channel.embedded.EmbeddedChannel;
 import org.apache.avro.Schema;
-import org.apache.avro.io.DatumReader;
-import org.apache.avro.io.DatumWriter;
-import org.apache.avro.io.Decoder;
-import org.apache.avro.io.DecoderFactory;
-import org.apache.avro.io.Encoder;
-import org.apache.avro.io.EncoderFactory;
-import org.apache.avro.reflect.ReflectDatumReader;
-import org.apache.avro.reflect.ReflectDatumWriter;
-import org.junit.Rule;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.rules.ExternalResource;
 
-import java.io.ByteArrayOutputStream;
-import java.util.HashSet;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.*;
 
 /**
  * @author David Liu
  */
 public class DeltaSerializationTest {
 
-    private InstanceInfo instanceInfo;
+    private final InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();
+    private EmbeddedChannel channel;
 
-    DatumWriter<Delta> writer;
-    ByteArrayOutputStream bos;
-    Encoder encoder;
-
-    DatumReader<Delta> datumReader;
-
-    @Rule
-    public final ExternalResource testResource = new ExternalResource() {
-
-        @Override
-        protected void before() throws Throwable {
-            instanceInfo = SampleInstanceInfo.DiscoveryServer.build();
-            Schema schema = new ConfigurableReflectData(EurekaTransports.DISCOVERY_MODEL).getSchema(Delta.class);
-
-            writer = new ReflectDatumWriter<Delta>(schema);
-            bos = new ByteArrayOutputStream();
-            encoder = EncoderFactory.get().binaryEncoder(bos, null);
-
-            datumReader = new ReflectDatumReader<Delta>(schema);
-        }
-
-        @Override
-        protected void after() {
-            try {
-                bos.close();
-            } catch (Exception e) {}
-        }
-    };
-
+    @Before
+    public void setup() {
+        Schema schema = AvroUtils.loadSchema(EurekaTransports.DISCOVERY_SCHEMA_FILE, EurekaTransports.DISCOVERY_ENVELOPE_TYPE);
+        AvroCodec avroCodec = new AvroCodec(EurekaTransports.DISCOVERY_PROTOCOL_MODEL_SET, schema);
+        channel = new EmbeddedChannel(avroCodec);
+    }
 
     @Test
     public void testDeltaSerializationWithAvro_HashSetInt() throws Exception {
@@ -72,16 +41,7 @@ public class DeltaSerializationTest {
                 .withDelta(InstanceInfoField.PORTS, newPorts)
                 .build();
 
-        writer.write(delta, encoder);
-        encoder.flush();
-
-        Decoder decoder = DecoderFactory.get().binaryDecoder(bos.toByteArray(), null);
-        Delta newDelta = datumReader.read(null, decoder);
-
-        InstanceInfo newInstanceInfo = instanceInfo.applyDelta(newDelta);
-        assertThat(newInstanceInfo.getPorts(), equalTo(newPorts));
-        assertThat(newInstanceInfo.getPorts(), not(equalTo(instanceInfo.getPorts())));
-        assertThat(newInstanceInfo.getId(), equalTo(instanceInfo.getId()));
+        doDeltaTest(delta);
     }
 
     @Test
@@ -92,17 +52,7 @@ public class DeltaSerializationTest {
                 .withVersion(instanceInfo.getVersion() + 1)
                 .withDelta(InstanceInfoField.HEALTHCHECK_URLS, newHealthCheckUrls)
                 .build();
-
-        writer.write(delta, encoder);
-        encoder.flush();
-
-        Decoder decoder = DecoderFactory.get().binaryDecoder(bos.toByteArray(), null);
-        Delta newDelta = datumReader.read(null, decoder);
-
-        InstanceInfo newInstanceInfo = instanceInfo.applyDelta(newDelta);
-        assertThat(newInstanceInfo.getHealthCheckUrls(), equalTo(newHealthCheckUrls));
-        assertThat(newInstanceInfo.getHealthCheckUrls(), not(equalTo(instanceInfo.getHealthCheckUrls())));
-        assertThat(newInstanceInfo.getId(), equalTo(instanceInfo.getId()));
+        doDeltaTest(delta);
     }
 
     @Test
@@ -113,17 +63,7 @@ public class DeltaSerializationTest {
                 .withVersion(instanceInfo.getVersion() + 1)
                 .withDelta(InstanceInfoField.HOMEPAGE_URL, newHomepage)
                 .build();
-
-        writer.write(delta, encoder);
-        encoder.flush();
-
-        Decoder decoder = DecoderFactory.get().binaryDecoder(bos.toByteArray(), null);
-        Delta newDelta = datumReader.read(null, decoder);
-
-        InstanceInfo newInstanceInfo = instanceInfo.applyDelta(newDelta);
-        assertThat(newInstanceInfo.getHomePageUrl(), equalTo(newHomepage));
-        assertThat(newInstanceInfo.getHomePageUrl(), not(equalTo(instanceInfo.getHomePageUrl())));
-        assertThat(newInstanceInfo.getId(), equalTo(instanceInfo.getId()));
+        doDeltaTest(delta);
     }
 
     @Test
@@ -134,17 +74,17 @@ public class DeltaSerializationTest {
                 .withVersion(instanceInfo.getVersion() + 1)
                 .withDelta(InstanceInfoField.STATUS, newStatus)
                 .build();
-
-        writer.write(delta, encoder);
-        encoder.flush();
-
-        Decoder decoder = DecoderFactory.get().binaryDecoder(bos.toByteArray(), null);
-        Delta newDelta = datumReader.read(null, decoder);
-
-        InstanceInfo newInstanceInfo = instanceInfo.applyDelta(newDelta);
-        assertThat(newInstanceInfo.getStatus(), equalTo(newStatus));
-        assertThat(newInstanceInfo.getStatus(), not(equalTo(instanceInfo.getStatus())));
-        assertThat(newInstanceInfo.getId(), equalTo(instanceInfo.getId()));
+        doDeltaTest(delta);
     }
 
+    private void doDeltaTest(Delta<?> delta) {
+        UpdateInstanceInfo update = new UpdateInstanceInfo(delta);
+
+        assertTrue("Message should be written successfuly to the channel", channel.writeOutbound(update));
+
+        channel.writeInbound(channel.readOutbound());
+        Object received = channel.readInbound();
+        assertTrue("Expected instance of UpdateInstanceInfo", received instanceof UpdateInstanceInfo);
+        assertEquals("Encoded/decoded shall produce identical object", update, received);
+    }
 }

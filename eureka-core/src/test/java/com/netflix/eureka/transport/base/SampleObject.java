@@ -1,19 +1,19 @@
 package com.netflix.eureka.transport.base;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Set;
 
-import com.netflix.eureka.transport.utils.TransportModel;
-import com.netflix.eureka.transport.utils.TransportModel.TransportModelBuilder;
+import com.netflix.eureka.transport.Acknowledgement;
+import org.apache.avro.Schema;
+import org.apache.avro.reflect.ReflectData;
 
 /**
  * @author Tomasz Bak
  */
 public class SampleObject {
 
-    public static final TransportModel TRANSPORT_MODEL =
-            new TransportModelBuilder(SampleObject.class)
-                    .withHierarchy(Internal.class, InternalA.class, InternalB.class)
-                    .build();
+    public static final Set<Class<?>> SAMPLE_OBJECT_MODEL_SET = Collections.<Class<?>>singleton(SampleObject.class);
 
     private Internal[] internals;
 
@@ -48,25 +48,29 @@ public class SampleObject {
     }
 
     @Override
-    public String toString() {
-        return "SampleObject{internals=" + Arrays.toString(internals) + '}';
-    }
-
-    @Override
     public int hashCode() {
         return internals != null ? Arrays.hashCode(internals) : 0;
     }
 
-    public static interface Internal {
+    @Override
+    public String toString() {
+        return "SampleObject{internals=" + Arrays.toString(internals) + '}';
     }
 
-    public static class InternalA implements Internal {
+    public static Schema rootSchema() {
+        ReflectData reflectData = new ReflectData();
+        return Schema.createUnion(Arrays.asList(
+                reflectData.getSchema(SampleObject.class),
+                reflectData.getSchema(Acknowledgement.class)));
+    }
+
+    public static class Internal {
         private String value;
 
-        public InternalA() {
+        public Internal() {
         }
 
-        public InternalA(String value) {
+        public Internal(String value) {
             this.value = value;
         }
 
@@ -83,9 +87,9 @@ public class SampleObject {
                 return false;
             }
 
-            InternalA internalA = (InternalA) o;
+            Internal internal = (Internal) o;
 
-            if (value != null ? !value.equals(internalA.value) : internalA.value != null) {
+            if (value != null ? !value.equals(internal.value) : internal.value != null) {
                 return false;
             }
 
@@ -99,50 +103,7 @@ public class SampleObject {
 
         @Override
         public String toString() {
-            return "InternalA{value='" + value + '\'' + '}';
-        }
-    }
-
-    public static class InternalB implements Internal {
-        private int value;
-
-        public InternalB() {
-        }
-
-        public InternalB(int value) {
-            this.value = value;
-        }
-
-        public int getValue() {
-            return value;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-
-            InternalB internalB = (InternalB) o;
-
-            if (value != internalB.value) {
-                return false;
-            }
-
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            return value;
-        }
-
-        @Override
-        public String toString() {
-            return "InternalB{value=" + value + '}';
+            return "Internal{value='" + value + '\'' + '}';
         }
     }
 }

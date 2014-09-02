@@ -1,7 +1,7 @@
 package com.netflix.eureka.transport.codec.avro;
 
 import com.netflix.eureka.transport.base.SampleObject;
-import com.netflix.eureka.transport.base.SampleObject.InternalA;
+import com.netflix.eureka.transport.base.SampleObject.Internal;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
@@ -14,9 +14,11 @@ public class AvroCodecTest {
 
     @Test
     public void testEncodeDecode() throws Exception {
-        EmbeddedChannel ch = new EmbeddedChannel(new AvroCodec(SampleObject.TRANSPORT_MODEL));
+        AvroCodec avroCodec = new AvroCodec(SampleObject.SAMPLE_OBJECT_MODEL_SET, SampleObject.rootSchema());
 
-        SampleObject message = new SampleObject(new InternalA("stringValue"));
+        EmbeddedChannel ch = new EmbeddedChannel(avroCodec);
+
+        SampleObject message = new SampleObject(new Internal("stringValue"));
         assertTrue("Message should be written successfuly to the channel", ch.writeOutbound(message));
 
         ch.writeInbound(ch.readOutbound());

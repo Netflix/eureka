@@ -1,11 +1,8 @@
-package com.netflix.eureka;
+package com.netflix.eureka.transport;
 
-import com.netflix.eureka.TransportCompatibilityTestSuite.DiscoveryProtocolTest;
-import com.netflix.eureka.TransportCompatibilityTestSuite.RegistrationProtocolTest;
-import com.netflix.eureka.transport.EurekaTransports;
+import com.netflix.eureka.transport.TransportCompatibilityTestSuite.DiscoveryProtocolTest;
+import com.netflix.eureka.transport.TransportCompatibilityTestSuite.RegistrationProtocolTest;
 import com.netflix.eureka.transport.EurekaTransports.Codec;
-import com.netflix.eureka.transport.MessageBroker;
-import com.netflix.eureka.transport.MessageBrokerServer;
 import com.netflix.eureka.transport.utils.BrokerUtils.BrokerPair;
 import org.junit.Test;
 import rx.Observable;

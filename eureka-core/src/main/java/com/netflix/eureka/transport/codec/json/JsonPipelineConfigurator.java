@@ -16,7 +16,8 @@
 
 package com.netflix.eureka.transport.codec.json;
 
-import com.netflix.eureka.transport.utils.TransportModel;
+import java.util.Set;
+
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
@@ -29,16 +30,16 @@ public class JsonPipelineConfigurator implements PipelineConfigurator<Object, Ob
 
     private static final int MAX_FRAME_LENGTH = 65536;
 
-    private final TransportModel model;
+    private final Set<Class<?>> protocolTypes;
 
-    public JsonPipelineConfigurator(TransportModel model) {
-        this.model = model;
+    public JsonPipelineConfigurator(Set<Class<?>> protocolTypes) {
+        this.protocolTypes = protocolTypes;
     }
 
     @Override
     public void configureNewPipeline(ChannelPipeline pipeline) {
         pipeline.addLast(new LengthFieldBasedFrameDecoder(MAX_FRAME_LENGTH, 0, 4, 0, 4));
         pipeline.addLast(new LengthFieldPrepender(4));
-        pipeline.addLast(new JsonCodec(model));
+        pipeline.addLast(new JsonCodec(protocolTypes));
     }
 }
