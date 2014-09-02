@@ -17,7 +17,6 @@
 package com.netflix.eureka.server.transport.tcp.discovery;
 
 import com.netflix.eureka.transport.EurekaTransports;
-import com.netflix.eureka.transport.codec.avro.AvroPipelineConfigurator;
 import com.netflix.karyon.transport.tcp.KaryonTcpModule;
 import io.reactivex.netty.servo.ServoEventsListenerFactory;
 
@@ -32,7 +31,7 @@ public class TcpDiscoveryModule extends KaryonTcpModule<Object, Object> {
 
     @Override
     protected void configureServer() {
-        bindPipelineConfigurator().toInstance(EurekaTransports.discoveryPipeline(EurekaTransports.Codec.Avro));
+        bindPipelineConfigurator().toInstance(EurekaTransports.discoveryPipeline(EurekaTransports.Codec.Json));
         bindConnectionHandler().to(TcpDiscoveryHandler.class);
         bindEventsListenerFactory().to(ServoEventsListenerFactory.class);
         server().port(7003);

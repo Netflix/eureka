@@ -27,6 +27,7 @@ import com.netflix.eureka.interests.Interests;
 import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.registry.SampleInstanceInfo;
 import com.netflix.eureka.service.EurekaService;
+import com.netflix.eureka.transport.EurekaTransports;
 import jline.Terminal;
 import jline.TerminalFactory;
 import jline.console.ConsoleReader;
@@ -118,7 +119,8 @@ public class EurekaCLI {
                 TransportClients.newTcpRegistrationClient(new StaticServerResolver<>(writeHost));
 
         TransportClient readClient =
-                TransportClients.newTcpDiscoveryClient(new StaticServerResolver<>(readHost));
+                TransportClients.newTcpDiscoveryClient(new StaticServerResolver<>(readHost),
+                                                       EurekaTransports.Codec.Json);
 
         EurekaService eurekaService = EurekaServiceImpl.forReadAndWriteServer(readClient, writeClient);
 
