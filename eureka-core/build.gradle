@@ -14,8 +14,13 @@
  * limitations under the License.
  */
 
+configurations {
+    avroTool
+}
 
 dependencies {
+    avroTool "org.apache.avro:avro-tools:${avro_version}"
+
     compile "com.netflix.rxnetty:rx-netty:${rx_netty_version}"
     compile "org.apache.avro:avro:${avro_version}"
     testCompile project(':eureka-test-utils')
@@ -29,3 +34,37 @@ jar {
         instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
     }
 }
+
+// Avro schema processing
+
+task prepareOutputDir {
+    mkdir "build/classes/main"
+}
+
+task buildRegistrationSchema (type: JavaExec) {
+    group = "Avro"
+    description = "Process Avro IDL files and generate Avro schema documents for registration protocol"
+
+    main = "org.apache.avro.tool.Main"
+    classpath = configurations.avroTool
+    args = [
+            "idl",
+            "src/main/avro/registration-schema.avdl",
+            "build/classes/main/registration-schema.avpr"
+    ]
+}
+task buildDiscoverySchema (type: JavaExec) {
+    group = "Avro"
+    description = "Process Avro IDL files and generate Avro schema documents for discovery protocol"
+
+    main = "org.apache.avro.tool.Main"
+    classpath = configurations.avroTool
+    args = [
+            "idl",
+            "src/main/avro/discovery-schema.avdl",
+            "build/classes/main/discovery-schema.avpr"
+    ]
+}
+buildRegistrationSchema.dependsOn prepareOutputDir
+buildDiscoverySchema.dependsOn prepareOutputDir
+build.dependsOn buildRegistrationSchema, buildDiscoverySchema

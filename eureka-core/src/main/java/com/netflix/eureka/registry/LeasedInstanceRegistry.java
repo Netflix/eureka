@@ -52,8 +52,8 @@ public class LeasedInstanceRegistry implements EurekaRegistry {
         this.myInstanceInfo = myInstanceInfo;
     }
 
-    public InstanceLocation getRegistryLocation() {
-        return myInstanceInfo.getInstanceLocation();
+    public DataCenterInfo getRegistryLocation() {
+        return myInstanceInfo.getDataCenterInfo();
     }
 
     // -------------------------------------------------

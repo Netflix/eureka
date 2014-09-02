@@ -19,15 +19,16 @@ package com.netflix.eureka.transport.codec.avro;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 import com.netflix.eureka.transport.Acknowledgement;
-import com.netflix.eureka.transport.utils.TransportModel;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.EncoderException;
-import org.apache.avro.io.BinaryDecoder;
+import org.apache.avro.Schema;
+import org.apache.avro.io.Decoder;
 import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.io.Encoder;
 import org.apache.avro.io.EncoderFactory;
@@ -39,26 +40,28 @@ import org.apache.avro.reflect.ReflectDatumWriter;
  *
  * @author Tomasz Bak
  */
-class AvroCodec extends ByteToMessageCodec<Object> {
+public class AvroCodec extends ByteToMessageCodec<Object> {
 
-    private final TransportModel model;
-    private final AvroSchemaArtifacts avroSchemaArtifacts;
+    private final Set<Class<?>> protocolTypes;
+    private final Schema rootSchema;
 
-    public AvroCodec(TransportModel model) {
-        this.model = model;
-        avroSchemaArtifacts = new AvroSchemaArtifacts(model);
+    public AvroCodec(Set<Class<?>> protocolTypes, Schema rootSchema) {
+        this.protocolTypes = protocolTypes;
+        this.rootSchema = rootSchema;
     }
 
     @Override
     public boolean acceptOutboundMessage(Object msg) throws Exception {
-        return msg instanceof Acknowledgement || model.isProtocolMessage(msg);
+        return msg instanceof Acknowledgement || protocolTypes.contains(msg.getClass());
     }
 
     @Override
     protected void encode(ChannelHandlerContext ctx, Object msg, ByteBuf out) {
-        ReflectDatumWriter<Object> writer = new ReflectDatumWriter<Object>(avroSchemaArtifacts.getRootSchema(), avroSchemaArtifacts.getReflectData());
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         Encoder encoder = EncoderFactory.get().binaryEncoder(bos, null);
+
+        SchemaReflectData reflectData = new SchemaReflectData(rootSchema);
+        ReflectDatumWriter<Object> writer = new ReflectDatumWriter(rootSchema, reflectData);
 
         try {
             writer.write(msg, encoder);
@@ -78,11 +81,9 @@ class AvroCodec extends ByteToMessageCodec<Object> {
         byte[] array = new byte[in.readableBytes()];
         in.readBytes(array);
 
-        ReflectDatumReader<Object> reader = new ReflectDatumReader<Object>(
-                avroSchemaArtifacts.getRootSchema(),
-                avroSchemaArtifacts.getRootSchema(),
-                avroSchemaArtifacts.getReflectData());
-        BinaryDecoder decoder = DecoderFactory.get().binaryDecoder(array, null);
+        SchemaReflectData reflectData = new SchemaReflectData(rootSchema);
+        ReflectDatumReader reader = new ReflectDatumReader(rootSchema, rootSchema, reflectData);
+        Decoder decoder = DecoderFactory.get().binaryDecoder(array, null);
 
         try {
             out.add(reader.read(null, decoder));

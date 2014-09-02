@@ -17,7 +17,7 @@
 package com.netflix.eureka.server.transport.registration.asynchronous;
 
 import com.netflix.eureka.transport.EurekaTransports;
-import com.netflix.eureka.transport.codec.json.JsonPipelineConfigurator;
+import com.netflix.eureka.transport.EurekaTransports.Codec;
 import com.netflix.karyon.transport.tcp.KaryonTcpModule;
 import io.reactivex.netty.servo.ServoEventsListenerFactory;
 
@@ -32,7 +32,7 @@ public class JsonRegistrationModule extends KaryonTcpModule<Object, Object> {
 
     @Override
     protected void configureServer() {
-        bindPipelineConfigurator().toInstance(new JsonPipelineConfigurator(EurekaTransports.REGISTRATION_MODEL));
+        bindPipelineConfigurator().toInstance(EurekaTransports.registrationPipeline(Codec.Json));
         bindConnectionHandler().to(AsyncRegistrationHandler.class);
         bindEventsListenerFactory().to(ServoEventsListenerFactory.class);
         server().port(7002);

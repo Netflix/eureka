@@ -25,6 +25,7 @@ import rx.Observable;
  *
  * @author Tomasz Bak
  */
+@Deprecated
 public interface MessageBrokerServer {
 
     Observable<MessageBroker> clientConnections();

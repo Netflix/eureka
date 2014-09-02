@@ -22,9 +22,9 @@ import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import com.netflix.eureka.transport.Acknowledgement;
-import com.netflix.eureka.transport.utils.TransportModel;
 import com.netflix.eureka.utils.Json;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -66,12 +66,11 @@ import org.codehaus.jackson.node.ArrayNode;
  */
 public class JsonCodec extends ByteToMessageCodec<Object> {
 
-    private final TransportModel model;
     private final ObjectMapper mapper;
+    private final Set<Class<?>> protocolTypes;
 
-    public JsonCodec(TransportModel model) {
-        this.model = model;
-
+    public JsonCodec(Set<Class<?>> protocolTypes) {
+        this.protocolTypes = protocolTypes;
         mapper = new ObjectMapper();
 
         SimpleSerializers serializers = new SimpleSerializers();
@@ -83,7 +82,7 @@ public class JsonCodec extends ByteToMessageCodec<Object> {
 
         DeserializerFactory deserializerFactory = BeanDeserializerFactory
                 .instance
-                .withDeserializerModifier(new TypeResolvingModifier(model, mapper));
+                .withDeserializerModifier(new TypeResolvingModifier(mapper));
 
         mapper.setSerializerFactory(serializerFactory);
         mapper.setDeserializerProvider(new StdDeserializerProvider(deserializerFactory));
@@ -94,7 +93,7 @@ public class JsonCodec extends ByteToMessageCodec<Object> {
 
     @Override
     public boolean acceptOutboundMessage(Object msg) throws Exception {
-        return msg instanceof Acknowledgement || model.isProtocolMessage(msg);
+        return msg instanceof Acknowledgement || protocolTypes.contains(msg.getClass());
     }
 
     @Override
@@ -201,12 +200,9 @@ public class JsonCodec extends ByteToMessageCodec<Object> {
 
     static class TypeResolvingModifier extends BeanDeserializerModifier {
 
-        private final TransportModel model;
-
         private final ObjectMapper mapper;
 
-        TypeResolvingModifier(TransportModel model, ObjectMapper mapper) {
-            this.model = model;
+        TypeResolvingModifier(ObjectMapper mapper) {
             this.mapper = mapper;
         }
 
@@ -219,7 +215,6 @@ public class JsonCodec extends ByteToMessageCodec<Object> {
                 if (!isBasicType(rawClass)) {
                     SettableBeanProperty newSettableBeanProperty = settableBeanProperty.withValueDeserializer(new PolymorphicDeserializer(rawClass, mapper));
                     builder.addOrReplaceProperty(newSettableBeanProperty, true);
-                    break;
                 }
             }
             return builder;

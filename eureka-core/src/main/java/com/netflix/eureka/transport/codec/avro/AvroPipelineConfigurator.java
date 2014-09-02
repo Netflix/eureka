@@ -16,29 +16,42 @@
 
 package com.netflix.eureka.transport.codec.avro;
 
-import com.netflix.eureka.transport.utils.TransportModel;
+import java.util.Set;
+
+import com.netflix.eureka.transport.utils.AvroUtils;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import io.reactivex.netty.pipeline.PipelineConfigurator;
+import org.apache.avro.Schema;
 
 /**
+ * Pipeline configuration for Avro codec. Avro schema is loaded from
+ * a file that is expected to be found on classpath.
+ *
  * @author Tomasz Bak
  */
 public class AvroPipelineConfigurator implements PipelineConfigurator<Object, Object> {
 
     private static final int MAX_FRAME_LENGTH = 65536;
 
-    private final TransportModel model;
+    private final Set<Class<?>> protocolTypes;
+    private final Schema rootSchema;
 
-    public AvroPipelineConfigurator(TransportModel model) {
-        this.model = model;
+    public AvroPipelineConfigurator(Set<Class<?>> protocolTypes, Schema rootSchema) {
+        this.protocolTypes = protocolTypes;
+        this.rootSchema = rootSchema;
+    }
+
+    public AvroPipelineConfigurator(Set<Class<?>> protocolTypes, String schemaResource, String envelopeType) {
+        this.protocolTypes = protocolTypes;
+        this.rootSchema = AvroUtils.loadSchema(schemaResource, envelopeType);
     }
 
     @Override
     public void configureNewPipeline(ChannelPipeline pipeline) {
         pipeline.addLast(new LengthFieldBasedFrameDecoder(MAX_FRAME_LENGTH, 0, 4, 0, 4));
         pipeline.addLast(new LengthFieldPrepender(4));
-        pipeline.addLast(new AvroCodec(model));
+        pipeline.addLast(new AvroCodec(protocolTypes, rootSchema));
     }
 }

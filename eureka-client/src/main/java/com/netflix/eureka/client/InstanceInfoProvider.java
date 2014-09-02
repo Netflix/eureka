@@ -14,26 +14,18 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka;
-
-import com.netflix.eureka.interests.ChangeNotification;
-import com.netflix.eureka.interests.Interest;
-import rx.Observable;
+package com.netflix.eureka.client;
 
 import com.netflix.eureka.registry.InstanceInfo;
+import rx.Observable;
 
 /**
+ * Provides local application's {@link InstanceInfo} object. This information is
+ * required during the registration process, and is used by other applications to
+ * connect to this instance.
  *
- *
- * @author Nitesh Kant
+ * @author Tomasz Bak
  */
-public abstract class EurekaClient {
-
-    public abstract Observable<Void> update(InstanceInfo instanceInfo);
-
-    public abstract Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest);
-
-    public abstract Observable<ChangeNotification<InstanceInfo>> forVips(String... vips);
-
-    public abstract Observable<Void> close();
+public interface InstanceInfoProvider {
+    Observable<InstanceInfo> localInstanceInfo();
 }

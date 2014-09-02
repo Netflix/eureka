@@ -1,0 +1,54 @@
+@namespace("com.netflix.eureka.protocol.discovery")
+protocol DiscoveryProtocol {
+
+    import idl "eureka-registry-model.avdl";
+    import idl "eureka-interest-model.avdl";
+
+    @namespace("com.netflix.eureka.transport")
+    record Acknowledgement {
+        string correlationId;
+    }
+
+    @namespace("com.netflix.eureka.protocol")
+    record Heartbeat {
+    }
+
+    record AddInstance {
+        com.netflix.eureka.registry.InstanceInfo instanceInfo;
+    }
+
+    record DeleteInstance {
+        string instanceId;
+    }
+
+    record UpdateInstanceInfo {
+        com.netflix.eureka.registry.Delta delta;
+    }
+
+    record RegisterInterestSet {
+        @java-class("[Lcom.netflix.eureka.interests.Interest;")
+        array<
+            union {
+                com.netflix.eureka.interests.ApplicationInterest,
+                com.netflix.eureka.interests.FullRegistryInterest,
+                com.netflix.eureka.interests.VipsInterest,
+                com.netflix.eureka.interests.InstanceInterest
+            }
+        > interests;
+    }
+
+    record UnregisterInterestSet {
+    }
+
+    record DiscoveryMessage {
+        union {
+            AddInstance,
+            DeleteInstance,
+            UpdateInstanceInfo,
+            RegisterInterestSet,
+            UnregisterInterestSet,
+            com.netflix.eureka.transport.Acknowledgement,
+            com.netflix.eureka.protocol.Heartbeat
+        } message;
+    }
+}

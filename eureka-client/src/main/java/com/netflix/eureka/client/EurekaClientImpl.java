@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka;
+package com.netflix.eureka.client;
 
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
