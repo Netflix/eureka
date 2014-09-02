@@ -16,13 +16,13 @@
 
 package com.netflix.eureka.server.service;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-
 import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.service.RegistrationChannel;
 import rx.Observable;
 import rx.subjects.PublishSubject;
+
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * @author Tomasz Bak
@@ -36,7 +36,7 @@ public class TestableRegistrationChannel implements RegistrationChannel {
     private final PublishSubject<Void> closeObservable = PublishSubject.create();
 
     @Override
-    public Observable<Void> register(InstanceInfo newInfo) {
+    public Observable<Void> register(InstanceInfo instanceInfo) {
         return null;
     }
 
@@ -44,6 +44,12 @@ public class TestableRegistrationChannel implements RegistrationChannel {
     public Observable<Void> update(InstanceInfo newInfo) {
         updateQueue.add(newInfo);
         return Observable.empty();
+    }
+
+    @Override
+    public Observable<Void> unregister() {
+        // TODO: Auto-generated method stub
+        return null;
     }
 
     @Override

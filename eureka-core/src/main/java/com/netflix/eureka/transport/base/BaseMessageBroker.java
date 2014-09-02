@@ -16,6 +16,16 @@
 
 package com.netflix.eureka.transport.base;
 
+import com.netflix.eureka.transport.Acknowledgement;
+import com.netflix.eureka.transport.MessageBroker;
+import io.reactivex.netty.channel.ObservableConnection;
+import rx.Observable;
+import rx.Subscriber;
+import rx.functions.Action1;
+import rx.functions.Func1;
+import rx.subjects.PublishSubject;
+import rx.subjects.ReplaySubject;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.DelayQueue;
@@ -24,15 +34,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import com.netflix.eureka.transport.Acknowledgement;
-import com.netflix.eureka.transport.MessageBroker;
-import io.reactivex.netty.channel.ObservableConnection;
-import rx.Observable;
-import rx.functions.Action1;
-import rx.functions.Func1;
-import rx.subjects.PublishSubject;
-import rx.subjects.ReplaySubject;
 
 /**
  * @author Tomasz Bak
@@ -88,7 +89,7 @@ public class BaseMessageBroker implements MessageBroker {
 
     @Override
     public Observable<Void> submit(Object message) {
-        return connection.writeAndFlush(message);
+        return writeWhenSubscribed(message);
     }
 
     @Override
@@ -107,14 +108,14 @@ public class BaseMessageBroker implements MessageBroker {
         }
 
         return Observable.concat(
-                connection.writeAndFlush(message),
+                writeWhenSubscribed(message),
                 ackObservable
         );
     }
 
     @Override
     public Observable<Void> acknowledge(Object message) {
-        return connection.writeAndFlush(new Acknowledgement(correlationIdFor(message)));
+        return writeWhenSubscribed(new Acknowledgement(correlationIdFor(message)));
     }
 
     @Override
@@ -137,6 +138,15 @@ public class BaseMessageBroker implements MessageBroker {
     @Override
     public Observable<Void> lifecycleObservable() {
         return lifecycleSubject;
+    }
+
+    private Observable<Void> writeWhenSubscribed(final Object message) {
+        return Observable.create(new Observable.OnSubscribe<Void>() {
+            @Override
+            public void call(Subscriber<? super Void> subscriber) {
+                connection.writeAndFlush(message).subscribe(subscriber);
+            }
+        });
     }
 
     private String correlationIdFor(Object message) {

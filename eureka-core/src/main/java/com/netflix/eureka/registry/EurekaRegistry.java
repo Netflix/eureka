@@ -20,6 +20,8 @@ import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
 import rx.Observable;
 
+import java.util.Set;
+
 /**
  * @author Nitesh Kant
  */
@@ -31,7 +33,7 @@ public interface EurekaRegistry {
 
     Observable<Void> unregister(String instanceId);
 
-    Observable<Void> update(InstanceInfo instanceInfo);
+    Observable<Void> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas);
 
     Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest);
 

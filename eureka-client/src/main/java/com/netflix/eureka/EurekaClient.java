@@ -18,9 +18,8 @@ package com.netflix.eureka;
 
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
-import rx.Observable;
-
 import com.netflix.eureka.registry.InstanceInfo;
+import rx.Observable;
 
 /**
  *
@@ -29,11 +28,15 @@ import com.netflix.eureka.registry.InstanceInfo;
  */
 public abstract class EurekaClient {
 
+    public abstract Observable<Void> register(InstanceInfo instanceInfo);
+
     public abstract Observable<Void> update(InstanceInfo instanceInfo);
 
     public abstract Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest);
 
     public abstract Observable<ChangeNotification<InstanceInfo>> forVips(String... vips);
 
-    public abstract Observable<Void> close();
+    public abstract Observable<Void> unregisterAllInterest();
+
+    public abstract void close();
 }

@@ -1,11 +1,9 @@
 package com.netflix.eureka;
 
-import java.util.Iterator;
-
 import com.netflix.eureka.protocol.Heartbeat;
 import com.netflix.eureka.protocol.discovery.AddInstance;
 import com.netflix.eureka.protocol.discovery.DeleteInstance;
-import com.netflix.eureka.protocol.discovery.RegisterInterestSet;
+import com.netflix.eureka.protocol.discovery.InterestRegistration;
 import com.netflix.eureka.protocol.discovery.UnregisterInterestSet;
 import com.netflix.eureka.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka.protocol.registration.Register;
@@ -17,9 +15,12 @@ import com.netflix.eureka.transport.MessageBroker;
 import rx.Notification;
 import rx.Observable;
 
-import static com.netflix.eureka.registry.SampleInstanceInfo.*;
-import static com.netflix.eureka.rx.RxSniffer.*;
-import static org.junit.Assert.*;
+import java.util.Iterator;
+
+import static com.netflix.eureka.registry.SampleInstanceInfo.DiscoveryServer;
+import static com.netflix.eureka.rx.RxSniffer.sniff;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Tomasz Bak
@@ -112,7 +113,7 @@ public abstract class TransportCompatibilityTestSuite {
         }
 
         private void registerInterestSetTest() {
-            runClientToServerWithAck(new RegisterInterestSet(SampleInterest.MultipleApps.build()));
+            runClientToServerWithAck(new InterestRegistration(SampleInterest.MultipleApps.build()));
         }
 
         private void unregisterInterestSetTest() {

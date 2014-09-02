@@ -23,11 +23,8 @@ import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.registry.LeasedInstanceRegistry;
 import com.netflix.eureka.server.EurekaWriteServer.EurekaServerModule;
 import com.netflix.eureka.server.EurekaWriteServer.EurekaShutdownModule;
-import com.netflix.eureka.server.service.EurekaServerService;
-import com.netflix.eureka.server.service.EurekaServiceImpl;
-import com.netflix.eureka.server.transport.discovery.asynchronous.AvroDiscoveryModule;
-import com.netflix.eureka.server.transport.registration.asynchronous.JsonRegistrationModule;
-import com.netflix.eureka.server.transport.registration.http.HttpRegistrationModule;
+import com.netflix.eureka.server.transport.tcp.discovery.TcpDiscoveryModule;
+import com.netflix.eureka.server.transport.tcp.registration.AvroRegistrationModule;
 import com.netflix.governator.annotations.Modules;
 import com.netflix.karyon.KaryonBootstrap;
 import com.netflix.karyon.KaryonServer;
@@ -43,9 +40,9 @@ import com.netflix.karyon.archaius.ArchaiusBootstrap;
         EurekaShutdownModule.class,
         KaryonWebAdminModule.class,
         EurekaServerModule.class,
-        HttpRegistrationModule.class,
-        JsonRegistrationModule.class,
-        AvroDiscoveryModule.class
+        //HttpRegistrationModule.class,
+        AvroRegistrationModule.class,
+        TcpDiscoveryModule.class
 })
 public class EurekaWriteServer {
 
@@ -55,7 +52,6 @@ public class EurekaWriteServer {
             // TODO: We need local server instance info...
             InstanceInfo localInstance = new InstanceInfo.Builder().withId("eurekaServer123").build();
             bind(EurekaRegistry.class).toInstance(new LeasedInstanceRegistry(localInstance));
-            bind(EurekaServerService.class).to(EurekaServiceImpl.class).asEagerSingleton();
         }
     }
 

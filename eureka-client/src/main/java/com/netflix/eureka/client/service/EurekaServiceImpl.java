@@ -1,10 +1,6 @@
 package com.netflix.eureka.client.service;
 
-import com.netflix.eureka.client.transport.TransportClientProvider;
-import com.netflix.eureka.client.transport.discovery.DiscoveryClient;
-import com.netflix.eureka.client.transport.registration.RegistrationClient;
-import com.netflix.eureka.interests.Interest;
-import com.netflix.eureka.registry.InstanceInfo;
+import com.netflix.eureka.client.transport.TransportClient;
 import com.netflix.eureka.service.EurekaService;
 import com.netflix.eureka.service.InterestChannel;
 import com.netflix.eureka.service.RegistrationChannel;
@@ -14,27 +10,71 @@ import com.netflix.eureka.service.RegistrationChannel;
  */
 public class EurekaServiceImpl implements EurekaService {
 
-    private final RegistrationChannelMonitor registrationChannelMonitor;
-    private final DiscoveryChannelMonitor discoveryChannelMonitor;
+    private final TransportClient readServerClient;
+    private final TransportClient writeServerClient;
 
-    public EurekaServiceImpl(TransportClientProvider<DiscoveryClient> discoveryClientProvider,
-                             TransportClientProvider<RegistrationClient> registrationClientProvider) {
-        registrationChannelMonitor = new RegistrationChannelMonitor(registrationClientProvider);
-        registrationChannelMonitor.start();
-
-        discoveryChannelMonitor = new DiscoveryChannelMonitor(discoveryClientProvider);
-        discoveryChannelMonitor.start();
+    protected EurekaServiceImpl(boolean readClient, TransportClient aClient) {
+        if (readClient) {
+            readServerClient = aClient;
+            writeServerClient = null;
+        } else {
+            writeServerClient = aClient;
+            readServerClient = null;
+        }
     }
 
+
+    protected EurekaServiceImpl(TransportClient writeServerClient, TransportClient readServerClient) {
+        this.writeServerClient = writeServerClient;
+        this.readServerClient = readServerClient;
+    }
+
+    public static EurekaService forReadServer(TransportClient client) {
+        return new EurekaServiceImpl(true, client);
+    }
+
+    public static EurekaService forWriteServer(TransportClient client) {
+        return new EurekaServiceImpl(false, client);
+    }
+
+    public static EurekaService forReadAndWriteServer(TransportClient readServerClient, TransportClient writeServerClient) {
+        return new EurekaServiceImpl(writeServerClient, readServerClient);
+    }
+
+    /**
+     * Returns an {@link InterestChannel} which is not yet connected to any eureka servers. The connection is done
+     * lazily when any operation is invoked on the channel.
+     *
+     * This makes it possible for clients to create this channel eagerly and use it when required.
+     *
+     * @return An {@link InterestChannel} which is not yet connected to any eureka servers.
+     */
     @Override
-    public InterestChannel forInterest(Interest<InstanceInfo> interest) {
-        InterestChannel interestChannel = discoveryChannelMonitor.activeChannel();
-        interestChannel.upgrade(interest);
-        return interestChannel;
+    public InterestChannel newInterestChannel() {
+        return new InterestChannelImpl(readServerClient);
     }
 
+
+    /**
+     * Returns an {@link RegistrationChannel} which is not yet connected to any eureka servers. The connection is done
+     * lazily when any operation is invoked on the channel.
+     *
+     * This makes it possible for clients to create this channel eagerly and use it when required.
+     *
+     * @return An {@link RegistrationChannel} which is not yet connected to any eureka servers.
+     */
     @Override
     public RegistrationChannel newRegistrationChannel() {
-        return registrationChannelMonitor.activeChannel();
+        return new RegistrationChannelImpl(writeServerClient);
+    }
+
+    @Override
+    public void shutdown() {
+        if (null != readServerClient) {
+            readServerClient.shutdown();
+        }
+        if (null != writeServerClient) {
+            writeServerClient.shutdown();
+        }
     }
 }

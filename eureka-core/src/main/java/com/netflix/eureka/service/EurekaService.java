@@ -1,9 +1,6 @@
 package com.netflix.eureka.service;
 
-import com.netflix.eureka.interests.ChangeNotification;
-import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.registry.EurekaRegistry;
-import com.netflix.eureka.registry.InstanceInfo;
 
 /**
  * A service for Eureka that provides access to the underlying {@link EurekaRegistry}.
@@ -16,18 +13,21 @@ import com.netflix.eureka.registry.InstanceInfo;
 public interface EurekaService {
 
     /**
-     * Returns a {@link InterestChannel} associated with the passed {@code interest}.
+     * Returns a new {@link InterestChannel}.
      *
-     * @param interest Interest to which the invoker is interested in receiving {@link ChangeNotification}s
-     *
-     * @return An {@link InterestChannel} corresponding to the passed {@code interest}
+     * @return A new {@link InterestChannel}.
      */
-    InterestChannel forInterest(Interest<InstanceInfo> interest);
+    InterestChannel newInterestChannel();
 
     /**
-     * Returns a {@link RegistrationChannel} for the registration of the passed {@code instanceToRegister}.
+     * Returns a new {@link RegistrationChannel}.
      *
-     * @return A {@link RegistrationChannel} for the registration of the passed {@code instanceToRegister}.
+     * @return A new {@link RegistrationChannel}.
      */
     RegistrationChannel newRegistrationChannel();
+
+    /**
+     * Shutdown this service.
+     */
+    void shutdown();
 }

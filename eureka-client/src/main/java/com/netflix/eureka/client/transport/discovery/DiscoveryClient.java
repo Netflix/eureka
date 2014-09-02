@@ -18,18 +18,15 @@ package com.netflix.eureka.client.transport.discovery;
 
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
-import com.netflix.eureka.protocol.discovery.InterestSetNotification;
 import com.netflix.eureka.registry.InstanceInfo;
 import rx.Observable;
-
-import java.util.List;
 
 /**
  * @author Tomasz Bak
  */
 public interface DiscoveryClient {
 
-    Observable<Void> registerInterestSet(Interest<InstanceInfo> interest);
+    Observable<ChangeNotification<InstanceInfo>> registerInterestSet(Interest<InstanceInfo> interest);
 
     Observable<Void> unregisterInterestSet();
 

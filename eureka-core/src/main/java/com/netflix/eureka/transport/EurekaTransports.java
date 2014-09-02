@@ -16,13 +16,6 @@
 
 package com.netflix.eureka.transport;
 
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
-import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-
 import com.netflix.eureka.interests.ApplicationInterest;
 import com.netflix.eureka.interests.FullRegistryInterest;
 import com.netflix.eureka.interests.InstanceInterest;
@@ -31,7 +24,7 @@ import com.netflix.eureka.interests.VipsInterest;
 import com.netflix.eureka.protocol.Heartbeat;
 import com.netflix.eureka.protocol.discovery.AddInstance;
 import com.netflix.eureka.protocol.discovery.DeleteInstance;
-import com.netflix.eureka.protocol.discovery.RegisterInterestSet;
+import com.netflix.eureka.protocol.discovery.InterestRegistration;
 import com.netflix.eureka.protocol.discovery.UnregisterInterestSet;
 import com.netflix.eureka.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka.protocol.registration.Register;
@@ -46,6 +39,13 @@ import com.netflix.eureka.transport.utils.TransportModel;
 import com.netflix.eureka.transport.utils.TransportModel.TransportModelBuilder;
 import io.reactivex.netty.pipeline.PipelineConfigurator;
 import rx.Observable;
+
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Communication endpoint factory methods.
@@ -66,7 +66,7 @@ public final class EurekaTransports {
             Register.class, Unregister.class, Heartbeat.class, Update.class
     };
     static final Class<?>[] DISCOVERY_PROTOCOL_MODEL = {
-            RegisterInterestSet.class, UnregisterInterestSet.class, Heartbeat.class,
+            InterestRegistration.class, UnregisterInterestSet.class, Heartbeat.class,
             AddInstance.class, DeleteInstance.class, UpdateInstanceInfo.class
     };
 
@@ -87,29 +87,29 @@ public final class EurekaTransports {
 
     public static Observable<MessageBroker> tcpRegistrationClient(String host, int port, Codec codec) {
         return new TcpMessageBrokerBuilder(new InetSocketAddress(host, port))
-                .withCodecPiepline(piplineFor(codec, REGISTRATION_MODEL))
+                .withCodecPiepline(pipelineFor(codec, REGISTRATION_MODEL))
                 .buildClient();
     }
 
     public static MessageBrokerServer tcpRegistrationServer(int port, Codec codec) {
         return new TcpMessageBrokerBuilder(new InetSocketAddress(port))
-                .withCodecPiepline(piplineFor(codec, REGISTRATION_MODEL))
+                .withCodecPiepline(pipelineFor(codec, REGISTRATION_MODEL))
                 .buildServer();
     }
 
     public static Observable<MessageBroker> tcpDiscoveryClient(String host, int port, Codec codec) {
         return new TcpMessageBrokerBuilder(new InetSocketAddress(host, port))
-                .withCodecPiepline(piplineFor(codec, DISCOVERY_MODEL))
+                .withCodecPiepline(pipelineFor(codec, DISCOVERY_MODEL))
                 .buildClient();
     }
 
     public static MessageBrokerServer tcpDiscoveryServer(int port, Codec codec) {
         return new TcpMessageBrokerBuilder(new InetSocketAddress(port))
-                .withCodecPiepline(piplineFor(codec, DISCOVERY_MODEL))
+                .withCodecPiepline(pipelineFor(codec, DISCOVERY_MODEL))
                 .buildServer();
     }
 
-    static PipelineConfigurator<Object, Object> piplineFor(Codec codec, TransportModel model) {
+    static PipelineConfigurator<Object, Object> pipelineFor(Codec codec, TransportModel model) {
         switch (codec) {
             case Avro:
                 return new AvroPipelineConfigurator(model);

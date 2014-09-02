@@ -16,13 +16,12 @@
 
 package com.netflix.eureka.server.service;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-
-import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.service.InterestChannel;
 import com.netflix.eureka.service.RegistrationChannel;
+
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Stub implementation of {@link EurekaServerService} and related channels for
@@ -42,7 +41,7 @@ public class TestableEurekaService implements EurekaServerService {
     }
 
     @Override
-    public InterestChannel forInterest(Interest<InstanceInfo> interest) {
+    public InterestChannel newInterestChannel() {
         TestableInterestChannel interestChannel = new TestableInterestChannel();
         interestChannels.add(interestChannel);
         return interestChannel;
@@ -53,6 +52,11 @@ public class TestableEurekaService implements EurekaServerService {
         TestableRegistrationChannel registrationChannel = new TestableRegistrationChannel();
         registrationChannels.add(registrationChannel);
         return registrationChannel;
+    }
+
+    @Override
+    public void shutdown() {
+        // No Op
     }
 
     public BlockingQueue<RegistrationChannel> viewNewRegistrationChannels() {
