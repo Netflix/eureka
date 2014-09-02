@@ -14,28 +14,18 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka.registry;
+package com.netflix.eureka.client.local;
 
-import com.netflix.eureka.interests.ChangeNotification;
-import com.netflix.eureka.interests.Interest;
+import com.netflix.eureka.client.DataCenterInfoProvider;
+import com.netflix.eureka.registry.DataCenterInfo;
 import rx.Observable;
 
-import java.util.Set;
-
 /**
- * @author Nitesh Kant
+ * @author Tomasz Bak
  */
-public interface EurekaRegistry {
-
-    DataCenterInfo getRegistryLocation();
-
-    Observable<Void> register(InstanceInfo instanceInfo);
-
-    Observable<Void> unregister(String instanceId);
-
-    Observable<Void> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas);
-
-    Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest);
-
-    Observable<Void> shutdown();
+public class AwsDataCenterInfoProvider implements DataCenterInfoProvider {
+    @Override
+    public Observable<DataCenterInfo> instanceLocation() {
+        return null;
+    }
 }

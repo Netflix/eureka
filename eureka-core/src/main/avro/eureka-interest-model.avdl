@@ -1,0 +1,22 @@
+@namespace("com.netflix.eureka.interests")
+protocol EurekaInterestModel {
+
+    record ApplicationInterest {
+        string applicationName;
+    }
+
+    record FullRegistryInterest {
+    }
+
+    record VipsInterest {
+        @java-class("java.util.HashSet") array<string> vips;
+    }
+
+    record InstanceInterest {
+        string instanceId;
+    }
+
+    record MultipleInterests {
+        array< union {ApplicationInterest, FullRegistryInterest, VipsInterest, InstanceInterest} > interests;
+    }
+}

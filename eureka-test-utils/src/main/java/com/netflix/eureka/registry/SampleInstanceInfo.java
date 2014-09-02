@@ -1,9 +1,7 @@
 package com.netflix.eureka.registry;
 
 import com.netflix.eureka.registry.InstanceInfo.Builder;
-import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.registry.InstanceInfo.Status;
-import com.netflix.eureka.registry.InstanceLocation;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -43,10 +41,7 @@ public enum SampleInstanceInfo {
                     .withStatus(Status.UP)
                     .withStatusPageUrl("http://eureka/status/ZuulServer")
                     .withVipAddress("vip#ZuulServer")
-                    .withInstanceLocation(new InstanceLocation.AmazonBuilder()
-                            .withRegion("us-east-1")
-                            .withZone("us-east-1a")
-                            .build());
+                    .withInstanceLocation(SampleAwsDataCenterInfo.UsEast1a.build());
         }
     },
 
@@ -77,10 +72,7 @@ public enum SampleInstanceInfo {
                     .withStatus(Status.UP)
                     .withStatusPageUrl("http://eureka/status/DiscoveryServer")
                     .withVipAddress("vip#DiscoveryServer")
-                    .withInstanceLocation(new InstanceLocation.AmazonBuilder()
-                            .withRegion("us-east-1")
-                            .withZone("us-east-1b")
-                            .build());
+                    .withInstanceLocation(SampleAwsDataCenterInfo.UsEast1a.build());
         }
     };
 

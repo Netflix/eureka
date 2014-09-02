@@ -14,28 +14,21 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka.registry;
+package com.netflix.eureka.client;
 
-import com.netflix.eureka.interests.ChangeNotification;
-import com.netflix.eureka.interests.Interest;
-import rx.Observable;
-
-import java.util.Set;
+import com.netflix.eureka.registry.NetworkAddress;
+import com.netflix.eureka.registry.InstanceInfo;
 
 /**
- * @author Nitesh Kant
+ * Most datacenters run servers with multiple IP addresses, and protocol families.
+ * The choice of a particular IP address and IP protocol version will depend on the relative
+ * location of two peer machines, and possibly other factors. This inteface provides abstraction
+ * over such resultion process.
+ *
+ * @author Tomasz Bak
  */
-public interface EurekaRegistry {
+public interface PeerAddressResolver {
 
-    DataCenterInfo getRegistryLocation();
+    NetworkAddress optimalRouting(InstanceInfo current, InstanceInfo target);
 
-    Observable<Void> register(InstanceInfo instanceInfo);
-
-    Observable<Void> unregister(String instanceId);
-
-    Observable<Void> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas);
-
-    Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest);
-
-    Observable<Void> shutdown();
 }

@@ -14,28 +14,29 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka.registry;
+package com.netflix.eureka.client;
 
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
+import com.netflix.eureka.registry.InstanceInfo;
 import rx.Observable;
 
-import java.util.Set;
-
 /**
+ *
+ *
  * @author Nitesh Kant
  */
-public interface EurekaRegistry {
+public abstract class EurekaClient {
 
-    DataCenterInfo getRegistryLocation();
+    public abstract Observable<Void> register(InstanceInfo instanceInfo);
 
-    Observable<Void> register(InstanceInfo instanceInfo);
+    public abstract Observable<Void> update(InstanceInfo instanceInfo);
 
-    Observable<Void> unregister(String instanceId);
+    public abstract Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest);
 
-    Observable<Void> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas);
+    public abstract Observable<ChangeNotification<InstanceInfo>> forVips(String... vips);
 
-    Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest);
+    public abstract Observable<Void> unregisterAllInterest();
 
-    Observable<Void> shutdown();
+    public abstract void close();
 }

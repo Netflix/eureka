@@ -44,7 +44,7 @@ public class InstanceInfo {
     protected String statusPageUrl;
     protected HashSet<String> healthCheckUrls;
     protected Long version;
-    protected InstanceLocation instanceLocation;
+    protected DataCenterInfo dataCenterInfo;
 
     // for serializers
     private InstanceInfo() {}
@@ -162,41 +162,74 @@ public class InstanceInfo {
         return version;
     }
 
-    public InstanceLocation getInstanceLocation() {
-        return instanceLocation;
+    public DataCenterInfo getDataCenterInfo() {
+        return dataCenterInfo;
     }
 
     // ------------------------------------------
     // Non-bean methods
     // ------------------------------------------
 
+
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof InstanceInfo)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         InstanceInfo that = (InstanceInfo) o;
 
-        if (app != null ? !app.equals(that.app) : that.app != null) return false;
-        if (appGroup != null ? !appGroup.equals(that.appGroup) : that.appGroup != null) return false;
-        if (asg != null ? !asg.equals(that.asg) : that.asg != null) return false;
-        if (healthCheckUrls != null ? !healthCheckUrls.equals(that.healthCheckUrls) : that.healthCheckUrls != null)
+        if (app != null ? !app.equals(that.app) : that.app != null) {
             return false;
-        if (homePageUrl != null ? !homePageUrl.equals(that.homePageUrl) : that.homePageUrl != null) return false;
-        if (hostname != null ? !hostname.equals(that.hostname) : that.hostname != null) return false;
-        if (id != null ? !id.equals(that.id) : that.id != null) return false;
-        if (instanceLocation != null ? !instanceLocation.equals(that.instanceLocation) : that.instanceLocation != null)
+        }
+        if (appGroup != null ? !appGroup.equals(that.appGroup) : that.appGroup != null) {
             return false;
-        if (ip != null ? !ip.equals(that.ip) : that.ip != null) return false;
-        if (ports != null ? !ports.equals(that.ports) : that.ports != null) return false;
-        if (securePorts != null ? !securePorts.equals(that.securePorts) : that.securePorts != null) return false;
-        if (secureVipAddress != null ? !secureVipAddress.equals(that.secureVipAddress) : that.secureVipAddress != null)
+        }
+        if (asg != null ? !asg.equals(that.asg) : that.asg != null) {
             return false;
-        if (status != that.status) return false;
-        if (statusPageUrl != null ? !statusPageUrl.equals(that.statusPageUrl) : that.statusPageUrl != null)
+        }
+        if (dataCenterInfo != null ? !dataCenterInfo.equals(that.dataCenterInfo) : that.dataCenterInfo != null) {
             return false;
-        if (version != null ? !version.equals(that.version) : that.version != null) return false;
-        if (vipAddress != null ? !vipAddress.equals(that.vipAddress) : that.vipAddress != null) return false;
+        }
+        if (healthCheckUrls != null ? !healthCheckUrls.equals(that.healthCheckUrls) : that.healthCheckUrls != null) {
+            return false;
+        }
+        if (homePageUrl != null ? !homePageUrl.equals(that.homePageUrl) : that.homePageUrl != null) {
+            return false;
+        }
+        if (hostname != null ? !hostname.equals(that.hostname) : that.hostname != null) {
+            return false;
+        }
+        if (id != null ? !id.equals(that.id) : that.id != null) {
+            return false;
+        }
+        if (ip != null ? !ip.equals(that.ip) : that.ip != null) {
+            return false;
+        }
+        if (ports != null ? !ports.equals(that.ports) : that.ports != null) {
+            return false;
+        }
+        if (securePorts != null ? !securePorts.equals(that.securePorts) : that.securePorts != null) {
+            return false;
+        }
+        if (secureVipAddress != null ? !secureVipAddress.equals(that.secureVipAddress) : that.secureVipAddress != null) {
+            return false;
+        }
+        if (status != that.status) {
+            return false;
+        }
+        if (statusPageUrl != null ? !statusPageUrl.equals(that.statusPageUrl) : that.statusPageUrl != null) {
+            return false;
+        }
+        if (version != null ? !version.equals(that.version) : that.version != null) {
+            return false;
+        }
+        if (vipAddress != null ? !vipAddress.equals(that.vipAddress) : that.vipAddress != null) {
+            return false;
+        }
 
         return true;
     }
@@ -218,7 +251,7 @@ public class InstanceInfo {
         result = 31 * result + (statusPageUrl != null ? statusPageUrl.hashCode() : 0);
         result = 31 * result + (healthCheckUrls != null ? healthCheckUrls.hashCode() : 0);
         result = 31 * result + (version != null ? version.hashCode() : 0);
-        result = 31 * result + (instanceLocation != null ? instanceLocation.hashCode() : 0);
+        result = 31 * result + (dataCenterInfo != null ? dataCenterInfo.hashCode() : 0);
         return result;
     }
 
@@ -240,7 +273,7 @@ public class InstanceInfo {
                 ", statusPageUrl='" + statusPageUrl + '\'' +
                 ", healthCheckUrls=" + healthCheckUrls +
                 ", version=" + version +
-                ", instanceLocation=" + instanceLocation +
+                ", dataCenterInfo=" + dataCenterInfo +
                 '}';
     }
 
@@ -366,7 +399,7 @@ public class InstanceInfo {
             info.statusPageUrl = another.statusPageUrl;
             info.healthCheckUrls = another.healthCheckUrls;
             info.version = another.version;
-            info.instanceLocation = another.instanceLocation;
+            info.dataCenterInfo = another.dataCenterInfo;
             return this;
         }
 
@@ -445,8 +478,8 @@ public class InstanceInfo {
             return this;
         }
 
-        public Builder withInstanceLocation(InstanceLocation location) {
-            info.instanceLocation = location;
+        public Builder withInstanceLocation(DataCenterInfo location) {
+            info.dataCenterInfo = location;
             return this;
         }
 

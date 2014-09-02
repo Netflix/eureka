@@ -24,7 +24,7 @@ public abstract class InstanceInfoTypes {
 
     abstract InstanceInfo.Status statusMethod();
 
-    abstract InstanceLocation instanceLocationMethod();
+    abstract DataCenterInfo instanceLocationMethod();
 
     public static final Set<Type> VALUE_TYPES;
     static {

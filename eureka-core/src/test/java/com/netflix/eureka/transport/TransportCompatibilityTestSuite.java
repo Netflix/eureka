@@ -1,4 +1,4 @@
-package com.netflix.eureka;
+package com.netflix.eureka.transport;
 
 import com.netflix.eureka.protocol.Heartbeat;
 import com.netflix.eureka.protocol.discovery.AddInstance;
@@ -11,7 +11,6 @@ import com.netflix.eureka.protocol.registration.Unregister;
 import com.netflix.eureka.protocol.registration.Update;
 import com.netflix.eureka.registry.SampleDelta;
 import com.netflix.eureka.registry.SampleInterest;
-import com.netflix.eureka.transport.MessageBroker;
 import rx.Notification;
 import rx.Observable;
 

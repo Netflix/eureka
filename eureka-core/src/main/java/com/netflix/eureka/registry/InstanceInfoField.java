@@ -254,16 +254,16 @@ public class InstanceInfoField<T> {
     });
 
     // ==================================================================
-    public static final InstanceInfoField<InstanceLocation> INSTANCE_LOCATION
-            = new InstanceInfoField<InstanceLocation>(Name.InstanceLocation, new Accessor<InstanceLocation>() {
+    public static final InstanceInfoField<DataCenterInfo> DATA_CENTER_INFO
+            = new InstanceInfoField<DataCenterInfo>("dataCenterInfo", new Accessor<DataCenterInfo>() {
         @Override
-        public InstanceInfo.Builder update(InstanceInfo.Builder builder, InstanceLocation value) {
+        public InstanceInfo.Builder update(InstanceInfo.Builder builder, DataCenterInfo value) {
             return builder.withInstanceLocation(value);
         }
 
         @Override
-        public InstanceLocation getValue(InstanceInfo instanceInfo) {
-            return instanceInfo.getInstanceLocation();
+        public DataCenterInfo getValue(InstanceInfo instanceInfo) {
+            return instanceInfo.getDataCenterInfo();
         }
     });
 
