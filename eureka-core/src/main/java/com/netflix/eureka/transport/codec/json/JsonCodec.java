@@ -89,6 +89,7 @@ public class JsonCodec extends ByteToMessageCodec<Object> {
         mapper.setVisibility(JsonMethod.FIELD, Visibility.ANY);
         mapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         mapper.configure(Feature.FAIL_ON_EMPTY_BEANS, false);
+        mapper.configure(Feature.AUTO_DETECT_GETTERS, false);
     }
 
     @Override

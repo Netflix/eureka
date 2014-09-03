@@ -16,9 +16,6 @@
 
 package com.netflix.eureka.registry;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.HashMap;
@@ -30,30 +27,29 @@ import java.util.Map;
  */
 public class InstanceInfoField<T> {
 
-    private static final Logger logger = LoggerFactory.getLogger(InstanceInfoField.class);
-
     public enum Name {
 
         AppGroup("appGroup"),
-        Application("app"),
+        App("app"),
         Asg("asg"),
-        Vip("vipAddress"),
-        SecureVip("secureVipAddress"),
-        HostName("hostname"),
-        IPAddress("ip"),
+        VipAddress("vipAddress"),
+        SecureVipAddress("secureVipAddress"),
+        Hostname("hostname"),
+        Ip("ip"),
         Ports("ports"),
         SecurePorts("securePorts"),
         Status("status"),
-        HomepageUrl("homePageUrl"),
+        HomePageUrl("homePageUrl"),
         StatusPageUrl("statusPageUrl"),
-        HealthcheckUrls("healthCheckUrls"),
-        DataCenterInfo("dataCenterInfo")
-        ;
+        HealthCheckUrls("healthCheckUrls"),
+        DataCenterInfo("dataCenterInfo");
 
         private static final Map<String, Name> nameStrVsName = new HashMap<String, Name>();
+
         static {
             updateNames();
         }
+
         private final String name;
 
         Name(String name) {
@@ -87,7 +83,7 @@ public class InstanceInfoField<T> {
 
     // ==================================================================
     public static final InstanceInfoField<String> APPLICATION
-            = new InstanceInfoField<String>(Name.Application, new Accessor<String>() {
+            = new InstanceInfoField<String>(Name.App, new Accessor<String>() {
         @Override
         public InstanceInfo.Builder update(InstanceInfo.Builder builder, String value) {
             return builder.withApp(value);
@@ -115,7 +111,7 @@ public class InstanceInfoField<T> {
 
     // ==================================================================
     public static final InstanceInfoField<String> VIP_ADDRESS
-            = new InstanceInfoField<String>(Name.Vip, new Accessor<String>() {
+            = new InstanceInfoField<String>(Name.VipAddress, new Accessor<String>() {
         @Override
         public InstanceInfo.Builder update(InstanceInfo.Builder builder, String value) {
             return builder.withVipAddress(value);
@@ -129,7 +125,7 @@ public class InstanceInfoField<T> {
 
     // ==================================================================
     public static final InstanceInfoField<String> SECURE_VIP_ADDRESS
-            = new InstanceInfoField<String>(Name.SecureVip, new Accessor<String>() {
+            = new InstanceInfoField<String>(Name.SecureVipAddress, new Accessor<String>() {
         @Override
         public InstanceInfo.Builder update(InstanceInfo.Builder builder, String value) {
             return builder.withSecureVipAddress(value);
@@ -143,7 +139,7 @@ public class InstanceInfoField<T> {
 
     // ==================================================================
     public static final InstanceInfoField<String> HOSTNAME
-            = new InstanceInfoField<String>(Name.HostName, new Accessor<String>() {
+            = new InstanceInfoField<String>(Name.Hostname, new Accessor<String>() {
         @Override
         public InstanceInfo.Builder update(InstanceInfo.Builder builder, String value) {
             return builder.withHostname(value);
@@ -157,7 +153,7 @@ public class InstanceInfoField<T> {
 
     // ==================================================================
     public static final InstanceInfoField<String> IP
-            = new InstanceInfoField<String>(Name.IPAddress, new Accessor<String>() {
+            = new InstanceInfoField<String>(Name.Ip, new Accessor<String>() {
         @Override
         public InstanceInfo.Builder update(InstanceInfo.Builder builder, String value) {
             return builder.withIp(value);
@@ -213,7 +209,7 @@ public class InstanceInfoField<T> {
 
     // ==================================================================
     public static final InstanceInfoField<String> HOMEPAGE_URL
-            = new InstanceInfoField<String>(Name.HomepageUrl, new Accessor<String>() {
+            = new InstanceInfoField<String>(Name.HomePageUrl, new Accessor<String>() {
         @Override
         public InstanceInfo.Builder update(InstanceInfo.Builder builder, String value) {
             return builder.withHomePageUrl(value);
@@ -241,7 +237,7 @@ public class InstanceInfoField<T> {
 
     // ==================================================================
     public static final InstanceInfoField<HashSet<String>> HEALTHCHECK_URLS
-            = new InstanceInfoField<HashSet<String>>(Name.HealthcheckUrls, new Accessor<HashSet<String>>() {
+            = new InstanceInfoField<HashSet<String>>(Name.HealthCheckUrls, new Accessor<HashSet<String>>() {
         @Override
         public InstanceInfo.Builder update(InstanceInfo.Builder builder, HashSet<String> value) {
             return builder.withHealthCheckUrls(value);
@@ -284,34 +280,34 @@ public class InstanceInfoField<T> {
         return builder;
     }
 
-    Name getFieldName() {
+    public Name getFieldName() {
         return fieldName;
     }
 
-    Type getValueType() {
+    public Type getValueType() {
         return valueType;
     }
 
-    T getValue(InstanceInfo instanceInfo) {
+    public T getValue(InstanceInfo instanceInfo) {
         return accessor.getValue(instanceInfo);
     }
 
     @SuppressWarnings("unchecked")
-    static <T> InstanceInfoField<T> forName(Name name) {
+    public static <T> InstanceInfoField<T> forName(Name name) {
         switch (name) {
             case AppGroup:
                 return (InstanceInfoField<T>) APPLICATION_GROUP;
-            case Application:
+            case App:
                 return (InstanceInfoField<T>) APPLICATION;
             case Asg:
                 return (InstanceInfoField<T>) ASG;
-            case Vip:
+            case VipAddress:
                 return (InstanceInfoField<T>) VIP_ADDRESS;
-            case SecureVip:
+            case SecureVipAddress:
                 return (InstanceInfoField<T>) SECURE_VIP_ADDRESS;
-            case HostName:
+            case Hostname:
                 return (InstanceInfoField<T>) HOSTNAME;
-            case IPAddress:
+            case Ip:
                 return (InstanceInfoField<T>) IP;
             case Ports:
                 return (InstanceInfoField<T>) PORTS;
@@ -319,11 +315,11 @@ public class InstanceInfoField<T> {
                 return (InstanceInfoField<T>) SECURE_PORTS;
             case Status:
                 return (InstanceInfoField<T>) STATUS;
-            case HomepageUrl:
+            case HomePageUrl:
                 return (InstanceInfoField<T>) HOMEPAGE_URL;
             case StatusPageUrl:
                 return (InstanceInfoField<T>) STATUS_PAGE_URL;
-            case HealthcheckUrls:
+            case HealthCheckUrls:
                 return (InstanceInfoField<T>) HEALTHCHECK_URLS;
             case DataCenterInfo:
                 return (InstanceInfoField<T>) DATA_CENTER_INFO;

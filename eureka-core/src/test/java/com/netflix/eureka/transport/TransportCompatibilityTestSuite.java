@@ -11,10 +11,12 @@ import com.netflix.eureka.protocol.registration.Unregister;
 import com.netflix.eureka.protocol.registration.Update;
 import com.netflix.eureka.registry.SampleDelta;
 import com.netflix.eureka.registry.SampleInterest;
+import com.netflix.eureka.rx.RxBlocking;
 import rx.Notification;
 import rx.Observable;
 
 import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 
 import static com.netflix.eureka.registry.SampleInstanceInfo.DiscoveryServer;
 import static com.netflix.eureka.rx.RxSniffer.sniff;
@@ -59,7 +61,7 @@ public abstract class TransportCompatibilityTestSuite {
         T receivedMsg = (T) destIt.next();
         assertEquals(content, receivedMsg);
 
-        dest.acknowledge(receivedMsg);
+        RxBlocking.isCompleted(1000, TimeUnit.SECONDS, dest.acknowledge(receivedMsg));
 
         assertTrue("Expected successful acknowledgement", ackIterator.next().isOnCompleted());
     }

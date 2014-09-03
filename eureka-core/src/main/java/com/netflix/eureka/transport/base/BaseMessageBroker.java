@@ -16,6 +16,16 @@
 
 package com.netflix.eureka.transport.base;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.DelayQueue;
+import java.util.concurrent.Delayed;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
+
 import com.netflix.eureka.transport.Acknowledgement;
 import com.netflix.eureka.transport.MessageBroker;
 import io.reactivex.netty.channel.ObservableConnection;
@@ -25,15 +35,6 @@ import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.subjects.PublishSubject;
 import rx.subjects.ReplaySubject;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.DelayQueue;
-import java.util.concurrent.Delayed;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * @author Tomasz Bak
@@ -140,11 +141,18 @@ public class BaseMessageBroker implements MessageBroker {
         return lifecycleSubject;
     }
 
+    // TODO: can we optimize that?
     private Observable<Void> writeWhenSubscribed(final Object message) {
+        final AtomicReference<Observable<Void>> observableRef = new AtomicReference<>();
         return Observable.create(new Observable.OnSubscribe<Void>() {
             @Override
             public void call(Subscriber<? super Void> subscriber) {
-                connection.writeAndFlush(message).subscribe(subscriber);
+                synchronized (observableRef) {
+                    if (observableRef.get() == null) {
+                        observableRef.set(connection.writeAndFlush(message));
+                    }
+                }
+                observableRef.get().subscribe(subscriber);
             }
         });
     }

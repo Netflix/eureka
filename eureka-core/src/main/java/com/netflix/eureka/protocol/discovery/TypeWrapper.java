@@ -1,4 +1,4 @@
-package com.netflix.eureka.registry;
+package com.netflix.eureka.protocol.discovery;
 
 import java.util.HashSet;
 
@@ -9,7 +9,7 @@ import java.util.HashSet;
  *
  * @author David Liu
  */
-public interface TypeWrapper<T> {
+interface TypeWrapper<T> {
 
     T getValue();
 
