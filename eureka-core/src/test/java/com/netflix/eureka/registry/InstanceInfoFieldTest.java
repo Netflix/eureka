@@ -31,7 +31,8 @@ public class InstanceInfoFieldTest {
         Set<String> actualFields = new HashSet<String>();
         for (Field field : instanceInfoFields) {
             InstanceInfoField iif = (InstanceInfoField) field.get(null);
-            actualFields.add(iif.getFieldName().name());
+            String name = iif.getFieldName().name();
+            actualFields.add(Character.toLowerCase(name.charAt(0)) + name.substring(1));
         }
 
         assertThat(expectedFields.size(), equalTo(actualFields.size()));

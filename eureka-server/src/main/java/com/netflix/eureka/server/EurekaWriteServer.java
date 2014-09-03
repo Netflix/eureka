@@ -25,6 +25,7 @@ import com.netflix.eureka.server.EurekaWriteServer.EurekaServerModule;
 import com.netflix.eureka.server.EurekaWriteServer.EurekaShutdownModule;
 import com.netflix.eureka.server.transport.tcp.discovery.TcpDiscoveryModule;
 import com.netflix.eureka.server.transport.tcp.registration.AvroRegistrationModule;
+import com.netflix.eureka.server.transport.tcp.registration.JsonRegistrationModule;
 import com.netflix.governator.annotations.Modules;
 import com.netflix.karyon.KaryonBootstrap;
 import com.netflix.karyon.KaryonServer;
@@ -41,7 +42,7 @@ import com.netflix.karyon.archaius.ArchaiusBootstrap;
         KaryonWebAdminModule.class,
         EurekaServerModule.class,
         //HttpRegistrationModule.class,
-        AvroRegistrationModule.class,
+        JsonRegistrationModule.class,
         TcpDiscoveryModule.class
 })
 public class EurekaWriteServer {

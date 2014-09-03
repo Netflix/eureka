@@ -101,7 +101,7 @@ public class BaseMessageBrokerTest {
         SampleObject receivedMessage = (SampleObject) serverIncoming.next();
         assertNotNull("expected message on server side", receivedMessage);
 
-        serverBroker.acknowledge(receivedMessage);
+        assertTrue("Ack not sent", RxBlocking.isCompleted(1, TimeUnit.SECONDS, serverBroker.acknowledge(receivedMessage)));
         assertTrue("Expected completed ack observable", RxBlocking.isCompleted(1, TimeUnit.SECONDS, ackObservable));
     }
 

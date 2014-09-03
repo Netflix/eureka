@@ -16,9 +16,6 @@
 
 package com.netflix.eureka.registry;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.HashSet;
 
 /**
  * A matching pair of field:value that denotes a delta change to an InstanceInfo
@@ -38,13 +35,7 @@ public class Delta<ValueType> {
     private Delta()  {} // for serializer
 
     InstanceInfo.Builder applyTo(InstanceInfo.Builder instanceInfoBuilder) {
-        if (value instanceof TypeWrapper) { // TODO: remove once we move off avro
-            @SuppressWarnings("unchecked")
-            ValueType valueToSet = (ValueType) ((TypeWrapper) value).getValue();
-            return field.update(instanceInfoBuilder, valueToSet);
-        } else {
-            return field.update(instanceInfoBuilder, value);
-        }
+        return field.update(instanceInfoBuilder, value);
     }
 
     public String getId() {
@@ -53,6 +44,14 @@ public class Delta<ValueType> {
 
     public Long getVersion() {
         return version;
+    }
+
+    public InstanceInfoField<ValueType> getField() {
+        return field;
+    }
+
+    public ValueType getValue() {
+        return value;
     }
 
     @Override
@@ -120,31 +119,6 @@ public class Delta<ValueType> {
             delta.field = field;
             delta.value = value;
             this.delta = delta;
-            return this;
-        }
-
-        // Special version to support hashsets with different parameterized types.
-        // This is needed to support avro serialization.
-        // TODO: Once/when we move off avro, revisit this and remove if possible
-        @SuppressWarnings("unchecked")
-        public <ValueType> Builder withDelta(InstanceInfoField<HashSet<ValueType>> field, HashSet<ValueType> value) {
-            if (field.getValueType() instanceof ParameterizedType) {
-                ParameterizedType ptype = (ParameterizedType)field.getValueType();
-                Type[] types = ptype.getActualTypeArguments();
-                if (types[0].equals(String.class)) {
-                    Delta<TypeWrapper.HashSetString> delta = new Delta<TypeWrapper.HashSetString>();
-                    //delta.fieldName = field.getFieldName(); //TODO: Fix me
-                    delta.value = new TypeWrapper.HashSetString((HashSet<String>)value);
-                    this.delta = delta;
-                } else if (types[0].equals(Integer.class)) {
-                    Delta<TypeWrapper.HashSetInt> delta = new Delta<TypeWrapper.HashSetInt>();
-                    //delta.fieldName = field.getFieldName(); //TODO: Fix me
-                    delta.value = new TypeWrapper.HashSetInt((HashSet<Integer>)value);
-                    this.delta = delta;
-                } else {
-                    throw new RuntimeException("Unsupported type");
-                }
-            }
             return this;
         }
 

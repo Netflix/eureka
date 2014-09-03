@@ -16,6 +16,12 @@
 
 package com.netflix.eureka.cmd;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import com.netflix.eureka.Sets;
 import com.netflix.eureka.client.EurekaClient;
 import com.netflix.eureka.client.EurekaClientImpl;
 import com.netflix.eureka.client.bootstrap.StaticServerResolver;
@@ -24,19 +30,18 @@ import com.netflix.eureka.client.transport.TransportClient;
 import com.netflix.eureka.client.transport.TransportClients;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interests;
+import com.netflix.eureka.registry.Delta;
+import com.netflix.eureka.registry.Delta.Builder;
 import com.netflix.eureka.registry.InstanceInfo;
+import com.netflix.eureka.registry.InstanceInfoField;
+import com.netflix.eureka.registry.InstanceInfoField.Name;
 import com.netflix.eureka.registry.SampleInstanceInfo;
 import com.netflix.eureka.service.EurekaService;
-import com.netflix.eureka.transport.EurekaTransports;
+import com.netflix.eureka.transport.EurekaTransports.Codec;
 import jline.Terminal;
 import jline.TerminalFactory;
 import jline.console.ConsoleReader;
 import rx.Subscriber;
-
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Simple command line Eureka client interface.
@@ -45,11 +50,12 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class EurekaCLI {
 
-    private enum Status {NotStarted, Initiated, Complete, Failed}
+    private enum Status {NotStarted, Initiated, Streaming, Complete, Failed}
 
     private final ConsoleReader consoleReader;
 
     private AtomicInteger idGenerator = new AtomicInteger(1);
+    private volatile InstanceInfo lastInstanceInfo;
     private EurekaClient eurekaClient;
     private Status registrationStatus = Status.NotStarted;
     private Status registryFetchStatus = Status.NotStarted;
@@ -71,18 +77,25 @@ public class EurekaCLI {
                 if ("quit".equals(cmd)) {
                     System.out.println("Terminatting...");
                     return;
-                } else if ("help".equals(cmd) && expect(cmd, 0, args)) {
-                    runHelp();
-                } else if ("connect".equals(cmd) && expect(cmd, 3, args)) {
-                    runConnect(args);
-                } else if ("register".equals(cmd) && expect(cmd, 0, args)) {
-                    runRegister();
-                } else if ("close".equals(cmd) && expect(cmd, 0, args)) {
-                    runClose();
-                } else if ("status".equals(cmd) && expect(cmd, 0, args)) {
-                    runStatus();
-                } else if ("show".equals(cmd) && expect(cmd, 0, args)) {
-                    listenForRegistry();
+                }
+                try {
+                    if ("help".equals(cmd) && expect(cmd, 0, args)) {
+                        runHelp();
+                    } else if ("connect".equals(cmd) && expect(cmd, 3, args)) {
+                        runConnect(args);
+                    } else if ("register".equals(cmd) && expect(cmd, 0, args)) {
+                        runRegister();
+                    } else if ("update".equals(cmd) && expect(cmd, 2, args)) {
+                        runUpdate(args);
+                    } else if ("close".equals(cmd) && expect(cmd, 0, args)) {
+                        runClose();
+                    } else if ("status".equals(cmd) && expect(cmd, 0, args)) {
+                        runStatus();
+                    } else if ("show".equals(cmd) && expect(cmd, 0, args)) {
+                        listenForRegistry();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
         }
@@ -103,6 +116,7 @@ public class EurekaCLI {
         System.out.println("  help                                                 print this help           ");
         System.out.println("  quit                                                 exit                      ");
         System.out.println("  register                                             register with server      ");
+        System.out.println("  update <field> <value>                               update own registry entry ");
         System.out.println("  status                                               print status summary      ");
         System.out.println("  show                                                 starts showing registry information");
     }
@@ -116,11 +130,10 @@ public class EurekaCLI {
         InetSocketAddress readHost = new InetSocketAddress(host, discoveryPort);
 
         TransportClient writeClient =
-                TransportClients.newTcpRegistrationClient(new StaticServerResolver<>(writeHost));
+                TransportClients.newTcpRegistrationClient(new StaticServerResolver<>(writeHost), Codec.Json);
 
         TransportClient readClient =
-                TransportClients.newTcpDiscoveryClient(new StaticServerResolver<>(readHost),
-                                                       EurekaTransports.Codec.Json);
+                TransportClients.newTcpDiscoveryClient(new StaticServerResolver<>(readHost), Codec.Json);
 
         EurekaService eurekaService = EurekaServiceImpl.forReadAndWriteServer(readClient, writeClient);
 
@@ -128,84 +141,168 @@ public class EurekaCLI {
     }
 
     private void runRegister() {
-        if (eurekaClient == null) {
-            System.out.println("ERROR: connect first to Eureka server");
+        if (!isConnected() || !expectedRegistrationStatus(Status.NotStarted, Status.Failed)) {
             return;
         }
 
+        registrationStatus = Status.Initiated;
+        lastInstanceInfo = SampleInstanceInfo.ZuulServer.builder()
+                .withId(Integer.toString(idGenerator.getAndIncrement()))
+                .build();
+        eurekaClient.register(lastInstanceInfo)
+                .subscribe(new Subscriber<Void>() {
+                    @Override
+                    public void onCompleted() {
+                        System.out.println("Successfuly registered with Eureka server");
+                        registrationStatus = Status.Complete;
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        System.out.println("ERROR: Registration failed.");
+                        e.printStackTrace();
+                        registrationStatus = Status.Failed;
+                    }
+
+                    @Override
+                    public void onNext(Void aVoid) {
+                        // No op
+                    }
+                });
+    }
+
+    private void runUpdate(String[] args) {
+        if (!isConnected() || !expectedRegistrationStatus(Status.Complete)) {
+            return;
+        }
+
+        Name name = Name.valueOf(args[0]);
+        InstanceInfoField<Object> field = InstanceInfoField.forName(name);
+
+        Object value;
+        if (field.getValueType().equals(Integer.class)) {
+            value = Integer.parseInt(args[1]);
+        } else {
+            value = args[1];
+        }
+
+        Delta<?> delta = new Builder()
+                .withId(lastInstanceInfo.getId())
+                .withVersion(lastInstanceInfo.getVersion())
+                .withDelta(field, value)
+                .build();
+        lastInstanceInfo = lastInstanceInfo.applyDelta(delta);
+
+        eurekaClient.update(lastInstanceInfo).subscribe(new Subscriber<Void>() {
+            @Override
+            public void onCompleted() {
+                System.out.println("Successfuly updated registry information.");
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                System.out.println("ERROR: Registration update failed.");
+                e.printStackTrace();
+                registrationStatus = Status.Failed;
+            }
+
+            @Override
+            public void onNext(Void aVoid) {
+                // No op
+            }
+        });
+    }
+
+    private boolean isConnected() {
+        if (eurekaClient == null) {
+            System.out.println("ERROR: connect first to Eureka server");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean expectedRegistrationStatus(Status... statusArray) {
+        if (Sets.asSet(statusArray).contains(registrationStatus)) {
+            return true;
+        }
         switch (registrationStatus) {
             case NotStarted:
+                System.out.println("ERROR: Registration not started yet.");
                 break;
             case Initiated:
                 System.out.println("ERROR: Registration already in progress.");
-                return;
+                break;
             case Complete:
                 System.out.println("ERROR: Registration already done.");
-                return;
+                break;
             case Failed:
-                System.out.println("ERROR: Previous registration failed, so proceeding with this request.");
+                System.out.println("ERROR: Previous registration failed.");
                 break;
         }
-
-        eurekaClient.register(SampleInstanceInfo.ZuulServer.builder()
-                                                           .withId(Integer.toString(idGenerator.getAndIncrement()))
-                                                           .build())
-                    .subscribe(new Subscriber<Void>() {
-                        @Override
-                        public void onCompleted() {
-                            registrationStatus = Status.Complete;
-                        }
-
-                        @Override
-                        public void onError(Throwable e) {
-                            System.out.println("ERROR: Registration failed.");
-                            e.printStackTrace();
-                            registrationStatus = Status.Failed;
-                        }
-
-                        @Override
-                        public void onNext(Void aVoid) {
-                            // No op
-                        }
-                    });
+        return false;
     }
 
     private void listenForRegistry() {
+        if (eurekaClient == null) {
+            System.out.println("Not connected");
+            return;
+        }
+
+        switch (registryFetchStatus) {
+            case NotStarted:
+                break;
+            case Initiated:
+            case Streaming:
+                System.out.println("ERROR: Registry fetch already in progress.");
+                return;
+            case Complete:
+                System.out.println("ERROR: Registry fetch already done.");
+                return;
+            case Failed:
+                System.out.println("ERROR: Previous registry fetch failed, so proceeding with this request.");
+                break;
+        }
+
+        registryFetchStatus = Status.Initiated;
         eurekaClient.forInterest(Interests.forFullRegistry())
-                    .subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
-                        @Override
-                        public void onCompleted() {
-                            registryFetchStatus = Status.Complete;
-                        }
+                .subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
+                    @Override
+                    public void onCompleted() {
+                        registryFetchStatus = Status.Complete;
+                    }
 
-                        @Override
-                        public void onError(Throwable e) {
-                            System.out.println("ERROR: Fetch registry failed.");
-                            e.printStackTrace();
-                            registryFetchStatus = Status.Failed;
-                        }
+                    @Override
+                    public void onError(Throwable e) {
+                        System.out.println("ERROR: Fetch registry failed.");
+                        e.printStackTrace();
+                        registryFetchStatus = Status.Failed;
+                    }
 
-                        @Override
-                        public void onNext(ChangeNotification<InstanceInfo> notification) {
-                            switch (notification.getKind()) {
-                                case Add:
-                                    System.out.println("Instance Added: " + notification.getData());
-                                    break;
-                                case Delete:
-                                    System.out.println("Instance deleted: " + notification.getData());
-                                    break;
-                                case Modify:
-                                    System.out.println("Instance updated: " + notification.getData());
-                                    break;
-                            }
+                    @Override
+                    public void onNext(ChangeNotification<InstanceInfo> notification) {
+                        registryFetchStatus = Status.Streaming;
+                        switch (notification.getKind()) {
+                            case Add:
+                                System.out.println("Instance Added: " + notification.getData());
+                                break;
+                            case Delete:
+                                System.out.println("Instance deleted: " + notification.getData());
+                                break;
+                            case Modify:
+                                System.out.println("Instance updated: " + notification.getData());
+                                break;
                         }
-                    });
+                    }
+                });
     }
 
     private void runClose() {
         if (eurekaClient != null) {
             System.out.println("Bye!");
             eurekaClient.close();
+            eurekaClient = null;
+            registrationStatus = Status.NotStarted;
+            registryFetchStatus = Status.NotStarted;
         }
     }
 
@@ -237,8 +334,11 @@ public class EurekaCLI {
                 case Initiated:
                     System.out.println("Registry fetch status: Initiated but not completed.");
                     break;
+                case Streaming:
+                    System.out.println("Registry fetch status: streaming updates from server");
+                    break;
                 case Complete:
-                    System.out.println("Registry fetch status: registered");
+                    System.out.println("Registry fetch status: finished");
                     break;
                 case Failed:
                     System.out.println("Registry fetch status: failed");

@@ -46,28 +46,4 @@ protocol EurekaRegistryModel {
         long version;
         union {AwsDataCenterInfo} dataCenterInfo;
     }
-
-    @namespace("com.netflix.eureka.registry.TypeWrapper$")
-    record HashSetString {
-        @java-class("java.util.HashSet") array<string> value;
-    }
-
-    @namespace("com.netflix.eureka.registry.TypeWrapper$")
-    record HashSetInt {
-        @java-class("java.util.HashSet") array<int> value;
-    }
-
-    record Delta {
-        string id;
-        long version;
-        string fieldName;
-        union {
-            string,
-            long,
-            AwsDataCenterInfo,
-            com.netflix.eureka.registry.InstanceInfo$.Status,
-            com.netflix.eureka.registry.TypeWrapper$.HashSetString,
-            com.netflix.eureka.registry.TypeWrapper$.HashSetInt
-        } value;
-    }
 }
