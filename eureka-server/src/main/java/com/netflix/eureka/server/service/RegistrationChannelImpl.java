@@ -108,13 +108,26 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
                 return Observable.error(INSTANCE_NOT_REGISTERED_EXCEPTION);
             case Registered:
                 Set<Delta<?>> deltas = newInfo.diffNewer(currentInfo);
-                return registry.update(newInfo, deltas)
-                               .doOnCompleted(new Action0() {
-                                   @Override
-                                   public void call() {
-                                       currentInfo = newInfo;
-                                   }
-                               });
+                // TODO: shall we chain ack observable with update?
+                Observable<Void> updateResult = registry.update(newInfo, deltas);
+                updateResult.subscribe(new Subscriber<Void>() {
+                    @Override
+                    public void onCompleted() {
+                        currentInfo = newInfo;
+                        sendAckOnTransport();
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        sendErrorOnTransport(e);
+                    }
+
+                    @Override
+                    public void onNext(Void aVoid) {
+                        // No op
+                    }
+                });
+                return updateResult;
             case Closed:
                 return Observable.error(CHANNEL_CLOSED_EXCEPTION);
             default:
