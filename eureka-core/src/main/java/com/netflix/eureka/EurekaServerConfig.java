@@ -511,4 +511,26 @@ public interface EurekaServerConfig {
      * @return {@code true} if the clientAuthHeaders should be logged and/or emitted as metrics
      */
     boolean shouldLogIdentityHeaders();
+
+    /**
+     * Indicates whether the rate limiter should be enabled or disabled.
+     */
+    boolean isRateLimiterEnabled();
+
+    /**
+     * A list of certified clients. This is in addition to standard eureka Java clients.
+     */
+    Set<String> getRateLimiterPrivilidgedClients();
+
+    /**
+     * Rate limiter, sliding window algorithm property. Specifies maximum allowed number of requests
+     * within a configured time window (see {@link #getRateLimiterWindowSize()}).
+     */
+    int getRateLimiterMaxInWindow();
+
+    /**
+     * Rate limiter, sliding window algorithm property. Specifies time window, rolling over the time
+     * within which client requests are counted (see {@link #getRateLimiterMaxInWindow()}).
+     */
+    int getRateLimiterWindowSize();
 }

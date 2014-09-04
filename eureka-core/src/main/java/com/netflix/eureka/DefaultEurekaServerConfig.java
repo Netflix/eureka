@@ -24,6 +24,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import com.netflix.config.DynamicBooleanProperty;
+import com.netflix.config.DynamicIntProperty;
+import com.netflix.config.DynamicStringSetProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +73,14 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     private static final int TIME_TO_WAIT_FOR_REPLICATION = 30000;
 
     private String namespace = "eureka.";
+
+    // These counters are checked for each HTTP request. Instantiating them per request like for the other
+    // properties would be too costly.
+    private final DynamicStringSetProperty rateLimiterPrivilidgedClients =
+            new DynamicStringSetProperty(namespace + "rateLimiter.privilidgedClients", Collections.<String>emptySet());
+    private final DynamicBooleanProperty rateLimiterEnabled = configInstance.getBooleanProperty(namespace + "rateLimiter.enabled", true);
+    private final DynamicIntProperty rateLimiterMaxInWindow = configInstance.getIntProperty(namespace + "rateLimiter.maxInWindow", 1000);
+    private final DynamicIntProperty rateLimiterWindowSize = configInstance.getIntProperty(namespace + "rateLimiter.windowSize", 1000);
 
     public DefaultEurekaServerConfig() {
         init();
@@ -300,7 +311,7 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
         return configInstance
         .getLongProperty(
                 namespace
-                + "maxIdleThreadAgeInMinutesForStatusReplication",
+                        + "maxIdleThreadAgeInMinutesForStatusReplication",
                 10).get();
     }
 
@@ -532,5 +543,25 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     @Override
     public boolean shouldLogIdentityHeaders() {
         return configInstance.getBooleanProperty(namespace + "auth.shouldLogIdentityHeaders", true).get();
+    }
+
+    @Override
+    public boolean isRateLimiterEnabled() {
+        return rateLimiterEnabled.get();
+    }
+
+    @Override
+    public Set<String> getRateLimiterPrivilidgedClients() {
+        return rateLimiterPrivilidgedClients.get();
+    }
+
+    @Override
+    public int getRateLimiterMaxInWindow() {
+        return rateLimiterMaxInWindow.get();
+    }
+
+    @Override
+    public int getRateLimiterWindowSize() {
+        return rateLimiterWindowSize.get();
     }
 }
