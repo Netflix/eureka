@@ -6,7 +6,6 @@ protocol DiscoveryProtocol {
 
     @namespace("com.netflix.eureka.transport")
     record Acknowledgement {
-        string correlationId;
     }
 
     @namespace("com.netflix.eureka.protocol")

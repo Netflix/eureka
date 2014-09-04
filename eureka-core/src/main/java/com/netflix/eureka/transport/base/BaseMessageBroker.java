@@ -18,15 +18,23 @@ package com.netflix.eureka.transport.base;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.eureka.transport.Acknowledgement;
 import com.netflix.eureka.transport.MessageBroker;
 import io.reactivex.netty.channel.ObservableConnection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.Scheduler;
+import rx.Scheduler.Worker;
 import rx.Subscriber;
+import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
 import rx.subjects.ReplaySubject;
 
@@ -35,13 +43,45 @@ import rx.subjects.ReplaySubject;
  */
 public class BaseMessageBroker implements MessageBroker {
 
+    private static final Logger logger = LoggerFactory.getLogger(BaseMessageBroker.class);
+
     private final ObservableConnection<Object, Object> connection;
+    private final Worker schedulerWorker;
+
     private final PublishSubject<Void> lifecycleSubject = PublishSubject.create();
 
-    private final Queue<ReplaySubject<Void>> pendingAck = new ConcurrentLinkedQueue<>();
+    private final Queue<PendingAck> pendingAck = new ConcurrentLinkedQueue<>();
+
+    private final Action0 cleanupTask = new Action0() {
+        @Override
+        public void call() {
+            try {
+                long currentTime = schedulerWorker.now();
+                if (!pendingAck.isEmpty() && pendingAck.peek().getExpiryTime() <= currentTime) {
+                    TimeoutException timeoutException = new TimeoutException("acknowledgement timeout");
+                    while (!pendingAck.isEmpty()) {
+                        ReplaySubject<Void> ackSubject = pendingAck.poll().getAckSubject();
+                        ackSubject.onError(timeoutException);
+                    }
+                    lifecycleSubject.onError(timeoutException);
+                } else {
+                    schedulerWorker.schedule(cleanupTask, 1, TimeUnit.SECONDS);
+                }
+            } catch (RuntimeException e) {
+                logger.error("Acknowledgement cleanup task failed with an exception: " + e.getMessage());
+                logger.debug("Acknowledgement failure stacktrace", e);
+                throw e;
+            }
+        }
+    };
 
     public BaseMessageBroker(ObservableConnection<Object, Object> connection) {
+        this(connection, Schedulers.computation());
+    }
+
+    public BaseMessageBroker(ObservableConnection<Object, Object> connection, Scheduler expiryScheduler) {
         this.connection = connection;
+        schedulerWorker = expiryScheduler.createWorker();
         installAcknowledgementHandler();
     }
 
@@ -56,10 +96,12 @@ public class BaseMessageBroker implements MessageBroker {
                     lifecycleSubject.onError(new IllegalStateException("received acknowledgment while non expected"));
                     return;
                 }
-                ReplaySubject<Void> observable = pendingAck.poll();
+                ReplaySubject<Void> observable = pendingAck.poll().ackSubject;
                 observable.onCompleted();
             }
         });
+
+        schedulerWorker.schedule(cleanupTask, 1, TimeUnit.SECONDS);
     }
 
     @Override
@@ -75,7 +117,8 @@ public class BaseMessageBroker implements MessageBroker {
     @Override
     public Observable<Void> submitWithAck(Object message, long timeout) {
         ReplaySubject<Void> ackObservable = ReplaySubject.create();
-        pendingAck.add(ackObservable);
+        long expiryTime = timeout <= 0 ? Long.MAX_VALUE : schedulerWorker.now() + timeout;
+        pendingAck.add(new PendingAck(expiryTime, ackObservable));
 
         return Observable.concat(
                 writeWhenSubscribed(message),
@@ -85,7 +128,7 @@ public class BaseMessageBroker implements MessageBroker {
 
     @Override
     public Observable<Void> acknowledge(Object message) {
-        return writeWhenSubscribed(new Acknowledgement(""));
+        return writeWhenSubscribed(Acknowledgement.INSTANCE);
     }
 
     @Override
@@ -102,6 +145,7 @@ public class BaseMessageBroker implements MessageBroker {
     public void shutdown() {
         Observable<Void> closeObservable = connection.close();
         closeObservable.subscribe(lifecycleSubject);
+        schedulerWorker.unsubscribe();
     }
 
     @Override
@@ -123,5 +167,23 @@ public class BaseMessageBroker implements MessageBroker {
                 observableRef.get().subscribe(subscriber);
             }
         });
+    }
+
+    static class PendingAck {
+        private final long expiryTime;
+        private final ReplaySubject<Void> ackSubject;
+
+        PendingAck(long expiryTime, ReplaySubject<Void> ackSubject) {
+            this.expiryTime = expiryTime;
+            this.ackSubject = ackSubject;
+        }
+
+        public long getExpiryTime() {
+            return expiryTime;
+        }
+
+        public ReplaySubject<Void> getAckSubject() {
+            return ackSubject;
+        }
     }
 }

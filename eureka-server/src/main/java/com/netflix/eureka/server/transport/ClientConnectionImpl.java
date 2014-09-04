@@ -64,7 +64,7 @@ public class ClientConnectionImpl implements ClientConnection {
 
     @Override
     public Observable<Void> sendAcknowledgment() {
-        return broker.submit(new Acknowledgement("")); // TODO: Acks are always sequential (ack last msg received), why do we need correlation id?
+        return broker.submit(Acknowledgement.INSTANCE);
     }
 
     @Override
