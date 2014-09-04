@@ -1,13 +1,14 @@
 package com.netflix.eureka.registry;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-
 import org.junit.Test;
 
 import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.Set;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
 
 /**
  * @author David Liu
@@ -30,7 +31,8 @@ public class InstanceInfoFieldTest {
         Set<String> actualFields = new HashSet<String>();
         for (Field field : instanceInfoFields) {
             InstanceInfoField iif = (InstanceInfoField) field.get(null);
-            actualFields.add(iif.getFieldName());
+            String name = iif.getFieldName().name();
+            actualFields.add(Character.toLowerCase(name.charAt(0)) + name.substring(1));
         }
 
         assertThat(expectedFields.size(), equalTo(actualFields.size()));

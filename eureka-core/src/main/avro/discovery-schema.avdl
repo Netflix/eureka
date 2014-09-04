@@ -6,7 +6,6 @@ protocol DiscoveryProtocol {
 
     @namespace("com.netflix.eureka.transport")
     record Acknowledgement {
-        string correlationId;
     }
 
     @namespace("com.netflix.eureka.protocol")
@@ -21,11 +20,36 @@ protocol DiscoveryProtocol {
         string instanceId;
     }
 
-    record UpdateInstanceInfo {
-        com.netflix.eureka.registry.Delta delta;
+    @namespace("com.netflix.eureka.protocol.discovery.TypeWrapper$")
+    record HashSetString {
+        @java-class("java.util.HashSet") array<string> value;
     }
 
-    record RegisterInterestSet {
+    @namespace("com.netflix.eureka.protocol.discovery.TypeWrapper$")
+    record HashSetInt {
+        @java-class("java.util.HashSet") array<int> value;
+    }
+
+    @namespace("com.netflix.eureka.protocol.discovery.UpdateInstanceInfo$")
+    record DeltaDTO {
+        string id;
+        long version;
+        string fieldName;
+        union {
+            string,
+            long,
+            com.netflix.eureka.registry.AwsDataCenterInfo,
+            com.netflix.eureka.registry.InstanceInfo$.Status,
+            com.netflix.eureka.protocol.discovery.TypeWrapper$.HashSetString,
+            com.netflix.eureka.protocol.discovery.TypeWrapper$.HashSetInt
+        } value;
+    }
+
+    record UpdateInstanceInfo {
+        com.netflix.eureka.protocol.discovery.UpdateInstanceInfo$.DeltaDTO deltaDTO;
+    }
+
+    record InterestRegistration {
         @java-class("[Lcom.netflix.eureka.interests.Interest;")
         array<
             union {
@@ -45,7 +69,7 @@ protocol DiscoveryProtocol {
             AddInstance,
             DeleteInstance,
             UpdateInstanceInfo,
-            RegisterInterestSet,
+            InterestRegistration,
             UnregisterInterestSet,
             com.netflix.eureka.transport.Acknowledgement,
             com.netflix.eureka.protocol.Heartbeat

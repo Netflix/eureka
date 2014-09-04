@@ -25,30 +25,40 @@ import com.netflix.eureka.service.InterestChannel;
 import com.netflix.eureka.service.RegistrationChannel;
 import rx.Observable;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 /**
  * @author Tomasz Bak
  */
 public class EurekaClientImpl extends EurekaClient {
 
-    private final EurekaService service;
-    private final InterestChannel interestChannel;
-    private final RegistrationChannel registrationChannel; // TODO: Do only if it is registrable
+    // TODO: Store instances and address multiple interest subscriptions
+    // TODO: Serialize calls to interest/registration channel
+
+    /**
+     * These channels are eagerly created and updated atomically whenever they are disconnected.
+     */
+    private final AtomicReference<InterestChannel> interestChannel;
+    private final AtomicReference<RegistrationChannel> registrationChannel;
 
     public EurekaClientImpl(EurekaService service) {
-        this.service = service;
-        interestChannel = service.forInterest(null); //TODO: API should change to create an empty channel.
-        registrationChannel = service.newRegistrationChannel();
+        interestChannel = new AtomicReference<InterestChannel>(service.newInterestChannel());
+        registrationChannel = new AtomicReference<RegistrationChannel>(service.newRegistrationChannel());
+    }
+
+    @Override
+    public Observable<Void> register(InstanceInfo instanceInfo) {
+        return getRegistrationChannel().register(instanceInfo);
     }
 
     @Override
     public Observable<Void> update(InstanceInfo instanceInfo) {
-        return registrationChannel.update(instanceInfo);
+        return getRegistrationChannel().update(instanceInfo);
     }
 
     @Override
     public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest) {
-        interestChannel.upgrade(interest);
-        return interestChannel.asObservable();
+        return getInterestChannel().register(interest); // TODO: Implement multiple interests support
     }
 
     @Override
@@ -57,7 +67,21 @@ public class EurekaClientImpl extends EurekaClient {
     }
 
     @Override
-    public Observable<Void> close() {
-        return null;
+    public Observable<Void> unregisterAllInterest() {
+        return getInterestChannel().unregister();
+    }
+
+    @Override
+    public void close() {
+        interestChannel.get().close();
+        registrationChannel.get().close();
+    }
+
+    protected InterestChannel getInterestChannel() {
+        return interestChannel.get(); // TODO: Implement re-initialize on disconnect.
+    }
+
+    protected RegistrationChannel getRegistrationChannel() {
+        return registrationChannel.get(); // TODO: Implement re-initialize on disconnect.
     }
 }

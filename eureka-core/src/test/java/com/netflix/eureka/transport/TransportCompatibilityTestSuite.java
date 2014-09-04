@@ -1,11 +1,9 @@
 package com.netflix.eureka.transport;
 
-import java.util.Iterator;
-
 import com.netflix.eureka.protocol.Heartbeat;
 import com.netflix.eureka.protocol.discovery.AddInstance;
 import com.netflix.eureka.protocol.discovery.DeleteInstance;
-import com.netflix.eureka.protocol.discovery.RegisterInterestSet;
+import com.netflix.eureka.protocol.discovery.InterestRegistration;
 import com.netflix.eureka.protocol.discovery.UnregisterInterestSet;
 import com.netflix.eureka.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka.protocol.registration.Register;
@@ -13,12 +11,17 @@ import com.netflix.eureka.protocol.registration.Unregister;
 import com.netflix.eureka.protocol.registration.Update;
 import com.netflix.eureka.registry.SampleDelta;
 import com.netflix.eureka.registry.SampleInterest;
+import com.netflix.eureka.rx.RxBlocking;
 import rx.Notification;
 import rx.Observable;
 
-import static com.netflix.eureka.registry.SampleInstanceInfo.*;
-import static com.netflix.eureka.rx.RxSniffer.*;
-import static org.junit.Assert.*;
+import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
+
+import static com.netflix.eureka.registry.SampleInstanceInfo.DiscoveryServer;
+import static com.netflix.eureka.rx.RxSniffer.sniff;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Tomasz Bak
@@ -58,7 +61,7 @@ public abstract class TransportCompatibilityTestSuite {
         T receivedMsg = (T) destIt.next();
         assertEquals(content, receivedMsg);
 
-        dest.acknowledge(receivedMsg);
+        RxBlocking.isCompleted(1000, TimeUnit.SECONDS, dest.acknowledge(receivedMsg));
 
         assertTrue("Expected successful acknowledgement", ackIterator.next().isOnCompleted());
     }
@@ -111,7 +114,7 @@ public abstract class TransportCompatibilityTestSuite {
         }
 
         private void registerInterestSetTest() {
-            runClientToServerWithAck(new RegisterInterestSet(SampleInterest.MultipleApps.build()));
+            runClientToServerWithAck(new InterestRegistration(SampleInterest.MultipleApps.build()));
         }
 
         private void unregisterInterestSetTest() {

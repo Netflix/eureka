@@ -16,7 +16,7 @@
 
 package com.netflix.eureka.client.transport.registration.http;
 
-import com.netflix.eureka.client.transport.common.http.HttpErrorHandler;
+import com.netflix.eureka.client.transport.http.HttpErrorHandler;
 import com.netflix.eureka.client.transport.registration.RegistrationClient;
 import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.utils.Json;

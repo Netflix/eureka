@@ -15,7 +15,7 @@ import java.util.Collection;
  */
 public class ModifyNotification<T> extends ChangeNotification<T> {
 
-    private final Collection<Delta> delta;
+    private final Collection<Delta<?>> delta;
 
     /**
      * Creates a new notification.
@@ -23,12 +23,12 @@ public class ModifyNotification<T> extends ChangeNotification<T> {
      * @param data Data which resulted after applying the passed delta to the existing data.
      * @param delta Delta which resulted in the passed {@code data}. The collection should typically be immutable.
      */
-    public ModifyNotification(T data, Collection<Delta> delta) {
+    public ModifyNotification(T data, Collection<Delta<?>> delta) {
         super(Kind.Modify, data);
         this.delta = delta;
     }
 
-    public Collection<Delta> getDelta() {
+    public Collection<Delta<?>> getDelta() {
         return delta;
     }
 }

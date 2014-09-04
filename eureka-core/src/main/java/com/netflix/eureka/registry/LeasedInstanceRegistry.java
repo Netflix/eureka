@@ -21,13 +21,16 @@ import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.IndexRegistry;
 import com.netflix.eureka.interests.InstanceInfoInitStateHolder;
 import com.netflix.eureka.interests.Interest;
+import com.netflix.eureka.interests.ModifyNotification;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Func1;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -139,17 +142,16 @@ public class LeasedInstanceRegistry implements EurekaRegistry {
     }
 
     @Override
-    public Observable<Void> update(InstanceInfo instanceInfo) {
-        final String instanceId = instanceInfo.getId();
+    public Observable<Void> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
+        final String instanceId = updatedInfo.getId();
 
-        Lease<InstanceInfo> newLease = new Lease<InstanceInfo>(instanceInfo);
+        Lease<InstanceInfo> newLease = new Lease<InstanceInfo>(updatedInfo);
         Lease<InstanceInfo> existing = internalStore.put(instanceId, newLease);
 
         if (existing == null) {  // is an add
             notificationSubject.onNext(newLease.getHolderSnapshot());
         } else {  // is a modify
-            notificationSubject.onNext(new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Modify,
-                    instanceInfo));
+            notificationSubject.onNext(new ModifyNotification<InstanceInfo>(updatedInfo, deltas));
         }
 
         return Observable.empty();
@@ -175,7 +177,12 @@ public class LeasedInstanceRegistry implements EurekaRegistry {
                 .withStatus(status)
                 .build();
 
-        return update(update);
+        Set<Delta<?>> deltas = new HashSet<Delta<?>>();
+        Delta<?> delta = new Delta.Builder().withDelta(InstanceInfoField.STATUS, status)
+                                            .withId(instanceId).withVersion(update.getVersion())
+                                            .build();
+        deltas.add(delta);
+        return update(update, deltas);
     }
 
     /**

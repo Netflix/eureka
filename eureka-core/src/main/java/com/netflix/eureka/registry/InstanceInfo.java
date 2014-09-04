@@ -283,7 +283,7 @@ public class InstanceInfo {
      * @param delta the delta changes to applyTo
      * @return a new InstanceInfo with the deltas applied
      */
-    public InstanceInfo applyDelta(Delta delta) throws Exception {
+    public InstanceInfo applyDelta(Delta delta) {
         if (!id.equals(delta.getId())) {
             throw new UnsupportedOperationException("Cannot apply delta to instanceInfo with non-matching id: "
                     + delta.getId() + ", " + id);
@@ -302,7 +302,7 @@ public class InstanceInfo {
      * @param another the "newer" instanceInfo
      * @return the set of deltas, or null if the diff is invalid (InstanceInfos are null or id mismatch)
      */
-    public Set<Delta<?>> diffNewer(InstanceInfo another) throws Exception {
+    public Set<Delta<?>> diffNewer(InstanceInfo another) {
         return diff(this, another);
     }
 
@@ -314,11 +314,11 @@ public class InstanceInfo {
      * @param another the "older" instanceInfo
      * @return the set of deltas, or null if the diff is invalid (InstanceInfos are null or id mismatch)
      */
-    public Set<Delta<?>> diffOlder(InstanceInfo another) throws Exception {
+    public Set<Delta<?>> diffOlder(InstanceInfo another) {
         return diff(another, this);
     }
 
-    private static Set<Delta<?>> diff(InstanceInfo oldInstanceInfo, InstanceInfo newInstanceInfo) throws Exception {
+    private static Set<Delta<?>> diff(InstanceInfo oldInstanceInfo, InstanceInfo newInstanceInfo) {
         if (oldInstanceInfo == null || newInstanceInfo == null) {
             return null;
         }
@@ -330,7 +330,8 @@ public class InstanceInfo {
         Set<Delta<?>> deltas = new HashSet<Delta<?>>();
 
         Long newVersion = newInstanceInfo.getVersion();
-        for (InstanceInfoField field : InstanceInfoField.FIELD_MAP.values()) {
+        for (InstanceInfoField.Name fieldName : InstanceInfoField.Name.values()) {
+            InstanceInfoField<Object> field = InstanceInfoField.forName(fieldName);
             Object oldValue = field.getValue(oldInstanceInfo);
             Object newValue = field.getValue(newInstanceInfo);
 

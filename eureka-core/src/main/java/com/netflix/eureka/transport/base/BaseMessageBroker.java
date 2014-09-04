@@ -16,21 +16,25 @@
 
 package com.netflix.eureka.transport.base;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.DelayQueue;
-import java.util.concurrent.Delayed;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.eureka.transport.Acknowledgement;
 import com.netflix.eureka.transport.MessageBroker;
 import io.reactivex.netty.channel.ObservableConnection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.Scheduler;
+import rx.Scheduler.Worker;
+import rx.Subscriber;
+import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
 import rx.subjects.ReplaySubject;
 
@@ -39,32 +43,45 @@ import rx.subjects.ReplaySubject;
  */
 public class BaseMessageBroker implements MessageBroker {
 
+    private static final Logger logger = LoggerFactory.getLogger(BaseMessageBroker.class);
+
     private final ObservableConnection<Object, Object> connection;
+    private final Worker schedulerWorker;
+
     private final PublishSubject<Void> lifecycleSubject = PublishSubject.create();
 
-    private final Map<String, ReplaySubject<Void>> pendingAck = new ConcurrentHashMap<String, ReplaySubject<Void>>();
-    private final DelayQueue<AckExpiry> expiryQueue = new DelayQueue<AckExpiry>();
-    private final ScheduledExecutorService expiryScheduler = Executors.newSingleThreadScheduledExecutor();
+    private final Queue<PendingAck> pendingAck = new ConcurrentLinkedQueue<>();
 
-    private final Runnable cleanupTask = new Runnable() {
+    private final Action0 cleanupTask = new Action0() {
         @Override
-        public void run() {
+        public void call() {
             try {
-                while (!expiryQueue.isEmpty()) {
-                    String correlationId = expiryQueue.poll().getCorrelationId();
-                    ReplaySubject<Void> ackSubject = pendingAck.get(correlationId);
-                    ackSubject.onError(new TimeoutException("acknowledgement timeout for message with correlation id " + correlationId));
+                long currentTime = schedulerWorker.now();
+                if (!pendingAck.isEmpty() && pendingAck.peek().getExpiryTime() <= currentTime) {
+                    TimeoutException timeoutException = new TimeoutException("acknowledgement timeout");
+                    while (!pendingAck.isEmpty()) {
+                        ReplaySubject<Void> ackSubject = pendingAck.poll().getAckSubject();
+                        ackSubject.onError(timeoutException);
+                    }
+                    lifecycleSubject.onError(timeoutException);
+                } else {
+                    schedulerWorker.schedule(cleanupTask, 1, TimeUnit.SECONDS);
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                expiryScheduler.schedule(cleanupTask, 1, TimeUnit.SECONDS);
+            } catch (RuntimeException e) {
+                logger.error("Acknowledgement cleanup task failed with an exception: " + e.getMessage());
+                logger.debug("Acknowledgement failure stacktrace", e);
+                throw e;
             }
         }
     };
 
     public BaseMessageBroker(ObservableConnection<Object, Object> connection) {
+        this(connection, Schedulers.computation());
+    }
+
+    public BaseMessageBroker(ObservableConnection<Object, Object> connection, Scheduler expiryScheduler) {
         this.connection = connection;
+        schedulerWorker = expiryScheduler.createWorker();
         installAcknowledgementHandler();
     }
 
@@ -75,20 +92,21 @@ public class BaseMessageBroker implements MessageBroker {
                 if (!(message instanceof Acknowledgement)) {
                     return;
                 }
-                Acknowledgement ack = (Acknowledgement) message;
-                String correlationId = ack.getCorrelationId();
-                ReplaySubject<Void> observable = pendingAck.get(correlationId);
-                if (observable != null) {
-                    observable.onCompleted();
+                if (pendingAck.isEmpty()) {
+                    lifecycleSubject.onError(new IllegalStateException("received acknowledgment while non expected"));
+                    return;
                 }
+                ReplaySubject<Void> observable = pendingAck.poll().ackSubject;
+                observable.onCompleted();
             }
         });
-        expiryScheduler.schedule(cleanupTask, 1, TimeUnit.SECONDS);
+
+        schedulerWorker.schedule(cleanupTask, 1, TimeUnit.SECONDS);
     }
 
     @Override
     public Observable<Void> submit(Object message) {
-        return connection.writeAndFlush(message);
+        return writeWhenSubscribed(message);
     }
 
     @Override
@@ -98,23 +116,19 @@ public class BaseMessageBroker implements MessageBroker {
 
     @Override
     public Observable<Void> submitWithAck(Object message, long timeout) {
-        String correlationId = correlationIdFor(message);
-
         ReplaySubject<Void> ackObservable = ReplaySubject.create();
-        pendingAck.put(correlationId, ackObservable);
-        if (timeout > 0) {
-            expiryQueue.put(new AckExpiry(correlationId, timeout));
-        }
+        long expiryTime = timeout <= 0 ? Long.MAX_VALUE : schedulerWorker.now() + timeout;
+        pendingAck.add(new PendingAck(expiryTime, ackObservable));
 
         return Observable.concat(
-                connection.writeAndFlush(message),
+                writeWhenSubscribed(message),
                 ackObservable
         );
     }
 
     @Override
     public Observable<Void> acknowledge(Object message) {
-        return connection.writeAndFlush(new Acknowledgement(correlationIdFor(message)));
+        return writeWhenSubscribed(Acknowledgement.INSTANCE);
     }
 
     @Override
@@ -131,7 +145,7 @@ public class BaseMessageBroker implements MessageBroker {
     public void shutdown() {
         Observable<Void> closeObservable = connection.close();
         closeObservable.subscribe(lifecycleSubject);
-        expiryScheduler.shutdown();
+        schedulerWorker.unsubscribe();
     }
 
     @Override
@@ -139,40 +153,37 @@ public class BaseMessageBroker implements MessageBroker {
         return lifecycleSubject;
     }
 
-    private String correlationIdFor(Object message) {
-        return Integer.toString(message.hashCode());
+    // TODO: can we optimize that?
+    private Observable<Void> writeWhenSubscribed(final Object message) {
+        final AtomicReference<Observable<Void>> observableRef = new AtomicReference<>();
+        return Observable.create(new Observable.OnSubscribe<Void>() {
+            @Override
+            public void call(Subscriber<? super Void> subscriber) {
+                synchronized (observableRef) {
+                    if (observableRef.get() == null) {
+                        observableRef.set(connection.writeAndFlush(message));
+                    }
+                }
+                observableRef.get().subscribe(subscriber);
+            }
+        });
     }
 
-    private static class AckExpiry implements Delayed {
-        private final String correlationId;
-        private final long expiry;
+    static class PendingAck {
+        private final long expiryTime;
+        private final ReplaySubject<Void> ackSubject;
 
-        public AckExpiry(String correlationId, long timeout) {
-            this.correlationId = correlationId;
-            expiry = System.currentTimeMillis() + timeout;
+        PendingAck(long expiryTime, ReplaySubject<Void> ackSubject) {
+            this.expiryTime = expiryTime;
+            this.ackSubject = ackSubject;
         }
 
-        public String getCorrelationId() {
-            return correlationId;
+        public long getExpiryTime() {
+            return expiryTime;
         }
 
-        @Override
-        public long getDelay(TimeUnit unit) {
-            long delay = expiry - System.currentTimeMillis();
-            return delay <= 0 ? 0 : unit.convert(delay, TimeUnit.MILLISECONDS);
-        }
-
-        @Override
-        public int compareTo(Delayed o) {
-            long d1 = getDelay(TimeUnit.MILLISECONDS);
-            long d2 = o.getDelay(TimeUnit.MILLISECONDS);
-            if (d1 < d2) {
-                return -1;
-            }
-            if (d1 > d2) {
-                return 1;
-            }
-            return 0;
+        public ReplaySubject<Void> getAckSubject() {
+            return ackSubject;
         }
     }
 }

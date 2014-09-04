@@ -24,7 +24,7 @@ import java.util.Set;
 import com.netflix.eureka.protocol.Heartbeat;
 import com.netflix.eureka.protocol.discovery.AddInstance;
 import com.netflix.eureka.protocol.discovery.DeleteInstance;
-import com.netflix.eureka.protocol.discovery.RegisterInterestSet;
+import com.netflix.eureka.protocol.discovery.InterestRegistration;
 import com.netflix.eureka.protocol.discovery.UnregisterInterestSet;
 import com.netflix.eureka.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka.protocol.registration.Register;
@@ -61,7 +61,7 @@ public final class EurekaTransports {
     };
     static final Set<Class<?>> REGISTRATION_PROTOCOL_MODEL_SET = new HashSet<>(Arrays.asList(REGISTRATION_PROTOCOL_MODEL));
     static final Class<?>[] DISCOVERY_PROTOCOL_MODEL = {
-            RegisterInterestSet.class, UnregisterInterestSet.class, Heartbeat.class,
+            InterestRegistration.class, UnregisterInterestSet.class, Heartbeat.class,
             AddInstance.class, DeleteInstance.class, UpdateInstanceInfo.class
     };
     static final Set<Class<?>> DISCOVERY_PROTOCOL_MODEL_SET = new HashSet<>(Arrays.asList(DISCOVERY_PROTOCOL_MODEL));

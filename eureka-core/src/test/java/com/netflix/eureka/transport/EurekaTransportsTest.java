@@ -24,7 +24,7 @@ public class EurekaTransportsTest {
         registrationProtocolTest(Codec.Json);
     }
 
-    @Test
+    @Test(timeout = 10000)
     public void testDiscoveryProtocolWithAvro() throws Exception {
         discoveryProtocolTest(Codec.Avro);
     }
