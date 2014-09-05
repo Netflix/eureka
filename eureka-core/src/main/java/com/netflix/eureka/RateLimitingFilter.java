@@ -23,7 +23,6 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -31,6 +30,7 @@ import java.util.Set;
 
 import com.netflix.appinfo.AbstractEurekaIdentity;
 import com.netflix.appinfo.EurekaClientIdentity;
+import com.netflix.eureka.util.EurekaMonitors;
 import com.netflix.eureka.util.RateLimiter;
 
 /**
@@ -50,23 +50,19 @@ import com.netflix.eureka.util.RateLimiter;
  * </li>
  * </ul>
  *
- * This feature is enabled by default, but can be turned off via fast properties mechanism.
+ * This feature is not enabled by default, but can be turned on via configuration.
  *
  * <p>
- * Rate limiter implementation is based on sliding window algorithm. There are two configurable
+ * Rate limiter implementation is based on token bucket algorithm. There are two configurable
  * parameters:
  * <ul>
  * <li>
- *     max requests in window - maximum number of requests within a given period of time
+ *     burst size - maximum number of requests allowed into the system as a burst
  * </li>
  * <li>
- *     window size - a period of time over which we track the requests
+ *     average rate - expected number of requests per second
  * </li>
  * </ul>
- * For example, if window size is 5 seconds, and max requests in window is 500, the
- * filter will restrict custom clients to running on average 100 requests/second,
- * with bursts of traffic up to 500. Standard clients requests are not counted, nor
- * throttled.
  *
  * @author Tomasz Bak
  */
@@ -84,20 +80,22 @@ public class RateLimitingFilter implements Filter {
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-        if (request instanceof HttpServletRequest
-                && EurekaServerConfigurationManager.getInstance().getConfiguration().isRateLimiterEnabled()) {
-            doRateLimiting((HttpServletRequest) request, (HttpServletResponse) response, chain);
-        } else {
-            chain.doFilter(request, response);
+        if (request instanceof HttpServletRequest) {
+            if (EurekaServerConfigurationManager.getInstance().getConfiguration().isRateLimiterEnabled()) {
+                if (isRateLimited((HttpServletRequest) request)) {
+                    EurekaMonitors.RATE_LIMITED.increment();
+                    // We just count it for now.
+                    // ((HttpServletResponse) response).setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                    chain.doFilter(request, response);
+                    return;
+                }
+            }
         }
+        chain.doFilter(request, response);
     }
 
-    private static void doRateLimiting(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
-        if (!isPrivilidged(request) && isOverloaded()) {
-            response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-        } else {
-            chain.doFilter(request, response);
-        }
+    private static boolean isRateLimited(HttpServletRequest request) {
+        return !isPrivilidged(request) && isOverloaded();
     }
 
     private static boolean isPrivilidged(HttpServletRequest request) {
@@ -107,9 +105,9 @@ public class RateLimitingFilter implements Filter {
     }
 
     private static boolean isOverloaded() {
-        int maxInWindow = EurekaServerConfigurationManager.getInstance().getConfiguration().getRateLimiterMaxInWindow();
-        int windowSize = EurekaServerConfigurationManager.getInstance().getConfiguration().getRateLimiterWindowSize();
-        return !rateLimiter.check(maxInWindow, windowSize);
+        int maxInWindow = EurekaServerConfigurationManager.getInstance().getConfiguration().getRateLimiterBurstSize();
+        int windowSize = EurekaServerConfigurationManager.getInstance().getConfiguration().getRateLimiterAverageRate();
+        return !rateLimiter.acquire(maxInWindow, windowSize);
     }
 
     @Override

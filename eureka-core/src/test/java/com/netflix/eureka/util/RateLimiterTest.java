@@ -25,25 +25,30 @@ import static org.junit.Assert.*;
  */
 public class RateLimiterTest {
 
-    private RateLimiter rateLimiter = new RateLimiter();
-    private int maxInWindow = 2;
-    private int windowSize = 10;
+    private static final long START = 1000000;
+    private static final int BURST_SIZE = 2;
+    private static final int AVERAGE_RATE = 10;
+    private static final long STEP = 1000 / AVERAGE_RATE;
+
+    private final RateLimiter rateLimiter = new RateLimiter();
 
     @Test
     public void testEvenLoad() throws Exception {
-        long step = windowSize / maxInWindow;
-        for (long currentTime = 0; currentTime < 3 * windowSize; currentTime += step) {
-            assertTrue(rateLimiter.check(maxInWindow, windowSize, currentTime));
+        for (long currentTime = START; currentTime < 3; currentTime += STEP) {
+            assertTrue(rateLimiter.acquire(BURST_SIZE, AVERAGE_RATE, currentTime));
         }
     }
 
     @Test
     public void testBursts() throws Exception {
-        long startTime = 0;
-
         // Generate burst, and go above the limit
-        assertTrue(rateLimiter.check(maxInWindow, windowSize, startTime));
-        assertTrue(rateLimiter.check(maxInWindow, windowSize, startTime));
-        assertFalse(rateLimiter.check(maxInWindow, windowSize, startTime));
+        assertTrue(rateLimiter.acquire(BURST_SIZE, AVERAGE_RATE, START));
+        assertTrue(rateLimiter.acquire(BURST_SIZE, AVERAGE_RATE, START));
+        assertFalse(rateLimiter.acquire(BURST_SIZE, AVERAGE_RATE, START));
+
+        // Now advance by 1.5 STEP
+        assertTrue(rateLimiter.acquire(BURST_SIZE, AVERAGE_RATE, START + STEP + STEP / 2));
+        assertFalse(rateLimiter.acquire(BURST_SIZE, AVERAGE_RATE, START + STEP + STEP / 2));
+        assertTrue(rateLimiter.acquire(BURST_SIZE, AVERAGE_RATE, START + 2 * STEP));
     }
 }

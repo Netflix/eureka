@@ -61,7 +61,8 @@ public enum EurekaMonitors {
     CANCEL_NOT_FOUND("cancelNotFoundCounter", "Number of total cancel requests on non-existing instance since startup"),
     RENEW_NOT_FOUND("renewNotFoundexpiredCounter", "Number of total renew on non-existing instance since startup"),
     REJECTED_REPLICATIONS("numOfRejectedReplications", "Number of replications rejected because of full queue"),
-    FAILED_REPLICATIONS("numOfFailedReplications", "Number of failed replications - likely from timeouts");
+    FAILED_REPLICATIONS("numOfFailedReplications", "Number of failed replications - likely from timeouts"),
+    RATE_LIMITED("numOfRateLimitedRequests", "Number of requests discarded by the rate limiter");
 
     private final String name;
 

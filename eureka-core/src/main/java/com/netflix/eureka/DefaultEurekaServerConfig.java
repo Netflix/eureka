@@ -78,9 +78,9 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     // properties would be too costly.
     private final DynamicStringSetProperty rateLimiterPrivilidgedClients =
             new DynamicStringSetProperty(namespace + "rateLimiter.privilidgedClients", Collections.<String>emptySet());
-    private final DynamicBooleanProperty rateLimiterEnabled = configInstance.getBooleanProperty(namespace + "rateLimiter.enabled", true);
-    private final DynamicIntProperty rateLimiterMaxInWindow = configInstance.getIntProperty(namespace + "rateLimiter.maxInWindow", 1000);
-    private final DynamicIntProperty rateLimiterWindowSize = configInstance.getIntProperty(namespace + "rateLimiter.windowSize", 1000);
+    private final DynamicBooleanProperty rateLimiterEnabled = configInstance.getBooleanProperty(namespace + "rateLimiter.enabled", false);
+    private final DynamicIntProperty rateLimiterBurstSize = configInstance.getIntProperty(namespace + "rateLimiter.burstSize", 10);
+    private final DynamicIntProperty rateLimiterAverageRate = configInstance.getIntProperty(namespace + "rateLimiter.averageRate", 1000);
 
     public DefaultEurekaServerConfig() {
         init();
@@ -556,12 +556,12 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     }
 
     @Override
-    public int getRateLimiterMaxInWindow() {
-        return rateLimiterMaxInWindow.get();
+    public int getRateLimiterBurstSize() {
+        return rateLimiterBurstSize.get();
     }
 
     @Override
-    public int getRateLimiterWindowSize() {
-        return rateLimiterWindowSize.get();
+    public int getRateLimiterAverageRate() {
+        return rateLimiterAverageRate.get();
     }
 }

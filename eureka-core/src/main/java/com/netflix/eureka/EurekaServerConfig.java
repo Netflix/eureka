@@ -523,14 +523,13 @@ public interface EurekaServerConfig {
     Set<String> getRateLimiterPrivilidgedClients();
 
     /**
-     * Rate limiter, sliding window algorithm property. Specifies maximum allowed number of requests
-     * within a configured time window (see {@link #getRateLimiterWindowSize()}).
+     * Rate limiter, token bucket algorithm property. See also {@link #getRateLimiterAverageRate()}.
      */
-    int getRateLimiterMaxInWindow();
+    int getRateLimiterBurstSize();
 
     /**
-     * Rate limiter, sliding window algorithm property. Specifies time window, rolling over the time
-     * within which client requests are counted (see {@link #getRateLimiterMaxInWindow()}).
+     * Rate limiter, token bucket algorithm property. Specifies the average enforced request rate.
+     * See also {@link #getRateLimiterBurstSize()}.
      */
-    int getRateLimiterWindowSize();
+    int getRateLimiterAverageRate();
 }
