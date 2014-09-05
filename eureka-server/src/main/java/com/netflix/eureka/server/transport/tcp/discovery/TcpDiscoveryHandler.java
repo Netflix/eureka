@@ -16,6 +16,8 @@
 
 package com.netflix.eureka.server.transport.tcp.discovery;
 
+import javax.inject.Inject;
+
 import com.netflix.eureka.registry.EurekaRegistry;
 import com.netflix.eureka.server.service.EurekaServerService;
 import com.netflix.eureka.server.service.EurekaServiceImpl;
@@ -23,14 +25,17 @@ import com.netflix.eureka.server.transport.ClientConnectionImpl;
 import com.netflix.eureka.transport.base.BaseMessageBroker;
 import io.reactivex.netty.channel.ConnectionHandler;
 import io.reactivex.netty.channel.ObservableConnection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
-
-import javax.inject.Inject;
+import rx.Subscriber;
 
 /**
  * @author Tomasz Bak
  */
 public class TcpDiscoveryHandler implements ConnectionHandler<Object, Object> {
+
+    private static final Logger logger = LoggerFactory.getLogger(TcpDiscoveryHandler.class);
 
     private final EurekaRegistry registry;
 
@@ -41,10 +46,31 @@ public class TcpDiscoveryHandler implements ConnectionHandler<Object, Object> {
 
     @Override
     public Observable<Void> handle(ObservableConnection<Object, Object> connection) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("New TCP dscovery client connection");
+        }
         final ClientConnectionImpl eurekaConn = new ClientConnectionImpl(new BaseMessageBroker(connection));
         final EurekaServerService service = new EurekaServiceImpl(registry, eurekaConn);
-        return service.newInterestChannel()
-                      .asLifecycleObservable(); // Since this is a discovery handler which only handles interest subscriptions,
-                                                // the channel is created on connection accept.
+        // Since this is a discovery handler which only handles interest subscriptions,
+        // the channel is created on connection accept. We subscribe here for the sake
+        // of logging only.
+        Observable<Void> lifecycleObservable = service.newInterestChannel().asLifecycleObservable();
+        lifecycleObservable.subscribe(new Subscriber<Void>() {
+            @Override
+            public void onCompleted() {
+                logger.info("Connection from client terminated");
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                logger.info("Connection from client terminated with error");
+                logger.debug("Connection exception", e);
+            }
+
+            @Override
+            public void onNext(Void aVoid) {
+            }
+        });
+        return lifecycleObservable;
     }
 }

@@ -60,6 +60,8 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
 
     @Override
     public Observable<Void> register(final InstanceInfo instanceInfo) {
+        logger.debug("Registering service in registry: {}", instanceInfo);
+
         if (!state.compareAndSet(STATES.Idle, STATES.Registered)) {// State check. Only register if the state is Idle.
             if (STATES.Closed == state.get()) {
                 /**
@@ -102,12 +104,16 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
 
     @Override
     public Observable<Void> update(final InstanceInfo newInfo) {
+        logger.debug("Updating service entry in registry. New info=: {}", newInfo);
+
         STATES currentState = state.get();
         switch (currentState) {
             case Idle:
                 return Observable.error(INSTANCE_NOT_REGISTERED_EXCEPTION);
             case Registered:
                 Set<Delta<?>> deltas = newInfo.diffNewer(currentInfo);
+                logger.debug("Set of InstanceInfo modified fields: {}", deltas);
+
                 // TODO: shall we chain ack observable with update?
                 Observable<Void> updateResult = registry.update(newInfo, deltas);
                 updateResult.subscribe(new Subscriber<Void>() {

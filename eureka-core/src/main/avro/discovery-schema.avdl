@@ -20,33 +20,42 @@ protocol DiscoveryProtocol {
         string instanceId;
     }
 
-    @namespace("com.netflix.eureka.protocol.discovery.TypeWrapper$")
-    record HashSetString {
-        @java-class("java.util.HashSet") array<string> value;
-    }
-
-    @namespace("com.netflix.eureka.protocol.discovery.TypeWrapper$")
-    record HashSetInt {
-        @java-class("java.util.HashSet") array<int> value;
-    }
-
     @namespace("com.netflix.eureka.protocol.discovery.UpdateInstanceInfo$")
-    record DeltaDTO {
+    record StringDeltaDTO {
         string id;
         long version;
         string fieldName;
-        union {
-            string,
-            long,
-            com.netflix.eureka.registry.AwsDataCenterInfo,
-            com.netflix.eureka.registry.InstanceInfo$.Status,
-            com.netflix.eureka.protocol.discovery.TypeWrapper$.HashSetString,
-            com.netflix.eureka.protocol.discovery.TypeWrapper$.HashSetInt
-        } value;
+        string value;
+    }
+    @namespace("com.netflix.eureka.protocol.discovery.UpdateInstanceInfo$")
+    record EnumDeltaDTO {
+        string id;
+        long version;
+        string fieldName;
+        com.netflix.eureka.registry.InstanceInfo$.Status value;
+    }
+    @namespace("com.netflix.eureka.protocol.discovery.UpdateInstanceInfo$")
+    record SetIntDeltaDTO {
+        string id;
+        long version;
+        string fieldName;
+        @java-class("java.util.HashSet") array<int> value;
+    }
+    @namespace("com.netflix.eureka.protocol.discovery.UpdateInstanceInfo$")
+    record SetStringDeltaDTO {
+        string id;
+        long version;
+        string fieldName;
+        @java-class("java.util.HashSet") array<string> value;
     }
 
     record UpdateInstanceInfo {
-        com.netflix.eureka.protocol.discovery.UpdateInstanceInfo$.DeltaDTO deltaDTO;
+        union {
+            com.netflix.eureka.protocol.discovery.UpdateInstanceInfo$.StringDeltaDTO,
+            com.netflix.eureka.protocol.discovery.UpdateInstanceInfo$.EnumDeltaDTO,
+            com.netflix.eureka.protocol.discovery.UpdateInstanceInfo$.SetIntDeltaDTO,
+            com.netflix.eureka.protocol.discovery.UpdateInstanceInfo$.SetStringDeltaDTO
+        } deltaDTO;
     }
 
     record InterestRegistration {

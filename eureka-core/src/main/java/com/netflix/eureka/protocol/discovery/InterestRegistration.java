@@ -43,16 +43,6 @@ public class InterestRegistration {
         this.interests = collector.toArray(new Interest[collector.size()]);
     }
 
-    private void flatten(Interest<InstanceInfo> interest, ArrayList<Interest<InstanceInfo>> collector) {
-        if (interest instanceof MultipleInterests) {
-            for (Interest<InstanceInfo> i : ((MultipleInterests<InstanceInfo>) interest).getInterests()) {
-                flatten(i, collector);
-            }
-        } else {
-            collector.add(interest);
-        }
-    }
-
     public Interest<InstanceInfo>[] getInterests() {
         return interests;
     }
@@ -90,5 +80,15 @@ public class InterestRegistration {
     @Override
     public String toString() {
         return "RegisterInterestSet{interests=" + Arrays.toString(interests) + '}';
+    }
+
+    private static void flatten(Interest<InstanceInfo> interest, ArrayList<Interest<InstanceInfo>> collector) {
+        if (interest instanceof MultipleInterests) {
+            for (Interest<InstanceInfo> i : ((MultipleInterests<InstanceInfo>) interest).getInterests()) {
+                flatten(i, collector);
+            }
+        } else {
+            collector.add(interest);
+        }
     }
 }

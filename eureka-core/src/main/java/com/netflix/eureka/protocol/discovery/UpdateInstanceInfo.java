@@ -18,10 +18,8 @@ package com.netflix.eureka.protocol.discovery;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.HashSet;
+import java.util.Set;
 
-import com.netflix.eureka.protocol.discovery.TypeWrapper.HashSetInt;
-import com.netflix.eureka.protocol.discovery.TypeWrapper.HashSetString;
 import com.netflix.eureka.registry.Delta;
 import com.netflix.eureka.registry.InstanceInfoField;
 import com.netflix.eureka.registry.InstanceInfoField.Name;
@@ -29,9 +27,9 @@ import com.netflix.eureka.registry.InstanceInfoField.Name;
 /**
  * @author Tomasz Bak
  */
-public class UpdateInstanceInfo implements InterestSetNotification {
+public class UpdateInstanceInfo<T> implements InterestSetNotification {
 
-    private final DeltaDTO deltaDTO;
+    private final DeltaDTO<?> deltaDTO;
 
     // For serialization framework
     protected UpdateInstanceInfo() {
@@ -39,13 +37,14 @@ public class UpdateInstanceInfo implements InterestSetNotification {
     }
 
     public UpdateInstanceInfo(Delta<?> delta) {
-        this.deltaDTO = new DeltaDTO(delta);
+        deltaDTO = toDeltaDTO(delta);
     }
 
     public Delta<?> getDelta() {
         return deltaDTO.toDelta();
     }
 
+    @SuppressWarnings("rawtypes")
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -74,48 +73,50 @@ public class UpdateInstanceInfo implements InterestSetNotification {
         return "UpdateInstanceInfo{deltaDTO=" + deltaDTO + '}';
     }
 
-    public static class DeltaDTO {
-        private final String id;
-        private final long version;
-        private final String fieldName;
-        private final Object value;
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    static DeltaDTO<?> toDeltaDTO(Delta<?> delta) {
+        Type type = delta.getField().getValueType();
+        if (type instanceof Class) {
+            Class<?> ctype = (Class<?>) type;
+            if (ctype.equals(String.class)) {
+                return new StringDeltaDTO((Delta<String>) delta);
+            } else if (Enum.class.isAssignableFrom(ctype)) {
+                return new EnumDeltaDTO((Delta<Enum>) delta);
+            }
+        } else if (type instanceof ParameterizedType) {
+            ParameterizedType ptype = (ParameterizedType) type;
+            if (Set.class.isAssignableFrom((Class<?>) ptype.getRawType())) {
+                Type targ = ptype.getActualTypeArguments()[0];
+                if (Integer.class.equals(targ)) {
+                    return new SetIntDeltaDTO((Delta<Set<Integer>>) delta);
+                } else if (String.class.equals(targ)) {
+                    return new SetStringDeltaDTO((Delta<Set<String>>) delta);
+                }
+            }
+        }
+        throw new IllegalArgumentException("Unexpected delta type " + type);
+    }
 
-        public DeltaDTO() {
+    abstract static class DeltaDTO<T> {
+        protected final String id;
+        protected final long version;
+        protected final String fieldName;
+
+        protected DeltaDTO() {
             id = null;
             version = -1;
             fieldName = null;
-            value = null;
         }
 
-        public DeltaDTO(String id, long version, String fieldName, Object value) {
-            this.id = id;
-            this.version = version;
-            this.fieldName = fieldName;
-            this.value = value;
-        }
-
-        public DeltaDTO(Delta<?> delta) {
+        protected DeltaDTO(Delta<T> delta) {
             this.id = delta.getId();
             this.version = delta.getVersion();
             this.fieldName = delta.getField().getFieldName().name();
-            this.value = toDtoValue(delta.getField().getValueType(), delta.getValue());
         }
 
-        private Object toDtoValue(Type type, Object value) {
-            if (type instanceof ParameterizedType) {
-                ParameterizedType ptype = (ParameterizedType) type;
-                Type[] types = ptype.getActualTypeArguments();
-                if (types[0].equals(String.class)) {
-                    return new HashSetString((HashSet<String>) value);
-                } else if (types[0].equals(Integer.class)) {
-                    return new HashSetInt((HashSet<Integer>) value);
-                } else {
-                    throw new RuntimeException("Unsupported type");
-                }
-            }
-            return value;
-        }
+        public abstract T getValue();
 
+        @SuppressWarnings("rawtypes")
         @Override
         public boolean equals(Object o) {
             if (this == o) {
@@ -136,19 +137,20 @@ public class UpdateInstanceInfo implements InterestSetNotification {
             if (id != null ? !id.equals(deltaDTO.id) : deltaDTO.id != null) {
                 return false;
             }
-            if (value != null ? !value.equals(deltaDTO.value) : deltaDTO.value != null) {
+            Object thisValue = getValue();
+            Object thatValue = deltaDTO.getValue();
+            if (thisValue != null ? !thisValue.equals(thatValue) : thatValue != null) {
                 return false;
             }
-
             return true;
         }
 
-        public Delta toDelta() {
-            Object unwrapped = value instanceof TypeWrapper ? ((TypeWrapper) value).getValue() : value;
-            return new Delta.Builder()
+        @SuppressWarnings("unchecked")
+        public Delta<T> toDelta() {
+            return (Delta<T>) new Delta.Builder()
                     .withId(id)
                     .withVersion(version)
-                    .withDelta(InstanceInfoField.forName(Name.forName(fieldName)), unwrapped)
+                    .withDelta(InstanceInfoField.forName(Name.forName(fieldName)), getValue())
                     .build();
         }
 
@@ -157,6 +159,7 @@ public class UpdateInstanceInfo implements InterestSetNotification {
             int result = id != null ? id.hashCode() : 0;
             result = 31 * result + (int) (version ^ (version >>> 32));
             result = 31 * result + (fieldName != null ? fieldName.hashCode() : 0);
+            Object value = getValue();
             result = 31 * result + (value != null ? value.hashCode() : 0);
             return result;
         }
@@ -167,8 +170,77 @@ public class UpdateInstanceInfo implements InterestSetNotification {
                     "id='" + id + '\'' +
                     ", version=" + version +
                     ", fieldName='" + fieldName + '\'' +
-                    ", value=" + value +
+                    ", value=" + getValue() +
                     '}';
+        }
+    }
+
+    public static class StringDeltaDTO extends DeltaDTO<String> {
+        private String value;
+
+        public StringDeltaDTO() {
+        }
+
+        public StringDeltaDTO(Delta<String> delta) {
+            super(delta);
+            value = delta.getValue();
+        }
+
+        @Override
+        public String getValue() {
+            return value;
+        }
+    }
+
+    @SuppressWarnings("rawtypes")
+    public static class EnumDeltaDTO extends DeltaDTO<Enum> {
+        Enum value;
+
+        public EnumDeltaDTO() {
+        }
+
+        public EnumDeltaDTO(Delta<Enum> delta) {
+            super(delta);
+            value = delta.getValue();
+        }
+
+        @Override
+        public Enum getValue() {
+            return value;
+        }
+    }
+
+    public static class SetIntDeltaDTO extends DeltaDTO<Set<Integer>> {
+        Set<Integer> value;
+
+        public SetIntDeltaDTO() {
+        }
+
+        public SetIntDeltaDTO(Delta<Set<Integer>> delta) {
+            super(delta);
+            value = delta.getValue();
+        }
+
+        @Override
+        public Set<Integer> getValue() {
+            return value;
+        }
+    }
+
+    public static class SetStringDeltaDTO extends DeltaDTO<Set<String>> {
+        Set<String> value;
+
+        public SetStringDeltaDTO() {
+        }
+
+        public SetStringDeltaDTO(Delta<Set<String>> delta) {
+            super(delta);
+            value = delta.getValue();
+        }
+
+        @Override
+        public Set<String> getValue() {
+            return value;
         }
     }
 }

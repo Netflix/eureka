@@ -44,6 +44,8 @@ public class InstanceInfoField<T> {
         HealthCheckUrls("healthCheckUrls"),
         DataCenterInfo("dataCenterInfo");
 
+        // Since enum values are capitalized, and field names start with lowercase letter,
+        // for case of comparison we comper lowercased names.
         private static final Map<String, Name> nameStrVsName = new HashMap<String, Name>();
 
         static {
@@ -58,12 +60,12 @@ public class InstanceInfoField<T> {
 
         private static void updateNames() {
             for (Name name : values()) {
-                nameStrVsName.put(name.name, name);
+                nameStrVsName.put(name.name.toLowerCase(), name);
             }
         }
 
         public static Name forName(String name) {
-            return nameStrVsName.get(name);
+            return nameStrVsName.get(name.toLowerCase());
         }
     }
 

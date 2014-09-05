@@ -23,6 +23,8 @@ package com.netflix.eureka.protocol;
  * @author Tomasz Bak
  */
 public class EurekaProtocolError extends RuntimeException {
+    private static final long serialVersionUID = -4597823354503721354L;
+
     public EurekaProtocolError(String message) {
         super(message);
     }
