@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
+import rx.Subscriber;
 import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 
@@ -108,7 +109,7 @@ public abstract class AbstractChannel<STATE extends Enum> extends AbstractServic
 
     protected void sendNotificationOnTransport(ChangeNotification<InstanceInfo> notification) {
         if (logger.isDebugEnabled()) {
-            logger.debug("Sending change notification on the transport.", notification);
+            logger.debug("Sending change notification on the transport: {}", notification);
         }
         subscribeToTransportSend(transport.sendNotification(notification), "notification");
     }
@@ -135,16 +136,20 @@ public abstract class AbstractChannel<STATE extends Enum> extends AbstractServic
     }
 
     protected void subscribeToTransportSend(Observable<Void> transportSendResult, final String sendType) {
-        transportSendResult.subscribe(new Action1<Void>() {
+        transportSendResult.subscribe(new Subscriber<Void>() {
             @Override
-            public void call(Void aVoid) {
-                // Nothing to do for a void.
+            public void onCompleted() {
+                logger.debug("Sent successfully message of type " + sendType);
             }
-        }, new Action1<Throwable>() {
+
             @Override
-            public void call(Throwable throwable) {
+            public void onError(Throwable throwable) {
                 logger.warn("Failed to send " + sendType + " on the transport. Closing the channel.", throwable);
                 close();
+            }
+
+            @Override
+            public void onNext(Void aVoid) {
             }
         });
     }

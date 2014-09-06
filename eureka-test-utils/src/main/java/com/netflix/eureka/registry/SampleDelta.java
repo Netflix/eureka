@@ -24,30 +24,22 @@ import com.netflix.eureka.registry.InstanceInfo.Status;
  */
 public enum SampleDelta {
 
+    Delta() {
+        @Override
+        public Builder builder() {
+            return newBuilder();
+        }
+    },
     StatusUp() {
         @Override
         public Builder builder() {
-            try {
-                return new Builder()
-                        .withId(this.baseInstanceInfo.getId())
-                        .withVersion(this.baseInstanceInfo.getVersion() + 1)
-                        .withDelta(InstanceInfoField.STATUS, Status.UP);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            return newBuilder().withDelta(InstanceInfoField.STATUS, Status.UP);
         }
     },
     StatusDown() {
         @Override
         public Builder builder() {
-            try {
-                return new Builder()
-                        .withId(this.baseInstanceInfo.getId())
-                        .withVersion(this.baseInstanceInfo.getVersion() + 1)
-                        .withDelta(InstanceInfoField.STATUS, Status.DOWN);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            return newBuilder().withDelta(InstanceInfoField.STATUS, Status.DOWN);
         }
     };
 
@@ -63,11 +55,13 @@ public enum SampleDelta {
 
     public abstract Builder builder();
 
-    public InstanceInfo getBaseInstanceInfo() {
-        return baseInstanceInfo;
-    }
-
     public <T> Delta<T> build() {
         return (Delta<T>) builder().build();
+    }
+
+    Builder newBuilder() {
+        return new Builder()
+                .withId(this.baseInstanceInfo.getId())
+                .withVersion(this.baseInstanceInfo.getVersion() + 1);
     }
 }

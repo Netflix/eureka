@@ -1,5 +1,9 @@
 package com.netflix.eureka.transport;
 
+import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
+
+import com.netflix.eureka.Sets;
 import com.netflix.eureka.protocol.Heartbeat;
 import com.netflix.eureka.protocol.discovery.AddInstance;
 import com.netflix.eureka.protocol.discovery.DeleteInstance;
@@ -9,19 +13,17 @@ import com.netflix.eureka.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka.protocol.registration.Register;
 import com.netflix.eureka.protocol.registration.Unregister;
 import com.netflix.eureka.protocol.registration.Update;
+import com.netflix.eureka.registry.Delta.Builder;
+import com.netflix.eureka.registry.InstanceInfoField;
 import com.netflix.eureka.registry.SampleDelta;
 import com.netflix.eureka.registry.SampleInterest;
 import com.netflix.eureka.rx.RxBlocking;
 import rx.Notification;
 import rx.Observable;
 
-import java.util.Iterator;
-import java.util.concurrent.TimeUnit;
-
-import static com.netflix.eureka.registry.SampleInstanceInfo.DiscoveryServer;
-import static com.netflix.eureka.rx.RxSniffer.sniff;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static com.netflix.eureka.registry.SampleInstanceInfo.*;
+import static com.netflix.eureka.rx.RxSniffer.*;
+import static org.junit.Assert.*;
 
 /**
  * @author Tomasz Bak
@@ -134,7 +136,19 @@ public abstract class TransportCompatibilityTestSuite {
         }
 
         private void updateInstanceInfoTest() {
-            runServerToClientWithAck(new UpdateInstanceInfo(SampleDelta.StatusUp.build()));
+            Builder builder = SampleDelta.Delta.builder();
+            runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.APPLICATION_GROUP, "newAppGroup").build()));
+            runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.APPLICATION, "newApplication").build()));
+            runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.ASG, "newASG").build()));
+            runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.VIP_ADDRESS, "newVipAddress").build()));
+            runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.SECURE_VIP_ADDRESS, "newSecureVipAddress").build()));
+            runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.HOSTNAME, "newHostname").build()));
+            runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.PORTS, Sets.asSet(1111, 2222)).build()));
+            runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.SECURE_PORTS, Sets.asSet(1112, 2223)).build()));
+            runServerToClientWithAck(new UpdateInstanceInfo(SampleDelta.StatusDown.build()));
+            runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.HOMEPAGE_URL, "newHomePageURL").build()));
+            runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.STATUS_PAGE_URL, "newStatusPageURL").build()));
+            runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.HEALTHCHECK_URLS, Sets.asSet("http://newHealthCheck1", "http://newHealthCheck2")).build()));
         }
     }
 }
