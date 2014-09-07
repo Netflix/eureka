@@ -75,7 +75,7 @@ public class EurekaCLI {
                 String cmd = parts[0];
                 String[] args = Arrays.copyOfRange(parts, 1, parts.length);
                 if ("quit".equals(cmd)) {
-                    System.out.println("Terminatting...");
+                    System.out.println("Terminating...");
                     return;
                 }
                 try {
@@ -182,6 +182,8 @@ public class EurekaCLI {
         Object value;
         if (field.getValueType().equals(Integer.class)) {
             value = Integer.parseInt(args[1]);
+        } else if (field.getValueType().equals(InstanceInfo.Status.class)) {
+            value = InstanceInfo.Status.valueOf(args[1]);
         } else {
             value = args[1];
         }

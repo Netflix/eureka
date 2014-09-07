@@ -29,20 +29,20 @@ public class InstanceInfoField<T> {
 
     public enum Name {
 
-        AppGroup("appGroup"),
-        App("app"),
-        Asg("asg"),
-        VipAddress("vipAddress"),
-        SecureVipAddress("secureVipAddress"),
-        Hostname("hostname"),
-        Ip("ip"),
-        Ports("ports"),
-        SecurePorts("securePorts"),
-        Status("status"),
-        HomePageUrl("homePageUrl"),
-        StatusPageUrl("statusPageUrl"),
-        HealthCheckUrls("healthCheckUrls"),
-        DataCenterInfo("dataCenterInfo");
+        AppGroup,
+        App,
+        Asg,
+        VipAddress,
+        SecureVipAddress,
+        Hostname,
+        Ip,
+        Ports,
+        SecurePorts,
+        Status,
+        HomePageUrl,
+        StatusPageUrl,
+        HealthCheckUrls,
+        DataCenterInfo;
 
         // Since enum values are capitalized, and field names start with lowercase letter,
         // for case of comparison we comper lowercased names.
@@ -52,20 +52,14 @@ public class InstanceInfoField<T> {
             updateNames();
         }
 
-        private final String name;
-
-        Name(String name) {
-            this.name = name;
-        }
-
         private static void updateNames() {
             for (Name name : values()) {
-                nameStrVsName.put(name.name.toLowerCase(), name);
+                nameStrVsName.put(name.name(), name);
             }
         }
 
         public static Name forName(String name) {
-            return nameStrVsName.get(name.toLowerCase());
+            return nameStrVsName.get(name);
         }
     }
 
