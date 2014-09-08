@@ -3,7 +3,7 @@ package com.netflix.eureka.registry;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
-import com.netflix.eureka.Sets;
+import com.netflix.eureka.utils.Sets;
 import org.junit.Test;
 
 import java.util.ArrayList;

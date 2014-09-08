@@ -111,7 +111,7 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
             case Idle:
                 return Observable.error(INSTANCE_NOT_REGISTERED_EXCEPTION);
             case Registered:
-                Set<Delta<?>> deltas = newInfo.diffNewer(currentInfo);
+                Set<Delta<?>> deltas = newInfo.diffOlder(currentInfo);
                 logger.debug("Set of InstanceInfo modified fields: {}", deltas);
 
                 // TODO: shall we chain ack observable with update?

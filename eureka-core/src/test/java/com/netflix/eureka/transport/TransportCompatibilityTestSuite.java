@@ -3,7 +3,7 @@ package com.netflix.eureka.transport;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka.Sets;
+import com.netflix.eureka.utils.Sets;
 import com.netflix.eureka.protocol.Heartbeat;
 import com.netflix.eureka.protocol.discovery.AddInstance;
 import com.netflix.eureka.protocol.discovery.DeleteInstance;
@@ -16,7 +16,7 @@ import com.netflix.eureka.protocol.registration.Update;
 import com.netflix.eureka.registry.Delta.Builder;
 import com.netflix.eureka.registry.InstanceInfoField;
 import com.netflix.eureka.registry.SampleDelta;
-import com.netflix.eureka.registry.SampleInterest;
+import com.netflix.eureka.interests.SampleInterest;
 import com.netflix.eureka.rx.RxBlocking;
 import rx.Notification;
 import rx.Observable;

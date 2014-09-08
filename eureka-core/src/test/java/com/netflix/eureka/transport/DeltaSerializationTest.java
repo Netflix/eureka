@@ -2,7 +2,7 @@ package com.netflix.eureka.transport;
 
 import java.util.HashSet;
 
-import com.netflix.eureka.Sets;
+import com.netflix.eureka.utils.Sets;
 import com.netflix.eureka.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka.registry.Delta;
 import com.netflix.eureka.registry.InstanceInfo;
