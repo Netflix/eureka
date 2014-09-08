@@ -21,8 +21,9 @@ import com.netflix.adminresources.resources.KaryonWebAdminModule;
 import com.netflix.eureka.registry.EurekaRegistry;
 import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.registry.LeasedInstanceRegistry;
-import com.netflix.eureka.server.EurekaWriteServer.EurekaServerModule;
-import com.netflix.eureka.server.EurekaWriteServer.EurekaShutdownModule;
+import com.netflix.eureka.registry.SampleApp;
+import com.netflix.eureka.server.TestEurekaWriteServer.EurekaServerModule;
+import com.netflix.eureka.server.TestEurekaWriteServer.EurekaShutdownModule;
 import com.netflix.eureka.server.transport.tcp.discovery.TcpDiscoveryModule;
 import com.netflix.eureka.server.transport.tcp.registration.JsonRegistrationModule;
 import com.netflix.governator.annotations.Modules;
@@ -30,6 +31,10 @@ import com.netflix.karyon.KaryonBootstrap;
 import com.netflix.karyon.KaryonServer;
 import com.netflix.karyon.ShutdownModule;
 import com.netflix.karyon.archaius.ArchaiusBootstrap;
+
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Tomasz Bak
@@ -44,14 +49,22 @@ import com.netflix.karyon.archaius.ArchaiusBootstrap;
         JsonRegistrationModule.class,
         TcpDiscoveryModule.class
 })
-public class EurekaWriteServer {
+public class TestEurekaWriteServer {
+
+    private static final Set<InstanceInfo> PRESET_INSTANCE_INFOS;
+    static {
+        PRESET_INSTANCE_INFOS = new HashSet<>();
+        PRESET_INSTANCE_INFOS.addAll(SampleApp.Zuul.collectionOf(10));
+        PRESET_INSTANCE_INFOS.addAll(SampleApp.Discovery.collectionOf(10));
+    }
 
     public static class EurekaServerModule extends AbstractModule {
         @Override
         protected void configure() {
-            // TODO: We need local server instance info...
-            InstanceInfo localInstance = new InstanceInfo.Builder().withId("eurekaServer123").build();
-            bind(EurekaRegistry.class).toInstance(new LeasedInstanceRegistry(localInstance));
+            InstanceInfo localInstance = new InstanceInfo.Builder().withId("ScriptedEurekaWriteServer_1").build();
+            EurekaRegistry registry = new LeasedInstanceRegistry(localInstance);
+            register(registry, PRESET_INSTANCE_INFOS);
+            bind(EurekaRegistry.class).toInstance(registry);
         }
     }
 
@@ -61,7 +74,13 @@ public class EurekaWriteServer {
         }
     }
 
+    public static void register(EurekaRegistry registry, Set<InstanceInfo> instanceInfos) {
+        for (InstanceInfo instanceInfo : instanceInfos) {
+            registry.register(instanceInfo);
+        }
+    }
+
     public static void main(String[] args) {
-        KaryonServer.main(new String[]{EurekaWriteServer.class.getName()});
+        KaryonServer.main(new String[]{TestEurekaWriteServer.class.getName()});
     }
 }
