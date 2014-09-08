@@ -1,5 +1,8 @@
 package com.netflix.eureka.registry;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * {@link DataCenterInfo} encapsulates information about the data center where a given
  * server is running, plus server specific information, like IP addresses, host names, etc.
@@ -15,7 +18,27 @@ public abstract class DataCenterInfo {
 
     public abstract String getName();
 
-    public abstract java.util.List<NetworkAddress> getAddresses();
+    public abstract List<NetworkAddress> getAddresses();
+
+    public List<NetworkAddress> getPublicAddresses() {
+        List<NetworkAddress> publicAddresses = new ArrayList<>();
+        for (NetworkAddress n : getAddresses()) {
+            if (n.isPublic()) {
+                publicAddresses.add(n);
+            }
+        }
+        return publicAddresses;
+    }
+
+    public List<NetworkAddress> getPrivateAddresses() {
+        List<NetworkAddress> privateAddresses = new ArrayList<>();
+        for (NetworkAddress n : getAddresses()) {
+            if (!n.isPublic()) {
+                privateAddresses.add(n);
+            }
+        }
+        return privateAddresses;
+    }
 
     public NetworkAddress getFirstPublicAddress() {
         for (NetworkAddress n : getAddresses()) {

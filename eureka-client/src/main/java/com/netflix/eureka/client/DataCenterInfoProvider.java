@@ -26,5 +26,5 @@ import rx.Observable;
  */
 public interface DataCenterInfoProvider {
 
-    Observable<DataCenterInfo> instanceLocation();
+    Observable<? extends DataCenterInfo> dataCenterInfo();
 }

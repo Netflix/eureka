@@ -22,6 +22,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.netflix.eureka.registry.NetworkAddress.ProtocolType;
+
 /**
  * This class represents a location of a server in AWS datacenter.
  *
@@ -156,6 +158,10 @@ public class AwsDataCenterInfo extends DataCenterInfo {
         public String instanceId;
         public String instanceType;
         public Set<NetworkAddress> addresses = new HashSet<NetworkAddress>();
+        private String privateIP;
+        private String privateHostName;
+        private String publicIP;
+        private String publicHostName;
 
         public AwsDataCenterInfoBuilder withRegion(String region) {
             this.region = region;
@@ -192,8 +198,39 @@ public class AwsDataCenterInfo extends DataCenterInfo {
             return this;
         }
 
+        public AwsDataCenterInfoBuilder withPrivateIPv4(String privateIP) {
+            this.privateIP = privateIP;
+            return this;
+        }
+
+        public AwsDataCenterInfoBuilder withPrivateHostName(String privateHostName) {
+            this.privateHostName = privateHostName;
+            return this;
+        }
+
+        public AwsDataCenterInfoBuilder withPublicIPv4(String publicIP) {
+            this.publicIP = publicIP;
+            return this;
+        }
+
+        public AwsDataCenterInfoBuilder withPublicHostName(String publicHostName) {
+            this.publicHostName = publicHostName;
+            return this;
+        }
+
         @Override
         public AwsDataCenterInfo build() {
+            if(privateIP != null || privateHostName != null) {
+                addresses.add(new NetworkAddress(ProtocolType.IPv4, false, privateIP, privateHostName));
+            }
+            if(publicIP != null || publicHostName != null) {
+                addresses.add(new NetworkAddress(ProtocolType.IPv4, true, publicIP, publicHostName));
+            }
+
+            if(region == null && zone != null) { // We will take it from zone name
+                region = zone.substring(0, zone.length() - 1);
+            }
+
             return new AwsDataCenterInfo(this);
         }
     }
