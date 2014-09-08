@@ -21,7 +21,8 @@ import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.netflix.eureka.Sets;
+import com.netflix.eureka.interests.Interest;
+import com.netflix.eureka.utils.Sets;
 import com.netflix.eureka.client.EurekaClient;
 import com.netflix.eureka.client.EurekaClientImpl;
 import com.netflix.eureka.client.bootstrap.StaticServerResolver;
@@ -41,6 +42,7 @@ import com.netflix.eureka.transport.EurekaTransports.Codec;
 import jline.Terminal;
 import jline.TerminalFactory;
 import jline.console.ConsoleReader;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 import rx.Subscriber;
 
 /**
@@ -57,6 +59,7 @@ public class EurekaCLI {
     private AtomicInteger idGenerator = new AtomicInteger(1);
     private volatile InstanceInfo lastInstanceInfo;
     private EurekaClient eurekaClient;
+    private ConcurrentHashSet<InstanceInfo> interestData = new ConcurrentHashSet<>();
     private Status registrationStatus = Status.NotStarted;
     private Status registryFetchStatus = Status.NotStarted;
 
@@ -91,8 +94,10 @@ public class EurekaCLI {
                         runClose();
                     } else if ("status".equals(cmd) && expect(cmd, 0, args)) {
                         runStatus();
-                    } else if ("show".equals(cmd) && expect(cmd, 0, args)) {
-                        listenForRegistry();
+                    } else if ("interestAll".equals(cmd) && expect(cmd, 0, args)) {
+                        listenForRegistry(Interests.forFullRegistry());
+                    } else if ("interest".equals(cmd) && atLeast(cmd, 1, args)) {
+                        listenForInterest(args);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -109,6 +114,14 @@ public class EurekaCLI {
         return true;
     }
 
+    private boolean atLeast(String cmd, int atLeastArgs, String[] args) {
+        if (args.length < atLeastArgs) {
+            System.err.println(String.format("ERROR: command %s expects at least %d arguments", cmd, atLeastArgs));
+            return false;
+        }
+        return true;
+    }
+
     private void runHelp() {
         System.out.println("Available commands:");
         System.out.println("  close                                                close all channels        ");
@@ -118,7 +131,8 @@ public class EurekaCLI {
         System.out.println("  register                                             register with server      ");
         System.out.println("  update <field> <value>                               update own registry entry ");
         System.out.println("  status                                               print status summary      ");
-        System.out.println("  show                                                 starts showing registry information");
+        System.out.println("  interestAll                                          start intrest subscription for all");
+        System.out.println("  interest <vipName>                                   start interest subscription for given vips");
     }
 
     private void runConnect(String[] args) {
@@ -146,8 +160,8 @@ public class EurekaCLI {
         }
 
         registrationStatus = Status.Initiated;
-        lastInstanceInfo = SampleInstanceInfo.ZuulServer.builder()
-                .withId(Integer.toString(idGenerator.getAndIncrement()))
+        lastInstanceInfo = SampleInstanceInfo.CliServer.builder()
+//                .withId(Integer.toString(idGenerator.getAndIncrement()))
                 .build();
         eurekaClient.register(lastInstanceInfo)
                 .subscribe(new Subscriber<Void>() {
@@ -244,7 +258,12 @@ public class EurekaCLI {
         return false;
     }
 
-    private void listenForRegistry() {
+    private void listenForInterest(String[] args) {
+
+        listenForRegistry(Interests.forVips(args));
+    }
+
+    private void listenForRegistry(final Interest<InstanceInfo> interest) {
         if (eurekaClient == null) {
             System.out.println("Not connected");
             return;
@@ -265,8 +284,12 @@ public class EurekaCLI {
                 break;
         }
 
+        final AtomicInteger addCounter = new AtomicInteger();
+        final AtomicInteger deleteCounter = new AtomicInteger();
+        final AtomicInteger updateCounter = new AtomicInteger();
+
         registryFetchStatus = Status.Initiated;
-        eurekaClient.forInterest(Interests.forFullRegistry())
+        eurekaClient.forInterest(interest)
                 .subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
                     @Override
                     public void onCompleted() {
@@ -285,13 +308,16 @@ public class EurekaCLI {
                         registryFetchStatus = Status.Streaming;
                         switch (notification.getKind()) {
                             case Add:
-                                System.out.println("Instance Added: " + notification.getData());
+                                interestData.add(notification.getData());
+                                System.out.println("Instance added (" + addCounter.incrementAndGet() + "): " + notification.getData());
                                 break;
                             case Delete:
-                                System.out.println("Instance deleted: " + notification.getData());
+                                interestData.remove(notification.getData());
+                                System.out.println("Instance deleted (" + deleteCounter.incrementAndGet() + "): " + notification.getData());
                                 break;
                             case Modify:
-                                System.out.println("Instance updated: " + notification.getData());
+                                interestData.add(notification.getData());
+                                System.out.println("Instance updated (" + updateCounter.incrementAndGet() + "): " + notification.getData());
                                 break;
                         }
                     }
@@ -347,6 +373,8 @@ public class EurekaCLI {
                     break;
             }
         }
+
+        System.out.println(String.format("Local registry: %d instances", interestData.size()));
     }
 
     public static void main(String[] args) throws IOException {

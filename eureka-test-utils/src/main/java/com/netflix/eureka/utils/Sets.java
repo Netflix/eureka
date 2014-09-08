@@ -1,7 +1,6 @@
-package com.netflix.eureka;
+package com.netflix.eureka.utils;
 
 import java.util.HashSet;
-import java.util.Set;
 
 /**
  * @author David Liu

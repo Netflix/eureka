@@ -1,4 +1,4 @@
-package com.netflix.eureka;
+package com.netflix.eureka.interests;
 
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.registry.InstanceInfo;

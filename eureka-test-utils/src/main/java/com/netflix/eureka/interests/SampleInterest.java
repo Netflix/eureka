@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka.registry;
+package com.netflix.eureka.interests;
 
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.interests.Interests;
+import com.netflix.eureka.registry.InstanceInfo;
 
 /**
  * @author Tomasz Bak
