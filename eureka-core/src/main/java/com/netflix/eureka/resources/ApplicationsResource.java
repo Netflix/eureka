@@ -54,7 +54,7 @@ public class ApplicationsResource {
     private static final String HEADER_CONTENT_ENCODING = "Content-Encoding";
     private static final String HEADER_GZIP_VALUE = "gzip";
     private static final String HEADER_JSON_VALUE = "json";
-    private static final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
+    private final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
     .getInstance().getConfiguration();
 
     /**
