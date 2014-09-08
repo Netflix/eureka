@@ -16,12 +16,12 @@
 
 package com.netflix.eureka.protocol.discovery;
 
+import java.util.Arrays;
+import java.util.Set;
+
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.interests.MultipleInterests;
 import com.netflix.eureka.registry.InstanceInfo;
-
-import java.util.ArrayList;
-import java.util.Arrays;
 
 /**
  * Discovery protocol message representing registration request. The {@link Interest} class hierarchy
@@ -31,16 +31,19 @@ import java.util.Arrays;
  */
 public class InterestRegistration {
 
-    private final Interest[] interests;
+    private final Interest<InstanceInfo>[] interests;
 
     public InterestRegistration() {
         interests = null;
     }
 
     public InterestRegistration(Interest<InstanceInfo> interest) {
-        ArrayList<Interest<InstanceInfo>> collector = new ArrayList<Interest<InstanceInfo>>();
-        flatten(interest, collector);
-        this.interests = collector.toArray(new Interest[collector.size()]);
+        if (interest instanceof MultipleInterests) {
+            Set<Interest<InstanceInfo>> set = ((MultipleInterests<InstanceInfo>) interest).flatten();
+            interests = set.toArray(new Interest[set.size()]);
+        } else {
+            interests = new Interest[]{interest};
+        }
     }
 
     public Interest<InstanceInfo>[] getInterests() {
@@ -80,15 +83,5 @@ public class InterestRegistration {
     @Override
     public String toString() {
         return "RegisterInterestSet{interests=" + Arrays.toString(interests) + '}';
-    }
-
-    private static void flatten(Interest<InstanceInfo> interest, ArrayList<Interest<InstanceInfo>> collector) {
-        if (interest instanceof MultipleInterests) {
-            for (Interest<InstanceInfo> i : ((MultipleInterests<InstanceInfo>) interest).getInterests()) {
-                flatten(i, collector);
-            }
-        } else {
-            collector.add(interest);
-        }
     }
 }

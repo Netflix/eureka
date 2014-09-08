@@ -13,7 +13,6 @@ import com.netflix.eureka.service.InterestChannel;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action1;
-import rx.subscriptions.SerialSubscription;
 
 /**
  * An implementation of {@link InterestChannel} for eureka server.
@@ -33,11 +32,11 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
 
     protected enum STATES {Idle, Registered, Closed}
 
-    private final SerialSubscription interestSubscription;
+    private final InterestNotificationMultiplexer notificationMultiplexer;
 
     public InterestChannelImpl(final EurekaRegistry registry, final ClientConnection transport) {
         super(STATES.Idle, transport, registry, 3, 30000);
-        interestSubscription = new SerialSubscription();
+        this.notificationMultiplexer = new InterestNotificationMultiplexer(registry);
 
         subscribeToTransportInput(new Action1<Object>() {
             @Override
@@ -98,11 +97,10 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
             }
         }
 
-        final Observable<ChangeNotification<InstanceInfo>> stream = registry.forInterest(interest);
 
         sendAckOnTransport(); // Ack first since we registered with the registry. If the stream throws an error it is sent on the transport.
 
-        interestSubscription.set(stream.subscribe(
+        notificationMultiplexer.changeNotifications().subscribe(
                 new Subscriber<ChangeNotification<InstanceInfo>>() {
                     @Override
                     public void onCompleted() {
@@ -119,10 +117,11 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
                     public void onNext(ChangeNotification<InstanceInfo> notification) {
                         sendNotificationOnTransport(notification);
                     }
-                })); // Set the latest subscription so it can be cancelled on close.
+                });
+        notificationMultiplexer.update(interest);
 
-        return stream; // It is not expected for caller (transport layer) to subscribe to this stream.
-                       // This channel bridges EurekaRegistry and Transport.
+        return notificationMultiplexer.changeNotifications(); // It is not expected for caller (transport layer) to subscribe to this stream.
+                                                              // This channel bridges EurekaRegistry and Transport.
     }
 
     @Override
@@ -132,9 +131,11 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
             return Observable.error(INTEREST_NOT_REGISTERED_EXCEPTION);
         }
 
-        sendErrorOnTransport(new UnsupportedOperationException("Upgrade not yet supported."));
+        notificationMultiplexer.update(newInterest);
 
-        return Observable.error(new UnsupportedOperationException("Upgrade not yet supported.")); // TODO: Implement upgrade.
+        Observable<Void> toReturn = transport.sendAcknowledgment();
+        subscribeToTransportSend(toReturn, "acknowledgment"); // Subscribe eagerly and not require the caller to subscribe.
+        return toReturn;
     }
 
     @Override
@@ -148,19 +149,17 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
             }
         }
 
-        interestSubscription.unsubscribe();
+        notificationMultiplexer.unregister();
 
         Observable<Void> toReturn = transport.sendAcknowledgment();
-
         subscribeToTransportSend(toReturn, "acknowledgment"); // Subscribe eagerly and not require the caller to subscribe.
-
         return toReturn;
     }
 
     @Override
     public void _close() {
         state.set(STATES.Closed);
-        interestSubscription.unsubscribe();
+        notificationMultiplexer.unregister();
         super._close(); // Shutdown the transport
     }
 }

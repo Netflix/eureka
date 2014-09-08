@@ -16,10 +16,18 @@
 
 package com.netflix.eureka.cmd;
 
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.LineNumberReader;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
+import java.util.ListIterator;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.utils.Sets;
@@ -43,6 +51,8 @@ import jline.Terminal;
 import jline.TerminalFactory;
 import jline.console.ConsoleReader;
 import org.eclipse.jetty.util.ConcurrentHashSet;
+import jline.console.history.History;
+import jline.console.history.History.Entry;
 import rx.Subscriber;
 
 /**
@@ -52,11 +62,19 @@ import rx.Subscriber;
  */
 public class EurekaCLI {
 
+    private static final File CONFIGURATION_FILE =
+            System.getProperty("user.home") == null ? null : new File(System.getProperty("user.home"), ".eurekarc");
+
+    private static final File HISTORY_FILE =
+            System.getProperty("user.home") == null ? null : new File(System.getProperty("user.home"), ".eureka_history");
+
+    private static final Pattern ALIAS_DEF_PATTERN = Pattern.compile("\\s*alias\\s+(\\w+)=(.*)");
+
     private enum Status {NotStarted, Initiated, Streaming, Complete, Failed}
 
     private final ConsoleReader consoleReader;
+    private TreeMap<String, String> aliasMap = new TreeMap<>();
 
-    private AtomicInteger idGenerator = new AtomicInteger(1);
     private volatile InstanceInfo lastInstanceInfo;
     private EurekaClient eurekaClient;
     private ConcurrentHashSet<InstanceInfo> interestData = new ConcurrentHashSet<>();
@@ -67,6 +85,70 @@ public class EurekaCLI {
         Terminal terminal = TerminalFactory.create();
         terminal.setEchoEnabled(false);
         consoleReader = new ConsoleReader(System.in, System.out, terminal);
+        loadConfiguration();
+        loadHistory();
+    }
+
+    private void loadConfiguration() {
+        if (CONFIGURATION_FILE != null && CONFIGURATION_FILE.exists()) {
+            try {
+                LineNumberReader reader = new LineNumberReader(new FileReader(CONFIGURATION_FILE));
+                try {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        Matcher matcher = ALIAS_DEF_PATTERN.matcher(line);
+                        if (matcher.matches()) {
+                            aliasMap.put(matcher.group(1), matcher.group(2));
+                        }
+                    }
+                } finally {
+                    reader.close();
+                }
+            } catch (IOException e) {
+                System.err.println("ERROR: could not load configuration file from ~/.eureka_history");
+            }
+        }
+    }
+
+    private void loadHistory() {
+        if (HISTORY_FILE != null && HISTORY_FILE.exists()) {
+            try {
+                LineNumberReader reader = new LineNumberReader(new FileReader(HISTORY_FILE));
+                try {
+                    History history = consoleReader.getHistory();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        history.add(line);
+                    }
+                } finally {
+                    reader.close();
+                }
+            } catch (IOException e) {
+                System.err.println("ERROR: could not load history file from ~/.eureka_history");
+            }
+        }
+    }
+
+    private void saveHistory() {
+        if (HISTORY_FILE != null) {
+            if (HISTORY_FILE.exists()) {
+                HISTORY_FILE.delete();
+            }
+            try {
+                FileWriter writer = new FileWriter(HISTORY_FILE);
+                ListIterator<Entry> iterator = consoleReader.getHistory().entries();
+                try {
+                    while (iterator.hasNext()) {
+                        writer.write(iterator.next().value().toString());
+                        writer.write('\n');
+                    }
+                } finally {
+                    writer.close();
+                }
+            } catch (IOException e) {
+                System.err.println("ERROR: could not save history file into ~/.eureka_history");
+            }
+        }
     }
 
     public void readExecutePrintLoop() throws IOException {
@@ -74,36 +156,63 @@ public class EurekaCLI {
         while (true) {
             String line = consoleReader.readLine("> ");
             if (line != null && !(line = line.trim()).isEmpty()) {
-                String[] parts = line.split("\\s+");
-                String cmd = parts[0];
-                String[] args = Arrays.copyOfRange(parts, 1, parts.length);
-                if ("quit".equals(cmd)) {
-                    System.out.println("Terminating...");
+                if (executeLine(line)) {
                     return;
-                }
-                try {
-                    if ("help".equals(cmd) && expect(cmd, 0, args)) {
-                        runHelp();
-                    } else if ("connect".equals(cmd) && expect(cmd, 3, args)) {
-                        runConnect(args);
-                    } else if ("register".equals(cmd) && expect(cmd, 0, args)) {
-                        runRegister();
-                    } else if ("update".equals(cmd) && expect(cmd, 2, args)) {
-                        runUpdate(args);
-                    } else if ("close".equals(cmd) && expect(cmd, 0, args)) {
-                        runClose();
-                    } else if ("status".equals(cmd) && expect(cmd, 0, args)) {
-                        runStatus();
-                    } else if ("interestAll".equals(cmd) && expect(cmd, 0, args)) {
-                        listenForRegistry(Interests.forFullRegistry());
-                    } else if ("interest".equals(cmd) && atLeast(cmd, 1, args)) {
-                        listenForInterest(args);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
                 }
             }
         }
+    }
+
+    private boolean executeLine(String line) {
+        for (String cmdLine : line.split("&&")) {
+            if (!executeCommand(cmdLine)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean executeCommand(String cmdLine) {
+        if ((cmdLine = cmdLine.trim()).isEmpty()) {
+            return true;
+        }
+
+        if (aliasMap.containsKey(cmdLine)) {
+            executeLine(aliasMap.get(cmdLine));
+        }
+
+        String[] parts = cmdLine.split("\\s+");
+        String cmd = parts[0];
+        String[] args = Arrays.copyOfRange(parts, 1, parts.length);
+        if ("quit".equals(cmd)) {
+            saveHistory();
+            System.out.println("Terminatting...");
+            return false;
+        }
+        try {
+            if ("help".equals(cmd) && expect(cmd, 0, args)) {
+                runHelp();
+            } else if ("history".equals(cmd) && expect(cmd, 0, args)) {
+                runHistory();
+            } else if ("connect".equals(cmd) && expect(cmd, 3, args)) {
+                runConnect(args);
+            } else if ("register".equals(cmd) && expect(cmd, 0, args)) {
+                runRegister();
+            } else if ("update".equals(cmd) && expect(cmd, 2, args)) {
+                runUpdate(args);
+            } else if ("close".equals(cmd) && expect(cmd, 0, args)) {
+                runClose();
+            } else if ("status".equals(cmd) && expect(cmd, 0, args)) {
+                runStatus();
+            } else if ("interestAll".equals(cmd) && expect(cmd, 0, args)) {
+                listenForRegistry(Interests.forFullRegistry());
+            } else if ("interest".equals(cmd) && atLeast(cmd, 1, args)) {
+                listenForInterest(args);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return true;
     }
 
     private boolean expect(String cmd, int expectedArgs, String[] args) {
@@ -127,12 +236,27 @@ public class EurekaCLI {
         System.out.println("  close                                                close all channels        ");
         System.out.println("  connect <host> <registration_port> <discovery_port>  ports: 7002, 7003         ");
         System.out.println("  help                                                 print this help           ");
+        System.out.println("  history                                              print previous commands   ");
         System.out.println("  quit                                                 exit                      ");
         System.out.println("  register                                             register with server      ");
         System.out.println("  update <field> <value>                               update own registry entry ");
         System.out.println("  status                                               print status summary      ");
         System.out.println("  interestAll                                          start intrest subscription for all");
         System.out.println("  interest <vipName>                                   start interest subscription for given vips");
+
+        if (!aliasMap.isEmpty()) {
+            System.out.println();
+            System.out.println("Aliases");
+            for (String key : aliasMap.keySet()) {
+                System.out.format("  %-52s %s\n", key, aliasMap.get(key));
+            }
+        }
+    }
+
+    private void runHistory() {
+        for (int i = 0; i < consoleReader.getHistory().size(); i++) {
+            System.out.println(String.format("%4d %s", i + 1, consoleReader.getHistory().get(i)));
+        }
     }
 
     private void runConnect(String[] args) {
@@ -152,6 +276,7 @@ public class EurekaCLI {
         EurekaService eurekaService = EurekaServiceImpl.forReadAndWriteServer(readClient, writeClient);
 
         eurekaClient = new EurekaClientImpl(eurekaService);
+        System.out.format("Connected to Eureka server at %s:%d (registry) and %s:%d (discovery)\n", host, registrationPort, host, discoveryPort);
     }
 
     private void runRegister() {

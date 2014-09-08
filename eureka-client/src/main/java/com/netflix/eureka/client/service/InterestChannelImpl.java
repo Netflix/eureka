@@ -24,7 +24,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * An implementation of {@link com.netflix.eureka.service.InterestChannel}
+ * An implementation of {@link com.netflix.eureka.service.InterestChannel}. It is mandatory that all operations
+ * on the channel are serialized, by the external client. This class is not thread safe and all operations on it
+ * shall be executed by the same thread.
  *
  * @author Nitesh Kant
  */
@@ -50,6 +52,10 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
      get the last seen {@link InstanceInfo}</li>
      </ul>
      *
+     * <h2>Cleanup</h2>
+     *
+     * TODO: how to remove instances belonging to an interest in which we are no longer interested?
+     *
      * <h2>Thread safety</h2>
      *
      * Since this channel directly leverages the underlying {@link ServerConnection} and our underlying stack guarantees
@@ -74,7 +80,7 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
             }
         }
 
-        //TODO: Need to serialize as register -> upgrade (if any) -> unregister. With this code they can be interleaved
+        // TODO: why switchMap here?
         return connect().switchMap(new Func1<ServerConnection, Observable<? extends ChangeNotification<InstanceInfo>>>() {
             @Override
             public Observable<? extends ChangeNotification<InstanceInfo>> call(ServerConnection serverConnection) {
@@ -90,24 +96,27 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
     }
 
     @Override
-    public Observable<Void> upgrade(Interest<InstanceInfo> newInterest) {
+    public Observable<Void> upgrade(final Interest<InstanceInfo> newInterest) {
         STATES currentState = state.get();
-        switch (currentState) {
-            case Idle:
-                return Observable.error(INTEREST_NOT_REGISTERED_EXCEPTION);
-            case Registered:
-                /**
-                 * TODO: Upgrades have two states:
-                 * 1) Every interest is unique: Server re-runs from the start for every interest.
-                 * 2) Overlapping interests: This becomes complex since we have to re-run the old notifications for a new
-                 * subscriber.
-                 */
-                return Observable.error(new UnsupportedOperationException("Upgrade not yet implemented."));
-            case Closed:
-                return Observable.error(CHANNEL_CLOSED_EXCEPTION);
-            default:
-                return Observable.error(new IllegalStateException("Unrecognized channel state: " + currentState));
+
+        if(currentState != STATES.Registered) {
+            switch (currentState) {
+                case Idle:
+                    return Observable.error(INTEREST_NOT_REGISTERED_EXCEPTION);
+                case Closed:
+                    return Observable.error(CHANNEL_CLOSED_EXCEPTION);
+                default:
+                    return Observable.error(new IllegalStateException("Unrecognized channel state: " + currentState));
+            }
         }
+
+        // TODO: why switchMap here?
+        return connect().switchMap(new Func1<ServerConnection, Observable<Void>>() {
+            @Override
+            public Observable<Void> call(ServerConnection connection) {
+                return connection.send(new InterestRegistration(newInterest));
+            }
+        }); // Connect is idempotent and does not connect on every call.
     }
 
     @Override
@@ -124,7 +133,7 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
             }
         }
 
-        //TODO: Need to serialize as register -> upgrade (if any) -> unregister. With this code both can be interleaved
+        // TODO: why switchMap here?
         return connect().switchMap(new Func1<ServerConnection, Observable<Void>>() {
             @Override
             public Observable<Void> call(ServerConnection connection) {
