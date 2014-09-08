@@ -103,6 +103,29 @@ public class RateLimitingFilterTest {
 
         assertEquals("Expected rate limiter counter increase", rateLimiterCounter + 1, EurekaMonitors.RATE_LIMITED.getCount());
         // We just test the counter
+        verify(response, times(1)).setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+    }
+
+    @Test
+    public void testCustomClientThrottlingCandidatesCounter() throws Exception {
+        ConfigurationManager.getConfigInstance().setProperty("eureka.rateLimiter.enabled", false);
+
+        // Custom clients will go up to the window limit
+        when(request.getHeader(AbstractEurekaIdentity.AUTH_NAME_HEADER_KEY)).thenReturn(CUSTOM_CLIENT);
+        when(request.getHeader(AbstractEurekaIdentity.AUTH_NAME_HEADER_KEY)).thenReturn(CUSTOM_CLIENT);
+
+        filter.doFilter(request, response, filterChain);
+        filter.doFilter(request, response, filterChain);
+
+        verify(filterChain, times(2)).doFilter(request, response);
+
+        // Now we hit the limit
+        long rateLimiterCounter = EurekaMonitors.RATE_LIMITED_CANDIDATES.getCount();
+        when(request.getHeader(AbstractEurekaIdentity.AUTH_NAME_HEADER_KEY)).thenReturn(CUSTOM_CLIENT);
+        filter.doFilter(request, response, filterChain);
+
+        assertEquals("Expected rate limiter counter increase", rateLimiterCounter + 1, EurekaMonitors.RATE_LIMITED_CANDIDATES.getCount());
+        // We just test the counter
         verify(response, times(0)).setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
     }
 }

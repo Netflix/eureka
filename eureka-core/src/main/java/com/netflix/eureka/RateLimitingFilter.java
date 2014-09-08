@@ -23,6 +23,7 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -50,7 +51,9 @@ import com.netflix.eureka.util.RateLimiter;
  * </li>
  * </ul>
  *
- * This feature is not enabled by default, but can be turned on via configuration.
+ * This feature is not enabled by default, but can be turned on via configuration. Even when disabled,
+ * the throttling statistics are still counted, although on a separate counter, so it is possible to
+ * measure the impact of this feature before activation.
  *
  * <p>
  * Rate limiter implementation is based on token bucket algorithm. There are two configurable
@@ -81,14 +84,15 @@ public class RateLimitingFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         if (request instanceof HttpServletRequest) {
-            if (EurekaServerConfigurationManager.getInstance().getConfiguration().isRateLimiterEnabled()) {
-                if (isRateLimited((HttpServletRequest) request)) {
+            if (isRateLimited((HttpServletRequest) request)) {
+                if (EurekaServerConfigurationManager.getInstance().getConfiguration().isRateLimiterEnabled()) {
                     EurekaMonitors.RATE_LIMITED.increment();
-                    // We just count it for now.
-                    // ((HttpServletResponse) response).setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                    ((HttpServletResponse) response).setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                } else {
+                    EurekaMonitors.RATE_LIMITED_CANDIDATES.increment();
                     chain.doFilter(request, response);
-                    return;
                 }
+                return;
             }
         }
         chain.doFilter(request, response);
