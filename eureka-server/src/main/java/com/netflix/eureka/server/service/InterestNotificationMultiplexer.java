@@ -67,9 +67,17 @@ public class InterestNotificationMultiplexer {
                     subscribedInterests.put(newInterest, new InterestSubscriber(newInterest));
                 }
             }
-        } else if (!subscribedInterests.containsKey(interest)) {
-            subscribedInterests.values().iterator().next().close();
-            subscribedInterests.put(interest, new InterestSubscriber(interest));
+        } else {
+            // First remove all interests except the current one if present
+            for (Interest<InstanceInfo> currentInterest : subscribedInterests.keySet()) {
+                if (!interest.equals(currentInterest)) {
+                    subscribedInterests.remove(currentInterest).close();
+                }
+            }
+            // Add new interests
+            if (subscribedInterests.isEmpty()) {
+                subscribedInterests.put(interest, new InterestSubscriber(interest));
+            }
         }
     }
 
