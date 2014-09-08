@@ -17,6 +17,8 @@
 package com.netflix.eureka.interests;
 
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Eureka client can subscribe to multiple interests at the same time. This class
@@ -48,6 +50,23 @@ public class MultipleInterests<T> extends Interest<T> {
             }
         }
         return false;
+    }
+
+
+    public Set<Interest<T>> flatten() {
+        Set<Interest<T>> set = new HashSet<>();
+        flatten(this, set);
+        return set;
+    }
+
+    private void flatten(Interest<T> interest, Set<Interest<T>> collector) {
+        if (interest instanceof MultipleInterests) {
+            for (Interest<T> i : ((MultipleInterests<T>) interest).getInterests()) {
+                flatten(i, collector);
+            }
+        } else {
+            collector.add(interest);
+        }
     }
 
     @Override

@@ -218,6 +218,7 @@ public class LeasedInstanceRegistry implements EurekaRegistry {
      */
     public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest) {
         try {
+            // TODO: this method can be run concurrently from different channels, unless we run everything on single server event loop.
             notificationSubject.pause(); // Pause notifications till we get a snapshot of current registry (registry.values())
             return indexRegistry.forInterest(interest, notificationSubject,
                                              new InstanceInfoInitStateHolder(getSnapshotForInterest(interest)));
