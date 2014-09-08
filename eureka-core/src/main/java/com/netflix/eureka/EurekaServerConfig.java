@@ -511,4 +511,25 @@ public interface EurekaServerConfig {
      * @return {@code true} if the clientAuthHeaders should be logged and/or emitted as metrics
      */
     boolean shouldLogIdentityHeaders();
+
+    /**
+     * Indicates whether the rate limiter should be enabled or disabled.
+     */
+    boolean isRateLimiterEnabled();
+
+    /**
+     * A list of certified clients. This is in addition to standard eureka Java clients.
+     */
+    Set<String> getRateLimiterPrivilidgedClients();
+
+    /**
+     * Rate limiter, token bucket algorithm property. See also {@link #getRateLimiterAverageRate()}.
+     */
+    int getRateLimiterBurstSize();
+
+    /**
+     * Rate limiter, token bucket algorithm property. Specifies the average enforced request rate.
+     * See also {@link #getRateLimiterBurstSize()}.
+     */
+    int getRateLimiterAverageRate();
 }

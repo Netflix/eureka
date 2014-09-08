@@ -17,6 +17,10 @@
      <filter-name>requestAuthFilter</filter-name>
      <filter-class>com.netflix.eureka.ServerRequestAuthFilter</filter-class>
   </filter>
+  <filter>
+    <filter-name>rateLimitingFilter</filter-name>
+    <filter-class>com.netflix.eureka.RateLimitingFilter</filter-class>
+  </filter>
 
   <filter>
      <filter-name>jersey</filter-name>

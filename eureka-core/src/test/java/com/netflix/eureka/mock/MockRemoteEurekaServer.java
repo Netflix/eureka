@@ -4,6 +4,7 @@ import com.netflix.appinfo.AbstractEurekaIdentity;
 import com.netflix.discovery.converters.XmlXStream;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.eureka.RateLimitingFilter;
 import com.netflix.eureka.ServerRequestAuthFilter;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
@@ -41,6 +42,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
         this.applicationDeltaMap = applicationDeltaMap;
         ServletHandler handler = new AppsResourceHandler();
         handler.addFilterWithMapping(ServerRequestAuthFilter.class, "/*", 1);
+        handler.addFilterWithMapping(RateLimitingFilter.class, "/*", 1);
         server = new Server(port);
         server.addHandler(handler);
         System.out.println(String.format(

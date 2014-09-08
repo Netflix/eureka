@@ -102,6 +102,7 @@ project(':eureka-core') {
 
         testCompile 'junit:junit:4.10'
         testCompile 'org.mortbay.jetty:jetty:6.1H.22'
+        testCompile 'org.mockito:mockito-all:1.8.5'
         testRuntime 'org.slf4j:slf4j-simple:1.7.0'
         testCompile project(':eureka-client')
     }
