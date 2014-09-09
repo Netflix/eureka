@@ -40,12 +40,12 @@ import static java.lang.String.*;
  */
 public class InterestNotificationMultiplexer {
 
-    private final EurekaRegistry eurekaRegistry;
+    private final EurekaRegistry<InstanceInfo> eurekaRegistry;
 
     private final Map<Interest<InstanceInfo>, InterestSubscriber> subscribedInterests = new HashMap<>();
     private final PublishSubject<ChangeNotification<InstanceInfo>> aggregatedStream = PublishSubject.create();
 
-    public InterestNotificationMultiplexer(EurekaRegistry eurekaRegistry) {
+    public InterestNotificationMultiplexer(EurekaRegistry<InstanceInfo> eurekaRegistry) {
         this.eurekaRegistry = eurekaRegistry;
     }
 
