@@ -16,19 +16,30 @@
 
 package com.netflix.eureka.client.bootstrap;
 
+import java.net.InetSocketAddress;
+
 import com.netflix.eureka.client.ServerResolver;
 import rx.Observable;
 
 /**
- * Read up to date bootstrap server list from the cluster itself.
- * Does it make sense????
+ * A resolver fetching server list from the Eureka cluster. Eureka client uses
+ * this resolver to load read cluster server list from the write cluster, after the
+ * registration process.
  *
  * @author Tomasz Bak
  */
-public class EurekaServerResolver implements ServerResolver {
+public class EurekaServerResolver implements ServerResolver<InetSocketAddress> {
 
     @Override
-    public Observable resolve() {
+    public Observable<ServerEntry<InetSocketAddress>> resolve() {
         return Observable.error(new UnsupportedOperationException("eureka server resolution not implemented."));
+    }
+
+    @Override
+    public void start() {
+    }
+
+    @Override
+    public void close() {
     }
 }

@@ -16,9 +16,11 @@
 
 package com.netflix.eureka.client;
 
-import rx.Observable;
-
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.net.SocketAddress;
+
+import rx.Observable;
 
 /**
  * Discovery of Eureka servers.
@@ -30,22 +32,45 @@ public interface ServerResolver<A extends SocketAddress> {
     //TODO: We should be using ribbon's load balancers
 
     /**
-     * Returns a stream of {@link ServerResolver.ServerEntry}
+     * Returns a stream of {@link ServerEntry}
      *
-     * @return A stream of {@link ServerResolver.ServerEntry}
+     * @return A stream of {@link ServerEntry}
      */
     Observable<ServerEntry<A>> resolve();
 
-    public class ServerEntry<A> {
+    @PostConstruct
+    void start();
+
+    /**
+     * Most resolvers will be active components doing background work. To release the resources a
+     * client must call this method. Calling {@link #close()} will also complete the {@link ServerEntry}
+     * observable returned by {@link #resolve()}.
+     */
+    @PreDestroy
+    void close();
+
+    class ServerEntry<A> {
+
+        public Protocol getProtocol() {
+            return protocol;
+        }
 
         public enum Action {Add, Remove}
 
+        public enum Protocol {Undefined, Tcp, WebSockets}
+
         private final Action action;
         private final A server;
+        private final Protocol protocol;
 
         public ServerEntry(Action action, A server) {
+            this(action, server, Protocol.Undefined);
+        }
+
+        public ServerEntry(Action action, A server, Protocol protocol) {
             this.action = action;
             this.server = server;
+            this.protocol = protocol;
         }
 
         public Action getAction() {
@@ -54,6 +79,47 @@ public interface ServerResolver<A extends SocketAddress> {
 
         public A getServer() {
             return server;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            ServerEntry that = (ServerEntry) o;
+
+            if (action != that.action) {
+                return false;
+            }
+            if (protocol != that.protocol) {
+                return false;
+            }
+            if (server != null ? !server.equals(that.server) : that.server != null) {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = action != null ? action.hashCode() : 0;
+            result = 31 * result + (server != null ? server.hashCode() : 0);
+            result = 31 * result + (protocol != null ? protocol.hashCode() : 0);
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return "ServerEntry{" +
+                    "action=" + action +
+                    ", server=" + server +
+                    ", protocol=" + protocol +
+                    '}';
         }
     }
 }
