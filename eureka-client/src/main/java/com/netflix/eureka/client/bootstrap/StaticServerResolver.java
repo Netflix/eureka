@@ -24,12 +24,16 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
 /**
+ * TODO: This resolver should provide add/remove methods, to dynamically adjust the server list.
+ * TODO: Support complete endpoint configuration (protocol + port).
+ *
  * @author Tomasz Bak
  */
 public class StaticServerResolver<A extends SocketAddress> implements ServerResolver<A> {
 
     private final Observable<ServerEntry<A>> serverList;
 
+    @SafeVarargs
     public StaticServerResolver(final A... serverList) {
         this.serverList = Observable.create(new Observable.OnSubscribe<ServerEntry<A>>() {
             @Override
@@ -45,6 +49,14 @@ public class StaticServerResolver<A extends SocketAddress> implements ServerReso
     @Override
     public Observable<ServerEntry<A>> resolve() {
         return serverList;
+    }
+
+    @Override
+    public void start() {
+    }
+
+    @Override
+    public void close() {
     }
 
     public static StaticServerResolver<InetSocketAddress> singleHostResolver(String host, int port) {

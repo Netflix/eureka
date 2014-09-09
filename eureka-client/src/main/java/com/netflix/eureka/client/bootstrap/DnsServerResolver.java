@@ -16,18 +16,126 @@
 
 package com.netflix.eureka.client.bootstrap;
 
-import com.netflix.eureka.client.ServerResolver;
-import rx.Observable;
+import javax.naming.NamingEnumeration;
+import javax.naming.NamingException;
+import javax.naming.directory.Attribute;
+import javax.naming.directory.Attributes;
+import javax.naming.directory.DirContext;
+import javax.naming.directory.InitialDirContext;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+import com.netflix.eureka.client.ServerResolver.ServerEntry.Action;
+import rx.Scheduler;
+import rx.schedulers.Schedulers;
 
 /**
- * Resolve write cluster from DNS.
+ * Load server list from DNS. Optionally, the list can be refreshed at a specified
+ * interval.
  *
  * @author Tomasz Bak
  */
-public class DnsServerResolver implements ServerResolver {
+public class DnsServerResolver extends AbstractServerResolver<InetSocketAddress> {
+
+    private static final long DNS_LOOKUP_INTERVAL = 30;
+    private static final TimeUnit DNS_LOOKUP_INTERVAL_UNIT = TimeUnit.SECONDS;
+
+    private final String eurekaServerDN;
+
+    public DnsServerResolver(String eurekaServerDN, boolean refresh) {
+        this(eurekaServerDN, refresh, Schedulers.io());
+    }
+
+    public DnsServerResolver(String eurekaServerDN, boolean refresh, Scheduler scheduler) {
+        super(refresh, scheduler);
+        this.eurekaServerDN = eurekaServerDN;
+    }
 
     @Override
-    public Observable resolve() {
-        return Observable.error(new UnsupportedOperationException("DNS resolution not implemented."));
+    protected DnsResolverTask createResolveTask() {
+        return new DnsResolverTask();
+    }
+
+    @Override
+    protected IOException noServersFound(Exception ex) {
+        if (ex == null) {
+            return new IOException("No address available for DN entry " + eurekaServerDN);
+        }
+        return new IOException("Could not resolve domain name " + eurekaServerDN, ex);
+    }
+
+    class DnsResolverTask implements ResolverTask {
+        @Override
+        public void call() {
+            boolean reschedule;
+            try {
+                reschedule = onServerListUpdate(resolveEurekaServerDN());
+            } catch (Exception ex) {
+                reschedule = onUpdateError(ex);
+            }
+            if (reschedule) {
+                scheduleLookup(this, DNS_LOOKUP_INTERVAL, DNS_LOOKUP_INTERVAL_UNIT);
+            }
+        }
+
+        private Set<ServerEntry<InetSocketAddress>> resolveEurekaServerDN() throws NamingException {
+            Hashtable<String, String> env = new Hashtable<String, String>();
+            env.put("java.naming.factory.initial", "com.sun.jndi.dns.DnsContextFactory");
+            DirContext dirContext = new InitialDirContext(env);
+            try {
+                return resolveName(dirContext, eurekaServerDN);
+            } finally {
+                dirContext.close();
+            }
+        }
+
+        private Set<ServerEntry<InetSocketAddress>> resolveName(DirContext dirContext, String targetDN) throws NamingException {
+            while (true) {
+                Attributes attrs = dirContext.getAttributes(targetDN, new String[]{"A", "CNAME"});
+                Set<ServerEntry<InetSocketAddress>> addresses = toSetOfServerEntries(attrs, "A");
+                if (!addresses.isEmpty()) {
+                    return addresses;
+                }
+                Set<String> aliases = toSetOfString(attrs, "CNAME");
+                if (aliases != null && !aliases.isEmpty()) {
+                    targetDN = aliases.iterator().next();
+                    continue;
+                }
+                return addresses;
+            }
+        }
+
+        private Set<String> toSetOfString(Attributes attrs, String attrName) throws NamingException {
+            Attribute attr = attrs.get(attrName);
+            if (attr == null) {
+                return Collections.emptySet();
+            }
+            Set<String> resultSet = new HashSet<>();
+            NamingEnumeration<?> it = attr.getAll();
+            while (it.hasMore()) {
+                Object value = it.next();
+                resultSet.add(value.toString());
+            }
+            return resultSet;
+        }
+
+        private Set<ServerEntry<InetSocketAddress>> toSetOfServerEntries(Attributes attrs, String attrName) throws NamingException {
+            Attribute attr = attrs.get(attrName);
+            if (attr == null) {
+                return Collections.emptySet();
+            }
+            Set<ServerEntry<InetSocketAddress>> resultSet = new HashSet<>();
+            NamingEnumeration<?> it = attr.getAll();
+            while (it.hasMore()) {
+                Object value = it.next();
+                resultSet.add(new ServerEntry<InetSocketAddress>(Action.Add, new InetSocketAddress(value.toString(), 0)));
+            }
+            return resultSet;
+        }
     }
 }
