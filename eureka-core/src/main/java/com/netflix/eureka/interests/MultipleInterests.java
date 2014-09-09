@@ -16,7 +16,8 @@
 
 package com.netflix.eureka.interests;
 
-import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -28,18 +29,28 @@ import java.util.Set;
  */
 public class MultipleInterests<T> extends Interest<T> {
 
-    private final Interest<T>[] interests;
+    private final Set<Interest<T>> interests;
 
-    protected MultipleInterests() {
-        this.interests = null;
+    public MultipleInterests() {
+        this.interests = new HashSet<>();
     }
 
     public MultipleInterests(Interest<T>... interests) {
-        this.interests = interests;
+        this.interests = new HashSet<>();
+        Collections.addAll(this.interests, interests);
     }
 
-    public Interest<T>[] getInterests() {
+    public Collection<Interest<T>> getInterests() {
         return interests;
+    }
+
+    public synchronized void clear() {
+        interests.clear();
+    }
+
+    public synchronized void add(Interest<T> interest) {
+        interests.add(interest);
+        flatten();
     }
 
     @Override
@@ -52,7 +63,7 @@ public class MultipleInterests<T> extends Interest<T> {
         return false;
     }
 
-
+    // TODO: properly deal with merging subsets into supersets
     public Set<Interest<T>> flatten() {
         Set<Interest<T>> set = new HashSet<>();
         flatten(this, set);
@@ -71,29 +82,25 @@ public class MultipleInterests<T> extends Interest<T> {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
+        if (this == o) return true;
+        if (!(o instanceof MultipleInterests)) return false;
 
         MultipleInterests that = (MultipleInterests) o;
 
-        if (!Arrays.equals(interests, that.interests)) {
-            return false;
-        }
+        if ( !interests.equals(that.interests) ) return false;
 
         return true;
     }
 
     @Override
     public int hashCode() {
-        return interests != null ? Arrays.hashCode(interests) : 0;
+        return interests.hashCode();
     }
 
     @Override
     public String toString() {
-        return "MultipleInterests{interests=" + Arrays.toString(interests) + '}';
+        return "MultipleInterests{" +
+                "interests=" + interests +
+                "} " + super.toString();
     }
 }

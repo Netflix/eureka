@@ -83,7 +83,7 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
 
     @Override
     public Observable<ChangeNotification<InstanceInfo>> register(Interest<InstanceInfo> interest) {
-        logger.debug("Received intrest registration request {}", interest);
+        logger.debug("Received interest registration request {}", interest);
 
         if (!state.compareAndSet(STATES.Idle, STATES.Registered)) {// State check. Only register if the state is Idle.
             if (STATES.Closed == state.get()) {

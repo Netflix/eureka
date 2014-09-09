@@ -5,6 +5,7 @@ import com.netflix.eureka.client.transport.TransportClient;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.interests.ModifyNotification;
+import com.netflix.eureka.interests.MultipleInterests;
 import com.netflix.eureka.protocol.discovery.AddInstance;
 import com.netflix.eureka.protocol.discovery.DeleteInstance;
 import com.netflix.eureka.protocol.discovery.InterestRegistration;
@@ -22,6 +23,7 @@ import rx.functions.Func1;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * An implementation of {@link com.netflix.eureka.service.InterestChannel}. It is mandatory that all operations
@@ -41,6 +43,11 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
             new IllegalStateException("No interest is registered on this channel.");
 
     protected enum STATES {Idle, Registered, Closed}
+
+    /**
+     * Since we assume single threaded access to this channel, no need for concurrency control
+     */
+    protected final MultipleInterests<InstanceInfo> interests;
 
     /**
      * A local copy of instances received by this channel from the server. This is used for:
@@ -66,6 +73,7 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
 
     public InterestChannelImpl(TransportClient client) {
         super(STATES.Idle, client, 30000);
+        interests = new MultipleInterests<>();
     }
 
     @Override
@@ -79,6 +87,8 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
                     return Observable.error(CHANNEL_CLOSED_EXCEPTION);
             }
         }
+
+        interests.add(interest);
 
         // TODO: why switchMap here?
         return connect().switchMap(new Func1<ServerConnection, Observable<? extends ChangeNotification<InstanceInfo>>>() {
@@ -98,7 +108,6 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
     @Override
     public Observable<Void> upgrade(final Interest<InstanceInfo> newInterest) {
         STATES currentState = state.get();
-
         if(currentState != STATES.Registered) {
             switch (currentState) {
                 case Idle:
@@ -109,6 +118,8 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
                     return Observable.error(new IllegalStateException("Unrecognized channel state: " + currentState));
             }
         }
+
+        interests.add(newInterest);
 
         // TODO: why switchMap here?
         return connect().switchMap(new Func1<ServerConnection, Observable<Void>>() {
@@ -133,6 +144,8 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
             }
         }
 
+        interests.clear();
+
         // TODO: why switchMap here?
         return connect().switchMap(new Func1<ServerConnection, Observable<Void>>() {
             @Override
@@ -144,8 +157,9 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
 
     @Override
     protected void _close() {
-        super._close();
+        state.set(STATES.Closed);
         idVsInstance.clear();
+        super._close();
     }
 
     private Observable<ChangeNotification<InstanceInfo>> createInterestStream() {
