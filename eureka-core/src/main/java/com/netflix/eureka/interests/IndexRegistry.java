@@ -2,41 +2,13 @@ package com.netflix.eureka.interests;
 
 import rx.Observable;
 
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
- * @author Nitesh Kant
+ * @author David Liu
  */
-public class IndexRegistry<T> {
-
-    private final ConcurrentHashMap<Interest<T>, Index<T>> interestVsIndex;
-
-    public IndexRegistry() {
-        this.interestVsIndex = new ConcurrentHashMap<Interest<T>, Index<T>>();
-    }
-
-    public Index<T> forInterest(final Interest<T> interest,
+public interface IndexRegistry<T> {
+    Index<T> forInterest(final Interest<T> interest,
                                 final Observable<ChangeNotification<T>> dataSource,
-                                final Index.InitStateHolder<T> initStateHolder) {
-        Index<T> index = interestVsIndex.get(interest);
-        if (null != index) {
-            return index;
-        } else {
-            index = Index.forInterest(interest, dataSource, initStateHolder);
-            Index<T> existing = interestVsIndex.putIfAbsent(interest, index);
-            if (null != existing) {
-                index.onCompleted(); // Shutdown for index.
-                return existing;
-            } else {
-                return index;
-            }
-        }
-    }
+                                final Index.InitStateHolder<T> initStateHolder);
 
-    public Observable<Void> shutdown() {
-        for (Index<T> index : interestVsIndex.values()) {
-            index.onCompleted();
-        }
-        return Observable.empty();
-    }
+    Observable<Void> shutdown();
 }

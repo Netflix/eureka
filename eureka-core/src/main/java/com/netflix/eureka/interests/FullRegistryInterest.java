@@ -7,9 +7,13 @@ import com.netflix.eureka.registry.InstanceInfo;
  */
 public class FullRegistryInterest extends Interest<InstanceInfo> {
 
-    public static final FullRegistryInterest DEFAULT_INSTANCE = new FullRegistryInterest();
+    private static final FullRegistryInterest DEFAULT_INSTANCE = new FullRegistryInterest();
 
     private static final int HASH = 234234128;
+
+    public static FullRegistryInterest getInstance() {
+        return DEFAULT_INSTANCE;
+    }
 
     @Override
     public boolean matches(InstanceInfo data) {

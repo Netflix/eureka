@@ -19,6 +19,7 @@ package com.netflix.eureka.registry;
 import com.netflix.eureka.datastore.NotificationsSubject;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.IndexRegistry;
+import com.netflix.eureka.interests.IndexRegistryImpl;
 import com.netflix.eureka.interests.InstanceInfoInitStateHolder;
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.interests.ModifyNotification;
@@ -29,6 +30,7 @@ import rx.functions.Func1;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,8 +51,8 @@ public class LeasedInstanceRegistry implements EurekaRegistry {
     private final InstanceInfo myInstanceInfo;
 
     public LeasedInstanceRegistry(InstanceInfo myInstanceInfo) {
-        internalStore = new ConcurrentHashMap<String, Lease<InstanceInfo>>();
-        indexRegistry = new IndexRegistry<InstanceInfo>();
+        internalStore = new ConcurrentHashMap<>();
+        indexRegistry = new IndexRegistryImpl<>();
         notificationSubject = NotificationsSubject.create();
         this.myInstanceInfo = myInstanceInfo;
     }
@@ -278,5 +280,21 @@ public class LeasedInstanceRegistry implements EurekaRegistry {
         public void remove() {
             throw new UnsupportedOperationException("Remove not supported for this iterator.");
         }
+    }
+
+    // pretty print for debugging
+    @Override
+    public String toString() {
+        return prettyString();
+    }
+
+    private String prettyString() {
+        StringBuilder sb = new StringBuilder("LeasedInstanceRegistry\n");
+        for (Map.Entry<String, Lease<InstanceInfo>> entry : internalStore.entrySet()) {
+            sb.append(entry).append("\n");
+        }
+        sb.append(indexRegistry.toString());
+
+        return sb.toString();
     }
 }
