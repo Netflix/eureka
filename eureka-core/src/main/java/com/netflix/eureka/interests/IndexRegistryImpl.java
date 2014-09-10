@@ -36,24 +36,6 @@ public class IndexRegistryImpl<T> implements IndexRegistry<T> {
     }
 
     @Override
-    public Observable<Void> completeInterest(Interest<T> interest) {
-        Index<T> index = interestVsIndex.remove(interest);
-        if (index != null) {
-            index.onCompleted();
-        }
-        return Observable.empty();  // TODO: wrap the logic inside observables?
-    }
-
-    @Override
-    public Observable<Void> errorInterest(Interest<T> interest, Throwable e) {
-        Index<T> index = interestVsIndex.remove(interest);
-        if (index != null) {
-            index.onError(e);
-        }
-        return Observable.empty();
-    }
-
-    @Override
     public synchronized Observable<Void> shutdown() {
         for (Index<T> index : interestVsIndex.values()) {
             index.onCompleted();
@@ -72,7 +54,7 @@ public class IndexRegistryImpl<T> implements IndexRegistry<T> {
     private String prettyString() {
         StringBuilder sb = new StringBuilder("IndexRegistryImpl\n");
         for (Map.Entry<Interest<T>, Index<T>> entry : interestVsIndex.entrySet()) {
-            sb.append(entry + "\n");
+            sb.append(entry).append("\n");
         }
         return sb.toString();
     }

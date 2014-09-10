@@ -57,10 +57,6 @@ public class LeasedInstanceRegistry implements EurekaRegistry {
         this.myInstanceInfo = myInstanceInfo;
     }
 
-    public IndexRegistry<InstanceInfo> getIndexRegistry() {
-        return indexRegistry;
-    }
-
     public DataCenterInfo getRegistryLocation() {
         return myInstanceInfo.getDataCenterInfo();
     }
@@ -295,7 +291,7 @@ public class LeasedInstanceRegistry implements EurekaRegistry {
     private String prettyString() {
         StringBuilder sb = new StringBuilder("LeasedInstanceRegistry\n");
         for (Map.Entry<String, Lease<InstanceInfo>> entry : internalStore.entrySet()) {
-            sb.append(entry + "\n");
+            sb.append(entry).append("\n");
         }
         sb.append(indexRegistry.toString());
 

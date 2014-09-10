@@ -13,6 +13,7 @@ import com.netflix.eureka.protocol.discovery.InterestSetNotification;
 import com.netflix.eureka.protocol.discovery.UnregisterInterestSet;
 import com.netflix.eureka.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka.registry.Delta;
+import com.netflix.eureka.registry.EurekaRegistry;
 import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.service.InterestChannel;
 import org.slf4j.Logger;
@@ -23,7 +24,6 @@ import rx.functions.Func1;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * An implementation of {@link com.netflix.eureka.service.InterestChannel}. It is mandatory that all operations
@@ -44,10 +44,12 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
 
     protected enum STATES {Idle, Registered, Closed}
 
+    protected EurekaRegistry registry;
+
     /**
      * Since we assume single threaded access to this channel, no need for concurrency control
      */
-    protected final MultipleInterests<InstanceInfo> interests;
+    protected Interest<InstanceInfo> channelInterests;
 
     /**
      * A local copy of instances received by this channel from the server. This is used for:
@@ -71,9 +73,10 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
      */
     private final Map<String, InstanceInfo> idVsInstance = new HashMap<String, InstanceInfo>();
 
-    public InterestChannelImpl(TransportClient client) {
+    public InterestChannelImpl(final EurekaRegistry registry, TransportClient client) {
         super(STATES.Idle, client, 30000);
-        interests = new MultipleInterests<>();
+        this.registry = registry;
+        channelInterests = null;
     }
 
     @Override
@@ -88,21 +91,40 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
             }
         }
 
-        interests.add(interest);
+        channelInterests = interest;  // assume single threaded access
 
         // TODO: why switchMap here?
-        return connect().switchMap(new Func1<ServerConnection, Observable<? extends ChangeNotification<InstanceInfo>>>() {
-            @Override
-            public Observable<? extends ChangeNotification<InstanceInfo>> call(ServerConnection serverConnection) {
-                @SuppressWarnings("rawtypes")
-                Observable sendAck = serverConnection.send(new InterestRegistration(interest));
+        return connect()
+                .switchMap(new Func1<ServerConnection, Observable<? extends ChangeNotification<InstanceInfo>>>() {
+                    @Override
+                    public Observable<? extends ChangeNotification<InstanceInfo>> call(ServerConnection serverConnection) {
+                        @SuppressWarnings("rawtypes")
+                        Observable sendAck = serverConnection.send(new InterestRegistration(interest));
 
-                @SuppressWarnings("unchecked")
-                Observable<ChangeNotification<InstanceInfo>> toReturn = Observable.concat(sendAck, createInterestStream());
+                        @SuppressWarnings("unchecked")
+                        Observable<ChangeNotification<InstanceInfo>> toReturn = Observable.concat(sendAck, createInterestStream());
 
-                return toReturn;
-            }
-        });
+                        return toReturn;
+                    }
+                }).map(new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
+                    @Override
+                    public ChangeNotification<InstanceInfo> call(ChangeNotification<InstanceInfo> notification) {
+                        switch (notification.getKind()) {  // these are in-mem blocking ops
+                            case Add:
+                                registry.register(notification.getData());
+                                break;
+                            case Modify:
+                                registry.update(notification.getData(), null);
+                                break;
+                            case Delete:
+                                registry.unregister(notification.getData().getId());
+                                break;
+                            default:
+                                logger.error("Unrecognized notification kind");
+                        }
+                        return notification;
+                    }
+                });
     }
 
     @Override
@@ -119,7 +141,7 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
             }
         }
 
-        interests.add(newInterest);
+        channelInterests = new MultipleInterests<>(channelInterests, newInterest);  // assume single threaded access
 
         // TODO: why switchMap here?
         return connect().switchMap(new Func1<ServerConnection, Observable<Void>>() {
@@ -144,7 +166,7 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
             }
         }
 
-        interests.clear();
+        channelInterests = null;
 
         // TODO: why switchMap here?
         return connect().switchMap(new Func1<ServerConnection, Observable<Void>>() {
@@ -158,6 +180,7 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
     @Override
     protected void _close() {
         state.set(STATES.Closed);
+        channelInterests = null;
         idVsInstance.clear();
         super._close();
     }

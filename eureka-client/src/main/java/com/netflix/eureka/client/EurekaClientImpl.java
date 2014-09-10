@@ -16,22 +16,22 @@
 
 package com.netflix.eureka.client;
 
+import com.netflix.eureka.client.service.EurekaClientService;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.interests.Interests;
 import com.netflix.eureka.registry.InstanceInfo;
-import com.netflix.eureka.registry.LeasedInstanceRegistry;
-import com.netflix.eureka.service.EurekaService;
 import com.netflix.eureka.service.InterestChannel;
 import com.netflix.eureka.service.RegistrationChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
+import rx.Subscription;
+import rx.observers.SafeSubscriber;
+import rx.subjects.PublishSubject;
 
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Tomasz Bak
@@ -40,87 +40,79 @@ public class EurekaClientImpl extends EurekaClient {
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaClientImpl.class);
 
-    // TODO: Store instances and address multiple interest subscriptions
-    // TODO: Serialize calls to interest/registration channel
+    private static final IllegalStateException CLIENT_SHUTTING_DOWN_EXCEPTION =
+            new IllegalStateException("The client is shutting down.");
 
-    private final EurekaService eurekaService;
+    private final EurekaClientService eurekaService;
 
-    /**
-     * These channels are eagerly created and updated atomically whenever they are disconnected.
-     */
-    private final AtomicReference<InterestChannel> interestChannel;  // TODO: there is no need to make this atomicRef
+    private final AtomicReference<InterestChannel> interestChannel;
     private final AtomicReference<RegistrationChannel> registrationChannel;
 
-    private final Lock interestLock = new ReentrantLock();
+    private final PublishSubject<Interest<InstanceInfo>> interestOperations;
+    private final Subscription interestOperationsSubscription;
 
-    private final LeasedInstanceRegistry clientRegistry;
-
-    public EurekaClientImpl(EurekaService service) {
+    public EurekaClientImpl(EurekaClientService service) {
         eurekaService = service;
         interestChannel = new AtomicReference<>();
         registrationChannel = new AtomicReference<>(service.newRegistrationChannel());
 
-        // TODO: have a client specific implementation/interface the access to indexRegistry?
-        // TODO: provide local instanceInfo for the registry
-        // TODO: interface interestRegistry management calls
-        clientRegistry = new LeasedInstanceRegistry(null);
+        interestOperations = PublishSubject.create();
+        interestOperationsSubscription = interestOperations.asObservable().subscribe(new InterestOperationsProcessor());
     }
 
     @Override
     public Observable<Void> register(InstanceInfo instanceInfo) {
+        if (getRegistrationChannel() == null) {
+            return Observable.error(CLIENT_SHUTTING_DOWN_EXCEPTION);
+        }
         return getRegistrationChannel().register(instanceInfo);
     }
 
     @Override
     public Observable<Void> update(InstanceInfo instanceInfo) {
+        if (getRegistrationChannel() == null) {
+            return Observable.error(CLIENT_SHUTTING_DOWN_EXCEPTION);
+        }
         return getRegistrationChannel().update(instanceInfo);
     }
 
     @Override
-    public Observable<ChangeNotification<InstanceInfo>> forInterest(final Interest<InstanceInfo> interest) {
-        try {
-            interestLock.lock();  // TODO: evaluate lock strategy to use
+    public Observable<Void> unregister(InstanceInfo instanceInfo) {
+        if (getRegistrationChannel() == null) {
+            return Observable.error(CLIENT_SHUTTING_DOWN_EXCEPTION);
+        }
+        return getRegistrationChannel().unregister();
+    }
 
-            if (getInterestChannel() != null) {
-                getInterestChannel().upgrade(interest).subscribe();
-            } else {
-                interestChannel.set(eurekaService.newInterestChannel());
-                getInterestChannel().register(interest).subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
+    @Override
+    public Observable<ChangeNotification<InstanceInfo>> forInterest(final Interest<InstanceInfo> interest) {
+        return Observable.create(new Observable.OnSubscribe<ChangeNotification<InstanceInfo>>() {
+            @Override
+            public void call(final Subscriber<? super ChangeNotification<InstanceInfo>> subscriber) {
+                interestOperations.onNext(interest);
+                eurekaService.forInterest(interest).subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
                     @Override
                     public void onCompleted() {
-                        clientRegistry.getIndexRegistry().completeInterest(interest);
-                        logger.debug("Interest " + interest + " has completed");
+                        subscriber.onCompleted();
                     }
 
                     @Override
                     public void onError(Throwable e) {
-                        clientRegistry.getIndexRegistry().errorInterest(interest, e);
-                        logger.error("Error fetching interest " + interest, e);
+                        subscriber.onError(e);
                     }
 
                     @Override
                     public void onNext(ChangeNotification<InstanceInfo> notification) {
-                        switch (notification.getKind()) {
-                            case Add:
-                                clientRegistry.register(notification.getData());
-                                break;
-                            case Modify:
-                                clientRegistry.update(notification.getData(), null);
-                                break;
-                            case Delete:
-                                clientRegistry.unregister(notification.getData().getId());
-                                break;
-                            default:
-                                logger.error("Unrecognized notification kind");
-                        }
+                        subscriber.onNext(notification);
                     }
                 });
             }
+        });
+    }
 
-            return clientRegistry.forInterest(interest);
-        } finally {
-            interestLock.unlock();
-        }
+    @Override
+    public Observable<ChangeNotification<InstanceInfo>> forApplication(String appName) {
+        return forInterest(Interests.forApplication(appName));
     }
 
     @Override
@@ -129,25 +121,17 @@ public class EurekaClientImpl extends EurekaClient {
     }
 
     @Override
-    public Observable<Void> unregisterAllInterest() {
-        try {
-            interestLock.lock();  // TODO: evaluate lock strategy to use
-
-            clientRegistry.getIndexRegistry().shutdown();  // TODO: what to do with the stale registry data?
-            InterestChannel old = interestChannel.getAndSet(null);
-            old.unregister().subscribe();
-            old.close();
-
-            return Observable.empty();
-        } finally {
-            interestLock.unlock();
-        }
-    }
-
-    @Override
     public void close() {
-        interestChannel.get().close();
-        registrationChannel.get().close();
+        interestOperationsSubscription.unsubscribe();
+        InterestChannel iChannel = interestChannel.getAndSet(null);
+        if (iChannel != null) {
+            iChannel.close();
+        }
+        RegistrationChannel rChannel = registrationChannel.getAndSet(null);
+        if (rChannel != null) {
+            rChannel.close();
+        }
+        eurekaService.shutdown();
     }
 
     protected InterestChannel getInterestChannel() {
@@ -160,6 +144,56 @@ public class EurekaClientImpl extends EurekaClient {
 
     @Override
     public String toString() {
-        return clientRegistry.toString();
+        return eurekaService.toString();
     }
+
+    /**
+     * Subscriber to process forInterest operations serially
+     */
+    private class InterestOperationsProcessor extends SafeSubscriber<Interest<InstanceInfo>> {
+        public InterestOperationsProcessor() {
+            super(new Subscriber<Interest<InstanceInfo>>() {
+                @Override
+                public void onCompleted() {}
+
+                @Override
+                public void onError(Throwable e) {}
+
+                @Override
+                public void onNext(final Interest<InstanceInfo> interest) {
+                    if (getInterestChannel() != null) {
+                        getInterestChannel().upgrade(interest).subscribe(new Subscriber<Void>() {
+                            @Override
+                            public void onCompleted() {}
+
+                            @Override
+                            public void onError(Throwable e) {
+                                // TODO: handle channel upgrade errors
+                                logger.error("channel upgrade error", e);
+                            }
+
+                            @Override
+                            public void onNext(Void aVoid) {}
+                        });
+                    } else {
+                        interestChannel.set(eurekaService.newInterestChannel());
+                        getInterestChannel().register(interest).subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
+                            @Override
+                            public void onCompleted() {}
+
+                            @Override
+                            public void onError(Throwable e) {
+                                // TODO: handle channel upgrade errors
+                                logger.error("channel register error", e);
+                            }
+
+                            @Override
+                            public void onNext(ChangeNotification<InstanceInfo> notification) {}
+                        });
+                    }
+                }
+            });
+        }
+    }
+
 }

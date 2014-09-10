@@ -53,66 +53,6 @@ public class IndexRegistryTest {
     }
 
     @Test
-    public void testCompleteInterest() throws Exception {
-        final CountDownLatch completionLatch = new CountDownLatch(1);
-
-        indexRegistry.forInterest(
-                interest2,
-                NotificationsSubject.<InstanceInfo>create(),
-                new InstanceInfoInitStateHolder(Collections.<ChangeNotification<InstanceInfo>>emptyIterator()))
-                .subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
-                    @Override
-                    public void onCompleted() {
-                        completionLatch.countDown();
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        Assert.fail("Should not be here");
-                    }
-
-                    @Override
-                    public void onNext(ChangeNotification<InstanceInfo> notification) {
-                        Assert.fail("Should not be here");
-                    }
-                });
-
-        indexRegistry.completeInterest(interest2);
-        completionLatch.await(1, TimeUnit.MINUTES);
-        assertThat(indexRegistry.getView().size(), equalTo(1));
-    }
-
-    @Test
-    public void testErrorInterest() throws Exception {
-        final CountDownLatch completionLatch = new CountDownLatch(1);
-
-        indexRegistry.forInterest(
-                interest2,
-                NotificationsSubject.<InstanceInfo>create(),
-                new InstanceInfoInitStateHolder(Collections.<ChangeNotification<InstanceInfo>>emptyIterator()))
-                .subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
-                    @Override
-                    public void onCompleted() {
-                        Assert.fail("Should not be here");
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        completionLatch.countDown();
-                    }
-
-                    @Override
-                    public void onNext(ChangeNotification<InstanceInfo> notification) {
-                        Assert.fail("Should not be here");
-                    }
-                });
-
-        indexRegistry.completeInterest(interest2);
-        completionLatch.await(1, TimeUnit.MINUTES);
-        assertThat(indexRegistry.getView().size(), equalTo(1));
-    }
-
-    @Test
     public void testShutdown() throws Exception {
         final CountDownLatch completionLatch = new CountDownLatch(2);
 

@@ -1,23 +1,31 @@
 package com.netflix.eureka.client.service;
 
 import com.netflix.eureka.client.transport.TransportClient;
-import com.netflix.eureka.service.EurekaService;
+import com.netflix.eureka.interests.ChangeNotification;
+import com.netflix.eureka.interests.Interest;
+import com.netflix.eureka.registry.EurekaRegistry;
+import com.netflix.eureka.registry.InstanceInfo;
+import com.netflix.eureka.registry.LeasedInstanceRegistry;
 import com.netflix.eureka.service.InterestChannel;
 import com.netflix.eureka.service.RegistrationChannel;
+import rx.Observable;
 
 /**
  * @author Nitesh Kant
  */
-public class EurekaServiceImpl implements EurekaService {
+public class EurekaServiceImpl implements EurekaClientService {
 
+    private final EurekaRegistry registry;
     private final TransportClient readServerClient;
     private final TransportClient writeServerClient;
 
     protected EurekaServiceImpl(boolean readClient, TransportClient aClient) {
         if (readClient) {
+            registry = new LeasedInstanceRegistry(null);
             readServerClient = aClient;
             writeServerClient = null;
         } else {
+            registry = null;
             writeServerClient = aClient;
             readServerClient = null;
         }
@@ -25,20 +33,26 @@ public class EurekaServiceImpl implements EurekaService {
 
 
     protected EurekaServiceImpl(TransportClient writeServerClient, TransportClient readServerClient) {
+        registry = new LeasedInstanceRegistry(null);
         this.writeServerClient = writeServerClient;
         this.readServerClient = readServerClient;
     }
 
-    public static EurekaService forReadServer(TransportClient client) {
+    public static EurekaClientService forReadServer(TransportClient client) {
         return new EurekaServiceImpl(true, client);
     }
 
-    public static EurekaService forWriteServer(TransportClient client) {
+    public static EurekaClientService forWriteServer(TransportClient client) {
         return new EurekaServiceImpl(false, client);
     }
 
-    public static EurekaService forReadAndWriteServer(TransportClient readServerClient, TransportClient writeServerClient) {
+    public static EurekaClientService forReadAndWriteServer(TransportClient readServerClient, TransportClient writeServerClient) {
         return new EurekaServiceImpl(writeServerClient, readServerClient);
+    }
+
+    @Override
+    public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest) {
+        return registry.forInterest(interest);
     }
 
     /**
@@ -51,7 +65,7 @@ public class EurekaServiceImpl implements EurekaService {
      */
     @Override
     public InterestChannel newInterestChannel() {
-        return new InterestChannelImpl(readServerClient);
+        return new InterestChannelImpl(registry, readServerClient);
     }
 
 
@@ -76,5 +90,14 @@ public class EurekaServiceImpl implements EurekaService {
         if (null != writeServerClient) {
             writeServerClient.shutdown();
         }
+        if (null != registry) {
+            registry.shutdown();
+        }
+    }
+
+    // for debugging
+    @Override
+    public String toString() {
+        return registry.toString();
     }
 }

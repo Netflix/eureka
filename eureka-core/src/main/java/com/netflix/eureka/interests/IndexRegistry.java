@@ -10,9 +10,5 @@ public interface IndexRegistry<T> {
                                 final Observable<ChangeNotification<T>> dataSource,
                                 final Index.InitStateHolder<T> initStateHolder);
 
-    Observable<Void> completeInterest(Interest<T> interest);
-
-    Observable<Void> errorInterest(Interest<T> interest, Throwable e);
-
     Observable<Void> shutdown();
 }

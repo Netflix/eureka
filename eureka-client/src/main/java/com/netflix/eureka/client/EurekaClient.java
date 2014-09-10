@@ -32,11 +32,13 @@ public abstract class EurekaClient {
 
     public abstract Observable<Void> update(InstanceInfo instanceInfo);
 
+    public abstract Observable<Void> unregister(InstanceInfo instanceInfo);
+
     public abstract Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest);
 
-    public abstract Observable<ChangeNotification<InstanceInfo>> forVips(String... vips);
+    public abstract Observable<ChangeNotification<InstanceInfo>> forApplication(String appName);
 
-    public abstract Observable<Void> unregisterAllInterest();
+    public abstract Observable<ChangeNotification<InstanceInfo>> forVips(String... vips);
 
     public abstract void close();
 }

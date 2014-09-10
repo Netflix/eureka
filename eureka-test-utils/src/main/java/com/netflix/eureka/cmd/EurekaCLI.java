@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.netflix.eureka.client.service.EurekaClientService;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.utils.Sets;
@@ -204,8 +205,6 @@ public class EurekaCLI {
                 runStatus();
             } else if ("interestAll".equals(cmd) && expect(cmd, 0, args)) {
                 listenForRegistry(Interests.forFullRegistry());
-            } else if ("interestNone".equals(cmd) && expect(cmd, 0, args)) {
-                stopAllInterest();
             } else if ("interest".equals(cmd) && atLeast(cmd, 1, args)) {
                 listenForInterest(args);
             }
@@ -244,6 +243,14 @@ public class EurekaCLI {
         System.out.println("  interestAll                                          start intrest subscription for all");
         System.out.println("  interestNone                                         stop intrest subscription for all");
         System.out.println("  interest <vipName> <vipName> ...                     start interest subscription for given vips");
+
+        if (!aliasMap.isEmpty()) {
+            System.out.println();
+            System.out.println("Aliases");
+            for (String key : aliasMap.keySet()) {
+                System.out.format("  %-52s %s\n", key, aliasMap.get(key));
+            }
+        }
     }
 
     private void runHistory() {
@@ -266,7 +273,7 @@ public class EurekaCLI {
         TransportClient readClient =
                 TransportClients.newTcpDiscoveryClient(new StaticServerResolver<>(readHost), Codec.Json);
 
-        EurekaService eurekaService = EurekaServiceImpl.forReadAndWriteServer(readClient, writeClient);
+        EurekaClientService eurekaService = EurekaServiceImpl.forReadAndWriteServer(readClient, writeClient);
 
         eurekaClient = new EurekaClientImpl(eurekaService);
         System.out.format("Connected to Eureka server at %s:%d (registry) and %s:%d (discovery)\n", host, registrationPort, host, discoveryPort);
@@ -374,30 +381,6 @@ public class EurekaCLI {
                 break;
         }
         return false;
-    }
-
-
-    private void stopAllInterest() {
-        if (eurekaClient == null) {
-            System.out.println("Not connected");
-            return;
-        }
-
-        switch (registryFetchStatus) {
-            case NotStarted:
-            case Initiated:
-            case Streaming:
-                registryFetchStatus = Status.NotStarted;
-                break;
-            case Complete:
-                System.out.println("ERROR: Registry fetch already done.");
-                return;
-            case Failed:
-                System.out.println("ERROR: Previous registry fetch failed, so proceeding with this request.");
-                break;
-        }
-
-        eurekaClient.unregisterAllInterest();
     }
 
     private void listenForInterest(String[] args) {
