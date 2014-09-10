@@ -92,10 +92,10 @@ public class ResolverBasedTransportClientTest {
         resolver.addServer(new InetSocketAddress("localhost", server.getServerPort()), Protocol.TcpRegistration);
         transportClient.loadBalancer.updateListOfServers(); // We do not want to wait for the background thread to refresh it.
 
-        ServerConnection connection = transportClient.connect().toBlocking().toFuture().get(1, TimeUnit.SECONDS);
+        ServerConnection connection = transportClient.connect().toBlocking().toFuture().get(30, TimeUnit.SECONDS);
         assertNotNull("Connection not established", connection);
         Observable<Void> ackObservable = connection.send(new Register(SampleInstanceInfo.DiscoveryServer.build()));
 
-        assertTrue("Acknowledgment not received in time", RxBlocking.isCompleted(1, TimeUnit.SECONDS, ackObservable));
+        assertTrue("Acknowledgment not received in time", RxBlocking.isCompleted(30, TimeUnit.SECONDS, ackObservable));
     }
 }
