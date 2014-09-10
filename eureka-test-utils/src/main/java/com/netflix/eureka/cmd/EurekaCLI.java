@@ -29,6 +29,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.netflix.eureka.client.service.EurekaClientService;
+import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.utils.Sets;
 import com.netflix.eureka.client.EurekaClient;
@@ -37,7 +39,6 @@ import com.netflix.eureka.client.bootstrap.StaticServerResolver;
 import com.netflix.eureka.client.service.EurekaServiceImpl;
 import com.netflix.eureka.client.transport.TransportClient;
 import com.netflix.eureka.client.transport.TransportClients;
-import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interests;
 import com.netflix.eureka.registry.Delta;
 import com.netflix.eureka.registry.Delta.Builder;
@@ -50,7 +51,6 @@ import com.netflix.eureka.transport.EurekaTransports.Codec;
 import jline.Terminal;
 import jline.TerminalFactory;
 import jline.console.ConsoleReader;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 import jline.console.history.History;
 import jline.console.history.History.Entry;
 import rx.Subscriber;
@@ -77,7 +77,6 @@ public class EurekaCLI {
 
     private volatile InstanceInfo lastInstanceInfo;
     private EurekaClient eurekaClient;
-    private ConcurrentHashSet<InstanceInfo> interestData = new ConcurrentHashSet<>();
     private Status registrationStatus = Status.NotStarted;
     private Status registryFetchStatus = Status.NotStarted;
 
@@ -242,7 +241,8 @@ public class EurekaCLI {
         System.out.println("  update <field> <value>                               update own registry entry ");
         System.out.println("  status                                               print status summary      ");
         System.out.println("  interestAll                                          start intrest subscription for all");
-        System.out.println("  interest <vipName>                                   start interest subscription for given vips");
+        System.out.println("  interestNone                                         stop intrest subscription for all");
+        System.out.println("  interest <vipName> <vipName> ...                     start interest subscription for given vips");
 
         if (!aliasMap.isEmpty()) {
             System.out.println();
@@ -273,7 +273,7 @@ public class EurekaCLI {
         TransportClient readClient =
                 TransportClients.newTcpDiscoveryClient(new StaticServerResolver<>(readHost), Codec.Json);
 
-        EurekaService eurekaService = EurekaServiceImpl.forReadAndWriteServer(readClient, writeClient);
+        EurekaClientService eurekaService = EurekaServiceImpl.forReadAndWriteServer(readClient, writeClient);
 
         eurekaClient = new EurekaClientImpl(eurekaService);
         System.out.format("Connected to Eureka server at %s:%d (registry) and %s:%d (discovery)\n", host, registrationPort, host, discoveryPort);
@@ -384,7 +384,6 @@ public class EurekaCLI {
     }
 
     private void listenForInterest(String[] args) {
-
         listenForRegistry(Interests.forVips(args));
     }
 
@@ -396,11 +395,9 @@ public class EurekaCLI {
 
         switch (registryFetchStatus) {
             case NotStarted:
-                break;
             case Initiated:
             case Streaming:
-                System.out.println("ERROR: Registry fetch already in progress.");
-                return;
+                break;
             case Complete:
                 System.out.println("ERROR: Registry fetch already done.");
                 return;
@@ -409,44 +406,24 @@ public class EurekaCLI {
                 break;
         }
 
-        final AtomicInteger addCounter = new AtomicInteger();
-        final AtomicInteger deleteCounter = new AtomicInteger();
-        final AtomicInteger updateCounter = new AtomicInteger();
-
         registryFetchStatus = Status.Initiated;
-        eurekaClient.forInterest(interest)
-                .subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
-                    @Override
-                    public void onCompleted() {
-                        registryFetchStatus = Status.Complete;
-                    }
+        System.out.println("Subscribing to Interest: " + interest);
+        eurekaClient.forInterest(interest).subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
+            @Override
+            public void onCompleted() {
+                System.out.println("Interest " + interest + " COMPLETE");
+            }
 
-                    @Override
-                    public void onError(Throwable e) {
-                        System.out.println("ERROR: Fetch registry failed.");
-                        e.printStackTrace();
-                        registryFetchStatus = Status.Failed;
-                    }
+            @Override
+            public void onError(Throwable e) {
+                System.out.println("Interest " + interest + " ERROR");
+            }
 
-                    @Override
-                    public void onNext(ChangeNotification<InstanceInfo> notification) {
-                        registryFetchStatus = Status.Streaming;
-                        switch (notification.getKind()) {
-                            case Add:
-                                interestData.add(notification.getData());
-                                System.out.println("Instance added (" + addCounter.incrementAndGet() + "): " + notification.getData());
-                                break;
-                            case Delete:
-                                interestData.remove(notification.getData());
-                                System.out.println("Instance deleted (" + deleteCounter.incrementAndGet() + "): " + notification.getData());
-                                break;
-                            case Modify:
-                                interestData.add(notification.getData());
-                                System.out.println("Instance updated (" + updateCounter.incrementAndGet() + "): " + notification.getData());
-                                break;
-                        }
-                    }
-                });
+            @Override
+            public void onNext(ChangeNotification<InstanceInfo> notification) {
+                System.out.println("Interest " + interest + " NEXT: " + notification);
+            }
+        });
     }
 
     private void runClose() {
@@ -499,7 +476,9 @@ public class EurekaCLI {
             }
         }
 
-        System.out.println(String.format("Local registry: %d instances", interestData.size()));
+        if (eurekaClient != null) {
+            System.out.println(eurekaClient.toString());
+        }
     }
 
     public static void main(String[] args) throws IOException {

@@ -29,10 +29,10 @@ public final class Interests {
     }
 
     public static Interest<InstanceInfo> forFullRegistry() {
-        return FullRegistryInterest.DEFAULT_INSTANCE;
+        return FullRegistryInterest.getInstance();
     }
 
     public static Interest<InstanceInfo> forSome(Interest<InstanceInfo>... interests) {
-        return new MultipleInterests<InstanceInfo>(interests);
+        return new MultipleInterests<>(interests);
     }
 }
