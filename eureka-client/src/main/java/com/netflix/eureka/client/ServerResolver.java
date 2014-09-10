@@ -29,7 +29,7 @@ import rx.Observable;
  */
 public interface ServerResolver<A extends SocketAddress> {
 
-    //TODO: We should be using ribbon's load balancers
+    enum Protocol {Undefined, TcpRegistration, TcpDiscovery, WebSockets}
 
     /**
      * Returns a stream of {@link ServerEntry}
@@ -56,8 +56,6 @@ public interface ServerResolver<A extends SocketAddress> {
         }
 
         public enum Action {Add, Remove}
-
-        public enum Protocol {Undefined, Tcp, WebSockets}
 
         private final Action action;
         private final A server;

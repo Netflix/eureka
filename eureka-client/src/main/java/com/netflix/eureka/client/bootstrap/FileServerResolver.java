@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka.client.ServerResolver.ServerEntry.Action;
-import com.netflix.eureka.client.ServerResolver.ServerEntry.Protocol;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
 

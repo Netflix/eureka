@@ -18,6 +18,7 @@
 dependencies {
     compile project(':eureka-core')
     compile "javax.inject:javax.inject:1"
+    compile "com.netflix.ribbon:ribbon-transport:${ribbon_version}"
     testCompile project(':eureka-test-utils')
 }
 

@@ -16,39 +16,84 @@
 
 package com.netflix.eureka.client.bootstrap;
 
-import com.netflix.eureka.client.ServerResolver;
-import rx.Observable;
-import rx.Subscriber;
-
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.HashSet;
+import java.util.concurrent.locks.ReentrantLock;
+
+import com.netflix.eureka.client.ServerResolver;
+import com.netflix.eureka.client.ServerResolver.ServerEntry.Action;
+import rx.Observable;
+import rx.Observable.OnSubscribe;
+import rx.Subscriber;
+import rx.observables.ConnectableObservable;
+import rx.subjects.PublishSubject;
 
 /**
- * TODO: This resolver should provide add/remove methods, to dynamically adjust the server list.
- * TODO: Support complete endpoint configuration (protocol + port).
  *
  * @author Tomasz Bak
  */
 public class StaticServerResolver<A extends SocketAddress> implements ServerResolver<A> {
 
-    private final Observable<ServerEntry<A>> serverList;
+    private final HashSet<ServerEntry<A>> serverList = new HashSet<>();
+    private final PublishSubject<ServerEntry<A>> serverPublisher = PublishSubject.create();
+    private final ReentrantLock lock = new ReentrantLock(); // To enforce serialized observable updates in add/remove methods
 
     @SafeVarargs
     public StaticServerResolver(final A... serverList) {
-        this.serverList = Observable.create(new Observable.OnSubscribe<ServerEntry<A>>() {
-            @Override
-            public void call(Subscriber<? super ServerEntry<A>> subscriber) {
-                for (A server : serverList) {
-                    subscriber.onNext(new ServerEntry<A>(ServerEntry.Action.Add, server));
-                    // Never completes as this is a static list.
+        for (A server : serverList) {
+            addServer(server, Protocol.Undefined);
+        }
+    }
+
+    public void addServer(A server, Protocol protocol) {
+        lock.lock();
+        try {
+            ServerEntry<A> entry = new ServerEntry<>(Action.Add, server, protocol);
+            if (!serverList.contains(entry)) {
+                serverPublisher.onNext(entry);
+                serverList.add(entry);
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public void removeServer(A server) {
+        lock.lock();
+        try {
+            for (ServerEntry<A> entry : serverList) {
+                if (entry.getServer().equals(server)) {
+                    serverList.remove(entry);
+                    serverPublisher.onNext(new ServerEntry<A>(Action.Remove, server, entry.getProtocol()));
                 }
             }
-        });
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override
     public Observable<ServerEntry<A>> resolve() {
-        return serverList;
+        return Observable.create(new OnSubscribe<ServerEntry<A>>() {
+            @Override
+            public void call(Subscriber<? super ServerEntry<A>> subscriber) {
+                ConnectableObservable<ServerEntry<A>> entryObservable;
+                HashSet<ServerEntry<A>> snapshot;
+                lock.lock();
+                try {
+                    entryObservable = serverPublisher.publish();
+                    snapshot = new HashSet<>(serverList);
+                } finally {
+                    lock.unlock();
+                }
+                for (ServerEntry<A> entry : snapshot) {
+                    subscriber.onNext(entry);
+                }
+                entryObservable.subscribe(subscriber);
+                entryObservable.connect();
+            }
+        });
     }
 
     @Override
