@@ -219,7 +219,7 @@ public class DiscoveryClient implements LookupService {
     }
 
     @Inject
-    DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, DiscoveryClientOptionalArgs args,
+    public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, DiscoveryClientOptionalArgs args,
                               Provider<BackupRegistry> backupRegistryProvider) {
         if (args != null) {
             healthCheckHandlerProvider = args.healthCheckHandlerProvider;
