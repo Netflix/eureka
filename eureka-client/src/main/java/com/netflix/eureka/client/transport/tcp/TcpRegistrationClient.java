@@ -16,18 +16,15 @@
 
 package com.netflix.eureka.client.transport.tcp;
 
+import java.net.InetSocketAddress;
+
+import com.netflix.client.config.ClientConfigFactory.DefaultClientConfigFactory;
 import com.netflix.eureka.client.ServerResolver;
+import com.netflix.eureka.client.ServerResolver.Protocol;
+import com.netflix.eureka.client.ServerResolver.ServerEntry;
 import com.netflix.eureka.client.transport.ResolverBasedTransportClient;
-import com.netflix.eureka.client.transport.ServerConnection;
 import com.netflix.eureka.client.transport.TransportClient;
 import com.netflix.eureka.transport.EurekaTransports;
-import com.netflix.eureka.transport.MessageBroker;
-import rx.Observable;
-import rx.functions.Func1;
-
-import java.net.InetSocketAddress;
-import java.util.Random;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * A {@link TransportClient} implementation for TCP based connections.
@@ -36,33 +33,19 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class TcpRegistrationClient extends ResolverBasedTransportClient<InetSocketAddress> {
 
-    private final EurekaTransports.Codec codec;
-
-    // TODO: this is trivial random pickup implementation
-    private final Random random = new Random();
-
     public TcpRegistrationClient(ServerResolver<InetSocketAddress> resolver, EurekaTransports.Codec codec) {
-        super(resolver);
-        this.codec = codec;
+        // TODO: figure out what we want to configure, and how to provide this configuration information.
+        super(resolver, DefaultClientConfigFactory.DEFAULT.newConfig(), EurekaTransports.registrationPipeline(codec));
     }
 
     @Override
-    public Observable<ServerConnection> connect() {
-        final CopyOnWriteArrayList<InetSocketAddress> servers = this.servers; // So that we can safely do size => get
-
-        InetSocketAddress server = servers.get(random.nextInt(servers.size()));
-
-        return EurekaTransports.tcpRegistrationClient(server.getHostName(), server.getPort(), codec)
-                               .take(1)
-                               .map(new Func1<MessageBroker, ServerConnection>() {
-                                   @Override
-                                   public ServerConnection call(MessageBroker messageBroker) {
-                                       return new TcpServerConnection(messageBroker);
-                                   }
-                               });
+    protected boolean matches(ServerEntry<InetSocketAddress> entry) {
+        return (entry.getProtocol() == Protocol.TcpRegistration || entry.getProtocol() == Protocol.Undefined)
+                && entry.getServer() instanceof InetSocketAddress;
     }
 
     @Override
-    public void shutdown() {
+    protected int defaultPort() {
+        return Protocol.TcpRegistration.defaultPort();
     }
 }

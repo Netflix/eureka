@@ -1,25 +1,28 @@
 package com.netflix.eureka.interests;
 
-import rx.Observable;
-
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.netflix.eureka.registry.EurekaRegistry;
+import rx.Observable;
 
 /**
  * @author Nitesh Kant
  */
 public class IndexRegistryImpl<T> implements IndexRegistry<T> {
 
-    protected final ConcurrentHashMap<Interest<T>, Index<T>> interestVsIndex;
+    final ConcurrentHashMap<Interest<T>, Index<T>> interestVsIndex;
 
     public IndexRegistryImpl() {
-        this.interestVsIndex = new ConcurrentHashMap<>();
+        this.interestVsIndex = new ConcurrentHashMap<Interest<T>, Index<T>>();
     }
 
     @Override
-    public Index<T> forInterest(final Interest<T> interest,
-                                final Observable<ChangeNotification<T>> dataSource,
-                                final Index.InitStateHolder<T> initStateHolder) {
+    public Observable<ChangeNotification<T>> forInterest(final Interest<T> interest,
+                                                         final Observable<ChangeNotification<T>> dataSource,
+                                                         final Index.InitStateHolder<T> initStateHolder) {
         Index<T> index = interestVsIndex.get(interest);
         if (null != index) {
             return index;
@@ -36,11 +39,19 @@ public class IndexRegistryImpl<T> implements IndexRegistry<T> {
     }
 
     @Override
-    public synchronized Observable<Void> shutdown() {
+    public Observable<ChangeNotification<T>> forCompositeInterest(MultipleInterests<T> interest, EurekaRegistry<T> registry) {
+        List<Observable<ChangeNotification<T>>> indexes = new ArrayList<>();
+        for (Interest<T> atomicIntrest : interest.flatten()) {
+            indexes.add(registry.forInterest(atomicIntrest));
+        }
+        return Observable.merge(indexes);
+    }
+
+    @Override
+    public Observable<Void> shutdown() {
         for (Index<T> index : interestVsIndex.values()) {
             index.onCompleted();
         }
-
         interestVsIndex.clear();
         return Observable.empty();
     }

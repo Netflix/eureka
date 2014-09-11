@@ -25,17 +25,17 @@ import java.util.Set;
 /**
  * @author Nitesh Kant
  */
-public interface EurekaRegistry {
+public interface EurekaRegistry<T> {
 
     DataCenterInfo getRegistryLocation();
 
-    Observable<Void> register(InstanceInfo instanceInfo);
+    Observable<Void> register(T instanceInfo);
 
     Observable<Void> unregister(String instanceId);
 
-    Observable<Void> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas);
+    Observable<Void> update(T updatedInfo, Set<Delta<?>> deltas);
 
-    Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest);
+    Observable<ChangeNotification<T>> forInterest(Interest<T> interest);
 
     Observable<Void> shutdown();
 }

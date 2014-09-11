@@ -17,6 +17,7 @@
 package com.netflix.eureka.server.service;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,66 +26,79 @@ import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.interests.MultipleInterests;
 import com.netflix.eureka.registry.EurekaRegistry;
 import com.netflix.eureka.registry.InstanceInfo;
+import com.netflix.eureka.utils.rx.BreakerSwitchOperator;
 import rx.Observable;
-import rx.Subscriber;
-import rx.Subscription;
 import rx.subjects.PublishSubject;
 
-import static java.lang.String.*;
-
 /**
- * Interest notification multiplexer is channel scoped object, so we can depend here
- * on its single-threaded property.
+ * Interest notification multiplexer is channel scoped object, so we can depend here on its
+ * single-threaded property from the channel side. However as we subscribe to multiple observables
+ * we need to merge them properly. For that we use {@link rx.Observable#merge} with atomic observable
+ * streams wrapped by {@link com.netflix.eureka.utils.rx.BreakerSwitchOperator}, which allowes us to close the notification
+ * stream during interest upgrades with interest removal.
  *
  * @author Tomasz Bak
  */
 public class InterestNotificationMultiplexer {
 
-    private final EurekaRegistry eurekaRegistry;
+    private final EurekaRegistry<InstanceInfo> eurekaRegistry;
 
-    private final Map<Interest<InstanceInfo>, InterestSubscriber> subscribedInterests = new HashMap<>();
-    private final PublishSubject<ChangeNotification<InstanceInfo>> aggregatedStream = PublishSubject.create();
+    private final Map<Interest<InstanceInfo>, BreakerSwitchOperator> subscriptionBreakers = new HashMap<>();
 
-    public InterestNotificationMultiplexer(EurekaRegistry eurekaRegistry) {
+    private final PublishSubject<Observable<ChangeNotification<InstanceInfo>>> upgrades = PublishSubject.create();
+    private final Observable<ChangeNotification<InstanceInfo>> aggregatedStream = Observable.merge(upgrades);
+
+    public InterestNotificationMultiplexer(EurekaRegistry<InstanceInfo> eurekaRegistry) {
         this.eurekaRegistry = eurekaRegistry;
     }
 
     /**
-     * For composite interest, we flatten it first, and than make parallel subscriptions to the registry.
+     * For composite interest, we flatten it first, and than make parallel subscriptionBreakers to the registry.
      */
-    public void update(Interest<InstanceInfo> interest) {
-        if (interest instanceof MultipleInterests) {
-            Set<Interest<InstanceInfo>> interests = ((MultipleInterests<InstanceInfo>) interest).flatten();
+    public void update(Interest<InstanceInfo> newInterest) {
+        if (newInterest instanceof MultipleInterests) {
+            Set<Interest<InstanceInfo>> newInterestSet = ((MultipleInterests<InstanceInfo>) newInterest).flatten();
             // Remove interests not present in the new subscription
-            for (Interest<InstanceInfo> currentInterest : subscribedInterests.keySet()) {
-                if (!interests.contains(currentInterest)) {
-                    subscribedInterests.remove(currentInterest).close();
-                }
+            Set<Interest<InstanceInfo>> toRemove = new HashSet<>(subscriptionBreakers.keySet());
+            toRemove.removeAll(newInterestSet);
+            for (Interest<InstanceInfo> item : toRemove) {
+                removeInterest(item);
             }
             // Add new interests
-            for (Interest<InstanceInfo> newInterest : interests) {
-                if (!subscribedInterests.containsKey(newInterest)) {
-                    subscribedInterests.put(newInterest, new InterestSubscriber(newInterest));
-                }
+            Set<Interest<InstanceInfo>> toAdd = new HashSet<>(newInterestSet);
+            toAdd.removeAll(subscriptionBreakers.keySet());
+            for (Interest<InstanceInfo> item : toAdd) {
+                subscribeToInterest(item);
             }
         } else {
             // First remove all interests except the current one if present
-            for (Interest<InstanceInfo> currentInterest : subscribedInterests.keySet()) {
-                if (!interest.equals(currentInterest)) {
-                    subscribedInterests.remove(currentInterest).close();
-                }
+            Set<Interest<InstanceInfo>> toRemove = new HashSet<>(subscriptionBreakers.keySet());
+            toRemove.remove(newInterest);
+            for (Interest<InstanceInfo> item : toRemove) {
+                removeInterest(item);
             }
             // Add new interests
-            if (subscribedInterests.isEmpty()) {
-                subscribedInterests.put(interest, new InterestSubscriber(interest));
+            if (subscriptionBreakers.isEmpty()) {
+                subscribeToInterest(newInterest);
             }
         }
     }
 
+    private void subscribeToInterest(Interest<InstanceInfo> newInterest) {
+        BreakerSwitchOperator breaker = new BreakerSwitchOperator();
+        upgrades.onNext(eurekaRegistry.forInterest(newInterest).lift(breaker));
+        subscriptionBreakers.put(newInterest, breaker);
+    }
+
+    private void removeInterest(Interest<InstanceInfo> currentInterest) {
+        subscriptionBreakers.remove(currentInterest).close();
+    }
+
     public void unregister() {
-        for (Interest<InstanceInfo> currentInterest : subscribedInterests.keySet()) {
-            subscribedInterests.remove(currentInterest).close();
+        for (BreakerSwitchOperator subject : subscriptionBreakers.values()) {
+            subject.close();
         }
+        subscriptionBreakers.clear();
     }
 
     /**
@@ -94,40 +108,5 @@ public class InterestNotificationMultiplexer {
      */
     public Observable<ChangeNotification<InstanceInfo>> changeNotifications() {
         return aggregatedStream;
-    }
-
-    private class InterestSubscriber extends Subscriber<ChangeNotification<InstanceInfo>> {
-        private final Interest<InstanceInfo> interest;
-        private final Observable<ChangeNotification<InstanceInfo>> registryObservable;
-        private final Subscription subscription;
-
-        private InterestSubscriber(Interest<InstanceInfo> interest) {
-            this.interest = interest;
-            this.registryObservable = eurekaRegistry.forInterest(interest);
-            subscription = registryObservable.subscribe(this);
-        }
-
-        public void close() {
-            subscription.unsubscribe();
-        }
-
-        @Override
-        public void onCompleted() {
-            aggregatedStream.onError(new IllegalStateException(
-                    format("Unexpected end of stream for change notification observable for interest %s",
-                            interest)));
-        }
-
-        @Override
-        public void onError(Throwable e) {
-            aggregatedStream.onError(new IllegalStateException(
-                    format("Unexpected error in stream of change notifications for interest %s",
-                            interest)));
-        }
-
-        @Override
-        public void onNext(ChangeNotification<InstanceInfo> notification) {
-            aggregatedStream.onNext(notification);
-        }
     }
 }

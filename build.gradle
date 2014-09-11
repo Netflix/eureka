@@ -52,7 +52,7 @@ subprojects {
 
         testCompile "junit:junit:${junit_version}"
         testCompile "org.hamcrest:hamcrest-library:${hamcrest_version}"
-        testCompile "org.easymock:easymock:${easymock_version}"
+        testCompile "org.mockito:mockito-core:${mockito_version}"
     }
 
     eclipse {

@@ -23,6 +23,7 @@ import com.netflix.eureka.interests.IndexRegistryImpl;
 import com.netflix.eureka.interests.InstanceInfoInitStateHolder;
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.interests.ModifyNotification;
+import com.netflix.eureka.interests.MultipleInterests;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Func1;
@@ -42,7 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * TODO: threadpool for async add/put to internalStore?
  * @author David Liu
  */
-public class LeasedInstanceRegistry implements EurekaRegistry {
+public class LeasedInstanceRegistry implements EurekaRegistry<InstanceInfo> {
 
     private final ConcurrentHashMap<String, Lease<InstanceInfo>> internalStore;
     private final NotificationsSubject<InstanceInfo> notificationSubject;  // subject for all changes in the registry
@@ -222,8 +223,12 @@ public class LeasedInstanceRegistry implements EurekaRegistry {
         try {
             // TODO: this method can be run concurrently from different channels, unless we run everything on single server event loop.
             notificationSubject.pause(); // Pause notifications till we get a snapshot of current registry (registry.values())
-            return indexRegistry.forInterest(interest, notificationSubject,
-                                             new InstanceInfoInitStateHolder(getSnapshotForInterest(interest)));
+            if(interest instanceof MultipleInterests) {
+                return indexRegistry.forCompositeInterest((MultipleInterests)interest, this);
+            } else {
+                return indexRegistry.forInterest(interest, notificationSubject,
+                        new InstanceInfoInitStateHolder(getSnapshotForInterest(interest)));
+            }
         } finally {
             notificationSubject.resume();
         }

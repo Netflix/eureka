@@ -25,20 +25,19 @@ import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.ListIterator;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.netflix.eureka.client.service.EurekaClientService;
-import com.netflix.eureka.interests.ChangeNotification;
-import com.netflix.eureka.interests.Interest;
-import com.netflix.eureka.utils.Sets;
 import com.netflix.eureka.client.EurekaClient;
 import com.netflix.eureka.client.EurekaClientImpl;
+import com.netflix.eureka.client.ServerResolver.Protocol;
 import com.netflix.eureka.client.bootstrap.StaticServerResolver;
+import com.netflix.eureka.client.service.EurekaClientService;
 import com.netflix.eureka.client.service.EurekaServiceImpl;
 import com.netflix.eureka.client.transport.TransportClient;
 import com.netflix.eureka.client.transport.TransportClients;
+import com.netflix.eureka.interests.ChangeNotification;
+import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.interests.Interests;
 import com.netflix.eureka.registry.Delta;
 import com.netflix.eureka.registry.Delta.Builder;
@@ -46,8 +45,8 @@ import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.registry.InstanceInfoField;
 import com.netflix.eureka.registry.InstanceInfoField.Name;
 import com.netflix.eureka.registry.SampleInstanceInfo;
-import com.netflix.eureka.service.EurekaService;
 import com.netflix.eureka.transport.EurekaTransports.Codec;
+import com.netflix.eureka.utils.Sets;
 import jline.Terminal;
 import jline.TerminalFactory;
 import jline.console.ConsoleReader;
@@ -267,11 +266,15 @@ public class EurekaCLI {
         InetSocketAddress writeHost = new InetSocketAddress(host, registrationPort);
         InetSocketAddress readHost = new InetSocketAddress(host, discoveryPort);
 
+        StaticServerResolver<InetSocketAddress> registryServers = new StaticServerResolver<>();
+        registryServers.addServer(writeHost, Protocol.TcpRegistration);
         TransportClient writeClient =
-                TransportClients.newTcpRegistrationClient(new StaticServerResolver<>(writeHost), Codec.Json);
+                TransportClients.newTcpRegistrationClient(registryServers, Codec.Json);
 
+        StaticServerResolver<InetSocketAddress> discoveryServers = new StaticServerResolver<>();
+        discoveryServers.addServer(readHost, Protocol.TcpDiscovery);
         TransportClient readClient =
-                TransportClients.newTcpDiscoveryClient(new StaticServerResolver<>(readHost), Codec.Json);
+                TransportClients.newTcpDiscoveryClient(discoveryServers, Codec.Json);
 
         EurekaClientService eurekaService = EurekaServiceImpl.forReadAndWriteServer(readClient, writeClient);
 
