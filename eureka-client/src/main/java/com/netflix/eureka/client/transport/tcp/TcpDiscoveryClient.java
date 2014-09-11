@@ -40,6 +40,12 @@ public class TcpDiscoveryClient extends ResolverBasedTransportClient<InetSocketA
 
     @Override
     protected boolean matches(ServerEntry<InetSocketAddress> entry) {
-        return entry.getProtocol() == Protocol.TcpDiscovery && entry.getServer() instanceof InetSocketAddress;
+        return (entry.getProtocol() == Protocol.TcpDiscovery || entry.getProtocol() == Protocol.Undefined)
+                && entry.getServer() instanceof InetSocketAddress;
+    }
+
+    @Override
+    protected int defaultPort() {
+        return Protocol.TcpDiscovery.defaultPort();
     }
 }

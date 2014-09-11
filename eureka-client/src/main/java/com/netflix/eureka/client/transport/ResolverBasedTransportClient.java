@@ -84,6 +84,8 @@ public abstract class ResolverBasedTransportClient<A extends SocketAddress> impl
 
     protected abstract boolean matches(ServerEntry<A> entry);
 
+    protected abstract int defaultPort();
+
     class ResolverServerList implements ServerList<Server> {
 
         private final CopyOnWriteArrayList<ServerEntry<A>> servers = new CopyOnWriteArrayList<>();

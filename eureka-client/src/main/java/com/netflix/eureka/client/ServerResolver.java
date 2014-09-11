@@ -29,7 +29,19 @@ import rx.Observable;
  */
 public interface ServerResolver<A extends SocketAddress> {
 
-    enum Protocol {Undefined, TcpRegistration, TcpDiscovery, WebSockets}
+    enum Protocol {
+        Undefined(-1), TcpRegistration(7002), TcpDiscovery(7003), WebSockets(7001);
+
+        private final int defaultPort;
+
+        Protocol(int defaultPort) {
+            this.defaultPort = defaultPort;
+        }
+
+        public int defaultPort() {
+            return defaultPort;
+        }
+    }
 
     /**
      * Returns a stream of {@link ServerEntry}
