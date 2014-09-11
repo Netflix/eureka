@@ -20,23 +20,21 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.interests.MultipleInterests;
 import com.netflix.eureka.registry.EurekaRegistry;
 import com.netflix.eureka.registry.InstanceInfo;
+import com.netflix.eureka.utils.rx.BreakerSwitchOperator;
 import rx.Observable;
-import rx.Observable.Operator;
-import rx.Subscriber;
 import rx.subjects.PublishSubject;
 
 /**
  * Interest notification multiplexer is channel scoped object, so we can depend here on its
  * single-threaded property from the channel side. However as we subscribe to multiple observables
  * we need to merge them properly. For that we use {@link rx.Observable#merge} with atomic observable
- * streams wrapped by {@link BreakerSwitchOperator}, which allowes us to close the notification
+ * streams wrapped by {@link com.netflix.eureka.utils.rx.BreakerSwitchOperator}, which allowes us to close the notification
  * stream during interest upgrades with interest removal.
  *
  * @author Tomasz Bak
@@ -110,61 +108,5 @@ public class InterestNotificationMultiplexer {
      */
     public Observable<ChangeNotification<InstanceInfo>> changeNotifications() {
         return aggregatedStream;
-    }
-
-    /**
-     * Since subscription to change notification channel is done by merge operator, we cannot cancel
-     * subscriptions selectively. Instead we lift all the atomic observable streams with switch breaker operator
-     * and complete the stream once an interest is removed from the composite set.
-     */
-    static class BreakerSwitchOperator implements Operator<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>> {
-
-        enum STATE {OPEN, CLOSE_REQUESTED, CLOSED}
-
-        private final AtomicReference<STATE> state = new AtomicReference<>(STATE.OPEN);
-
-        @Override
-        public Subscriber<? super ChangeNotification<InstanceInfo>> call(final Subscriber<? super ChangeNotification<InstanceInfo>> subscriber) {
-            return new Subscriber<ChangeNotification<InstanceInfo>>() {
-                @Override
-                public void onCompleted() {
-                    subscriber.onCompleted();
-                }
-
-                @Override
-                public void onError(Throwable e) {
-                    switch (state.get()) {
-                        case OPEN:
-                            subscriber.onError(e);
-                            break;
-                        case CLOSE_REQUESTED:
-                            subscriber.onError(e);
-                            state.set(STATE.CLOSED);
-                            break;
-                        case CLOSED:
-                            // IGNORE
-                    }
-                }
-
-                @Override
-                public void onNext(ChangeNotification<InstanceInfo> notification) {
-                    switch (state.get()) {
-                        case OPEN:
-                            subscriber.onNext(notification);
-                            break;
-                        case CLOSE_REQUESTED:
-                            subscriber.onCompleted();
-                            state.set(STATE.CLOSED);
-                            break;
-                        case CLOSED:
-                            // IGNORE
-                    }
-                }
-            };
-        }
-
-        void close() {
-            state.compareAndSet(STATE.OPEN, STATE.CLOSE_REQUESTED);
-        }
     }
 }
