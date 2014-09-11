@@ -36,10 +36,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import rx.subjects.PublishSubject;
+import rx.subjects.ReplaySubject;
 
-import static org.hamcrest.CoreMatchers.*;
+import static com.netflix.eureka.utils.Sets.*;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -86,11 +89,10 @@ public class InterestNotificationMultiplexerTest {
         // Add two instances
         InstanceController controller1 = new InstanceController(SampleInstanceInfo.DiscoveryServer.build());
         InstanceController controller2 = new InstanceController(SampleInstanceInfo.ZuulServer.build());
-        upgradeTo(controller1, controller2);
         controller1.publishAdd();
         controller2.publishAdd();
-        assertThat(notifications.next(), is(equalTo(controller1.addNotification)));
-        assertThat(notifications.next(), is(equalTo(controller2.addNotification)));
+        upgradeTo(controller1, controller2);
+        assertThat(asSet(notifications.next(), notifications.next()), containsInAnyOrder(controller1.addNotification, controller2.addNotification));
 
         // Now remove interest for instance 1 and add interest for instance 3
         InstanceController controller3 = new InstanceController(SampleInstanceInfo.CliServer.build());
@@ -98,12 +100,11 @@ public class InterestNotificationMultiplexerTest {
         controller1.publishModify();
         controller2.publishModify();
         controller3.publishAdd();
-        assertThat(notifications.next(), is(equalTo(controller2.modifyNotification)));
-        assertThat(notifications.next(), is(equalTo(controller3.addNotification)));
+        assertThat(asSet(notifications.next(), notifications.next()), containsInAnyOrder(controller2.modifyNotification, controller3.addNotification));
     }
 
     private void upgradeTo(InstanceController... controllers) {
-        if(controllers.length == 1) {
+        if (controllers.length == 1) {
             multiplexer.update(controllers[0].interest);
         } else {
             Interest<InstanceInfo>[] interests = new Interest[controllers.length];
@@ -117,7 +118,7 @@ public class InterestNotificationMultiplexerTest {
     class InstanceController {
         InstanceInfo instance;
         Interest<InstanceInfo> interest;
-        PublishSubject<ChangeNotification<InstanceInfo>> instanceSubject;
+        ReplaySubject<ChangeNotification<InstanceInfo>> instanceSubject;
 
         // Notifications
         ChangeNotification<InstanceInfo> addNotification;
@@ -126,7 +127,7 @@ public class InterestNotificationMultiplexerTest {
         InstanceController(InstanceInfo instance) {
             this.instance = instance;
             interest = Interests.forInstance(instance.getId());
-            instanceSubject = PublishSubject.create();
+            instanceSubject = ReplaySubject.create();
             addNotification = new ChangeNotification<>(Kind.Add, instance);
             modifyNotification = new ModifyNotification<>(instance, Collections.<Delta<?>>singleton(SampleDelta.StatusUp.build()));
 

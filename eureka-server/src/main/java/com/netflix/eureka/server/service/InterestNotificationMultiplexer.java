@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
@@ -27,17 +28,16 @@ import com.netflix.eureka.interests.MultipleInterests;
 import com.netflix.eureka.registry.EurekaRegistry;
 import com.netflix.eureka.registry.InstanceInfo;
 import rx.Observable;
-import rx.observables.ConnectableObservable;
+import rx.Observable.Operator;
+import rx.Subscriber;
 import rx.subjects.PublishSubject;
 
 /**
- * Interest notification multiplexer is channel scoped object, so we can depend here
- * on its single-threaded property from the channel side. However as we subscribe
- * to multiple observables we need to merge them properly. For that we use
- * {@link rx.Observable#merge} with bridge {@link rx.subjects.PublishSubject} wrapping
- * each change notification stream. The bridge subjects are stored in a map, so when an
- * interest must be removed during upgrade, we can just complete its corresponding
- * bridge subject.
+ * Interest notification multiplexer is channel scoped object, so we can depend here on its
+ * single-threaded property from the channel side. However as we subscribe to multiple observables
+ * we need to merge them properly. For that we use {@link rx.Observable#merge} with atomic observable
+ * streams wrapped by {@link BreakerSwitchOperator}, which allowes us to close the notification
+ * stream during interest upgrades with interest removal.
  *
  * @author Tomasz Bak
  */
@@ -45,7 +45,7 @@ public class InterestNotificationMultiplexer {
 
     private final EurekaRegistry<InstanceInfo> eurekaRegistry;
 
-    private final Map<Interest<InstanceInfo>, PublishSubject<ChangeNotification<InstanceInfo>>> subscriptions = new HashMap<>();
+    private final Map<Interest<InstanceInfo>, BreakerSwitchOperator> subscriptionBreakers = new HashMap<>();
 
     private final PublishSubject<Observable<ChangeNotification<InstanceInfo>>> upgrades = PublishSubject.create();
     private final Observable<ChangeNotification<InstanceInfo>> aggregatedStream = Observable.merge(upgrades);
@@ -55,63 +55,52 @@ public class InterestNotificationMultiplexer {
     }
 
     /**
-     * For composite interest, we flatten it first, and than make parallel subscriptions to the registry.
+     * For composite interest, we flatten it first, and than make parallel subscriptionBreakers to the registry.
      */
     public void update(Interest<InstanceInfo> newInterest) {
         if (newInterest instanceof MultipleInterests) {
             Set<Interest<InstanceInfo>> newInterestSet = ((MultipleInterests<InstanceInfo>) newInterest).flatten();
             // Remove interests not present in the new subscription
-            Set<Interest<InstanceInfo>> toRemove = new HashSet<>(subscriptions.keySet());
+            Set<Interest<InstanceInfo>> toRemove = new HashSet<>(subscriptionBreakers.keySet());
             toRemove.removeAll(newInterestSet);
             for (Interest<InstanceInfo> item : toRemove) {
                 removeInterest(item);
             }
             // Add new interests
             Set<Interest<InstanceInfo>> toAdd = new HashSet<>(newInterestSet);
-            toAdd.removeAll(subscriptions.keySet());
+            toAdd.removeAll(subscriptionBreakers.keySet());
             for (Interest<InstanceInfo> item : toAdd) {
                 subscribeToInterest(item);
             }
         } else {
             // First remove all interests except the current one if present
-            Set<Interest<InstanceInfo>> toRemove = new HashSet<>(subscriptions.keySet());
+            Set<Interest<InstanceInfo>> toRemove = new HashSet<>(subscriptionBreakers.keySet());
             toRemove.remove(newInterest);
             for (Interest<InstanceInfo> item : toRemove) {
                 removeInterest(item);
             }
             // Add new interests
-            if (subscriptions.isEmpty()) {
+            if (subscriptionBreakers.isEmpty()) {
                 subscribeToInterest(newInterest);
             }
         }
     }
 
-    /**
-     * To be able to complete the notification stream on interest upgrade with remove we use
-     * {@link rx.subjects.PublishSubject} as a bridge. When a given interest should be removed,
-     * the corresponding {@link rx.subjects.PublishSubject} is completed.
-     */
     private void subscribeToInterest(Interest<InstanceInfo> newInterest) {
-        PublishSubject<ChangeNotification<InstanceInfo>> publishSubject = PublishSubject.create();
-
-        ConnectableObservable<ChangeNotification<InstanceInfo>> connectableObservable = publishSubject.publish();
-        upgrades.onNext(connectableObservable);
-
-        eurekaRegistry.forInterest(newInterest).subscribe(publishSubject);
-        connectableObservable.connect();
-
-        subscriptions.put(newInterest, publishSubject);
+        BreakerSwitchOperator breaker = new BreakerSwitchOperator();
+        upgrades.onNext(eurekaRegistry.forInterest(newInterest).lift(breaker));
+        subscriptionBreakers.put(newInterest, breaker);
     }
 
     private void removeInterest(Interest<InstanceInfo> currentInterest) {
-        subscriptions.remove(currentInterest).onCompleted();
+        subscriptionBreakers.remove(currentInterest).close();
     }
 
     public void unregister() {
-        for (PublishSubject<ChangeNotification<InstanceInfo>> subject : subscriptions.values()) {
-            subject.onCompleted();
+        for (BreakerSwitchOperator subject : subscriptionBreakers.values()) {
+            subject.close();
         }
-        subscriptions.clear();
+        subscriptionBreakers.clear();
     }
 
     /**
@@ -121,5 +110,61 @@ public class InterestNotificationMultiplexer {
      */
     public Observable<ChangeNotification<InstanceInfo>> changeNotifications() {
         return aggregatedStream;
+    }
+
+    /**
+     * Since subscription to change notification channel is done by merge operator, we cannot cancel
+     * subscriptions selectively. Instead we lift all the atomic observable streams with switch breaker operator
+     * and complete the stream once an interest is removed from the composite set.
+     */
+    static class BreakerSwitchOperator implements Operator<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>> {
+
+        enum STATE {OPEN, CLOSE_REQUESTED, CLOSED}
+
+        private final AtomicReference<STATE> state = new AtomicReference<>(STATE.OPEN);
+
+        @Override
+        public Subscriber<? super ChangeNotification<InstanceInfo>> call(final Subscriber<? super ChangeNotification<InstanceInfo>> subscriber) {
+            return new Subscriber<ChangeNotification<InstanceInfo>>() {
+                @Override
+                public void onCompleted() {
+                    subscriber.onCompleted();
+                }
+
+                @Override
+                public void onError(Throwable e) {
+                    switch (state.get()) {
+                        case OPEN:
+                            subscriber.onError(e);
+                            break;
+                        case CLOSE_REQUESTED:
+                            subscriber.onError(e);
+                            state.set(STATE.CLOSED);
+                            break;
+                        case CLOSED:
+                            // IGNORE
+                    }
+                }
+
+                @Override
+                public void onNext(ChangeNotification<InstanceInfo> notification) {
+                    switch (state.get()) {
+                        case OPEN:
+                            subscriber.onNext(notification);
+                            break;
+                        case CLOSE_REQUESTED:
+                            subscriber.onCompleted();
+                            state.set(STATE.CLOSED);
+                            break;
+                        case CLOSED:
+                            // IGNORE
+                    }
+                }
+            };
+        }
+
+        void close() {
+            state.compareAndSet(STATE.OPEN, STATE.CLOSE_REQUESTED);
+        }
     }
 }
