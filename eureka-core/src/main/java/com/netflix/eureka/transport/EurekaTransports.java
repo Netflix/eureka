@@ -16,7 +16,6 @@
 
 package com.netflix.eureka.transport;
 
-import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -30,11 +29,9 @@ import com.netflix.eureka.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka.protocol.registration.Register;
 import com.netflix.eureka.protocol.registration.Unregister;
 import com.netflix.eureka.protocol.registration.Update;
-import com.netflix.eureka.transport.base.TcpMessageBrokerBuilder;
 import com.netflix.eureka.transport.codec.avro.AvroPipelineConfigurator;
 import com.netflix.eureka.transport.codec.json.JsonPipelineConfigurator;
 import io.reactivex.netty.pipeline.PipelineConfigurator;
-import rx.Observable;
 
 /**
  * Communication endpoint factory methods.
@@ -65,30 +62,6 @@ public final class EurekaTransports {
             AddInstance.class, DeleteInstance.class, UpdateInstanceInfo.class
     };
     static final Set<Class<?>> DISCOVERY_PROTOCOL_MODEL_SET = new HashSet<>(Arrays.asList(DISCOVERY_PROTOCOL_MODEL));
-
-    public static Observable<MessageBroker> tcpRegistrationClient(String host, int port, Codec codec) {
-        return new TcpMessageBrokerBuilder(new InetSocketAddress(host, port))
-                .withCodecPiepline(registrationPipeline(codec))
-                .buildClient();
-    }
-
-    public static MessageBrokerServer tcpRegistrationServer(int port, Codec codec) {
-        return new TcpMessageBrokerBuilder(new InetSocketAddress(port))
-                .withCodecPiepline(registrationPipeline(codec))
-                .buildServer();
-    }
-
-    public static Observable<MessageBroker> tcpDiscoveryClient(String host, int port, Codec codec) {
-        return new TcpMessageBrokerBuilder(new InetSocketAddress(host, port))
-                .withCodecPiepline(discoveryPipeline(codec))
-                .buildClient();
-    }
-
-    public static MessageBrokerServer tcpDiscoveryServer(int port, Codec codec) {
-        return new TcpMessageBrokerBuilder(new InetSocketAddress(port))
-                .withCodecPiepline(discoveryPipeline(codec))
-                .buildServer();
-    }
 
     public static PipelineConfigurator<Object, Object> registrationPipeline(Codec codec) {
         switch (codec) {
