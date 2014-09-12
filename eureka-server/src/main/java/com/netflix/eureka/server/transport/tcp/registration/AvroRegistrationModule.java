@@ -26,8 +26,15 @@ import io.reactivex.netty.servo.ServoEventsListenerFactory;
  */
 public class AvroRegistrationModule extends KaryonTcpModule<Object, Object> {
 
+    private final int port;
+
     public AvroRegistrationModule() {
-        super("avroRegistrationServer", Object.class, Object.class);
+        this("avroRegistrationServer", 7002);
+    }
+
+    public AvroRegistrationModule(String moduleName, int port) {
+        super(moduleName, Object.class, Object.class);
+        this.port = port;
     }
 
     @Override
@@ -35,6 +42,6 @@ public class AvroRegistrationModule extends KaryonTcpModule<Object, Object> {
         bindPipelineConfigurator().toInstance(EurekaTransports.registrationPipeline(Codec.Avro));
         bindConnectionHandler().to(TcpRegistrationHandler.class);
         bindEventsListenerFactory().to(ServoEventsListenerFactory.class);
-        server().port(7002);
+        server().port(port);
     }
 }
