@@ -15,39 +15,26 @@ import rx.Observable;
  */
 public class EurekaServiceImpl implements EurekaClientService {
 
-    private final EurekaRegistry registry;
+    private final EurekaRegistry<InstanceInfo> registry;
     private final TransportClient readServerClient;
     private final TransportClient writeServerClient;
 
-    protected EurekaServiceImpl(boolean readClient, TransportClient aClient) {
-        if (readClient) {
-            registry = new LeasedInstanceRegistry(null);
-            readServerClient = aClient;
-            writeServerClient = null;
-        } else {
-            registry = null;
-            writeServerClient = aClient;
-            readServerClient = null;
-        }
-    }
-
-
-    protected EurekaServiceImpl(TransportClient writeServerClient, TransportClient readServerClient) {
-        registry = new LeasedInstanceRegistry(null);
+    protected EurekaServiceImpl(EurekaRegistry<InstanceInfo> registry, TransportClient writeServerClient, TransportClient readServerClient) {
+        this.registry = registry;
         this.writeServerClient = writeServerClient;
         this.readServerClient = readServerClient;
     }
 
-    public static EurekaClientService forReadServer(TransportClient client) {
-        return new EurekaServiceImpl(true, client);
+    public static EurekaClientService forReadServer(EurekaRegistry<InstanceInfo> registry, TransportClient client) {
+        return new EurekaServiceImpl(registry, null, client);
     }
 
-    public static EurekaClientService forWriteServer(TransportClient client) {
-        return new EurekaServiceImpl(false, client);
+    public static EurekaClientService forWriteServer(EurekaRegistry<InstanceInfo> registry, TransportClient client) {
+        return new EurekaServiceImpl(registry, client, null);
     }
 
-    public static EurekaClientService forReadAndWriteServer(TransportClient readServerClient, TransportClient writeServerClient) {
-        return new EurekaServiceImpl(writeServerClient, readServerClient);
+    public static EurekaClientService forReadAndWriteServer(EurekaRegistry<InstanceInfo> registry, TransportClient readServerClient, TransportClient writeServerClient) {
+        return new EurekaServiceImpl(registry, writeServerClient, readServerClient);
     }
 
     @Override

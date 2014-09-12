@@ -41,9 +41,11 @@ import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.interests.Interests;
 import com.netflix.eureka.registry.Delta;
 import com.netflix.eureka.registry.Delta.Builder;
+import com.netflix.eureka.registry.EurekaRegistry;
 import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.registry.InstanceInfoField;
 import com.netflix.eureka.registry.InstanceInfoField.Name;
+import com.netflix.eureka.registry.LeasedInstanceRegistry;
 import com.netflix.eureka.registry.SampleInstanceInfo;
 import com.netflix.eureka.transport.EurekaTransports.Codec;
 import com.netflix.eureka.utils.Sets;
@@ -276,7 +278,9 @@ public class EurekaCLI {
         TransportClient readClient =
                 TransportClients.newTcpDiscoveryClient(discoveryServers, Codec.Json);
 
-        EurekaClientService eurekaService = EurekaServiceImpl.forReadAndWriteServer(readClient, writeClient);
+        EurekaRegistry<InstanceInfo> registry = new LeasedInstanceRegistry(null);
+
+        EurekaClientService eurekaService = EurekaServiceImpl.forReadAndWriteServer(registry, readClient, writeClient);
 
         eurekaClient = new EurekaClientImpl(eurekaService);
         System.out.format("Connected to Eureka server at %s:%d (registry) and %s:%d (discovery)\n", host, registrationPort, host, discoveryPort);
