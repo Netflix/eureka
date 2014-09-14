@@ -344,7 +344,7 @@ public class EurekaCLI {
         eurekaClient.update(lastInstanceInfo).subscribe(new Subscriber<Void>() {
             @Override
             public void onCompleted() {
-                System.out.println("Successfuly updated registry information.");
+                System.out.println("Successfully updated registry information.");
             }
 
             @Override
@@ -423,7 +423,7 @@ public class EurekaCLI {
 
             @Override
             public void onError(Throwable e) {
-                System.out.println("Interest " + interest + " ERROR");
+                System.out.println("Interest " + interest + " ERROR: " + e);
             }
 
             @Override
