@@ -82,7 +82,7 @@ public class ResolverBasedTransportClientTest {
 
         // Single, non-existent server - should fail on it
         try {
-            transportClient.connect().toBlocking().toFuture().get(1, TimeUnit.SECONDS);
+            transportClient.connect().toBlocking().toFuture().get(30, TimeUnit.SECONDS);
             fail("Connection to server should have failed");
         } catch (Exception ex) {
             // As expected

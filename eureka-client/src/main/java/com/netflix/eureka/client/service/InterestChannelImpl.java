@@ -19,6 +19,8 @@ import com.netflix.eureka.service.InterestChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.functions.Action0;
+import rx.functions.Action1;
 import rx.functions.Func1;
 
 import java.util.Collections;
@@ -44,7 +46,7 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
 
     protected enum STATES {Idle, Registered, Closed}
 
-    protected EurekaRegistry registry;
+    protected EurekaRegistry<InstanceInfo> registry;
 
     /**
      * Since we assume single threaded access to this channel, no need for concurrency control
@@ -73,7 +75,7 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
      */
     private final Map<String, InstanceInfo> idVsInstance = new HashMap<String, InstanceInfo>();
 
-    public InterestChannelImpl(final EurekaRegistry registry, TransportClient client) {
+    public InterestChannelImpl(final EurekaRegistry<InstanceInfo> registry, TransportClient client) {
         super(STATES.Idle, client, 30000);
         this.registry = registry;
         channelInterests = null;
@@ -91,9 +93,8 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
             }
         }
 
-        channelInterests = interest;  // assume single threaded access
+        channelInterests = interest;
 
-        // TODO: why switchMap here?
         return connect()
                 .switchMap(new Func1<ServerConnection, Observable<? extends ChangeNotification<InstanceInfo>>>() {
                     @Override
@@ -124,6 +125,16 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
                         }
                         return notification;
                     }
+                }).doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        logger.info("Interest Channel stream has COMPLETED");
+                    }
+                }).doOnError(new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable e) {
+                        logger.error("Interest Channel throw an ERROR: " + e);
+                    }
                 });
     }
 
@@ -143,7 +154,6 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
 
         channelInterests = new MultipleInterests<>(channelInterests, newInterest);  // assume single threaded access
 
-        // TODO: why switchMap here?
         return connect().switchMap(new Func1<ServerConnection, Observable<Void>>() {
             @Override
             public Observable<Void> call(ServerConnection connection) {
@@ -168,7 +178,6 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
 
         channelInterests = null;
 
-        // TODO: why switchMap here?
         return connect().switchMap(new Func1<ServerConnection, Observable<Void>>() {
             @Override
             public Observable<Void> call(ServerConnection connection) {
