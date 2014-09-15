@@ -20,7 +20,7 @@ public class HttpRegistrationClientTest {
                 .withResultTransformer(new FromStringTransformer())
                 .start();
 
-        RegistrationClientProvider<InetSocketAddress> clientProvider = httpClientProvider(singleHostResolver("localhost", server.getServerPort()));
+        RegistrationClientProvider<InetSocketAddress> clientProvider = httpClientProvider(hostResolver("localhost", server.getServerPort()));
         client = clientProvider.connect().toBlocking().first();
         requestContextIterator = server.contextIterator();
     }
