@@ -104,7 +104,7 @@ public class StaticServerResolver<A extends SocketAddress> implements ServerReso
     public void close() {
     }
 
-    public static StaticServerResolver<InetSocketAddress> singleHostResolver(String host, int port) {
+    public static StaticServerResolver<InetSocketAddress> hostResolver(String host, int port) {
         return new StaticServerResolver<InetSocketAddress>(new InetSocketAddress(host, port));
     }
 }

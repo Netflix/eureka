@@ -16,7 +16,7 @@ public class TcpTransportClientTest {
         server = EurekaTransports.tcpDiscoveryServer(0, Codec.Json).start();
 
         RxItem<MessageBroker> messageBrokerCollector = RxBlocking.firstFrom(1, TimeUnit.SECONDS, server.clientConnections());
-        TransportClient discoveryClient = TransportClients.newTcpDiscoveryClient(singleHostResolver("localhost", server.getServerPort()),
+        TransportClient discoveryClient = TransportClients.newTcpDiscoveryClient(hostResolver("localhost", server.getServerPort()),
                                                                         Codec.Json);
         RxItem<ServerConnection> discoveryClientCollector = RxBlocking.firstFrom(1, TimeUnit.SECONDS,
                                                                                  discoveryClient

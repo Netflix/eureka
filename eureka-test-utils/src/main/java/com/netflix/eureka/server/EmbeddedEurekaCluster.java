@@ -16,25 +16,15 @@
 
 package com.netflix.eureka.server;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Injector;
-import com.google.inject.Module;
-import com.netflix.eureka.registry.AwsDataCenterInfo;
-import com.netflix.eureka.registry.AwsDataCenterInfo.AwsDataCenterInfoBuilder;
-import com.netflix.eureka.registry.EurekaRegistry;
-import com.netflix.eureka.registry.InstanceInfo;
-import com.netflix.eureka.registry.InstanceInfo.Builder;
-import com.netflix.eureka.registry.LeasedInstanceRegistry;
-import com.netflix.eureka.registry.NetworkAddress;
-import com.netflix.eureka.server.transport.tcp.discovery.TcpDiscoveryModule;
-import com.netflix.eureka.server.transport.tcp.registration.JsonRegistrationModule;
-import com.netflix.governator.guice.LifecycleInjector;
-import com.netflix.governator.guice.LifecycleInjectorBuilder;
-import com.netflix.governator.lifecycle.LifecycleManager;
+import com.netflix.eureka.client.ServerResolver.Protocol;
+import com.netflix.eureka.client.bootstrap.StaticServerResolver;
+import com.netflix.eureka.server.ServerInstance.EurekaReadServerInstance;
+import com.netflix.eureka.server.ServerInstance.EurekaWriteServerInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,13 +39,23 @@ public class EmbeddedEurekaCluster {
 
     private static final String WRITE_SERVER_NAME_PREFIX = "WriteServer";
     private static final int WRITE_SERVER_PORTS_FROM = 7200;
+    private static final String READ_SERVER_NAME_PREFIX = "ReadServer";
+    private static final int READ_SERVER_PORTS_FROM = 7300;
 
     private final List<ServerInstance> writeInstances = new ArrayList<>();
+    private final List<ServerInstance> readInstances = new ArrayList<>();
 
     public EmbeddedEurekaCluster(int writeCount, int readCount) {
+        StaticServerResolver<InetSocketAddress> writeClusterResolver = new StaticServerResolver<>();
         for (int i = 0; i < writeCount; i++) {
-            ServerInstance instance = new ServerInstance(WRITE_SERVER_NAME_PREFIX + i, WRITE_SERVER_PORTS_FROM + 2 * i);
+            int port = WRITE_SERVER_PORTS_FROM + 2 * i;
+            ServerInstance instance = new EurekaWriteServerInstance(WRITE_SERVER_NAME_PREFIX + i, port);
             writeInstances.add(instance);
+            writeClusterResolver.addServer(new InetSocketAddress("localhost", port + 1), Protocol.TcpDiscovery);
+        }
+        for (int i = 0; i < readCount; i++) {
+            ServerInstance instance = new EurekaReadServerInstance(READ_SERVER_NAME_PREFIX + i, READ_SERVER_PORTS_FROM + i, writeClusterResolver);
+            readInstances.add(instance);
         }
     }
 
@@ -86,6 +86,9 @@ public class EmbeddedEurekaCluster {
         for (ServerInstance instance : writeInstances) {
             instance.shutdown();
         }
+        for (ServerInstance instance : readInstances) {
+            instance.shutdown();
+        }
     }
 
     public static void main(String[] args) throws Exception {
@@ -96,58 +99,5 @@ public class EmbeddedEurekaCluster {
         int writeCount = Integer.valueOf(args[0]);
         int readCount = Integer.valueOf(args[1]);
         new EmbeddedEurekaCluster(writeCount, readCount).waitTillShutdown();
-    }
-
-    public static class EmbeddedEurekaServerModule extends AbstractModule {
-
-        private final InstanceInfo localInstance;
-
-        public EmbeddedEurekaServerModule(InstanceInfo localInstance) {
-            this.localInstance = localInstance;
-        }
-
-        @Override
-        protected void configure() {
-            bind(EurekaRegistry.class).toInstance(new LeasedInstanceRegistry(localInstance));
-        }
-    }
-
-    public static class ServerInstance {
-        private final Injector injector;
-        private final LifecycleManager lifecycleManager;
-
-        public ServerInstance(String serverName, int port) {
-            AwsDataCenterInfo dataCenterInfo = new AwsDataCenterInfoBuilder()
-                    .withAddresses(NetworkAddress.publicHostNameIPv4("localhost"))
-                    .build();
-
-            InstanceInfo localInstance = new Builder()
-                    .withId(serverName)
-                    .withApp("Discovery2.0 Write")
-                    .withAppGroup("Discovery2.0 Write Cluster")
-                    .withInstanceLocation(dataCenterInfo)
-                    .build();
-            Module[] modules = {
-                    new JsonRegistrationModule(serverName + "#registration", port),
-                    new TcpDiscoveryModule(serverName + "#discovery", port + 1),
-                    new EmbeddedEurekaServerModule(localInstance)
-            };
-
-
-            LifecycleInjectorBuilder builder = LifecycleInjector.builder();
-            builder.withAdditionalModules(modules);
-            injector = builder.build().createInjector();
-
-            lifecycleManager = injector.getInstance(LifecycleManager.class);
-            try {
-                lifecycleManager.start();
-            } catch (Exception e) {
-                throw new RuntimeException("Container setup failure", e);
-            }
-        }
-
-        public void shutdown() {
-            lifecycleManager.close();
-        }
     }
 }
