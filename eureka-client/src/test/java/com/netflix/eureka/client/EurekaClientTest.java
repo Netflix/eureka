@@ -230,9 +230,6 @@ public class EurekaClientTest {
 
         assertThat(output1, containsInAnyOrder(allRegistry.toArray()));
         assertThat(output2, containsInAnyOrder(allRegistry.toArray()));
-
-        client.close();
-        assertThat(completionLatch.await(1, TimeUnit.MINUTES), equalTo(true));
     }
 
     @Test
@@ -286,9 +283,6 @@ public class EurekaClientTest {
 
         assertThat(discoveryOutput, containsInAnyOrder(discoveryRegistry.toArray()));
         assertThat(zuulOutput, containsInAnyOrder(zuulRegistry.toArray()));
-
-        client.close();
-        assertThat(completionLatch.await(1, TimeUnit.MINUTES), equalTo(true));
     }
 
     @Test
@@ -351,9 +345,6 @@ public class EurekaClientTest {
         List<ChangeNotification<InstanceInfo>> compositeRegistry = new ArrayList<>(discoveryRegistry);
         compositeRegistry.addAll(zuulRegistry);
         assertThat(compositeOutput, containsInAnyOrder(compositeRegistry.toArray()));
-
-        client.close();
-        assertThat(completionLatch.await(1, TimeUnit.MINUTES), equalTo(true));
     }
 
     @Test

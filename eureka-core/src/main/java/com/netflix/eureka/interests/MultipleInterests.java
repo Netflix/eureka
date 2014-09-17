@@ -34,6 +34,7 @@ public class MultipleInterests<T> extends Interest<T> {
         this.interests = null;
     }
 
+    @SafeVarargs
     public MultipleInterests(Interest<T>... interests) {
         this.interests = interests;
     }
