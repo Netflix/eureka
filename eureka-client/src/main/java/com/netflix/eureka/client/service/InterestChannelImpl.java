@@ -25,7 +25,9 @@ import rx.functions.Func1;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * An implementation of {@link com.netflix.eureka.service.InterestChannel}. It is mandatory that all operations
@@ -51,7 +53,7 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
     /**
      * Since we assume single threaded access to this channel, no need for concurrency control
      */
-    protected Interest<InstanceInfo> channelInterests;
+    protected Set<Interest<InstanceInfo>> channelInterests;
 
     /**
      * A local copy of instances received by this channel from the server. This is used for:
@@ -93,7 +95,7 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
             }
         }
 
-        channelInterests = interest;
+        channelInterests = flatten(interest);
 
         return connect()
                 .switchMap(new Func1<ServerConnection, Observable<? extends ChangeNotification<InstanceInfo>>>() {
@@ -115,7 +117,9 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
                                 registry.register(notification.getData());
                                 break;
                             case Modify:
-                                registry.update(notification.getData(), null);
+                                ModifyNotification<InstanceInfo> modifyNotification
+                                        = (ModifyNotification<InstanceInfo>) notification;
+                                registry.update(modifyNotification.getData(), modifyNotification.getDelta());
                                 break;
                             case Delete:
                                 registry.unregister(notification.getData().getId());
@@ -152,12 +156,20 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
             }
         }
 
-        channelInterests = new MultipleInterests<>(channelInterests, newInterest);  // assume single threaded access
+        Set<Interest<InstanceInfo>> flattenedInterests = flatten(newInterest);
+        if (channelInterests.containsAll(flattenedInterests)) {
+            return Observable.empty();  // no-op optimization
+        }
+
+        flattenedInterests.removeAll(channelInterests);
+        @SuppressWarnings("unchecked")
+        final MultipleInterests<InstanceInfo> interest =
+                new MultipleInterests<InstanceInfo>(flattenedInterests.toArray(new Interest[flattenedInterests.size()]));
 
         return connect().switchMap(new Func1<ServerConnection, Observable<Void>>() {
             @Override
             public Observable<Void> call(ServerConnection connection) {
-                return connection.send(new InterestRegistration(newInterest));
+                return connection.send(new InterestRegistration(interest));
             }
         }); // Connect is idempotent and does not connect on every call.
     }
@@ -192,6 +204,19 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
         channelInterests = null;
         idVsInstance.clear();
         super._close();
+    }
+
+    // TODO: optimize later if necessary
+    @SuppressWarnings("unchecked")
+    private Set<Interest<InstanceInfo>> flatten(Interest<InstanceInfo> interest) {
+        Set<Interest<InstanceInfo>> interests = new HashSet<>();
+        if (interest instanceof MultipleInterests) {
+            interests.addAll(((MultipleInterests) interest).flatten());
+        } else {
+            interests.add(interest);
+        }
+
+        return interests;
     }
 
     private Observable<ChangeNotification<InstanceInfo>> createInterestStream() {
