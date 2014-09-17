@@ -15,6 +15,7 @@ import rx.subjects.Subject;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Processor class to serialize access to the underlying Interest Channel.
@@ -46,7 +47,7 @@ public class InterestProcessor {
                     interestStream.ignoreElements().cast(Void.class).subscribe(task);
                 }
 
-                taskProcessor.schedule(this);  // repeat
+                taskProcessor.schedule(this, 100, TimeUnit.MILLISECONDS);  // repeat
             }
         });
     }

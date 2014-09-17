@@ -115,7 +115,9 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
                                 registry.register(notification.getData());
                                 break;
                             case Modify:
-                                registry.update(notification.getData(), null);
+                                ModifyNotification<InstanceInfo> modifyNotification
+                                        = (ModifyNotification<InstanceInfo>) notification;
+                                registry.update(modifyNotification.getData(), modifyNotification.getDelta());
                                 break;
                             case Delete:
                                 registry.unregister(notification.getData().getId());
