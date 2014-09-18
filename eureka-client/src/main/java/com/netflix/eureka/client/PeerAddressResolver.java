@@ -16,14 +16,14 @@
 
 package com.netflix.eureka.client;
 
-import com.netflix.eureka.registry.NetworkAddress;
 import com.netflix.eureka.registry.InstanceInfo;
+import com.netflix.eureka.registry.NetworkAddress;
 
 /**
  * Most datacenters run servers with multiple IP addresses, and protocol families.
  * The choice of a particular IP address and IP protocol version will depend on the relative
- * location of two peer machines, and possibly other factors. This inteface provides abstraction
- * over such resultion process.
+ * location of two peer machines, and possibly other factors. This interface provides abstraction
+ * over such resolution process.
  *
  * @author Tomasz Bak
  */

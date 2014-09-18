@@ -1,14 +1,14 @@
 package com.netflix.eureka.client;
 
-import com.netflix.eureka.client.service.EurekaClientService;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.interests.Interests;
 import com.netflix.eureka.interests.SampleChangeNotification;
 import com.netflix.eureka.registry.EurekaRegistry;
+import com.netflix.eureka.registry.EurekaRegistryImpl;
 import com.netflix.eureka.registry.InstanceInfo;
-import com.netflix.eureka.registry.LeasedInstanceRegistry;
 import com.netflix.eureka.registry.SampleInstanceInfo;
+import com.netflix.eureka.service.EurekaService;
 import com.netflix.eureka.service.InterestChannel;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -43,7 +43,7 @@ public class EurekaClientTest {
     protected InterestChannel interestChannel;
 
     @Mock
-    protected EurekaClientService eurekaService;
+    protected EurekaService eurekaService;
 
     protected EurekaClient client;
     protected EurekaRegistry<InstanceInfo> registry;
@@ -77,7 +77,7 @@ public class EurekaClientTest {
             allRegistry.addAll(zuulRegistry);
 
             Observable<ChangeNotification<InstanceInfo>> mockInterestStream = Observable.from(allRegistry);
-            registry = new LeasedInstanceRegistry(null);
+            registry = new EurekaRegistryImpl();
             for (ChangeNotification<InstanceInfo> notification : allRegistry) {
                 registry.register(notification.getData());
             }
@@ -100,13 +100,10 @@ public class EurekaClientTest {
             when(interestChannel.upgrade(eq(interestZuul))).thenReturn(Observable.<Void>empty());
 
             when(eurekaService.newInterestChannel()).thenReturn(interestChannel);
-            when(eurekaService.forInterest(eq(interestAll))).thenReturn(registry.forInterest(interestAll));
-            when(eurekaService.forInterest(eq(interestDiscovery))).thenReturn(registry.forInterest(interestDiscovery));
-            when(eurekaService.forInterest(eq(interestZuul))).thenReturn(registry.forInterest(interestZuul));
 
             processor = new InterestProcessor(interestChannel);
 
-            client = new EurekaClientImpl(eurekaService);
+            client = new EurekaClientImpl(registry, null);
         }
 
         @Override

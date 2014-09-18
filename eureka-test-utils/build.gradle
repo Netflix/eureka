@@ -17,6 +17,8 @@
 dependencies {
     compile project(':eureka-core')
     compile project(':eureka-server')
+    compile project(':eureka-read-server')
+    compile project(':eureka-write-server')
     compile "jline:jline:${jline_version}"
     testCompile "junit:junit:${junit_version}"
 }

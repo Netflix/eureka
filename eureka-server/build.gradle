@@ -16,7 +16,7 @@
 
 dependencies {
     compile "org.slf4j:slf4j-simple:${slf4j_version}"
-    compile project(':eureka-client')
+    compile project(':eureka-core')
     compile "com.netflix.karyon:karyon-governator:${karyon_version}"
     compile "com.netflix.karyon:karyon-archaius:${karyon_version}"
 

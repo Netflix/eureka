@@ -16,10 +16,10 @@
 
 package com.netflix.eureka.client.bootstrap;
 
-import java.net.InetSocketAddress;
-
 import com.netflix.eureka.client.ServerResolver;
 import com.netflix.eureka.client.ServerResolver.Protocol;
+
+import java.net.InetSocketAddress;
 
 /**
  * {@link ServerResolvers} provides a collection of static factory methods for
@@ -38,7 +38,7 @@ public class ServerResolvers {
      * default value associated with a provided protocol is used instead.
      */
     public static ServerResolver<InetSocketAddress> fromList(Protocol protocol, String... entries) {
-        StaticServerResolver<InetSocketAddress> resolver = new StaticServerResolver<InetSocketAddress>();
+        StaticServerResolver<InetSocketAddress> resolver = new StaticServerResolver<>();
         for (String entry : entries) {
             int cidx = entry.indexOf(':');
             String host;

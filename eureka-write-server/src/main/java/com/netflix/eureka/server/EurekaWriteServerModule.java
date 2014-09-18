@@ -17,33 +17,29 @@
 package com.netflix.eureka.server;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.name.Names;
-import com.netflix.eureka.client.inject.EurekaClientProvider;
+import com.netflix.eureka.client.ServerResolver;
 import com.netflix.eureka.registry.EurekaRegistry;
-import com.netflix.eureka.registry.InstanceInfo;
-import com.netflix.eureka.registry.LeasedInstanceRegistry;
+import com.netflix.eureka.registry.EurekaRegistryImpl;
 import com.netflix.eureka.transport.EurekaTransports.Codec;
+
+import java.net.InetSocketAddress;
 
 /**
  * @author Tomasz Bak
  */
 public class EurekaWriteServerModule extends AbstractModule {
 
-    private final InstanceInfo localInstanceInfo;
+    @SuppressWarnings("unused") private final ServerResolver<InetSocketAddress> peerResolver;
     private final Codec codec;
 
-    public EurekaWriteServerModule(InstanceInfo localInstanceInfo, Codec codec) {
-        this.localInstanceInfo = localInstanceInfo;
+    public EurekaWriteServerModule(ServerResolver<InetSocketAddress> peerResolver, Codec codec) {
+        this.peerResolver = peerResolver;
         this.codec = codec;
     }
 
     @Override
     public void configure() {
-        bind(InstanceInfo.class)
-                .annotatedWith(Names.named(EurekaClientProvider.LOCAL_INSTANCE_INFO_TAG))
-                .toInstance(localInstanceInfo);
         bind(Codec.class).toInstance(codec);
-
-        bind(EurekaRegistry.class).toInstance(new LeasedInstanceRegistry(localInstanceInfo));
+        bind(EurekaRegistry.class).toInstance(new EurekaRegistryImpl());
     }
 }

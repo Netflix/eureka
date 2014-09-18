@@ -28,6 +28,10 @@ import rx.Observable;
  */
 public abstract class EurekaClient {
 
+    public static final String READ_SERVER_RESOLVER_NAME = "eureka_read_server_resolver";
+
+    public static final String WRITE_SERVER_RESOLVER_NAME = "eureka_write_server_resolver";
+
     public abstract Observable<Void> register(InstanceInfo instanceInfo);
 
     public abstract Observable<Void> update(InstanceInfo instanceInfo);
