@@ -84,4 +84,14 @@ public class Lease<E> {
     public void cancel() {
         // TODO necessary?
     }
+
+    @Override
+    public String toString() {
+        return "Lease{" +
+                "holder=" + holder +
+                ", snapshot=" + snapshot +
+                ", lastRenewalTimestamp=" + lastRenewalTimestamp +
+                ", leaseDurationMillis=" + leaseDurationMillis +
+                '}';
+    }
 }

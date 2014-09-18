@@ -15,6 +15,7 @@ import rx.subjects.Subject;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Processor class to serialize access to the underlying Interest Channel.
@@ -24,7 +25,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class InterestProcessor {
     protected final Queue<Task<Interest<InstanceInfo>>> taskQueue;
     protected final Scheduler.Worker taskProcessor;
-    protected Observable<ChangeNotification<InstanceInfo>> interestStream;
+    protected Observable<Void> interestStream;
 
     public InterestProcessor(final InterestChannel interestChannel) {
         this.taskQueue = new ConcurrentLinkedQueue<>();
@@ -39,14 +40,14 @@ public class InterestProcessor {
                     if (interestStream != null) {
                         interestChannel.upgrade(interest).subscribe(task);
                     } else {
-                        interestStream = interestChannel.register(interest);
+                        interestStream = interestChannel.register(interest).ignoreElements().cast(Void.class);
+                        interestStream.subscribe(task);  // for propagation of error and complete if needed
                     }
 
                     // subscribe the tasks to the (singleton) channel stream to propagate onError and onComplete
-                    interestStream.ignoreElements().cast(Void.class).subscribe(task);
                 }
 
-                taskProcessor.schedule(this);  // repeat
+                taskProcessor.schedule(this, 100, TimeUnit.MILLISECONDS);  // repeat
             }
         });
     }

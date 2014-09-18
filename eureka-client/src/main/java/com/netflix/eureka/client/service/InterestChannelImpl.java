@@ -25,7 +25,9 @@ import rx.functions.Func1;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * An implementation of {@link InterestChannel}. It is mandatory that all operations
@@ -118,7 +120,9 @@ import java.util.Map;
                                 registry.register(notification.getData());
                                 break;
                             case Modify:
-                                registry.update(notification.getData(), null);
+                                ModifyNotification<InstanceInfo> modifyNotification
+                                        = (ModifyNotification<InstanceInfo>) notification;
+                                registry.update(modifyNotification.getData(), modifyNotification.getDelta());
                                 break;
                             case Delete:
                                 registry.unregister(notification.getData().getId());
@@ -158,7 +162,7 @@ import java.util.Map;
         return connect().switchMap(new Func1<ServerConnection, Observable<Void>>() {
             @Override
             public Observable<Void> call(ServerConnection connection) {
-                return connection.send(new InterestRegistration(newInterest));
+                return connection.send(new InterestRegistration(interest));
             }
         }); // Connect is idempotent and does not connect on every call.
     }
@@ -206,6 +210,19 @@ import java.util.Map;
         state.set(STATES.Closed);
         idVsInstance.clear();
         super._close();
+    }
+
+    // TODO: optimize later if necessary
+    @SuppressWarnings("unchecked")
+    private Set<Interest<InstanceInfo>> flatten(Interest<InstanceInfo> interest) {
+        Set<Interest<InstanceInfo>> interests = new HashSet<>();
+        if (interest instanceof MultipleInterests) {
+            interests.addAll(((MultipleInterests) interest).flatten());
+        } else {
+            interests.add(interest);
+        }
+
+        return interests;
     }
 
     private Observable<ChangeNotification<InstanceInfo>> createInterestStream() {
