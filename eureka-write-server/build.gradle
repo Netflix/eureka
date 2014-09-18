@@ -14,26 +14,21 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka.registry;
+configurations {
+    avroTool
+}
 
-import com.netflix.eureka.interests.ChangeNotification;
-import com.netflix.eureka.interests.Interest;
-import rx.Observable;
+dependencies {
+    compile project(':eureka-client')
+    compile project(':eureka-server')
+    testCompile project(':eureka-test-utils')
+}
 
-import java.util.Set;
-
-/**
- * @author Nitesh Kant
- */
-public interface EurekaRegistry<T> {
-
-    Observable<Void> register(T instanceInfo);
-
-    Observable<Void> unregister(String instanceId);
-
-    Observable<Void> update(T updatedInfo, Set<Delta<?>> deltas);
-
-    Observable<ChangeNotification<T>> forInterest(Interest<T> interest);
-
-    Observable<Void> shutdown();
+jar {
+    manifest {
+        name = 'eureka-write-server'
+        instruction 'Bundle-Vendor', 'Netflix'
+        instruction 'Bundle-DocURL', 'https://github.com/Netflix/eureka'
+        instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
+    }
 }

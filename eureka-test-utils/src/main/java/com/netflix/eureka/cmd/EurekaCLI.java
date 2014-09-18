@@ -16,6 +16,30 @@
 
 package com.netflix.eureka.cmd;
 
+import com.netflix.eureka.client.EurekaClient;
+import com.netflix.eureka.client.EurekaClientImpl;
+import com.netflix.eureka.client.ServerResolver.Protocol;
+import com.netflix.eureka.client.bootstrap.StaticServerResolver;
+import com.netflix.eureka.client.transport.TransportClient;
+import com.netflix.eureka.client.transport.TransportClients;
+import com.netflix.eureka.interests.ChangeNotification;
+import com.netflix.eureka.interests.Interest;
+import com.netflix.eureka.interests.Interests;
+import com.netflix.eureka.registry.Delta;
+import com.netflix.eureka.registry.Delta.Builder;
+import com.netflix.eureka.registry.InstanceInfo;
+import com.netflix.eureka.registry.InstanceInfoField;
+import com.netflix.eureka.registry.InstanceInfoField.Name;
+import com.netflix.eureka.registry.SampleInstanceInfo;
+import com.netflix.eureka.transport.EurekaTransports.Codec;
+import com.netflix.eureka.utils.Sets;
+import jline.Terminal;
+import jline.TerminalFactory;
+import jline.console.ConsoleReader;
+import jline.console.history.History;
+import jline.console.history.History.Entry;
+import rx.Subscriber;
+
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -27,34 +51,6 @@ import java.util.ListIterator;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import com.netflix.eureka.client.EurekaClient;
-import com.netflix.eureka.client.EurekaClientImpl;
-import com.netflix.eureka.client.ServerResolver.Protocol;
-import com.netflix.eureka.client.bootstrap.StaticServerResolver;
-import com.netflix.eureka.client.service.EurekaClientService;
-import com.netflix.eureka.client.service.EurekaServiceImpl;
-import com.netflix.eureka.client.transport.TransportClient;
-import com.netflix.eureka.client.transport.TransportClients;
-import com.netflix.eureka.interests.ChangeNotification;
-import com.netflix.eureka.interests.Interest;
-import com.netflix.eureka.interests.Interests;
-import com.netflix.eureka.registry.Delta;
-import com.netflix.eureka.registry.Delta.Builder;
-import com.netflix.eureka.registry.EurekaRegistry;
-import com.netflix.eureka.registry.InstanceInfo;
-import com.netflix.eureka.registry.InstanceInfoField;
-import com.netflix.eureka.registry.InstanceInfoField.Name;
-import com.netflix.eureka.registry.LeasedInstanceRegistry;
-import com.netflix.eureka.registry.SampleInstanceInfo;
-import com.netflix.eureka.transport.EurekaTransports.Codec;
-import com.netflix.eureka.utils.Sets;
-import jline.Terminal;
-import jline.TerminalFactory;
-import jline.console.ConsoleReader;
-import jline.console.history.History;
-import jline.console.history.History.Entry;
-import rx.Subscriber;
 
 /**
  * Simple command line Eureka client interface.
@@ -87,13 +83,18 @@ public class EurekaCLI {
         consoleReader = new ConsoleReader(System.in, System.out, terminal);
         loadConfiguration();
         loadHistory();
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            @Override
+            public void run() {
+                eurekaClient.close();
+            }
+        }));
     }
 
     private void loadConfiguration() {
         if (CONFIGURATION_FILE != null && CONFIGURATION_FILE.exists()) {
             try {
-                LineNumberReader reader = new LineNumberReader(new FileReader(CONFIGURATION_FILE));
-                try {
+                try (LineNumberReader reader = new LineNumberReader(new FileReader(CONFIGURATION_FILE))) {
                     String line;
                     while ((line = reader.readLine()) != null) {
                         Matcher matcher = ALIAS_DEF_PATTERN.matcher(line);
@@ -101,8 +102,6 @@ public class EurekaCLI {
                             aliasMap.put(matcher.group(1), matcher.group(2));
                         }
                     }
-                } finally {
-                    reader.close();
                 }
             } catch (IOException e) {
                 System.err.println("ERROR: could not load configuration file from ~/.eureka_history");
@@ -113,15 +112,12 @@ public class EurekaCLI {
     private void loadHistory() {
         if (HISTORY_FILE != null && HISTORY_FILE.exists()) {
             try {
-                LineNumberReader reader = new LineNumberReader(new FileReader(HISTORY_FILE));
-                try {
+                try (LineNumberReader reader = new LineNumberReader(new FileReader(HISTORY_FILE))) {
                     History history = consoleReader.getHistory();
                     String line;
                     while ((line = reader.readLine()) != null) {
                         history.add(line);
                     }
-                } finally {
-                    reader.close();
                 }
             } catch (IOException e) {
                 System.err.println("ERROR: could not load history file from ~/.eureka_history");
@@ -132,18 +128,18 @@ public class EurekaCLI {
     private void saveHistory() {
         if (HISTORY_FILE != null) {
             if (HISTORY_FILE.exists()) {
-                HISTORY_FILE.delete();
+                boolean deleted = HISTORY_FILE.delete();
+                if (!deleted) {
+                    System.err.println("Failed to delete the history file.");
+                }
             }
             try {
-                FileWriter writer = new FileWriter(HISTORY_FILE);
                 ListIterator<Entry> iterator = consoleReader.getHistory().entries();
-                try {
+                try (FileWriter writer = new FileWriter(HISTORY_FILE)) {
                     while (iterator.hasNext()) {
                         writer.write(iterator.next().value().toString());
                         writer.write('\n');
                     }
-                } finally {
-                    writer.close();
                 }
             } catch (IOException e) {
                 System.err.println("ERROR: could not save history file into ~/.eureka_history");
@@ -194,7 +190,7 @@ public class EurekaCLI {
                 runHelp();
             } else if ("history".equals(cmd) && expect(cmd, 0, args)) {
                 runHistory();
-            } else if ("connect".equals(cmd) && expect(cmd, 3, args)) {
+            } else if ("connect".equals(cmd)) {
                 runConnect(args);
             } else if ("register".equals(cmd) && expect(cmd, 0, args)) {
                 runRegister();
@@ -261,9 +257,28 @@ public class EurekaCLI {
     }
 
     private void runConnect(String[] args) {
-        String host = args[0];
-        int registrationPort = Integer.parseInt(args[1]);
-        int discoveryPort = Integer.parseInt(args[2]);
+
+        String host = "localhost";
+        int registrationPort = 7002;
+        int discoveryPort = 7003;
+
+        switch (args.length) {
+            case 0:
+                // defaults are already set
+                break;
+            case 1:
+                host = args[0];
+                break;
+            case 2:
+                host = args[0];
+                registrationPort = Integer.parseInt(args[1]);
+                break;
+            default:
+                host = args[0];
+                registrationPort = Integer.parseInt(args[1]);
+                discoveryPort = Integer.parseInt(args[2]);
+                break;
+        }
 
         InetSocketAddress writeHost = new InetSocketAddress(host, registrationPort);
         InetSocketAddress readHost = new InetSocketAddress(host, discoveryPort);
@@ -278,12 +293,10 @@ public class EurekaCLI {
         TransportClient readClient =
                 TransportClients.newTcpDiscoveryClient(discoveryServers, Codec.Json);
 
-        EurekaRegistry<InstanceInfo> registry = new LeasedInstanceRegistry(null);
+        eurekaClient = new EurekaClientImpl(readClient, writeClient);
 
-        EurekaClientService eurekaService = EurekaServiceImpl.forReadAndWriteServer(registry, readClient, writeClient);
-
-        eurekaClient = new EurekaClientImpl(eurekaService);
-        System.out.format("Connected to Eureka server at %s:%d (registry) and %s:%d (discovery)\n", host, registrationPort, host, discoveryPort);
+        System.out.format("Connected to Eureka server at %s:%d (registry) and %s:%d (discovery)\n", host,
+                          registrationPort, host, discoveryPort);
     }
 
     private void runRegister() {
@@ -428,6 +441,7 @@ public class EurekaCLI {
 
             @Override
             public void onNext(ChangeNotification<InstanceInfo> notification) {
+                registryFetchStatus = Status.Streaming;
                 System.out.println("Interest " + interest + " NEXT: " + notification);
             }
         });
@@ -481,10 +495,6 @@ public class EurekaCLI {
                     System.out.println("Registry fetch status: failed");
                     break;
             }
-        }
-
-        if (eurekaClient != null) {
-            System.out.println(eurekaClient.toString());
         }
     }
 

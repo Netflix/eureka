@@ -17,8 +17,7 @@
 package com.netflix.eureka.server;
 
 import com.netflix.adminresources.resources.KaryonWebAdminModule;
-import com.netflix.eureka.registry.InstanceInfo;
-import com.netflix.eureka.registry.InstanceInfo.Builder;
+import com.netflix.eureka.client.bootstrap.StaticServerResolver;
 import com.netflix.eureka.server.transport.tcp.discovery.TcpDiscoveryModule;
 import com.netflix.eureka.server.transport.tcp.registration.JsonRegistrationModule;
 import com.netflix.eureka.transport.EurekaTransports.Codec;
@@ -30,26 +29,22 @@ import com.netflix.karyon.archaius.ArchaiusBootstrap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
+
 /**
  * @author Tomasz Bak
  */
 @ArchaiusBootstrap
-@KaryonBootstrap(name = "eurekaWriteServer")
+@KaryonBootstrap(name = "eureka-write-server")
 @Modules(include = KaryonWebAdminModule.class)
 public class EurekaWriteServer extends AbstractEurekaServer {
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaWriteServer.class);
 
     private final int shutdownPort;
-    private final InstanceInfo localInstanceInfo;
 
     public EurekaWriteServer(int shutdownPort) {
         this.shutdownPort = shutdownPort;
-        // TODO: how to build complete info?
-        this.localInstanceInfo = new Builder()
-                .withId("eurekaWriteServer." + System.currentTimeMillis())
-                .withApp("eureka2.0")
-                .build();
     }
 
     @Override
@@ -61,7 +56,7 @@ public class EurekaWriteServer extends AbstractEurekaServer {
                         new EurekaShutdownModule(shutdownPort),
                         new JsonRegistrationModule("eurekaWriteServer-registrationTransport", 7002),
                         new TcpDiscoveryModule("eurekaWriteServer-discoveryTransport", 7003),
-                        new EurekaWriteServerModule(localInstanceInfo, Codec.Json)
+                        new EurekaWriteServerModule(new StaticServerResolver<InetSocketAddress>(), Codec.Json)
                 );
             }
         };

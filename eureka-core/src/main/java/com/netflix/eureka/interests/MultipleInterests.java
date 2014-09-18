@@ -16,7 +16,6 @@
 
 package com.netflix.eureka.interests;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -28,18 +27,24 @@ import java.util.Set;
  */
 public class MultipleInterests<T> extends Interest<T> {
 
-    private final Interest<T>[] interests;
-
-    protected MultipleInterests() {
-        this.interests = null;
-    }
+    private final Set<Interest<T>> interests;
 
     @SafeVarargs
     public MultipleInterests(Interest<T>... interests) {
-        this.interests = interests;
+        this.interests = new HashSet<>();
+        for (Interest<T> interest : interests) {
+            append(interest, this.interests); // Unwraps if the interest itself is a MultipleInterest
+        }
     }
 
-    public Interest<T>[] getInterests() {
+    public MultipleInterests(Iterable<Interest<T>> interests) {
+        this.interests = new HashSet<>();
+        for (Interest<T> interest : interests) {
+            append(interest, this.interests); // Unwraps if the interest itself is a MultipleInterest
+        }
+    }
+
+    public Set<Interest<T>> getInterests() {
         return interests;
     }
 
@@ -53,20 +58,39 @@ public class MultipleInterests<T> extends Interest<T> {
         return false;
     }
 
-
     public Set<Interest<T>> flatten() {
-        Set<Interest<T>> set = new HashSet<>();
-        flatten(this, set);
-        return set;
+        return new HashSet<>(interests); // Copy to restrict mutations to the underlying set.
     }
 
-    private void flatten(Interest<T> interest, Set<Interest<T>> collector) {
+    public MultipleInterests<T> copyAndAppend(Interest<T> toAppend) {
+        Set<Interest<T>> newInterests = flatten(); // flatten does the copy of the underlying set
+        append(toAppend, newInterests);
+        return new MultipleInterests<>(newInterests);
+    }
+
+    public MultipleInterests<T> copyAndRemove(Interest<T> toAppend) {
+        Set<Interest<T>> newInterests = flatten(); // flatten does the copy of the underlying set
+        remove(toAppend, newInterests);
+        return new MultipleInterests<>(newInterests);
+    }
+
+    private static <T> void append(Interest<T> interest, Set<Interest<T>> collector) {
         if (interest instanceof MultipleInterests) {
             for (Interest<T> i : ((MultipleInterests<T>) interest).getInterests()) {
-                flatten(i, collector);
+                append(i, collector);
             }
         } else {
             collector.add(interest);
+        }
+    }
+
+    private static <T> void remove(Interest<T> interest, Set<Interest<T>> collector) {
+        if (interest instanceof MultipleInterests) {
+            for (Interest<T> i : ((MultipleInterests<T>) interest).getInterests()) {
+                remove(i, collector);
+            }
+        } else {
+            collector.remove(interest);
         }
     }
 
@@ -75,26 +99,23 @@ public class MultipleInterests<T> extends Interest<T> {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof MultipleInterests)) {
             return false;
         }
 
         MultipleInterests that = (MultipleInterests) o;
 
-        if (!Arrays.equals(interests, that.interests)) {
-            return false;
-        }
+        return interests.equals(that.interests);
 
-        return true;
     }
 
     @Override
     public int hashCode() {
-        return interests != null ? Arrays.hashCode(interests) : 0;
+        return interests.hashCode();
     }
 
     @Override
     public String toString() {
-        return "MultipleInterests{interests=" + Arrays.toString(interests) + '}';
+        return "MultipleInterests{" + "interests=" + interests + '}';
     }
 }

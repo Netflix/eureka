@@ -16,14 +16,10 @@
 
 package com.netflix.eureka.server;
 
-import java.net.InetSocketAddress;
-
 import com.netflix.adminresources.resources.KaryonWebAdminModule;
 import com.netflix.eureka.client.ServerResolver;
 import com.netflix.eureka.client.ServerResolver.Protocol;
 import com.netflix.eureka.client.bootstrap.ServerResolvers;
-import com.netflix.eureka.registry.InstanceInfo;
-import com.netflix.eureka.registry.InstanceInfo.Builder;
 import com.netflix.eureka.server.transport.tcp.discovery.TcpDiscoveryModule;
 import com.netflix.eureka.transport.EurekaTransports.Codec;
 import com.netflix.governator.annotations.Modules;
@@ -34,7 +30,9 @@ import com.netflix.karyon.archaius.ArchaiusBootstrap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Arrays.*;
+import java.net.InetSocketAddress;
+
+import static java.util.Arrays.copyOfRange;
 
 /**
  * TODO: register Eureka Read server with the write cluster
@@ -42,7 +40,7 @@ import static java.util.Arrays.*;
  * @author Tomasz Bak
  */
 @ArchaiusBootstrap
-@KaryonBootstrap(name = "eurekaReadServer")
+@KaryonBootstrap(name = "eureka-read-server")
 @Modules(include = KaryonWebAdminModule.class)
 public class EurekaReadServer extends AbstractEurekaServer {
 
@@ -50,16 +48,10 @@ public class EurekaReadServer extends AbstractEurekaServer {
 
     private final ServerResolver<InetSocketAddress> resolver;
     private final int shutdownPort;
-    private final InstanceInfo localInstanceInfo;
 
     public EurekaReadServer(ServerResolver<InetSocketAddress> resolver, int shutdownPort) {
         this.resolver = resolver;
         this.shutdownPort = shutdownPort;
-        // TODO: how to build complete info?
-        this.localInstanceInfo = new Builder()
-                .withId("eurekaReadServer." + System.currentTimeMillis())
-                .withApp("eureka2.0")
-                .build();
     }
 
     @Override
@@ -70,7 +62,7 @@ public class EurekaReadServer extends AbstractEurekaServer {
                 builder.withModules(
                         new EurekaShutdownModule(shutdownPort),
                         new TcpDiscoveryModule("eurekaReadServer-transport", 7004),
-                        new EurekaReadServerModule(localInstanceInfo, resolver, Codec.Json)
+                        new EurekaReadServerModule(resolver, Codec.Json)
                 );
             }
         };
@@ -78,7 +70,7 @@ public class EurekaReadServer extends AbstractEurekaServer {
 
     public static void usage() {
         System.out.println("Usage:");
-        System.out.println("    -t dns <write_cluster_dn>     resolve write cluster from a domain name");
+        System.out.println("    -t dns <write_cluster_dns>     resolve write cluster from a domain name");
         System.out.println("    -t inline (<host>[:<port>])+  configure write cluster resolver with");
         System.out.println("                                  provided list of host[:port] entries");
         System.out.println();
@@ -98,12 +90,16 @@ public class EurekaReadServer extends AbstractEurekaServer {
             cliSyntaxError("expected -t option followed by write server cluster resolution method");
         }
         ServerResolver<InetSocketAddress> resolver = null;
-        if ("dns".equals(args[1])) {
-            resolver = ServerResolvers.forDomainName(Protocol.TcpDiscovery, args[2]);
-        } else if ("inline".equals(args[1])) {
-            resolver = ServerResolvers.fromList(Protocol.TcpDiscovery, copyOfRange(args, 2, args.length));
-        } else {
-            cliSyntaxError("unrecognized server resolver type " + args[1]);
+        switch (args[1]) {
+            case "dns":
+                resolver = ServerResolvers.forDomainName(Protocol.TcpDiscovery, args[2]);
+                break;
+            case "inline":
+                resolver = ServerResolvers.fromList(Protocol.TcpDiscovery, copyOfRange(args, 2, args.length));
+                break;
+            default:
+                cliSyntaxError("unrecognized server resolver type " + args[1]);
+                break;
         }
 
         EurekaReadServer server = null;

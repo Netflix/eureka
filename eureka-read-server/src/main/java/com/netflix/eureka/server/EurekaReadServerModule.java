@@ -16,18 +16,16 @@
 
 package com.netflix.eureka.server;
 
-import java.net.InetSocketAddress;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.netflix.eureka.client.EurekaClient;
+import com.netflix.eureka.client.EurekaClientImpl;
 import com.netflix.eureka.client.ServerResolver;
-import com.netflix.eureka.client.inject.EurekaClientProvider;
 import com.netflix.eureka.registry.EurekaRegistry;
-import com.netflix.eureka.registry.InstanceInfo;
-import com.netflix.eureka.server.registry.EurekaProxyRegistry;
 import com.netflix.eureka.transport.EurekaTransports.Codec;
+
+import java.net.InetSocketAddress;
 
 /**
  * @author Tomasz Bak
@@ -38,25 +36,26 @@ public class EurekaReadServerModule extends AbstractModule {
             new TypeLiteral<ServerResolver<InetSocketAddress>>() {
             };
 
-    private final InstanceInfo localInstanceInfo;
-    private final ServerResolver<InetSocketAddress> resolver;
+    private final ServerResolver<InetSocketAddress> writeServerResolver;
     private final Codec codec;
 
-    public EurekaReadServerModule(InstanceInfo localInstanceInfo, ServerResolver<InetSocketAddress> resolver, Codec codec) {
-        this.localInstanceInfo = localInstanceInfo;
-        this.resolver = resolver;
+    public EurekaReadServerModule(ServerResolver<InetSocketAddress> writeServerResolver, Codec codec) {
+        this.writeServerResolver = writeServerResolver;
         this.codec = codec;
     }
 
     @Override
     public void configure() {
-        bind(InstanceInfo.class)
-                .annotatedWith(Names.named(EurekaClientProvider.LOCAL_INSTANCE_INFO_TAG))
-                .toInstance(localInstanceInfo);
-        bind(SERVER_RESOLVER_TYPE_LITERAL).toInstance(resolver);
+        /*
+         * Since, the read server connects to the write server for both read and write, there is only one resolver.
+         */
+        bind(SERVER_RESOLVER_TYPE_LITERAL).annotatedWith(Names.named(EurekaClient.WRITE_SERVER_RESOLVER_NAME))
+                                          .toInstance(writeServerResolver);
+        bind(SERVER_RESOLVER_TYPE_LITERAL).annotatedWith(Names.named(EurekaClient.READ_SERVER_RESOLVER_NAME))
+                                          .toInstance(writeServerResolver);
         bind(Codec.class).toInstance(codec);
 
-        bind(EurekaClient.class).toProvider(EurekaClientProvider.class);
-        bind(EurekaRegistry.class).to(EurekaProxyRegistry.class);
+        bind(EurekaClient.class).to(EurekaClientImpl.class);
+        bind(EurekaRegistry.class).to(EurekaReadServerRegistry.class);
     }
 }

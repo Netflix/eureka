@@ -1,14 +1,13 @@
 package com.netflix.eureka.client;
 
-import com.netflix.eureka.client.service.EurekaClientService;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.interests.Interests;
 import com.netflix.eureka.interests.MultipleInterests;
 import com.netflix.eureka.interests.SampleChangeNotification;
 import com.netflix.eureka.registry.EurekaRegistry;
+import com.netflix.eureka.registry.EurekaRegistryImpl;
 import com.netflix.eureka.registry.InstanceInfo;
-import com.netflix.eureka.registry.LeasedInstanceRegistry;
 import com.netflix.eureka.registry.SampleInstanceInfo;
 import com.netflix.eureka.service.InterestChannel;
 import org.junit.Assert;
@@ -16,14 +15,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.RunWith;
-import org.mockito.Matchers;
 import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.mockito.stubbing.Answer;
 import rx.Observable;
 import rx.Subscriber;
-import rx.Subscription;
 import rx.functions.Func1;
 
 import java.util.ArrayList;
@@ -36,7 +31,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
 /**
@@ -47,9 +41,6 @@ public class EurekaClientTest {
 
     @Mock
     protected InterestChannel interestChannel;
-
-    @Mock
-    protected EurekaClientService eurekaService;
 
     protected EurekaClient client;
     protected EurekaRegistry<InstanceInfo> registry;
@@ -83,7 +74,7 @@ public class EurekaClientTest {
             allRegistry.addAll(zuulRegistry);
 
             Observable<ChangeNotification<InstanceInfo>> mockInterestStream = Observable.from(allRegistry);
-            registry = new LeasedInstanceRegistry(null);
+            registry = new EurekaRegistryImpl();
             for (ChangeNotification<InstanceInfo> notification : allRegistry) {
                 registry.register(notification.getData());
             }
@@ -96,37 +87,20 @@ public class EurekaClientTest {
                     return interestDiscovery.matches(notification.getData());
                 }
             }));
-            when(interestChannel.register(eq(interestZuul))).thenReturn(mockInterestStream.filter(new Func1<ChangeNotification<InstanceInfo>, Boolean>() {
-                @Override
-                public Boolean call(ChangeNotification<InstanceInfo> notification) {
-                    return interestZuul.matches(notification.getData());
-                }
-            }));
+            when(interestChannel.register(eq(interestZuul))).thenReturn(mockInterestStream.filter(
+                    new Func1<ChangeNotification<InstanceInfo>, Boolean>() {
+                        @Override
+                        public Boolean call(ChangeNotification<InstanceInfo> notification) {
+                            return interestZuul.matches(notification.getData());
+                        }
+                    }));
             when(interestChannel.upgrade(eq(interestAll))).thenReturn(Observable.<Void>empty());
             when(interestChannel.upgrade(eq(interestDiscovery))).thenReturn(Observable.<Void>empty());
             when(interestChannel.upgrade(eq(interestZuul))).thenReturn(Observable.<Void>empty());
 
-            // eureka service mocks that does pass through to the registry
-            when(eurekaService.newInterestChannel()).thenReturn(interestChannel);
-            when(eurekaService.forInterest(Matchers.any(Interest.class))).thenAnswer(new Answer<Object>() {
-                @Override
-                public Object answer(InvocationOnMock invocation) throws Throwable {
-                    Object[] args = invocation.getArguments();
-                    Object mock = invocation.getMock();
-                    return registry.forInterest((Interest<InstanceInfo>) args[0]);
-                }
-            });
-            doAnswer(new Answer() {
-                @Override
-                public Object answer(InvocationOnMock invocation) throws Throwable {
-                    registry.shutdown();
-                    return null;
-                }
-            }).when(eurekaService).shutdown();
-
             processor = new InterestProcessor(interestChannel);
 
-            client = new EurekaClientImpl(eurekaService);
+            client = new EurekaClientImpl(registry, null);
         }
 
         @Override
@@ -169,7 +143,7 @@ public class EurekaClientTest {
                 output.add(notification);
                 latch.countDown();
                 if (latch.getCount() == 1) {
-                    eurekaService.shutdown();  // this sends an onComplete to the stream
+                    client.close();  // this sends an onComplete to the stream
                 }
             }
         });

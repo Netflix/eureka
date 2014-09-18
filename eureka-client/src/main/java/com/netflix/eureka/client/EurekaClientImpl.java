@@ -16,64 +16,67 @@
 
 package com.netflix.eureka.client;
 
-import com.netflix.eureka.client.service.EurekaClientService;
+import com.netflix.eureka.client.service.EurekaClientRegistry;
+import com.netflix.eureka.client.transport.TransportClient;
+import com.netflix.eureka.client.transport.TransportClients;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.interests.Interests;
+import com.netflix.eureka.registry.EurekaRegistry;
 import com.netflix.eureka.registry.InstanceInfo;
-import com.netflix.eureka.service.InterestChannel;
-import com.netflix.eureka.service.RegistrationChannel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.netflix.eureka.transport.EurekaTransports;
 import rx.Observable;
 
-import java.util.concurrent.atomic.AtomicReference;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+import java.net.InetSocketAddress;
 
 /**
  * @author Tomasz Bak
  */
+@Singleton
 public class EurekaClientImpl extends EurekaClient {
 
-    private static final Logger logger = LoggerFactory.getLogger(EurekaClientImpl.class);
+    private final EurekaRegistry<InstanceInfo> registry;
+    private final RegistrationHandler registrationHandler;
 
-    private final EurekaClientService eurekaService;
+    public EurekaClientImpl(EurekaRegistry<InstanceInfo> registry,
+                            RegistrationHandler registrationHandler) {
+        this.registry = registry;
+        this.registrationHandler = registrationHandler;
+    }
 
-    private final AtomicReference<InterestChannel> interestChannel;
-    private final AtomicReference<RegistrationChannel> registrationChannel;
+    public EurekaClientImpl(TransportClient readClient, TransportClient writeClient) {
+        this(new EurekaClientRegistry(readClient), new RegistrationHandlerImpl(writeClient));
+    }
 
-    private final InterestProcessor interestProcessor;
-
-    public EurekaClientImpl(EurekaClientService service) {
-        eurekaService = service;
-        interestChannel = new AtomicReference<>(service.newInterestChannel());
-        registrationChannel = new AtomicReference<>(service.newRegistrationChannel());
-
-        interestProcessor = new InterestProcessor(interestChannel.get());
+    @Inject
+    public EurekaClientImpl(@Named(READ_SERVER_RESOLVER_NAME) ServerResolver<InetSocketAddress> readServerResolver,
+                            @Named(WRITE_SERVER_RESOLVER_NAME) ServerResolver<InetSocketAddress> writeServerResolver) {
+        //TODO: Default to avro as we are always going to use avro by default. Today it expects avro schema in CP.
+        this(TransportClients.newTcpDiscoveryClient(readServerResolver, EurekaTransports.Codec.Json),
+             TransportClients.newTcpRegistrationClient(writeServerResolver, EurekaTransports.Codec.Json));
     }
 
     @Override
     public Observable<Void> register(InstanceInfo instanceInfo) {
-        return getRegistrationChannel().register(instanceInfo);
+        return registrationHandler.register(instanceInfo);
     }
 
     @Override
     public Observable<Void> update(InstanceInfo instanceInfo) {
-        return getRegistrationChannel().update(instanceInfo);
+        return registrationHandler.update(instanceInfo);
     }
 
     @Override
     public Observable<Void> unregister(InstanceInfo instanceInfo) {
-        return getRegistrationChannel().unregister();
+        return registrationHandler.unregister(instanceInfo);
     }
 
     @Override
     public Observable<ChangeNotification<InstanceInfo>> forInterest(final Interest<InstanceInfo> interest) {
-        Observable ob = interestProcessor.forInterest(interest);
-
-        @SuppressWarnings("unchecked")
-        Observable<ChangeNotification<InstanceInfo>> toReturn = ob.mergeWith(eurekaService.forInterest(interest));
-
-        return toReturn;
+        return registry.forInterest(interest);
     }
 
     @Override
@@ -88,28 +91,9 @@ public class EurekaClientImpl extends EurekaClient {
 
     @Override
     public void close() {
-        interestProcessor.shutdown();
-        InterestChannel iChannel = interestChannel.getAndSet(null);
-        if (iChannel != null) {
-            iChannel.close();
+        registry.shutdown();
+        if (null != registrationHandler) {
+            registrationHandler.shutdown();
         }
-        RegistrationChannel rChannel = registrationChannel.getAndSet(null);
-        if (rChannel != null) {
-            rChannel.close();
-        }
-        eurekaService.shutdown();
-    }
-
-    protected InterestChannel getInterestChannel() {
-        return interestChannel.get(); // TODO: Implement re-initialize on disconnect.
-    }
-
-    protected RegistrationChannel getRegistrationChannel() {
-        return registrationChannel.get(); // TODO: Implement re-initialize on disconnect.
-    }
-
-    @Override
-    public String toString() {
-        return eurekaService.toString();
     }
 }
