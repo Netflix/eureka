@@ -92,6 +92,8 @@ public class EurekaClientImpl extends EurekaClient {
     @Override
     public void close() {
         registry.shutdown();
-        registrationHandler.shutdown();
+        if (null != registrationHandler) {
+            registrationHandler.shutdown();
+        }
     }
 }

@@ -9,7 +9,6 @@ import com.netflix.eureka.registry.EurekaRegistry;
 import com.netflix.eureka.registry.EurekaRegistryImpl;
 import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.registry.SampleInstanceInfo;
-import com.netflix.eureka.service.EurekaService;
 import com.netflix.eureka.service.InterestChannel;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -42,9 +41,6 @@ public class EurekaClientTest {
 
     @Mock
     protected InterestChannel interestChannel;
-
-    @Mock
-    protected EurekaService eurekaService;
 
     protected EurekaClient client;
     protected EurekaRegistry<InstanceInfo> registry;
@@ -102,9 +98,6 @@ public class EurekaClientTest {
             when(interestChannel.upgrade(eq(interestDiscovery))).thenReturn(Observable.<Void>empty());
             when(interestChannel.upgrade(eq(interestZuul))).thenReturn(Observable.<Void>empty());
 
-            // eureka service mocks that does pass through to the registry
-            when(eurekaService.newInterestChannel()).thenReturn(interestChannel);
-
             processor = new InterestProcessor(interestChannel);
 
             client = new EurekaClientImpl(registry, null);
@@ -150,7 +143,7 @@ public class EurekaClientTest {
                 output.add(notification);
                 latch.countDown();
                 if (latch.getCount() == 1) {
-                    eurekaService.shutdown();  // this sends an onComplete to the stream
+                    client.close();  // this sends an onComplete to the stream
                 }
             }
         });

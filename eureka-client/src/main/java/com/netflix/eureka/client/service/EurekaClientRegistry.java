@@ -123,7 +123,7 @@ public class EurekaClientRegistry implements EurekaRegistry<InstanceInfo> {
          * Although {@link InterestChannelInvoker} sequences all operations it does not guarantee that any updates are
          * automatically converted to registration (which is good from the channel point of view). So, we need to make
          * sure that registration and appends are not inter-leaved and hence possibly getting into a state where
-         * register arrives before update.
+         * register is sent after update.
          *
          * This subject replays the result of whether the registration was queued into the
          * {@link InterestChannelInvoker}. If there is an error in registration, subsequent registration will reset this

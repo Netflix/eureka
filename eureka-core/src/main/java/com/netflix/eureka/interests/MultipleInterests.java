@@ -16,7 +16,6 @@
 
 package com.netflix.eureka.interests;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -33,11 +32,16 @@ public class MultipleInterests<T> extends Interest<T> {
     @SafeVarargs
     public MultipleInterests(Interest<T>... interests) {
         this.interests = new HashSet<>();
-        Collections.addAll(this.interests, interests);
+        for (Interest<T> interest : interests) {
+            append(interest, this.interests); // Unwraps if the interest itself is a MultipleInterest
+        }
     }
 
-    public MultipleInterests(Set<Interest<T>> interests) {
-        this.interests = Collections.unmodifiableSet(new HashSet<>(interests)); // Copy so that the set is not mutable externally.
+    public MultipleInterests(Iterable<Interest<T>> interests) {
+        this.interests = new HashSet<>();
+        for (Interest<T> interest : interests) {
+            append(interest, this.interests); // Unwraps if the interest itself is a MultipleInterest
+        }
     }
 
     public Set<Interest<T>> getInterests() {
@@ -53,7 +57,6 @@ public class MultipleInterests<T> extends Interest<T> {
         }
         return false;
     }
-
 
     public Set<Interest<T>> flatten() {
         return new HashSet<>(interests); // Copy to restrict mutations to the underlying set.
@@ -102,13 +105,13 @@ public class MultipleInterests<T> extends Interest<T> {
 
         MultipleInterests that = (MultipleInterests) o;
 
-        return !(interests != null ? !interests.equals(that.interests) : that.interests != null);
+        return interests.equals(that.interests);
 
     }
 
     @Override
     public int hashCode() {
-        return interests != null ? interests.hashCode() : 0;
+        return interests.hashCode();
     }
 
     @Override
