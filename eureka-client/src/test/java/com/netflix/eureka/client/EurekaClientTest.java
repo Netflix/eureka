@@ -16,14 +16,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.RunWith;
-import org.mockito.Matchers;
 import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.mockito.stubbing.Answer;
 import rx.Observable;
 import rx.Subscriber;
-import rx.Subscription;
 import rx.functions.Func1;
 
 import java.util.ArrayList;
@@ -36,7 +32,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
 /**
@@ -96,12 +91,13 @@ public class EurekaClientTest {
                     return interestDiscovery.matches(notification.getData());
                 }
             }));
-            when(interestChannel.register(eq(interestZuul))).thenReturn(mockInterestStream.filter(new Func1<ChangeNotification<InstanceInfo>, Boolean>() {
-                @Override
-                public Boolean call(ChangeNotification<InstanceInfo> notification) {
-                    return interestZuul.matches(notification.getData());
-                }
-            }));
+            when(interestChannel.register(eq(interestZuul))).thenReturn(mockInterestStream.filter(
+                    new Func1<ChangeNotification<InstanceInfo>, Boolean>() {
+                        @Override
+                        public Boolean call(ChangeNotification<InstanceInfo> notification) {
+                            return interestZuul.matches(notification.getData());
+                        }
+                    }));
             when(interestChannel.upgrade(eq(interestAll))).thenReturn(Observable.<Void>empty());
             when(interestChannel.upgrade(eq(interestDiscovery))).thenReturn(Observable.<Void>empty());
             when(interestChannel.upgrade(eq(interestZuul))).thenReturn(Observable.<Void>empty());

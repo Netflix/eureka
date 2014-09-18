@@ -25,9 +25,7 @@ import rx.functions.Func1;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * An implementation of {@link InterestChannel}. It is mandatory that all operations
@@ -99,13 +97,7 @@ import java.util.Set;
                     public Observable<? extends ChangeNotification<InstanceInfo>> call(ServerConnection serverConnection) {
                         @SuppressWarnings("rawtypes")
                         Observable sendAck = serverConnection.send(new InterestRegistration(interest))
-                                                             .doOnCompleted(
-                                                                     new Action0() {
-                                                                         @Override
-                                                                         public void call() {
-                                                                             channelInterest = new MultipleInterests<>(interest);
-                                                                         }
-                                                                     });
+                                                             .doOnCompleted(new UpdateInterest(interest));
 
                         @SuppressWarnings("unchecked")
                         Observable<ChangeNotification<InstanceInfo>> toReturn = Observable.concat(sendAck, createInterestStream());
@@ -162,7 +154,8 @@ import java.util.Set;
         return connect().switchMap(new Func1<ServerConnection, Observable<Void>>() {
             @Override
             public Observable<Void> call(ServerConnection connection) {
-                return connection.send(new InterestRegistration(interest));
+                return connection.send(new InterestRegistration(newInterest))
+                                 .doOnCompleted(new UpdateInterest(newInterest));
             }
         }); // Connect is idempotent and does not connect on every call.
     }
@@ -184,7 +177,8 @@ import java.util.Set;
         return connect().switchMap(new Func1<ServerConnection, Observable<Void>>() {
             @Override
             public Observable<Void> call(ServerConnection connection) {
-                return connection.send(UnregisterInterestSet.INSTANCE);
+                return connection.send(UnregisterInterestSet.INSTANCE)
+                                 .doOnCompleted(new UpdateInterest(new MultipleInterests<InstanceInfo>()));
             }
         }); // Connect is idempotent and does not connect on every call.
     }
@@ -210,19 +204,6 @@ import java.util.Set;
         state.set(STATES.Closed);
         idVsInstance.clear();
         super._close();
-    }
-
-    // TODO: optimize later if necessary
-    @SuppressWarnings("unchecked")
-    private Set<Interest<InstanceInfo>> flatten(Interest<InstanceInfo> interest) {
-        Set<Interest<InstanceInfo>> interests = new HashSet<>();
-        if (interest instanceof MultipleInterests) {
-            interests.addAll(((MultipleInterests) interest).flatten());
-        } else {
-            interests.add(interest);
-        }
-
-        return interests;
     }
 
     private Observable<ChangeNotification<InstanceInfo>> createInterestStream() {
@@ -293,5 +274,18 @@ import java.util.Set;
                 });
             }
         });
+    }
+
+    private class UpdateInterest implements Action0 {
+        private final Interest<InstanceInfo> interest;
+
+        public UpdateInterest(Interest<InstanceInfo> interest) {
+            this.interest = interest;
+        }
+
+        @Override
+        public void call() {
+            channelInterest = new MultipleInterests<>(interest);
+        }
     }
 }
