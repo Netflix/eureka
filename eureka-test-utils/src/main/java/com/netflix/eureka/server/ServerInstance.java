@@ -16,16 +16,10 @@
 
 package com.netflix.eureka.server;
 
-import java.net.InetSocketAddress;
-
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.netflix.eureka.client.ServerResolver;
-import com.netflix.eureka.registry.AwsDataCenterInfo;
-import com.netflix.eureka.registry.AwsDataCenterInfo.AwsDataCenterInfoBuilder;
-import com.netflix.eureka.registry.InstanceInfo;
-import com.netflix.eureka.registry.InstanceInfo.Builder;
-import com.netflix.eureka.registry.NetworkAddress;
+import com.netflix.eureka.client.bootstrap.StaticServerResolver;
 import com.netflix.eureka.server.transport.tcp.discovery.TcpDiscoveryModule;
 import com.netflix.eureka.server.transport.tcp.registration.JsonRegistrationModule;
 import com.netflix.eureka.transport.EurekaTransports.Codec;
@@ -33,17 +27,19 @@ import com.netflix.governator.guice.LifecycleInjector;
 import com.netflix.governator.guice.LifecycleInjectorBuilder;
 import com.netflix.governator.lifecycle.LifecycleManager;
 
+import java.net.InetSocketAddress;
+
 /**
  * @author Tomasz Bak
  */
 public abstract class ServerInstance {
-    private Injector injector;
+
     private LifecycleManager lifecycleManager;
 
     protected void setup(Module[] modules) {
         LifecycleInjectorBuilder builder = LifecycleInjector.builder();
         builder.withAdditionalModules(modules);
-        injector = builder.build().createInjector();
+        Injector injector = builder.build().createInjector();
 
         lifecycleManager = injector.getInstance(LifecycleManager.class);
         try {
@@ -59,20 +55,10 @@ public abstract class ServerInstance {
 
     public static class EurekaWriteServerInstance extends ServerInstance {
         public EurekaWriteServerInstance(String serverName, int port) {
-            AwsDataCenterInfo dataCenterInfo = new AwsDataCenterInfoBuilder()
-                    .withAddresses(NetworkAddress.publicHostNameIPv4("localhost"))
-                    .build();
-
-            InstanceInfo localInstance = new Builder()
-                    .withId(serverName)
-                    .withApp("Discovery2.0 Write")
-                    .withAppGroup("Discovery2.0 Write Cluster")
-                    .withInstanceLocation(dataCenterInfo)
-                    .build();
             Module[] modules = {
                     new JsonRegistrationModule(serverName + "#registration", port),
                     new TcpDiscoveryModule(serverName + "#discovery", port + 1),
-                    new EurekaWriteServerModule(localInstance, Codec.Json)
+                    new EurekaWriteServerModule(new StaticServerResolver<InetSocketAddress>(), Codec.Json)
             };
 
             setup(modules);
@@ -82,13 +68,9 @@ public abstract class ServerInstance {
     public static class EurekaReadServerInstance extends ServerInstance {
         public EurekaReadServerInstance(String serverName, int port, ServerResolver<InetSocketAddress> resolver) {
 
-            InstanceInfo localInstanceInfo = new Builder()
-                    .withId(serverName)
-                    .withApp("eureka2.0")
-                    .build();
             Module[] modules = {
                     new TcpDiscoveryModule(serverName + "#discovery", port),
-                    new EurekaReadServerModule(localInstanceInfo, resolver, Codec.Json)
+                    new EurekaReadServerModule(resolver, Codec.Json)
             };
 
             setup(modules);

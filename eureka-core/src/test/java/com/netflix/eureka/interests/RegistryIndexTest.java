@@ -1,9 +1,9 @@
 package com.netflix.eureka.interests;
 
-import com.netflix.eureka.registry.SampleInstanceInfo;
 import com.netflix.eureka.registry.EurekaRegistry;
+import com.netflix.eureka.registry.EurekaRegistryImpl;
 import com.netflix.eureka.registry.InstanceInfo;
-import com.netflix.eureka.registry.LeasedInstanceRegistry;
+import com.netflix.eureka.registry.SampleInstanceInfo;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
@@ -12,7 +12,9 @@ import rx.functions.Action1;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.netflix.eureka.interests.Interests.*;
+import static com.netflix.eureka.interests.Interests.forFullRegistry;
+import static com.netflix.eureka.interests.Interests.forInstance;
+import static com.netflix.eureka.interests.Interests.forSome;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
@@ -32,7 +34,7 @@ public class RegistryIndexTest {
 
         @Override
         protected void before() throws Throwable {
-            registry = new LeasedInstanceRegistry(SampleInstanceInfo.DiscoveryServer.build());
+            registry = new EurekaRegistryImpl();
         }
 
         @Override
@@ -52,7 +54,7 @@ public class RegistryIndexTest {
     }
 
     private void doTestWithIndex(Interest<InstanceInfo> interest) {
-        final List<ChangeNotification<InstanceInfo>> notifications = new ArrayList<ChangeNotification<InstanceInfo>>();
+        final List<ChangeNotification<InstanceInfo>> notifications = new ArrayList<>();
 
         registry.register(discoveryServer).toBlocking().lastOrDefault(null);
         registry.forInterest(interest)

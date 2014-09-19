@@ -16,6 +16,7 @@
 
 dependencies {
     compile project(':eureka-server')
+    compile project(':eureka-client')
     compile "com.netflix.suro:suro-client:${suro_version}"
     testCompile project(':eureka-test-utils')
 }

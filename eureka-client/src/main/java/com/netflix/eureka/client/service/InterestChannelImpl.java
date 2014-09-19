@@ -25,18 +25,19 @@ import rx.functions.Func1;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 /**
- * An implementation of {@link com.netflix.eureka.service.InterestChannel}. It is mandatory that all operations
+ * An implementation of {@link InterestChannel}. It is mandatory that all operations
  * on the channel are serialized, by the external client. This class is not thread safe and all operations on it
  * shall be executed by the same thread.
  *
+ * Use {@link InterestChannelInvoker} for serializing operations on this channel.
+ *
  * @author Nitesh Kant
  */
-public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STATES> implements InterestChannel {
+/*pkg-private: Used by EurekaClientService only*/class InterestChannelImpl
+        extends AbstractChannel<InterestChannelImpl.STATES> implements ClientInterestChannel {
 
     private static final Logger logger = LoggerFactory.getLogger(InterestChannelImpl.class);
 
@@ -46,14 +47,14 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
     private static final IllegalStateException INTEREST_NOT_REGISTERED_EXCEPTION =
             new IllegalStateException("No interest is registered on this channel.");
 
-    protected enum STATES {Idle, Registered, Closed}
-
-    protected EurekaRegistry<InstanceInfo> registry;
-
     /**
      * Since we assume single threaded access to this channel, no need for concurrency control
      */
-    protected Set<Interest<InstanceInfo>> channelInterests;
+    protected MultipleInterests<InstanceInfo> channelInterest;
+
+    protected enum STATES {Idle, Registered, Closed}
+
+    protected EurekaRegistry<InstanceInfo> registry;
 
     /**
      * A local copy of instances received by this channel from the server. This is used for:
@@ -65,22 +66,17 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
      get the last seen {@link InstanceInfo}</li>
      </ul>
      *
-     * <h2>Cleanup</h2>
-     *
-     * TODO: how to remove instances belonging to an interest in which we are no longer interested?
-     *
      * <h2>Thread safety</h2>
      *
      * Since this channel directly leverages the underlying {@link ServerConnection} and our underlying stack guarantees
      * that there are not concurrent updates sent to the input reader, we can safely assume that this code is single
      * threaded.
      */
-    private final Map<String, InstanceInfo> idVsInstance = new HashMap<String, InstanceInfo>();
+    private final Map<String, InstanceInfo> idVsInstance = new HashMap<>();
 
     public InterestChannelImpl(final EurekaRegistry<InstanceInfo> registry, TransportClient client) {
         super(STATES.Idle, client, 30000);
         this.registry = registry;
-        channelInterests = null;
     }
 
     @Override
@@ -95,14 +91,13 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
             }
         }
 
-        channelInterests = flatten(interest);
-
         return connect()
                 .switchMap(new Func1<ServerConnection, Observable<? extends ChangeNotification<InstanceInfo>>>() {
                     @Override
                     public Observable<? extends ChangeNotification<InstanceInfo>> call(ServerConnection serverConnection) {
                         @SuppressWarnings("rawtypes")
-                        Observable sendAck = serverConnection.send(new InterestRegistration(interest));
+                        Observable sendAck = serverConnection.send(new InterestRegistration(interest))
+                                                             .doOnCompleted(new UpdateInterest(interest));
 
                         @SuppressWarnings("unchecked")
                         Observable<ChangeNotification<InstanceInfo>> toReturn = Observable.concat(sendAck, createInterestStream());
@@ -132,7 +127,7 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
                 }).doOnCompleted(new Action0() {
                     @Override
                     public void call() {
-                        logger.info("Interest Channel stream has COMPLETED");
+                        logger.debug("Interest Channel stream has COMPLETED");
                     }
                 }).doOnError(new Action1<Throwable>() {
                     @Override
@@ -156,20 +151,11 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
             }
         }
 
-        Set<Interest<InstanceInfo>> flattenedInterests = flatten(newInterest);
-        if (channelInterests.containsAll(flattenedInterests)) {
-            return Observable.empty();  // no-op optimization
-        }
-
-        flattenedInterests.removeAll(channelInterests);
-        @SuppressWarnings("unchecked")
-        final MultipleInterests<InstanceInfo> interest =
-                new MultipleInterests<InstanceInfo>(flattenedInterests.toArray(new Interest[flattenedInterests.size()]));
-
         return connect().switchMap(new Func1<ServerConnection, Observable<Void>>() {
             @Override
             public Observable<Void> call(ServerConnection connection) {
-                return connection.send(new InterestRegistration(interest));
+                return connection.send(new InterestRegistration(newInterest))
+                                 .doOnCompleted(new UpdateInterest(newInterest));
             }
         }); // Connect is idempotent and does not connect on every call.
     }
@@ -188,35 +174,36 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
             }
         }
 
-        channelInterests = null;
-
         return connect().switchMap(new Func1<ServerConnection, Observable<Void>>() {
             @Override
             public Observable<Void> call(ServerConnection connection) {
-                return connection.send(UnregisterInterestSet.INSTANCE);
+                return connection.send(UnregisterInterestSet.INSTANCE)
+                                 .doOnCompleted(new UpdateInterest(new MultipleInterests<InstanceInfo>()));
             }
         }); // Connect is idempotent and does not connect on every call.
     }
 
     @Override
-    protected void _close() {
-        state.set(STATES.Closed);
-        channelInterests = null;
-        idVsInstance.clear();
-        super._close();
+    public Observable<Void> appendInterest(Interest<InstanceInfo> toAppend) {
+        if (null == channelInterest) {
+            return Observable.error(INTEREST_NOT_REGISTERED_EXCEPTION);
+        }
+        return upgrade(channelInterest.copyAndAppend(toAppend));
     }
 
-    // TODO: optimize later if necessary
-    @SuppressWarnings("unchecked")
-    private Set<Interest<InstanceInfo>> flatten(Interest<InstanceInfo> interest) {
-        Set<Interest<InstanceInfo>> interests = new HashSet<>();
-        if (interest instanceof MultipleInterests) {
-            interests.addAll(((MultipleInterests) interest).flatten());
-        } else {
-            interests.add(interest);
+    @Override
+    public Observable<Void> removeInterest(Interest<InstanceInfo> toRemove) {
+        if (null == channelInterest) {
+            return Observable.error(INTEREST_NOT_REGISTERED_EXCEPTION);
         }
+        return upgrade(channelInterest.copyAndRemove(toRemove));
+    }
 
-        return interests;
+    @Override
+    protected void _close() {
+        state.set(STATES.Closed);
+        idVsInstance.clear();
+        super._close();
     }
 
     private Observable<ChangeNotification<InstanceInfo>> createInterestStream() {
@@ -241,7 +228,7 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
                             InstanceInfo instanceInfo = ((AddInstance) notification).getInstanceInfo();
                             idVsInstance.put(instanceInfo.getId(), instanceInfo);
                             sendAckOnConnection(connection);
-                            return new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Add, instanceInfo);
+                            return new ChangeNotification<>(ChangeNotification.Kind.Add, instanceInfo);
                         } else if (notification instanceof UpdateInstanceInfo) {
                             Delta delta = ((UpdateInstanceInfo) notification).getDelta();
                             InstanceInfo oldInfo = idVsInstance.get(delta.getId());
@@ -266,7 +253,7 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
                             InstanceInfo removedInstance = idVsInstance.remove(instanceId);
                             sendAckOnConnection(connection);
                             if (removedInstance != null) {
-                                return new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Delete,
+                                return new ChangeNotification<>(ChangeNotification.Kind.Delete,
                                                                             removedInstance);
                             }
                             sendAckOnConnection(connection); // Non-existent instance delete isn't an error.
@@ -287,5 +274,18 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
                 });
             }
         });
+    }
+
+    private class UpdateInterest implements Action0 {
+        private final Interest<InstanceInfo> interest;
+
+        public UpdateInterest(Interest<InstanceInfo> interest) {
+            this.interest = interest;
+        }
+
+        @Override
+        public void call() {
+            channelInterest = new MultipleInterests<>(interest);
+        }
     }
 }

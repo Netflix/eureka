@@ -19,8 +19,8 @@ package com.netflix.eureka.server;
 import com.google.inject.AbstractModule;
 import com.netflix.adminresources.resources.KaryonWebAdminModule;
 import com.netflix.eureka.registry.EurekaRegistry;
+import com.netflix.eureka.registry.EurekaRegistryImpl;
 import com.netflix.eureka.registry.InstanceInfo;
-import com.netflix.eureka.registry.LeasedInstanceRegistry;
 import com.netflix.eureka.registry.SampleApp;
 import com.netflix.eureka.server.TestEurekaWriteServer.EurekaServerModule;
 import com.netflix.eureka.server.TestEurekaWriteServer.EurekaShutdownModule;
@@ -32,7 +32,6 @@ import com.netflix.karyon.KaryonServer;
 import com.netflix.karyon.ShutdownModule;
 import com.netflix.karyon.archaius.ArchaiusBootstrap;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -61,8 +60,7 @@ public class TestEurekaWriteServer {
     public static class EurekaServerModule extends AbstractModule {
         @Override
         protected void configure() {
-            InstanceInfo localInstance = new InstanceInfo.Builder().withId("ScriptedEurekaWriteServer_1").build();
-            EurekaRegistry registry = new LeasedInstanceRegistry(localInstance);
+            EurekaRegistry registry = new EurekaRegistryImpl();
             register(registry, PRESET_INSTANCE_INFOS);
             bind(EurekaRegistry.class).toInstance(registry);
         }

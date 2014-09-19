@@ -16,11 +16,6 @@
 
 package com.netflix.eureka.server.service;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.interests.MultipleInterests;
@@ -30,11 +25,16 @@ import com.netflix.eureka.utils.rx.BreakerSwitchOperator;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 /**
  * Interest notification multiplexer is channel scoped object, so we can depend here on its
  * single-threaded property from the channel side. However as we subscribe to multiple observables
  * we need to merge them properly. For that we use {@link rx.Observable#merge} with atomic observable
- * streams wrapped by {@link com.netflix.eureka.utils.rx.BreakerSwitchOperator}, which allowes us to close the notification
+ * streams wrapped by {@link BreakerSwitchOperator}, which allows us to close the notification
  * stream during interest upgrades with interest removal.
  *
  * @author Tomasz Bak

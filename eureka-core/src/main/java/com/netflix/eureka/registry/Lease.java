@@ -49,7 +49,7 @@ public class Lease<E> {
 
     public synchronized void set(E holder) {
         this.holder = holder;
-        snapshot = new ChangeNotification<E>(ChangeNotification.Kind.Add, holder);
+        snapshot = new ChangeNotification<>(ChangeNotification.Kind.Add, holder);
     }
 
     public E getHolder() {

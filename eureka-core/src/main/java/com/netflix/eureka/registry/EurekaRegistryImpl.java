@@ -43,23 +43,16 @@ import java.util.concurrent.ConcurrentHashMap;
  * TODO: threadpool for async add/put to internalStore?
  * @author David Liu
  */
-public class LeasedInstanceRegistry implements EurekaRegistry<InstanceInfo> {
+public class EurekaRegistryImpl implements EurekaRegistry<InstanceInfo> {
 
     private final ConcurrentHashMap<String, Lease<InstanceInfo>> internalStore;
     private final NotificationsSubject<InstanceInfo> notificationSubject;  // subject for all changes in the registry
     private final IndexRegistry<InstanceInfo> indexRegistry;
 
-    private final InstanceInfo myInstanceInfo;
-
-    public LeasedInstanceRegistry(InstanceInfo myInstanceInfo) {
+    public EurekaRegistryImpl() {
         internalStore = new ConcurrentHashMap<>();
         indexRegistry = new IndexRegistryImpl<>();
         notificationSubject = NotificationsSubject.create();
-        this.myInstanceInfo = myInstanceInfo;
-    }
-
-    public DataCenterInfo getRegistryLocation() {
-        return myInstanceInfo.getDataCenterInfo();
     }
 
     // -------------------------------------------------
@@ -117,7 +110,7 @@ public class LeasedInstanceRegistry implements EurekaRegistry<InstanceInfo> {
     }
 
     public Observable<Void> register(final InstanceInfo instanceInfo, final long durationMillis) {
-        Lease<InstanceInfo> lease = new Lease<InstanceInfo>(
+        Lease<InstanceInfo> lease = new Lease<>(
                 instanceInfo,
                 durationMillis);
         internalStore.put(instanceInfo.getId(), lease);
@@ -129,7 +122,7 @@ public class LeasedInstanceRegistry implements EurekaRegistry<InstanceInfo> {
     public Observable<Void> unregister(final String instanceId) {
         final Lease<InstanceInfo> remove = internalStore.remove(instanceId);
         if (remove != null) {
-            notificationSubject.onNext(new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Delete,
+            notificationSubject.onNext(new ChangeNotification<>(ChangeNotification.Kind.Delete,
                     remove.getHolder()));
         }
         return Observable.create(new Observable.OnSubscribe<Void>() {
@@ -148,13 +141,13 @@ public class LeasedInstanceRegistry implements EurekaRegistry<InstanceInfo> {
     public Observable<Void> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
         final String instanceId = updatedInfo.getId();
 
-        Lease<InstanceInfo> newLease = new Lease<InstanceInfo>(updatedInfo);
+        Lease<InstanceInfo> newLease = new Lease<>(updatedInfo);
         Lease<InstanceInfo> existing = internalStore.put(instanceId, newLease);
 
         if (existing == null) {  // is an add
             notificationSubject.onNext(newLease.getHolderSnapshot());
         } else {  // is a modify
-            notificationSubject.onNext(new ModifyNotification<InstanceInfo>(updatedInfo, deltas));
+            notificationSubject.onNext(new ModifyNotification<>(updatedInfo, deltas));
         }
 
         return Observable.empty();
@@ -180,7 +173,7 @@ public class LeasedInstanceRegistry implements EurekaRegistry<InstanceInfo> {
                 .withStatus(status)
                 .build();
 
-        Set<Delta<?>> deltas = new HashSet<Delta<?>>();
+        Set<Delta<?>> deltas = new HashSet<>();
         Delta<?> delta = new Delta.Builder().withDelta(InstanceInfoField.STATUS, status)
                                             .withId(instanceId).withVersion(update.getVersion())
                                             .build();
@@ -294,7 +287,7 @@ public class LeasedInstanceRegistry implements EurekaRegistry<InstanceInfo> {
     }
 
     private String prettyString() {
-        StringBuilder sb = new StringBuilder("LeasedInstanceRegistry\n");
+        StringBuilder sb = new StringBuilder("EurekaRegistryImpl\n");
         for (Map.Entry<String, Lease<InstanceInfo>> entry : internalStore.entrySet()) {
             sb.append(entry).append("\n");
         }

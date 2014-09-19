@@ -14,7 +14,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -24,16 +28,16 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author David Liu
  */
-public class LeasedInstanceRegistryTest {
+public class EurekaRegistryImplTest {
 
-    private LeasedInstanceRegistry registry;
+    private EurekaRegistryImpl registry;
 
     @Rule
     public final ExternalResource registryResource = new ExternalResource() {
 
         @Override
         protected void before() throws Throwable {
-            registry = new LeasedInstanceRegistry(SampleInstanceInfo.DiscoveryServer.build());
+            registry = new EurekaRegistryImpl();
         }
 
         @Override
@@ -54,7 +58,7 @@ public class LeasedInstanceRegistryTest {
 
         Observable<InstanceInfo> snapshot = registry.snapshotForInterest(Interests.forFullRegistry());
 
-        final List<InstanceInfo> returnedInstanceInfos = new ArrayList<InstanceInfo>();
+        final List<InstanceInfo> returnedInstanceInfos = new ArrayList<>();
         final CountDownLatch completionLatch = new CountDownLatch(1);
 
         snapshot.subscribe(new Subscriber<InstanceInfo>() {
@@ -102,7 +106,7 @@ public class LeasedInstanceRegistryTest {
         registry.register(discovery3);
         registry.register(zuul1);
 
-        final List<String> returnedIds = new ArrayList<String>();
+        final List<String> returnedIds = new ArrayList<>();
 
         Observable<ChangeNotification<InstanceInfo>> interestStream =
                 registry.forInterest(Interests.forApplication(discovery1.getApp()));

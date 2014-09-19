@@ -7,17 +7,20 @@ import com.netflix.eureka.protocol.registration.Unregister;
 import com.netflix.eureka.protocol.registration.Update;
 import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.service.RegistrationChannel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Func1;
 
 /**
+ * An implementation of {@link RegistrationChannel}. It is mandatory that all operations
+ * on the channel are serialized, by the external client. This class is not thread safe and all operations on it
+ * shall be executed by the same thread.
+ *
+ * Use {@link InterestChannelInvoker} for serializing operations on this channel.
+ *
  * @author Nitesh Kant
  */
-public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannelImpl.STATES> implements RegistrationChannel {
-
-    private static final Logger logger = LoggerFactory.getLogger(RegistrationChannelImpl.class);
+/*pkg-private: Used by EurekaClientService only*/class RegistrationChannelImpl
+        extends AbstractChannel<RegistrationChannelImpl.STATES> implements RegistrationChannel {
 
     private static final IllegalStateException INSTANCE_ALREADY_REGISTERED_EXCEPTION =
             new IllegalStateException("An instance is already registered. You must update instance instead.");
