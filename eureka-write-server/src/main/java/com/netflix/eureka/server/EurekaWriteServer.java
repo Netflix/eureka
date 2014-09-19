@@ -16,8 +16,17 @@
 
 package com.netflix.eureka.server;
 
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import com.google.inject.Module;
 import com.netflix.adminresources.resources.KaryonWebAdminModule;
 import com.netflix.eureka.client.bootstrap.StaticServerResolver;
+import com.netflix.eureka.server.spi.ExtensionContext;
+import com.netflix.eureka.server.spi.ExtensionContext.ExtensionContextBuilder;
+import com.netflix.eureka.server.spi.ExtensionLoader;
 import com.netflix.eureka.server.transport.tcp.discovery.TcpDiscoveryModule;
 import com.netflix.eureka.server.transport.tcp.registration.JsonRegistrationModule;
 import com.netflix.eureka.transport.EurekaTransports.Codec;
@@ -29,7 +38,7 @@ import com.netflix.karyon.archaius.ArchaiusBootstrap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetSocketAddress;
+import static java.util.Arrays.*;
 
 /**
  * @author Tomasz Bak
@@ -52,12 +61,22 @@ public class EurekaWriteServer extends AbstractEurekaServer {
         return new LifecycleInjectorBuilderSuite() {
             @Override
             public void configure(LifecycleInjectorBuilder builder) {
-                builder.withModules(
+                List<Module> baseModules = Arrays.<Module>asList(
                         new EurekaShutdownModule(shutdownPort),
                         new JsonRegistrationModule("eurekaWriteServer-registrationTransport", 7002),
                         new TcpDiscoveryModule("eurekaWriteServer-discoveryTransport", 7003),
                         new EurekaWriteServerModule(new StaticServerResolver<InetSocketAddress>(), Codec.Json)
                 );
+                ExtensionContext extensionContext = new ExtensionContextBuilder()
+                        .withEurekaClusterName("eureka-write-server")
+                        .withInternalReadServerAddress(new InetSocketAddress("localhost", 7003))
+                        .withSystemProperties(true)
+                        .build();
+                List<Module> extModules = asList(new ExtensionLoader(extensionContext, false).asModuleArray());
+
+                List<Module> all = new ArrayList<>(baseModules);
+                all.addAll(extModules);
+                builder.withModules(all);
             }
         };
     }

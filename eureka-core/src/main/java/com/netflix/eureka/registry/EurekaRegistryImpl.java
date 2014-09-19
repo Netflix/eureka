@@ -45,7 +45,10 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class EurekaRegistryImpl implements EurekaRegistry<InstanceInfo> {
 
-    private final ConcurrentHashMap<String, Lease<InstanceInfo>> internalStore;
+    /**
+     * TODO: define a better contract for base implementation and decorators
+     */
+    protected final ConcurrentHashMap<String, Lease<InstanceInfo>> internalStore;
     private final NotificationsSubject<InstanceInfo> notificationSubject;  // subject for all changes in the registry
     private final IndexRegistry<InstanceInfo> indexRegistry;
 

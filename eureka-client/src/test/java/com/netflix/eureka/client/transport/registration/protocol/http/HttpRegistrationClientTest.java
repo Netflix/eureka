@@ -14,7 +14,7 @@ public class HttpRegistrationClientTest {
     private RegistrationClient client;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUpAuditService() throws Exception {
         server = new MockHttpRxServer<String, String>()
                 .withSourceTransformer(new ToStringTransformer())
                 .withResultTransformer(new FromStringTransformer())

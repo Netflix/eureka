@@ -48,7 +48,6 @@ subprojects {
 
     group = "com.netflix.eureka"
 
-    apply plugin: 'osgi'
     apply plugin: 'groovy'
 
     apply plugin: 'eclipse'
