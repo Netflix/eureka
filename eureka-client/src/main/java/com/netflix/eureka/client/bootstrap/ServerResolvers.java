@@ -30,7 +30,7 @@ import java.net.InetSocketAddress;
 public class ServerResolvers {
 
     public static ServerResolver<InetSocketAddress> forDomainName(Protocol protocol, String domainName) {
-        return new DnsServerResolver(domainName, true);
+        return new DnsServerResolver(protocol, domainName, true);
     }
 
     /**

@@ -116,10 +116,10 @@ public class NetworkAddress {
     }
 
     public static NetworkAddress privateIPv4(String ipAddress) {
-        return new NetworkAddress(ProtocolType.IPv6, false, ipAddress, null);
+        return new NetworkAddress(ProtocolType.IPv4, false, ipAddress, null);
     }
 
     public static NetworkAddress privateHostNameIPv4(String hostName) {
-        return new NetworkAddress(ProtocolType.IPv6, false, null, hostName);
+        return new NetworkAddress(ProtocolType.IPv4, false, null, hostName);
     }
 }

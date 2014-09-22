@@ -6,4 +6,5 @@ include 'eureka-client',\
         'eureka-core',\
         'eureka-dashboard',\
         'eureka-test-utils',\
-        'eureka-extensions:eureka-kafka'
+        'eureka-extensions:eureka-kafka',\
+        'eureka-examples'
