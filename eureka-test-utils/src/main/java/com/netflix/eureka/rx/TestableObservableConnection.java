@@ -36,6 +36,7 @@ import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.EventExecutorGroup;
+import io.reactivex.netty.channel.ChannelMetricEventProvider;
 import io.reactivex.netty.channel.ContentTransformer;
 import io.reactivex.netty.channel.ObservableConnection;
 import rx.Observable;
@@ -57,7 +58,7 @@ public class TestableObservableConnection<I, O> extends ObservableConnection<I, 
     private volatile boolean isClosed;
 
     public TestableObservableConnection() {
-        super(new ChannelHandlerContextStub(), null, null);
+        super(new ChannelHandlerContextStub(), (ChannelMetricEventProvider)null, null);
     }
 
     /*
