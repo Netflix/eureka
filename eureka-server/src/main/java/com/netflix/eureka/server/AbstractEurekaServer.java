@@ -20,6 +20,7 @@ import java.util.concurrent.CountDownLatch;
 
 import com.google.inject.Injector;
 import com.netflix.governator.guice.LifecycleInjector;
+import com.netflix.governator.guice.LifecycleInjectorBuilder;
 import com.netflix.governator.guice.LifecycleInjectorBuilderSuite;
 import com.netflix.governator.lifecycle.LifecycleManager;
 import org.slf4j.Logger;

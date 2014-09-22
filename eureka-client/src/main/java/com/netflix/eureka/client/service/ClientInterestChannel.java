@@ -15,7 +15,7 @@ import rx.Observable;
  * application without synchronizing, it is effective to leverage the single threaded nature of the
  * {@link InterestChannel} (forced via {@link InterestChannelInvoker}).
  * This extension provides way to modify the underlying interest set without requiring to atomically upgrade the
- * interest set using {@link #upgrade(Interest)}
+ * interest set using {@link #change(Interest)}
  *
  * @author Nitesh Kant
  */
@@ -26,7 +26,7 @@ interface ClientInterestChannel extends InterestChannel {
      *
      * @param toAppend Interest to append.
      *
-     * @return Acknowledgment as returned by {@link #upgrade(Interest)} after appending this interest.
+     * @return Acknowledgment as returned by {@link #change(Interest)} after appending this interest.
      */
     Observable<Void> appendInterest(Interest<InstanceInfo> toAppend);
 
@@ -35,7 +35,7 @@ interface ClientInterestChannel extends InterestChannel {
      *
      * @param toRemove Interest to remove.
      *
-     * @return Acknowledgment as returned by {@link #upgrade(Interest)} after removing this interest.
+     * @return Acknowledgment as returned by {@link #change(Interest)} after removing this interest.
      */
     Observable<Void> removeInterest(Interest<InstanceInfo> toRemove);
 }

@@ -28,6 +28,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Matchers.eq;
@@ -44,7 +45,6 @@ public class EurekaClientTest {
 
     protected EurekaClient client;
     protected EurekaRegistry<InstanceInfo> registry;
-    protected InterestProcessor processor;
     protected List<ChangeNotification<InstanceInfo>> allRegistry;
     protected List<ChangeNotification<InstanceInfo>> discoveryRegistry;
     protected List<ChangeNotification<InstanceInfo>> zuulRegistry;
@@ -73,40 +73,20 @@ public class EurekaClientTest {
             allRegistry = new ArrayList<>(discoveryRegistry);
             allRegistry.addAll(zuulRegistry);
 
-            Observable<ChangeNotification<InstanceInfo>> mockInterestStream = Observable.from(allRegistry);
             registry = new EurekaRegistryImpl();
             for (ChangeNotification<InstanceInfo> notification : allRegistry) {
                 registry.register(notification.getData());
             }
 
             // interest channel mocks
-            when(interestChannel.register(eq(interestAll))).thenReturn(mockInterestStream);
-            when(interestChannel.register(eq(interestDiscovery))).thenReturn(mockInterestStream.filter(new Func1<ChangeNotification<InstanceInfo>, Boolean>() {
-                @Override
-                public Boolean call(ChangeNotification<InstanceInfo> notification) {
-                    return interestDiscovery.matches(notification.getData());
-                }
-            }));
-            when(interestChannel.register(eq(interestZuul))).thenReturn(mockInterestStream.filter(
-                    new Func1<ChangeNotification<InstanceInfo>, Boolean>() {
-                        @Override
-                        public Boolean call(ChangeNotification<InstanceInfo> notification) {
-                            return interestZuul.matches(notification.getData());
-                        }
-                    }));
-            when(interestChannel.upgrade(eq(interestAll))).thenReturn(Observable.<Void>empty());
-            when(interestChannel.upgrade(eq(interestDiscovery))).thenReturn(Observable.<Void>empty());
-            when(interestChannel.upgrade(eq(interestZuul))).thenReturn(Observable.<Void>empty());
-
-            processor = new InterestProcessor(interestChannel);
+            when(interestChannel.change(org.mockito.Mockito.any(Interest.class))).thenReturn(Observable.empty().cast(Void.class));
 
             client = new EurekaClientImpl(registry, null);
         }
 
         @Override
         protected void after() {
-            registry.shutdown();
-            processor.shutdown();
+            client.close();
         }
     };
 
@@ -287,7 +267,6 @@ public class EurekaClientTest {
 
         // don't use all registry interest as it is a special singleton
         Interest<InstanceInfo> compositeInterest = new MultipleInterests<>(interestDiscovery, interestZuul);
-        when(interestChannel.upgrade(eq(compositeInterest))).thenReturn(Observable.<Void>empty());
 
         final List<ChangeNotification<InstanceInfo>> compositeOutput = new ArrayList<>();
 

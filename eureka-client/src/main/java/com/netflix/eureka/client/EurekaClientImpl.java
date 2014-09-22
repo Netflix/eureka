@@ -96,4 +96,9 @@ public class EurekaClientImpl extends EurekaClient {
             registrationHandler.shutdown();
         }
     }
+
+    @Override
+    public String toString() {
+        return registry.toString();
+    }
 }

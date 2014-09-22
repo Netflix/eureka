@@ -10,7 +10,6 @@ import com.netflix.eureka.protocol.discovery.AddInstance;
 import com.netflix.eureka.protocol.discovery.DeleteInstance;
 import com.netflix.eureka.protocol.discovery.InterestRegistration;
 import com.netflix.eureka.protocol.discovery.InterestSetNotification;
-import com.netflix.eureka.protocol.discovery.UnregisterInterestSet;
 import com.netflix.eureka.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka.registry.Delta;
 import com.netflix.eureka.registry.EurekaRegistry;
@@ -19,9 +18,10 @@ import com.netflix.eureka.service.InterestChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.Subscriber;
 import rx.functions.Action0;
-import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.observers.SafeSubscriber;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,9 +41,6 @@ import java.util.Map;
 
     private static final Logger logger = LoggerFactory.getLogger(InterestChannelImpl.class);
 
-    private static final IllegalStateException INTEREST_ALREADY_REGISTERED_EXCEPTION =
-            new IllegalStateException("An interest is already registered. You must upgrade interest instead.");
-
     private static final IllegalStateException INTEREST_NOT_REGISTERED_EXCEPTION =
             new IllegalStateException("No interest is registered on this channel.");
 
@@ -51,8 +48,11 @@ import java.util.Map;
      * Since we assume single threaded access to this channel, no need for concurrency control
      */
     protected MultipleInterests<InstanceInfo> channelInterest;
+    protected Observable<ChangeNotification<InstanceInfo>> channelInterestStream;
 
-    protected enum STATES {Idle, Registered, Closed}
+    protected Subscriber<ChangeNotification<InstanceInfo>> channelInterestSubscriber;
+
+    protected enum STATES {Idle, Open, Closed}
 
     protected EurekaRegistry<InstanceInfo> registry;
 
@@ -77,110 +77,39 @@ import java.util.Map;
     public InterestChannelImpl(final EurekaRegistry<InstanceInfo> registry, TransportClient client) {
         super(STATES.Idle, client, 30000);
         this.registry = registry;
+        channelInterest = new MultipleInterests<>();  // blank channelInterest to start with
+        channelInterestSubscriber = new ChannelInterestSubscriber(registry);
+        channelInterestStream = createInterestStream();
     }
 
+    // channel contract means this will be invoked in serial.
     @Override
-    public Observable<ChangeNotification<InstanceInfo>> register(final Interest<InstanceInfo> interest) {
-        if (!state.compareAndSet(STATES.Idle, STATES.Registered)) {// State check. Only start registration if the state is Idle.
-            STATES currentState = state.get();
-            switch (currentState) {
-                case Registered:
-                    return Observable.error(INTEREST_ALREADY_REGISTERED_EXCEPTION);
-                case Closed:
-                    return Observable.error(CHANNEL_CLOSED_EXCEPTION);
-            }
-        }
+    public Observable<Void> change(final Interest<InstanceInfo> newInterest) {
+        Observable<Void> serverRequest = connect() // Connect is idempotent and does not connect on every call.
+                .switchMap(new Func1<ServerConnection, Observable<Void>>() {
+                    @Override
+                    public Observable<Void> call(ServerConnection serverConnection) {
+                        return serverConnection.send(new InterestRegistration(newInterest))
+                                .doOnCompleted(new UpdateLocalInterest(newInterest));
 
-        return connect()
-                .switchMap(new Func1<ServerConnection, Observable<? extends ChangeNotification<InstanceInfo>>>() {
-                    @Override
-                    public Observable<? extends ChangeNotification<InstanceInfo>> call(ServerConnection serverConnection) {
-                        @SuppressWarnings("rawtypes")
-                        Observable sendAck = serverConnection.send(new InterestRegistration(interest))
-                                                             .doOnCompleted(new UpdateInterest(interest));
-
-                        @SuppressWarnings("unchecked")
-                        Observable<ChangeNotification<InstanceInfo>> toReturn = Observable.concat(sendAck, createInterestStream());
-
-                        return toReturn;
-                    }
-                }).map(new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
-                    @Override
-                    public ChangeNotification<InstanceInfo> call(ChangeNotification<InstanceInfo> notification) {
-                        switch (notification.getKind()) {  // these are in-mem blocking ops
-                            case Add:
-                                registry.register(notification.getData());
-                                break;
-                            case Modify:
-                                ModifyNotification<InstanceInfo> modifyNotification
-                                        = (ModifyNotification<InstanceInfo>) notification;
-                                registry.update(modifyNotification.getData(), modifyNotification.getDelta());
-                                break;
-                            case Delete:
-                                registry.unregister(notification.getData().getId());
-                                break;
-                            default:
-                                logger.error("Unrecognized notification kind");
-                        }
-                        return notification;
-                    }
-                }).doOnCompleted(new Action0() {
-                    @Override
-                    public void call() {
-                        logger.debug("Interest Channel stream has COMPLETED");
-                    }
-                }).doOnError(new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable e) {
-                        logger.error("Interest Channel throw an ERROR: " + e);
                     }
                 });
-    }
 
-    @Override
-    public Observable<Void> upgrade(final Interest<InstanceInfo> newInterest) {
-        STATES currentState = state.get();
-        if(currentState != STATES.Registered) {
-            switch (currentState) {
-                case Idle:
-                    return Observable.error(INTEREST_NOT_REGISTERED_EXCEPTION);
-                case Closed:
-                    return Observable.error(CHANNEL_CLOSED_EXCEPTION);
-                default:
-                    return Observable.error(new IllegalStateException("Unrecognized channel state: " + currentState));
-            }
-        }
-
-        return connect().switchMap(new Func1<ServerConnection, Observable<Void>>() {
+        return Observable.create(new Observable.OnSubscribe<Void>() {
             @Override
-            public Observable<Void> call(ServerConnection connection) {
-                return connection.send(new InterestRegistration(newInterest))
-                                 .doOnCompleted(new UpdateInterest(newInterest));
+            public void call(Subscriber<? super Void> subscriber) {
+                if (STATES.Closed == state.get()) {
+                    subscriber.onError(CHANNEL_CLOSED_EXCEPTION);
+                }
+                else if (state.compareAndSet(STATES.Idle, STATES.Open)) {
+                    logger.debug("First time registration");
+                    channelInterestStream.subscribe(channelInterestSubscriber);
+                } else {
+                    logger.debug("Channel changes");
+                }
+                subscriber.onCompleted();
             }
-        }); // Connect is idempotent and does not connect on every call.
-    }
-
-    @Override
-    public Observable<Void> unregister() {
-        if (!state.compareAndSet(STATES.Registered, STATES.Idle)) {
-            final STATES currentState = state.get();
-            switch (currentState) {
-                case Idle:
-                    return Observable.error(INTEREST_NOT_REGISTERED_EXCEPTION);
-                case Closed:
-                    return Observable.error(CHANNEL_CLOSED_EXCEPTION);
-                default:
-                    return Observable.error(new IllegalStateException("Unrecognized channel state: " + currentState));
-            }
-        }
-
-        return connect().switchMap(new Func1<ServerConnection, Observable<Void>>() {
-            @Override
-            public Observable<Void> call(ServerConnection connection) {
-                return connection.send(UnregisterInterestSet.INSTANCE)
-                                 .doOnCompleted(new UpdateInterest(new MultipleInterests<InstanceInfo>()));
-            }
-        }); // Connect is idempotent and does not connect on every call.
+        }).concatWith(serverRequest);
     }
 
     @Override
@@ -188,7 +117,7 @@ import java.util.Map;
         if (null == channelInterest) {
             return Observable.error(INTEREST_NOT_REGISTERED_EXCEPTION);
         }
-        return upgrade(channelInterest.copyAndAppend(toAppend));
+        return change(channelInterest.copyAndAppend(toAppend));
     }
 
     @Override
@@ -196,7 +125,7 @@ import java.util.Map;
         if (null == channelInterest) {
             return Observable.error(INTEREST_NOT_REGISTERED_EXCEPTION);
         }
-        return upgrade(channelInterest.copyAndRemove(toRemove));
+        return change(channelInterest.copyAndRemove(toRemove));
     }
 
     @Override
@@ -276,10 +205,47 @@ import java.util.Map;
         });
     }
 
-    private class UpdateInterest implements Action0 {
+    protected static class ChannelInterestSubscriber extends SafeSubscriber<ChangeNotification<InstanceInfo>> {
+        public ChannelInterestSubscriber(final EurekaRegistry<InstanceInfo> registry) {
+            super(new Subscriber<ChangeNotification<InstanceInfo>>() {
+                @Override
+                public void onCompleted() {
+                    // TODO: handle
+                    logger.debug("Channel interest completed");
+                }
+
+                @Override
+                public void onError(Throwable e) {
+                    // TODO: handle/do failover/fallback
+                    logger.error("Channel interest throw error", e);
+                }
+
+                @Override
+                public void onNext(ChangeNotification<InstanceInfo> notification) {
+                    switch (notification.getKind()) {  // these are in-mem blocking ops
+                        case Add:
+                            registry.register(notification.getData());
+                            break;
+                        case Modify:
+                            ModifyNotification<InstanceInfo> modifyNotification
+                                    = (ModifyNotification<InstanceInfo>) notification;
+                            registry.update(modifyNotification.getData(), modifyNotification.getDelta());
+                            break;
+                        case Delete:
+                            registry.unregister(notification.getData().getId());
+                            break;
+                        default:
+                            logger.error("Unrecognized notification kind");
+                    }
+                }
+            });
+        }
+    }
+
+    private class UpdateLocalInterest implements Action0 {
         private final Interest<InstanceInfo> interest;
 
-        public UpdateInterest(Interest<InstanceInfo> interest) {
+        public UpdateLocalInterest(Interest<InstanceInfo> interest) {
             this.interest = interest;
         }
 

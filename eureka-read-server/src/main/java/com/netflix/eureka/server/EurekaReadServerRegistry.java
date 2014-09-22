@@ -80,4 +80,9 @@ public class EurekaReadServerRegistry implements EurekaRegistry<InstanceInfo> {
     public Observable<Void> shutdown() {
         return Observable.empty();
     }
+
+    @Override
+    public String toString() {
+        return eurekaClient.toString();
+    }
 }

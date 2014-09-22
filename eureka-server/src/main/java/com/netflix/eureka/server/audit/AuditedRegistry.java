@@ -17,6 +17,7 @@
 package com.netflix.eureka.server.audit;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Set;
 
 import com.netflix.eureka.interests.ChangeNotification;
@@ -32,6 +33,7 @@ import rx.Observable;
  *
  * @author Tomasz Bak
  */
+@Singleton
 public class AuditedRegistry extends EurekaRegistryImpl {
 
     private final AuditService auditService;

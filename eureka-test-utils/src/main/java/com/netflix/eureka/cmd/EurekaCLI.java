@@ -39,6 +39,7 @@ import jline.console.ConsoleReader;
 import jline.console.history.History;
 import jline.console.history.History.Entry;
 import rx.Subscriber;
+import rx.observers.SafeSubscriber;
 
 import java.io.File;
 import java.io.FileReader;
@@ -49,6 +50,7 @@ import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.ListIterator;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -72,6 +74,7 @@ public class EurekaCLI {
     private final ConsoleReader consoleReader;
     private TreeMap<String, String> aliasMap = new TreeMap<>();
 
+    private static final AtomicInteger streamId = new AtomicInteger(0);
     private volatile InstanceInfo lastInstanceInfo;
     private EurekaClient eurekaClient;
     private Status registrationStatus = Status.NotStarted;
@@ -427,24 +430,9 @@ public class EurekaCLI {
         }
 
         registryFetchStatus = Status.Initiated;
-        System.out.println("Subscribing to Interest: " + interest);
-        eurekaClient.forInterest(interest).subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
-            @Override
-            public void onCompleted() {
-                System.out.println("Interest " + interest + " COMPLETE");
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                System.out.println("Interest " + interest + " ERROR: " + e);
-            }
-
-            @Override
-            public void onNext(ChangeNotification<InstanceInfo> notification) {
-                registryFetchStatus = Status.Streaming;
-                System.out.println("Interest " + interest + " NEXT: " + notification);
-            }
-        });
+        int id = streamId.getAndIncrement();
+        System.out.println("Stream_" + id + ": Subscribing to Interest: " + interest);
+        eurekaClient.forInterest(interest).subscribe(new InterestSubscriber(interest, id));
     }
 
     private void runClose() {
@@ -454,6 +442,7 @@ public class EurekaCLI {
             eurekaClient = null;
             registrationStatus = Status.NotStarted;
             registryFetchStatus = Status.NotStarted;
+            streamId.set(0);
         }
     }
 
@@ -495,6 +484,29 @@ public class EurekaCLI {
                     System.out.println("Registry fetch status: failed");
                     break;
             }
+            System.out.println("Registry: " + eurekaClient.toString());
+        }
+    }
+
+    private class InterestSubscriber extends SafeSubscriber<ChangeNotification<InstanceInfo>> {
+        public InterestSubscriber(final Interest<InstanceInfo> interest, final int id) {
+            super(new Subscriber<ChangeNotification<InstanceInfo>>() {
+                @Override
+                public void onCompleted() {
+                    System.out.println("Stream_" + id + ": Interest " + interest + " COMPLETE");
+                }
+
+                @Override
+                public void onError(Throwable e) {
+                    System.out.println("Stream_" + id + ": Interest " + interest + " ERROR: " + e);
+                }
+
+                @Override
+                public void onNext(ChangeNotification<InstanceInfo> notification) {
+                    registryFetchStatus = Status.Streaming;
+                    System.out.println("Stream_" + id + ": Interest " + interest + " NEXT: " + notification);
+                }
+            });
         }
     }
 

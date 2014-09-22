@@ -2,6 +2,7 @@ package com.netflix.eureka.server.service;
 
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
+import com.netflix.eureka.interests.Interests;
 import com.netflix.eureka.protocol.EurekaProtocolError;
 import com.netflix.eureka.protocol.Heartbeat;
 import com.netflix.eureka.protocol.discovery.InterestRegistration;
@@ -24,17 +25,11 @@ import rx.functions.Action1;
  */
 public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STATES> implements InterestChannel {
 
-    private static final IllegalStateException INTEREST_ALREADY_REGISTERED_EXCEPTION =
-            new IllegalStateException("An interest is already registered. You must upgrade interest instead.");
-
-    private static final IllegalStateException INTEREST_NOT_REGISTERED_EXCEPTION =
-            new IllegalStateException("No interest is registered on this channel.");
-
-    protected enum STATES {Idle, Registered, Closed}
+    protected enum STATES {Idle, Open, Closed}
 
     private final InterestNotificationMultiplexer notificationMultiplexer;
 
-    public InterestChannelImpl(final EurekaRegistry registry, final ClientConnection transport) {
+    public InterestChannelImpl(final EurekaRegistry<InstanceInfo> registry, final ClientConnection transport) {
         super(STATES.Idle, transport, registry, 3, 30000);
         this.notificationMultiplexer = new InterestNotificationMultiplexer(registry);
 
@@ -49,11 +44,8 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
                 if (message instanceof InterestRegistration) {
                     Interest<InstanceInfo> interest = ((InterestRegistration) message).toComposite();
                     switch (state.get()) {
-                        case Idle:
-                            register(interest); // No need to subscribe, the register() call does the subscription.
-                            break;
-                        case Registered:
-                            upgrade(interest); // No need to subscribe, the upgrade() call does the subscription.
+                        case Open:
+                            change(interest);
                             break;
                         case Closed:
                             sendErrorOnTransport(CHANNEL_CLOSED_EXCEPTION);
@@ -61,11 +53,8 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
                     }
                 } else if (message instanceof UnregisterInterestSet) {
                     switch (state.get()) {
-                        case Idle:
-                            sendErrorOnTransport(new IllegalStateException("No registration done before unregister."));
-                            break;
-                        case Registered:
-                            unregister();// No need to subscribe, the unregister() call does the subscription.
+                        case Open:
+                            change(Interests.forNone());
                             break;
                         case Closed:
                             sendErrorOnTransport(CHANNEL_CLOSED_EXCEPTION);
@@ -79,33 +68,16 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
 
             }
         });
-    }
 
-    @Override
-    public Observable<ChangeNotification<InstanceInfo>> register(Interest<InstanceInfo> interest) {
-        logger.debug("Received interest registration request {}", interest);
-
-        if (!state.compareAndSet(STATES.Idle, STATES.Registered)) {// State check. Only register if the state is Idle.
-            if (STATES.Closed == state.get()) {
-                /**
-                 * Since channel is already closed and hence the transport, we don't need to send an error on transport.
-                 */
-                return Observable.error(CHANNEL_CLOSED_EXCEPTION);
-            } else {
-                sendErrorOnTransport(INTEREST_ALREADY_REGISTERED_EXCEPTION);
-                return Observable.error(INTEREST_ALREADY_REGISTERED_EXCEPTION);
-            }
-        }
-
-
-        sendAckOnTransport(); // Ack first since we registered with the registry. If the stream throws an error it is sent on the transport.
+        state.set(STATES.Open);
+        sendAckOnTransport();
 
         notificationMultiplexer.changeNotifications().subscribe(
                 new Subscriber<ChangeNotification<InstanceInfo>>() {
                     @Override
                     public void onCompleted() {
                         sendOnCompleteOnTransport(); // On complete of stream.
-                        unregister();// No need to subscribe, the unregister() call does the subscription. Unregister to set the state properly.
+                        change(Interests.forNone());  // TODO: needed?
                     }
 
                     @Override
@@ -118,38 +90,22 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
                         sendNotificationOnTransport(notification);
                     }
                 });
-        notificationMultiplexer.update(interest);
 
-        return notificationMultiplexer.changeNotifications(); // It is not expected for caller (transport layer) to subscribe to this stream.
-                                                              // This channel bridges EurekaRegistry and Transport.
     }
 
+
     @Override
-    public Observable<Void> upgrade(Interest<InstanceInfo> newInterest) {
-        if (state.get() != STATES.Registered) {
-            sendErrorOnTransport(INTEREST_NOT_REGISTERED_EXCEPTION);
-            return Observable.error(INTEREST_NOT_REGISTERED_EXCEPTION);
+    public Observable<Void> change(Interest<InstanceInfo> newInterest) {
+        logger.debug("Received interest change request {}", newInterest);
+
+        if (STATES.Closed == state.get()) {
+            /**
+             * Since channel is already closed and hence the transport, we don't need to send an error on transport.
+             */
+            return Observable.error(CHANNEL_CLOSED_EXCEPTION);
         }
 
         notificationMultiplexer.update(newInterest);
-
-        Observable<Void> toReturn = transport.sendAcknowledgment();
-        subscribeToTransportSend(toReturn, "acknowledgment"); // Subscribe eagerly and not require the caller to subscribe.
-        return toReturn;
-    }
-
-    @Override
-    public Observable<Void> unregister() {
-        if (!state.compareAndSet(STATES.Registered, STATES.Idle)) {
-            if (state.get() == STATES.Closed) {
-                return Observable.error(CHANNEL_CLOSED_EXCEPTION);
-            } else {
-                sendErrorOnTransport(INTEREST_NOT_REGISTERED_EXCEPTION);
-                return Observable.error(INTEREST_NOT_REGISTERED_EXCEPTION);
-            }
-        }
-
-        notificationMultiplexer.unregister();
 
         Observable<Void> toReturn = transport.sendAcknowledgment();
         subscribeToTransportSend(toReturn, "acknowledgment"); // Subscribe eagerly and not require the caller to subscribe.

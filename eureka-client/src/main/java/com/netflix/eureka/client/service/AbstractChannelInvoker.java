@@ -7,6 +7,8 @@ import rx.Observable;
 import rx.Scheduler;
 import rx.Subscriber;
 import rx.Subscription;
+import rx.functions.Action0;
+import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.internal.operators.NotificationLite;
 import rx.observers.SerializedSubscriber;
@@ -139,6 +141,7 @@ import java.util.concurrent.LinkedBlockingQueue;
                 boolean terminate = false;
                 while (!terminate) {
                     try {
+                        // TODO: handle InterruptedException here better
                         Object notification = notifications.take(); // Blocks when nothing available.
                         nl.accept(subscriber, notification);
                     } catch (InterruptedException e) {
@@ -176,10 +179,20 @@ import java.util.concurrent.LinkedBlockingQueue;
 
         protected void execute() {
             try {
-                Observable<Void> result = actual.call();
-                result.toBlocking().singleOrDefault(null); // Called by the subscriber which can block as it runs
-                                                           // on a separate single thread.
-                subscriberForThisTask.onCompleted();
+                actual.call().firstOrDefault(null).ignoreElements()
+                        .doOnError(new Action1<Throwable>() {
+                            @Override
+                            public void call(Throwable e) {
+                                subscriberForThisTask.onError(e);
+                            }
+                        })
+                        .doOnCompleted(new Action0() {
+                            @Override
+                            public void call() {
+                                subscriberForThisTask.onCompleted();
+                            }
+                        })
+                        .subscribe();
             } catch (Throwable e) {
                 logger.error("Exception invoking the channel invocation task.", e);
                 subscriberForThisTask.onError(e);

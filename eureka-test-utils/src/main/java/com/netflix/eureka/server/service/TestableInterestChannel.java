@@ -42,22 +42,28 @@ public class TestableInterestChannel implements InterestChannel {
     private PublishSubject<Void> closeObservable = PublishSubject.create();
 
     @Override
-    public Observable<ChangeNotification<InstanceInfo>> register(Interest<InstanceInfo> interest) {
-        // TODO: Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public Observable<Void> upgrade(Interest<InstanceInfo> newInterest) {
+    public Observable<Void> change(Interest<InstanceInfo> newInterest) {
         updateQueue.add(newInterest);
         return Observable.empty();
     }
 
-    @Override
-    public Observable<Void> unregister() {
-        // TODO: Auto-generated method stub
-        return null;
-    }
+//    @Override
+//    public Observable<ChangeNotification<InstanceInfo>> register(Interest<InstanceInfo> interest) {
+//        // TODO: Auto-generated method stub
+//        return null;
+//    }
+//
+//    @Override
+//    public Observable<Void> upgrade(Interest<InstanceInfo> newInterest) {
+//        updateQueue.add(newInterest);
+//        return Observable.empty();
+//    }
+//
+//    @Override
+//    public Observable<Void> unregister() {
+//        // TODO: Auto-generated method stub
+//        return null;
+//    }
 
     @Override
     public void heartbeat() {
