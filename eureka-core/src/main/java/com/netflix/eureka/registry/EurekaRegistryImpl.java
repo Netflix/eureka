@@ -68,7 +68,10 @@ public class EurekaRegistryImpl implements EurekaRegistry<InstanceInfo> {
      * @param durationMillis Duration for which the lease is to be renewed.
      *
      * @return true if successfully renewed
+     *
+     * @deprecated Not used anywhere
      */
+    @Deprecated
     public Observable<Void> renewLease(final String instanceId, final long durationMillis) {
         Lease<?> lease = internalStore.get(instanceId);
         if (lease != null) {
@@ -82,7 +85,10 @@ public class EurekaRegistryImpl implements EurekaRegistry<InstanceInfo> {
      * check to see if the lease of the specified instance has expired.
      * @param instanceId the instanceId of the instance to check
      * @return true if instance exist and has expired, false if exist and not expired
+     *
+     * @deprecated Not used anywhere
      */
+    @Deprecated
     public Observable<Boolean> hasExpired(final String instanceId) {
         Lease<?> lease = internalStore.get(instanceId);
 
@@ -98,11 +104,18 @@ public class EurekaRegistryImpl implements EurekaRegistry<InstanceInfo> {
      * @param instanceId Instance Id for which the lease is to be returned.
      *
      * @return Lease for the passed instance Id.
+     *
+     * @deprecated Not used anywhere
      */
+    @Deprecated
     public Observable<Lease<InstanceInfo>> getLease(final String instanceId) {
         return Observable.just(internalStore.get(instanceId));
     }
 
+    /**
+     * @deprecated Not used anywhere
+     */
+    @Deprecated
     public boolean contains(final String instanceId) {
         return internalStore.contains(instanceId);
     }
@@ -112,6 +125,10 @@ public class EurekaRegistryImpl implements EurekaRegistry<InstanceInfo> {
         return register(instanceInfo, Lease.DEFAULT_LEASE_DURATION_MILLIS);
     }
 
+    /**
+     * Can we remove lease duration?
+     */
+    @Deprecated
     public Observable<Void> register(final InstanceInfo instanceInfo, final long durationMillis) {
         Lease<InstanceInfo> lease = new Lease<>(
                 instanceInfo,
@@ -162,7 +179,10 @@ public class EurekaRegistryImpl implements EurekaRegistry<InstanceInfo> {
      * @param status New status.
      *
      * @return true of successfully updated
+     *
+     * @deprecated Not used anywhere
      */
+    @Deprecated
     public Observable<Void> updateStatus(String instanceId, InstanceInfo.Status status) {
         Lease<InstanceInfo> lease = internalStore.get(instanceId);
 
@@ -191,7 +211,10 @@ public class EurekaRegistryImpl implements EurekaRegistry<InstanceInfo> {
      *
      * @return A stream of {@link InstanceInfo}s for the passed {@code interest}. The stream represent a snapshot
      * of the registry for the interest.
+     *
+     * @deprecated Not used anywhere
      */
+    @Deprecated
     public Observable<InstanceInfo> snapshotForInterest(final Interest<InstanceInfo> interest) {
         return Observable.from(internalStore.values())
                 .map(new Func1<Lease<InstanceInfo>, InstanceInfo>() {

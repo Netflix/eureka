@@ -28,12 +28,27 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class Lease<E> {
 
+    /**
+     * Each lease entry in a registry is associated with exactly one origin:
+     * <ul>
+     * <li>{@link #ATTACHED_CLIENT}</li> - there is an opened registration client connection to the write local server
+     * <li>{@link #REPLICATED}</li> - replicated entry from another server
+     * </ul>
+     */
+    public enum Origin { ATTACHED_CLIENT, REPLICATED }
+
+    @Deprecated
     public static final int DEFAULT_LEASE_DURATION_MILLIS = 90 * 1000;  // TODO: get default via config
 
     private E holder;
     private ChangeNotification<E> snapshot;
 
+    private Origin origin;
+
+    @Deprecated
     private final AtomicLong lastRenewalTimestamp;  // timestamp of last renewal
+
+    @Deprecated
     private final AtomicLong leaseDurationMillis;  // duration of this lease in millis
 
     public Lease(E holder) {
