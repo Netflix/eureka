@@ -16,20 +16,21 @@
 
 package com.netflix.eureka.server;
 
+import java.net.InetSocketAddress;
+
 import com.google.inject.AbstractModule;
 import com.netflix.eureka.client.ServerResolver;
 import com.netflix.eureka.registry.EurekaRegistry;
-import com.netflix.eureka.registry.EurekaRegistryImpl;
+import com.netflix.eureka.server.audit.AuditedRegistry;
 import com.netflix.eureka.transport.EurekaTransports.Codec;
-
-import java.net.InetSocketAddress;
 
 /**
  * @author Tomasz Bak
  */
 public class EurekaWriteServerModule extends AbstractModule {
 
-    @SuppressWarnings("unused") private final ServerResolver<InetSocketAddress> peerResolver;
+    @SuppressWarnings("unused")
+    private final ServerResolver<InetSocketAddress> peerResolver;
     private final Codec codec;
 
     public EurekaWriteServerModule(ServerResolver<InetSocketAddress> peerResolver, Codec codec) {
@@ -40,6 +41,6 @@ public class EurekaWriteServerModule extends AbstractModule {
     @Override
     public void configure() {
         bind(Codec.class).toInstance(codec);
-        bind(EurekaRegistry.class).toInstance(new EurekaRegistryImpl());
+        bind(EurekaRegistry.class).to(AuditedRegistry.class);
     }
 }

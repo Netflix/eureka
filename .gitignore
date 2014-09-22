@@ -45,7 +45,7 @@ Thumbs.db
 /target
 */target
 /build
-*/build
+**/build
 /bin
 */bin
 #

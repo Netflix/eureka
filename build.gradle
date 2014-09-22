@@ -28,6 +28,13 @@ allprojects {
     repositories {
 //        mavenLocal()
         mavenCentral() // maven { url: 'http://jcenter.bintray.com' }
+
+        // suro-client dependency
+        maven{
+            name 'github.release.repo'
+            url 'https://raw.github.com/bulldog2011/bulldog-repo/master/repo/releases/'
+        }
+
     }
 }
 
@@ -41,7 +48,6 @@ subprojects {
 
     group = "com.netflix.eureka"
 
-    apply plugin: 'osgi'
     apply plugin: 'groovy'
 
     apply plugin: 'eclipse'

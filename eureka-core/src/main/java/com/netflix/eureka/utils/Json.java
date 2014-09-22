@@ -16,6 +16,7 @@
 
 package com.netflix.eureka.utils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import io.netty.buffer.ByteBuf;
@@ -25,15 +26,14 @@ import io.netty.buffer.UnpooledByteBufAllocator;
 import org.codehaus.jackson.annotate.JsonAutoDetect.Visibility;
 import org.codehaus.jackson.annotate.JsonMethod;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
 import org.codehaus.jackson.map.SerializationConfig.Feature;
 
 /**
- * FIXME Do we need to abstract from a specific JSON parser implementation?
+ * A set of helper methods to convert to/from JSON format.
  *
  * @author Tomasz Bak
  */
-public class Json {
+public final class Json {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     static {
@@ -41,8 +41,19 @@ public class Json {
         MAPPER.configure(Feature.FAIL_ON_EMPTY_BEANS, false);
     }
 
+    private Json() {
+    }
+
     public static ObjectMapper getMapper() {
         return MAPPER;
+    }
+
+    public static <T> T fromJson(byte[] byteBuf, Class<T> type) {
+        try {
+            return MAPPER.readValue(byteBuf, type);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Provided buffer does not contain JSON object conforming to type " + type.getName(), e);
+        }
     }
 
     public static <T> T fromJson(ByteBuf byteBuf, Class<T> type) {
@@ -50,6 +61,16 @@ public class Json {
             return MAPPER.readValue(new ByteBufInputStream(byteBuf), type);
         } catch (IOException e) {
             throw new IllegalArgumentException("Provided buffer does not contain JSON object conforming to type " + type.getName(), e);
+        }
+    }
+
+    public static <T> byte[] toByteArrayJson(T value) {
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            MAPPER.writeValue(out, value);
+            return out.toByteArray();
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Value of type " + value.getClass().getName() + " could not be serialized into JSON", e);
         }
     }
 

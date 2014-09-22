@@ -16,29 +16,48 @@
 
 package com.netflix.eureka.server;
 
+import java.net.InetSocketAddress;
+
+import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.netflix.eureka.client.ServerResolver;
 import com.netflix.eureka.client.bootstrap.StaticServerResolver;
+import com.netflix.eureka.server.spi.ExtensionContext;
+import com.netflix.eureka.server.spi.ExtensionContext.ExtensionContextBuilder;
+import com.netflix.eureka.server.spi.ExtensionLoader;
 import com.netflix.eureka.server.transport.tcp.discovery.TcpDiscoveryModule;
 import com.netflix.eureka.server.transport.tcp.registration.JsonRegistrationModule;
 import com.netflix.eureka.transport.EurekaTransports.Codec;
 import com.netflix.governator.guice.LifecycleInjector;
 import com.netflix.governator.guice.LifecycleInjectorBuilder;
 import com.netflix.governator.lifecycle.LifecycleManager;
-
-import java.net.InetSocketAddress;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Tomasz Bak
  */
 public abstract class ServerInstance {
 
+    private static final Logger logger = LoggerFactory.getLogger(ServerInstance.class);
+
     private LifecycleManager lifecycleManager;
 
-    protected void setup(Module[] modules) {
+    protected void setup(final ExtensionContext extensionContext, Module[] modules) {
         LifecycleInjectorBuilder builder = LifecycleInjector.builder();
         builder.withAdditionalModules(modules);
+
+        // Extension context
+        builder.withAdditionalModules(new AbstractModule() {
+            @Override
+            protected void configure() {
+                bind(ExtensionContext.class).toInstance(extensionContext);
+            }
+        });
+        // Extensions
+        builder.withAdditionalModules(new ExtensionLoader(extensionContext, true).asModuleArray());
+
         Injector injector = builder.build().createInjector();
 
         lifecycleManager = injector.getInstance(LifecycleManager.class);
@@ -53,27 +72,37 @@ public abstract class ServerInstance {
         lifecycleManager.close();
     }
 
+
     public static class EurekaWriteServerInstance extends ServerInstance {
         public EurekaWriteServerInstance(String serverName, int port) {
+            ExtensionContext context = new ExtensionContextBuilder()
+                    .withEurekaClusterName(serverName + '#' + port)
+                    .withInternalReadServerAddress(new InetSocketAddress("localhost", port))
+                    .withSystemProperties(true)
+                    .build();
             Module[] modules = {
                     new JsonRegistrationModule(serverName + "#registration", port),
                     new TcpDiscoveryModule(serverName + "#discovery", port + 1),
                     new EurekaWriteServerModule(new StaticServerResolver<InetSocketAddress>(), Codec.Json)
             };
 
-            setup(modules);
+            setup(context, modules);
         }
     }
 
     public static class EurekaReadServerInstance extends ServerInstance {
         public EurekaReadServerInstance(String serverName, int port, ServerResolver<InetSocketAddress> resolver) {
-
+            ExtensionContext context = new ExtensionContextBuilder()
+                    .withEurekaClusterName(serverName + '#' + port)
+                    .withInternalReadServerAddress(new InetSocketAddress("localhost", port))
+                    .withSystemProperties(true)
+                    .build();
             Module[] modules = {
                     new TcpDiscoveryModule(serverName + "#discovery", port),
                     new EurekaReadServerModule(resolver, Codec.Json)
             };
 
-            setup(modules);
+            setup(context, modules);
         }
     }
 }
