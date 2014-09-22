@@ -45,15 +45,26 @@ public class DnsServerResolver extends AbstractServerResolver<InetSocketAddress>
     private static final long DNS_LOOKUP_INTERVAL = 30;
     private static final TimeUnit DNS_LOOKUP_INTERVAL_UNIT = TimeUnit.SECONDS;
 
-    private final String eurekaServerDN;
+    private final String domainName;
+    private final int port;
 
-    public DnsServerResolver(String eurekaServerDN, boolean refresh) {
-        this(eurekaServerDN, refresh, Schedulers.io());
+    public DnsServerResolver(Protocol protocol, String domainName, boolean refresh) {
+        this(protocol, domainName, refresh, Schedulers.io());
     }
 
-    public DnsServerResolver(String eurekaServerDN, boolean refresh, Scheduler scheduler) {
+    public DnsServerResolver(Protocol protocol, String domainName, boolean refresh, Scheduler scheduler) {
         super(refresh, scheduler);
-        this.eurekaServerDN = eurekaServerDN;
+
+        int port = (protocol == null) ? 0 : protocol.defaultPort();
+        int idx = domainName.indexOf(':');
+        if (idx == -1) {
+            this.domainName = domainName;
+        } else {
+            this.domainName = domainName.substring(0, idx);
+            port = Integer.parseInt(domainName.substring(idx + 1));
+        }
+
+        this.port = port;
     }
 
     @Override
@@ -64,9 +75,9 @@ public class DnsServerResolver extends AbstractServerResolver<InetSocketAddress>
     @Override
     protected IOException noServersFound(Exception ex) {
         if (ex == null) {
-            return new IOException("No address available for DN entry " + eurekaServerDN);
+            return new IOException("No address available for DN entry " + domainName);
         }
-        return new IOException("Could not resolve domain name " + eurekaServerDN, ex);
+        return new IOException("Could not resolve domain name " + domainName, ex);
     }
 
     class DnsResolverTask implements ResolverTask {
@@ -88,7 +99,7 @@ public class DnsServerResolver extends AbstractServerResolver<InetSocketAddress>
             env.put("java.naming.factory.initial", "com.sun.jndi.dns.DnsContextFactory");
             DirContext dirContext = new InitialDirContext(env);
             try {
-                return resolveName(dirContext, eurekaServerDN);
+                return resolveName(dirContext, domainName);
             } finally {
                 dirContext.close();
             }
@@ -133,7 +144,7 @@ public class DnsServerResolver extends AbstractServerResolver<InetSocketAddress>
             NamingEnumeration<?> it = attr.getAll();
             while (it.hasMore()) {
                 Object value = it.next();
-                resultSet.add(new ServerEntry<InetSocketAddress>(Action.Add, new InetSocketAddress(value.toString(), 0)));
+                resultSet.add(new ServerEntry<InetSocketAddress>(Action.Add, new InetSocketAddress(value.toString(), port)));
             }
             return resultSet;
         }

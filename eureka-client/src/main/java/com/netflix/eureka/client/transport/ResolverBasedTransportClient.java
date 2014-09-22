@@ -8,6 +8,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.netflix.client.DefaultLoadBalancerRetryHandler;
 import com.netflix.client.RetryHandler;
+import com.netflix.client.config.DefaultClientConfigImpl;
 import com.netflix.client.config.IClientConfig;
 import com.netflix.client.netty.RibbonTransport;
 import com.netflix.eureka.client.ServerResolver;
@@ -85,6 +86,13 @@ public abstract class ResolverBasedTransportClient<A extends SocketAddress> impl
     protected abstract boolean matches(ServerEntry<A> entry);
 
     protected abstract int defaultPort();
+
+    protected static IClientConfig getClientConfig(String name) {
+        // TODO: figure out what we want to configure, and how to provide this configuration information.
+        DefaultClientConfigImpl config = new DefaultClientConfigImpl("eureka.");
+        config.setClientName(name);
+        return config;
+    }
 
     class ResolverServerList implements ServerList<Server> {
 

@@ -14,20 +14,7 @@
  * limitations under the License.
  */
 
-apply plugin: 'osgi'
-
 dependencies {
-    compile project(':eureka-core')
-    compile "javax.inject:javax.inject:1"
-    compile "com.netflix.ribbon:ribbon-transport:${ribbon_version}"
-    testCompile project(':eureka-test-utils')
-}
-
-jar {
-    manifest {
-        name = 'eureka-client'
-        instruction 'Bundle-Vendor', 'Netflix'
-        instruction 'Bundle-DocURL', 'https://github.com/Netflix/eureka'
-        instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
-    }
+    compile project(':eureka-client')
+    compile "org.slf4j:slf4j-simple:${slf4j_version}"
 }

@@ -18,7 +18,6 @@ package com.netflix.eureka.client.transport.tcp;
 
 import java.net.InetSocketAddress;
 
-import com.netflix.client.config.ClientConfigFactory.DefaultClientConfigFactory;
 import com.netflix.eureka.client.ServerResolver;
 import com.netflix.eureka.client.ServerResolver.Protocol;
 import com.netflix.eureka.client.ServerResolver.ServerEntry;
@@ -34,8 +33,7 @@ import com.netflix.eureka.transport.EurekaTransports;
 public class TcpRegistrationClient extends ResolverBasedTransportClient<InetSocketAddress> {
 
     public TcpRegistrationClient(ServerResolver<InetSocketAddress> resolver, EurekaTransports.Codec codec) {
-        // TODO: figure out what we want to configure, and how to provide this configuration information.
-        super(resolver, DefaultClientConfigFactory.DEFAULT.newConfig(), EurekaTransports.registrationPipeline(codec));
+        super(resolver, getClientConfig("tcpRegistrationClient"), EurekaTransports.registrationPipeline(codec));
     }
 
     @Override

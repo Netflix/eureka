@@ -35,6 +35,7 @@ import com.netflix.loadbalancer.ServerList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Subscriber;
+import rx.functions.Action1;
 
 /**
  * {@link ServerList} provider for Ribbon {@link ILoadBalancer}. This is utility class
@@ -62,8 +63,13 @@ public class EurekaSourcedServerList implements ServerList<Server> {
 
     @PostConstruct
     public void start() {
-        eurekaClient = EurekaClients.forRead(readClusterResolver);
-        subscribeToVip();
+        EurekaClients.forDiscovery(readClusterResolver).subscribe(new Action1<EurekaClient>() {
+            @Override
+            public void call(EurekaClient eurekaClient) {
+                EurekaSourcedServerList.this.eurekaClient = eurekaClient;
+                subscribeToVip();
+            }
+        });
     }
 
     protected void subscribeToVip() {

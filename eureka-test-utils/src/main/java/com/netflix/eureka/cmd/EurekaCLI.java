@@ -293,7 +293,7 @@ public class EurekaCLI {
         TransportClient readClient =
                 TransportClients.newTcpDiscoveryClient(discoveryServers, Codec.Json);
 
-        eurekaClient = new EurekaClientImpl(readClient, writeClient);
+        eurekaClient = new EurekaClientImpl(writeClient, readClient);
 
         System.out.format("Connected to Eureka server at %s:%d (registry) and %s:%d (discovery)\n", host,
                           registrationPort, host, discoveryPort);

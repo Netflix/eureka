@@ -47,7 +47,7 @@ public class EurekaClientImpl extends EurekaClient {
         this.registrationHandler = registrationHandler;
     }
 
-    public EurekaClientImpl(TransportClient readClient, TransportClient writeClient) {
+    public EurekaClientImpl(TransportClient writeClient, TransportClient readClient) {
         this(new EurekaClientRegistry(readClient), new RegistrationHandlerImpl(writeClient));
     }
 
@@ -55,8 +55,8 @@ public class EurekaClientImpl extends EurekaClient {
     public EurekaClientImpl(@Named(READ_SERVER_RESOLVER_NAME) ServerResolver<InetSocketAddress> readServerResolver,
                             @Named(WRITE_SERVER_RESOLVER_NAME) ServerResolver<InetSocketAddress> writeServerResolver) {
         //TODO: Default to avro as we are always going to use avro by default. Today it expects avro schema in CP.
-        this(TransportClients.newTcpDiscoveryClient(readServerResolver, EurekaTransports.Codec.Json),
-             TransportClients.newTcpRegistrationClient(writeServerResolver, EurekaTransports.Codec.Json));
+        this(TransportClients.newTcpRegistrationClient(writeServerResolver, EurekaTransports.Codec.Json), TransportClients.newTcpDiscoveryClient(readServerResolver, EurekaTransports.Codec.Json)
+        );
     }
 
     @Override
