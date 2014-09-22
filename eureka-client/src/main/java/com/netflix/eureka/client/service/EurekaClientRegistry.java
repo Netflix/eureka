@@ -10,13 +10,10 @@ import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.service.EurekaService;
 import com.netflix.eureka.service.InterestChannel;
 import rx.Observable;
-import rx.functions.Action1;
-import rx.functions.Func1;
-import rx.subjects.ReplaySubject;
+import rx.Subscriber;
 
 import javax.inject.Inject;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * An implementation of {@link EurekaRegistry} to be used by the eureka client.
@@ -39,113 +36,56 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class EurekaClientRegistry implements EurekaRegistry<InstanceInfo> {
 
-    private final TransportClient readServerClient;
-    private final AtomicReference<RegistryState> state;
+    private final EurekaService service;
+    private final EurekaRegistry<InstanceInfo> registry;
+    private final ClientInterestChannel interestChannel;
 
     @Inject
     public EurekaClientRegistry(final TransportClient readServerClient) {
-        this.readServerClient = readServerClient;
-        state = new AtomicReference<>(new RegistryState(readServerClient));
+        registry = new EurekaRegistryImpl();
+
+        service = EurekaServiceImpl.forReadServer(registry, readServerClient);
+        interestChannel = (ClientInterestChannel) service.newInterestChannel();
     }
 
     @Override
     public Observable<Void> register(InstanceInfo instanceInfo) {
-        return state.get().registry.register(instanceInfo);
+        return registry.register(instanceInfo);
     }
 
     @Override
     public Observable<Void> unregister(String instanceId) {
-        return state.get().registry.unregister(instanceId);
+        return registry.unregister(instanceId);
     }
 
     @Override
     public Observable<Void> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
-        return state.get().registry.update(updatedInfo, deltas);
+        return registry.update(updatedInfo, deltas);
     }
 
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest) {
-        final RegistryState currentState = state.get();
-        if (currentState.claimRegistration()) {
-            return currentState.interestChannel
-                    .register(interest)
-                    .map(new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
-                        @Override
-                        public ChangeNotification<InstanceInfo> call(ChangeNotification<InstanceInfo> notification) {
-                            if (currentState.state.compareAndSet(RegistryState.State.RegistrationStarted,
-                                                                 RegistryState.State.RegistrationQueued)) {
-                                currentState.registrationQueuedAck.onCompleted();
-                            }
-                            return notification;
-                        }
-                    }).doOnError(new Action1<Throwable>() {
-                        @Override
-                        public void call(Throwable throwable) {
-                            currentState.registrationQueuedAck.onError(throwable);
-                        }
-                    });
-        } else {
-            /**
-             * The following code lazily does append on the channel after the registration is successful.
-             * Although {@link InterestChannelImpl#appendInterest(Interest)} isn't lazy, this will always be flowing
-             * through {@link InterestChannelInvoker#appendInterest(Interest)} which is lazy and hence guarantees that
-             * append will not enqueue before register.
-             */
-            Observable toReturn = currentState.registrationQueuedAck
-                    .concatWith(currentState.interestChannel.appendInterest(interest))
-                    .cast(ChangeNotification.class)
-                    .concatWith(currentState.registry.forInterest(interest));
+    public Observable<ChangeNotification<InstanceInfo>> forInterest(final Interest<InstanceInfo> interest) {
+        Observable toReturn = interestChannel
+                .appendInterest(interest).cast(ChangeNotification.class)
+                .mergeWith(registry.forInterest(interest));
 
-            return (Observable<ChangeNotification<InstanceInfo>>) toReturn;
-        }
+        return toReturn;
     }
 
     @Override
     public Observable<Void> shutdown() {
-        return state.get().shutdown();
+        return Observable.create(new Observable.OnSubscribe<Void>() {
+            @Override
+            public void call(Subscriber<? super Void> subscriber) {
+                interestChannel.close();
+                service.shutdown();  // service will shutdown registry and transport clients
+            }
+        });
     }
 
-    private static final class RegistryState {
-
-        private enum State {
-            Idle,
-            RegistrationStarted,
-            RegistrationQueued /*Terminal state*/
-        }
-
-        private final EurekaService service;
-        private final EurekaRegistryImpl registry;
-        private final ClientInterestChannel interestChannel;
-        private final AtomicReference<State> state;
-
-        /**
-         * Although {@link InterestChannelInvoker} sequences all operations it does not guarantee that any updates are
-         * automatically converted to registration (which is good from the channel point of view). So, we need to make
-         * sure that registration and appends are not inter-leaved and hence possibly getting into a state where
-         * register is sent after update.
-         *
-         * This subject replays the result of whether the registration was queued into the
-         * {@link InterestChannelInvoker}. If there is an error in registration, subsequent registration will reset this
-         * {@link ReplaySubject}
-         */
-        private ReplaySubject<Void> registrationQueuedAck = ReplaySubject.create();
-
-        private RegistryState(final TransportClient readServerClient) {
-            registry = new EurekaRegistryImpl();
-            service = EurekaServiceImpl.forReadServer(registry, readServerClient);
-            interestChannel = (ClientInterestChannel) service.newInterestChannel();
-            state = new AtomicReference<>(State.Idle);
-        }
-
-        private boolean claimRegistration() {
-            return state.compareAndSet(State.Idle, State.RegistrationStarted);
-        }
-
-        private Observable<Void> shutdown() {
-            service.shutdown();
-            interestChannel.close();
-            return registry.shutdown();
-        }
+    @Override
+    public String toString() {
+        return registry.toString();
     }
 }

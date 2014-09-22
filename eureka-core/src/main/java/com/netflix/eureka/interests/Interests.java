@@ -32,6 +32,8 @@ public final class Interests {
         return FullRegistryInterest.getInstance();
     }
 
+    public static Interest<InstanceInfo> forNone() { return EmptyRegistryInterest.getInstance(); }
+
     public static Interest<InstanceInfo> forSome(Interest<InstanceInfo>... interests) {
         return new MultipleInterests<>(interests);
     }

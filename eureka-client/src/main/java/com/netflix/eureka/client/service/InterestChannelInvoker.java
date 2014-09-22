@@ -1,6 +1,5 @@
 package com.netflix.eureka.client.service;
 
-import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.service.InterestChannel;
@@ -24,31 +23,11 @@ import java.util.concurrent.Callable;
     }
 
     @Override
-    public Observable<ChangeNotification<InstanceInfo>> register(final Interest<InstanceInfo> interest) {
-        return submitForResult(new Callable<Observable<ChangeNotification<InstanceInfo>>>() {
-            @Override
-            public Observable<ChangeNotification<InstanceInfo>> call() throws Exception {
-                return delegate.register(interest);
-            }
-        });
-    }
-
-    @Override
-    public Observable<Void> upgrade(final Interest<InstanceInfo> newInterest) {
+    public Observable<Void> change(final Interest<InstanceInfo> newInterest) {
         return submitForAck(new Callable<Observable<Void>>() {
             @Override
             public Observable<Void> call() throws Exception {
-                return delegate.upgrade(newInterest);
-            }
-        });
-    }
-
-    @Override
-    public Observable<Void> unregister() {
-        return submitForAck(new Callable<Observable<Void>>() {
-            @Override
-            public Observable<Void> call() throws Exception {
-                return delegate.unregister();
+                return delegate.change(newInterest);
             }
         });
     }
