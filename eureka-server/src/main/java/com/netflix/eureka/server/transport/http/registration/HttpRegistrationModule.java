@@ -17,10 +17,11 @@
 package com.netflix.eureka.server.transport.http.registration;
 
 import com.netflix.karyon.transport.http.KaryonHttpModule;
-import io.reactivex.netty.servo.ServoEventsListenerFactory;
 
 /**
  * HTTP server module for discovery registration endpoint.
+ *
+ * TODO: this code must be refactored, as the Karyon API has changed.
  *
  * @author Tomasz Bak
  */
@@ -33,8 +34,7 @@ public class HttpRegistrationModule extends KaryonHttpModule<Object, Object> {
 
     @Override
     protected void configureServer() {
-        bindRouter().to(RegistrationHttpRequestRouter.class);
-        bindEventsListenerFactory().to(ServoEventsListenerFactory.class);
+//        bindRouter().to(RegistrationHttpRequestRouter.class);
         server().port(7001).threadPoolSize(100);
     }
 }

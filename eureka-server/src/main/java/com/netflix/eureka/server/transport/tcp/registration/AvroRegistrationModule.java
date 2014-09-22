@@ -19,7 +19,6 @@ package com.netflix.eureka.server.transport.tcp.registration;
 import com.netflix.eureka.transport.EurekaTransports;
 import com.netflix.eureka.transport.EurekaTransports.Codec;
 import com.netflix.karyon.transport.tcp.KaryonTcpModule;
-import io.reactivex.netty.servo.ServoEventsListenerFactory;
 
 /**
  * @author Tomasz Bak
@@ -41,7 +40,6 @@ public class AvroRegistrationModule extends KaryonTcpModule<Object, Object> {
     protected void configureServer() {
         bindPipelineConfigurator().toInstance(EurekaTransports.registrationPipeline(Codec.Avro));
         bindConnectionHandler().to(TcpRegistrationHandler.class);
-        bindEventsListenerFactory().to(ServoEventsListenerFactory.class);
         server().port(port);
     }
 }

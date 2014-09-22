@@ -10,16 +10,17 @@ import com.netflix.client.DefaultLoadBalancerRetryHandler;
 import com.netflix.client.RetryHandler;
 import com.netflix.client.config.DefaultClientConfigImpl;
 import com.netflix.client.config.IClientConfig;
-import com.netflix.client.netty.RibbonTransport;
 import com.netflix.eureka.client.ServerResolver;
 import com.netflix.eureka.client.ServerResolver.ServerEntry;
 import com.netflix.eureka.client.transport.tcp.TcpServerConnection;
 import com.netflix.eureka.transport.base.BaseMessageBroker;
-import com.netflix.loadbalancer.NoOpPing;
+import com.netflix.loadbalancer.DummyPing;
+import com.netflix.loadbalancer.IPing;
 import com.netflix.loadbalancer.RoundRobinRule;
 import com.netflix.loadbalancer.Server;
 import com.netflix.loadbalancer.ServerList;
 import com.netflix.loadbalancer.ZoneAwareLoadBalancer;
+import com.netflix.ribbon.transport.netty.RibbonTransport;
 import io.reactivex.netty.channel.ObservableConnection;
 import io.reactivex.netty.client.RxClient;
 import io.reactivex.netty.pipeline.PipelineConfigurator;
@@ -38,7 +39,7 @@ public abstract class ResolverBasedTransportClient<A extends SocketAddress> impl
 
     private static final Logger logger = LoggerFactory.getLogger(ResolverBasedTransportClient.class);
 
-    private static final NoOpPing NO_OP_PING = new NoOpPing();
+    private static final IPing DUMMY_PING = new DummyPing();
 
     private final ServerResolver<A> resolver;
     protected final IClientConfig clientConfig;
@@ -54,7 +55,7 @@ public abstract class ResolverBasedTransportClient<A extends SocketAddress> impl
         this.clientConfig = clientConfig;
         this.pipelineConfigurator = pipelineConfigurator;
         ServerList<Server> serverList = new ResolverServerList(resolver);
-        loadBalancer = new ZoneAwareLoadBalancer<>(clientConfig, new RoundRobinRule(), NO_OP_PING, serverList, null /* filter */);
+        loadBalancer = new ZoneAwareLoadBalancer<>(clientConfig, new RoundRobinRule(), DUMMY_PING, serverList, null /* filter */);
     }
 
     @Override
