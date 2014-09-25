@@ -64,6 +64,11 @@ public class EurekaClientRegistry implements EurekaRegistry<InstanceInfo> {
     }
 
     @Override
+    public Observable<InstanceInfo> forSnapshot(Interest<InstanceInfo> interest) {
+        return registry.forSnapshot(interest);
+    }
+
+    @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
     public Observable<ChangeNotification<InstanceInfo>> forInterest(final Interest<InstanceInfo> interest) {
         Observable toReturn = interestChannel

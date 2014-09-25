@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
-import rx.functions.Action0;
 import rx.functions.Action1;
 
 import java.util.Set;
@@ -33,11 +32,13 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
             new IllegalStateException("Instance is not registered yet.");
 
     private volatile InstanceInfo currentInfo;
+    private volatile long currentVersion;
 
     protected enum STATES {Idle, Registered, Closed}
 
     public RegistrationChannelImpl(EurekaRegistry registry, ClientConnection transport) {
         super(STATES.Idle, transport, registry, 3, 30000);
+        currentVersion = System.currentTimeMillis();
         subscribeToTransportInput(new Action1<Object>() {
             @Override
             public void call(Object message) {
@@ -78,12 +79,16 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
             logger.debug("Registering a new instance: " + instanceInfo);
         }
 
-        currentInfo = instanceInfo;
+        final long tempNewVersion = currentVersion + 1;
+        final InstanceInfo tempNewInfo = new InstanceInfo.Builder()
+                .withInstanceInfo(instanceInfo).withVersion(tempNewVersion).build();
 
-        Observable<Void> registerResult = registry.register(instanceInfo);
+        Observable<Void> registerResult = registry.register(tempNewInfo);
         registerResult.subscribe(new Subscriber<Void>() {
             @Override
             public void onCompleted() {
+                currentVersion = tempNewVersion;
+                currentInfo = tempNewInfo;
                 sendAckOnTransport();
             }
 
@@ -111,15 +116,20 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
             case Idle:
                 return Observable.error(INSTANCE_NOT_REGISTERED_EXCEPTION);
             case Registered:
-                Set<Delta<?>> deltas = newInfo.diffOlder(currentInfo);
+                final long tempNewVersion = currentVersion + 1;
+                final InstanceInfo tempNewInfo = new InstanceInfo.Builder()
+                        .withInstanceInfo(newInfo).withVersion(tempNewVersion).build();
+
+                Set<Delta<?>> deltas = tempNewInfo.diffOlder(currentInfo);
                 logger.debug("Set of InstanceInfo modified fields: {}", deltas);
 
                 // TODO: shall we chain ack observable with update?
-                Observable<Void> updateResult = registry.update(newInfo, deltas);
+                Observable<Void> updateResult = registry.update(tempNewInfo, deltas);
                 updateResult.subscribe(new Subscriber<Void>() {
                     @Override
                     public void onCompleted() {
-                        currentInfo = newInfo;
+                        currentVersion = tempNewVersion;
+                        currentInfo = tempNewInfo;
                         sendAckOnTransport();
                     }
 
@@ -148,7 +158,26 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
             case Idle:
                 return Observable.error(INSTANCE_NOT_REGISTERED_EXCEPTION);
             case Registered:
-                registry.unregister(currentInfo.getId());
+                Observable<Void> updateResult = registry.unregister(currentInfo.getId());  // TODO: deal with channel ownership
+                updateResult.subscribe(new Subscriber<Void>() {
+                    @Override
+                    public void onCompleted() {
+                        currentInfo = null;
+                        sendAckOnTransport();
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        sendErrorOnTransport(e);
+                    }
+
+                    @Override
+                    public void onNext(Void aVoid) {
+                        // No op
+                    }
+                });
+
+                return updateResult;
             case Closed:
                 return Observable.error(CHANNEL_CLOSED_EXCEPTION);
             default:

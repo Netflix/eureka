@@ -56,7 +56,7 @@ public class EurekaRegistryImplTest {
         registry.register(discovery2);
         registry.register(discovery3);
 
-        Observable<InstanceInfo> snapshot = registry.snapshotForInterest(Interests.forFullRegistry());
+        Observable<InstanceInfo> snapshot = registry.forSnapshot(Interests.forFullRegistry());
 
         final List<InstanceInfo> returnedInstanceInfos = new ArrayList<>();
         final CountDownLatch completionLatch = new CountDownLatch(1);
@@ -137,31 +137,19 @@ public class EurekaRegistryImplTest {
     }
 
     @Test
-    public void shouldRenewLeaseWithDuration() throws Exception {
-
-        InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
-                .withStatus(InstanceInfo.Status.UP)
-                .build();
-        registry.register(original, 1);
-        Thread.sleep(10);  // let time pass enough
-        assertTrue(registry.hasExpired(original.getId()).toBlocking().lastOrDefault(null));
-
-        registry.renewLease(original.getId(), 5000);
-        assertFalse(registry.hasExpired(original.getId()).toBlocking().lastOrDefault(null));
-    }
-
-    @Test
     public void shouldUpdateInstanceStatus() {
         InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
                 .withStatus(InstanceInfo.Status.UP)
                 .build();
-        registry.register(original, 90 * 1000).toBlocking().lastOrDefault(null);
+        registry.register(original).toBlocking().lastOrDefault(null);
 
         Lease<InstanceInfo> lease = registry.getLease(original.getId()).toBlocking().lastOrDefault(null);
         assertTrue(lease != null);
         assertEquals(InstanceInfo.Status.UP, lease.getHolder().getStatus());
 
-        registry.updateStatus(original.getId(), InstanceInfo.Status.OUT_OF_SERVICE);
+        InstanceInfo newInstanceInfo = new InstanceInfo.Builder().withInstanceInfo(original)
+                .withStatus(InstanceInfo.Status.OUT_OF_SERVICE).build();
+        registry.update(newInstanceInfo, newInstanceInfo.diffOlder(original));
         lease = registry.getLease(original.getId()).toBlocking().lastOrDefault(null);
         assertTrue(lease != null);
         assertEquals(InstanceInfo.Status.OUT_OF_SERVICE, lease.getHolder().getStatus());
@@ -172,22 +160,19 @@ public class EurekaRegistryImplTest {
         InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
                 .withStatus(InstanceInfo.Status.UP)
                 .build();
-        registry.register(original, 90 * 1000).toBlocking().lastOrDefault(null);
+        registry.register(original).toBlocking().lastOrDefault(null);
 
         Lease<InstanceInfo> lease = registry.getLease(original.getId()).toBlocking().lastOrDefault(null);
         assertTrue(lease != null);
         assertEquals(InstanceInfo.Status.UP, lease.getHolder().getStatus());
-        long lastRenewalTimestamp = lease.getLastRenewalTimestamp();
-        Thread.sleep(10);  // let time pass a bit
 
         InstanceInfo newInstance = SampleInstanceInfo.DiscoveryServer.builder()
                 .withStatus(InstanceInfo.Status.DOWN)
                 .build();
-        registry.register(newInstance, 90 * 1000).toBlocking().lastOrDefault(null);
+        registry.register(newInstance).toBlocking().lastOrDefault(null);
 
         lease = registry.getLease(newInstance.getId()).toBlocking().lastOrDefault(null);
         assertTrue(lease != null);
         assertEquals(InstanceInfo.Status.DOWN, lease.getHolder().getStatus());
-        assertNotEquals(lastRenewalTimestamp, lease.getLastRenewalTimestamp(), 0.00001);
     }
 }

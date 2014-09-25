@@ -19,7 +19,6 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import rx.Observable;
 import rx.Subscriber;
-import rx.functions.Func1;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,10 +27,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.when;
 
 /**

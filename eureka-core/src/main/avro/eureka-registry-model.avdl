@@ -30,6 +30,7 @@ protocol EurekaRegistryModel {
 
     record InstanceInfo {
         string id;
+        long version;
         string appGroup;
         string app;
         string asg;
@@ -43,7 +44,6 @@ protocol EurekaRegistryModel {
         string homePageUrl;
         string statusPageUrl;
         @java-class("java.util.HashSet") array<string> healthCheckUrls;
-        long version;
         union {AwsDataCenterInfo} dataCenterInfo;
     }
 }
