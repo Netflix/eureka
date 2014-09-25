@@ -1,8 +1,11 @@
 package com.netflix.eureka.interests;
 
-import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.registry.SampleInstanceInfo;
+import rx.Observable;
+
+import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  * @author David Liu
@@ -17,7 +20,7 @@ public enum SampleChangeNotification {
 
         @Override
         public ChangeNotification<InstanceInfo> newNotification(InstanceInfo seed) {
-            return new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Add, seed);
+            return new ChangeNotification<>(ChangeNotification.Kind.Add, seed);
         }
     },
     ZuulDelete() {
@@ -28,7 +31,7 @@ public enum SampleChangeNotification {
 
         @Override
         public ChangeNotification<InstanceInfo> newNotification(InstanceInfo seed) {
-            return new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Delete, seed);
+            return new ChangeNotification<>(ChangeNotification.Kind.Delete, seed);
         }
     },
     DiscoveryAdd() {
@@ -39,7 +42,7 @@ public enum SampleChangeNotification {
 
         @Override
         public ChangeNotification<InstanceInfo> newNotification(InstanceInfo seed) {
-            return new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Add, seed);
+            return new ChangeNotification<>(ChangeNotification.Kind.Add, seed);
         }
     },
     DiscoveryDelete() {
@@ -50,11 +53,18 @@ public enum SampleChangeNotification {
 
         @Override
         public ChangeNotification<InstanceInfo> newNotification(InstanceInfo seed) {
-            return new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Delete, seed);
+            return new ChangeNotification<>(ChangeNotification.Kind.Delete, seed);
         }
     };
 
     public abstract ChangeNotification<InstanceInfo> newNotification();
     public abstract ChangeNotification<InstanceInfo> newNotification(InstanceInfo seed);
 
+    public static Observable<ChangeNotification<InstanceInfo>> newAddNotifications(SampleChangeNotification type, int n) {
+        Collection<ChangeNotification<InstanceInfo>> result = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            result.add(type.newNotification());
+        }
+        return Observable.from(result);
+    }
 }

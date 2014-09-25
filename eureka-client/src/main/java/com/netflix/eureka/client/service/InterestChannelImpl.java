@@ -135,7 +135,7 @@ import java.util.Map;
         super._close();
     }
 
-    private Observable<ChangeNotification<InstanceInfo>> createInterestStream() {
+    protected Observable<ChangeNotification<InstanceInfo>> createInterestStream() {
 
         return connect().switchMap(new Func1<ServerConnection, Observable<? extends ChangeNotification<InstanceInfo>>>() {
             @Override
@@ -152,48 +152,21 @@ import java.util.Map;
                 }).map(new Func1<Object, ChangeNotification<InstanceInfo>>() {
                     @Override
                     public ChangeNotification<InstanceInfo> call(Object message) {
+                        ChangeNotification<InstanceInfo> changeNotification;
                         InterestSetNotification notification = (InterestSetNotification) message;
                         if (notification instanceof AddInstance) {
-                            InstanceInfo instanceInfo = ((AddInstance) notification).getInstanceInfo();
-                            idVsInstance.put(instanceInfo.getId(), instanceInfo);
-                            sendAckOnConnection(connection);
-                            return new ChangeNotification<>(ChangeNotification.Kind.Add, instanceInfo);
+                            changeNotification = addMessageToChangeNotification((AddInstance) notification);
                         } else if (notification instanceof UpdateInstanceInfo) {
-                            Delta delta = ((UpdateInstanceInfo) notification).getDelta();
-                            InstanceInfo oldInfo = idVsInstance.get(delta.getId());
-                            if (oldInfo != null) {
-                                InstanceInfo updatedInfo = oldInfo.applyDelta(delta);
-                                idVsInstance.put(updatedInfo.getId(), updatedInfo);
-                                sendAckOnConnection(connection);
-                                @SuppressWarnings("unchecked")
-                                ModifyNotification<InstanceInfo> modify =
-                                        new ModifyNotification(updatedInfo, Collections.singleton(delta));
-                                return modify;
-                            }
-
-                            sendAckOnConnection(connection); // Non-existent instance update isn't an error.
-
-                            if (logger.isWarnEnabled()) {
-                                logger.warn("Update notification received for non-existent instance id " + delta.getId());
-                            }
-                            return null;
+                            changeNotification = updateMessageToChangeNotification((UpdateInstanceInfo) notification);
                         } else if (notification instanceof DeleteInstance) {
-                            String instanceId = ((DeleteInstance) notification).getInstanceId();
-                            InstanceInfo removedInstance = idVsInstance.remove(instanceId);
-                            sendAckOnConnection(connection);
-                            if (removedInstance != null) {
-                                return new ChangeNotification<>(ChangeNotification.Kind.Delete,
-                                                                            removedInstance);
-                            }
-                            sendAckOnConnection(connection); // Non-existent instance delete isn't an error.
-                            if (logger.isWarnEnabled()) {
-                                logger.warn("Delete notification received for non-existent instance id:" + instanceId);
-                            }
-                            return null;
+                            changeNotification = deleteMessageToChangeNotification((DeleteInstance) notification);
                         } else {
                             throw new IllegalArgumentException("Unknown message received on the interest channel. Type: "
-                                                               + message.getClass().getName());
+                                    + message.getClass().getName());
                         }
+
+                        sendAckOnConnection(connection);
+                        return changeNotification;
                     }
                 }).filter(new Func1<ChangeNotification<InstanceInfo>, Boolean>() {
                     @Override
@@ -203,6 +176,80 @@ import java.util.Map;
                 });
             }
         });
+    }
+
+    /**
+     * For an AddInstance msg,
+     * - if it does not exist in cache, this is an Add Notification to the store
+     * - if it exist in cache but had a different version, this is a modify notification to the store.
+     *   For simplicity we treat this as an add if the new msg have a GREATER version number,
+     *   and ignore it otherwise
+     */
+    private ChangeNotification<InstanceInfo> addMessageToChangeNotification(AddInstance msg) {
+        ChangeNotification<InstanceInfo> notification = null;
+
+        InstanceInfo incoming = msg.getInstanceInfo();
+        InstanceInfo cached = idVsInstance.get(incoming.getId());
+        if (cached == null) {
+            idVsInstance.put(incoming.getId(), incoming);
+            notification = new ChangeNotification<>(ChangeNotification.Kind.Add, incoming);
+        } else if (incoming.getVersion() <= cached.getVersion()) {
+            logger.debug("Skipping <= version of the instanceInfo. Cached: {}, Incoming: {}", cached, incoming);
+        } else {
+            logger.debug("Received newer version of an existing instanceInfo as Add");
+            idVsInstance.put(incoming.getId(), incoming);
+            notification = new ChangeNotification<>(ChangeNotification.Kind.Add, incoming);
+        }
+
+        return notification;
+    }
+
+    /**
+     * For an UpdateInstanceInfo msg,
+     * - if it does not exist in cache, we ignore this message as we do not have enough information to restore it
+     * - if it exist in cache but is different, this is a modify notification to the store.
+     *   We only apply changes to cached instance if it has a version number GREATER THAN the cached
+     *   version number.
+     */
+    @SuppressWarnings("unchecked")
+    private ChangeNotification<InstanceInfo> updateMessageToChangeNotification(UpdateInstanceInfo msg) {
+        ModifyNotification<InstanceInfo> notification = null;
+
+        Delta delta = msg.getDelta();
+        InstanceInfo cached = idVsInstance.get(delta.getId());
+        if (cached == null) {
+            if (logger.isWarnEnabled()) {
+                logger.warn("Update notification received for non-existent instance id " + delta.getId());
+            }
+        }
+        else if (delta.getVersion() <= cached.getVersion()) {
+            logger.debug("Skipping <= version of the delta. Cached: {}, Delta: {}", cached, delta);
+        } else {
+            InstanceInfo updatedInfo = cached.applyDelta(delta);
+            idVsInstance.put(updatedInfo.getId(), updatedInfo);
+            notification = new ModifyNotification(updatedInfo, Collections.singleton(delta));
+        }
+
+        return notification;
+    }
+
+    /**
+     * For a DeleteInstance msg,
+     * - if it does not exist in cache, we ignore this message as it is irrelevant
+     * - else just remove it. We handle conflicts with delete and add on the registration side
+     */
+    private ChangeNotification<InstanceInfo> deleteMessageToChangeNotification(DeleteInstance msg) {
+        ChangeNotification<InstanceInfo> notification = null;
+
+        String instanceId = msg.getInstanceId();
+        InstanceInfo removedInstance = idVsInstance.remove(instanceId);
+        if (removedInstance != null) {
+            notification = new ChangeNotification<>(ChangeNotification.Kind.Delete, removedInstance);
+        } else if (logger.isWarnEnabled()) {
+            logger.warn("Delete notification received for non-existent instance id:" + instanceId);
+        }
+
+        return notification;
     }
 
     protected static class ChannelInterestSubscriber extends SafeSubscriber<ChangeNotification<InstanceInfo>> {

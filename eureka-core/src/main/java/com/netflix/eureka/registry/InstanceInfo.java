@@ -16,9 +16,6 @@
 
 package com.netflix.eureka.registry;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.HashSet;
 import java.util.Set;
 
@@ -49,7 +46,7 @@ public class InstanceInfo {
 
     // for serializers
     private InstanceInfo() {
-        this(null, null);
+        this(null, -1l);
     }
 
     protected InstanceInfo(String id, Long version) {
@@ -62,6 +59,16 @@ public class InstanceInfo {
      */
     public String getId() {
         return id;
+    }
+
+    /**
+     * All InstanceInfo instances contain a version string that can be used to determine timeline ordering
+     * for InstanceInfo records with the same id.
+     *
+     * @return the version string for this InstanceInfo
+     */
+    public Long getVersion() {
+        return version;
     }
 
     /**
@@ -160,16 +167,6 @@ public class InstanceInfo {
         return healthCheckUrls;
     }
 
-    /**
-     * All InstanceInfo instances contain a version string that can be used to determine timeline ordering
-     * for InstanceInfo records with the same id.
-     *
-     * @return the version string for this InstanceInfo
-     */
-    public Long getVersion() {
-        return version;
-    }
-
     public DataCenterInfo getDataCenterInfo() {
         return dataCenterInfo;
     }
@@ -213,6 +210,7 @@ public class InstanceInfo {
     @Override
     public int hashCode() {
         int result = id != null ? id.hashCode() : 0;
+        result = 31 * result + (version != null ? version.hashCode() : 0);
         result = 31 * result + (appGroup != null ? appGroup.hashCode() : 0);
         result = 31 * result + (app != null ? app.hashCode() : 0);
         result = 31 * result + (asg != null ? asg.hashCode() : 0);
@@ -226,7 +224,6 @@ public class InstanceInfo {
         result = 31 * result + (homePageUrl != null ? homePageUrl.hashCode() : 0);
         result = 31 * result + (statusPageUrl != null ? statusPageUrl.hashCode() : 0);
         result = 31 * result + (healthCheckUrls != null ? healthCheckUrls.hashCode() : 0);
-        result = 31 * result + (version != null ? version.hashCode() : 0);
         result = 31 * result + (dataCenterInfo != null ? dataCenterInfo.hashCode() : 0);
         return result;
     }
@@ -351,8 +348,6 @@ public class InstanceInfo {
     // ------------------------------------------
 
     public static final class Builder {
-        private static final Logger logger = LoggerFactory.getLogger(InstanceInfo.Builder.class);
-
         private String id;
         private Long version;
 
@@ -397,7 +392,7 @@ public class InstanceInfo {
             return this;
         }
 
-        protected Builder withVersion(Long version) {
+        public Builder withVersion(Long version) {
             this.version = version;
             return this;
         }
@@ -474,7 +469,7 @@ public class InstanceInfo {
 
         public InstanceInfo build() {
             if (this.version == null) {
-                this.version = System.currentTimeMillis();
+                this.version = -1l;
             }
 
             InstanceInfo result = new InstanceInfo(this.id, this.version);

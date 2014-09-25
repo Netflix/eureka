@@ -25,7 +25,7 @@ public abstract class AbstractChannel<STATE extends Enum> extends AbstractServic
     protected static final Logger logger = LoggerFactory.getLogger(AbstractChannel.class);
 
     protected final ClientConnection transport;
-    protected final EurekaRegistry registry;
+    protected final EurekaRegistry<InstanceInfo> registry;
 
     /**
      * For every heartbeat received, this counter is decremented by 1 and for every hearbeat check tick it is
@@ -45,7 +45,7 @@ public abstract class AbstractChannel<STATE extends Enum> extends AbstractServic
 
     private final int maxMissedHeartbeats;
 
-    protected AbstractChannel(STATE initState, ClientConnection transport, final EurekaRegistry registry) {
+    protected AbstractChannel(STATE initState, ClientConnection transport, final EurekaRegistry<InstanceInfo> registry) {
         super(initState);
         this.transport = transport;
         this.registry = registry;
@@ -53,12 +53,12 @@ public abstract class AbstractChannel<STATE extends Enum> extends AbstractServic
         maxMissedHeartbeats = Integer.MAX_VALUE;
     }
 
-    protected AbstractChannel(STATE initState, ClientConnection transport, final EurekaRegistry registry,
+    protected AbstractChannel(STATE initState, ClientConnection transport, final EurekaRegistry<InstanceInfo> registry,
                               int maxMissedHeartbeats, int heartbeatIntervalMs) {
         this(initState, transport, registry, maxMissedHeartbeats, heartbeatIntervalMs, Schedulers.computation());
     }
 
-    protected AbstractChannel(STATE initState, ClientConnection transport, final EurekaRegistry registry,
+    protected AbstractChannel(STATE initState, ClientConnection transport, final EurekaRegistry<InstanceInfo> registry,
                               int maxMissedHeartbeats, int heartbeatIntervalMs, Scheduler heartbeatCheckScheduler) {
         super(initState, heartbeatIntervalMs);
         this.transport = transport;

@@ -28,7 +28,7 @@ import java.util.Map;
 public class InstanceInfoField<T> {
 
     public enum Name {
-
+        // NO id or version
         AppGroup,
         App,
         Asg,
