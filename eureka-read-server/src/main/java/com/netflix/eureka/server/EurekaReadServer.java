@@ -16,42 +16,42 @@
 
 package com.netflix.eureka.server;
 
+import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 import com.netflix.adminresources.resources.KaryonWebAdminModule;
+import com.netflix.eureka.client.EurekaClient;
 import com.netflix.eureka.client.ServerResolver;
 import com.netflix.eureka.client.ServerResolver.Protocol;
+import com.netflix.eureka.client.ServerResolver.ProtocolType;
 import com.netflix.eureka.client.bootstrap.ServerResolvers;
+import com.netflix.eureka.server.ReadStartupConfig.ReadCommandLineParser;
 import com.netflix.eureka.server.transport.tcp.discovery.TcpDiscoveryModule;
 import com.netflix.eureka.transport.EurekaTransports.Codec;
 import com.netflix.governator.annotations.Modules;
 import com.netflix.governator.guice.LifecycleInjectorBuilder;
 import com.netflix.governator.guice.LifecycleInjectorBuilderSuite;
 import com.netflix.karyon.KaryonBootstrap;
-import com.netflix.karyon.archaius.ArchaiusBootstrap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetSocketAddress;
-
-import static java.util.Arrays.copyOfRange;
-
 /**
- * TODO: register Eureka Read server with the write cluster
- *
  * @author Tomasz Bak
  */
-@ArchaiusBootstrap
+//@ArchaiusBootstrap
 @KaryonBootstrap(name = "eureka-read-server")
 @Modules(include = KaryonWebAdminModule.class)
-public class EurekaReadServer extends AbstractEurekaServer {
+public class EurekaReadServer extends AbstractEurekaServer<ReadStartupConfig> {
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaReadServer.class);
 
     private final ServerResolver<InetSocketAddress> resolver;
-    private final int shutdownPort;
 
-    public EurekaReadServer(ServerResolver<InetSocketAddress> resolver, int shutdownPort) {
-        this.resolver = resolver;
-        this.shutdownPort = shutdownPort;
+    public EurekaReadServer(ReadStartupConfig config) {
+        super(config);
+        this.resolver = createResolver();
     }
 
     @Override
@@ -60,52 +60,67 @@ public class EurekaReadServer extends AbstractEurekaServer {
             @Override
             public void configure(LifecycleInjectorBuilder builder) {
                 builder.withModules(
-                        new EurekaShutdownModule(shutdownPort),
-                        new TcpDiscoveryModule("eurekaReadServer-transport", 7004),
+                        new EurekaShutdownModule(config.getShutDownPort()),
+                        new TcpDiscoveryModule("eurekaReadServer-transport", config.getDiscoveryPort()),
                         new EurekaReadServerModule(resolver, Codec.Json)
                 );
             }
         };
     }
 
-    public static void usage() {
-        System.out.println("Usage:");
-        System.out.println("    -t dns <write_cluster_dns>     resolve write cluster from a domain name");
-        System.out.println("    -t inline (<host>[:<port>])+  configure write cluster resolver with");
-        System.out.println("                                  provided list of host[:port] entries");
-        System.out.println();
+    @Override
+    public void start() throws Exception {
+        resolver.start();
+        super.start();
     }
 
-    private static void cliSyntaxError(String message) {
-        System.err.println("ERROR: " + message);
-        usage();
-        System.exit(-1);
+    private ServerResolver<InetSocketAddress> createResolver() {
+        Protocol[] protocols = {
+                new Protocol(config.getWriteClusterRegistrationPort(), ProtocolType.TcpRegistration),
+                new Protocol(config.getWriteClusterDiscoveryPort(), ProtocolType.TcpDiscovery)
+        };
+
+        ServerResolver<InetSocketAddress> resolver = null;
+        switch (config.getResolverType()) {
+            case "dns":
+                resolver = ServerResolvers.forDomainName(config.getRest()[0], protocols);
+                break;
+            case "inline":
+                Set<Protocol> protocolSet = new HashSet<>(Arrays.asList(protocols));
+                resolver = ServerResolvers.fromList(protocolSet, config.getRest());
+                break;
+        }
+        return resolver;
+    }
+
+    private void selfRegistration() {
+        ReadSelfRegistrationExecutor.doSelfRegistration(injector.getInstance(EurekaClient.class), config);
     }
 
     public static void main(String[] args) {
-        if (args.length < 3) {
-            cliSyntaxError("insufficient number of parameters");
+        System.out.println("Eureka 2.0 Read Server\n");
+
+        ReadCommandLineParser commandLineParser = new ReadCommandLineParser();
+        ReadStartupConfig config = null;
+        try {
+            config = commandLineParser.build(args);
+        } catch (Exception e) {
+            System.err.println("ERROR: invalid configuration parameters; " + e.getMessage());
+            System.exit(-1);
         }
-        if (!"-t".equals(args[0])) {
-            cliSyntaxError("expected -t option followed by write server cluster resolution method");
+
+        if (config.hasHelp()) {
+            commandLineParser.printHelp();
+            System.exit(0);
         }
-        ServerResolver<InetSocketAddress> resolver = null;
-        switch (args[1]) {
-            case "dns":
-                resolver = ServerResolvers.forDomainName(Protocol.TcpDiscovery, args[2]);
-                break;
-            case "inline":
-                resolver = ServerResolvers.fromList(Protocol.TcpDiscovery, copyOfRange(args, 2, args.length));
-                break;
-            default:
-                cliSyntaxError("unrecognized server resolver type " + args[1]);
-                break;
-        }
+
+        logger.info("Starting Eureka Read server with startup configuration: " + config);
 
         EurekaReadServer server = null;
         try {
-            server = new EurekaReadServer(resolver, 7789);
+            server = new EurekaReadServer(config);
             server.start();
+            server.selfRegistration();
         } catch (Exception e) {
             logger.error("Error while starting Eureka Read server.", e);
             if (server != null) {

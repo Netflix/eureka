@@ -19,6 +19,8 @@ package com.netflix.eureka.client;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.net.SocketAddress;
+import java.util.Collections;
+import java.util.Set;
 
 import rx.Observable;
 
@@ -29,20 +31,6 @@ import rx.Observable;
  */
 public interface ServerResolver<A extends SocketAddress> {
 
-    enum Protocol {
-        Undefined(-1), TcpRegistration(7002), TcpDiscovery(7003), WebSockets(7001);
-
-        private final int defaultPort;
-
-        Protocol(int defaultPort) {
-            this.defaultPort = defaultPort;
-        }
-
-        public int defaultPort() {
-            return defaultPort;
-        }
-    }
-
     /**
      * Returns a stream of {@link ServerEntry}
      *
@@ -50,6 +38,7 @@ public interface ServerResolver<A extends SocketAddress> {
      */
     Observable<ServerEntry<A>> resolve();
 
+    // TODO: refactor the code to use lazy initialization on first #resolve request, and get rid of explicit start
     @PostConstruct
     void start();
 
@@ -61,26 +50,63 @@ public interface ServerResolver<A extends SocketAddress> {
     @PreDestroy
     void close();
 
-    class ServerEntry<A> {
+    enum ProtocolType {
+        Undefined(-1), TcpRegistration(7002), TcpDiscovery(7003), WebSockets(7001);
 
-        public Protocol getProtocol() {
-            return protocol;
+        private final int defaultPort;
+
+        ProtocolType(int defaultPort) {
+            this.defaultPort = defaultPort;
         }
+
+        public int defaultPort() {
+            return defaultPort;
+        }
+    }
+
+    class Protocol {
+        private final int port;
+        private final ProtocolType protocolType;
+
+        public Protocol(int port, ProtocolType protocolType) {
+            this.port = port;
+            this.protocolType = protocolType;
+        }
+
+        public int getPort() {
+
+            return port;
+        }
+
+        public ProtocolType getProtocolType() {
+            return protocolType;
+        }
+
+        public static Set<Protocol> setOf(int port, ProtocolType protocolType) {
+            return Collections.singleton(new Protocol(port, protocolType));
+        }
+    }
+
+    class ServerEntry<A> {
 
         public enum Action {Add, Remove}
 
         private final Action action;
         private final A server;
-        private final Protocol protocol;
+        private final Set<Protocol> protocols;
 
         public ServerEntry(Action action, A server) {
-            this(action, server, Protocol.Undefined);
+            this(action, server, (Set<Protocol>) null);
         }
 
         public ServerEntry(Action action, A server, Protocol protocol) {
+            this(action, server, Collections.singleton(protocol));
+        }
+
+        public ServerEntry(Action action, A server, Set<Protocol> protocols) {
             this.action = action;
             this.server = server;
-            this.protocol = protocol;
+            this.protocols = protocols;
         }
 
         public Action getAction() {
@@ -89,6 +115,26 @@ public interface ServerResolver<A extends SocketAddress> {
 
         public A getServer() {
             return server;
+        }
+
+        public int getPort(ProtocolType protocolType) {
+            if (protocols == null) {
+                return protocolType.defaultPort;
+            }
+            for (Protocol p : protocols) {
+                if (p.getProtocolType() == protocolType) {
+                    return p.getPort();
+                }
+            }
+            return -1;
+        }
+
+        public Set<Protocol> getProtocols() {
+            return protocols;
+        }
+
+        public boolean matches(ProtocolType protocolType) {
+            return getPort(protocolType) != -1;
         }
 
         @Override
@@ -105,7 +151,7 @@ public interface ServerResolver<A extends SocketAddress> {
             if (action != that.action) {
                 return false;
             }
-            if (protocol != that.protocol) {
+            if (protocols != null ? !protocols.equals(that.protocols) : that.protocols != null) {
                 return false;
             }
             if (server != null ? !server.equals(that.server) : that.server != null) {
@@ -119,17 +165,13 @@ public interface ServerResolver<A extends SocketAddress> {
         public int hashCode() {
             int result = action != null ? action.hashCode() : 0;
             result = 31 * result + (server != null ? server.hashCode() : 0);
-            result = 31 * result + (protocol != null ? protocol.hashCode() : 0);
+            result = 31 * result + (protocols != null ? protocols.hashCode() : 0);
             return result;
         }
 
         @Override
         public String toString() {
-            return "ServerEntry{" +
-                    "action=" + action +
-                    ", server=" + server +
-                    ", protocol=" + protocol +
-                    '}';
+            return "ServerEntry{action=" + action + ", server=" + server + ", protocols=" + protocols + '}';
         }
     }
 }

@@ -20,7 +20,6 @@ import java.util.concurrent.CountDownLatch;
 
 import com.google.inject.Injector;
 import com.netflix.governator.guice.LifecycleInjector;
-import com.netflix.governator.guice.LifecycleInjectorBuilder;
 import com.netflix.governator.guice.LifecycleInjectorBuilderSuite;
 import com.netflix.governator.lifecycle.LifecycleManager;
 import org.slf4j.Logger;
@@ -30,12 +29,17 @@ import org.slf4j.LoggerFactory;
  *
  * @author Tomasz Bak
  */
-public abstract class AbstractEurekaServer {
+public abstract class AbstractEurekaServer<C extends StartupConfig> {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractEurekaServer.class);
 
-    private Injector injector;
+    protected final C config;
+    protected Injector injector;
     private LifecycleManager lifecycleManager;
+
+    protected AbstractEurekaServer(C config) {
+        this.config = config;
+    }
 
     public void start() throws Exception {
         injector = LifecycleInjector.bootstrap(this.getClass(), additionalModules());

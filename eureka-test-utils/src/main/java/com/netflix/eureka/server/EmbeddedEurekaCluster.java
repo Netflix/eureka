@@ -22,9 +22,13 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import com.netflix.eureka.client.ServerResolver.Protocol;
+import com.netflix.eureka.client.ServerResolver.ProtocolType;
 import com.netflix.eureka.client.bootstrap.StaticServerResolver;
+import com.netflix.eureka.registry.datacenter.LocalDataCenterInfo.DataCenterType;
+import com.netflix.eureka.server.ReadStartupConfig.ReadStartupConfigBuilder;
 import com.netflix.eureka.server.ServerInstance.EurekaReadServerInstance;
 import com.netflix.eureka.server.ServerInstance.EurekaWriteServerInstance;
+import com.netflix.eureka.server.WriteStartupConfig.WriteStartupConfigBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,9 +41,9 @@ public class EmbeddedEurekaCluster {
 
     private static final Logger logger = LoggerFactory.getLogger(EmbeddedEurekaCluster.class);
 
-    private static final String WRITE_SERVER_NAME_PREFIX = "WriteServer";
+    private static final String WRITE_SERVER_NAME = "WriteServer";
     private static final int WRITE_SERVER_PORTS_FROM = 7200;
-    private static final String READ_SERVER_NAME_PREFIX = "ReadServer";
+    private static final String READ_SERVER_NAME = "ReadServer";
     private static final int READ_SERVER_PORTS_FROM = 7300;
 
     private final List<ServerInstance> writeInstances = new ArrayList<>();
@@ -49,12 +53,29 @@ public class EmbeddedEurekaCluster {
         StaticServerResolver<InetSocketAddress> writeClusterResolver = new StaticServerResolver<>();
         for (int i = 0; i < writeCount; i++) {
             int port = WRITE_SERVER_PORTS_FROM + 2 * i;
-            ServerInstance instance = new EurekaWriteServerInstance(WRITE_SERVER_NAME_PREFIX + i, port);
+            WriteStartupConfig config = new WriteStartupConfigBuilder()
+                    .withAppName(WRITE_SERVER_NAME)
+                    .withVipAddress(WRITE_SERVER_NAME)
+                    .withDataCenterType(DataCenterType.Basic)
+                    .withWriteServerPort(port)
+                    .withReadServerPort(port + 1)
+                    .build();
+            ServerInstance instance = new EurekaWriteServerInstance(config);
             writeInstances.add(instance);
-            writeClusterResolver.addServer(new InetSocketAddress("localhost", port + 1), Protocol.TcpDiscovery);
+            writeClusterResolver.addServer(
+                    new InetSocketAddress("localhost", 0),
+                    new Protocol(port, ProtocolType.TcpRegistration),
+                    new Protocol(port + 1, ProtocolType.TcpDiscovery));
         }
         for (int i = 0; i < readCount; i++) {
-            ServerInstance instance = new EurekaReadServerInstance(READ_SERVER_NAME_PREFIX + i, READ_SERVER_PORTS_FROM + i, writeClusterResolver);
+            int port = READ_SERVER_PORTS_FROM + i;
+            ReadStartupConfig config = new ReadStartupConfigBuilder()
+                    .withAppName(READ_SERVER_NAME)
+                    .withVipAddress(READ_SERVER_NAME)
+                    .withDataCenterType(DataCenterType.Basic)
+                    .withReadServerPort(port)
+                    .build();
+            ServerInstance instance = new EurekaReadServerInstance(config, writeClusterResolver);
             readInstances.add(instance);
         }
     }

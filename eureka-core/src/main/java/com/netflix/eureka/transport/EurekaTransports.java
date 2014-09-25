@@ -40,6 +40,9 @@ import io.reactivex.netty.pipeline.PipelineConfigurator;
  */
 public final class EurekaTransports {
 
+    public static final int DEFAULT_REGISTRATION_PORT = 7002;
+    public static final int DEFAULT_DISCOVERY_PORT = 7003;
+
     static final String REGISTRATION_SCHEMA_FILE = "registration-schema.avpr";
     static final String REGISTRATION_ENVELOPE_TYPE = "com.netflix.eureka.protocol.registration.RegistrationMessages";
     static final String DISCOVERY_SCHEMA_FILE = "discovery-schema.avpr";
@@ -84,6 +87,6 @@ public final class EurekaTransports {
     }
 
     private static PipelineConfigurator<Object, Object> failOnMissingCodec(Codec codec) {
-        throw new IllegalArgumentException("internal error - missing pipelinie implementation for codec " + codec);
+        throw new IllegalArgumentException("internal error - missing pipeline implementation for codec " + codec);
     }
 }

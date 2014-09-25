@@ -46,25 +46,16 @@ public class DnsServerResolver extends AbstractServerResolver<InetSocketAddress>
     private static final TimeUnit DNS_LOOKUP_INTERVAL_UNIT = TimeUnit.SECONDS;
 
     private final String domainName;
-    private final int port;
+    private final Set<Protocol> protocols;
 
-    public DnsServerResolver(Protocol protocol, String domainName, boolean refresh) {
-        this(protocol, domainName, refresh, Schedulers.io());
+    public DnsServerResolver(String domainName, Set<Protocol> protocols, boolean refresh) {
+        this(domainName, protocols, refresh, Schedulers.io());
     }
 
-    public DnsServerResolver(Protocol protocol, String domainName, boolean refresh, Scheduler scheduler) {
+    public DnsServerResolver(String domainName, Set<Protocol> protocols, boolean refresh, Scheduler scheduler) {
         super(refresh, scheduler);
-
-        int port = (protocol == null) ? 0 : protocol.defaultPort();
-        int idx = domainName.indexOf(':');
-        if (idx == -1) {
-            this.domainName = domainName;
-        } else {
-            this.domainName = domainName.substring(0, idx);
-            port = Integer.parseInt(domainName.substring(idx + 1));
-        }
-
-        this.port = port;
+        this.domainName = domainName;
+        this.protocols = protocols;
     }
 
     @Override
@@ -144,7 +135,7 @@ public class DnsServerResolver extends AbstractServerResolver<InetSocketAddress>
             NamingEnumeration<?> it = attr.getAll();
             while (it.hasMore()) {
                 Object value = it.next();
-                resultSet.add(new ServerEntry<InetSocketAddress>(Action.Add, new InetSocketAddress(value.toString(), port)));
+                resultSet.add(new ServerEntry<InetSocketAddress>(Action.Add, new InetSocketAddress(value.toString(), 0), protocols));
             }
             return resultSet;
         }

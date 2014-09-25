@@ -20,6 +20,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka.client.ServerResolver.Protocol;
+import com.netflix.eureka.client.ServerResolver.ProtocolType;
 import com.netflix.eureka.client.bootstrap.StaticServerResolver;
 import com.netflix.eureka.client.transport.tcp.TcpRegistrationClient;
 import com.netflix.eureka.protocol.registration.Register;
@@ -76,7 +77,7 @@ public class ResolverBasedTransportClientTest {
     @Test
     public void testRibbonLoadBalancer() throws Exception {
         StaticServerResolver<InetSocketAddress> resolver = new StaticServerResolver<>();
-        resolver.addServer(new InetSocketAddress("localhost", 1), Protocol.TcpRegistration);
+        resolver.addServer(new InetSocketAddress("localhost", 0), new Protocol(1, ProtocolType.TcpRegistration));
 
         ResolverBasedTransportClient<InetSocketAddress> transportClient = new TcpRegistrationClient(resolver, Codec.Json);
 
@@ -89,7 +90,7 @@ public class ResolverBasedTransportClientTest {
         }
 
         // Now add our test server
-        resolver.addServer(new InetSocketAddress("localhost", server.getServerPort()), Protocol.TcpRegistration);
+        resolver.addServer(new InetSocketAddress("localhost", 0), new Protocol(server.getServerPort(), ProtocolType.TcpRegistration));
         transportClient.loadBalancer.updateListOfServers(); // We do not want to wait for the background thread to refresh it.
 
         ServerConnection connection = transportClient.connect().toBlocking().toFuture().get(30, TimeUnit.SECONDS);

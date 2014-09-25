@@ -16,10 +16,15 @@
 
 package com.netflix.eureka.client.bootstrap;
 
+import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 import com.netflix.eureka.client.ServerResolver;
 import com.netflix.eureka.client.ServerResolver.Protocol;
-
-import java.net.InetSocketAddress;
+import com.netflix.eureka.client.ServerResolver.ProtocolType;
 
 /**
  * {@link ServerResolvers} provides a collection of static factory methods for
@@ -27,17 +32,30 @@ import java.net.InetSocketAddress;
  *
  * @author Tomasz Bak
  */
-public class ServerResolvers {
+public final class ServerResolvers {
 
-    public static ServerResolver<InetSocketAddress> forDomainName(Protocol protocol, String domainName) {
-        return new DnsServerResolver(protocol, domainName, true);
+    private ServerResolvers() {
+    }
+
+    public static ServerResolver<InetSocketAddress> forDomainName(String domainName, Protocol... protocols) {
+        int idx = domainName.indexOf(':');
+        if (idx != -1) {
+            throw new IllegalArgumentException("Expected server domain name without port number attached; protocol ports are defined explicitly");
+        }
+        return new DnsServerResolver(domainName, protocols == null ? null : new HashSet<Protocol>(Arrays.asList(protocols)), true);
+    }
+
+    public static ServerResolver<InetSocketAddress> forDomainName(String domainName, ProtocolType protocolType) {
+        int idx = domainName.indexOf(':');
+        int port = idx == -1 ? protocolType.defaultPort() : Integer.parseInt(domainName.substring(idx + 1));
+        return new DnsServerResolver(domainName, Collections.singleton(new Protocol(port, protocolType)), true);
     }
 
     /**
      * Each entry should be in the format <host>[:<port>]. If the port is not given, the
      * default value associated with a provided protocol is used instead.
      */
-    public static ServerResolver<InetSocketAddress> fromList(Protocol protocol, String... entries) {
+    public static ServerResolver<InetSocketAddress> fromList(ProtocolType protocolType, String... entries) {
         StaticServerResolver<InetSocketAddress> resolver = new StaticServerResolver<>();
         for (String entry : entries) {
             int cidx = entry.indexOf(':');
@@ -45,12 +63,20 @@ public class ServerResolvers {
             int port;
             if (cidx == -1) {
                 host = entry;
-                port = protocol.defaultPort();
+                port = protocolType.defaultPort();
             } else {
                 host = entry.substring(0, cidx);
                 port = Integer.parseInt(entry.substring(cidx + 1));
             }
-            resolver.addServer(new InetSocketAddress(host, port), protocol);
+            resolver.addServer(new InetSocketAddress(host, port), Collections.singleton(new Protocol(port, protocolType)));
+        }
+        return resolver;
+    }
+
+    public static ServerResolver<InetSocketAddress> fromList(Set<Protocol> protocols, String... hosts) {
+        StaticServerResolver<InetSocketAddress> resolver = new StaticServerResolver<>();
+        for (String host : hosts) {
+            resolver.addServer(new InetSocketAddress(host, 0), protocols);
         }
         return resolver;
     }

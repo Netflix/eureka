@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka.client.local;
+package com.netflix.eureka.registry.datacenter;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.netflix.eureka.registry.AwsDataCenterInfo;
 import com.netflix.eureka.registry.SampleAwsDataCenterInfo;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -32,14 +31,13 @@ import io.reactivex.netty.protocol.http.server.HttpServerRequest;
 import io.reactivex.netty.protocol.http.server.HttpServerResponse;
 import io.reactivex.netty.protocol.http.server.RequestHandler;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Notification;
 import rx.Notification.Kind;
 import rx.Observable;
 
-import static org.junit.Assert.assertSame;
+import static org.junit.Assert.*;
 
 /**
  * @author Tomasz Bak
@@ -95,7 +93,7 @@ public class AwsDataCenterInfoProviderTest {
         AwsDataCenterInfoProvider provider = new AwsDataCenterInfoProvider("http://localhost:" + httpServer.getServerPort() + "/latest/meta-data");
         AwsDataCenterInfo resolvedDataCenterInfo = provider.dataCenterInfo().single().toBlocking().toFuture().get(10, TimeUnit.SECONDS);
 
-        Assert.assertEquals("Resolved data center info not identical to the reference one", DATA_CENTER_INFO, resolvedDataCenterInfo);
+        assertEquals("Resolved data center info not identical to the reference one", DATA_CENTER_INFO, resolvedDataCenterInfo);
     }
 
     @Test

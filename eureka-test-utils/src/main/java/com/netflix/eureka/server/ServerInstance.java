@@ -21,8 +21,15 @@ import java.net.InetSocketAddress;
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.netflix.eureka.client.EurekaClient;
+import com.netflix.eureka.client.EurekaClients;
 import com.netflix.eureka.client.ServerResolver;
 import com.netflix.eureka.client.bootstrap.StaticServerResolver;
+import com.netflix.eureka.registry.DataCenterInfo;
+import com.netflix.eureka.registry.EurekaRegistry;
+import com.netflix.eureka.registry.NetworkAddress;
+import com.netflix.eureka.registry.datacenter.BasicDataCenterInfo;
+import com.netflix.eureka.registry.datacenter.BasicDataCenterInfo.BasicDataCenterInfoBuilder;
 import com.netflix.eureka.server.spi.ExtensionContext;
 import com.netflix.eureka.server.spi.ExtensionContext.ExtensionContextBuilder;
 import com.netflix.eureka.server.spi.ExtensionLoader;
@@ -42,7 +49,14 @@ public abstract class ServerInstance {
 
     private static final Logger logger = LoggerFactory.getLogger(ServerInstance.class);
 
-    private LifecycleManager lifecycleManager;
+    private static final DataCenterInfo DATA_CENTER_INFO = new BasicDataCenterInfoBuilder<BasicDataCenterInfo>()
+            .withName("local-dev")
+            .withAddresses(NetworkAddress.publicHostNameIPv4("localhost"))
+            .build();
+
+
+    protected Injector injector;
+    protected LifecycleManager lifecycleManager;
 
     protected void setup(final ExtensionContext extensionContext, Module[] modules) {
         LifecycleInjectorBuilder builder = LifecycleInjector.builder();
@@ -58,7 +72,7 @@ public abstract class ServerInstance {
         // Extensions
         builder.withAdditionalModules(new ExtensionLoader(extensionContext, true).asModuleArray());
 
-        Injector injector = builder.build().createInjector();
+        injector = builder.build().createInjector();
 
         lifecycleManager = injector.getInstance(LifecycleManager.class);
         try {
@@ -74,35 +88,39 @@ public abstract class ServerInstance {
 
 
     public static class EurekaWriteServerInstance extends ServerInstance {
-        public EurekaWriteServerInstance(String serverName, int port) {
+        public EurekaWriteServerInstance(WriteStartupConfig config) {
             ExtensionContext context = new ExtensionContextBuilder()
-                    .withEurekaClusterName(serverName + '#' + port)
-                    .withInternalReadServerAddress(new InetSocketAddress("localhost", port))
+                    .withEurekaClusterName(config.getAppName())
+                    .withInternalReadServerAddress(new InetSocketAddress("localhost", config.getDiscoveryPort()))
                     .withSystemProperties(true)
                     .build();
             Module[] modules = {
-                    new JsonRegistrationModule(serverName + "#registration", port),
-                    new TcpDiscoveryModule(serverName + "#discovery", port + 1),
+                    new JsonRegistrationModule(config.getAppName() + "#registration", config.getRegistrationPort()),
+                    new TcpDiscoveryModule(config.getAppName() + "#discovery", config.getDiscoveryPort()),
                     new EurekaWriteServerModule(new StaticServerResolver<InetSocketAddress>(), Codec.Json)
             };
 
             setup(context, modules);
+            //noinspection unchecked
+            WriteSelfRegistrationExecutor.doSelfRegistration(injector.getInstance(EurekaRegistry.class), DATA_CENTER_INFO, config);
         }
     }
 
     public static class EurekaReadServerInstance extends ServerInstance {
-        public EurekaReadServerInstance(String serverName, int port, ServerResolver<InetSocketAddress> resolver) {
+        public EurekaReadServerInstance(ReadStartupConfig config, ServerResolver<InetSocketAddress> resolver) {
             ExtensionContext context = new ExtensionContextBuilder()
-                    .withEurekaClusterName(serverName + '#' + port)
-                    .withInternalReadServerAddress(new InetSocketAddress("localhost", port))
+                    .withEurekaClusterName(config.getAppName())
+                    .withInternalReadServerAddress(new InetSocketAddress("localhost", config.getDiscoveryPort()))
                     .withSystemProperties(true)
                     .build();
             Module[] modules = {
-                    new TcpDiscoveryModule(serverName + "#discovery", port),
+                    new TcpDiscoveryModule(config.getAppName() + "#discovery", config.getDiscoveryPort()),
                     new EurekaReadServerModule(resolver, Codec.Json)
             };
 
             setup(context, modules);
+            EurekaClient eurekaClient = EurekaClients.forRegistrationAndDiscovery(resolver, resolver, Codec.Json).toBlocking().first();
+            ReadSelfRegistrationExecutor.doSelfRegistration(eurekaClient, DATA_CENTER_INFO, config);
         }
     }
 }

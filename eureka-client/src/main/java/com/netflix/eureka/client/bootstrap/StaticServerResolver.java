@@ -18,7 +18,9 @@ package com.netflix.eureka.client.bootstrap;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.netflix.eureka.client.ServerResolver;
@@ -40,16 +42,23 @@ public class StaticServerResolver<A extends SocketAddress> implements ServerReso
     private final ReentrantLock lock = new ReentrantLock(); // To enforce serialized observable updates in add/remove methods
 
     @SafeVarargs
-    public StaticServerResolver(final A... serverList) {
+    public StaticServerResolver(A... serverList) {
         for (A server : serverList) {
-            addServer(server, Protocol.Undefined);
+            addServer(server, (Set<Protocol>) null);
         }
     }
 
-    public void addServer(A server, Protocol protocol) {
+    @SafeVarargs
+    public StaticServerResolver(Set<Protocol> protocols, A... serverList) {
+        for (A server : serverList) {
+            addServer(server, protocols);
+        }
+    }
+
+    public void addServer(A server, Set<Protocol> protocols) {
         lock.lock();
         try {
-            ServerEntry<A> entry = new ServerEntry<>(Action.Add, server, protocol);
+            ServerEntry<A> entry = new ServerEntry<>(Action.Add, server, protocols);
             if (!serverList.contains(entry)) {
                 serverPublisher.onNext(entry);
                 serverList.add(entry);
@@ -59,13 +68,17 @@ public class StaticServerResolver<A extends SocketAddress> implements ServerReso
         }
     }
 
+    public void addServer(A server, Protocol... protocols) {
+        addServer(server, protocols == null ? null : new HashSet<Protocol>(Arrays.asList(protocols)));
+    }
+
     public void removeServer(A server) {
         lock.lock();
         try {
             for (ServerEntry<A> entry : serverList) {
                 if (entry.getServer().equals(server)) {
                     serverList.remove(entry);
-                    serverPublisher.onNext(new ServerEntry<A>(Action.Remove, server, entry.getProtocol()));
+                    serverPublisher.onNext(new ServerEntry<A>(Action.Remove, server, entry.getProtocols()));
                 }
             }
         } finally {

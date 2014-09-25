@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka.registry;
+package com.netflix.eureka.registry.datacenter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.netflix.eureka.registry.DataCenterInfo;
+import com.netflix.eureka.registry.NetworkAddress;
 import com.netflix.eureka.registry.NetworkAddress.ProtocolType;
 import com.netflix.eureka.utils.SystemUtil;
 
 /**
- * This class encapsulates basic server information. It can be created explicitely
+ * This class encapsulates basic server information. It can be created explicitly
  * with {@link BasicDataCenterInfoBuilder} or deduced from the local server
  * system data.
  *
@@ -103,7 +105,7 @@ public class BasicDataCenterInfo extends DataCenterInfo {
     public static class BasicDataCenterInfoBuilder<T extends BasicDataCenterInfo> extends DataCenterInfoBuilder<T> {
 
         private String name;
-        private List<NetworkAddress> addresses = new ArrayList<>();
+        private final List<NetworkAddress> addresses = new ArrayList<>();
 
         public BasicDataCenterInfoBuilder<T> withName(String name) {
             this.name = name;
@@ -115,6 +117,7 @@ public class BasicDataCenterInfo extends DataCenterInfo {
             return this;
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public T build() {
             return (T) new BasicDataCenterInfo(name, addresses);

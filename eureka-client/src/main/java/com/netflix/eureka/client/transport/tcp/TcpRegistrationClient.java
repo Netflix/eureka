@@ -19,7 +19,7 @@ package com.netflix.eureka.client.transport.tcp;
 import java.net.InetSocketAddress;
 
 import com.netflix.eureka.client.ServerResolver;
-import com.netflix.eureka.client.ServerResolver.Protocol;
+import com.netflix.eureka.client.ServerResolver.ProtocolType;
 import com.netflix.eureka.client.ServerResolver.ServerEntry;
 import com.netflix.eureka.client.transport.ResolverBasedTransportClient;
 import com.netflix.eureka.client.transport.TransportClient;
@@ -33,17 +33,11 @@ import com.netflix.eureka.transport.EurekaTransports;
 public class TcpRegistrationClient extends ResolverBasedTransportClient<InetSocketAddress> {
 
     public TcpRegistrationClient(ServerResolver<InetSocketAddress> resolver, EurekaTransports.Codec codec) {
-        super(resolver, getClientConfig("tcpRegistrationClient"), EurekaTransports.registrationPipeline(codec));
+        super(resolver, ProtocolType.TcpRegistration, getClientConfig("tcpRegistrationClient"), EurekaTransports.registrationPipeline(codec));
     }
 
     @Override
     protected boolean matches(ServerEntry<InetSocketAddress> entry) {
-        return (entry.getProtocol() == Protocol.TcpRegistration || entry.getProtocol() == Protocol.Undefined)
-                && entry.getServer() instanceof InetSocketAddress;
-    }
-
-    @Override
-    protected int defaultPort() {
-        return Protocol.TcpRegistration.defaultPort();
+        return entry.matches(ProtocolType.TcpRegistration);
     }
 }

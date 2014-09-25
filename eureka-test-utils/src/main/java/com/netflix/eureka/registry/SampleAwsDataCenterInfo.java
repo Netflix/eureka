@@ -16,7 +16,8 @@
 
 package com.netflix.eureka.registry;
 
-import com.netflix.eureka.registry.AwsDataCenterInfo.AwsDataCenterInfoBuilder;
+import com.netflix.eureka.registry.datacenter.AwsDataCenterInfo;
+import com.netflix.eureka.registry.datacenter.AwsDataCenterInfo.AwsDataCenterInfoBuilder;
 import com.netflix.eureka.registry.NetworkAddress.ProtocolType;
 
 /**

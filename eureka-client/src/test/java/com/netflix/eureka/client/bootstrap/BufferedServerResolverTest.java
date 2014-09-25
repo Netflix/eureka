@@ -17,6 +17,7 @@
 package com.netflix.eureka.client.bootstrap;
 
 import java.net.InetSocketAddress;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -51,7 +52,7 @@ public class BufferedServerResolverTest {
                 });
 
         assertEquals("Should not complete yet", 1, completed.getCount());
-        resolver.addServer(new InetSocketAddress("testA", 123), Protocol.TcpDiscovery);
+        resolver.addServer(new InetSocketAddress("testA", 0), (Set<Protocol>) null);
         assertTrue("Should be done by now", completed.await(30, TimeUnit.SECONDS));
 
         assertEquals(1, bufferedResolver.currentSnapshot().size());

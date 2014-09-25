@@ -34,3 +34,16 @@ jar {
         instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
     }
 }
+
+task runWriteServer (dependsOn: [classes], type: JavaExec) {
+    group = "Run tasks"
+    description = "Run Eureka 2.0 write server"
+
+    main = "com.netflix.eureka.server.EurekaWriteServer"
+    classpath = sourceSets.main.runtimeClasspath
+
+    systemProperty 'java.awt.headless', 'true'
+    systemProperty 'archaius.deployment.environment', 'dev'
+
+    args "-n", "eurekaWrite"
+}

@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka.client.ServerResolver.Protocol;
+import com.netflix.eureka.client.ServerResolver.ProtocolType;
 import com.netflix.eureka.client.ServerResolver.ServerEntry;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -39,7 +40,7 @@ public class DnsServerResolverTest {
     @Ignore // Because the DNS resolution fails on CloudBees
     public void testPublicAddressResolution() throws Exception {
         // Google has a long list of addresses.
-        DnsServerResolver resolver = new DnsServerResolver(Protocol.TcpDiscovery, "google.com", false);
+        DnsServerResolver resolver = new DnsServerResolver("google.com", null, false);
         resolver.start();
         try {
             List<ServerEntry<InetSocketAddress>> serverEntries = resolver.resolve().take(2).toList().toBlocking().toFuture().get(30, TimeUnit.SECONDS);
@@ -53,7 +54,7 @@ public class DnsServerResolverTest {
     @Test
     @Ignore
     public void testLocalhost() throws Exception {
-        DnsServerResolver resolver = new DnsServerResolver(Protocol.TcpDiscovery, "localhost:7300", false);
+        DnsServerResolver resolver = new DnsServerResolver("localhost", Protocol.setOf(7300, ProtocolType.TcpDiscovery), false);
         resolver.start();
         try {
             List<ServerEntry<InetSocketAddress>> serverEntries = resolver.resolve().take(1).toList().toBlocking().toFuture().get(30, TimeUnit.SECONDS);

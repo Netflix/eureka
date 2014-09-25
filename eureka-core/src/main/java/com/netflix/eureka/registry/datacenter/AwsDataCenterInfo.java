@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka.registry;
+package com.netflix.eureka.registry.datacenter;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,6 +22,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.netflix.eureka.registry.DataCenterInfo;
+import com.netflix.eureka.registry.NetworkAddress;
 import com.netflix.eureka.registry.NetworkAddress.ProtocolType;
 
 /**
@@ -31,6 +33,7 @@ import com.netflix.eureka.registry.NetworkAddress.ProtocolType;
  */
 public class AwsDataCenterInfo extends DataCenterInfo {
 
+    private final String name;
     private final String region;
     private final String zone;
     private final String placementGroup;
@@ -41,7 +44,7 @@ public class AwsDataCenterInfo extends DataCenterInfo {
 
     // For object creation via reflection.
     private AwsDataCenterInfo() {
-        region = zone = placementGroup = amiId = instanceId = instanceType = null;
+        name = region = zone = placementGroup = amiId = instanceId = instanceType = null;
         addresses = null;
     }
 
@@ -50,7 +53,7 @@ public class AwsDataCenterInfo extends DataCenterInfo {
         zone = builder.zone;
         placementGroup = builder.placementGroup;
         amiId = builder.amiId;
-        instanceId = builder.instanceId;
+        name = instanceId = builder.instanceId;
         instanceType = builder.instanceType;
         addresses = new ArrayList<NetworkAddress>(builder.addresses);
     }
@@ -69,7 +72,7 @@ public class AwsDataCenterInfo extends DataCenterInfo {
 
     @Override
     public String getName() {
-        return null;
+        return name;
     }
 
     @Override
@@ -112,6 +115,9 @@ public class AwsDataCenterInfo extends DataCenterInfo {
         if (instanceType != null ? !instanceType.equals(that.instanceType) : that.instanceType != null) {
             return false;
         }
+        if (name != null ? !name.equals(that.name) : that.name != null) {
+            return false;
+        }
         if (placementGroup != null ? !placementGroup.equals(that.placementGroup) : that.placementGroup != null) {
             return false;
         }
@@ -127,7 +133,8 @@ public class AwsDataCenterInfo extends DataCenterInfo {
 
     @Override
     public int hashCode() {
-        int result = region != null ? region.hashCode() : 0;
+        int result = name != null ? name.hashCode() : 0;
+        result = 31 * result + (region != null ? region.hashCode() : 0);
         result = 31 * result + (zone != null ? zone.hashCode() : 0);
         result = 31 * result + (placementGroup != null ? placementGroup.hashCode() : 0);
         result = 31 * result + (amiId != null ? amiId.hashCode() : 0);
@@ -140,7 +147,8 @@ public class AwsDataCenterInfo extends DataCenterInfo {
     @Override
     public String toString() {
         return "AwsDataCenterInfo{" +
-                "region='" + region + '\'' +
+                "name='" + name + '\'' +
+                ", region='" + region + '\'' +
                 ", zone='" + zone + '\'' +
                 ", placementGroup='" + placementGroup + '\'' +
                 ", amiId='" + amiId + '\'' +
@@ -154,10 +162,10 @@ public class AwsDataCenterInfo extends DataCenterInfo {
         private String region;
         private String zone;
         private String placementGroup;
-        public String amiId;
-        public String instanceId;
-        public String instanceType;
-        public Set<NetworkAddress> addresses = new HashSet<NetworkAddress>();
+        private String amiId;
+        private String instanceId;
+        private String instanceType;
+        private final Set<NetworkAddress> addresses = new HashSet<NetworkAddress>();
         private String privateIP;
         private String privateHostName;
         private String publicIP;
