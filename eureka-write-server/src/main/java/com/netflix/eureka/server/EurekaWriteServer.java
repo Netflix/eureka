@@ -24,6 +24,8 @@ import java.util.List;
 import com.google.inject.Module;
 import com.netflix.adminresources.resources.KaryonWebAdminModule;
 import com.netflix.eureka.client.bootstrap.StaticServerResolver;
+import com.netflix.eureka.registry.EurekaRegistry;
+import com.netflix.eureka.server.WriteStartupConfig.WriteCommandLineParser;
 import com.netflix.eureka.server.spi.ExtensionContext;
 import com.netflix.eureka.server.spi.ExtensionContext.ExtensionContextBuilder;
 import com.netflix.eureka.server.spi.ExtensionLoader;
@@ -34,7 +36,6 @@ import com.netflix.governator.annotations.Modules;
 import com.netflix.governator.guice.LifecycleInjectorBuilder;
 import com.netflix.governator.guice.LifecycleInjectorBuilderSuite;
 import com.netflix.karyon.KaryonBootstrap;
-import com.netflix.karyon.archaius.ArchaiusBootstrap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,17 +44,15 @@ import static java.util.Arrays.*;
 /**
  * @author Tomasz Bak
  */
-@ArchaiusBootstrap
+//@ArchaiusBootstrap
 @KaryonBootstrap(name = "eureka-write-server")
 @Modules(include = KaryonWebAdminModule.class)
-public class EurekaWriteServer extends AbstractEurekaServer {
+public class EurekaWriteServer extends AbstractEurekaServer<WriteStartupConfig> {
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaWriteServer.class);
 
-    private final int shutdownPort;
-
-    public EurekaWriteServer(int shutdownPort) {
-        this.shutdownPort = shutdownPort;
+    public EurekaWriteServer(WriteStartupConfig config) {
+        super(config);
     }
 
     @Override
@@ -62,14 +61,14 @@ public class EurekaWriteServer extends AbstractEurekaServer {
             @Override
             public void configure(LifecycleInjectorBuilder builder) {
                 List<Module> baseModules = Arrays.<Module>asList(
-                        new EurekaShutdownModule(shutdownPort),
-                        new JsonRegistrationModule("eurekaWriteServer-registrationTransport", 7002),
-                        new TcpDiscoveryModule("eurekaWriteServer-discoveryTransport", 7003),
+                        new EurekaShutdownModule(config.getShutDownPort()),
+                        new JsonRegistrationModule("eurekaWriteServer-registrationTransport", config.getRegistrationPort()),
+                        new TcpDiscoveryModule("eurekaWriteServer-discoveryTransport", config.getDiscoveryPort()),
                         new EurekaWriteServerModule(new StaticServerResolver<InetSocketAddress>(), Codec.Json)
                 );
                 ExtensionContext extensionContext = new ExtensionContextBuilder()
                         .withEurekaClusterName("eureka-write-server")
-                        .withInternalReadServerAddress(new InetSocketAddress("localhost", 7003))
+                        .withInternalReadServerAddress(new InetSocketAddress("localhost", config.getDiscoveryPort()))
                         .withSystemProperties(true)
                         .build();
                 List<Module> extModules = asList(new ExtensionLoader(extensionContext, false).asModuleArray());
@@ -81,11 +80,35 @@ public class EurekaWriteServer extends AbstractEurekaServer {
         };
     }
 
+    @SuppressWarnings("unchecked")
+    private void selfRegistration() {
+        WriteSelfRegistrationExecutor.doSelfRegistration(injector.getInstance(EurekaRegistry.class), config);
+    }
+
     public static void main(String[] args) {
+        System.out.println("Eureka 2.0 Write Server\n");
+
+        WriteCommandLineParser commandLineParser = new WriteCommandLineParser();
+        WriteStartupConfig config = null;
+        try {
+            config = commandLineParser.build(args);
+        } catch (Exception e) {
+            System.err.println("ERROR: invalid configuration parameters; " + e.getMessage());
+            System.exit(-1);
+        }
+
+        if (config.hasHelp()) {
+            commandLineParser.printHelp();
+            System.exit(0);
+        }
+
+        logger.info("Starting Eureka Write server with startup configuration: " + config);
+
         EurekaWriteServer server = null;
         try {
-            server = new EurekaWriteServer(7788);
+            server = new EurekaWriteServer(config);
             server.start();
+            server.selfRegistration();
         } catch (Exception e) {
             logger.error("Error while starting Eureka Write server.", e);
             if (server != null) {

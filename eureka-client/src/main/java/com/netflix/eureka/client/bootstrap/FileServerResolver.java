@@ -34,7 +34,7 @@ import rx.schedulers.Schedulers;
  * optionally re-read at specified interval.
  * The file should consist of a set of lines, one per server in the following format:
  * <br>
- * {@code host name | ip address [;protocol=(json|avro)&port=port_number]}
+ * {@code host name | ip address [;protocol=(TcpRegistration|TcpDiscovery)&port=port_number]}
  *
  * @author Tomasz Bak
  */
@@ -110,7 +110,7 @@ public class FileServerResolver extends AbstractServerResolver<InetSocketAddress
                 return new ServerEntry<InetSocketAddress>(Action.Add, new InetSocketAddress(line, 0));
             }
             String address = line.substring(0, idx);
-            Protocol protocol = null;
+            ProtocolType protocolType = null;
             Integer port = null;
             int pos = idx + 1;
             while (pos < line.length()) {
@@ -126,7 +126,7 @@ public class FileServerResolver extends AbstractServerResolver<InetSocketAddress
                 String value = line.substring(eqIdx + 1, ampIdx);
                 if ("protocol".equals(name)) {
                     try {
-                        protocol = Protocol.valueOf(value);
+                        protocolType = ProtocolType.valueOf(value);
                     } catch (IllegalArgumentException ignored) {
                         throw new IllegalArgumentException("Syntax error at line " + lineNumber + " - unrecognized protocol");
                     }
@@ -140,13 +140,13 @@ public class FileServerResolver extends AbstractServerResolver<InetSocketAddress
                     throw new IllegalArgumentException("Syntax error at line " + lineNumber + " - unrecognized property");
                 }
             }
-            if (protocol == null && port == null) {
+            if (protocolType == null && port == null) {
                 return new ServerEntry<InetSocketAddress>(Action.Add, new InetSocketAddress(line, 0));
             }
-            if (protocol == null || port == null) {
+            if (protocolType == null || port == null) {
                 throw new IllegalArgumentException("Syntax error at line " + lineNumber + " - both protocol and port number must be defined");
             }
-            return new ServerEntry<InetSocketAddress>(Action.Add, new InetSocketAddress(address, port), protocol);
+            return new ServerEntry<InetSocketAddress>(Action.Add, new InetSocketAddress(address, port), new Protocol(port, protocolType));
         }
 
         boolean isUpdated() {

@@ -11,6 +11,7 @@ import com.netflix.client.RetryHandler;
 import com.netflix.client.config.DefaultClientConfigImpl;
 import com.netflix.client.config.IClientConfig;
 import com.netflix.eureka.client.ServerResolver;
+import com.netflix.eureka.client.ServerResolver.ProtocolType;
 import com.netflix.eureka.client.ServerResolver.ServerEntry;
 import com.netflix.eureka.client.transport.tcp.TcpServerConnection;
 import com.netflix.eureka.transport.base.BaseMessageBroker;
@@ -42,6 +43,7 @@ public abstract class ResolverBasedTransportClient<A extends SocketAddress> impl
     private static final IPing DUMMY_PING = new DummyPing();
 
     private final ServerResolver<A> resolver;
+    private final ProtocolType protocolType;
     protected final IClientConfig clientConfig;
     private final PipelineConfigurator<Object, Object> pipelineConfigurator;
     protected final ZoneAwareLoadBalancer<Server> loadBalancer;
@@ -49,9 +51,11 @@ public abstract class ResolverBasedTransportClient<A extends SocketAddress> impl
     private RxClient<Object, Object> tcpClient;
 
     protected ResolverBasedTransportClient(ServerResolver<A> resolver,
+                                           ProtocolType protocolType,
                                            IClientConfig clientConfig,
                                            PipelineConfigurator<Object, Object> pipelineConfigurator) {
         this.resolver = resolver;
+        this.protocolType = protocolType;
         this.clientConfig = clientConfig;
         this.pipelineConfigurator = pipelineConfigurator;
         ServerList<Server> serverList = new ResolverServerList(resolver);
@@ -85,8 +89,6 @@ public abstract class ResolverBasedTransportClient<A extends SocketAddress> impl
     }
 
     protected abstract boolean matches(ServerEntry<A> entry);
-
-    protected abstract int defaultPort();
 
     protected static IClientConfig getClientConfig(String name) {
         // TODO: figure out what we want to configure, and how to provide this configuration information.
@@ -134,7 +136,7 @@ public abstract class ResolverBasedTransportClient<A extends SocketAddress> impl
             List<Server> newList = new ArrayList<>(servers.size());
             for (ServerEntry<A> entry : servers) {
                 InetSocketAddress address = (InetSocketAddress) entry.getServer();
-                newList.add(new Server(address.getHostName(), address.getPort()));
+                newList.add(new Server(address.getHostName(), entry.getPort(protocolType)));
             }
             return newList;
         }

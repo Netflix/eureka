@@ -51,7 +51,7 @@ public abstract class AbstractServerResolver<A extends SocketAddress> implements
 
     /**
      * Guards access to the {@link #serverAddEntries}, to make
-     * server list update, and a new subscription mutally exclusive operations.
+     * server list update, and a new subscription mutually exclusive operations.
      */
     private final Lock lock = new ReentrantLock();
     private Set<ServerEntry<A>> serverAddEntries;
@@ -120,7 +120,7 @@ public abstract class AbstractServerResolver<A extends SocketAddress> implements
             } else {
                 for (ServerEntry<A> oldEntry : serverAddEntries) {
                     if (!newAddEntries.contains(oldEntry)) {
-                        updateSubject.onNext(new ServerEntry<A>(Action.Remove, oldEntry.getServer(), oldEntry.getProtocol()));
+                        updateSubject.onNext(new ServerEntry<A>(Action.Remove, oldEntry.getServer(), oldEntry.getProtocols()));
                     }
                 }
                 for (ServerEntry<A> newEntry : newAddEntries) {

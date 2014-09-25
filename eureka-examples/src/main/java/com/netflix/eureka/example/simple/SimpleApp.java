@@ -21,7 +21,7 @@ import com.netflix.eureka.client.EurekaClients;
 import com.netflix.eureka.client.transport.TransportClients;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interests;
-import com.netflix.eureka.registry.BasicDataCenterInfo;
+import com.netflix.eureka.registry.datacenter.BasicDataCenterInfo;
 import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.registry.InstanceInfo.Builder;
 import com.netflix.eureka.registry.InstanceInfo.Status;
@@ -34,7 +34,7 @@ import rx.Subscriber;
  *
  * @author Tomasz Bak
  */
-public class SimpleApp {
+public final class SimpleApp {
 
     public static final InstanceInfo SERVICE_A = new Builder()
             .withId("id_serviceA")

@@ -18,6 +18,7 @@ apply plugin: 'osgi'
 
 dependencies {
     compile "org.slf4j:slf4j-simple:${slf4j_version}"
+    compile "commons-cli:commons-cli:${commons_cli_version}"
     compile project(':eureka-core')
     compile "com.netflix.governator:governator:${governator_version}"
     compile "com.netflix.rxnetty:rx-netty-servo:${rx_netty_version}"
@@ -38,15 +39,4 @@ jar {
         instruction 'Bundle-DocURL', 'https://github.com/Netflix/eureka'
         instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
     }
-}
-
-task runWriteServer (dependsOn: [classes], type: JavaExec) {
-    group = "Run tasks"
-    description = "Run Eureka 2.0 write server"
-
-    main = "com.netflix.eureka.server.EurekaWriteServer"
-    classpath = sourceSets.main.runtimeClasspath
-
-    systemProperty 'java.awt.headless', 'true'
-    systemProperty 'archaius.deployment.environment', 'dev'
 }

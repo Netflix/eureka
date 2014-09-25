@@ -18,32 +18,62 @@ protocol EurekaRegistryModel {
         union {null, string} hostName;
     }
 
+    @namespace("com.netflix.eureka.registry.datacenter")
+    record BasicDataCenterInfo {
+        union { null, string } name;
+        union {
+            null,
+            @java-class("java.util.ArrayList") array<com.netflix.eureka.registry.NetworkAddress>
+        } addresses;
+    }
+
+    @namespace("com.netflix.eureka.registry.datacenter")
     record AwsDataCenterInfo {
-        string region;
-        string zone;
-        string placementGroup;
-        string amiId;
-        string instanceId;
-        string instanceType;
-        @java-class("java.util.ArrayList") array<NetworkAddress> addresses;
+        union { null, string } name;
+        union { null, string } region;
+        union { null, string } zone;
+        union { null, string } placementGroup;
+        union { null, string } amiId;
+        union { null, string } instanceId;
+        union { null, string } instanceType;
+        union {
+            null,
+            @java-class("java.util.ArrayList") array<com.netflix.eureka.registry.NetworkAddress>
+        } addresses;
     }
 
     record InstanceInfo {
         string id;
-        long version;
-        string appGroup;
-        string app;
-        string asg;
-        string vipAddress;
-        string secureVipAddress;
-        string hostname;
-        string ip;
-        @java-class("java.util.HashSet") array<int> ports;
-        @java-class("java.util.HashSet") array<int> securePorts;
-        com.netflix.eureka.registry.InstanceInfo$.Status status;
-        string homePageUrl;
-        string statusPageUrl;
-        @java-class("java.util.HashSet") array<string> healthCheckUrls;
-        union {AwsDataCenterInfo} dataCenterInfo;
+        union { null, string } appGroup;
+        union { null, string } app;
+        union { null, string } asg;
+        union { null, string } vipAddress;
+        union { null, string } secureVipAddress;
+        union { null, string } hostname;
+        union { null, string } ip;
+        union {
+            null,
+            @java-class("java.util.HashSet") array<int>
+        } ports;
+        union {
+            null,
+            @java-class("java.util.HashSet") array<int>
+        } securePorts;
+        union {
+            null,
+            com.netflix.eureka.registry.InstanceInfo$.Status
+        } status;
+        union { null, string } homePageUrl;
+        union { null, string } statusPageUrl;
+        union {
+            null,
+            @java-class("java.util.HashSet") array<string>
+        } healthCheckUrls;
+        union { null, long } version;
+        union {
+            null,
+            com.netflix.eureka.registry.datacenter.BasicDataCenterInfo,
+            com.netflix.eureka.registry.datacenter.AwsDataCenterInfo
+        } dataCenterInfo;
     }
 }

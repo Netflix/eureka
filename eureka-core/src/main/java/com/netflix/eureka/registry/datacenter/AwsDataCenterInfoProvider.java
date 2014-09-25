@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka.client.local;
+package com.netflix.eureka.registry.datacenter;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.netflix.eureka.client.DataCenterInfoProvider;
-import com.netflix.eureka.registry.AwsDataCenterInfo;
-import com.netflix.eureka.registry.AwsDataCenterInfo.AwsDataCenterInfoBuilder;
+import com.netflix.eureka.registry.datacenter.AwsDataCenterInfo.AwsDataCenterInfoBuilder;
 import io.netty.buffer.ByteBuf;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.protocol.http.client.HttpClientResponse;

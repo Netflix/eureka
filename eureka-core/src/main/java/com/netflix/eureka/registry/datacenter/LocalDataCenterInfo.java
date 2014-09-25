@@ -14,17 +14,34 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka.client;
+package com.netflix.eureka.registry.datacenter;
 
 import com.netflix.eureka.registry.DataCenterInfo;
 import rx.Observable;
 
 /**
- * Provides information about application's server location.
+ * Convenience factory methods for creating {@link DataCenterInfo} objects for a given
+ * data center type.
  *
  * @author Tomasz Bak
  */
-public interface DataCenterInfoProvider {
+public final class LocalDataCenterInfo {
 
-    Observable<? extends DataCenterInfo> dataCenterInfo();
+    private LocalDataCenterInfo() {
+    }
+
+    public enum DataCenterType {
+        Basic,
+        AWS
+    }
+
+    public static Observable<? extends DataCenterInfo> forDataCenterType(DataCenterType type) {
+        switch (type) {
+            case Basic:
+                return Observable.just(BasicDataCenterInfo.fromSystemData());
+            case AWS:
+                return new AwsDataCenterInfoProvider().dataCenterInfo();
+        }
+        throw new IllegalStateException("Unhandled type " + type);
+    }
 }

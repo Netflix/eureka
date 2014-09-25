@@ -22,7 +22,7 @@ package com.netflix.eureka.registry;
  */
 public class NetworkAddress {
 
-    enum ProtocolType {
+    public enum ProtocolType {
         IPv4, IPv6
     }
 
@@ -81,7 +81,7 @@ public class NetworkAddress {
         if (ipAddress != null ? !ipAddress.equals(that.ipAddress) : that.ipAddress != null) {
             return false;
         }
-        if (protocolType != null ? !protocolType.equals(that.protocolType) : that.protocolType != null) {
+        if (protocolType != null ? protocolType != that.protocolType : that.protocolType != null) {
             return false;
         }
 

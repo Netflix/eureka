@@ -16,9 +16,23 @@
 
 package com.netflix.eureka.cmd;
 
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.LineNumberReader;
+import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.ListIterator;
+import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import com.netflix.eureka.client.EurekaClient;
 import com.netflix.eureka.client.EurekaClientImpl;
 import com.netflix.eureka.client.ServerResolver.Protocol;
+import com.netflix.eureka.client.ServerResolver.ProtocolType;
 import com.netflix.eureka.client.bootstrap.StaticServerResolver;
 import com.netflix.eureka.client.transport.TransportClient;
 import com.netflix.eureka.client.transport.TransportClients;
@@ -41,24 +55,12 @@ import jline.console.history.History.Entry;
 import rx.Subscriber;
 import rx.observers.SafeSubscriber;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.LineNumberReader;
-import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.ListIterator;
-import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 /**
  * Simple command line Eureka client interface.
  *
  * @author Tomasz Bak
  */
+@SuppressWarnings("CallToPrintStackTrace")
 public class EurekaCLI {
 
     private static final File CONFIGURATION_FILE =
@@ -72,7 +74,7 @@ public class EurekaCLI {
     private enum Status {NotStarted, Initiated, Streaming, Complete, Failed}
 
     private final ConsoleReader consoleReader;
-    private TreeMap<String, String> aliasMap = new TreeMap<>();
+    private final TreeMap<String, String> aliasMap = new TreeMap<>();
 
     private static final AtomicInteger streamId = new AtomicInteger(0);
     private volatile InstanceInfo lastInstanceInfo;
@@ -106,7 +108,7 @@ public class EurekaCLI {
                         }
                     }
                 }
-            } catch (IOException e) {
+            } catch (IOException ignored) {
                 System.err.println("ERROR: could not load configuration file from ~/.eureka_history");
             }
         }
@@ -122,7 +124,7 @@ public class EurekaCLI {
                         history.add(line);
                     }
                 }
-            } catch (IOException e) {
+            } catch (IOException ignored) {
                 System.err.println("ERROR: could not load history file from ~/.eureka_history");
             }
         }
@@ -144,7 +146,7 @@ public class EurekaCLI {
                         writer.write('\n');
                     }
                 }
-            } catch (IOException e) {
+            } catch (IOException ignored) {
                 System.err.println("ERROR: could not save history file into ~/.eureka_history");
             }
         }
@@ -185,7 +187,7 @@ public class EurekaCLI {
         String[] args = Arrays.copyOfRange(parts, 1, parts.length);
         if ("quit".equals(cmd)) {
             saveHistory();
-            System.out.println("Terminatting...");
+            System.out.println("Terminating...");
             return false;
         }
         try {
@@ -242,8 +244,8 @@ public class EurekaCLI {
         System.out.println("  register                                             register with server      ");
         System.out.println("  update <field> <value>                               update own registry entry ");
         System.out.println("  status                                               print status summary      ");
-        System.out.println("  interestAll                                          start intrest subscription for all");
-        System.out.println("  interestNone                                         stop intrest subscription for all");
+        System.out.println("  interestAll                                          start interest subscription for all");
+        System.out.println("  interestNone                                         stop interest subscription for all");
         System.out.println("  interest <vipName> <vipName> ...                     start interest subscription for given vips");
 
         if (!aliasMap.isEmpty()) {
@@ -289,19 +291,19 @@ public class EurekaCLI {
         InetSocketAddress readHost = new InetSocketAddress(host, discoveryPort);
 
         StaticServerResolver<InetSocketAddress> registryServers = new StaticServerResolver<>();
-        registryServers.addServer(writeHost, Protocol.TcpRegistration);
+        registryServers.addServer(writeHost, new Protocol(registrationPort, ProtocolType.TcpRegistration));
         TransportClient writeClient =
                 TransportClients.newTcpRegistrationClient(registryServers, Codec.Json);
 
         StaticServerResolver<InetSocketAddress> discoveryServers = new StaticServerResolver<>();
-        discoveryServers.addServer(readHost, Protocol.TcpDiscovery);
+        discoveryServers.addServer(readHost, new Protocol(discoveryPort, ProtocolType.TcpDiscovery));
         TransportClient readClient =
                 TransportClients.newTcpDiscoveryClient(discoveryServers, Codec.Json);
 
         eurekaClient = new EurekaClientImpl(writeClient, readClient);
 
         System.out.format("Connected to Eureka server at %s:%d (registry) and %s:%d (discovery)\n", host,
-                          registrationPort, host, discoveryPort);
+                registrationPort, host, discoveryPort);
     }
 
     private void runRegister() {
@@ -315,7 +317,7 @@ public class EurekaCLI {
                 .subscribe(new Subscriber<Void>() {
                     @Override
                     public void onCompleted() {
-                        System.out.println("Successfuly registered with Eureka server");
+                        System.out.println("Successfully registered with Eureka server");
                         registrationStatus = Status.Complete;
                     }
 
@@ -511,12 +513,12 @@ public class EurekaCLI {
                     System.out.println("Registry fetch status: failed");
                     break;
             }
-            System.out.println("Registry: " + eurekaClient.toString());
+            System.out.println("Registry: " + eurekaClient);
         }
     }
 
     private class InterestSubscriber extends SafeSubscriber<ChangeNotification<InstanceInfo>> {
-        public InterestSubscriber(final Interest<InstanceInfo> interest, final int id) {
+        private InterestSubscriber(final Interest<InstanceInfo> interest, final int id) {
             super(new Subscriber<ChangeNotification<InstanceInfo>>() {
                 @Override
                 public void onCompleted() {
