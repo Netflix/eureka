@@ -199,6 +199,8 @@ public class EurekaCLI {
                 runConnect(args);
             } else if ("register".equals(cmd) && expect(cmd, 0, args)) {
                 runRegister();
+            } else if ("unregister".equals(cmd) && expect(cmd, 0, args)) {
+                runUnregister();
             } else if ("update".equals(cmd) && expect(cmd, 2, args)) {
                 runUpdate(args);
             } else if ("close".equals(cmd) && expect(cmd, 0, args)) {
@@ -310,9 +312,7 @@ public class EurekaCLI {
         }
 
         registrationStatus = Status.Initiated;
-        lastInstanceInfo = SampleInstanceInfo.CliServer.builder()
-//                .withId(Integer.toString(idGenerator.getAndIncrement()))
-                .build();
+        lastInstanceInfo = SampleInstanceInfo.CliServer.build();
         eurekaClient.register(lastInstanceInfo)
                 .subscribe(new Subscriber<Void>() {
                     @Override
@@ -324,6 +324,33 @@ public class EurekaCLI {
                     @Override
                     public void onError(Throwable e) {
                         System.out.println("ERROR: Registration failed.");
+                        e.printStackTrace();
+                        registrationStatus = Status.Failed;
+                    }
+
+                    @Override
+                    public void onNext(Void aVoid) {
+                        // No op
+                    }
+                });
+    }
+
+    private void runUnregister() {
+        if (!isConnected() || !expectedRegistrationStatus(Status.Complete)) {
+            return;
+        }
+
+        eurekaClient.unregister(lastInstanceInfo)
+                .subscribe(new Subscriber<Void>() {
+                    @Override
+                    public void onCompleted() {
+                        System.out.println("Successfuly unregistered with Eureka server");
+                        registrationStatus = Status.NotStarted;
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        System.out.println("ERROR: Unregistration failed.");
                         e.printStackTrace();
                         registrationStatus = Status.Failed;
                     }

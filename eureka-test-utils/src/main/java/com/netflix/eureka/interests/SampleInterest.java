@@ -16,9 +16,8 @@
 
 package com.netflix.eureka.interests;
 
-import com.netflix.eureka.interests.Interest;
-import com.netflix.eureka.interests.Interests;
 import com.netflix.eureka.registry.InstanceInfo;
+import com.netflix.eureka.registry.SampleInstanceInfo;
 
 /**
  * @author Tomasz Bak
@@ -28,19 +27,25 @@ public enum SampleInterest {
     ZuulVip() {
         @Override
         public Interest<InstanceInfo> build() {
-            return Interests.forVip("zuul.addr:7001");
+            return Interests.forVip(SampleInstanceInfo.ZuulServer.build().getVipAddress());
         }
     },
     ZuulApp() {
         @Override
         public Interest<InstanceInfo> build() {
-            return Interests.forApplication("zuul001");
+            return Interests.forApplication(SampleInstanceInfo.ZuulServer.build().getApp());
+        }
+    },
+    DiscoveryVip() {
+        @Override
+        public Interest<InstanceInfo> build() {
+            return Interests.forApplication(SampleInstanceInfo.DiscoveryServer.build().getVipAddress());
         }
     },
     DiscoveryApp() {
         @Override
         public Interest<InstanceInfo> build() {
-            return Interests.forApplication("discovery001");
+            return Interests.forApplication(SampleInstanceInfo.DiscoveryServer.build().getApp());
         }
     },
     MultipleApps() {

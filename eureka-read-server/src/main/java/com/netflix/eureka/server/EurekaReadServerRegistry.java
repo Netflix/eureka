@@ -58,17 +58,22 @@ public class EurekaReadServerRegistry implements EurekaRegistry<InstanceInfo> {
 
     @Override
     public Observable<Void> register(InstanceInfo instanceInfo) {
-        throw new IllegalStateException("method not supported by EurekaProxyRegistry");
+        throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
     }
 
     @Override
     public Observable<Void> unregister(String instanceId) {
-        throw new IllegalStateException("method not supported by EurekaProxyRegistry");
+        throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
     }
 
     @Override
     public Observable<Void> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
-        throw new IllegalStateException("method not supported by EurekaProxyRegistry");
+        throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
+    }
+
+    @Override
+    public Observable<InstanceInfo> forSnapshot(Interest<InstanceInfo> interest) {
+        throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
     }
 
     @Override

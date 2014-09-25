@@ -16,7 +16,6 @@
 
 package com.netflix.eureka.registry;
 
-
 /**
  * A matching pair of field:value that denotes a delta change to an InstanceInfo
  * Deltas must also contain an id denoting which InstanceInfo id it correspond to,
