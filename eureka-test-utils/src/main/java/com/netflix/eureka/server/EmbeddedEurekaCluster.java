@@ -51,22 +51,28 @@ public class EmbeddedEurekaCluster {
 
     public EmbeddedEurekaCluster(int writeCount, int readCount) {
         StaticServerResolver<InetSocketAddress> writeClusterResolver = new StaticServerResolver<>();
+
+        // Write cluster
         for (int i = 0; i < writeCount; i++) {
-            int port = WRITE_SERVER_PORTS_FROM + 2 * i;
+            int port = WRITE_SERVER_PORTS_FROM + 10 * i;
             WriteStartupConfig config = new WriteStartupConfigBuilder()
                     .withAppName(WRITE_SERVER_NAME)
                     .withVipAddress(WRITE_SERVER_NAME)
                     .withDataCenterType(DataCenterType.Basic)
                     .withWriteServerPort(port)
                     .withReadServerPort(port + 1)
+                    .withReplicationPort(port + 2)
                     .build();
-            ServerInstance instance = new EurekaWriteServerInstance(config);
+            ServerInstance instance = new EurekaWriteServerInstance(config, writeClusterResolver);
             writeInstances.add(instance);
             writeClusterResolver.addServer(
                     new InetSocketAddress("localhost", 0),
                     new Protocol(port, ProtocolType.TcpRegistration),
-                    new Protocol(port + 1, ProtocolType.TcpDiscovery));
+                    new Protocol(port + 1, ProtocolType.TcpDiscovery),
+                    new Protocol(port + 2, ProtocolType.TcpReplication));
         }
+
+        // Read cluster
         for (int i = 0; i < readCount; i++) {
             int port = READ_SERVER_PORTS_FROM + i;
             ReadStartupConfig config = new ReadStartupConfigBuilder()

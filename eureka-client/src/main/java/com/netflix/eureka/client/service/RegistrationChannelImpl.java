@@ -50,7 +50,7 @@ import rx.functions.Func1;
         return connect().switchMap(new Func1<ServerConnection, Observable<? extends Void>>() {
             @Override
             public Observable<? extends Void> call(ServerConnection connection) {
-                return connection.send(new Register(instanceInfo));
+                return connection.sendWithAck(new Register(instanceInfo));
             }
         });
     }
@@ -66,7 +66,7 @@ import rx.functions.Func1;
                 return connect().switchMap(new Func1<ServerConnection, Observable<? extends Void>>() {
                     @Override
                     public Observable<? extends Void> call(ServerConnection connection) {
-                        return connection.send(new Update(newInfo));
+                        return connection.sendWithAck(new Update(newInfo));
                     }
                 });
             case Closed:
@@ -87,7 +87,7 @@ import rx.functions.Func1;
                 return connect().switchMap(new Func1<ServerConnection, Observable<? extends Void>>() {
                     @Override
                     public Observable<? extends Void> call(ServerConnection connection) {
-                        return connection.send(new Unregister());
+                        return connection.sendWithAck(new Unregister());
                     }
                 });
             case Closed:

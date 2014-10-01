@@ -26,13 +26,23 @@ public interface ServerConnection {
     void shutdown();
 
     /**
+     * Sends a message to the server, with no acknowledgement expected. The returned observable
+     * is connected to the transport.
+     *
+     * @param message Message to send.
+     *
+     * @return confirmation that the message was submitted to the transport
+     */
+    Observable<Void> send(Object message);
+
+    /**
      * Sends a message to the server and expects an acknowledgment from the server.
      *
      * @param message Message to send.
      *
      * @return Acknowledgment sent from the server.
      */
-    Observable<Void> send(Object message);
+    Observable<Void> sendWithAck(Object message);
 
     /**
      * Sends a heartbeat to the server.

@@ -62,6 +62,11 @@ public class EurekaReadServerRegistry implements EurekaRegistry<InstanceInfo> {
     }
 
     @Override
+    public Observable<Void> register(InstanceInfo instanceInfo, Origin origin) {
+        throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
+    }
+
+    @Override
     public Observable<Void> unregister(String instanceId) {
         throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
     }
@@ -79,6 +84,11 @@ public class EurekaReadServerRegistry implements EurekaRegistry<InstanceInfo> {
     @Override
     public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest) {
         return eurekaClient.forInterest(interest);
+    }
+
+    @Override
+    public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, Origin origin) {
+        throw new IllegalStateException("Origin filtering not supported by EurekaReadServerRegistry");
     }
 
     @Override

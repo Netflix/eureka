@@ -7,6 +7,7 @@ import com.netflix.eureka.rx.RxBlocking;
 import com.netflix.eureka.transport.EurekaTransports.Codec;
 import com.netflix.eureka.transport.TransportCompatibilityTestSuite.DiscoveryProtocolTest;
 import com.netflix.eureka.transport.TransportCompatibilityTestSuite.RegistrationProtocolTest;
+import com.netflix.eureka.transport.TransportCompatibilityTestSuite.ReplicationProtocolTest;
 import com.netflix.eureka.transport.base.BaseMessageBroker;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ConnectionHandler;
@@ -34,14 +35,24 @@ public class EurekaTransportsTest {
         }
     }
 
-    @Test
+    @Test(timeout = 10000)
     public void testRegistrationProtocolWithAvro() throws Exception {
         registrationProtocolTest(Codec.Avro);
     }
 
-    @Test
+    @Test(timeout = 10000)
     public void testRegistrationProtocolWithJson() throws Exception {
         registrationProtocolTest(Codec.Json);
+    }
+
+    @Test(timeout = 10000)
+    public void testReplicationProtocolWithJson() throws Exception {
+        replicationProtocolTest(Codec.Json);
+    }
+
+    @Test(timeout = 10000)
+    public void testReplicationProtocolWithAvro() throws Exception {
+        replicationProtocolTest(Codec.Avro);
     }
 
     @Test(timeout = 10000)
@@ -49,7 +60,7 @@ public class EurekaTransportsTest {
         discoveryProtocolTest(Codec.Avro);
     }
 
-    @Test
+    @Test(timeout = 10000)
     public void testDiscoveryProtocolWithJson() throws Exception {
         discoveryProtocolTest(Codec.Json);
     }
@@ -60,6 +71,17 @@ public class EurekaTransportsTest {
         MessageBroker serverBroker = serverBrokerIterator.next();
 
         new RegistrationProtocolTest(
+                clientBroker,
+                serverBroker
+        ).runTestSuite();
+    }
+
+    public void replicationProtocolTest(Codec codec) throws Exception {
+        Iterator<MessageBroker> serverBrokerIterator = RxBlocking.iteratorFrom(1, TimeUnit.SECONDS, serverConnection(EurekaTransports.replicationPipeline(codec)));
+        MessageBroker clientBroker = clientConnection(EurekaTransports.replicationPipeline(codec));
+        MessageBroker serverBroker = serverBrokerIterator.next();
+
+        new ReplicationProtocolTest(
                 clientBroker,
                 serverBroker
         ).runTestSuite();

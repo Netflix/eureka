@@ -19,18 +19,26 @@ package com.netflix.eureka.server;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.google.inject.Module;
 import com.netflix.adminresources.resources.KaryonWebAdminModule;
+import com.netflix.eureka.client.ServerResolver;
+import com.netflix.eureka.client.ServerResolver.Protocol;
+import com.netflix.eureka.client.ServerResolver.ProtocolType;
+import com.netflix.eureka.client.bootstrap.ServerResolvers;
 import com.netflix.eureka.client.bootstrap.StaticServerResolver;
 import com.netflix.eureka.registry.EurekaRegistry;
+import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.server.WriteStartupConfig.WriteCommandLineParser;
 import com.netflix.eureka.server.spi.ExtensionContext;
 import com.netflix.eureka.server.spi.ExtensionContext.ExtensionContextBuilder;
 import com.netflix.eureka.server.spi.ExtensionLoader;
 import com.netflix.eureka.server.transport.tcp.discovery.TcpDiscoveryModule;
-import com.netflix.eureka.server.transport.tcp.registration.JsonRegistrationModule;
+import com.netflix.eureka.server.transport.tcp.registration.TcpRegistrationModule;
+import com.netflix.eureka.server.transport.tcp.replication.TcpReplicationModule;
 import com.netflix.eureka.transport.EurekaTransports.Codec;
 import com.netflix.governator.annotations.Modules;
 import com.netflix.governator.guice.LifecycleInjectorBuilder;
@@ -38,6 +46,7 @@ import com.netflix.governator.guice.LifecycleInjectorBuilderSuite;
 import com.netflix.karyon.KaryonBootstrap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rx.Subscriber;
 
 import static java.util.Arrays.*;
 
@@ -50,9 +59,13 @@ import static java.util.Arrays.*;
 public class EurekaWriteServer extends AbstractEurekaServer<WriteStartupConfig> {
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaWriteServer.class);
+    private final LocalInstanceInfoResolver localInstanceInfoResolver;
+    private final ServerResolver<InetSocketAddress> resolver;
 
     public EurekaWriteServer(WriteStartupConfig config) {
         super(config);
+        this.localInstanceInfoResolver = WriteInstanceInfoResolver.localInstanceInfo(config);
+        this.resolver = createResolver();
     }
 
     @Override
@@ -62,9 +75,10 @@ public class EurekaWriteServer extends AbstractEurekaServer<WriteStartupConfig> 
             public void configure(LifecycleInjectorBuilder builder) {
                 List<Module> baseModules = Arrays.<Module>asList(
                         new EurekaShutdownModule(config.getShutDownPort()),
-                        new JsonRegistrationModule("eurekaWriteServer-registrationTransport", config.getRegistrationPort()),
+                        new TcpRegistrationModule("eurekaWriteServer-registrationTransport", config.getRegistrationPort(), Codec.Json),
+                        new TcpReplicationModule("eurekaWriteServer-replicationTransport", config.getReplicationPort(), Codec.Json),
                         new TcpDiscoveryModule("eurekaWriteServer-discoveryTransport", config.getDiscoveryPort()),
-                        new EurekaWriteServerModule(new StaticServerResolver<InetSocketAddress>(), Codec.Json)
+                        new EurekaWriteServerModule(localInstanceInfoResolver, resolver, Codec.Json, 30000, 5000)
                 );
                 ExtensionContext extensionContext = new ExtensionContextBuilder()
                         .withEurekaClusterName("eureka-write-server")
@@ -80,9 +94,53 @@ public class EurekaWriteServer extends AbstractEurekaServer<WriteStartupConfig> 
         };
     }
 
+    @Override
+    public void start() throws Exception {
+        resolver.start();
+        super.start();
+        doSelfRegistration();
+    }
+
+    private ServerResolver<InetSocketAddress> createResolver() {
+        Protocol[] protocols = {
+                new Protocol(config.getReplicationPort(), ProtocolType.TcpReplication)
+        };
+
+        ServerResolver<InetSocketAddress> resolver = null;
+        if (config.getResolverType() != null) {
+            switch (config.getResolverType()) {
+                case "dns":
+                    resolver = ServerResolvers.forDomainName(config.getRest()[0], protocols);
+                    break;
+                case "inline":
+                    Set<Protocol> protocolSet = new HashSet<>(asList(protocols));
+                    resolver = ServerResolvers.fromList(protocolSet, config.getRest());
+                    break;
+            }
+        } else {
+            resolver = new StaticServerResolver<>();
+        }
+        return resolver;
+    }
+
     @SuppressWarnings("unchecked")
-    private void selfRegistration() {
-        WriteSelfRegistrationExecutor.doSelfRegistration(injector.getInstance(EurekaRegistry.class), config);
+    private void doSelfRegistration() {
+        localInstanceInfoResolver.resolve().subscribe(new Subscriber<InstanceInfo>() {
+            @Override
+            public void onCompleted() {
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                logger.error("Self registration error", e);
+            }
+
+            @Override
+            public void onNext(InstanceInfo instanceInfo) {
+                logger.info("Self registration with instance info {}", instanceInfo);
+                injector.getInstance(EurekaRegistry.class).register(instanceInfo);
+            }
+        });
     }
 
     public static void main(String[] args) {
@@ -108,7 +166,6 @@ public class EurekaWriteServer extends AbstractEurekaServer<WriteStartupConfig> 
         try {
             server = new EurekaWriteServer(config);
             server.start();
-            server.selfRegistration();
         } catch (Exception e) {
             logger.error("Error while starting Eureka Write server.", e);
             if (server != null) {

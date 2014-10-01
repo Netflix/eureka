@@ -35,7 +35,7 @@ import rx.subjects.PublishSubject;
  * which adds buffering feature. Its main benefit is however in making it possible to setup conditions
  * on server list content, which can be used to delay construction of objects depending on whats in the server list.
  * For example creation of {@link EurekaClient} with empty server pool, will most likely result
- * in an excpetion from an underlying Ribbon load balancer.
+ * in an exception from an underlying Ribbon load balancer.
  *
  * @author Tomasz Bak
  */

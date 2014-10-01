@@ -16,6 +16,13 @@
 
 package com.netflix.eureka.registry;
 
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 import com.netflix.eureka.datastore.NotificationsSubject;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.IndexRegistry;
@@ -27,13 +34,6 @@ import com.netflix.eureka.interests.MultipleInterests;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Func1;
-
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * TODO: fix race in adding/removing from store and sending notification to notificationSubject
@@ -87,7 +87,12 @@ public class EurekaRegistryImpl implements EurekaRegistry<InstanceInfo> {
      */
     @Override
     public Observable<Void> register(final InstanceInfo instanceInfo) {
-        Lease<InstanceInfo> lease = new Lease<>(instanceInfo);
+        return register(instanceInfo, Origin.LOCAL);
+    }
+
+    @Override
+    public Observable<Void> register(InstanceInfo instanceInfo, Origin origin) {
+        Lease<InstanceInfo> lease = new Lease<>(instanceInfo, origin);
         internalStore.put(instanceInfo.getId(), lease);
         notificationSubject.onNext(lease.getHolderSnapshot());
 
@@ -169,8 +174,8 @@ public class EurekaRegistryImpl implements EurekaRegistry<InstanceInfo> {
         try {
             // TODO: this method can be run concurrently from different channels, unless we run everything on single server event loop.
             notificationSubject.pause(); // Pause notifications till we get a snapshot of current registry (registry.values())
-            if(interest instanceof MultipleInterests) {
-                return indexRegistry.forCompositeInterest((MultipleInterests)interest, this);
+            if (interest instanceof MultipleInterests) {
+                return indexRegistry.forCompositeInterest((MultipleInterests) interest, this);
             } else {
                 return indexRegistry.forInterest(interest, notificationSubject,
                         new InstanceInfoInitStateHolder(getSnapshotForInterest(interest)));
@@ -178,6 +183,17 @@ public class EurekaRegistryImpl implements EurekaRegistry<InstanceInfo> {
         } finally {
             notificationSubject.resume();
         }
+    }
+
+    @Override
+    public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, final Origin origin) {
+        return forInterest(interest).filter(new Func1<ChangeNotification<InstanceInfo>, Boolean>() {
+            @Override
+            public Boolean call(ChangeNotification<InstanceInfo> changeNotification) {
+                Lease<InstanceInfo> lease = internalStore.get(changeNotification.getData().getId());
+                return lease != null && lease.getOrigin() == origin;
+            }
+        });
     }
 
     @Override

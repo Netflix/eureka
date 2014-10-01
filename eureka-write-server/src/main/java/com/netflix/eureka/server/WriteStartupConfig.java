@@ -34,61 +34,83 @@ import static com.netflix.eureka.transport.EurekaTransports.*;
  */
 public class WriteStartupConfig extends StartupConfig {
     private final int writeServerPort;
+    private final int replicationPort;
 
-    public WriteStartupConfig(boolean helpOption, int readServerPort, int shutDownPort, DataCenterType dataCenterType,
-                              String appName, String vipAddress, String[] rest, int writeServerPort) {
-        super(helpOption, readServerPort, shutDownPort, dataCenterType, appName, vipAddress, rest);
+    public WriteStartupConfig(boolean helpOption, DataCenterType dataCenterType, String resolverType, int readServerPort, int shutDownPort,
+                              String appName, String vipAddress, String[] rest, int writeServerPort, int replicationPort) {
+        super(helpOption, dataCenterType, resolverType, readServerPort, shutDownPort, appName, vipAddress, rest);
         this.writeServerPort = writeServerPort;
+        this.replicationPort = replicationPort;
     }
 
     public int getRegistrationPort() {
         return writeServerPort;
     }
 
+    public int getReplicationPort() {
+        return replicationPort;
+    }
+
     public static class WriteStartupConfigBuilder extends StartupConfigBuilder<WriteStartupConfig, WriteStartupConfigBuilder> {
 
         private int writeServerPort;
+        private int replicationPort;
 
         public WriteStartupConfigBuilder withWriteServerPort(int writeServerPort) {
             this.writeServerPort = writeServerPort;
             return this;
         }
 
+        public WriteStartupConfigBuilder withReplicationPort(int replicationPort) {
+            this.replicationPort = replicationPort;
+            return this;
+        }
+
         @Override
         public WriteStartupConfig build() {
-            return new WriteStartupConfig(helpOption, readServerPort, shutDownPort, dataCenterType, appName, vipAddress, rest, writeServerPort);
+            return new WriteStartupConfig(helpOption, dataCenterType, resolverType, readServerPort, shutDownPort, appName,
+                    vipAddress, rest, writeServerPort, replicationPort);
         }
     }
 
     public static class WriteCommandLineParser extends EurekaCommandLineParser<WriteStartupConfig> {
         private int writeServerPort;
+        private int replicationPort;
+
+        protected WriteCommandLineParser() {
+            super(false);
+        }
 
         @Override
         protected void additionalOptions(Options options) {
             options.addOption("w", true, "TCP registration server port; default " + DEFAULT_REGISTRATION_PORT);
+            options.addOption("p", true, "TCP replication server port; default " + DEFAULT_REPLICATION_PORT);
         }
 
         @Override
         protected void process(CommandLine cli) {
             super.process(cli);
             writeServerPort = Integer.parseInt(cli.getOptionValue("w", "" + DEFAULT_REGISTRATION_PORT));
+            replicationPort = Integer.parseInt(cli.getOptionValue("p", "" + DEFAULT_REPLICATION_PORT));
         }
 
         @Override
         protected WriteStartupConfig build() {
-            return new WriteStartupConfig(helpOption, readServerPort, shutDownPort, dataCenterType, appName, vipAddress, rest, writeServerPort);
+            return new WriteStartupConfig(helpOption, dataCenterType, resolverType, readServerPort, shutDownPort, appName, vipAddress, rest, writeServerPort, replicationPort);
         }
 
         @Override
         public String toString() {
             return "WriteCommandLineParser{" +
-                    "readServerPort=" + readServerPort +
-                    ", dataCenterType=" + dataCenterType +
+                    "dataCenterType=" + dataCenterType +
+                    ", resolverType=" + resolverType +
+                    ", readServerPort=" + readServerPort +
                     ", shutDownPort=" + shutDownPort +
                     ", appName='" + appName + '\'' +
                     ", vipAddress='" + vipAddress + '\'' +
                     ", rest=" + Arrays.toString(rest) + '\'' +
                     ", writeServerPort=" + writeServerPort +
+                    ", replicationPort=" + replicationPort +
                     '}';
         }
     }

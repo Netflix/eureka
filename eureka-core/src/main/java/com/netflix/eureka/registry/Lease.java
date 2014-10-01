@@ -17,6 +17,7 @@
 package com.netflix.eureka.registry;
 
 import com.netflix.eureka.interests.ChangeNotification;
+import com.netflix.eureka.registry.EurekaRegistry.Origin;
 
 /**
  * Represent a lease over an element E
@@ -26,22 +27,20 @@ import com.netflix.eureka.interests.ChangeNotification;
  */
 public class Lease<E> {
 
-    /**
-     * Each lease entry in a registry is associated with exactly one origin:
-     * <ul>
-     * <li>{@link #LOCAL}</li> - there is an opened registration client connection to the write local server
-     * <li>{@link #REPLICATED}</li> - replicated entry from another server
-     * </ul>
-     */
-    public enum Origin { LOCAL, REPLICATED }
+    private final E holder;
+    private final Origin origin;
 
-    private E holder;
-    private ChangeNotification<E> snapshot;
-
-    private Origin origin;
+    private final ChangeNotification<E> snapshot;
 
     public Lease(E holder) {
         this.holder = holder;
+        this.origin = Origin.LOCAL;
+        snapshot = new ChangeNotification<>(ChangeNotification.Kind.Add, holder);
+    }
+
+    public Lease(E holder, Origin origin) {
+        this.holder = holder;
+        this.origin = origin;
         snapshot = new ChangeNotification<>(ChangeNotification.Kind.Add, holder);
     }
 
@@ -49,29 +48,34 @@ public class Lease<E> {
         return holder;
     }
 
+    public Origin getOrigin() {
+        return origin;
+    }
+
     public ChangeNotification<E> getHolderSnapshot() {
         return snapshot;
     }
 
     @Override
-    public String toString() {
-        return "Lease{" +
-                "holder=" + holder +
-                ", snapshot=" + snapshot +
-                ", origin=" + origin +
-                '}';
-    }
-
-    @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Lease)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Lease)) {
+            return false;
+        }
 
         Lease lease = (Lease) o;
 
-        if (holder != null ? !holder.equals(lease.holder) : lease.holder != null) return false;
-        if (origin != lease.origin) return false;
-        if (snapshot != null ? !snapshot.equals(lease.snapshot) : lease.snapshot != null) return false;
+        if (holder != null ? !holder.equals(lease.holder) : lease.holder != null) {
+            return false;
+        }
+        if (origin != lease.origin) {
+            return false;
+        }
+        if (snapshot != null ? !snapshot.equals(lease.snapshot) : lease.snapshot != null) {
+            return false;
+        }
 
         return true;
     }
@@ -82,5 +86,14 @@ public class Lease<E> {
         result = 31 * result + (snapshot != null ? snapshot.hashCode() : 0);
         result = 31 * result + (origin != null ? origin.hashCode() : 0);
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return "Lease{" +
+                "holder=" + holder +
+                ", snapshot=" + snapshot +
+                ", origin=" + origin +
+                '}';
     }
 }

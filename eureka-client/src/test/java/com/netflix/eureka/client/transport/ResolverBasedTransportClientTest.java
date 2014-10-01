@@ -95,7 +95,7 @@ public class ResolverBasedTransportClientTest {
 
         ServerConnection connection = transportClient.connect().toBlocking().toFuture().get(30, TimeUnit.SECONDS);
         assertNotNull("Connection not established", connection);
-        Observable<Void> ackObservable = connection.send(new Register(SampleInstanceInfo.DiscoveryServer.build()));
+        Observable<Void> ackObservable = connection.sendWithAck(new Register(SampleInstanceInfo.DiscoveryServer.build()));
 
         assertTrue("Acknowledgment not received in time", RxBlocking.isCompleted(30, TimeUnit.SECONDS, ackObservable));
     }

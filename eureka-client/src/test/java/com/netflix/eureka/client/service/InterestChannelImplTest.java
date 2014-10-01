@@ -72,7 +72,7 @@ public class InterestChannelImplTest {
         protected void before() throws Throwable {
             registry = new EurekaRegistryImpl();
             when(serverConnection.sendAcknowledgment()).thenReturn(Observable.<Void>empty());
-            when(serverConnection.send(Mockito.anyObject())).thenReturn(Observable.<Void>empty());
+            when(serverConnection.sendWithAck(Mockito.anyObject())).thenReturn(Observable.<Void>empty());
             when(transportClient.connect()).thenReturn(Observable.from(serverConnection));
 
             channel = new InterestChannelImpl(registry, transportClient);

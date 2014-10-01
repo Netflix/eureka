@@ -27,6 +27,7 @@ import com.netflix.eureka.client.ServerResolver;
 import com.netflix.eureka.client.bootstrap.StaticServerResolver;
 import com.netflix.eureka.registry.DataCenterInfo;
 import com.netflix.eureka.registry.EurekaRegistry;
+import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.registry.NetworkAddress;
 import com.netflix.eureka.registry.datacenter.BasicDataCenterInfo;
 import com.netflix.eureka.registry.datacenter.BasicDataCenterInfo.BasicDataCenterInfoBuilder;
@@ -34,13 +35,15 @@ import com.netflix.eureka.server.spi.ExtensionContext;
 import com.netflix.eureka.server.spi.ExtensionContext.ExtensionContextBuilder;
 import com.netflix.eureka.server.spi.ExtensionLoader;
 import com.netflix.eureka.server.transport.tcp.discovery.TcpDiscoveryModule;
-import com.netflix.eureka.server.transport.tcp.registration.JsonRegistrationModule;
+import com.netflix.eureka.server.transport.tcp.registration.TcpRegistrationModule;
+import com.netflix.eureka.server.transport.tcp.replication.TcpReplicationModule;
 import com.netflix.eureka.transport.EurekaTransports.Codec;
 import com.netflix.governator.guice.LifecycleInjector;
 import com.netflix.governator.guice.LifecycleInjectorBuilder;
 import com.netflix.governator.lifecycle.LifecycleManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rx.Subscriber;
 
 /**
  * @author Tomasz Bak
@@ -88,21 +91,44 @@ public abstract class ServerInstance {
 
 
     public static class EurekaWriteServerInstance extends ServerInstance {
-        public EurekaWriteServerInstance(WriteStartupConfig config) {
+        public EurekaWriteServerInstance(WriteStartupConfig config, StaticServerResolver<InetSocketAddress> writeClusterResolver) {
             ExtensionContext context = new ExtensionContextBuilder()
                     .withEurekaClusterName(config.getAppName())
                     .withInternalReadServerAddress(new InetSocketAddress("localhost", config.getDiscoveryPort()))
                     .withSystemProperties(true)
                     .build();
+
+            LocalInstanceInfoResolver localInstanceInfoResolver = WriteInstanceInfoResolver.localInstanceInfo(DATA_CENTER_INFO, config);
+
             Module[] modules = {
-                    new JsonRegistrationModule(config.getAppName() + "#registration", config.getRegistrationPort()),
+                    new TcpRegistrationModule(config.getAppName() + "#registration", config.getRegistrationPort(), Codec.Json),
+                    new TcpReplicationModule(config.getAppName() + "#replication", config.getReplicationPort(), Codec.Json),
                     new TcpDiscoveryModule(config.getAppName() + "#discovery", config.getDiscoveryPort()),
-                    new EurekaWriteServerModule(new StaticServerResolver<InetSocketAddress>(), Codec.Json)
+                    new EurekaWriteServerModule(localInstanceInfoResolver, writeClusterResolver, Codec.Json, 30000, 5000)
             };
 
             setup(context, modules);
-            //noinspection unchecked
-            WriteSelfRegistrationExecutor.doSelfRegistration(injector.getInstance(EurekaRegistry.class), DATA_CENTER_INFO, config);
+
+            doSelfRegistration(localInstanceInfoResolver);
+        }
+
+        protected void doSelfRegistration(LocalInstanceInfoResolver localInstanceInfoResolver) {
+            localInstanceInfoResolver.resolve().subscribe(new Subscriber<InstanceInfo>() {
+                @Override
+                public void onCompleted() {
+                }
+
+                @Override
+                public void onError(Throwable e) {
+                    logger.error("Self registration error", e);
+                }
+
+                @Override
+                public void onNext(InstanceInfo instanceInfo) {
+                    logger.info("Self registration with instance info {}", instanceInfo);
+                    injector.getInstance(EurekaRegistry.class).register(instanceInfo);
+                }
+            });
         }
     }
 

@@ -28,6 +28,8 @@ import rx.Subscriber;
 /**
  * Self registration procedure for the Eureka read server.
  *
+ * TODO: Re-implement this using {@link com.netflix.eureka.server.LocalInstanceInfoResolver} interface, like in write server
+ *
  * @author Tomasz Bak
  */
 public class ReadSelfRegistrationExecutor {

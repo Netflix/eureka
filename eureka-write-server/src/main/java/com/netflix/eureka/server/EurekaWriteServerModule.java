@@ -19,9 +19,12 @@ package com.netflix.eureka.server;
 import java.net.InetSocketAddress;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.TypeLiteral;
+import com.google.inject.name.Names;
 import com.netflix.eureka.client.ServerResolver;
 import com.netflix.eureka.registry.EurekaRegistry;
 import com.netflix.eureka.server.audit.AuditedRegistry;
+import com.netflix.eureka.server.replication.ReplicationService;
 import com.netflix.eureka.transport.EurekaTransports.Codec;
 
 /**
@@ -29,18 +32,31 @@ import com.netflix.eureka.transport.EurekaTransports.Codec;
  */
 public class EurekaWriteServerModule extends AbstractModule {
 
-    @SuppressWarnings("unused")
+    private static final TypeLiteral<ServerResolver<InetSocketAddress>> SERVER_RESOLVER_LITERAL = new TypeLiteral<ServerResolver<InetSocketAddress>>() {
+    };
+
+    private final LocalInstanceInfoResolver localInstanceInfoResolver;
     private final ServerResolver<InetSocketAddress> peerResolver;
     private final Codec codec;
+    private final long reconnectDelayMs;
+    private final long heartbeatIntervalMs;
 
-    public EurekaWriteServerModule(ServerResolver<InetSocketAddress> peerResolver, Codec codec) {
+    public EurekaWriteServerModule(LocalInstanceInfoResolver localInstanceInfoResolver, ServerResolver<InetSocketAddress> peerResolver, Codec codec, long reconnectDelayMs, long heartbeatIntervalMs) {
+        this.localInstanceInfoResolver = localInstanceInfoResolver;
         this.peerResolver = peerResolver;
         this.codec = codec;
+        this.reconnectDelayMs = reconnectDelayMs;
+        this.heartbeatIntervalMs = heartbeatIntervalMs;
     }
 
     @Override
     public void configure() {
+        bind(LocalInstanceInfoResolver.class).toInstance(localInstanceInfoResolver);
         bind(Codec.class).toInstance(codec);
         bind(EurekaRegistry.class).to(AuditedRegistry.class);
+        bind(SERVER_RESOLVER_LITERAL).annotatedWith(Names.named(ReplicationService.PEER_RESOLVER_TAG)).toInstance(peerResolver);
+        bind(Long.class).annotatedWith(Names.named(ReplicationService.RECONNECT_DELAY_TAG)).toInstance(reconnectDelayMs);
+        bind(Long.class).annotatedWith(Names.named(ReplicationService.HEART_BEAT_INTERVAL_TAG)).toInstance(heartbeatIntervalMs);
+        bind(ReplicationService.class).asEagerSingleton();
     }
 }

@@ -1,18 +1,19 @@
 package com.netflix.eureka.server.service;
 
 import com.netflix.eureka.registry.InstanceInfo;
-import com.netflix.eureka.registry.Lease;
 import com.netflix.eureka.service.ServiceChannel;
 import rx.Observable;
+
+import static com.netflix.eureka.registry.EurekaRegistry.*;
 
 /**
  * A {@link com.netflix.eureka.service.ServiceChannel} implementation representing a replication stream
  * between two Eureka write servers.
  *
  * The client side of the channel is a source of data, that comes from its own registry, and is limited
- * to entries with {@link Lease.Origin#ATTACHED_CLIENT}.
+ * to entries with {@link Origin#LOCAL}.
  *
- * On the server side the data are put into the registry with origin set to {@link Lease.Origin#REPLICATED}.
+ * On the server side the data are put into the registry with origin set to {@link Origin#REPLICATED}.
  * A replicated entry is removed from the registry under following circumstances:
  * <ul>
  *     <li>Explicite {@link #unregister(String)} call - an entry was removed from the source registry</li>

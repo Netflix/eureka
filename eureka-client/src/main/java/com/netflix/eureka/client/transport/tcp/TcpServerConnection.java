@@ -29,6 +29,11 @@ public class TcpServerConnection implements ServerConnection {
 
     @Override
     public Observable<Void> send(Object message) {
+        return broker.submit(message);
+    }
+
+    @Override
+    public Observable<Void> sendWithAck(Object message) {
         return broker.submitWithAck(message);
     }
 

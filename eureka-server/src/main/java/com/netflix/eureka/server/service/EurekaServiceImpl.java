@@ -17,10 +17,10 @@ import com.netflix.eureka.service.RegistrationChannel;
  */
 public class EurekaServiceImpl implements EurekaServerService {
 
-    private final EurekaRegistry registry;
+    private final EurekaRegistry<InstanceInfo> registry;
     private final ClientConnection connection;
 
-    public EurekaServiceImpl(EurekaRegistry registry, ClientConnection connection) {
+    public EurekaServiceImpl(EurekaRegistry<InstanceInfo> registry, ClientConnection connection) {
         this.registry = registry;
         this.connection = connection;
     }
@@ -36,8 +36,8 @@ public class EurekaServiceImpl implements EurekaServerService {
     }
 
     @Override
-    public ReplicationChannel newReplicationChannel(InstanceInfo sourceServer) {
-        return new ReplicationChannelImpl(sourceServer, connection, registry);
+    public ReplicationChannel newReplicationChannel() {
+        return new ReplicationChannelImpl(connection, registry);
     }
 
     @Override

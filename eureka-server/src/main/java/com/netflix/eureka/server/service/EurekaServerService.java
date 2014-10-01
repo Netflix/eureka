@@ -1,6 +1,5 @@
 package com.netflix.eureka.server.service;
 
-import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.service.EurekaService;
 
 /**
@@ -14,13 +13,9 @@ import com.netflix.eureka.service.EurekaService;
 public interface EurekaServerService extends EurekaService {
 
     /**
-     * Opens a new {@link ReplicationChannel} with the passed {@code sourceServer} as the source of this replication
-     * channel.
-     *
-     * @param sourceServer The source server which is the owner of the data flowing on this channel.
+     * Opens a new {@link ReplicationChannel}.
      *
      * @return The {@link ReplicationChannel}.
      */
-    ReplicationChannel newReplicationChannel(InstanceInfo sourceServer);
-
+    ReplicationChannel newReplicationChannel();
 }
