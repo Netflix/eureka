@@ -27,7 +27,7 @@ dependencies {
 
     // Karyon admin and its dependencies
     compile "com.netflix.karyon:karyon-admin-web:${karyon_version}"
-    compile "commons-codec:commons-codec:1.9"
+    compile "commons-codec:commons-codec:${commons_codec_version}"
 
     testCompile project(':eureka-test-utils')
 }
