@@ -33,21 +33,15 @@ import static com.netflix.eureka.transport.EurekaTransports.*;
  * @author Tomasz Bak
  */
 public class ReadStartupConfig extends StartupConfig {
-    private final String resolverType;
     private final int writeClusterRegistrationPort;
     private final int writeClusterDiscoveryPort;
 
-    public ReadStartupConfig(boolean helpOption, int readServerPort, int shutDownPort, DataCenterType dataCenterType,
-                             String appName, String vipAddress, String[] rest, String resolverType,
+    public ReadStartupConfig(boolean helpOption, DataCenterType dataCenterType, String resolverType, int readServerPort,
+                             int shutDownPort, String appName, String vipAddress, String[] rest,
                              int writeClusterRegistrationPort, int writeClusterDiscoveryPort) {
-        super(helpOption, readServerPort, shutDownPort, dataCenterType, appName, vipAddress, rest);
-        this.resolverType = resolverType;
+        super(helpOption, dataCenterType, resolverType, readServerPort, shutDownPort, appName, vipAddress, rest);
         this.writeClusterRegistrationPort = writeClusterRegistrationPort;
         this.writeClusterDiscoveryPort = writeClusterDiscoveryPort;
-    }
-
-    public String getResolverType() {
-        return resolverType;
     }
 
     public int getWriteClusterRegistrationPort() {
@@ -59,16 +53,9 @@ public class ReadStartupConfig extends StartupConfig {
     }
 
     public static class ReadStartupConfigBuilder extends StartupConfigBuilder<ReadStartupConfig, ReadStartupConfigBuilder> {
-        private String resolverType;
-
         private int writeClusterRegistrationPort;
 
         private int writeClusterDiscoveryPort;
-
-        public ReadStartupConfigBuilder withResolverType(String resolverType) {
-            this.resolverType = resolverType;
-            return this;
-        }
 
         public ReadStartupConfigBuilder withWriteClusterRegistrationPort(int writeClusterRegistrationPort) {
             this.writeClusterRegistrationPort = writeClusterRegistrationPort;
@@ -82,16 +69,19 @@ public class ReadStartupConfig extends StartupConfig {
 
         @Override
         public ReadStartupConfig build() {
-            return new ReadStartupConfig(helpOption, readServerPort, shutDownPort, dataCenterType, appName, vipAddress,
-                    rest, resolverType, writeClusterRegistrationPort, writeClusterDiscoveryPort);
+            return new ReadStartupConfig(helpOption, dataCenterType, resolverType, readServerPort, shutDownPort, appName, vipAddress,
+                    rest, writeClusterRegistrationPort, writeClusterDiscoveryPort);
         }
     }
 
     public static class ReadCommandLineParser extends EurekaCommandLineParser<ReadStartupConfig> {
 
-        private String resolverType;
         private int writeClusterRegistrationPort;
         private int writeClusterDiscoveryPort;
+
+        protected ReadCommandLineParser() {
+            super(true);
+        }
 
         @Override
         protected void additionalOptions(Options options) {
@@ -103,29 +93,14 @@ public class ReadStartupConfig extends StartupConfig {
         @Override
         protected void process(CommandLine cli) {
             super.process(cli);
-            resolverType = cli.getOptionValue("q", "inline");
-            switch (resolverType) {
-                case "dns":
-                    if (cli.getArgList().size() != 1) {
-                        throw new IllegalArgumentException("provide Eureka Write cluster domain name as parameter");
-                    }
-                    break;
-                case "inline":
-                    if (cli.getArgList().size() < 1) {
-                        throw new IllegalArgumentException("provide Eureka Write cluster server addresses as parameter list");
-                    }
-                    break;
-                default:
-                    throw new IllegalArgumentException("resolver type not defined ('-r dns|inline')");
-            }
             writeClusterRegistrationPort = Integer.parseInt(cli.getOptionValue("rw", "" + DEFAULT_REGISTRATION_PORT));
             writeClusterDiscoveryPort = Integer.parseInt(cli.getOptionValue("rr", "" + DEFAULT_DISCOVERY_PORT));
         }
 
         @Override
         protected ReadStartupConfig build() {
-            return new ReadStartupConfig(helpOption, readServerPort, shutDownPort, dataCenterType, appName,
-                    vipAddress, rest, resolverType, writeClusterRegistrationPort, writeClusterDiscoveryPort);
+            return new ReadStartupConfig(helpOption, dataCenterType, resolverType, readServerPort, shutDownPort, appName,
+                    vipAddress, rest, writeClusterRegistrationPort, writeClusterDiscoveryPort);
         }
 
         @Override

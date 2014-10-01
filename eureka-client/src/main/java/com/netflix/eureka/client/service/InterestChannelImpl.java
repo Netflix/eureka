@@ -89,7 +89,7 @@ import java.util.Map;
                 .switchMap(new Func1<ServerConnection, Observable<Void>>() {
                     @Override
                     public Observable<Void> call(ServerConnection serverConnection) {
-                        return serverConnection.send(new InterestRegistration(newInterest))
+                        return serverConnection.sendWithAck(new InterestRegistration(newInterest))
                                 .doOnCompleted(new UpdateLocalInterest(newInterest));
 
                     }

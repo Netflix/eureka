@@ -3,6 +3,10 @@ package com.netflix.eureka.transport;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
+import com.netflix.eureka.protocol.replication.RegisterCopy;
+import com.netflix.eureka.protocol.replication.UnregisterCopy;
+import com.netflix.eureka.protocol.replication.UpdateCopy;
+import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.utils.Sets;
 import com.netflix.eureka.protocol.Heartbeat;
 import com.netflix.eureka.protocol.discovery.AddInstance;
@@ -91,6 +95,38 @@ public abstract class TransportCompatibilityTestSuite {
 
         private void updateTest() {
             runClientToServerWithAck(new Update(DiscoveryServer.build()));
+        }
+
+        private void hearbeatTest() {
+            runClientToServer(Heartbeat.INSTANCE);
+        }
+    }
+
+    public static class ReplicationProtocolTest extends TransportCompatibilityTestSuite {
+
+        private final InstanceInfo instanceInfo = DiscoveryServer.build();
+
+        public ReplicationProtocolTest(MessageBroker clientBroker, MessageBroker serverBroker) {
+            super(clientBroker, serverBroker);
+        }
+
+        public void runTestSuite() {
+            registrationTest();
+            unregisterTest();
+            updateTest();
+            hearbeatTest();
+        }
+
+        private void registrationTest() {
+            runClientToServerWithAck(new RegisterCopy(instanceInfo));
+        }
+
+        private void unregisterTest() {
+            runClientToServerWithAck(new UnregisterCopy(instanceInfo.getId()));
+        }
+
+        private void updateTest() {
+            runClientToServerWithAck(new UpdateCopy(instanceInfo));
         }
 
         private void hearbeatTest() {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka.server.transport.tcp.registration;
+package com.netflix.eureka.server.transport.tcp.replication;
 
 import com.netflix.eureka.transport.EurekaTransports;
 import com.netflix.eureka.transport.EurekaTransports.Codec;
@@ -23,23 +23,21 @@ import com.netflix.karyon.transport.tcp.KaryonTcpModule;
 /**
  * @author Tomasz Bak
  */
-public class AvroRegistrationModule extends KaryonTcpModule<Object, Object> {
+public class TcpReplicationModule extends KaryonTcpModule<Object, Object> {
 
+    private final Codec codec;
     private final int port;
 
-    public AvroRegistrationModule() {
-        this("avroRegistrationServer", 7002);
-    }
-
-    public AvroRegistrationModule(String moduleName, int port) {
+    public TcpReplicationModule(String moduleName, int port, Codec codec) {
         super(moduleName, Object.class, Object.class);
         this.port = port;
+        this.codec = codec;
     }
 
     @Override
     protected void configureServer() {
-        bindPipelineConfigurator().toInstance(EurekaTransports.registrationPipeline(Codec.Avro));
-        bindConnectionHandler().to(TcpRegistrationHandler.class);
+        bindPipelineConfigurator().toInstance(EurekaTransports.replicationPipeline(codec));
+        bindConnectionHandler().to(TcpReplicationHandler.class);
         server().port(port);
     }
 }

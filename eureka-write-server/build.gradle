@@ -44,6 +44,8 @@ task runWriteServer (dependsOn: [classes], type: JavaExec) {
 
     systemProperty 'java.awt.headless', 'true'
     systemProperty 'archaius.deployment.environment', 'dev'
+    systemProperty 'org.slf4j.simpleLogger.log.com.netflix.eureka', 'debug'
+    systemProperty 'org.slf4j.simpleLogger.log.io.netty.handler.logging.LoggingHandler', 'debug'
 
     args "-n", "eurekaWrite"
 }

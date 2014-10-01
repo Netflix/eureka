@@ -48,6 +48,7 @@ public abstract class AbstractEurekaServer<C extends StartupConfig> {
 
     protected abstract LifecycleInjectorBuilderSuite additionalModules();
 
+
     private void startLifecycleManager() throws Exception {
         lifecycleManager = injector.getInstance(LifecycleManager.class);
         lifecycleManager.start();

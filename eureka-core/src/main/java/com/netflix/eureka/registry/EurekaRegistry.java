@@ -27,7 +27,18 @@ import java.util.Set;
  */
 public interface EurekaRegistry<T> {
 
+    /**
+     * Each entry in a registry is associated with exactly one origin:
+     * <ul>
+     * <li>{@link #LOCAL}</li> - there is an opened registration client connection to the write local server
+     * <li>{@link #REPLICATED}</li> - replicated entry from another server
+     * </ul>
+     */
+    enum Origin { LOCAL, REPLICATED }
+
     Observable<Void> register(T instanceInfo);
+
+    Observable<Void> register(T instanceInfo, Origin origin);
 
     Observable<Void> unregister(String instanceId);
 
@@ -36,6 +47,8 @@ public interface EurekaRegistry<T> {
     Observable<T> forSnapshot(Interest<T> interest);
 
     Observable<ChangeNotification<T>> forInterest(Interest<T> interest);
+
+    Observable<ChangeNotification<T>> forInterest(Interest<T> interest, Origin origin);
 
     Observable<Void> shutdown();
 }

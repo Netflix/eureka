@@ -16,8 +16,6 @@
 
 package com.netflix.eureka.server.transport.tcp.registration;
 
-import javax.inject.Inject;
-
 import com.netflix.eureka.transport.EurekaTransports;
 import com.netflix.eureka.transport.EurekaTransports.Codec;
 import com.netflix.karyon.transport.tcp.KaryonTcpModule;
@@ -25,23 +23,20 @@ import com.netflix.karyon.transport.tcp.KaryonTcpModule;
 /**
  * @author Tomasz Bak
  */
-public class JsonRegistrationModule extends KaryonTcpModule<Object, Object> {
+public class TcpRegistrationModule extends KaryonTcpModule<Object, Object> {
 
+    private final Codec codec;
     private final int port;
 
-    @Inject
-    public JsonRegistrationModule() {
-        this("jsonRegistrationServer", 7002);
-    }
-
-    public JsonRegistrationModule(String moduleName, int port) {
+    public TcpRegistrationModule(String moduleName, int port, Codec codec) {
         super(moduleName, Object.class, Object.class);
         this.port = port;
+        this.codec = codec;
     }
 
     @Override
     protected void configureServer() {
-        bindPipelineConfigurator().toInstance(EurekaTransports.registrationPipeline(Codec.Json));
+        bindPipelineConfigurator().toInstance(EurekaTransports.registrationPipeline(codec));
         bindConnectionHandler().to(TcpRegistrationHandler.class);
         server().port(port);
     }

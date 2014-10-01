@@ -55,6 +55,18 @@ task buildRegistrationSchema (type: JavaExec) {
             "build/classes/main/registration-schema.avpr"
     ]
 }
+task buildReplicationSchema (type: JavaExec) {
+    group = "Avro"
+    description = "Process Avro IDL files and generate Avro schema documents for replication protocol"
+
+    main = "org.apache.avro.tool.Main"
+    classpath = configurations.avroTool
+    args = [
+            "idl",
+            "src/main/avro/replication-schema.avdl",
+            "build/classes/main/replication-schema.avpr"
+    ]
+}
 task buildDiscoverySchema (type: JavaExec) {
     group = "Avro"
     description = "Process Avro IDL files and generate Avro schema documents for discovery protocol"
@@ -68,5 +80,6 @@ task buildDiscoverySchema (type: JavaExec) {
     ]
 }
 buildRegistrationSchema.dependsOn prepareOutputDir
+buildReplicationSchema.dependsOn prepareOutputDir
 buildDiscoverySchema.dependsOn prepareOutputDir
-build.dependsOn buildRegistrationSchema, buildDiscoverySchema
+build.dependsOn buildRegistrationSchema, buildReplicationSchema, buildDiscoverySchema

@@ -16,7 +16,6 @@
 
 package com.netflix.eureka.server.service;
 
-import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.service.InterestChannel;
 import com.netflix.eureka.service.RegistrationChannel;
 
@@ -36,7 +35,7 @@ public class TestableEurekaService implements EurekaServerService {
     private final BlockingQueue<InterestChannel> interestChannels = new LinkedBlockingQueue<InterestChannel>();
 
     @Override
-    public ReplicationChannel newReplicationChannel(InstanceInfo sourceServer) {
+    public ReplicationChannel newReplicationChannel() {
         return null;
     }
 

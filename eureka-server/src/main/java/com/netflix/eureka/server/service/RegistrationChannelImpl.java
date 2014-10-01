@@ -75,10 +75,6 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
             }
         }
 
-        if (logger.isDebugEnabled()) {
-            logger.debug("Registering a new instance: " + instanceInfo);
-        }
-
         final long tempNewVersion = currentVersion + 1;
         final InstanceInfo tempNewInfo = new InstanceInfo.Builder()
                 .withInstanceInfo(instanceInfo).withVersion(tempNewVersion).build();
@@ -109,7 +105,7 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
 
     @Override
     public Observable<Void> update(final InstanceInfo newInfo) {
-        logger.debug("Updating service entry in registry. New info=: {}", newInfo);
+        logger.debug("Updating service entry in registry. New info= {}", newInfo);
 
         STATES currentState = state.get();
         switch (currentState) {

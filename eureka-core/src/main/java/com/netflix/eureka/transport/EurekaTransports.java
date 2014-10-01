@@ -29,6 +29,9 @@ import com.netflix.eureka.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka.protocol.registration.Register;
 import com.netflix.eureka.protocol.registration.Unregister;
 import com.netflix.eureka.protocol.registration.Update;
+import com.netflix.eureka.protocol.replication.RegisterCopy;
+import com.netflix.eureka.protocol.replication.UnregisterCopy;
+import com.netflix.eureka.protocol.replication.UpdateCopy;
 import com.netflix.eureka.transport.codec.avro.AvroPipelineConfigurator;
 import com.netflix.eureka.transport.codec.json.JsonPipelineConfigurator;
 import io.reactivex.netty.pipeline.PipelineConfigurator;
@@ -42,9 +45,14 @@ public final class EurekaTransports {
 
     public static final int DEFAULT_REGISTRATION_PORT = 7002;
     public static final int DEFAULT_DISCOVERY_PORT = 7003;
+    public static final int DEFAULT_REPLICATION_PORT = 7004;
 
     static final String REGISTRATION_SCHEMA_FILE = "registration-schema.avpr";
     static final String REGISTRATION_ENVELOPE_TYPE = "com.netflix.eureka.protocol.registration.RegistrationMessages";
+
+    static final String REPLICATION_SCHEMA_FILE = "replication-schema.avpr";
+    static final String REPLICATION_ENVELOPE_TYPE = "com.netflix.eureka.protocol.replication.ReplicationMessages";
+
     static final String DISCOVERY_SCHEMA_FILE = "discovery-schema.avpr";
     static final String DISCOVERY_ENVELOPE_TYPE = "com.netflix.eureka.protocol.discovery.DiscoveryMessage";
 
@@ -60,6 +68,12 @@ public final class EurekaTransports {
             Register.class, Unregister.class, Heartbeat.class, Update.class
     };
     static final Set<Class<?>> REGISTRATION_PROTOCOL_MODEL_SET = new HashSet<>(Arrays.asList(REGISTRATION_PROTOCOL_MODEL));
+
+    static final Class<?>[] REPLICATION_PROTOCOL_MODEL = {
+            RegisterCopy.class, UnregisterCopy.class, Heartbeat.class, UpdateCopy.class
+    };
+    static final Set<Class<?>> REPLICATION_PROTOCOL_MODEL_SET = new HashSet<>(Arrays.asList(REPLICATION_PROTOCOL_MODEL));
+
     static final Class<?>[] DISCOVERY_PROTOCOL_MODEL = {
             InterestRegistration.class, UnregisterInterestSet.class, Heartbeat.class,
             AddInstance.class, DeleteInstance.class, UpdateInstanceInfo.class
@@ -72,6 +86,16 @@ public final class EurekaTransports {
                 return new AvroPipelineConfigurator(REGISTRATION_PROTOCOL_MODEL_SET, REGISTRATION_SCHEMA_FILE, REGISTRATION_ENVELOPE_TYPE);
             case Json:
                 return new JsonPipelineConfigurator(REGISTRATION_PROTOCOL_MODEL_SET);
+        }
+        return failOnMissingCodec(codec);
+    }
+
+    public static PipelineConfigurator<Object, Object> replicationPipeline(Codec codec) {
+        switch (codec) {
+            case Avro:
+                return new AvroPipelineConfigurator(REPLICATION_PROTOCOL_MODEL_SET, REPLICATION_SCHEMA_FILE, REPLICATION_ENVELOPE_TYPE);
+            case Json:
+                return new JsonPipelineConfigurator(REPLICATION_PROTOCOL_MODEL_SET);
         }
         return failOnMissingCodec(codec);
     }

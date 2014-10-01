@@ -70,6 +70,11 @@ public class AuditedRegistry extends EurekaRegistryImpl {
     }
 
     @Override
+    public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, Origin origin) {
+        return super.forInterest(interest, origin);
+    }
+
+    @Override
     public Observable<Void> shutdown() {
         return super.shutdown();
     }

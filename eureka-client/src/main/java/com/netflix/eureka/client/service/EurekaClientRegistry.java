@@ -1,5 +1,8 @@
 package com.netflix.eureka.client.service;
 
+import javax.inject.Inject;
+import java.util.Set;
+
 import com.netflix.eureka.client.transport.TransportClient;
 import com.netflix.eureka.interests.ChangeNotification;
 import com.netflix.eureka.interests.Interest;
@@ -11,9 +14,6 @@ import com.netflix.eureka.service.EurekaService;
 import com.netflix.eureka.service.InterestChannel;
 import rx.Observable;
 import rx.Subscriber;
-
-import javax.inject.Inject;
-import java.util.Set;
 
 /**
  * An implementation of {@link EurekaRegistry} to be used by the eureka client.
@@ -54,6 +54,11 @@ public class EurekaClientRegistry implements EurekaRegistry<InstanceInfo> {
     }
 
     @Override
+    public Observable<Void> register(InstanceInfo instanceInfo, Origin origin) {
+        return registry.register(instanceInfo, origin);
+    }
+
+    @Override
     public Observable<Void> unregister(String instanceId) {
         return registry.unregister(instanceId);
     }
@@ -76,6 +81,11 @@ public class EurekaClientRegistry implements EurekaRegistry<InstanceInfo> {
                 .mergeWith(registry.forInterest(interest));
 
         return toReturn;
+    }
+
+    @Override
+    public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, Origin origin) {
+        throw new IllegalStateException("Origin filtering not supported by EurekaClientRegistry");
     }
 
     @Override

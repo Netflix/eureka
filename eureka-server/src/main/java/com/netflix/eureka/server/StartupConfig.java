@@ -36,6 +36,7 @@ import static com.netflix.eureka.transport.EurekaTransports.*;
 public class StartupConfig {
 
     private final boolean helpOption;
+    private final String resolverType;
     private final int readServerPort;
     private final int shutDownPort;
     private final DataCenterType dataCenterType;
@@ -43,9 +44,10 @@ public class StartupConfig {
     private final String vipAddress;
     private final String[] rest;
 
-    public StartupConfig(boolean helpOption, int readServerPort, int shutDownPort, DataCenterType dataCenterType,
+    public StartupConfig(boolean helpOption, DataCenterType dataCenterType, String resolverType, int readServerPort, int shutDownPort,
                          String appName, String vipAddress, String[] rest) {
         this.helpOption = helpOption;
+        this.resolverType = resolverType;
         this.readServerPort = readServerPort;
         this.shutDownPort = shutDownPort;
         this.dataCenterType = dataCenterType;
@@ -54,16 +56,20 @@ public class StartupConfig {
         this.rest = rest;
     }
 
+    public DataCenterType getDataCenterType() {
+        return dataCenterType;
+    }
+
+    public String getResolverType() {
+        return resolverType;
+    }
+
     public int getDiscoveryPort() {
         return readServerPort;
     }
 
     public int getShutDownPort() {
         return shutDownPort;
-    }
-
-    public DataCenterType getDataCenterType() {
-        return dataCenterType;
     }
 
     public String getAppName() {
@@ -84,9 +90,10 @@ public class StartupConfig {
 
     public static class StartupConfigBuilder<C extends StartupConfig, B extends StartupConfigBuilder<C, B>> {
         protected boolean helpOption;
+        protected DataCenterType dataCenterType;
+        protected String resolverType;
         protected int readServerPort;
         protected int shutDownPort;
-        protected DataCenterType dataCenterType;
         protected String appName;
         protected String vipAddress;
         protected String[] rest;
@@ -96,6 +103,11 @@ public class StartupConfig {
 
         public B withHelpOption(boolean helpOption) {
             this.helpOption = helpOption;
+            return self();
+        }
+
+        public B withResolverType(String resolverType) {
+            this.resolverType = resolverType;
             return self();
         }
 
@@ -131,7 +143,7 @@ public class StartupConfig {
 
         @SuppressWarnings("unchecked")
         public C build() {
-            return (C) new StartupConfig(helpOption, readServerPort, shutDownPort, dataCenterType, appName, vipAddress, rest);
+            return (C) new StartupConfig(helpOption, dataCenterType, resolverType, readServerPort, shutDownPort, appName, vipAddress, rest);
         }
 
         @SuppressWarnings("unchecked")
@@ -143,8 +155,10 @@ public class StartupConfig {
     public static class EurekaCommandLineParser<C extends StartupConfig> {
 
         private final Options options;
+        private final boolean resolverRequired;
 
         protected boolean helpOption;
+        protected String resolverType;
         protected int readServerPort;
         protected DataCenterType dataCenterType;
         protected int shutDownPort;
@@ -152,10 +166,12 @@ public class StartupConfig {
         protected String vipAddress;
         protected String[] rest;
 
-        protected EurekaCommandLineParser() {
+        protected EurekaCommandLineParser(boolean resolverRequired) {
+            this.resolverRequired = resolverRequired;
             this.options = new Options()
                     .addOption("h", false, "print this help information")
                     .addOption("d", true, "datacenter type (AWS|Basic). Default Basic")
+                    .addOption("q", true, "server resolver type (dns|inline); default inline")
                     .addOption("s", true, "shutdown port; default 7700")
                     .addOption("r", true, "TCP discovery server port; default " + DEFAULT_DISCOVERY_PORT)
                     .addOption("n", true, "server instance name");
@@ -166,7 +182,7 @@ public class StartupConfig {
 
         @SuppressWarnings("unchecked")
         protected C build() {
-            return (C) new StartupConfig(helpOption, readServerPort, shutDownPort, dataCenterType, appName, vipAddress, rest);
+            return (C) new StartupConfig(helpOption, dataCenterType, resolverType, readServerPort, shutDownPort, appName, vipAddress, rest);
         }
 
         @SuppressWarnings("unchecked")
@@ -174,6 +190,25 @@ public class StartupConfig {
             helpOption = cli.hasOption('h');
             if (!helpOption) {
                 dataCenterType = DataCenterType.valueOf(cli.getOptionValue("d", "Basic"));
+
+                if (resolverRequired || !cli.getArgList().isEmpty()) {
+                    resolverType = cli.getOptionValue("q", "inline");
+                    switch (resolverType) {
+                        case "dns":
+                            if (cli.getArgList().size() != 1) {
+                                throw new IllegalArgumentException("provide Eureka Write cluster domain name as parameter");
+                            }
+                            break;
+                        case "inline":
+                            if (cli.getArgList().size() < 1) {
+                                throw new IllegalArgumentException("provide Eureka Write cluster server addresses as parameter list");
+                            }
+                            break;
+                        default:
+                            throw new IllegalArgumentException("resolver type not defined ('-r dns|inline')");
+                    }
+                }
+
                 shutDownPort = Integer.parseInt(cli.getOptionValue("s", "7700"));
                 readServerPort = Integer.parseInt(cli.getOptionValue("r", "" + DEFAULT_DISCOVERY_PORT));
                 if (!cli.hasOption("n")) {

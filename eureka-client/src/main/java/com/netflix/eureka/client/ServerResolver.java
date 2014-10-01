@@ -51,7 +51,7 @@ public interface ServerResolver<A extends SocketAddress> {
     void close();
 
     enum ProtocolType {
-        Undefined(-1), TcpRegistration(7002), TcpDiscovery(7003), WebSockets(7001);
+        Undefined(-1), TcpRegistration(7002), TcpDiscovery(7003), TcpReplication(7004);
 
         private final int defaultPort;
 
