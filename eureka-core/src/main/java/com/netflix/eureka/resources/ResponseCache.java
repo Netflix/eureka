@@ -79,7 +79,7 @@ public class ResponseCache {
 
     private static final Logger logger = LoggerFactory
             .getLogger(ResponseCache.class);
-    private static final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
+    private final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
             .getInstance().getConfiguration();
 
     public static final String ALL_APPS = "ALL_APPS";

@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2012 Netflix, Inc.
  *
@@ -47,7 +48,7 @@ public class StatusResource {
     .getLogger(StatusResource.class);
     private static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss Z";
 
-    private static final PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry
+    private final PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry
     .getInstance();
 
     @GET

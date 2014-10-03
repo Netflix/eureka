@@ -49,7 +49,7 @@ public class ApplicationResource {
     private static final Logger logger = LoggerFactory
             .getLogger(ApplicationResource.class);
 
-    private static final PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry
+    private final PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry
             .getInstance();
 
     String appName;

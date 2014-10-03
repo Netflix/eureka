@@ -56,7 +56,7 @@ public class InstanceResource {
     private static final Logger logger = LoggerFactory
             .getLogger(InstanceResource.class);
 
-    private static final PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry
+    private final PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry
             .getInstance();
 
     String id;
