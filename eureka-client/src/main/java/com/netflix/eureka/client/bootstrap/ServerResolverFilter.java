@@ -24,6 +24,7 @@ import com.netflix.eureka.client.ServerResolver.Protocol;
 import com.netflix.eureka.client.ServerResolver.ServerEntry;
 import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.registry.NetworkAddress;
+import com.netflix.eureka.utils.SystemUtil;
 import rx.Observable.Operator;
 import rx.Subscriber;
 
@@ -67,7 +68,7 @@ public class ServerResolverFilter implements Operator<ServerEntry<InetSocketAddr
         };
     }
 
-    public static ServerResolverFilter filterOut(InstanceInfo instanceInfo) {
+    public static ServerResolverFilter filterOut(InstanceInfo instanceInfo, boolean includeLocal) {
         Set<String> addresses = new HashSet<>();
         for (NetworkAddress address : instanceInfo.getDataCenterInfo().getAddresses()) {
             if (address.getHostName() != null) {
@@ -77,6 +78,13 @@ public class ServerResolverFilter implements Operator<ServerEntry<InetSocketAddr
                 addresses.add(address.getIpAddress());
             }
         }
+
+        if (includeLocal) {
+            addresses.add(SystemUtil.IP4_LOOPBACK);
+            addresses.add(SystemUtil.IP6_LOOPBACK);
+            addresses.add("localhost");
+        }
+
         return new ServerResolverFilter(addresses, instanceInfo.getPorts());
     }
 }

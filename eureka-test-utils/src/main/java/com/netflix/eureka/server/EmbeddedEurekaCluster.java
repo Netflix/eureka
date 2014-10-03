@@ -25,10 +25,10 @@ import com.netflix.eureka.client.ServerResolver.Protocol;
 import com.netflix.eureka.client.ServerResolver.ProtocolType;
 import com.netflix.eureka.client.bootstrap.StaticServerResolver;
 import com.netflix.eureka.registry.datacenter.LocalDataCenterInfo.DataCenterType;
-import com.netflix.eureka.server.ReadStartupConfig.ReadStartupConfigBuilder;
+import com.netflix.eureka.server.ReadServerConfig.ReadServerConfigBuilder;
 import com.netflix.eureka.server.ServerInstance.EurekaReadServerInstance;
 import com.netflix.eureka.server.ServerInstance.EurekaWriteServerInstance;
-import com.netflix.eureka.server.WriteStartupConfig.WriteStartupConfigBuilder;
+import com.netflix.eureka.server.WriteServerConfig.WriteServerConfigBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +55,7 @@ public class EmbeddedEurekaCluster {
         // Write cluster
         for (int i = 0; i < writeCount; i++) {
             int port = WRITE_SERVER_PORTS_FROM + 10 * i;
-            WriteStartupConfig config = new WriteStartupConfigBuilder()
+            WriteServerConfig config = new WriteServerConfigBuilder()
                     .withAppName(WRITE_SERVER_NAME)
                     .withVipAddress(WRITE_SERVER_NAME)
                     .withDataCenterType(DataCenterType.Basic)
@@ -75,11 +75,13 @@ public class EmbeddedEurekaCluster {
         // Read cluster
         for (int i = 0; i < readCount; i++) {
             int port = READ_SERVER_PORTS_FROM + i;
-            ReadStartupConfig config = new ReadStartupConfigBuilder()
+            ReadServerConfig config = new ReadServerConfigBuilder()
                     .withAppName(READ_SERVER_NAME)
                     .withVipAddress(READ_SERVER_NAME)
                     .withDataCenterType(DataCenterType.Basic)
                     .withReadServerPort(port)
+                    .withWriteClusterRegistrationPort(WRITE_SERVER_PORTS_FROM)
+                    .withWriteClusterDiscoveryPort(WRITE_SERVER_PORTS_FROM + 1)
                     .build();
             ServerInstance instance = new EurekaReadServerInstance(config, writeClusterResolver);
             readInstances.add(instance);

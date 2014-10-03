@@ -24,6 +24,7 @@ dependencies {
     compile "com.netflix.rxnetty:rx-netty-servo:${rx_netty_version}"
     compile "com.netflix.karyon:karyon-governator:${karyon_version}"
     compile "com.netflix.karyon:karyon-archaius:${karyon_version}"
+    compile "com.netflix.karyon:karyon-servo:${karyon_version}"
 
     // Karyon admin and its dependencies
     compile "com.netflix.karyon:karyon-admin-web:${karyon_version}"

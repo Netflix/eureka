@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka.server;
+package com.netflix.eureka.server.service;
 
 import com.netflix.eureka.registry.InstanceInfo;
 import rx.Observable;
@@ -22,6 +22,6 @@ import rx.Observable;
 /**
  * @author Tomasz Bak
  */
-public interface LocalInstanceInfoResolver {
+public interface SelfRegistrationService {
     Observable<InstanceInfo> resolve();
 }

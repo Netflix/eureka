@@ -16,12 +16,17 @@
 
 package com.netflix.eureka.server;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import com.google.inject.Injector;
+import com.netflix.adminresources.resources.KaryonWebAdminModule;
 import com.netflix.governator.guice.LifecycleInjector;
 import com.netflix.governator.guice.LifecycleInjectorBuilderSuite;
 import com.netflix.governator.lifecycle.LifecycleManager;
+import com.netflix.karyon.archaius.ArchaiusSuite;
+import com.netflix.karyon.servo.KaryonServoModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,25 +34,41 @@ import org.slf4j.LoggerFactory;
  *
  * @author Tomasz Bak
  */
-public abstract class AbstractEurekaServer<C extends StartupConfig> {
+public abstract class AbstractEurekaServer<C extends EurekaBootstrapConfig> {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractEurekaServer.class);
 
     protected final C config;
+    protected final String name;
+
     protected Injector injector;
     private LifecycleManager lifecycleManager;
 
+    protected AbstractEurekaServer(String name) {
+        this.config = null;
+        this.name = name;
+    }
+
     protected AbstractEurekaServer(C config) {
         this.config = config;
+        this.name = null;
     }
 
     public void start() throws Exception {
-        injector = LifecycleInjector.bootstrap(this.getClass(), additionalModules());
+        List<LifecycleInjectorBuilderSuite> suites = new ArrayList<>();
+        if (config == null) {
+            suites.add(new ArchaiusSuite(name));
+        }
+        suites.add(KaryonWebAdminModule.asSuite());
+        suites.add(KaryonServoModule.asSuite());
+        additionalModules(suites);
+        injector = LifecycleInjector.bootstrap(
+                this.getClass(),
+                suites.toArray(new LifecycleInjectorBuilderSuite[suites.size()]));
         startLifecycleManager();
     }
 
-    protected abstract LifecycleInjectorBuilderSuite additionalModules();
-
+    protected abstract void additionalModules(List<LifecycleInjectorBuilderSuite> suites);
 
     private void startLifecycleManager() throws Exception {
         lifecycleManager = injector.getInstance(LifecycleManager.class);

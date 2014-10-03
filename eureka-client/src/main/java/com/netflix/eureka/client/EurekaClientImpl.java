@@ -16,6 +16,11 @@
 
 package com.netflix.eureka.client;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+import java.net.InetSocketAddress;
+
 import com.netflix.eureka.client.service.EurekaClientRegistry;
 import com.netflix.eureka.client.transport.TransportClient;
 import com.netflix.eureka.client.transport.TransportClients;
@@ -24,13 +29,8 @@ import com.netflix.eureka.interests.Interest;
 import com.netflix.eureka.interests.Interests;
 import com.netflix.eureka.registry.EurekaRegistry;
 import com.netflix.eureka.registry.InstanceInfo;
-import com.netflix.eureka.transport.EurekaTransports;
+import com.netflix.eureka.transport.EurekaTransports.Codec;
 import rx.Observable;
-
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
-import java.net.InetSocketAddress;
 
 /**
  * @author Tomasz Bak
@@ -55,8 +55,13 @@ public class EurekaClientImpl extends EurekaClient {
     public EurekaClientImpl(@Named(READ_SERVER_RESOLVER_NAME) ServerResolver<InetSocketAddress> readServerResolver,
                             @Named(WRITE_SERVER_RESOLVER_NAME) ServerResolver<InetSocketAddress> writeServerResolver) {
         //TODO: Default to avro as we are always going to use avro by default. Today it expects avro schema in CP.
-        this(TransportClients.newTcpRegistrationClient(writeServerResolver, EurekaTransports.Codec.Json), TransportClients.newTcpDiscoveryClient(readServerResolver, EurekaTransports.Codec.Json)
-        );
+        this(readServerResolver, writeServerResolver, Codec.Avro);
+    }
+
+    public EurekaClientImpl(ServerResolver<InetSocketAddress> readServerResolver,
+                            ServerResolver<InetSocketAddress> writeServerResolver,
+                            Codec codec) {
+        this(TransportClients.newTcpRegistrationClient(writeServerResolver, codec), TransportClients.newTcpDiscoveryClient(readServerResolver, codec));
     }
 
     @Override

@@ -16,7 +16,7 @@
 
 package com.netflix.eureka.server.audit.kafka;
 
-import com.netflix.eureka.server.spi.ExtensionContext;
+import com.netflix.governator.annotations.Configuration;
 
 /**
  * Kafka audit service configuration options.
@@ -25,58 +25,50 @@ import com.netflix.eureka.server.spi.ExtensionContext;
  */
 public class KafkaAuditConfig {
 
-    public static final String KAFKA_AUDIT_KEYS_PREFIX = "eureka.ext.audit.kafka";
+    public static final String KAFKA_SERVERS_KEY = "eureka.ext.audit.kafka.servers";
+    public static final String KAFKA_VIP_KEY = "eureka.ext.audit.kafka.vip";
+    public static final String KAFKA_PORT_KEY = "eureka.ext.audit.kafka.port";
+    public static final String KAFKA_TOPIC_KEY = "eureka.ext.audit.kafka.topic";
+
+    public static final int KAFKA_PORT_DEFAULT = 7101;
 
     /**
      * Kafka server list can be injected directly via configuration, in the following format:
      * host[:port][;host[:port...]]
      *
-     * This property is an alternative to {@link #KAFKA_VIP_KEY}, with higher priority if both defined.
+     * This property is an alternative to {@link #kafkaVip}, with higher priority if both defined.
      */
-    public static final String KAFKA_SERVER_LIST_KEY = KAFKA_AUDIT_KEYS_PREFIX + ".servers";
+    @Configuration(KAFKA_SERVERS_KEY)
+    private String kafkaServerList;
 
     /**
      * VIP address resolved in local Eureka registry. This property must be set, unless a list of
-     * Kafka servers is defined directly with {@link #KAFKA_SERVER_LIST_KEY}.
+     * Kafka servers is defined directly with {@link #kafkaServerList}.
      */
-    public static final String KAFKA_VIP_KEY = KAFKA_AUDIT_KEYS_PREFIX + ".vip";
+    @Configuration(KAFKA_VIP_KEY)
+    private String kafkaVip;
 
     /**
-     * Kafka server port. Optional parameter with default defined by {@link #KAFKA_PORT_DEFAULT}.
+     * Kafka server port. Optional parameter with default defined by {@link #kafkaPort}.
      */
-    public static final String KAFKA_PORT_KEY = KAFKA_AUDIT_KEYS_PREFIX + ".port";
-
-    public static final int KAFKA_PORT_DEFAULT = 7101;
+    @Configuration(KAFKA_PORT_KEY)
+    private int kafkaPort;
 
     /**
-     * Kafka topic for audit messages. If not set, {@link ExtensionContext#getEurekaClusterName()} is used.
+     * Kafka topic for audit messages. If not set, Eureka cluster name is used.
      */
-    public static final String AUDIT_KAFKA_TOPIC = KAFKA_AUDIT_KEYS_PREFIX + ".topic";
+    @Configuration(KAFKA_TOPIC_KEY)
+    private String kafkaTopic;
 
-    private final String kafkaServerList;
-    private final String kafkaVip;
-    private final int kafkaPort;
+    // For configuration injection
+    public KafkaAuditConfig() {
+    }
 
-    public KafkaAuditConfig(ExtensionContext context) {
-        kafkaServerList = context.getProperty(KAFKA_SERVER_LIST_KEY);
-        if (kafkaServerList == null) {
-            kafkaVip = context.getProperty(KAFKA_VIP_KEY);
-            if (kafkaVip == null) {
-                throw new IllegalArgumentException("Kafka vip not defined via property " + KAFKA_VIP_KEY);
-            }
-            String portValue = context.getProperty(KAFKA_PORT_KEY);
-            if (portValue == null) {
-                throw new IllegalArgumentException("Kafka port not defined via property " + KAFKA_PORT_KEY);
-            }
-            try {
-                kafkaPort = Integer.parseInt(portValue);
-            } catch (NumberFormatException ignored) {
-                throw new IllegalArgumentException("Not an integer value in property " + KAFKA_PORT_KEY);
-            }
-        } else {
-            kafkaVip = null;
-            kafkaPort = -1;
-        }
+    public KafkaAuditConfig(String kafkaServerList, String kafkaVip, int kafkaPort, String kafkaTopic) {
+        this.kafkaServerList = kafkaServerList;
+        this.kafkaVip = kafkaVip;
+        this.kafkaPort = kafkaPort;
+        this.kafkaTopic = kafkaTopic;
     }
 
     public String getKafkaServerList() {
@@ -89,5 +81,20 @@ public class KafkaAuditConfig {
 
     public int getKafkaPort() {
         return kafkaPort;
+    }
+
+    public String getKafkaTopic() {
+        return kafkaTopic;
+    }
+
+    public void validateConfiguration() {
+        if (kafkaServerList == null) {
+            if (kafkaVip == null) {
+                throw new IllegalArgumentException("Kafka vip not defined via property " + KAFKA_VIP_KEY);
+            }
+            if (kafkaPort == 0) {
+                throw new IllegalArgumentException("Kafka port not defined via property " + KAFKA_PORT_KEY);
+            }
+        }
     }
 }

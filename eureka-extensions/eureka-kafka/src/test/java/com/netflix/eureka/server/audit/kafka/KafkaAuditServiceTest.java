@@ -43,12 +43,13 @@ public class KafkaAuditServiceTest {
                 .withEurekaClusterName("eureka2-test")
                 .build();
 
-        String kafkaPropertyValue = System.getProperty(KafkaAuditConfig.KAFKA_SERVER_LIST_KEY);
+        String kafkaPropertyValue = System.getProperty(KafkaAuditConfig.KAFKA_SERVERS_KEY);
         if (kafkaPropertyValue == null) {
-            fail(format("This is integration test and requires that system property %s is set", KafkaAuditConfig.KAFKA_SERVER_LIST_KEY));
+            fail(format("This is integration test and requires that system property %s is set", KafkaAuditConfig.KAFKA_SERVERS_KEY));
         }
         PropertySourcedServerList kafkaServerList = new PropertySourcedServerList(kafkaPropertyValue, KafkaAuditConfig.KAFKA_PORT_DEFAULT);
-        auditService = new KafkaAuditService(context, kafkaServerList);
+        KafkaAuditConfig config = new KafkaAuditConfig();
+        auditService = new KafkaAuditService(context, config, kafkaServerList);
         auditService.start();
     }
 
