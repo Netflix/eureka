@@ -41,6 +41,7 @@ import com.netflix.discovery.shared.EurekaJerseyClient.JerseyClient;
 import com.netflix.discovery.shared.LookupService;
 import com.netflix.eventbus.spi.EventBus;
 import com.netflix.governator.guice.lazy.FineGrainedLazySingleton;
+import com.netflix.http4.MonitoredConnectionManager;
 import com.netflix.servo.monitor.Counter;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
@@ -49,6 +50,7 @@ import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
+import com.sun.jersey.client.apache4.config.ApacheHttpClient4Config;
 import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -179,11 +181,11 @@ public class DiscoveryClient implements LookupService {
     private final ThreadPoolExecutor cacheRefreshExecutor;
 
     private final EventBus eventBus;
-    
+
     public static class DiscoveryClientOptionalArgs {
         @Inject(optional = true)
         private EventBus eventBus;
-        
+
         @Inject(optional = true)
         private Provider<HealthCheckCallback> healthCheckCallbackProvider;
 
@@ -235,7 +237,7 @@ public class DiscoveryClient implements LookupService {
         this.backupRegistryProvider = backupRegistryProvider;
 
         try {
-            scheduler = Executors.newScheduledThreadPool(4, 
+            scheduler = Executors.newScheduledThreadPool(4,
                     new ThreadFactoryBuilder()
                         .setNameFormat("DiscoveryClient-%d")
                         .setDaemon(true)
@@ -264,17 +266,34 @@ public class DiscoveryClient implements LookupService {
                                     + instanceInfo.getId();
             }
 
+            MonitoredConnectionManager cm =
+                    new MonitoredConnectionManager("Proxy-DiscoveryClient-HTTPClient");
+            cm.setDefaultMaxPerRoute(clientConfig.getEurekaServerTotalConnectionsPerHost());
+            cm.setMaxTotal(clientConfig.getEurekaServerTotalConnections());
+            ClientConfig cc = new DefaultApacheHttpClient4Config();
+            cc.getProperties().put(ApacheHttpClient4Config.PROPERTY_CONNECTION_MANAGER, cm);
+
             String proxyHost = clientConfig.getProxyHost();
             String proxyPort = clientConfig.getProxyPort();
-            discoveryJerseyClient = EurekaJerseyClient.createJerseyClient(
-                    "DiscoveryClient-HTTPClient",
+            if (proxyHost != null && proxyPort != null) {
+                String proxyUserName = clientConfig.getProxyUserName();
+                String proxyPassword = clientConfig.getProxyPassword();
+                if(proxyUserName != null && proxyPassword != null) {
+                    cc.getProperties().put(ApacheHttpClient4Config.PROPERTY_PROXY_USERNAME, proxyUserName);
+                    cc.getProperties().put(ApacheHttpClient4Config.PROPERTY_PROXY_PASSWORD, proxyPassword);
+                }
+                cc.getProperties().put(
+                        DefaultApacheHttpClient4Config.PROPERTY_PROXY_URI,
+                        "http://" + proxyHost + ":" + proxyPort);
+            }
+
+            discoveryJerseyClient = new EurekaJerseyClient.JerseyClient(
                     clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000,
                     clientConfig.getEurekaServerReadTimeoutSeconds() * 1000,
-                    clientConfig.getEurekaServerTotalConnectionsPerHost(),
-                    clientConfig.getEurekaServerTotalConnections(),
-                    clientConfig.getEurekaConnectionIdleTimeoutSeconds());
+                    clientConfig.getEurekaConnectionIdleTimeoutSeconds(),
+                    cc
+            );
             discoveryApacheClient = discoveryJerseyClient.getClient();
-            ClientConfig cc = discoveryJerseyClient.getClientconfig();
             remoteRegionsToFetch = new AtomicReference<String>(clientConfig.fetchRegistryForRemoteRegions());
             AzToRegionMapper azToRegionMapper;
             if (clientConfig.shouldUseDnsForFetchingServiceUrls()) {
@@ -300,12 +319,6 @@ public class DiscoveryClient implements LookupService {
             String ip = instanceInfo == null ? null : instanceInfo.getIPAddr();
             EurekaClientIdentity identity = new EurekaClientIdentity(ip);
             discoveryApacheClient.addFilter(new EurekaIdentityHeaderFilter(identity));
-
-            if (proxyHost != null && proxyPort != null) {
-                cc.getProperties().put(
-                        DefaultApacheHttpClient4Config.PROPERTY_PROXY_URI,
-                        "http://" + proxyHost + ":" + proxyPort);
-            }
 
         } catch (Throwable e) {
             throw new RuntimeException("Failed to initialize DiscoveryClient!", e);

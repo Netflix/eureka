@@ -164,6 +164,18 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 namespace + "eurekaServer.proxyPort", null).get();
     }
 
+    @Override
+    public String getProxyUserName() {
+        return configInstance.getStringProperty(
+                namespace + "eurekaServer.proxyUserName", null).get();
+    }
+
+    @Override
+    public String getProxyPassword() {
+        return configInstance.getStringProperty(
+                namespace + "eurekaServer.proxyPassword", null).get();
+    }
+
     /*
      * (non-Javadoc)
      *
