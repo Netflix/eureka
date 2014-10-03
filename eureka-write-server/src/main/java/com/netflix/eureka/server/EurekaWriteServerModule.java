@@ -16,47 +16,53 @@
 
 package com.netflix.eureka.server;
 
-import java.net.InetSocketAddress;
-
 import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.google.inject.name.Names;
-import com.netflix.eureka.client.ServerResolver;
 import com.netflix.eureka.registry.EurekaRegistry;
 import com.netflix.eureka.server.audit.AuditedRegistry;
 import com.netflix.eureka.server.replication.ReplicationService;
-import com.netflix.eureka.transport.EurekaTransports.Codec;
+import com.netflix.eureka.server.service.SelfRegistrationService;
+import com.netflix.eureka.server.service.WriteSelfRegistrationService;
+import com.netflix.eureka.server.spi.ExtensionContext;
+import com.netflix.eureka.server.transport.tcp.discovery.TcpDiscoveryServer;
+import com.netflix.eureka.server.transport.tcp.registration.TcpRegistrationServer;
+import com.netflix.eureka.server.transport.tcp.replication.TcpReplicationServer;
+import io.reactivex.netty.metrics.MetricEventsListenerFactory;
+import io.reactivex.netty.servo.ServoEventsListenerFactory;
 
 /**
  * @author Tomasz Bak
  */
 public class EurekaWriteServerModule extends AbstractModule {
 
-    private static final TypeLiteral<ServerResolver<InetSocketAddress>> SERVER_RESOLVER_LITERAL = new TypeLiteral<ServerResolver<InetSocketAddress>>() {
-    };
+    private final WriteServerConfig config;
 
-    private final LocalInstanceInfoResolver localInstanceInfoResolver;
-    private final ServerResolver<InetSocketAddress> peerResolver;
-    private final Codec codec;
-    private final long reconnectDelayMs;
-    private final long heartbeatIntervalMs;
+    public EurekaWriteServerModule() {
+        this(null);
+    }
 
-    public EurekaWriteServerModule(LocalInstanceInfoResolver localInstanceInfoResolver, ServerResolver<InetSocketAddress> peerResolver, Codec codec, long reconnectDelayMs, long heartbeatIntervalMs) {
-        this.localInstanceInfoResolver = localInstanceInfoResolver;
-        this.peerResolver = peerResolver;
-        this.codec = codec;
-        this.reconnectDelayMs = reconnectDelayMs;
-        this.heartbeatIntervalMs = heartbeatIntervalMs;
+    public EurekaWriteServerModule(WriteServerConfig config) {
+        this.config = config;
     }
 
     @Override
     public void configure() {
-        bind(LocalInstanceInfoResolver.class).toInstance(localInstanceInfoResolver);
-        bind(Codec.class).toInstance(codec);
+        if (config == null) {
+            bind(EurekaBootstrapConfig.class).to(WriteServerConfig.class).asEagerSingleton();
+        } else {
+            bind(EurekaBootstrapConfig.class).toInstance(config);
+            bind(WriteServerConfig.class).toInstance(config);
+        }
+        bind(SelfRegistrationService.class).to(WriteSelfRegistrationService.class).asEagerSingleton();
+
         bind(EurekaRegistry.class).to(AuditedRegistry.class);
-        bind(SERVER_RESOLVER_LITERAL).annotatedWith(Names.named(ReplicationService.PEER_RESOLVER_TAG)).toInstance(peerResolver);
-        bind(Long.class).annotatedWith(Names.named(ReplicationService.RECONNECT_DELAY_TAG)).toInstance(reconnectDelayMs);
-        bind(Long.class).annotatedWith(Names.named(ReplicationService.HEART_BEAT_INTERVAL_TAG)).toInstance(heartbeatIntervalMs);
+
+        bind(MetricEventsListenerFactory.class).toInstance(new ServoEventsListenerFactory());
+        bind(TcpRegistrationServer.class).asEagerSingleton();
+        bind(TcpDiscoveryServer.class).asEagerSingleton();
+        bind(TcpReplicationServer.class).asEagerSingleton();
+
         bind(ReplicationService.class).asEagerSingleton();
+
+        bind(ExtensionContext.class).asEagerSingleton();
     }
 }

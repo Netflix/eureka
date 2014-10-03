@@ -27,7 +27,7 @@ import com.netflix.loadbalancer.ServerList;
 /**
  * This class creates {@link ServerList} with Kafka addresses that can be set
  * depending on the provided configuration either directly from a property value
- * ({@link KafkaAuditConfig#KAFKA_SERVER_LIST_KEY}) or Eureka registry
+ * ({@link KafkaAuditConfig#kafkaServerList}) or Eureka registry
  * ({@link KafkaAuditConfig#KAFKA_VIP_KEY}).
  *
  * @author Tomasz Bak
@@ -38,9 +38,9 @@ public class KafkaServerListProvider implements Provider<ServerList<Server>> {
     private final KafkaAuditConfig config;
 
     @Inject
-    public KafkaServerListProvider(ExtensionContext context) {
+    public KafkaServerListProvider(ExtensionContext context, KafkaAuditConfig config) {
         this.context = context;
-        this.config = new KafkaAuditConfig(context);
+        this.config = config;
     }
 
     @Override

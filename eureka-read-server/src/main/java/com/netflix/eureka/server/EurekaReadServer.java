@@ -16,111 +16,68 @@
 
 package com.netflix.eureka.server;
 
-import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
-import com.netflix.adminresources.resources.KaryonWebAdminModule;
-import com.netflix.eureka.client.EurekaClient;
-import com.netflix.eureka.client.ServerResolver;
-import com.netflix.eureka.client.ServerResolver.Protocol;
-import com.netflix.eureka.client.ServerResolver.ProtocolType;
-import com.netflix.eureka.client.bootstrap.ServerResolvers;
-import com.netflix.eureka.server.ReadStartupConfig.ReadCommandLineParser;
-import com.netflix.eureka.server.transport.tcp.discovery.TcpDiscoveryModule;
-import com.netflix.eureka.transport.EurekaTransports.Codec;
-import com.netflix.governator.annotations.Modules;
+import com.google.inject.Module;
+import com.netflix.eureka.server.config.ReadCommandLineParser;
 import com.netflix.governator.guice.LifecycleInjectorBuilder;
 import com.netflix.governator.guice.LifecycleInjectorBuilderSuite;
-import com.netflix.karyon.KaryonBootstrap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * @author Tomasz Bak
  */
-//@ArchaiusBootstrap
-@KaryonBootstrap(name = "eureka-read-server")
-@Modules(include = KaryonWebAdminModule.class)
-public class EurekaReadServer extends AbstractEurekaServer<ReadStartupConfig> {
+public class EurekaReadServer extends AbstractEurekaServer<ReadServerConfig> {
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaReadServer.class);
 
-    private final ServerResolver<InetSocketAddress> resolver;
+    public EurekaReadServer(String name) {
+        super(name);
+    }
 
-    public EurekaReadServer(ReadStartupConfig config) {
+    public EurekaReadServer(ReadServerConfig config) {
         super(config);
-        this.resolver = createResolver();
     }
 
     @Override
-    protected LifecycleInjectorBuilderSuite additionalModules() {
-        return new LifecycleInjectorBuilderSuite() {
+    protected void additionalModules(List<LifecycleInjectorBuilderSuite> suites) {
+        suites.add(new LifecycleInjectorBuilderSuite() {
             @Override
             public void configure(LifecycleInjectorBuilder builder) {
-                builder.withModules(
-                        new EurekaShutdownModule(config.getShutDownPort()),
-                        new TcpDiscoveryModule("eurekaReadServer-transport", config.getDiscoveryPort()),
-                        new EurekaReadServerModule(resolver, Codec.Json)
-                );
+                List<Module> all = new ArrayList<>();
+                all.add(new EurekaReadServerModule(config));
+                builder.withModules(all);
             }
-        };
-    }
-
-    @Override
-    public void start() throws Exception {
-        resolver.start();
-        super.start();
-    }
-
-    private ServerResolver<InetSocketAddress> createResolver() {
-        Protocol[] protocols = {
-                new Protocol(config.getWriteClusterRegistrationPort(), ProtocolType.TcpRegistration),
-                new Protocol(config.getWriteClusterDiscoveryPort(), ProtocolType.TcpDiscovery)
-        };
-
-        ServerResolver<InetSocketAddress> resolver = null;
-        switch (config.getResolverType()) {
-            case "dns":
-                resolver = ServerResolvers.forDomainName(config.getRest()[0], protocols);
-                break;
-            case "inline":
-                Set<Protocol> protocolSet = new HashSet<>(Arrays.asList(protocols));
-                resolver = ServerResolvers.fromList(protocolSet, config.getRest());
-                break;
-        }
-        return resolver;
-    }
-
-    private void selfRegistration() {
-        ReadSelfRegistrationExecutor.doSelfRegistration(injector.getInstance(EurekaClient.class), config);
+        });
     }
 
     public static void main(String[] args) {
-        System.out.println("Eureka 2.0 Read Server\n");
+        logger.info("Eureka 2.0 Read Server");
 
-        ReadCommandLineParser commandLineParser = new ReadCommandLineParser();
-        ReadStartupConfig config = null;
-        try {
-            config = commandLineParser.build(args);
-        } catch (Exception e) {
-            System.err.println("ERROR: invalid configuration parameters; " + e.getMessage());
-            System.exit(-1);
+        ReadCommandLineParser commandLineParser = new ReadCommandLineParser(args);
+        ReadServerConfig config = null;
+        if (args.length == 0) {
+            logger.info("No command line parameters provided; enabling archaius property loader for server bootstrapping");
+        } else {
+            try {
+                config = commandLineParser.process();
+            } catch (Exception e) {
+                System.err.println("ERROR: invalid configuration parameters; " + e.getMessage());
+                System.exit(-1);
+            }
+
+            if (commandLineParser.hasHelpOption()) {
+                commandLineParser.printHelp();
+                System.exit(0);
+            }
         }
-
-        if (config.hasHelp()) {
-            commandLineParser.printHelp();
-            System.exit(0);
-        }
-
-        logger.info("Starting Eureka Read server with startup configuration: " + config);
 
         EurekaReadServer server = null;
         try {
-            server = new EurekaReadServer(config);
+            server = config != null ? new EurekaReadServer(config) : new EurekaReadServer("eureka-read-server");
             server.start();
-            server.selfRegistration();
         } catch (Exception e) {
             logger.error("Error while starting Eureka Read server.", e);
             if (server != null) {

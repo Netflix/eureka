@@ -17,45 +17,53 @@
 package com.netflix.eureka.server;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.google.inject.name.Names;
 import com.netflix.eureka.client.EurekaClient;
-import com.netflix.eureka.client.EurekaClientImpl;
-import com.netflix.eureka.client.ServerResolver;
 import com.netflix.eureka.registry.EurekaRegistry;
-import com.netflix.eureka.transport.EurekaTransports.Codec;
-
-import java.net.InetSocketAddress;
+import com.netflix.eureka.server.service.ReadSelfRegistrationService;
+import com.netflix.eureka.server.service.SelfRegistrationService;
+import com.netflix.eureka.server.transport.tcp.discovery.TcpDiscoveryServer;
+import io.reactivex.netty.metrics.MetricEventsListenerFactory;
+import io.reactivex.netty.servo.ServoEventsListenerFactory;
 
 /**
  * @author Tomasz Bak
  */
 public class EurekaReadServerModule extends AbstractModule {
 
-    private static final TypeLiteral<ServerResolver<InetSocketAddress>> SERVER_RESOLVER_TYPE_LITERAL =
-            new TypeLiteral<ServerResolver<InetSocketAddress>>() {
-            };
+    private final ReadServerConfig config;
+    private final EurekaClient eurekaClient;
 
-    private final ServerResolver<InetSocketAddress> writeServerResolver;
-    private final Codec codec;
+    public EurekaReadServerModule() {
+        this(null);
+    }
 
-    public EurekaReadServerModule(ServerResolver<InetSocketAddress> writeServerResolver, Codec codec) {
-        this.writeServerResolver = writeServerResolver;
-        this.codec = codec;
+    public EurekaReadServerModule(ReadServerConfig config) {
+        this(config, null);
+    }
+
+    public EurekaReadServerModule(ReadServerConfig config, EurekaClient eurekaClient) {
+        this.config = config;
+        this.eurekaClient = eurekaClient;
     }
 
     @Override
     public void configure() {
-        /*
-         * Since, the read server connects to the write server for both read and write, there is only one resolver.
-         */
-        bind(SERVER_RESOLVER_TYPE_LITERAL).annotatedWith(Names.named(EurekaClient.WRITE_SERVER_RESOLVER_NAME))
-                                          .toInstance(writeServerResolver);
-        bind(SERVER_RESOLVER_TYPE_LITERAL).annotatedWith(Names.named(EurekaClient.READ_SERVER_RESOLVER_NAME))
-                                          .toInstance(writeServerResolver);
-        bind(Codec.class).toInstance(codec);
+        if (config == null) {
+            bind(EurekaBootstrapConfig.class).to(ReadServerConfig.class).asEagerSingleton();
+        } else {
+            bind(EurekaBootstrapConfig.class).toInstance(config);
+            bind(ReadServerConfig.class).toInstance(config);
+        }
+        if (eurekaClient == null) {
+            bind(EurekaClient.class).toProvider(EurekaClientProvider.class);
+        } else {
+            bind(EurekaClient.class).toInstance(eurekaClient);
+        }
+        bind(MetricEventsListenerFactory.class).toInstance(new ServoEventsListenerFactory());
+        bind(TcpDiscoveryServer.class).asEagerSingleton();
 
-        bind(EurekaClient.class).to(EurekaClientImpl.class);
+        bind(SelfRegistrationService.class).to(ReadSelfRegistrationService.class).asEagerSingleton();
+
         bind(EurekaRegistry.class).to(EurekaReadServerRegistry.class);
     }
 }

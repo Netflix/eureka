@@ -16,10 +16,13 @@
 
 package com.netflix.eureka.server.spi;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.net.InetSocketAddress;
 import java.util.Properties;
 import java.util.ServiceLoader;
+
+import com.netflix.eureka.server.EurekaBootstrapConfig;
 
 /**
  * Eureka extensions discovery is based on {@link ServiceLoader} mechanism.
@@ -33,40 +36,25 @@ public class ExtensionContext {
 
     public static final String PROPERTY_KEYS_PREFIX = "eureka.ext";
 
-    private final String eurekaClusterName;
-    private final InetSocketAddress internalReadServerAddress;
-    private final Properties properties;
+    private final EurekaBootstrapConfig config;
 
-    protected ExtensionContext(String eurekaClusterName, InetSocketAddress internalReadServerAddress, Properties properties) {
-        this.eurekaClusterName = eurekaClusterName;
-        this.internalReadServerAddress = internalReadServerAddress;
-        this.properties = properties;
+    @Inject
+    protected ExtensionContext(EurekaBootstrapConfig config) {
+        this.config = config;
     }
 
     /**
      * Unique name assigned to read or write cluster.
      */
     public String getEurekaClusterName() {
-        return eurekaClusterName;
+        return config.getAppName();
     }
 
     /**
      * TODO: this should be replaced with internal EurekaClient API connecting us directly to local registry
      */
     public InetSocketAddress getInteralReadServerAddress() {
-        return internalReadServerAddress;
-    }
-
-    /**
-     * TODO: we need to provide mechanism to pass configuration to the extensions in a generic way
-     */
-    public Properties getProperties() {
-        return properties;
-    }
-
-    public String getProperty(String name) {
-        String value = properties.getProperty(name);
-        return value == null ? null : (value = value.trim()).isEmpty() ? null : value;
+        return new InetSocketAddress("localhost", config.getDiscoveryPort());
     }
 
     public static class ExtensionContextBuilder {
@@ -108,7 +96,7 @@ public class ExtensionContext {
                     }
                 }
             }
-            return new ExtensionContext(eurekaClusterName, internalReadServerAddress, allProperties);
+            return null;
         }
     }
 }

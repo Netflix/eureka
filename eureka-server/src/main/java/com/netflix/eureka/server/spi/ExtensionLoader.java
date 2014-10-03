@@ -41,19 +41,6 @@ public class ExtensionLoader {
 
     private static final Logger logger = LoggerFactory.getLogger(ExtensionLoader.class);
 
-    private final ExtensionContext extensionContext;
-
-    /**
-     * If set to true, ignore discovered modules that are not runnable (see {@link ExtAbstractModule#isRunnable(ExtensionContext)}).
-     * Otherwise fail applicaton bootstrap.
-     */
-    private final boolean ignoreNotRunnable;
-
-    public ExtensionLoader(ExtensionContext extensionContext, boolean ignoreNotRunnable) {
-        this.extensionContext = extensionContext;
-        this.ignoreNotRunnable = ignoreNotRunnable;
-    }
-
     public Module[] asModuleArray() {
         List<Module> moduleList = enableExtensions();
         return moduleList.toArray(new Module[moduleList.size()]);
@@ -77,16 +64,10 @@ public class ExtensionLoader {
         // Discover and load whats available
         final EnumSet<StandardExtension> loadedStdExts = EnumSet.noneOf(StandardExtension.class);
         for (ExtAbstractModule m : ServiceLoader.load(ExtAbstractModule.class)) {
-            if (m.isRunnable(extensionContext)) {
-                logger.info("Loading module {}", m.getClass().getName());
-                moduleList.add(m);
-                if (m.standardExtension() != StandardExtension.Undefined) {
-                    loadedStdExts.add(m.standardExtension());
-                }
-            } else if (!ignoreNotRunnable) {
-                throw new IllegalArgumentException("Cannot initialize module " + m.getClass().getName());
-            } else {
-                logger.warn("Module {} not runnable; skipping it", m.getClass().getName());
+            logger.info("Loading module {}", m.getClass().getName());
+            moduleList.add(m);
+            if (m.standardExtension() != StandardExtension.Undefined) {
+                loadedStdExts.add(m.standardExtension());
             }
         }
 

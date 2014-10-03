@@ -14,74 +14,86 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka.server;
+package com.netflix.eureka.server.service;
 
+import javax.annotation.PostConstruct;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.google.inject.Inject;
+import com.netflix.eureka.client.EurekaClient;
 import com.netflix.eureka.registry.DataCenterInfo;
 import com.netflix.eureka.registry.InstanceInfo;
 import com.netflix.eureka.registry.InstanceInfo.Builder;
 import com.netflix.eureka.registry.datacenter.LocalDataCenterInfo;
+import com.netflix.eureka.server.ReadServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Notification;
 import rx.Observable;
+import rx.Subscriber;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.subjects.ReplaySubject;
 
 /**
- * Self registration procedure for the Eureka write server.
- *
  * @author Tomasz Bak
  */
-public class WriteInstanceInfoResolver implements LocalInstanceInfoResolver {
+public class ReadSelfRegistrationService implements SelfRegistrationService {
 
-    private static final Logger logger = LoggerFactory.getLogger(WriteInstanceInfoResolver.class);
+    private static final Logger logger = LoggerFactory.getLogger(ReadSelfRegistrationService.class);
 
-    private final DataCenterInfo dataCenterInfo;
-    private final WriteStartupConfig config;
+    private final ReadServerConfig config;
+    private final EurekaClient eurekaClient;
 
     private final AtomicBoolean connected = new AtomicBoolean();
     private final ReplaySubject<InstanceInfo> replaySubject = ReplaySubject.create();
 
-    public WriteInstanceInfoResolver(DataCenterInfo dataCenterInfo, WriteStartupConfig config) {
-        this.dataCenterInfo = dataCenterInfo;
+    @Inject
+    public ReadSelfRegistrationService(ReadServerConfig config, EurekaClient eurekaClient) {
         this.config = config;
+        this.eurekaClient = eurekaClient;
     }
 
+    @PostConstruct
+    public void registerWithWriteCluster() {
+        resolve().subscribe(new Action1<InstanceInfo>() {
+            @Override
+            public void call(final InstanceInfo instanceInfo) {
+                eurekaClient.register(instanceInfo).subscribe(new Subscriber<Void>() {
+                    @Override
+                    public void onCompleted() {
+                        logger.info("Eureka server {} self registration completed", instanceInfo.getId());
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        logger.error("Eureka server " + instanceInfo.getId() + " self registration failed", e);
+                    }
+
+                    @Override
+                    public void onNext(Void o) {
+                    }
+                });
+            }
+        });
+    }
+
+    @Override
     public Observable<InstanceInfo> resolve() {
         if (connected.compareAndSet(false, true)) {
-            return connect().take(1).doOnEach(new Action1<Notification<? super InstanceInfo>>() {
-                @Override
-                public void call(Notification<? super InstanceInfo> notification) {
-                    switch (notification.getKind()) {
-                        case OnCompleted:
-                            break;
-                        case OnError:
-                            replaySubject.onError(notification.getThrowable());
-                            break;
-                        case OnNext:
-                            replaySubject.onNext((InstanceInfo) notification.getValue());
-                            replaySubject.onCompleted();
-                            break;
-                    }
-                }
-            });
+            return connect();
         }
         return replaySubject;
     }
 
     public Observable<InstanceInfo> connect() {
-        return resolveDataCenterInfo().map(new Func1<DataCenterInfo, InstanceInfo>() {
+        return resolveDataCenterInfo().take(1).map(new Func1<DataCenterInfo, InstanceInfo>() {
             @Override
             public InstanceInfo call(DataCenterInfo dataCenterInfo) {
                 final String instanceId = config.getAppName() + '#' + System.currentTimeMillis();
 
                 HashSet<Integer> ports = new HashSet<Integer>();
-                ports.add(config.getRegistrationPort());
-                ports.add(config.getReplicationPort());
                 ports.add(config.getDiscoveryPort());
 
                 return new Builder()
@@ -97,9 +109,12 @@ public class WriteInstanceInfoResolver implements LocalInstanceInfoResolver {
             public void call(Notification<? super InstanceInfo> notification) {
                 switch (notification.getKind()) {
                     case OnNext:
+                        replaySubject.onNext((InstanceInfo) notification.getValue());
+                        replaySubject.onCompleted();
                         logger.info("Own instance info resolved to {}", notification.getValue());
                         break;
                     case OnError:
+                        replaySubject.onError(notification.getThrowable());
                         logger.error("Could not resolve own instance info", notification.getThrowable());
                         break;
                 }
@@ -108,17 +123,6 @@ public class WriteInstanceInfoResolver implements LocalInstanceInfoResolver {
     }
 
     private Observable<? extends DataCenterInfo> resolveDataCenterInfo() {
-        if (dataCenterInfo == null) {
-            return LocalDataCenterInfo.forDataCenterType(config.getDataCenterType());
-        }
-        return Observable.just(dataCenterInfo);
-    }
-
-    public static LocalInstanceInfoResolver localInstanceInfo(DataCenterInfo dataCenterInfo, WriteStartupConfig config) {
-        return new WriteInstanceInfoResolver(dataCenterInfo, config);
-    }
-
-    public static LocalInstanceInfoResolver localInstanceInfo(final WriteStartupConfig config) {
-        return new WriteInstanceInfoResolver(null, config);
+        return LocalDataCenterInfo.forDataCenterType(config.getDataCenterType());
     }
 }

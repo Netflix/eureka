@@ -136,6 +136,7 @@ public abstract class ResolverBasedTransportClient<A extends SocketAddress> impl
             List<Server> newList = new ArrayList<>(servers.size());
             for (ServerEntry<A> entry : servers) {
                 InetSocketAddress address = (InetSocketAddress) entry.getServer();
+                logger.debug("Adding server {}:{}", address.getHostName(), entry.getPort(protocolType));
                 newList.add(new Server(address.getHostName(), entry.getPort(protocolType)));
             }
             return newList;

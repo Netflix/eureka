@@ -47,10 +47,10 @@ public class KafkaAuditService implements AuditService {
     /* Access from test */ volatile Producer<String, byte[]> kafkaProducer;
 
     @Inject
-    public KafkaAuditService(ExtensionContext context, ServerList<Server> kafkaServerList) {
+    public KafkaAuditService(ExtensionContext context, KafkaAuditConfig config, ServerList<Server> kafkaServerList) {
+        config.validateConfiguration();
         this.kafkaServerList = kafkaServerList;
-        this.topic = context.getProperty(KafkaAuditConfig.AUDIT_KAFKA_TOPIC) == null ?
-                context.getEurekaClusterName() : context.getProperty(KafkaAuditConfig.AUDIT_KAFKA_TOPIC);
+        this.topic = config.getKafkaTopic() == null ? context.getEurekaClusterName() : config.getKafkaTopic();
     }
 
     @PostConstruct

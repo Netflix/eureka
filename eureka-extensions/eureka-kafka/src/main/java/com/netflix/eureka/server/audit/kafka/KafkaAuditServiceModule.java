@@ -41,16 +41,6 @@ public class KafkaAuditServiceModule extends ExtAbstractModule {
     }
 
     @Override
-    public boolean isRunnable(ExtensionContext extensionContext) {
-        try {
-            new KafkaAuditConfig(extensionContext);
-        } catch (Exception ex) {
-            return false;
-        }
-        return true;
-    }
-
-    @Override
     public StandardExtension standardExtension() {
         return StandardExtension.AuditServiceExt;
     }

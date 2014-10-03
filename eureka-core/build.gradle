@@ -25,6 +25,7 @@ dependencies {
 
     compile "com.netflix.rxnetty:rx-netty:${rx_netty_version}"
     compile "org.apache.avro:avro:${avro_version}"
+    compile "org.apache.commons:commons-compress:${commons_compress_version}"
     testCompile project(':eureka-test-utils')
 }
 

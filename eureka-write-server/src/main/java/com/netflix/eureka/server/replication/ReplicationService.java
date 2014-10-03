@@ -19,20 +19,20 @@ package com.netflix.eureka.server.replication;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.inject.Singleton;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.netflix.eureka.client.ServerResolver;
 import com.netflix.eureka.client.ServerResolver.ProtocolType;
 import com.netflix.eureka.client.ServerResolver.ServerEntry;
 import com.netflix.eureka.client.bootstrap.ServerResolverFilter;
 import com.netflix.eureka.registry.EurekaRegistry;
 import com.netflix.eureka.registry.InstanceInfo;
-import com.netflix.eureka.server.LocalInstanceInfoResolver;
+import com.netflix.eureka.server.EurekaBootstrapConfig;
+import com.netflix.eureka.server.WriteClusterResolverProvider;
+import com.netflix.eureka.server.service.SelfRegistrationService;
 import com.netflix.eureka.transport.EurekaTransports.Codec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,29 +55,28 @@ public class ReplicationService {
 
     private static final Logger logger = LoggerFactory.getLogger(ReplicationService.class);
 
+    // TODO: make this dynamic properties
+    private final long reconnectDelay = 30000;
+    private final long heartbeatInterval = 5000;
+
     private final AtomicReference<STATE> state = new AtomicReference<>(STATE.Idle);
     private final EurekaRegistry eurekaRegistry;
-    private final LocalInstanceInfoResolver localInstanceInfoResolver;
-    private final ServerResolver<InetSocketAddress> writeClusterResolver;
+    private final SelfRegistrationService selfRegistrationService;
+    private final WriteClusterResolverProvider writeClusterResolverProvider;
     private final Codec codec;
-    private final long reconnectDelay;
-    private final long heartbeatInterval;
+
     private final Map<InetSocketAddress, ReplicationChannelMonitor> replicationWatchdogs = new HashMap<>();
     private Subscription resolverSubscription;
 
     @Inject
-    public ReplicationService(EurekaRegistry eurekaRegistry,
-                              LocalInstanceInfoResolver localInstanceInfoResolver,
-                              @Named(PEER_RESOLVER_TAG) ServerResolver<InetSocketAddress> writeClusterResolver,
-                              Codec codec,
-                              @Named(RECONNECT_DELAY_TAG) long reconnectDelayMs,
-                              @Named(HEART_BEAT_INTERVAL_TAG) long heartbeatIntervalMs) {
+    public ReplicationService(EurekaBootstrapConfig config,
+                              EurekaRegistry eurekaRegistry,
+                              SelfRegistrationService selfRegistrationService,
+                              WriteClusterResolverProvider writeClusterResolverProvider) {
         this.eurekaRegistry = eurekaRegistry;
-        this.localInstanceInfoResolver = localInstanceInfoResolver;
-        this.writeClusterResolver = writeClusterResolver;
-        this.codec = codec;
-        this.reconnectDelay = reconnectDelayMs;
-        this.heartbeatInterval = heartbeatIntervalMs;
+        this.selfRegistrationService = selfRegistrationService;
+        this.writeClusterResolverProvider = writeClusterResolverProvider;
+        this.codec = config.getCodec();
     }
 
     @PostConstruct
@@ -91,11 +90,11 @@ public class ReplicationService {
             throw new IllegalStateException("ReplicationService already closed");
         }
 
-        resolverSubscription = localInstanceInfoResolver.resolve()
+        resolverSubscription = selfRegistrationService.resolve()
                 .flatMap(new Func1<InstanceInfo, Observable<ServerEntry<InetSocketAddress>>>() {
                     @Override
                     public Observable<ServerEntry<InetSocketAddress>> call(InstanceInfo instanceInfo) {
-                        return writeClusterResolver.resolve().lift(ServerResolverFilter.filterOut(instanceInfo));
+                        return writeClusterResolverProvider.get().resolve().lift(ServerResolverFilter.filterOut(instanceInfo, true));
                     }
                 })
                 .subscribe(new Subscriber<ServerEntry<InetSocketAddress>>() {
