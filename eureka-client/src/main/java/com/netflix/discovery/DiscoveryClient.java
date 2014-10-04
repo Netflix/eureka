@@ -281,6 +281,11 @@ public class DiscoveryClient implements LookupService {
                 if(proxyUserName != null && proxyPassword != null) {
                     cc.getProperties().put(ApacheHttpClient4Config.PROPERTY_PROXY_USERNAME, proxyUserName);
                     cc.getProperties().put(ApacheHttpClient4Config.PROPERTY_PROXY_PASSWORD, proxyPassword);
+                } else {
+                    // Due to bug in apache client, user name/password must always be set.
+                    // Otherwise proxy configuration is ignored.
+                    cc.getProperties().put(ApacheHttpClient4Config.PROPERTY_PROXY_USERNAME, "guest");
+                    cc.getProperties().put(ApacheHttpClient4Config.PROPERTY_PROXY_PASSWORD, "guest");
                 }
                 cc.getProperties().put(
                         DefaultApacheHttpClient4Config.PROPERTY_PROXY_URI,
