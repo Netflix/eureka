@@ -104,6 +104,20 @@ public interface EurekaClientConfig {
     String getProxyPort();
 
     /**
+     * Gets the proxy user name if any.
+     *
+     * @return the proxy user name.
+     */
+    String getProxyUserName();
+
+    /**
+     * Gets the proxy password if any.
+     *
+     * @return the proxy password.
+     */
+    String getProxyPassword();
+
+    /**
      * Indicates whether the content fetched from eureka server has to be
      * compressed whenever it is supported by the server. The registry
      * information from the eureka server is compressed for optimum network
