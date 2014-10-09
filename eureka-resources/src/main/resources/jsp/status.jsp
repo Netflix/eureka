@@ -9,15 +9,28 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 <html>
   <head>
     <base href="<%=basePath%>">
-    
+
     <title>Eureka</title>
     <link rel="stylesheet" type="text/css" href="./css/main.css">
-    <script type="text/javascript" src="./js/jquery-1.3.2.js" ></script>
+    <script type="text/javascript" src="./js/jquery-1.11.1.js" ></script>
+    <script type="text/javascript" src="./js/jquery.dataTables.js" ></script>
     <script type="text/javascript" >
        $(document).ready(function() {
            $('table.stripeable tr:odd').addClass('odd');
            $('table.stripeable tr:even').addClass('even');
+           $('#instances thead th').each(function () {
+               var title = $('#instances thead th').eq($(this).index()).text();
+               $(this).html(title + '</br><input type="text" placeholder="Search ' + title + '" />');
            });
+           // DataTable
+           var table = $('#instances').DataTable({"paging": false, "bInfo": false, "sDom": 'ltipr', "bSort": false});
+           // Apply the search
+           table.columns().eq(0).each(function (colIdx) {
+               $('input', table.column(colIdx).header()).on('keyup change', function () {
+                   table.column(colIdx).search(this.value).draw();
+               });
+           });
+       });
     </script>
   </head>
   
@@ -27,7 +40,9 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
     <div id="content">
       <div class="sectionTitle">Instances currently registered with Eureka</div>
         <table id='instances' class="stripeable">
-          <tr><th>Application</th><th>AMIs</th><th>Availability Zones</th><th>Status</th></tr>
+           <thead><tr><th>Application</th><th>AMIs</th><th>Availability Zones</th><th>Status</th></tr></thead>
+           <tfoot><tr><th>Application</th><th>AMIs</th><th>Availability Zones</th><th>Status</th></tr></tfoot>
+           <tbody>
            <%
            for(Application app : PeerAwareInstanceRegistry.getInstance().getSortedApplications()) {
                out.print("<tr><td><b>" + app.getName() + "</b></td>");
@@ -115,6 +130,7 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
                out.println("<td>" + buf.toString() + "</td></tr>");
            }
            %>
+           </tbody>
            </table>
       </div>
       <div>

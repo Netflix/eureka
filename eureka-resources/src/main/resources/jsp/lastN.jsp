@@ -11,11 +11,11 @@
 <%@page import="com.netflix.discovery.shared.Pair"%><html>
   <head>
     <base href="<%=basePath%>">
-    
+
     <title>Eureka - Last N events</title>
     <link rel="stylesheet" type="text/css" href="./css/main.css">
-    <link type="text/css" href="./css/jquery-ui-1.7.2.custom.css" rel="Stylesheet" />  
-    <script type="text/javascript" src="./js/jquery-1.3.2.js" ></script>
+    <link type="text/css" href="./css/jquery-ui-1.7.2.custom.css" rel="Stylesheet" />
+    <script type="text/javascript" src="./js/jquery-1.11.1.js" ></script>
     <script type="text/javascript" src="./js/jquery-ui-1.7.2.custom.min.js"></script>
     <script type="text/javascript" >
        $(document).ready(function() {
