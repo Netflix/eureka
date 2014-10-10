@@ -1624,11 +1624,18 @@ public class DiscoveryClient implements LookupService {
                 }
 
                 final HealthCheckHandler handler = getHealthCheckHandler();
-                InstanceStatus status = handler.getStatus(instanceInfo.getStatus());
-                if (null != status) {
-                    instanceInfo.setStatus(status);
+                InstanceStatus masterStatus = ApplicationInfoManager.getInstance().getInstanceStatus();
+                if (masterStatus == InstanceInfo.InstanceStatus.UP) {
+                    InstanceStatus status = handler.getStatus(masterStatus);
+                    if (null != status) {
+                        instanceInfo.setStatus(status);
+                        ApplicationInfoManager.getInstance().setInstanceStatus(status);
+                    }
                 }
-
+                else {
+                    instanceInfo.setStatus(masterStatus);
+                }
+                    
                 if (instanceInfo.isDirty()) {
                     logger.info(PREFIX + appPathIdentifier
                             + " - retransmit instance info with status "

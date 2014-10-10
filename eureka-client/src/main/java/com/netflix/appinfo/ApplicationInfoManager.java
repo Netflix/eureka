@@ -51,6 +51,7 @@ public class ApplicationInfoManager {
 
     private InstanceInfo instanceInfo;
     private EurekaInstanceConfig config;
+    private InstanceInfo.InstanceStatus status;
 
     private ApplicationInfoManager() {
     }
@@ -59,7 +60,7 @@ public class ApplicationInfoManager {
     ApplicationInfoManager(EurekaInstanceConfig config, InstanceInfo instanceInfo) {
         this.config = config;
         this.instanceInfo = instanceInfo;
-
+        this.status = instanceInfo.getStatus();
         // Hack to allow for getInstance() to use the DI'd ApplicationInfoManager
         instance = this;
     }
@@ -72,6 +73,7 @@ public class ApplicationInfoManager {
         try {
             this.config = config;
             this.instanceInfo = new EurekaConfigBasedInstanceInfoProvider(config).get();
+            this.status = this.instanceInfo.getStatus();
         } catch (Throwable e) {
             throw new RuntimeException(
                     "Failed to initialize ApplicationInfoManager", e);
@@ -101,13 +103,22 @@ public class ApplicationInfoManager {
 
     /**
      * Set the status of this instance. Application can use this to indicate
-     * whether it is ready to receive traffic.
+     * whether it is ready to receive traffic.  This status acts as the master
+     * status for healthcheck and must be UP before healthcheck is consulted.
      *
      * @param status
      *            Status of the instance
      */
     public void setInstanceStatus(InstanceStatus status) {
-        instanceInfo.setStatus(status);
+        this.status = status;
+    }
+    
+    /**
+     * Return the instance status tracked by ApplicationInfoManager
+     * @return
+     */
+    public InstanceStatus getInstanceStatus() {
+        return this.status;
     }
 
     /**
