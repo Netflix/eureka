@@ -1,0 +1,34 @@
+@namespace("com.netflix.rx.eureka.protocol.registration")
+protocol RegistrationProtocol {
+
+    import idl "eureka-registry-model.avdl";
+
+    @namespace("com.netflix.rx.eureka.transport")
+    record Acknowledgement {
+    }
+
+    @namespace("com.netflix.rx.eureka.protocol")
+    record Heartbeat {
+    }
+
+    record Register {
+        com.netflix.rx.eureka.registry.InstanceInfo instanceInfo;
+    }
+
+    record Unregister {
+    }
+
+    record Update {
+        com.netflix.rx.eureka.registry.InstanceInfo instanceInfo;
+    }
+
+    record RegistrationMessages {
+        union {
+            Register,
+            Unregister,
+            Update,
+            com.netflix.rx.eureka.transport.Acknowledgement,
+            com.netflix.rx.eureka.protocol.Heartbeat
+        } message;
+    }
+}

@@ -1,10 +1,10 @@
 rootProject.name='eureka' 
-include 'eureka-client',\
-        'eureka-server',\
-        'eureka-read-server',\
-        'eureka-write-server',\
-        'eureka-core',\
-        'eureka-dashboard',\
-        'eureka-test-utils',\
-        'eureka-extensions:eureka-kafka',\
-        'eureka-examples'
+include 'rx-eureka-client',\
+        'rx-eureka-server',\
+        'rx-eureka-read-server',\
+        'rx-eureka-write-server',\
+        'rx-eureka-core',\
+        'rx-eureka-dashboard',\
+        'rx-eureka-test-utils',\
+        'rx-eureka-extensions:rx-eureka-kafka',\
+        'rx-eureka-examples'
