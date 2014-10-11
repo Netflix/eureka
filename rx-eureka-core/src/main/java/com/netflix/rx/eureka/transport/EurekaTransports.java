@@ -43,9 +43,9 @@ import io.reactivex.netty.pipeline.PipelineConfigurator;
  */
 public final class EurekaTransports {
 
-    public static final int DEFAULT_REGISTRATION_PORT = 7002;
-    public static final int DEFAULT_DISCOVERY_PORT = 7003;
-    public static final int DEFAULT_REPLICATION_PORT = 7004;
+    public static final int DEFAULT_REGISTRATION_PORT = 7102;
+    public static final int DEFAULT_DISCOVERY_PORT = 7103;
+    public static final int DEFAULT_REPLICATION_PORT = 7104;
 
     static final String REGISTRATION_SCHEMA_FILE = "registration-schema.avpr";
     static final String REGISTRATION_ENVELOPE_TYPE = "com.netflix.rx.eureka.protocol.registration.RegistrationMessages";
