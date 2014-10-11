@@ -46,7 +46,7 @@ apply from: file('gradle/release.gradle')
 
 subprojects {
 
-    group = "com.netflix.eureka"
+    group = "com.netflix.rx.eureka"
 
     apply plugin: 'groovy'
 

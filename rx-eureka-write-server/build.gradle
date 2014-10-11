@@ -1,0 +1,51 @@
+/*
+ * Copyright 2014 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: 'osgi'
+
+configurations {
+    avroTool
+}
+
+dependencies {
+    compile project(':rx-eureka-client')
+    compile project(':rx-eureka-server')
+    testCompile project(':rx-eureka-test-utils')
+}
+
+jar {
+    manifest {
+        name = 'rx-eureka-write-server'
+        instruction 'Bundle-Vendor', 'Netflix'
+        instruction 'Bundle-DocURL', 'https://github.com/Netflix/eureka'
+        instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
+    }
+}
+
+task runWriteServer (dependsOn: [classes], type: JavaExec) {
+    group = "Run tasks"
+    description = "Run Eureka 2.0 write server"
+
+    main = "com.netflix.rx.eureka.server.EurekaWriteServer"
+    classpath = sourceSets.main.runtimeClasspath
+
+    systemProperty 'java.awt.headless', 'true'
+    systemProperty 'archaius.deployment.environment', 'dev'
+    systemProperty 'org.slf4j.simpleLogger.log.com.netflix.rx.eureka', 'debug'
+    systemProperty 'org.slf4j.simpleLogger.log.io.netty.handler.logging.LoggingHandler', 'debug'
+
+//    args "-n", "eureka-write-server"
+}
