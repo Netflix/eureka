@@ -16,6 +16,10 @@
 
 apply plugin: 'osgi'
 
+configurations {
+    all*.exclude module: 'eureka-client' // Transitive dependency from karyon-admin-web
+}
+
 dependencies {
     compile "org.slf4j:slf4j-simple:${slf4j_version}"
     compile "commons-cli:commons-cli:${commons_cli_version}"

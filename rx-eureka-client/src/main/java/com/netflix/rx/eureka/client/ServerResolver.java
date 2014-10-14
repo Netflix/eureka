@@ -22,6 +22,7 @@ import java.net.SocketAddress;
 import java.util.Collections;
 import java.util.Set;
 
+import com.netflix.rx.eureka.transport.EurekaTransports;
 import rx.Observable;
 
 /**
@@ -51,7 +52,10 @@ public interface ServerResolver<A extends SocketAddress> {
     void close();
 
     enum ProtocolType {
-        Undefined(-1), TcpRegistration(7002), TcpDiscovery(7003), TcpReplication(7004);
+        Undefined(-1),
+        TcpRegistration(EurekaTransports.DEFAULT_REGISTRATION_PORT),
+        TcpDiscovery(EurekaTransports.DEFAULT_DISCOVERY_PORT),
+        TcpReplication(EurekaTransports.DEFAULT_REPLICATION_PORT);
 
         private final int defaultPort;
 
