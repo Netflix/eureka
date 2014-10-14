@@ -139,6 +139,9 @@ public class EmbeddedEurekaCluster {
         for (ServerInstance instance : readInstances) {
             instance.shutdown();
         }
+        for (ServerInstance instance : bridgeInstances) {
+            instance.shutdown();
+        }
     }
 
     public static void main(String[] args) throws Exception {
