@@ -20,12 +20,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
+import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.netflix.adminresources.resources.KaryonWebAdminModule;
 import com.netflix.governator.guice.LifecycleInjector;
+import com.netflix.governator.guice.LifecycleInjectorBuilder;
 import com.netflix.governator.guice.LifecycleInjectorBuilderSuite;
 import com.netflix.governator.lifecycle.LifecycleManager;
 import com.netflix.karyon.archaius.ArchaiusSuite;
+import com.netflix.karyon.health.AlwaysHealthyHealthCheck;
+import com.netflix.karyon.health.HealthCheckHandler;
+import com.netflix.karyon.health.HealthCheckInvocationStrategy;
+import com.netflix.karyon.health.SyncHealthCheckInvocationStrategy;
 import com.netflix.karyon.servo.KaryonServoModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +66,21 @@ public abstract class AbstractEurekaServer<C extends EurekaBootstrapConfig> {
             suites.add(new ArchaiusSuite(name));
         }
         suites.add(KaryonWebAdminModule.asSuite());
+
+        // TODO: replace fake health check with a real one.
+        suites.add(new LifecycleInjectorBuilderSuite() {
+            @Override
+            public void configure(LifecycleInjectorBuilder builder) {
+                builder.withAdditionalModules(new AbstractModule() {
+                    @Override
+                    protected void configure() {
+                        bind(HealthCheckHandler.class).to(AlwaysHealthyHealthCheck.class).asEagerSingleton();
+                        bind(HealthCheckInvocationStrategy.class).to(SyncHealthCheckInvocationStrategy.class).asEagerSingleton();
+                    }
+                });
+            }
+        });
+
         suites.add(KaryonServoModule.asSuite());
         additionalModules(suites);
         injector = LifecycleInjector.bootstrap(
