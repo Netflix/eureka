@@ -5,6 +5,7 @@ include 'rx-eureka-client',\
         'rx-eureka-write-server',\
         'rx-eureka-core',\
         'rx-eureka-dashboard',\
+        'rx-eureka-compatibility',\
         'rx-eureka-test-utils',\
         'rx-eureka-extensions:rx-eureka-kafka',\
         'rx-eureka-examples'

@@ -91,7 +91,7 @@ public class WriteSelfRegistrationService implements SelfRegistrationService {
                         .withApp(config.getAppName())
                         .withVipAddress(config.getVipAddress())
                         .withPorts(ports)
-                        .withInstanceLocation(dataCenterInfo)
+                        .withDataCenterInfo(dataCenterInfo)
                         .build();
             }
         }).doOnEach(new Action1<Notification<? super InstanceInfo>>() {

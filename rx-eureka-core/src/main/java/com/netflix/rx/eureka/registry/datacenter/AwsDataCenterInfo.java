@@ -48,7 +48,7 @@ public class AwsDataCenterInfo extends DataCenterInfo {
         addresses = null;
     }
 
-    private AwsDataCenterInfo(AwsDataCenterInfoBuilder builder) {
+    private AwsDataCenterInfo(Builder builder) {
         region = builder.region;
         zone = builder.zone;
         placementGroup = builder.placementGroup;
@@ -158,7 +158,7 @@ public class AwsDataCenterInfo extends DataCenterInfo {
                 '}';
     }
 
-    public static final class AwsDataCenterInfoBuilder extends DataCenterInfoBuilder<AwsDataCenterInfo> {
+    public static final class Builder extends DataCenterInfoBuilder<AwsDataCenterInfo> {
         private String region;
         private String zone;
         private String placementGroup;
@@ -171,57 +171,57 @@ public class AwsDataCenterInfo extends DataCenterInfo {
         private String publicIP;
         private String publicHostName;
 
-        public AwsDataCenterInfoBuilder withRegion(String region) {
+        public Builder withRegion(String region) {
             this.region = region;
             return this;
         }
 
-        public AwsDataCenterInfoBuilder withZone(String zone) {
+        public Builder withZone(String zone) {
             this.zone = zone;
             return this;
         }
 
-        public AwsDataCenterInfoBuilder withPlacementGroup(String placementGroup) {
+        public Builder withPlacementGroup(String placementGroup) {
             this.placementGroup = placementGroup;
             return this;
         }
 
-        public AwsDataCenterInfoBuilder withAmiId(String amiId) {
+        public Builder withAmiId(String amiId) {
             this.amiId = amiId;
             return this;
         }
 
-        public AwsDataCenterInfoBuilder withInstanceId(String instanceId) {
+        public Builder withInstanceId(String instanceId) {
             this.instanceId = instanceId;
             return this;
         }
 
-        public AwsDataCenterInfoBuilder withInstanceType(String instanceType) {
+        public Builder withInstanceType(String instanceType) {
             this.instanceType = instanceType;
             return this;
         }
 
-        public AwsDataCenterInfoBuilder withAddresses(NetworkAddress... addresses) {
+        public Builder withAddresses(NetworkAddress... addresses) {
             Collections.addAll(this.addresses, addresses);
             return this;
         }
 
-        public AwsDataCenterInfoBuilder withPrivateIPv4(String privateIP) {
+        public Builder withPrivateIPv4(String privateIP) {
             this.privateIP = privateIP;
             return this;
         }
 
-        public AwsDataCenterInfoBuilder withPrivateHostName(String privateHostName) {
+        public Builder withPrivateHostName(String privateHostName) {
             this.privateHostName = privateHostName;
             return this;
         }
 
-        public AwsDataCenterInfoBuilder withPublicIPv4(String publicIP) {
+        public Builder withPublicIPv4(String publicIP) {
             this.publicIP = publicIP;
             return this;
         }
 
-        public AwsDataCenterInfoBuilder withPublicHostName(String publicHostName) {
+        public Builder withPublicHostName(String publicHostName) {
             this.publicHostName = publicHostName;
             return this;
         }
@@ -235,7 +235,7 @@ public class AwsDataCenterInfo extends DataCenterInfo {
                 addresses.add(new NetworkAddress(ProtocolType.IPv4, true, publicIP, publicHostName));
             }
 
-            if(region == null && zone != null) { // We will take it from zone name
+            if(region == null && zone != null && !zone.isEmpty()) { // We will take it from zone name
                 region = zone.substring(0, zone.length() - 1);
             }
 
