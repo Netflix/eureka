@@ -17,7 +17,6 @@
 package com.netflix.rx.eureka.registry;
 
 import com.netflix.rx.eureka.registry.datacenter.AwsDataCenterInfo;
-import com.netflix.rx.eureka.registry.datacenter.AwsDataCenterInfo.AwsDataCenterInfoBuilder;
 import com.netflix.rx.eureka.registry.NetworkAddress.ProtocolType;
 
 /**
@@ -27,8 +26,8 @@ public enum SampleAwsDataCenterInfo {
 
     UsEast1a() {
         @Override
-        public AwsDataCenterInfoBuilder builder() {
-            return new AwsDataCenterInfoBuilder()
+        public AwsDataCenterInfo.Builder builder() {
+            return new AwsDataCenterInfo.Builder()
                     .withRegion("US-East-1")
                     .withZone("US-East-1a")
                     .withPlacementGroup("pg-1")
@@ -41,8 +40,8 @@ public enum SampleAwsDataCenterInfo {
     },
     UsEast1c() {
         @Override
-        public AwsDataCenterInfoBuilder builder() {
-            return new AwsDataCenterInfoBuilder()
+        public AwsDataCenterInfo.Builder builder() {
+            return new AwsDataCenterInfo.Builder()
                     .withRegion("US-East-1")
                     .withZone("US-East-1c")
                     .withPlacementGroup("pg-1")
@@ -54,7 +53,7 @@ public enum SampleAwsDataCenterInfo {
     };
 
 
-    public abstract AwsDataCenterInfoBuilder builder();
+    public abstract AwsDataCenterInfo.Builder builder();
 
     public AwsDataCenterInfo build() {
         return builder().build();

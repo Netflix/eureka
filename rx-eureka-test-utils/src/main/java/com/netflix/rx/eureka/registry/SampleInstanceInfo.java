@@ -60,7 +60,7 @@ public enum SampleInstanceInfo {
                 .withStatus(Status.UP)
                 .withStatusPageUrl("http://eureka/status/"+name)
                 .withVipAddress("vip#"+name)
-                .withInstanceLocation(SampleAwsDataCenterInfo.UsEast1a.build());
+                .withDataCenterInfo(SampleAwsDataCenterInfo.UsEast1a.build());
     }
 
     public InstanceInfo build() {

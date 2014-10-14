@@ -27,7 +27,7 @@ import com.netflix.rx.eureka.utils.SystemUtil;
 
 /**
  * This class encapsulates basic server information. It can be created explicitly
- * with {@link BasicDataCenterInfoBuilder} or deduced from the local server
+ * with {@link com.netflix.rx.eureka.registry.datacenter.BasicDataCenterInfo.Builder} or deduced from the local server
  * system data.
  *
  * @author Tomasz Bak
@@ -90,7 +90,7 @@ public class BasicDataCenterInfo extends DataCenterInfo {
     }
 
     public static BasicDataCenterInfo fromSystemData() {
-        BasicDataCenterInfoBuilder<BasicDataCenterInfo> builder = new BasicDataCenterInfoBuilder<>();
+        Builder<BasicDataCenterInfo> builder = new Builder<>();
         builder.withName(SystemUtil.getHostName());
         for (String ip : SystemUtil.getLocalIPs()) {
             if (!SystemUtil.isLoopbackIP(ip)) {
@@ -102,17 +102,17 @@ public class BasicDataCenterInfo extends DataCenterInfo {
         return builder.build();
     }
 
-    public static class BasicDataCenterInfoBuilder<T extends BasicDataCenterInfo> extends DataCenterInfoBuilder<T> {
+    public static class Builder<T extends BasicDataCenterInfo> extends DataCenterInfoBuilder<T> {
 
         private String name;
         private final List<NetworkAddress> addresses = new ArrayList<>();
 
-        public BasicDataCenterInfoBuilder<T> withName(String name) {
+        public Builder<T> withName(String name) {
             this.name = name;
             return this;
         }
 
-        public BasicDataCenterInfoBuilder<T> withAddresses(NetworkAddress... addresses) {
+        public Builder<T> withAddresses(NetworkAddress... addresses) {
             this.addresses.addAll(Arrays.asList(addresses));
             return this;
         }
