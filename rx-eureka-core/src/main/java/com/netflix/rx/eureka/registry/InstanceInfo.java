@@ -308,7 +308,7 @@ public class InstanceInfo {
             Object oldValue = field.getValue(oldInstanceInfo);
             Object newValue = field.getValue(newInstanceInfo);
 
-            if (oldValue == null || !oldValue.equals(newValue)) {  // there is a difference
+            if (!equalsNullable(oldValue, newValue)) {  // there is a difference
                 Delta<?> delta = new Delta.Builder()
                         .withId(newInstanceInfo.getId())
                         .withVersion(newVersion)
@@ -321,6 +321,15 @@ public class InstanceInfo {
         return deltas;
     }
 
+    private static boolean equalsNullable(Object a, Object b) {
+        if (a == null && b == null) {
+            return true;
+        } else if (a == null || b == null) {
+            return false;
+        } else {
+            return a.equals(b);
+        }
+    }
 
     // ------------------------------------------
     // Instance Status
@@ -462,7 +471,7 @@ public class InstanceInfo {
             return this;
         }
 
-        public Builder withInstanceLocation(DataCenterInfo location) {
+        public Builder withDataCenterInfo(DataCenterInfo location) {
             this.dataCenterInfo = location;
             return this;
         }

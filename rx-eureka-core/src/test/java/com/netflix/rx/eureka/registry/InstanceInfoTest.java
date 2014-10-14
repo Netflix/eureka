@@ -55,7 +55,7 @@ public class InstanceInfoTest {
                 .withPorts(Sets.asSet(111,222))
                 .withSecurePorts(Sets.asSet(555,666))
                 .withStatus(InstanceInfo.Status.DOWN)
-                .withInstanceLocation(SampleAwsDataCenterInfo.UsEast1c.build())
+                .withDataCenterInfo(SampleAwsDataCenterInfo.UsEast1c.build())
                 .build();
 
         Set<Delta<?>> deltas = oldInstanceInfo.diffNewer(newInstanceInfo);

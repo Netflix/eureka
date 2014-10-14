@@ -250,7 +250,7 @@ public class InstanceInfoField<T> {
             = new InstanceInfoField<DataCenterInfo>(Name.DataCenterInfo, new Accessor<DataCenterInfo>() {
         @Override
         public InstanceInfo.Builder update(InstanceInfo.Builder builder, DataCenterInfo value) {
-            return builder.withInstanceLocation(value);
+            return builder.withDataCenterInfo(value);
         }
 
         @Override

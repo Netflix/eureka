@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.netflix.rx.eureka.registry.datacenter.AwsDataCenterInfo.AwsDataCenterInfoBuilder;
 import io.netty.buffer.ByteBuf;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.protocol.http.client.HttpClientResponse;
@@ -44,49 +43,49 @@ public class AwsDataCenterInfoProvider implements DataCenterInfoProvider {
     enum MetaDataKey {
         AmiId("ami-id") {
             @Override
-            public AwsDataCenterInfoBuilder apply(AwsDataCenterInfoBuilder builder, String metaInfoValue) {
+            public AwsDataCenterInfo.Builder apply(AwsDataCenterInfo.Builder builder, String metaInfoValue) {
                 return builder.withAmiId(metaInfoValue);
             }
         },
         InstanceId("instance-id") {
             @Override
-            public AwsDataCenterInfoBuilder apply(AwsDataCenterInfoBuilder builder, String metaInfoValue) {
+            public AwsDataCenterInfo.Builder apply(AwsDataCenterInfo.Builder builder, String metaInfoValue) {
                 return builder.withInstanceId(metaInfoValue);
             }
         },
         InstanceType("instance-type") {
             @Override
-            public AwsDataCenterInfoBuilder apply(AwsDataCenterInfoBuilder builder, String metaInfoValue) {
+            public AwsDataCenterInfo.Builder apply(AwsDataCenterInfo.Builder builder, String metaInfoValue) {
                 return builder.withInstanceType(metaInfoValue);
             }
         },
         PublicHostname("public-hostname") {
             @Override
-            public AwsDataCenterInfoBuilder apply(AwsDataCenterInfoBuilder builder, String metaInfoValue) {
+            public AwsDataCenterInfo.Builder apply(AwsDataCenterInfo.Builder builder, String metaInfoValue) {
                 return builder.withPublicHostName(metaInfoValue);
             }
         },
         PublicIpv4("public-ipv4") {
             @Override
-            public AwsDataCenterInfoBuilder apply(AwsDataCenterInfoBuilder builder, String metaInfoValue) {
+            public AwsDataCenterInfo.Builder apply(AwsDataCenterInfo.Builder builder, String metaInfoValue) {
                 return builder.withPublicIPv4(metaInfoValue);
             }
         },
         LocalHostName("local-hostname") {
             @Override
-            public AwsDataCenterInfoBuilder apply(AwsDataCenterInfoBuilder builder, String metaInfoValue) {
+            public AwsDataCenterInfo.Builder apply(AwsDataCenterInfo.Builder builder, String metaInfoValue) {
                 return builder.withPrivateHostName(metaInfoValue);
             }
         },
         LocalIpv4("local-ipv4") {
             @Override
-            public AwsDataCenterInfoBuilder apply(AwsDataCenterInfoBuilder builder, String metaInfoValue) {
+            public AwsDataCenterInfo.Builder apply(AwsDataCenterInfo.Builder builder, String metaInfoValue) {
                 return builder.withPrivateIPv4(metaInfoValue);
             }
         },
         AvailabilityZone("availability-zone", "placement/") {
             @Override
-            public AwsDataCenterInfoBuilder apply(AwsDataCenterInfoBuilder builder, String metaInfoValue) {
+            public AwsDataCenterInfo.Builder apply(AwsDataCenterInfo.Builder builder, String metaInfoValue) {
                 return builder.withZone(metaInfoValue);
             }
         };
@@ -111,7 +110,7 @@ public class AwsDataCenterInfoProvider implements DataCenterInfoProvider {
             return path;
         }
 
-        public abstract AwsDataCenterInfoBuilder apply(AwsDataCenterInfoBuilder builder, String metaInfoValue);
+        public abstract AwsDataCenterInfo.Builder apply(AwsDataCenterInfo.Builder builder, String metaInfoValue);
     }
 
     private final AtomicReference<Observable<AwsDataCenterInfo>> dataCenterInfoRef = new AtomicReference<>();
@@ -137,7 +136,7 @@ public class AwsDataCenterInfoProvider implements DataCenterInfoProvider {
     private Observable<AwsDataCenterInfo> readMetaInfo() {
         final ReplaySubject<AwsDataCenterInfo> subject = ReplaySubject.create();
 
-        final AwsDataCenterInfoBuilder builder = new AwsDataCenterInfoBuilder();
+        final AwsDataCenterInfo.Builder builder = new AwsDataCenterInfo.Builder();
         Observable.from(MetaDataKey.values()).flatMap(new Func1<MetaDataKey, Observable<Void>>() {
             @Override
             public Observable<Void> call(final MetaDataKey key) {

@@ -125,7 +125,7 @@ public class Delta<ValueType> {
             delta.id = this.id;
             delta.version = this.version;
             if (delta.id == null || delta.version == null
-                    || delta.field == null || delta.value == null) {
+                    || delta.field == null) {  // null data.value is ok
                 throw new IllegalStateException("Incomplete delta information");
             }
 

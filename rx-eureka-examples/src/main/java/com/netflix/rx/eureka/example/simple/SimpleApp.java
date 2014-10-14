@@ -41,7 +41,7 @@ public final class SimpleApp {
             .withApp("ServiceA")
             .withAppGroup("ServiceA_1")
             .withStatus(Status.UP)
-            .withInstanceLocation(BasicDataCenterInfo.fromSystemData())
+            .withDataCenterInfo(BasicDataCenterInfo.fromSystemData())
             .build();
 
     public static void main(String[] args) throws InterruptedException {
