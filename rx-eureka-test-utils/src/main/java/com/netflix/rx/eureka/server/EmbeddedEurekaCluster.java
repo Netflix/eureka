@@ -25,7 +25,9 @@ import com.netflix.rx.eureka.client.ServerResolver.Protocol;
 import com.netflix.rx.eureka.client.ServerResolver.ProtocolType;
 import com.netflix.rx.eureka.client.bootstrap.StaticServerResolver;
 import com.netflix.rx.eureka.registry.datacenter.LocalDataCenterInfo.DataCenterType;
+import com.netflix.rx.eureka.server.BridgeServerConfig.BridgeServerConfigBuilder;
 import com.netflix.rx.eureka.server.ReadServerConfig.ReadServerConfigBuilder;
+import com.netflix.rx.eureka.server.ServerInstance.EurekaBridgeServerInstance;
 import com.netflix.rx.eureka.server.ServerInstance.EurekaReadServerInstance;
 import com.netflix.rx.eureka.server.ServerInstance.EurekaWriteServerInstance;
 import com.netflix.rx.eureka.server.WriteServerConfig.WriteServerConfigBuilder;
@@ -45,11 +47,14 @@ public class EmbeddedEurekaCluster {
     private static final int WRITE_SERVER_PORTS_FROM = 7200;
     private static final String READ_SERVER_NAME = "ReadServer";
     private static final int READ_SERVER_PORTS_FROM = 7300;
+    private static final String BRIDGE_SERVER_NAME = "BridgeServer";
+    private static final int BRIDGE_SERVER_PORTS_FROM = 7400;
 
     private final List<ServerInstance> writeInstances = new ArrayList<>();
     private final List<ServerInstance> readInstances = new ArrayList<>();
+    private final List<ServerInstance> bridgeInstances = new ArrayList<>();
 
-    public EmbeddedEurekaCluster(int writeCount, int readCount) {
+    public EmbeddedEurekaCluster(int writeCount, int readCount, boolean useBridge) {
         StaticServerResolver<InetSocketAddress> writeClusterResolver = new StaticServerResolver<>();
 
         // Write cluster
@@ -86,6 +91,22 @@ public class EmbeddedEurekaCluster {
             ServerInstance instance = new EurekaReadServerInstance(config, writeClusterResolver);
             readInstances.add(instance);
         }
+
+        // Bridge cluster
+        if (useBridge) {
+             int port = BRIDGE_SERVER_PORTS_FROM;
+             BridgeServerConfig config = new BridgeServerConfigBuilder()
+                     .withAppName(BRIDGE_SERVER_NAME)
+                     .withVipAddress(BRIDGE_SERVER_NAME)
+                     .withDataCenterType(DataCenterType.Basic)
+                     .withWriteServerPort(port)
+                     .withReadServerPort(port + 1)  // explicitly set it to a different port to verify
+                     .withReplicationPort(port + 2)  // explicitly set it to a different port to verify
+                     .withRefreshRateSec(30)
+                     .build();
+            ServerInstance instance = new EurekaBridgeServerInstance(config, writeClusterResolver);
+            bridgeInstances.add(instance);
+        }
     }
 
     public void waitTillShutdown() {
@@ -118,15 +139,23 @@ public class EmbeddedEurekaCluster {
         for (ServerInstance instance : readInstances) {
             instance.shutdown();
         }
+        for (ServerInstance instance : bridgeInstances) {
+            instance.shutdown();
+        }
     }
 
     public static void main(String[] args) throws Exception {
-        if (args.length != 2) {
+        if (args.length < 2) {
             System.err.println("ERROR: required number of write and read servers");
             System.exit(-1);
         }
         int writeCount = Integer.valueOf(args[0]);
         int readCount = Integer.valueOf(args[1]);
-        new EmbeddedEurekaCluster(writeCount, readCount).waitTillShutdown();
+
+        boolean useBridge = false;
+        if (args.length >= 3) {
+            useBridge = Boolean.valueOf(args[2]);
+        }
+        new EmbeddedEurekaCluster(writeCount, readCount, useBridge).waitTillShutdown();
     }
 }

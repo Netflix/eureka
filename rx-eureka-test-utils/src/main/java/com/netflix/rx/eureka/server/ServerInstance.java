@@ -85,4 +85,20 @@ public abstract class ServerInstance {
             setup(modules);
         }
     }
+
+    public static class EurekaBridgeServerInstance extends ServerInstance {
+        public EurekaBridgeServerInstance(final BridgeServerConfig config,  final ServerResolver<InetSocketAddress> writeClusterResolver) {
+            Module[] modules = {
+                    new EurekaBridgeServerModule(config),
+                    new AbstractModule() {
+                        @Override
+                        protected void configure() {
+                            bind(WriteClusterResolverProvider.class).toInstance(new WriteClusterResolverProvider(writeClusterResolver));
+                        }
+                    }
+            };
+
+            setup(modules);
+        }
+    }
 }
