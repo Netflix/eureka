@@ -237,7 +237,7 @@ public class EurekaCLI {
     private void runHelp() {
         System.out.println("Available commands:");
         System.out.println("  close                                                close all channels        ");
-        System.out.println("  connect <host> <registration_port> <discovery_port>  ports: 7102, 7103         ");
+        System.out.println("  connect <host> <registration_port> <discovery_port>  ports: 12102, 12203       ");
         System.out.println("  help                                                 print this help           ");
         System.out.println("  history                                              print previous commands   ");
         System.out.println("  quit                                                 exit                      ");
@@ -266,8 +266,8 @@ public class EurekaCLI {
     private void runConnect(String[] args) {
 
         String host = "localhost";
-        int registrationPort = 7102;
-        int discoveryPort = 7103;
+        int registrationPort = 12102;
+        int discoveryPort = 12103;
 
         switch (args.length) {
             case 0:
