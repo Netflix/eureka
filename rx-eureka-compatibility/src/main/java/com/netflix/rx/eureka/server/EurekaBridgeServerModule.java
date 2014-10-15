@@ -3,9 +3,9 @@ package com.netflix.rx.eureka.server;
 import com.google.inject.AbstractModule;
 import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.server.replication.ReplicationService;
+import com.netflix.rx.eureka.server.service.BridgeSelfRegistrationService;
 import com.netflix.rx.eureka.server.service.BridgeService;
 import com.netflix.rx.eureka.server.service.SelfRegistrationService;
-import com.netflix.rx.eureka.server.service.WriteSelfRegistrationService;
 import com.netflix.rx.eureka.server.spi.ExtensionContext;
 import com.netflix.rx.eureka.server.transport.tcp.discovery.TcpDiscoveryServer;
 import com.netflix.rx.eureka.server.transport.tcp.replication.TcpReplicationServer;
@@ -35,7 +35,7 @@ public class EurekaBridgeServerModule extends AbstractModule {
             bind(EurekaBootstrapConfig.class).toInstance(config);
             bind(BridgeServerConfig.class).toInstance(config);
         }
-        bind(SelfRegistrationService.class).to(WriteSelfRegistrationService.class).asEagerSingleton();
+        bind(SelfRegistrationService.class).to(BridgeSelfRegistrationService.class).asEagerSingleton();
 
         bind(EurekaRegistry.class).to(EurekaBridgeRegistry.class);
 

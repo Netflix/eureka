@@ -44,11 +44,11 @@ public class EmbeddedEurekaCluster {
     private static final Logger logger = LoggerFactory.getLogger(EmbeddedEurekaCluster.class);
 
     private static final String WRITE_SERVER_NAME = "WriteServer";
-    private static final int WRITE_SERVER_PORTS_FROM = 7200;
+    private static final int WRITE_SERVER_PORTS_FROM = 12100;
     private static final String READ_SERVER_NAME = "ReadServer";
-    private static final int READ_SERVER_PORTS_FROM = 7300;
+    private static final int READ_SERVER_PORTS_FROM = 12200;
     private static final String BRIDGE_SERVER_NAME = "BridgeServer";
-    private static final int BRIDGE_SERVER_PORTS_FROM = 7400;
+    private static final int BRIDGE_SERVER_PORTS_FROM = 12900;
 
     private final List<ServerInstance> writeInstances = new ArrayList<>();
     private final List<ServerInstance> readInstances = new ArrayList<>();
