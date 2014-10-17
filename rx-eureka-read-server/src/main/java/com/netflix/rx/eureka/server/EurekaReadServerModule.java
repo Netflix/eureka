@@ -19,7 +19,7 @@ package com.netflix.rx.eureka.server;
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.netflix.rx.eureka.client.EurekaClient;
-import com.netflix.rx.eureka.client.transport.ServerConnectionMetrics;
+import com.netflix.rx.eureka.client.transport.EurekaClientConnectionMetrics;
 import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.registry.EurekaRegistryMetrics;
 import com.netflix.rx.eureka.server.metric.EurekaServerMetricFactory;
@@ -28,7 +28,7 @@ import com.netflix.rx.eureka.server.service.ReadSelfRegistrationService;
 import com.netflix.rx.eureka.server.service.RegistrationChannelMetrics;
 import com.netflix.rx.eureka.server.service.ReplicationChannelMetrics;
 import com.netflix.rx.eureka.server.service.SelfRegistrationService;
-import com.netflix.rx.eureka.server.transport.ClientConnectionMetrics;
+import com.netflix.rx.eureka.server.transport.EurekaServerConnectionMetrics;
 import com.netflix.rx.eureka.server.transport.tcp.discovery.TcpDiscoveryServer;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 import io.reactivex.netty.servo.ServoEventsListenerFactory;
@@ -75,19 +75,19 @@ public class EurekaReadServerModule extends AbstractModule {
         bind(EurekaRegistry.class).to(EurekaReadServerRegistry.class);
 
         // Metrics
-        bind(ClientConnectionMetrics.class).annotatedWith(Names.named("registration")).toInstance(new ClientConnectionMetrics("eureka2.registration.connection"));
-        bind(ClientConnectionMetrics.class).annotatedWith(Names.named("replication")).toInstance(new ClientConnectionMetrics("eureka2.replication.connection"));
-        bind(ClientConnectionMetrics.class).annotatedWith(Names.named("discovery")).toInstance(new ClientConnectionMetrics("eureka2.discovery.connection"));
+        bind(EurekaServerConnectionMetrics.class).annotatedWith(Names.named("registration")).toInstance(new EurekaServerConnectionMetrics("registration"));
+        bind(EurekaServerConnectionMetrics.class).annotatedWith(Names.named("replication")).toInstance(new EurekaServerConnectionMetrics("replication"));
+        bind(EurekaServerConnectionMetrics.class).annotatedWith(Names.named("discovery")).toInstance(new EurekaServerConnectionMetrics("discovery"));
 
-        bind(ServerConnectionMetrics.class).annotatedWith(Names.named("registration")).toInstance(new ServerConnectionMetrics("eureka2.client.registration.connection"));
-        bind(ServerConnectionMetrics.class).annotatedWith(Names.named("discovery")).toInstance(new ServerConnectionMetrics("eureka2.client.discovery.connection"));
-        bind(ServerConnectionMetrics.class).annotatedWith(Names.named("replication")).toInstance(new ServerConnectionMetrics("eureka2.client.replication.connection"));
+        bind(EurekaClientConnectionMetrics.class).annotatedWith(Names.named("registration")).toInstance(new EurekaClientConnectionMetrics("registration"));
+        bind(EurekaClientConnectionMetrics.class).annotatedWith(Names.named("discovery")).toInstance(new EurekaClientConnectionMetrics("discovery"));
+        bind(EurekaClientConnectionMetrics.class).annotatedWith(Names.named("replication")).toInstance(new EurekaClientConnectionMetrics("replication"));
 
-        bind(RegistrationChannelMetrics.class).toInstance(new RegistrationChannelMetrics("eureka2.registration.channel"));
-        bind(ReplicationChannelMetrics.class).toInstance(new ReplicationChannelMetrics("eureka2.replication.channel"));
-        bind(InterestChannelMetrics.class).toInstance(new InterestChannelMetrics("eureka2.discovery.channel"));
+        bind(RegistrationChannelMetrics.class).toInstance(new RegistrationChannelMetrics());
+        bind(ReplicationChannelMetrics.class).toInstance(new ReplicationChannelMetrics());
+        bind(InterestChannelMetrics.class).toInstance(new InterestChannelMetrics());
 
-        bind(EurekaRegistryMetrics.class).toInstance(new EurekaRegistryMetrics("eureka2.registry"));
+        bind(EurekaRegistryMetrics.class).toInstance(new EurekaRegistryMetrics("readServer"));
         bind(EurekaServerMetricFactory.class).asEagerSingleton();
     }
 }

@@ -18,8 +18,8 @@ package com.netflix.rx.eureka.server.replication;
 
 import java.net.InetSocketAddress;
 
+import com.netflix.rx.eureka.client.transport.EurekaClientConnectionMetrics;
 import com.netflix.rx.eureka.client.transport.ServerConnection;
-import com.netflix.rx.eureka.client.transport.ServerConnectionMetrics;
 import com.netflix.rx.eureka.client.transport.TransportClient;
 import com.netflix.rx.eureka.client.transport.tcp.TcpServerConnection;
 import com.netflix.rx.eureka.transport.EurekaTransports;
@@ -39,9 +39,9 @@ import rx.functions.Func1;
 public class ReplicationTransportClient implements TransportClient {
 
     private final RxClient<Object, Object> rxClient;
-    private final ServerConnectionMetrics metrics;
+    private final EurekaClientConnectionMetrics metrics;
 
-    public ReplicationTransportClient(InetSocketAddress address, Codec codec, ServerConnectionMetrics metrics) {
+    public ReplicationTransportClient(InetSocketAddress address, Codec codec, EurekaClientConnectionMetrics metrics) {
         this.metrics = metrics;
         this.rxClient = RxNetty.newTcpClientBuilder(address.getHostName(), address.getPort())
                 .pipelineConfigurator(EurekaTransports.replicationPipeline(codec))

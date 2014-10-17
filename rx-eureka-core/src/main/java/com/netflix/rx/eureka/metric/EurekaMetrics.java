@@ -28,10 +28,9 @@ import com.netflix.servo.DefaultMonitorRegistry;
 import com.netflix.servo.monitor.Counter;
 import com.netflix.servo.monitor.LongGauge;
 import com.netflix.servo.monitor.Monitor;
+import com.netflix.servo.monitor.MonitorConfig;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Timer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Base class for component specific metric implementations.
@@ -40,24 +39,22 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class EurekaMetrics {
 
-    private static final Logger logger = LoggerFactory.getLogger(EurekaMetrics.class);
-
     enum STATE {Init, Up, Down}
 
-    private final String rootName;
+    private final String id;
 
     private final AtomicReference<STATE> state = new AtomicReference<>(STATE.Init);
     private final List<Monitor<?>> monitors = new ArrayList<>();
     private final List<EurekaMetrics> nestedMetrics = new ArrayList<>();
 
-    protected EurekaMetrics(String rootName) {
-        this.rootName = rootName;
+    protected EurekaMetrics(String id) {
+        this.id = id;
     }
 
     @PostConstruct
     public void bindMetrics() {
         if (state.compareAndSet(STATE.Init, STATE.Up)) {
-            ServoUtils.registerObject(rootName, this);
+            ServoUtils.registerObject(id, this);
             for (Monitor<?> m : monitors) {
                 DefaultMonitorRegistry.getInstance().register(m);
             }
@@ -70,7 +67,7 @@ public abstract class EurekaMetrics {
     @PreDestroy
     public void unbindMetrics() {
         if (state.compareAndSet(STATE.Up, STATE.Down)) {
-            ServoUtils.unregisterObject(rootName, this);
+            ServoUtils.unregisterObject(id, this);
             for (Monitor<?> m : monitors) {
                 DefaultMonitorRegistry.getInstance().unregister(m);
             }
@@ -80,20 +77,22 @@ public abstract class EurekaMetrics {
         }
     }
 
-    protected String fullName(String baseName) {
-        return rootName + '.' + baseName;
+    protected MonitorConfig monitorConfig(String baseName) {
+        return MonitorConfig.builder(baseName)
+                .withTag("id", id)
+                .build();
     }
 
     protected Counter newCounter(String baseName) {
-        return Monitors.newCounter(fullName(baseName));
+        return Monitors.newCounter(baseName);
     }
 
     protected LongGauge newLongGauge(String baseName) {
-        return ServoUtils.newLongGauge(fullName(baseName));
+        return ServoUtils.newLongGauge(baseName);
     }
 
     protected Timer newTimer(String baseName) {
-        return Monitors.newTimer(fullName(baseName));
+        return Monitors.newTimer(baseName);
     }
 
     protected void register(Monitor<?>... additionalMonitors) {

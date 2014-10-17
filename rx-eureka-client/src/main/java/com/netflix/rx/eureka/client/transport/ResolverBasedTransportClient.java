@@ -46,7 +46,7 @@ public abstract class ResolverBasedTransportClient<A extends SocketAddress> impl
     private final ProtocolType protocolType;
     protected final IClientConfig clientConfig;
     private final PipelineConfigurator<Object, Object> pipelineConfigurator;
-    private final ServerConnectionMetrics metrics;
+    private final EurekaClientConnectionMetrics metrics;
     protected final ZoneAwareLoadBalancer<Server> loadBalancer;
 
     private RxClient<Object, Object> tcpClient;
@@ -55,7 +55,7 @@ public abstract class ResolverBasedTransportClient<A extends SocketAddress> impl
                                            ProtocolType protocolType,
                                            IClientConfig clientConfig,
                                            PipelineConfigurator<Object, Object> pipelineConfigurator,
-                                           ServerConnectionMetrics metrics) {
+                                           EurekaClientConnectionMetrics metrics) {
         this.resolver = resolver;
         this.protocolType = protocolType;
         this.clientConfig = clientConfig;
