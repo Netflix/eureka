@@ -10,6 +10,8 @@ import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.transport.Acknowledgement;
 import com.netflix.rx.eureka.transport.MessageBroker;
 import rx.Observable;
+import rx.functions.Action0;
+import rx.functions.Action1;
 
 /**
  * @author Nitesh Kant
@@ -17,25 +19,37 @@ import rx.Observable;
 public class ClientConnectionImpl implements ClientConnection {
 
     private final MessageBroker broker;
+    private final long startTime;
+    private final ClientConnectionMetrics metrics;
 
-    public ClientConnectionImpl(MessageBroker broker) {
+    public ClientConnectionImpl(MessageBroker broker, ClientConnectionMetrics metrics) {
         this.broker = broker;
+        this.metrics = metrics;
+        this.startTime = System.currentTimeMillis();
+        metrics.incrementConnectedClients();
     }
 
     @Override
     public Observable<Object> getInput() {
-        return broker.incoming();
+        return broker.incoming().doOnNext(new Action1<Object>() {
+            @Override
+            public void call(Object o) {
+                metrics.incrementIncomingMessageCounter(o.getClass(), 1);
+            }
+        });
     }
 
     @Override
     public Observable<Void> sendNotification(ChangeNotification<InstanceInfo> notification) {
         switch (notification.getKind()) {
             case Add:
+                metrics.incrementOutgoingMessageCounter(AddInstance.class, 1);
                 return broker.submitWithAck(new AddInstance(notification.getData()));
             case Delete:
+                metrics.incrementOutgoingMessageCounter(DeleteInstance.class, 1);
                 return broker.submitWithAck(new DeleteInstance(notification.getData().getId()));
             case Modify:
-                ModifyNotification<InstanceInfo> modifyNotification = (ModifyNotification<InstanceInfo>) notification;
+                final ModifyNotification<InstanceInfo> modifyNotification = (ModifyNotification<InstanceInfo>) notification;
 
                 /**
                  * Below will only work correctly if {@link MessageBroker#submitWithAck(Object)} is a lazy submit i.e.
@@ -51,6 +65,13 @@ public class ClientConnectionImpl implements ClientConnection {
                         toReturn.concatWith(broker.submitWithAck(new UpdateInstanceInfo(delta)));
                     }
                 }
+                metrics.incrementOutgoingMessageCounter(UpdateInstanceInfo.class, modifyNotification.getDelta().size());
+                toReturn.doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        metrics.incrementIncomingMessageCounter(Acknowledgement.class, modifyNotification.getDelta().size());
+                    }
+                });
                 return toReturn;
         }
         return Observable.error(new IllegalArgumentException("Unknown change notification type: " +
@@ -59,11 +80,14 @@ public class ClientConnectionImpl implements ClientConnection {
 
     @Override
     public void shutdown() {
+        metrics.decrementConnectedClients();
+        metrics.clientConnectionTime(startTime);
         broker.shutdown();
     }
 
     @Override
     public Observable<Void> sendAcknowledgment() {
+        metrics.incrementOutgoingMessageCounter(Acknowledgement.class, 1);
         return broker.submit(Acknowledgement.INSTANCE);
     }
 

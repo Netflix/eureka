@@ -48,7 +48,7 @@ public class EurekaReadServer extends AbstractEurekaServer<ReadServerConfig> {
             public void configure(LifecycleInjectorBuilder builder) {
                 List<Module> all = new ArrayList<>();
                 all.add(new EurekaReadServerModule(config));
-                builder.withModules(all);
+                builder.withAdditionalModules(all);
             }
         });
     }

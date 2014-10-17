@@ -1,5 +1,13 @@
 package com.netflix.rx.eureka.client.service;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory;
 import com.netflix.rx.eureka.client.transport.ServerConnection;
 import com.netflix.rx.eureka.client.transport.TransportClient;
 import com.netflix.rx.eureka.interests.Interest;
@@ -21,7 +29,6 @@ import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import rx.Observable;
@@ -29,17 +36,9 @@ import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Func1;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
-import static org.mockito.Mockito.when;
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
+import static org.mockito.Mockito.*;
 
 /**
  * @author David Liu
@@ -70,7 +69,7 @@ public class InterestChannelImplTest {
 
         @Override
         protected void before() throws Throwable {
-            registry = new EurekaRegistryImpl();
+            registry = new EurekaRegistryImpl(EurekaClientMetricFactory.clientMetrics().getRegistryMetrics());
             when(serverConnection.sendAcknowledgment()).thenReturn(Observable.<Void>empty());
             when(serverConnection.sendWithAck(Mockito.anyObject())).thenReturn(Observable.<Void>empty());
             when(transportClient.connect()).thenReturn(Observable.from(serverConnection));

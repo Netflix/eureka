@@ -18,6 +18,7 @@ package com.netflix.rx.eureka.server.transport.tcp.registration;
 
 import com.google.inject.Inject;
 import com.netflix.rx.eureka.registry.EurekaRegistry;
+import com.netflix.rx.eureka.server.metric.EurekaServerMetricFactory;
 import com.netflix.rx.eureka.server.service.EurekaServerService;
 import com.netflix.rx.eureka.server.service.EurekaServiceImpl;
 import com.netflix.rx.eureka.server.transport.ClientConnectionImpl;
@@ -32,18 +33,20 @@ import rx.Observable;
 public class TcpRegistrationHandler implements ConnectionHandler<Object, Object> {
 
     private final EurekaRegistry registry;
+    private final EurekaServerMetricFactory metricFactory;
 
     @Inject
-    public TcpRegistrationHandler(EurekaRegistry registry) {
+    public TcpRegistrationHandler(EurekaRegistry registry, EurekaServerMetricFactory metricFactory) {
         this.registry = registry;
+        this.metricFactory = metricFactory;
     }
 
     @Override
     public Observable<Void> handle(ObservableConnection<Object, Object> connection) {
-        final ClientConnectionImpl eurekaConn = new ClientConnectionImpl(new BaseMessageBroker(connection));
-        final EurekaServerService service = new EurekaServiceImpl(registry, eurekaConn);
+        final ClientConnectionImpl eurekaConn = new ClientConnectionImpl(new BaseMessageBroker(connection), metricFactory.getRegistrationConnectionMetrics());
+        final EurekaServerService service = new EurekaServiceImpl(registry, eurekaConn, metricFactory);
         return service.newRegistrationChannel()
-                      .asLifecycleObservable(); // Since this is a discovery handler which only handles interest subscriptions,
-                                                // the channel is created on connection accept.
+                .asLifecycleObservable(); // Since this is a discovery handler which only handles interest subscriptions,
+        // the channel is created on connection accept.
     }
 }

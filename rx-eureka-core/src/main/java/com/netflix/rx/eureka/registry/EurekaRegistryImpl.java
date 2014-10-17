@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.rx.eureka.datastore.NotificationsSubject;
@@ -50,8 +51,17 @@ public class EurekaRegistryImpl implements EurekaRegistry<InstanceInfo> {
     protected final ConcurrentHashMap<String, Lease<InstanceInfo>> internalStore;
     private final NotificationsSubject<InstanceInfo> notificationSubject;  // subject for all changes in the registry
     private final IndexRegistry<InstanceInfo> indexRegistry;
+    private final EurekaRegistryMetrics metrics;
 
-    public EurekaRegistryImpl() {
+    public EurekaRegistryImpl(EurekaRegistryMetrics metrics) {
+        this.metrics = metrics;
+        this.metrics.setRegistrySizeMonitor(new Callable<Integer>() {
+            @Override
+            public Integer call() throws Exception {
+                return internalStore.size();
+            }
+        });
+
         internalStore = new ConcurrentHashMap<>();
         indexRegistry = new IndexRegistryImpl<>();
         notificationSubject = NotificationsSubject.create();
@@ -94,6 +104,7 @@ public class EurekaRegistryImpl implements EurekaRegistry<InstanceInfo> {
     public Observable<Void> register(InstanceInfo instanceInfo, Origin origin) {
         Lease<InstanceInfo> lease = new Lease<>(instanceInfo, origin);
         internalStore.put(instanceInfo.getId(), lease);
+        metrics.incrementRegistrationCounter(origin);
         notificationSubject.onNext(lease.getHolderSnapshot());
 
         return Observable.empty();
@@ -105,6 +116,7 @@ public class EurekaRegistryImpl implements EurekaRegistry<InstanceInfo> {
     public Observable<Void> unregister(final String instanceId) {
         final Lease<InstanceInfo> remove = internalStore.remove(instanceId);
         if (remove != null) {
+            metrics.incrementUnregistrationCounter(remove.getOrigin());
             notificationSubject.onNext(new ChangeNotification<>(ChangeNotification.Kind.Delete,
                     remove.getHolder()));
         }
@@ -123,6 +135,8 @@ public class EurekaRegistryImpl implements EurekaRegistry<InstanceInfo> {
     @Override
     public Observable<Void> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
         final String instanceId = updatedInfo.getId();
+
+        metrics.incrementUpdateCounter();
 
         Lease<InstanceInfo> newLease = new Lease<>(updatedInfo);
         Lease<InstanceInfo> existing = internalStore.put(instanceId, newLease);

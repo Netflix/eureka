@@ -20,6 +20,7 @@ import javax.annotation.PreDestroy;
 
 import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.server.EurekaBootstrapConfig;
+import com.netflix.rx.eureka.server.metric.EurekaServerMetricFactory;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 import io.reactivex.netty.server.RxServer;
 
@@ -31,12 +32,15 @@ public class AbstractTcpServer {
     protected final EurekaBootstrapConfig config;
     protected final EurekaRegistry eurekaRegistry;
     protected final MetricEventsListenerFactory servoEventsListenerFactory;
+    protected final EurekaServerMetricFactory metricFactory;
     protected RxServer<Object, Object> server;
 
-    public AbstractTcpServer(EurekaRegistry eurekaRegistry, MetricEventsListenerFactory servoEventsListenerFactory, EurekaBootstrapConfig config) {
+    public AbstractTcpServer(EurekaRegistry eurekaRegistry, MetricEventsListenerFactory servoEventsListenerFactory,
+                             EurekaBootstrapConfig config, EurekaServerMetricFactory metricFactory) {
         this.eurekaRegistry = eurekaRegistry;
         this.servoEventsListenerFactory = servoEventsListenerFactory;
         this.config = config;
+        this.metricFactory = metricFactory;
     }
 
     @PreDestroy

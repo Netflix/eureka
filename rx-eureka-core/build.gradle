@@ -26,6 +26,7 @@ dependencies {
     compile "com.netflix.rxnetty:rx-netty:${rx_netty_version}"
     compile "org.apache.avro:avro:${avro_version}"
     compile "org.apache.commons:commons-compress:${commons_compress_version}"
+    compile "com.netflix.servo:servo-core:${servo_version}"
     testCompile project(':rx-eureka-test-utils')
 }
 

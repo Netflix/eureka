@@ -1,5 +1,9 @@
 package com.netflix.rx.eureka.interests;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory;
 import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.registry.EurekaRegistryImpl;
 import com.netflix.rx.eureka.registry.InstanceInfo;
@@ -9,15 +13,9 @@ import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import rx.functions.Action1;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static com.netflix.rx.eureka.interests.Interests.forFullRegistry;
-import static com.netflix.rx.eureka.interests.Interests.forInstance;
-import static com.netflix.rx.eureka.interests.Interests.forSome;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.hasSize;
+import static com.netflix.rx.eureka.interests.Interests.*;
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
 
 /**
  * @author Nitesh Kant
@@ -34,7 +32,7 @@ public class RegistryIndexTest {
 
         @Override
         protected void before() throws Throwable {
-            registry = new EurekaRegistryImpl();
+            registry = new EurekaRegistryImpl(EurekaClientMetricFactory.clientMetrics().getRegistryMetrics());
         }
 
         @Override

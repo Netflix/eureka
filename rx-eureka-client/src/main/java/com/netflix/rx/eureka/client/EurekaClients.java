@@ -25,6 +25,7 @@ import com.netflix.rx.eureka.client.ServerResolver.ProtocolType;
 import com.netflix.rx.eureka.client.bootstrap.BufferedServerResolver;
 import com.netflix.rx.eureka.client.bootstrap.EurekaServerResolver;
 import com.netflix.rx.eureka.client.bootstrap.ServerResolvers;
+import com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory;
 import com.netflix.rx.eureka.client.transport.TransportClient;
 import com.netflix.rx.eureka.client.transport.TransportClients;
 import com.netflix.rx.eureka.transport.EurekaTransports;
@@ -63,7 +64,7 @@ public final class EurekaClients {
                         TransportClient writeClient = bufferedWrite == null ? null : TransportClients.newTcpRegistrationClient(inetResolver(bufferedWrite), codec);
                         TransportClient readClient = bufferedRead == null ? null : TransportClients.newTcpDiscoveryClient(inetResolver(bufferedRead), codec);
 
-                        subscriber.onNext(new EurekaClientImpl(writeClient, readClient));
+                        subscriber.onNext(new EurekaClientImpl(writeClient, readClient, EurekaClientMetricFactory.clientMetrics().getRegistryMetrics()));
                         subscriber.onCompleted();
                     }
                 })
@@ -95,7 +96,7 @@ public final class EurekaClients {
                     public void call(Subscriber<? super EurekaClient> subscriber) {
                         TransportClient writeClient = bufferedWrite == null ? null : TransportClients.newTcpRegistrationClient(inetResolver(bufferedWrite));
 
-                        subscriber.onNext(new EurekaClientImpl(writeClient, null));
+                        subscriber.onNext(new EurekaClientImpl(writeClient, null, EurekaClientMetricFactory.clientMetrics().getRegistryMetrics()));
                         subscriber.onCompleted();
                     }
                 })
@@ -115,7 +116,7 @@ public final class EurekaClients {
                     public void call(Subscriber<? super EurekaClient> subscriber) {
                         TransportClient readClient = bufferedRead == null ? null : TransportClients.newTcpDiscoveryClient(inetResolver(bufferedRead));
 
-                        subscriber.onNext(new EurekaClientImpl(null, readClient));
+                        subscriber.onNext(new EurekaClientImpl(null, readClient, EurekaClientMetricFactory.clientMetrics().getRegistryMetrics()));
                         subscriber.onCompleted();
                     }
                 })

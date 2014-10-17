@@ -22,6 +22,7 @@ import com.netflix.rx.eureka.client.ServerResolver;
 import com.netflix.rx.eureka.client.ServerResolver.ProtocolType;
 import com.netflix.rx.eureka.client.ServerResolver.ServerEntry;
 import com.netflix.rx.eureka.client.transport.ResolverBasedTransportClient;
+import com.netflix.rx.eureka.client.transport.ServerConnectionMetrics;
 import com.netflix.rx.eureka.client.transport.TransportClient;
 import com.netflix.rx.eureka.transport.EurekaTransports;
 
@@ -32,8 +33,8 @@ import com.netflix.rx.eureka.transport.EurekaTransports;
  */
 public class TcpDiscoveryClient extends ResolverBasedTransportClient<InetSocketAddress> {
 
-    public TcpDiscoveryClient(ServerResolver<InetSocketAddress> resolver, EurekaTransports.Codec codec) {
-        super(resolver, ProtocolType.TcpDiscovery, getClientConfig("tcpDiscoveryClient"), EurekaTransports.discoveryPipeline(codec));
+    public TcpDiscoveryClient(ServerResolver<InetSocketAddress> resolver, EurekaTransports.Codec codec, ServerConnectionMetrics metrics) {
+        super(resolver, ProtocolType.TcpDiscovery, getClientConfig("tcpDiscoveryClient"), EurekaTransports.discoveryPipeline(codec), metrics);
     }
 
     @Override

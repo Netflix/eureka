@@ -24,6 +24,7 @@ import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interest;
 import com.netflix.rx.eureka.registry.Delta;
 import com.netflix.rx.eureka.registry.EurekaRegistryImpl;
+import com.netflix.rx.eureka.registry.EurekaRegistryMetrics;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.registry.Lease;
 import rx.Observable;
@@ -39,7 +40,8 @@ public class AuditedRegistry extends EurekaRegistryImpl {
     private final AuditService auditService;
 
     @Inject
-    public AuditedRegistry(AuditService auditService) {
+    public AuditedRegistry(AuditService auditService, EurekaRegistryMetrics metrics) {
+        super(metrics);
         this.auditService = auditService;
     }
 

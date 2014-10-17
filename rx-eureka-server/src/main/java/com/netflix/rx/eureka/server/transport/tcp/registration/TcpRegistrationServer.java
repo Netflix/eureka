@@ -22,6 +22,7 @@ import javax.inject.Singleton;
 
 import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.server.EurekaBootstrapConfig;
+import com.netflix.rx.eureka.server.metric.EurekaServerMetricFactory;
 import com.netflix.rx.eureka.server.transport.tcp.AbstractTcpServer;
 import com.netflix.rx.eureka.transport.EurekaTransports;
 import io.reactivex.netty.RxNetty;
@@ -40,15 +41,16 @@ public class TcpRegistrationServer extends AbstractTcpServer {
     @Inject
     public TcpRegistrationServer(EurekaBootstrapConfig config,
                                  EurekaRegistry eurekaRegistry,
-                                 MetricEventsListenerFactory servoEventsListenerFactory) {
-        super(eurekaRegistry, servoEventsListenerFactory, config);
+                                 MetricEventsListenerFactory servoEventsListenerFactory,
+                                 EurekaServerMetricFactory metricFactory) {
+        super(eurekaRegistry, servoEventsListenerFactory, config, metricFactory);
     }
 
     @PostConstruct
     public void start() {
         server = RxNetty.newTcpServerBuilder(
                 config.getRegistrationPort(),
-                new TcpRegistrationHandler(eurekaRegistry))
+                new TcpRegistrationHandler(eurekaRegistry, metricFactory))
                 .pipelineConfigurator(EurekaTransports.registrationPipeline(config.getCodec()))
                 .withMetricEventsListenerFactory(servoEventsListenerFactory)
                 .build()
@@ -56,5 +58,4 @@ public class TcpRegistrationServer extends AbstractTcpServer {
 
         logger.info("Starting TCP registration server on port {}...", server.getServerPort());
     }
-
 }

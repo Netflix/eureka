@@ -9,6 +9,7 @@ import com.netflix.rx.eureka.protocol.discovery.InterestRegistration;
 import com.netflix.rx.eureka.protocol.discovery.UnregisterInterestSet;
 import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
+import com.netflix.rx.eureka.server.service.InterestChannelMetrics.ChannelSubscriptionMonitor;
 import com.netflix.rx.eureka.server.transport.ClientConnection;
 import com.netflix.rx.eureka.service.InterestChannel;
 import rx.Observable;
@@ -27,11 +28,16 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
 
     protected enum STATES {Idle, Open, Closed}
 
-    private final InterestNotificationMultiplexer notificationMultiplexer;
+    private final InterestChannelMetrics metrics;
 
-    public InterestChannelImpl(final EurekaRegistry<InstanceInfo> registry, final ClientConnection transport) {
+    private final InterestNotificationMultiplexer notificationMultiplexer;
+    private final ChannelSubscriptionMonitor channelSubscriptionMonitor;
+
+    public InterestChannelImpl(final EurekaRegistry<InstanceInfo> registry, final ClientConnection transport, final InterestChannelMetrics metrics) {
         super(STATES.Idle, transport, registry, 3, 30000);
+        this.metrics = metrics;
         this.notificationMultiplexer = new InterestNotificationMultiplexer(registry);
+        this.channelSubscriptionMonitor = new ChannelSubscriptionMonitor(metrics);
 
         subscribeToTransportInput(new Action1<Object>() {
             @Override
@@ -70,6 +76,7 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
         });
 
         state.set(STATES.Open);
+        this.metrics.incrementStateCounter(STATES.Open);
         sendAckOnTransport();
 
         notificationMultiplexer.changeNotifications().subscribe(
@@ -87,10 +94,10 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
 
                     @Override
                     public void onNext(ChangeNotification<InstanceInfo> notification) {
+                        metrics.incrementApplicationNotificationCounter(notification.getData().getApp());
                         sendNotificationOnTransport(notification);
                     }
                 });
-
     }
 
 
@@ -105,6 +112,7 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
             return Observable.error(CHANNEL_CLOSED_EXCEPTION);
         }
 
+        channelSubscriptionMonitor.update(newInterest);
         notificationMultiplexer.update(newInterest);
 
         Observable<Void> toReturn = transport.sendAcknowledgment();
@@ -114,8 +122,12 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
 
     @Override
     public void _close() {
-        state.set(STATES.Closed);
-        notificationMultiplexer.unregister();
-        super._close(); // Shutdown the transport
+        if (state.compareAndSet(STATES.Open, STATES.Closed)) {
+            state.set(STATES.Closed);
+            channelSubscriptionMonitor.update(Interests.forNone());
+            metrics.stateTransition(STATES.Open, STATES.Closed);
+            notificationMultiplexer.unregister();
+            super._close(); // Shutdown the transport
+        }
     }
 }

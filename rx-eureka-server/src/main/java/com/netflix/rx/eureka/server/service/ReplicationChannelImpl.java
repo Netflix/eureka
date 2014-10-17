@@ -27,13 +27,18 @@ import rx.functions.Action1;
 public class ReplicationChannelImpl extends AbstractChannel<ReplicationChannelImpl.STATES> implements ReplicationChannel {
 
     private static final Logger logger = LoggerFactory.getLogger(ReplicationChannelImpl.class);
+    private final ReplicationChannelMetrics metrics;
 
     protected enum STATES {Opened, Closed}
 
     private final Map<String, InstanceInfo> instanceInfoById = new HashMap<>();
 
-    public ReplicationChannelImpl(ClientConnection transport, EurekaRegistry<InstanceInfo> registry) {
+    public ReplicationChannelImpl(ClientConnection transport, EurekaRegistry<InstanceInfo> registry, ReplicationChannelMetrics metrics) {
         super(STATES.Opened, transport, registry, 3, 30000);
+
+        this.metrics = metrics;
+        this.metrics.incrementStateCounter(STATES.Opened);
+
         subscribeToTransportInput(new Action1<Object>() {
             @Override
             public void call(Object message) {
@@ -175,6 +180,7 @@ public class ReplicationChannelImpl extends AbstractChannel<ReplicationChannelIm
         if (state.getAndSet(STATES.Closed) == STATES.Closed) {
             return;
         }
+        metrics.stateTransition(STATES.Opened, STATES.Closed);
         super._close();
         unregisterAll();
     }
