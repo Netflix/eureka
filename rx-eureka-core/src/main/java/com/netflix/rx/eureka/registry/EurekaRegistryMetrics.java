@@ -22,65 +22,70 @@ import com.netflix.rx.eureka.metric.EurekaMetrics;
 import com.netflix.rx.eureka.registry.EurekaRegistry.Origin;
 import com.netflix.servo.monitor.BasicGauge;
 import com.netflix.servo.monitor.Counter;
-import com.netflix.servo.monitor.MonitorConfig;
 
 /**
  * @author Tomasz Bak
  */
 public class EurekaRegistryMetrics extends EurekaMetrics {
 
-    private final RegistryActionCounter registrationsCounter;
-    private final RegistryActionCounter updatesCounter;
-    private final RegistryActionCounter unregistrationsCounter;
+    private final Counter registrationsLocal;
+    private final Counter registrationsReplicated;
+    private final Counter registrationsTotal;
 
-    public EurekaRegistryMetrics(String rootName) {
-        super(rootName);
-        this.registrationsCounter = new RegistryActionCounter(fullName("action.add"));
-        this.updatesCounter = new RegistryActionCounter(fullName("action.update"));
-        this.unregistrationsCounter = new RegistryActionCounter(fullName("action.remove"));
-        register(registrationsCounter, updatesCounter, unregistrationsCounter);
+    private final Counter updatesLocal;
+    private final Counter updatesReplicated;
+    private final Counter updatesTotal;
+
+    private final Counter unregistrationsLocal;
+    private final Counter unregistrationsReplicated;
+    private final Counter unregistrationsTotal;
+
+    public EurekaRegistryMetrics(String id) {
+        super(id);
+        registrationsLocal = newCounter("registrationsLocal");
+        registrationsReplicated = newCounter("registrationsReplicated");
+        registrationsTotal = newCounter("registrationsTotal");
+
+        updatesLocal = newCounter("updatesLocal");
+        updatesReplicated = newCounter("updatesLocal");
+        updatesTotal = newCounter("updatesTotal");
+
+        unregistrationsLocal = newCounter("unregistrationsLocal");
+        unregistrationsReplicated = newCounter("unregistrationsReplicated");
+        unregistrationsTotal = newCounter("unregistrationsTotal");
     }
 
     public void incrementRegistrationCounter(Origin origin) {
-        registrationsCounter.increment(origin);
+        switch (origin) {
+            case LOCAL:
+                registrationsLocal.increment();
+                break;
+            case REPLICATED:
+                registrationsReplicated.increment();
+                break;
+        }
+        registrationsTotal.increment();
     }
 
     public void incrementUnregistrationCounter(Origin origin) {
-        unregistrationsCounter.increment(origin);
+        switch (origin) {
+            case LOCAL:
+                unregistrationsLocal.increment();
+                break;
+            case REPLICATED:
+                unregistrationsReplicated.increment();
+                break;
+        }
+        unregistrationsTotal.increment();
     }
 
     public void incrementUpdateCounter() {
-        updatesCounter.increment(Origin.LOCAL); // TODO: fix registration implementation so we can track it per origin
+        updatesLocal.increment(); // TODO: fix registration implementation so we can track it per origin
+        updatesTotal.increment();
     }
 
     public void setRegistrySizeMonitor(Callable<Integer> registrySizeCallable) {
-        String name = fullName("registrySize");
-        BasicGauge<Integer> gauge = new BasicGauge<>(MonitorConfig.builder(name).build(), registrySizeCallable);
+        BasicGauge<Integer> gauge = new BasicGauge<>(monitorConfig("registrySize"), registrySizeCallable);
         register(gauge);
-    }
-
-    static class RegistryActionCounter extends EurekaMetrics {
-        private final Counter localEntryCounter;
-        private final Counter replicatedEntryCounter;
-        private final Counter totalEntriesCounter;
-
-        RegistryActionCounter(String rootName) {
-            super(rootName);
-            this.localEntryCounter = newCounter("registrations.local");
-            this.replicatedEntryCounter = newCounter("registrations.replicated");
-            this.totalEntriesCounter = newCounter("registrations.total");
-        }
-
-        void increment(Origin origin) {
-            switch (origin) {
-                case LOCAL:
-                    localEntryCounter.increment();
-                    break;
-                case REPLICATED:
-                    replicatedEntryCounter.increment();
-                    break;
-            }
-            totalEntriesCounter.increment();
-        }
     }
 }

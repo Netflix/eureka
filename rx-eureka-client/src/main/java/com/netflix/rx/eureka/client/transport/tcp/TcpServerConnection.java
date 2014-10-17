@@ -1,7 +1,7 @@
 package com.netflix.rx.eureka.client.transport.tcp;
 
+import com.netflix.rx.eureka.client.transport.EurekaClientConnectionMetrics;
 import com.netflix.rx.eureka.client.transport.ServerConnection;
-import com.netflix.rx.eureka.client.transport.ServerConnectionMetrics;
 import com.netflix.rx.eureka.protocol.Heartbeat;
 import com.netflix.rx.eureka.transport.Acknowledgement;
 import com.netflix.rx.eureka.transport.MessageBroker;
@@ -15,10 +15,10 @@ import rx.functions.Action1;
 public class TcpServerConnection implements ServerConnection {
 
     private final MessageBroker broker;
-    private final ServerConnectionMetrics metrics;
+    private final EurekaClientConnectionMetrics metrics;
     private final long startTime;
 
-    public TcpServerConnection(MessageBroker broker, ServerConnectionMetrics metrics) {
+    public TcpServerConnection(MessageBroker broker, EurekaClientConnectionMetrics metrics) {
         this.broker = broker;
         this.metrics = metrics;
         metrics.incrementClientConnections();

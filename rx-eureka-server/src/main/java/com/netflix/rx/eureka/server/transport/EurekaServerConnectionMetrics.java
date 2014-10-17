@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.rx.eureka.client.transport;
+package com.netflix.rx.eureka.server.transport;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,18 +22,20 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.rx.eureka.metric.EurekaMetrics;
 import com.netflix.rx.eureka.utils.ServoUtils;
+import com.netflix.servo.monitor.BasicCounter;
 import com.netflix.servo.monitor.Counter;
 import com.netflix.servo.monitor.LongGauge;
 import com.netflix.servo.monitor.Timer;
 
 /**
+ * Metrics class for instances of {@link ClientConnection}.
+ *
  * @author Tomasz Bak
  */
-public class ServerConnectionMetrics extends EurekaMetrics {
+public class EurekaServerConnectionMetrics extends EurekaMetrics {
 
-    private final LongGauge clientConnections;
+    private final LongGauge connectedClients;
     private final Timer connectionTime;
-    private final Timer ackWaitTime;
 
     /**
      * We could use {@link java.util.concurrent.ConcurrentHashMap} with putIfAbsent method
@@ -44,13 +46,20 @@ public class ServerConnectionMetrics extends EurekaMetrics {
     private final Counter totalIncomingMessages;
     private final Counter totalOutgoingMessages;
 
-    public ServerConnectionMetrics(String rootName) {
-        super(rootName);
-        this.clientConnections = newLongGauge("clientConnections");
+    public EurekaServerConnectionMetrics(String context) {
+        super(context);
+        this.connectedClients = newLongGauge("connectedClients");
         this.connectionTime = newTimer("connectionTime");
-        this.ackWaitTime = newTimer("ackWaitTime");
         this.totalIncomingMessages = newCounter("incoming.total");
         this.totalOutgoingMessages = newCounter("outgoing.total");
+    }
+
+    public void incrementConnectedClients() {
+        ServoUtils.incrementLongGauge(connectedClients);
+    }
+
+    public void decrementConnectedClients() {
+        ServoUtils.decrementLongGauge(connectedClients);
     }
 
     public void clientConnectionTime(long start) {
@@ -75,24 +84,12 @@ public class ServerConnectionMetrics extends EurekaMetrics {
             synchronized (messageCounters) {
                 counter = messageCounters.get(counterName);
                 if (counter == null) {
-                    counter = newCounter(counterName);
+                    counter = new BasicCounter(monitorConfig(counterName));
                     messageCounters.put(counterName, counter);
                     register(counter);
                 }
             }
         }
         return counter;
-    }
-
-    public void ackWaitTime(long startTime) {
-        ackWaitTime.record(System.currentTimeMillis() - startTime, TimeUnit.MILLISECONDS);
-    }
-
-    public void incrementClientConnections() {
-        ServoUtils.incrementLongGauge(clientConnections);
-    }
-
-    public void decrementClientConnections() {
-        ServoUtils.decrementLongGauge(clientConnections);
     }
 }

@@ -19,7 +19,7 @@ package com.netflix.rx.eureka.client.metric;
 import javax.inject.Inject;
 import javax.inject.Named;
 
-import com.netflix.rx.eureka.client.transport.ServerConnectionMetrics;
+import com.netflix.rx.eureka.client.transport.EurekaClientConnectionMetrics;
 import com.netflix.rx.eureka.registry.EurekaRegistryMetrics;
 
 /**
@@ -31,14 +31,14 @@ public class EurekaClientMetricFactory {
 
     private final EurekaRegistryMetrics registryMetrics;
 
-    private final ServerConnectionMetrics registrationServerConnectionMetrics;
+    private final EurekaClientConnectionMetrics registrationServerConnectionMetrics;
 
-    private final ServerConnectionMetrics discoveryServerConnectionMetrics;
+    private final EurekaClientConnectionMetrics discoveryServerConnectionMetrics;
 
     @Inject
     public EurekaClientMetricFactory(EurekaRegistryMetrics registryMetrics,
-                                     @Named("registration") ServerConnectionMetrics registrationServerConnectionMetrics,
-                                     @Named("discovery") ServerConnectionMetrics discoveryServerConnectionMetrics) {
+                                     @Named("registration") EurekaClientConnectionMetrics registrationServerConnectionMetrics,
+                                     @Named("discovery") EurekaClientConnectionMetrics discoveryServerConnectionMetrics) {
         this.registryMetrics = registryMetrics;
         this.registrationServerConnectionMetrics = registrationServerConnectionMetrics;
         this.discoveryServerConnectionMetrics = discoveryServerConnectionMetrics;
@@ -48,24 +48,24 @@ public class EurekaClientMetricFactory {
         return registryMetrics;
     }
 
-    public ServerConnectionMetrics getRegistrationServerConnectionMetrics() {
+    public EurekaClientConnectionMetrics getRegistrationServerConnectionMetrics() {
         return registrationServerConnectionMetrics;
     }
 
-    public ServerConnectionMetrics getDiscoveryServerConnectionMetrics() {
+    public EurekaClientConnectionMetrics getDiscoveryServerConnectionMetrics() {
         return discoveryServerConnectionMetrics;
     }
 
     public static EurekaClientMetricFactory clientMetrics() {
         if (INSTANCE == null) {
             synchronized (EurekaClientMetricFactory.class) {
-                EurekaRegistryMetrics registryMetrics = new EurekaRegistryMetrics("eureka2.client.registry");
+                EurekaRegistryMetrics registryMetrics = new EurekaRegistryMetrics("client");
                 registryMetrics.bindMetrics();
 
-                ServerConnectionMetrics registrationServerConnectionMetrics = new ServerConnectionMetrics("eureka2.client.registration.connection");
+                EurekaClientConnectionMetrics registrationServerConnectionMetrics = new EurekaClientConnectionMetrics("registration");
                 registrationServerConnectionMetrics.bindMetrics();
 
-                ServerConnectionMetrics discoveryServerConnectionMetrics = new ServerConnectionMetrics("eureka2.client.discovery.connection");
+                EurekaClientConnectionMetrics discoveryServerConnectionMetrics = new EurekaClientConnectionMetrics("discovery");
                 discoveryServerConnectionMetrics.bindMetrics();
 
                 INSTANCE = new EurekaClientMetricFactory(registryMetrics, registrationServerConnectionMetrics, discoveryServerConnectionMetrics);

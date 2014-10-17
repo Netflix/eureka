@@ -19,29 +19,29 @@ package com.netflix.rx.eureka.server.metric;
 import javax.inject.Inject;
 import javax.inject.Named;
 
-import com.netflix.rx.eureka.client.transport.ServerConnectionMetrics;
+import com.netflix.rx.eureka.client.transport.EurekaClientConnectionMetrics;
 import com.netflix.rx.eureka.server.service.InterestChannelMetrics;
 import com.netflix.rx.eureka.server.service.RegistrationChannelMetrics;
 import com.netflix.rx.eureka.server.service.ReplicationChannelMetrics;
-import com.netflix.rx.eureka.server.transport.ClientConnectionMetrics;
+import com.netflix.rx.eureka.server.transport.EurekaServerConnectionMetrics;
 
 /**
  * @author Tomasz Bak
  */
 public class WriteServerMetricFactory extends EurekaServerMetricFactory {
     private static WriteServerMetricFactory INSTANCE;
-    private final ServerConnectionMetrics registrationServerConnectionMetrics;
-    private final ServerConnectionMetrics discoveryServerConnectionMetrics;
-    private final ServerConnectionMetrics replicationServerConnectionMetrics;
+    private final EurekaClientConnectionMetrics registrationServerConnectionMetrics;
+    private final EurekaClientConnectionMetrics discoveryServerConnectionMetrics;
+    private final EurekaClientConnectionMetrics replicationServerConnectionMetrics;
 
     @Inject
     public WriteServerMetricFactory(
-            @Named("registration") ClientConnectionMetrics registrationConnectionMetrics,
-            @Named("replication") ClientConnectionMetrics replicationConnectionMetrics,
-            @Named("discovery") ClientConnectionMetrics discoveryConnectionMetrics,
-            @Named("registration") ServerConnectionMetrics registrationServerConnectionMetrics,
-            @Named("discovery") ServerConnectionMetrics discoveryServerConnectionMetrics,
-            @Named("replication") ServerConnectionMetrics replicationServerConnectionMetrics,
+            @Named("registration") EurekaServerConnectionMetrics registrationConnectionMetrics,
+            @Named("replication") EurekaServerConnectionMetrics replicationConnectionMetrics,
+            @Named("discovery") EurekaServerConnectionMetrics discoveryConnectionMetrics,
+            @Named("registration") EurekaClientConnectionMetrics registrationServerConnectionMetrics,
+            @Named("discovery") EurekaClientConnectionMetrics discoveryServerConnectionMetrics,
+            @Named("replication") EurekaClientConnectionMetrics replicationServerConnectionMetrics,
             RegistrationChannelMetrics registrationChannelMetrics,
             ReplicationChannelMetrics replicationChannelMetrics,
             InterestChannelMetrics interestChannelMetrics) {
@@ -52,15 +52,15 @@ public class WriteServerMetricFactory extends EurekaServerMetricFactory {
         this.replicationServerConnectionMetrics = replicationServerConnectionMetrics;
     }
 
-    public ServerConnectionMetrics getReplicationServerConnectionMetrics() {
+    public EurekaClientConnectionMetrics getReplicationServerConnectionMetrics() {
         return replicationServerConnectionMetrics;
     }
 
-    public ServerConnectionMetrics getRegistrationServerConnectionMetrics() {
+    public EurekaClientConnectionMetrics getRegistrationServerConnectionMetrics() {
         return registrationServerConnectionMetrics;
     }
 
-    public ServerConnectionMetrics getDiscoveryServerConnectionMetrics() {
+    public EurekaClientConnectionMetrics getDiscoveryServerConnectionMetrics() {
         return discoveryServerConnectionMetrics;
     }
 
@@ -71,9 +71,9 @@ public class WriteServerMetricFactory extends EurekaServerMetricFactory {
                         serverMetrics().getRegistrationConnectionMetrics(),
                         serverMetrics().getReplicationConnectionMetrics(),
                         serverMetrics().getDiscoveryConnectionMetrics(),
-                        new ServerConnectionMetrics("eureka2.client.registration"),
-                        new ServerConnectionMetrics("eureka2.client.discovery"),
-                        new ServerConnectionMetrics("eureka2.replication.serverConnection"),
+                        new EurekaClientConnectionMetrics("registration"),
+                        new EurekaClientConnectionMetrics("discovery"),
+                        new EurekaClientConnectionMetrics("replication"),
                         serverMetrics().getRegistrationChannelMetrics(),
                         serverMetrics().getReplicationChannelMetrics(),
                         serverMetrics().getInterestChannelMetrics()

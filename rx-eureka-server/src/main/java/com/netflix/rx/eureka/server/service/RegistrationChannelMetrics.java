@@ -23,7 +23,7 @@ import com.netflix.rx.eureka.server.service.RegistrationChannelImpl.STATES;
  */
 public class RegistrationChannelMetrics extends AbstractStateMachineMetrics<STATES> {
 
-    public RegistrationChannelMetrics(String rootName) {
-        super(rootName, STATES.class);
+    public RegistrationChannelMetrics() {
+        super("server", STATES.class);
     }
 }

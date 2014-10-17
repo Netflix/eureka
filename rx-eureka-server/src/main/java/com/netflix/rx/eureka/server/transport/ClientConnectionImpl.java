@@ -20,9 +20,9 @@ public class ClientConnectionImpl implements ClientConnection {
 
     private final MessageBroker broker;
     private final long startTime;
-    private final ClientConnectionMetrics metrics;
+    private final EurekaServerConnectionMetrics metrics;
 
-    public ClientConnectionImpl(MessageBroker broker, ClientConnectionMetrics metrics) {
+    public ClientConnectionImpl(MessageBroker broker, EurekaServerConnectionMetrics metrics) {
         this.broker = broker;
         this.metrics = metrics;
         this.startTime = System.currentTimeMillis();

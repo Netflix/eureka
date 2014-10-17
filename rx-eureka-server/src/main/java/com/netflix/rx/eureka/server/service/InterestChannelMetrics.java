@@ -31,6 +31,7 @@ import com.netflix.rx.eureka.interests.VipsInterest;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.server.service.InterestChannelImpl.STATES;
 import com.netflix.rx.eureka.utils.ServoUtils;
+import com.netflix.servo.monitor.BasicCounter;
 import com.netflix.servo.monitor.Counter;
 import com.netflix.servo.monitor.LongGauge;
 
@@ -50,8 +51,8 @@ public class InterestChannelMetrics extends AbstractStateMachineMetrics<STATES> 
     private final LongGauge interestAllCounter;
     private final LongGauge totalInstanceInterests;
 
-    public InterestChannelMetrics(String rootName) {
-        super(rootName, STATES.class);
+    public InterestChannelMetrics() {
+        super("server", STATES.class);
         this.interestAllCounter = newLongGauge("interestAll");
         this.totalInstanceInterests = newLongGauge("totalInstanceInterests");
     }
@@ -88,7 +89,7 @@ public class InterestChannelMetrics extends AbstractStateMachineMetrics<STATES> 
             synchronized (subscribedClientsByInterest) {
                 counter = subscribedClientsByInterest.get(interestKey);
                 if (counter == null) {
-                    counter = newLongGauge("subscriptions." + interestKey.getCounterName());
+                    counter = new LongGauge(monitorConfig("subscriptions." + interestKey.getCounterName()));
                     subscribedClientsByInterest.put(interestKey, counter);
                     register(counter);
                 }
@@ -104,7 +105,7 @@ public class InterestChannelMetrics extends AbstractStateMachineMetrics<STATES> 
             synchronized (notificationCountersByApplication) {
                 counter = notificationCountersByApplication.get(counterName);
                 if (counter == null) {
-                    counter = newCounter(counterName);
+                    counter = new BasicCounter(monitorConfig(counterName));
                     notificationCountersByApplication.put(counterName, counter);
                     register(counter);
                 }

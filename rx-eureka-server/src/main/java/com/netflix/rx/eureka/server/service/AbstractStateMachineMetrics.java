@@ -32,11 +32,11 @@ import com.netflix.servo.monitor.LongGauge;
 public abstract class AbstractStateMachineMetrics<STATE extends Enum<STATE>> extends EurekaMetrics {
     private final EnumMap<STATE, LongGauge> stateCounters;
 
-    protected AbstractStateMachineMetrics(String rootName, Class<STATE> stateClass) {
-        super(rootName);
+    protected AbstractStateMachineMetrics(String id, Class<STATE> stateClass) {
+        super(id);
         this.stateCounters = new EnumMap<STATE, LongGauge>(stateClass);
         for (STATE s : stateClass.getEnumConstants()) {
-            LongGauge counter = newLongGauge(s.name());
+            LongGauge counter = new LongGauge(monitorConfig("state." + s.name()));
             stateCounters.put(s, counter);
             register(counter);
         }
