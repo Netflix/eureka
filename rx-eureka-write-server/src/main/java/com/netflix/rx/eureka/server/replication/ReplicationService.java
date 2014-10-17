@@ -32,6 +32,7 @@ import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.server.EurekaBootstrapConfig;
 import com.netflix.rx.eureka.server.WriteClusterResolverProvider;
+import com.netflix.rx.eureka.server.metric.WriteServerMetricFactory;
 import com.netflix.rx.eureka.server.service.SelfRegistrationService;
 import com.netflix.rx.eureka.transport.EurekaTransports.Codec;
 import org.slf4j.Logger;
@@ -63,6 +64,7 @@ public class ReplicationService {
     private final EurekaRegistry eurekaRegistry;
     private final SelfRegistrationService selfRegistrationService;
     private final WriteClusterResolverProvider writeClusterResolverProvider;
+    private final WriteServerMetricFactory metricFactory;
     private final Codec codec;
 
     private final Map<InetSocketAddress, ReplicationChannelMonitor> replicationWatchdogs = new HashMap<>();
@@ -72,10 +74,12 @@ public class ReplicationService {
     public ReplicationService(EurekaBootstrapConfig config,
                               EurekaRegistry eurekaRegistry,
                               SelfRegistrationService selfRegistrationService,
-                              WriteClusterResolverProvider writeClusterResolverProvider) {
+                              WriteClusterResolverProvider writeClusterResolverProvider,
+                              WriteServerMetricFactory metricFactory) {
         this.eurekaRegistry = eurekaRegistry;
         this.selfRegistrationService = selfRegistrationService;
         this.writeClusterResolverProvider = writeClusterResolverProvider;
+        this.metricFactory = metricFactory;
         this.codec = config.getCodec();
     }
 
@@ -122,7 +126,7 @@ public class ReplicationService {
                                     ReplicationChannelMonitor monitor = new ReplicationChannelMonitor(
                                             targetName,
                                             eurekaRegistry,
-                                            new ReplicationTransportClient(address, codec),
+                                            new ReplicationTransportClient(address, codec, metricFactory.getReplicationServerConnectionMetrics()),
                                             reconnectDelay, heartbeatInterval
                                     );
                                     replicationWatchdogs.put(address, monitor);

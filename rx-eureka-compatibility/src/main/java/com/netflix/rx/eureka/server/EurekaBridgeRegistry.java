@@ -1,6 +1,7 @@
 package com.netflix.rx.eureka.server;
 
 import com.netflix.rx.eureka.registry.EurekaRegistryImpl;
+import com.netflix.rx.eureka.registry.EurekaRegistryMetrics;
 
 import javax.inject.Singleton;
 
@@ -9,4 +10,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class EurekaBridgeRegistry extends EurekaRegistryImpl {
+
+    public EurekaBridgeRegistry(EurekaRegistryMetrics metrics) {
+        super(metrics);
+    }
 }

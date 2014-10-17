@@ -34,6 +34,7 @@ import com.netflix.rx.eureka.client.EurekaClientImpl;
 import com.netflix.rx.eureka.client.ServerResolver.Protocol;
 import com.netflix.rx.eureka.client.ServerResolver.ProtocolType;
 import com.netflix.rx.eureka.client.bootstrap.StaticServerResolver;
+import com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory;
 import com.netflix.rx.eureka.client.transport.TransportClient;
 import com.netflix.rx.eureka.client.transport.TransportClients;
 import com.netflix.rx.eureka.interests.ChangeNotification;
@@ -300,7 +301,7 @@ public class EurekaCLI {
         TransportClient readClient =
                 TransportClients.newTcpDiscoveryClient(discoveryServers, Codec.Json);
 
-        eurekaClient = new EurekaClientImpl(writeClient, readClient);
+        eurekaClient = new EurekaClientImpl(writeClient, readClient, EurekaClientMetricFactory.clientMetrics().getRegistryMetrics());
 
         System.out.format("Connected to Eureka server at %s:%d (registry) and %s:%d (discovery)\n", host,
                 registrationPort, host, discoveryPort);

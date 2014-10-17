@@ -19,6 +19,7 @@ package com.netflix.rx.eureka.server.transport.tcp.discovery;
 import javax.inject.Inject;
 
 import com.netflix.rx.eureka.registry.EurekaRegistry;
+import com.netflix.rx.eureka.server.metric.EurekaServerMetricFactory;
 import com.netflix.rx.eureka.server.service.EurekaServerService;
 import com.netflix.rx.eureka.server.service.EurekaServiceImpl;
 import com.netflix.rx.eureka.server.transport.ClientConnectionImpl;
@@ -38,10 +39,12 @@ public class TcpDiscoveryHandler implements ConnectionHandler<Object, Object> {
     private static final Logger logger = LoggerFactory.getLogger(TcpDiscoveryHandler.class);
 
     private final EurekaRegistry registry;
+    private final EurekaServerMetricFactory metricFactory;
 
     @Inject
-    public TcpDiscoveryHandler(EurekaRegistry registry) {
+    public TcpDiscoveryHandler(EurekaRegistry registry, EurekaServerMetricFactory metricFactory) {
         this.registry = registry;
+        this.metricFactory = metricFactory;
     }
 
     @Override
@@ -49,8 +52,8 @@ public class TcpDiscoveryHandler implements ConnectionHandler<Object, Object> {
         if (logger.isDebugEnabled()) {
             logger.debug("New TCP dscovery client connection");
         }
-        final ClientConnectionImpl eurekaConn = new ClientConnectionImpl(new BaseMessageBroker(connection));
-        final EurekaServerService service = new EurekaServiceImpl(registry, eurekaConn);
+        final ClientConnectionImpl eurekaConn = new ClientConnectionImpl(new BaseMessageBroker(connection), metricFactory.getDiscoveryConnectionMetrics());
+        final EurekaServerService service = new EurekaServiceImpl(registry, eurekaConn, metricFactory);
         // Since this is a discovery handler which only handles interest subscriptions,
         // the channel is created on connection accept. We subscribe here for the sake
         // of logging only.

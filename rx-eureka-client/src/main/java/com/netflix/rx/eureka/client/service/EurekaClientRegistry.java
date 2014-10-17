@@ -9,6 +9,7 @@ import com.netflix.rx.eureka.interests.Interest;
 import com.netflix.rx.eureka.registry.Delta;
 import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.registry.EurekaRegistryImpl;
+import com.netflix.rx.eureka.registry.EurekaRegistryMetrics;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.service.EurekaService;
 import com.netflix.rx.eureka.service.InterestChannel;
@@ -41,8 +42,8 @@ public class EurekaClientRegistry implements EurekaRegistry<InstanceInfo> {
     private final ClientInterestChannel interestChannel;
 
     @Inject
-    public EurekaClientRegistry(final TransportClient readServerClient) {
-        registry = new EurekaRegistryImpl();
+    public EurekaClientRegistry(final TransportClient readServerClient, EurekaRegistryMetrics metrics) {
+        registry = new EurekaRegistryImpl(metrics);
 
         service = EurekaServiceImpl.forReadServer(registry, readServerClient);
         interestChannel = (ClientInterestChannel) service.newInterestChannel();

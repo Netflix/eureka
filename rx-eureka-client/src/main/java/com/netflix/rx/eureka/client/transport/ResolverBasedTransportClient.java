@@ -46,6 +46,7 @@ public abstract class ResolverBasedTransportClient<A extends SocketAddress> impl
     private final ProtocolType protocolType;
     protected final IClientConfig clientConfig;
     private final PipelineConfigurator<Object, Object> pipelineConfigurator;
+    private final ServerConnectionMetrics metrics;
     protected final ZoneAwareLoadBalancer<Server> loadBalancer;
 
     private RxClient<Object, Object> tcpClient;
@@ -53,11 +54,13 @@ public abstract class ResolverBasedTransportClient<A extends SocketAddress> impl
     protected ResolverBasedTransportClient(ServerResolver<A> resolver,
                                            ProtocolType protocolType,
                                            IClientConfig clientConfig,
-                                           PipelineConfigurator<Object, Object> pipelineConfigurator) {
+                                           PipelineConfigurator<Object, Object> pipelineConfigurator,
+                                           ServerConnectionMetrics metrics) {
         this.resolver = resolver;
         this.protocolType = protocolType;
         this.clientConfig = clientConfig;
         this.pipelineConfigurator = pipelineConfigurator;
+        this.metrics = metrics;
         ServerList<Server> serverList = new ResolverServerList(resolver);
         loadBalancer = new ZoneAwareLoadBalancer<>(clientConfig, new RoundRobinRule(), DUMMY_PING, serverList, null /* filter */);
     }
@@ -72,7 +75,7 @@ public abstract class ResolverBasedTransportClient<A extends SocketAddress> impl
                 .map(new Func1<ObservableConnection<Object, Object>, ServerConnection>() {
                     @Override
                     public ServerConnection call(ObservableConnection<Object, Object> connection) {
-                        return new TcpServerConnection(new BaseMessageBroker(connection));
+                        return new TcpServerConnection(new BaseMessageBroker(connection), metrics);
                     }
                 });
         return Observable.concat(

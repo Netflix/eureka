@@ -9,6 +9,8 @@ import com.netflix.rx.eureka.client.transport.tcp.TcpRegistrationClient;
 import com.netflix.rx.eureka.transport.EurekaTransports;
 import com.netflix.rx.eureka.transport.EurekaTransports.Codec;
 
+import static com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory.*;
+
 /**
  * A factory to create {@link TransportClient} instances.
  *
@@ -21,21 +23,21 @@ public final class TransportClients {
     }
 
     public static TransportClient newTcpDiscoveryClient(ServerResolver<InetSocketAddress> resolver) {
-        return new TcpDiscoveryClient(resolver, defaultCodec);
+        return new TcpDiscoveryClient(resolver, defaultCodec, clientMetrics().getDiscoveryServerConnectionMetrics());
     }
 
     public static TransportClient newTcpDiscoveryClient(ServerResolver<InetSocketAddress> resolver,
                                                         EurekaTransports.Codec codec) {
-        return new TcpDiscoveryClient(resolver, codec);
+        return new TcpDiscoveryClient(resolver, codec, clientMetrics().getDiscoveryServerConnectionMetrics());
     }
 
     public static TransportClient newTcpRegistrationClient(ServerResolver<InetSocketAddress> resolver) {
-        return new TcpRegistrationClient(resolver, defaultCodec);
+        return new TcpRegistrationClient(resolver, defaultCodec, clientMetrics().getRegistrationServerConnectionMetrics());
     }
 
     public static TransportClient newTcpRegistrationClient(ServerResolver<InetSocketAddress> resolver,
                                                            EurekaTransports.Codec codec) {
-        return new TcpRegistrationClient(resolver, codec);
+        return new TcpRegistrationClient(resolver, codec, clientMetrics().getRegistrationServerConnectionMetrics());
     }
 
     /**

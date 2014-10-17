@@ -22,6 +22,7 @@ import com.netflix.rx.eureka.client.ServerResolver;
 import com.netflix.rx.eureka.client.ServerResolver.ProtocolType;
 import com.netflix.rx.eureka.client.ServerResolver.ServerEntry;
 import com.netflix.rx.eureka.client.transport.ResolverBasedTransportClient;
+import com.netflix.rx.eureka.client.transport.ServerConnectionMetrics;
 import com.netflix.rx.eureka.client.transport.TransportClient;
 import com.netflix.rx.eureka.transport.EurekaTransports;
 
@@ -32,8 +33,8 @@ import com.netflix.rx.eureka.transport.EurekaTransports;
  */
 public class TcpRegistrationClient extends ResolverBasedTransportClient<InetSocketAddress> {
 
-    public TcpRegistrationClient(ServerResolver<InetSocketAddress> resolver, EurekaTransports.Codec codec) {
-        super(resolver, ProtocolType.TcpRegistration, getClientConfig("tcpRegistrationClient"), EurekaTransports.registrationPipeline(codec));
+    public TcpRegistrationClient(ServerResolver<InetSocketAddress> resolver, EurekaTransports.Codec codec, ServerConnectionMetrics metrics) {
+        super(resolver, ProtocolType.TcpRegistration, getClientConfig("tcpRegistrationClient"), EurekaTransports.registrationPipeline(codec), metrics);
     }
 
     @Override

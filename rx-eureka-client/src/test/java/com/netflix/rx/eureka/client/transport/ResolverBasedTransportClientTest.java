@@ -40,6 +40,7 @@ import org.junit.Test;
 import rx.Observable;
 import rx.functions.Func1;
 
+import static com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory.*;
 import static org.junit.Assert.*;
 
 /**
@@ -79,7 +80,8 @@ public class ResolverBasedTransportClientTest {
         StaticServerResolver<InetSocketAddress> resolver = new StaticServerResolver<>();
         resolver.addServer(new InetSocketAddress("localhost", 0), new Protocol(1, ProtocolType.TcpRegistration));
 
-        ResolverBasedTransportClient<InetSocketAddress> transportClient = new TcpRegistrationClient(resolver, Codec.Json);
+        ResolverBasedTransportClient<InetSocketAddress> transportClient =
+                new TcpRegistrationClient(resolver, Codec.Json, clientMetrics().getRegistrationServerConnectionMetrics());
 
         // Single, non-existent server - should fail on it
         try {

@@ -1,5 +1,12 @@
 package com.netflix.rx.eureka.client;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory;
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interest;
 import com.netflix.rx.eureka.interests.Interests;
@@ -20,16 +27,9 @@ import org.mockito.runners.MockitoJUnitRunner;
 import rx.Observable;
 import rx.Subscriber;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
-import static org.mockito.Mockito.when;
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
+import static org.mockito.Mockito.*;
 
 /**
  * @author David Liu
@@ -70,7 +70,7 @@ public class EurekaClientTest {
             allRegistry = new ArrayList<>(discoveryRegistry);
             allRegistry.addAll(zuulRegistry);
 
-            registry = new EurekaRegistryImpl();
+            registry = new EurekaRegistryImpl(EurekaClientMetricFactory.clientMetrics().getRegistryMetrics());
             for (ChangeNotification<InstanceInfo> notification : allRegistry) {
                 registry.register(notification.getData());
             }

@@ -1,5 +1,7 @@
 package com.netflix.rx.eureka.server.service;
 
+import java.util.Set;
+
 import com.netflix.rx.eureka.protocol.EurekaProtocolError;
 import com.netflix.rx.eureka.protocol.Heartbeat;
 import com.netflix.rx.eureka.protocol.registration.Register;
@@ -16,8 +18,6 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action1;
 
-import java.util.Set;
-
 /**
  * @author Nitesh Kant
  */
@@ -31,13 +31,19 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
     private static final IllegalStateException INSTANCE_NOT_REGISTERED_EXCEPTION =
             new IllegalStateException("Instance is not registered yet.");
 
+    private final RegistrationChannelMetrics metrics;
+
     private volatile InstanceInfo currentInfo;
     private volatile long currentVersion;
 
     protected enum STATES {Idle, Registered, Closed}
 
-    public RegistrationChannelImpl(EurekaRegistry registry, ClientConnection transport) {
+    public RegistrationChannelImpl(EurekaRegistry registry, ClientConnection transport, RegistrationChannelMetrics metrics) {
         super(STATES.Idle, transport, registry, 3, 30000);
+        this.metrics = metrics;
+
+        metrics.incrementStateCounter(STATES.Idle);
+
         currentVersion = System.currentTimeMillis();
         subscribeToTransportInput(new Action1<Object>() {
             @Override
@@ -63,7 +69,7 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
     public Observable<Void> register(final InstanceInfo instanceInfo) {
         logger.debug("Registering service in registry: {}", instanceInfo);
 
-        if (!state.compareAndSet(STATES.Idle, STATES.Registered)) {// State check. Only register if the state is Idle.
+        if (!moveToState(STATES.Idle, STATES.Registered)) {// State check. Only register if the state is Idle.
             if (STATES.Closed == state.get()) {
                 /**
                  * Since channel is already closed and hence the transport, we don't need to send an error on transport.
@@ -91,7 +97,7 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
             @Override
             public void onError(Throwable e) {
                 sendErrorOnTransport(e);
-                state.compareAndSet(STATES.Registered, STATES.Idle); // Set the state back to enable subsequent
+                moveToState(STATES.Registered, STATES.Idle); // Set the state back to enable subsequent
                 // registrations.
             }
 
@@ -149,35 +155,46 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
 
     @Override
     public Observable<Void> unregister() {
-        STATES currentState = state.get();
-        switch (currentState) {
-            case Idle:
+        if (!moveToState(STATES.Registered, STATES.Closed)) {
+            STATES currentState = state.get();
+            if (currentState == STATES.Idle) {
                 return Observable.error(INSTANCE_NOT_REGISTERED_EXCEPTION);
-            case Registered:
-                Observable<Void> updateResult = registry.unregister(currentInfo.getId());  // TODO: deal with channel ownership
-                updateResult.subscribe(new Subscriber<Void>() {
-                    @Override
-                    public void onCompleted() {
-                        currentInfo = null;
-                        sendAckOnTransport();
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        sendErrorOnTransport(e);
-                    }
-
-                    @Override
-                    public void onNext(Void aVoid) {
-                        // No op
-                    }
-                });
-
-                return updateResult;
-            case Closed:
+            }
+            if (currentState == STATES.Closed) {
                 return Observable.error(CHANNEL_CLOSED_EXCEPTION);
-            default:
-                return Observable.error(new IllegalStateException("Unrecognized channel state: " + currentState));
+            }
+            return Observable.error(new IllegalStateException("Unrecognized channel state: " + currentState));
         }
+
+        Observable<Void> updateResult = registry.unregister(currentInfo.getId());  // TODO: deal with channel ownership
+        updateResult.subscribe(new Subscriber<Void>() {
+            @Override
+            public void onCompleted() {
+                currentInfo = null;
+                sendAckOnTransport();
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                sendErrorOnTransport(e);
+            }
+
+            @Override
+            public void onNext(Void aVoid) {
+                // No op
+            }
+        });
+
+        return updateResult;
+
+    }
+
+    protected boolean moveToState(STATES from, STATES to) {
+        if (state.compareAndSet(from, to)) {
+            metrics.decrementStateCounter(from);
+            metrics.incrementStateCounter(to);
+            return true;
+        }
+        return false;
     }
 }
