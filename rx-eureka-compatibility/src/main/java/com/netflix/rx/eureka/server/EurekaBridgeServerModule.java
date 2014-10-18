@@ -1,12 +1,19 @@
 package com.netflix.rx.eureka.server;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.name.Names;
+import com.netflix.rx.eureka.client.transport.EurekaClientConnectionMetrics;
 import com.netflix.rx.eureka.registry.EurekaRegistry;
+import com.netflix.rx.eureka.registry.EurekaRegistryMetrics;
 import com.netflix.rx.eureka.server.replication.ReplicationService;
 import com.netflix.rx.eureka.server.service.BridgeSelfRegistrationService;
 import com.netflix.rx.eureka.server.service.BridgeService;
+import com.netflix.rx.eureka.server.service.InterestChannelMetrics;
+import com.netflix.rx.eureka.server.service.RegistrationChannelMetrics;
+import com.netflix.rx.eureka.server.service.ReplicationChannelMetrics;
 import com.netflix.rx.eureka.server.service.SelfRegistrationService;
 import com.netflix.rx.eureka.server.spi.ExtensionContext;
+import com.netflix.rx.eureka.server.transport.EurekaServerConnectionMetrics;
 import com.netflix.rx.eureka.server.transport.tcp.discovery.TcpDiscoveryServer;
 import com.netflix.rx.eureka.server.transport.tcp.replication.TcpReplicationServer;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
@@ -45,6 +52,24 @@ public class EurekaBridgeServerModule extends AbstractModule {
 
         bind(ReplicationService.class).asEagerSingleton();
         bind(BridgeService.class).asEagerSingleton();
+
+
+        bind(ExtensionContext.class).asEagerSingleton();
+
+        // Metrics
+        bind(EurekaServerConnectionMetrics.class).annotatedWith(Names.named("registration")).toInstance(new EurekaServerConnectionMetrics("registration"));
+        bind(EurekaServerConnectionMetrics.class).annotatedWith(Names.named("replication")).toInstance(new EurekaServerConnectionMetrics("replication"));
+        bind(EurekaServerConnectionMetrics.class).annotatedWith(Names.named("discovery")).toInstance(new EurekaServerConnectionMetrics("discovery"));
+
+        bind(EurekaClientConnectionMetrics.class).annotatedWith(Names.named("registration")).toInstance(new EurekaClientConnectionMetrics("registration"));
+        bind(EurekaClientConnectionMetrics.class).annotatedWith(Names.named("discovery")).toInstance(new EurekaClientConnectionMetrics("discovery"));
+        bind(EurekaClientConnectionMetrics.class).annotatedWith(Names.named("replication")).toInstance(new EurekaClientConnectionMetrics("replication"));
+
+        bind(RegistrationChannelMetrics.class).toInstance(new RegistrationChannelMetrics());
+        bind(ReplicationChannelMetrics.class).toInstance(new ReplicationChannelMetrics());
+        bind(InterestChannelMetrics.class).toInstance(new InterestChannelMetrics());
+
+        bind(EurekaRegistryMetrics.class).toInstance(new EurekaRegistryMetrics("bridgeServer"));
 
         bind(ExtensionContext.class).asEagerSingleton();
     }
