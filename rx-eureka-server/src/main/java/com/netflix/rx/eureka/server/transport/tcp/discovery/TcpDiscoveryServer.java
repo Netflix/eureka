@@ -18,6 +18,7 @@ package com.netflix.rx.eureka.server.transport.tcp.discovery;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 
 import com.netflix.rx.eureka.registry.EurekaRegistry;
@@ -43,7 +44,7 @@ public class TcpDiscoveryServer extends AbstractTcpServer {
     @Inject
     public TcpDiscoveryServer(EurekaBootstrapConfig config,
                               EurekaRegistry eurekaRegistry,
-                              MetricEventsListenerFactory servoEventsListenerFactory,
+                              @Named("discovery") MetricEventsListenerFactory servoEventsListenerFactory,
                               EurekaServerMetricFactory metricFactory) {
         super(eurekaRegistry, servoEventsListenerFactory, config, metricFactory);
         this.metricFactory = metricFactory;

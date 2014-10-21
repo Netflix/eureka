@@ -64,7 +64,9 @@ public class EurekaWriteServerModule extends AbstractModule {
 
         bind(EurekaRegistry.class).to(AuditedRegistry.class);
 
-        bind(MetricEventsListenerFactory.class).toInstance(new ServoEventsListenerFactory());
+        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("registration")).toInstance(new ServoEventsListenerFactory("registration-rx-client-", "registration-rx-server-"));
+        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new ServoEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
+        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("replication")).toInstance(new ServoEventsListenerFactory("replication-rx-client-", "replication-rx-server-"));
         bind(TcpRegistrationServer.class).asEagerSingleton();
         bind(TcpDiscoveryServer.class).asEagerSingleton();
         bind(TcpReplicationServer.class).asEagerSingleton();

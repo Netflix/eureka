@@ -50,10 +50,6 @@ public class ReplicationService {
 
     enum STATE {Idle, Connected, Closed}
 
-    public static final String PEER_RESOLVER_TAG = "peerResolver";
-    public static final String RECONNECT_DELAY_TAG = "reconnectDelay";
-    public static final String HEART_BEAT_INTERVAL_TAG = "heartbeatInterval";
-
     private static final Logger logger = LoggerFactory.getLogger(ReplicationService.class);
 
     // TODO: make this dynamic properties
