@@ -29,6 +29,7 @@ import com.netflix.rx.eureka.client.ServerResolver;
 import com.netflix.rx.eureka.client.ServerResolver.Protocol;
 import com.netflix.rx.eureka.client.ServerResolver.ProtocolType;
 import com.netflix.rx.eureka.client.bootstrap.ServerResolvers;
+import com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory;
 import rx.Observable;
 import rx.subjects.ReplaySubject;
 
@@ -40,13 +41,15 @@ import static java.util.Arrays.*;
 public class EurekaClientProvider implements Provider<EurekaClient> {
 
     private final ReadServerConfig config;
+    private final EurekaClientMetricFactory metricFactory;
 
     private final AtomicBoolean connected = new AtomicBoolean();
     private final ReplaySubject<EurekaClient> replaySubject = ReplaySubject.create();
 
     @Inject
-    public EurekaClientProvider(ReadServerConfig config) {
+    public EurekaClientProvider(ReadServerConfig config, EurekaClientMetricFactory metricFactory) {
         this.config = config;
+        this.metricFactory = metricFactory;
     }
 
     // TODO: we are blocking here to not propagate Observable<EurekaClient> further into the code. This will be fixed once Ribbon supports observable load balancer.
@@ -60,11 +63,11 @@ public class EurekaClientProvider implements Provider<EurekaClient> {
 
     private Observable<EurekaClient> connect() {
         ServerResolver<InetSocketAddress> resolver = createResolver();
-        return EurekaClients.forRegistrationAndDiscovery(resolver, resolver, config.getCodec());
+        return EurekaClients.forRegistrationAndDiscovery(resolver, resolver, config.getCodec(), metricFactory);
     }
 
-    public ServerResolver<InetSocketAddress> createResolver() {
-        ServerResolver<InetSocketAddress> resolver = null;
+    private ServerResolver<InetSocketAddress> createResolver() {
+        ServerResolver<InetSocketAddress> resolver;
 
         Protocol[] protocols = {
                 new Protocol(config.getWriteClusterRegistrationPort(), ProtocolType.TcpRegistration),

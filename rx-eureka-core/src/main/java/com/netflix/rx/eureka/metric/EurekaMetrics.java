@@ -79,6 +79,7 @@ public abstract class EurekaMetrics {
 
     protected MonitorConfig monitorConfig(String baseName) {
         return MonitorConfig.builder(baseName)
+                .withTag("class", getClass().getSimpleName())
                 .withTag("id", id)
                 .build();
     }

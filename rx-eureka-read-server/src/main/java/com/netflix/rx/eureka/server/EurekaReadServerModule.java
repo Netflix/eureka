@@ -67,7 +67,7 @@ public class EurekaReadServerModule extends AbstractModule {
         } else {
             bind(EurekaClient.class).toInstance(eurekaClient);
         }
-        bind(MetricEventsListenerFactory.class).toInstance(new ServoEventsListenerFactory());
+        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new ServoEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
         bind(TcpDiscoveryServer.class).asEagerSingleton();
 
         bind(SelfRegistrationService.class).to(ReadSelfRegistrationService.class).asEagerSingleton();

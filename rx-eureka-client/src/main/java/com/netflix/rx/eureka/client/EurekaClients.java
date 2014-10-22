@@ -52,6 +52,13 @@ public final class EurekaClients {
     public static <A extends SocketAddress> Observable<EurekaClient> forRegistrationAndDiscovery(final ServerResolver<A> writeClusterResolver,
                                                                                                  final ServerResolver<A> readClusterResolver,
                                                                                                  final Codec codec) {
+        return forRegistrationAndDiscovery(writeClusterResolver, readClusterResolver, codec, EurekaClientMetricFactory.clientMetrics());
+    }
+
+    public static <A extends SocketAddress> Observable<EurekaClient> forRegistrationAndDiscovery(final ServerResolver<A> writeClusterResolver,
+                                                                                                 final ServerResolver<A> readClusterResolver,
+                                                                                                 final Codec codec,
+                                                                                                 final EurekaClientMetricFactory metricFactory) {
         final BufferedServerResolver<A> bufferedWrite = writeClusterResolver == null ? null : new BufferedServerResolver<>(writeClusterResolver);
         final BufferedServerResolver<A> bufferedRead = readClusterResolver == null ? null : new BufferedServerResolver<>(readClusterResolver);
 
@@ -64,7 +71,7 @@ public final class EurekaClients {
                         TransportClient writeClient = bufferedWrite == null ? null : TransportClients.newTcpRegistrationClient(inetResolver(bufferedWrite), codec);
                         TransportClient readClient = bufferedRead == null ? null : TransportClients.newTcpDiscoveryClient(inetResolver(bufferedRead), codec);
 
-                        subscriber.onNext(new EurekaClientImpl(writeClient, readClient, EurekaClientMetricFactory.clientMetrics().getRegistryMetrics()));
+                        subscriber.onNext(new EurekaClientImpl(writeClient, readClient, metricFactory.getRegistryMetrics()));
                         subscriber.onCompleted();
                     }
                 })
