@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.netflix.rx.eureka.server.service;
+package com.netflix.rx.eureka.metric;
 
 import java.util.EnumMap;
 
-import com.netflix.rx.eureka.metric.EurekaMetrics;
 import com.netflix.rx.eureka.utils.ServoUtils;
 import com.netflix.servo.monitor.LongGauge;
 

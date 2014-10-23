@@ -16,6 +16,7 @@
 
 package com.netflix.rx.eureka.server.service;
 
+import com.netflix.rx.eureka.metric.AbstractStateMachineMetrics;
 import com.netflix.rx.eureka.server.service.RegistrationChannelImpl.STATES;
 
 /**

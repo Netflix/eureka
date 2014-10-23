@@ -1,5 +1,9 @@
 package com.netflix.rx.eureka.client.service;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 import com.netflix.rx.eureka.client.transport.ServerConnection;
 import com.netflix.rx.eureka.client.transport.TransportClient;
 import com.netflix.rx.eureka.interests.ChangeNotification;
@@ -22,10 +26,6 @@ import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.observers.SafeSubscriber;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * An implementation of {@link InterestChannel}. It is mandatory that all operations
@@ -54,15 +54,17 @@ import java.util.Map;
 
     protected enum STATES {Idle, Open, Closed}
 
+    private final InterestChannelMetrics metrics;
+
     protected EurekaRegistry<InstanceInfo> registry;
 
     /**
      * A local copy of instances received by this channel from the server. This is used for:
      *
      * <ul>
-        <li><i>Updates on the wire</i>: Since we only get the delta on the wire, we use this map to get the last seen
+     <li><i>Updates on the wire</i>: Since we only get the delta on the wire, we use this map to get the last seen
      {@link InstanceInfo} and apply the delta on it to get the new {@link InstanceInfo}</li>
-        <li><i>Deletes on the wire</i>: Since we only get the identifier for the instance deleted, we use this map to
+     <li><i>Deletes on the wire</i>: Since we only get the identifier for the instance deleted, we use this map to
      get the last seen {@link InstanceInfo}</li>
      </ul>
      *
@@ -74,9 +76,11 @@ import java.util.Map;
      */
     private final Map<String, InstanceInfo> idVsInstance = new HashMap<>();
 
-    public InterestChannelImpl(final EurekaRegistry<InstanceInfo> registry, TransportClient client) {
+    public InterestChannelImpl(final EurekaRegistry<InstanceInfo> registry, TransportClient client, InterestChannelMetrics metrics) {
         super(STATES.Idle, client, 30000);
         this.registry = registry;
+        this.metrics = metrics;
+        metrics.incrementStateCounter(STATES.Idle);
         channelInterest = new MultipleInterests<>();  // blank channelInterest to start with
         channelInterestSubscriber = new ChannelInterestSubscriber(registry);
         channelInterestStream = createInterestStream();
@@ -100,8 +104,7 @@ import java.util.Map;
             public void call(Subscriber<? super Void> subscriber) {
                 if (STATES.Closed == state.get()) {
                     subscriber.onError(CHANNEL_CLOSED_EXCEPTION);
-                }
-                else if (state.compareAndSet(STATES.Idle, STATES.Open)) {
+                } else if (moveToState(STATES.Idle, STATES.Open)) {
                     logger.debug("First time registration");
                     channelInterestStream.subscribe(channelInterestSubscriber);
                 } else {
@@ -130,9 +133,11 @@ import java.util.Map;
 
     @Override
     protected void _close() {
-        state.set(STATES.Closed);
-        idVsInstance.clear();
-        super._close();
+        if (state.get() != STATES.Closed) {
+            moveToState(state.get(), STATES.Closed);
+            idVsInstance.clear();
+            super._close();
+        }
     }
 
     protected Observable<ChangeNotification<InstanceInfo>> createInterestStream() {
@@ -221,8 +226,7 @@ import java.util.Map;
             if (logger.isWarnEnabled()) {
                 logger.warn("Update notification received for non-existent instance id " + delta.getId());
             }
-        }
-        else if (delta.getVersion() <= cached.getVersion()) {
+        } else if (delta.getVersion() <= cached.getVersion()) {
             logger.debug("Skipping <= version of the delta. Cached: {}, Delta: {}", cached, delta);
         } else {
             InstanceInfo updatedInfo = cached.applyDelta(delta);
@@ -250,6 +254,15 @@ import java.util.Map;
         }
 
         return notification;
+    }
+
+    protected boolean moveToState(STATES from, STATES to) {
+        if (state.compareAndSet(from, to)) {
+            metrics.decrementStateCounter(from);
+            metrics.incrementStateCounter(to);
+            return true;
+        }
+        return false;
     }
 
     protected static class ChannelInterestSubscriber extends SafeSubscriber<ChangeNotification<InstanceInfo>> {

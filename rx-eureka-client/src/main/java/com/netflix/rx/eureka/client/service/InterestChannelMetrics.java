@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-package com.netflix.rx.eureka.server.service;
+package com.netflix.rx.eureka.client.service;
 
+import com.netflix.rx.eureka.client.service.InterestChannelImpl.STATES;
 import com.netflix.rx.eureka.metric.AbstractStateMachineMetrics;
-import com.netflix.rx.eureka.server.service.ReplicationChannelImpl.STATES;
 
 /**
  * @author Tomasz Bak
  */
-public class ReplicationChannelMetrics extends AbstractStateMachineMetrics<STATES> {
-
-    public ReplicationChannelMetrics() {
-        super("server", STATES.class);
+public class InterestChannelMetrics extends AbstractStateMachineMetrics<STATES> {
+    public InterestChannelMetrics() {
+        super("client", STATES.class);
     }
 }

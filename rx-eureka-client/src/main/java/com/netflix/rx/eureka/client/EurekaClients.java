@@ -71,7 +71,7 @@ public final class EurekaClients {
                         TransportClient writeClient = bufferedWrite == null ? null : TransportClients.newTcpRegistrationClient(inetResolver(bufferedWrite), codec);
                         TransportClient readClient = bufferedRead == null ? null : TransportClients.newTcpDiscoveryClient(inetResolver(bufferedRead), codec);
 
-                        subscriber.onNext(new EurekaClientImpl(writeClient, readClient, metricFactory.getRegistryMetrics()));
+                        subscriber.onNext(new EurekaClientImpl(writeClient, readClient, metricFactory));
                         subscriber.onCompleted();
                     }
                 })
@@ -83,11 +83,15 @@ public final class EurekaClients {
      *
      * TODO: we keep discovery connection open to the write cluster for read cluster info update. We should implement more sophisticated resolver that can switch to read cluster back and forth.
      */
-    public static Observable<EurekaClient> forRegistrationAndDiscovery(final ServerResolver<InetSocketAddress> writeClusterResolver, String eurekaReadClusterVip) {
+    public static Observable<EurekaClient> forRegistrationAndDiscovery(final ServerResolver<InetSocketAddress> writeClusterResolver, String eurekaReadClusterVip, EurekaClientMetricFactory metricFactory) {
         return forRegistrationAndDiscovery(
                 writeClusterResolver,
-                EurekaServerResolver.fromVip(writeClusterResolver, eurekaReadClusterVip, new Protocol(EurekaTransports.DEFAULT_DISCOVERY_PORT, ProtocolType.TcpDiscovery))
+                EurekaServerResolver.fromVip(writeClusterResolver, eurekaReadClusterVip, new Protocol(EurekaTransports.DEFAULT_DISCOVERY_PORT, ProtocolType.TcpDiscovery), metricFactory)
         );
+    }
+
+    public static Observable<EurekaClient> forRegistrationAndDiscovery(final ServerResolver<InetSocketAddress> writeClusterResolver, String eurekaReadClusterVip) {
+        return forRegistrationAndDiscovery(writeClusterResolver, eurekaReadClusterVip, EurekaClientMetricFactory.clientMetrics());
     }
 
     /**
@@ -103,7 +107,7 @@ public final class EurekaClients {
                     public void call(Subscriber<? super EurekaClient> subscriber) {
                         TransportClient writeClient = bufferedWrite == null ? null : TransportClients.newTcpRegistrationClient(inetResolver(bufferedWrite));
 
-                        subscriber.onNext(new EurekaClientImpl(writeClient, null, EurekaClientMetricFactory.clientMetrics().getRegistryMetrics()));
+                        subscriber.onNext(new EurekaClientImpl(writeClient, null, EurekaClientMetricFactory.clientMetrics()));
                         subscriber.onCompleted();
                     }
                 })
@@ -113,7 +117,7 @@ public final class EurekaClients {
     /**
      * TODO: right now this does not work, as internally we try to connect to registration channel as well
      */
-    public static <A extends SocketAddress> Observable<EurekaClient> forDiscovery(ServerResolver<A> readClusterResolver) {
+    public static <A extends SocketAddress> Observable<EurekaClient> forDiscovery(ServerResolver<A> readClusterResolver, final EurekaClientMetricFactory metricFactory) {
         final BufferedServerResolver<A> bufferedRead = readClusterResolver == null ? null : new BufferedServerResolver<>(readClusterResolver);
 
         return Observable.concat(
@@ -123,11 +127,15 @@ public final class EurekaClients {
                     public void call(Subscriber<? super EurekaClient> subscriber) {
                         TransportClient readClient = bufferedRead == null ? null : TransportClients.newTcpDiscoveryClient(inetResolver(bufferedRead));
 
-                        subscriber.onNext(new EurekaClientImpl(null, readClient, EurekaClientMetricFactory.clientMetrics().getRegistryMetrics()));
+                        subscriber.onNext(new EurekaClientImpl(null, readClient, metricFactory));
                         subscriber.onCompleted();
                     }
                 })
         );
+    }
+
+    public static <A extends SocketAddress> Observable<EurekaClient> forDiscovery(ServerResolver<A> readClusterResolver) {
+        return forDiscovery(readClusterResolver, EurekaClientMetricFactory.clientMetrics());
     }
 
     public static Observable<EurekaClient> forRegistrationAndDiscovery(String writeClusterDomainName, String readClusterDomainName) {

@@ -1,5 +1,6 @@
 package com.netflix.rx.eureka.client.service;
 
+import com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory;
 import com.netflix.rx.eureka.client.transport.TransportClient;
 import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
@@ -15,25 +16,22 @@ public class EurekaServiceImpl implements EurekaService {
     private final EurekaRegistry<InstanceInfo> registry; /*Null for write server only service*/
     private final TransportClient readServerClient; /*Null for write server only service*/
     private final TransportClient writeServerClient; /*Null for read server only service*/
+    private final EurekaClientMetricFactory metricFactory;
 
-    protected EurekaServiceImpl(EurekaRegistry<InstanceInfo> registry, TransportClient writeServerClient, TransportClient readServerClient) {
+    protected EurekaServiceImpl(EurekaRegistry<InstanceInfo> registry, TransportClient writeServerClient,
+                                TransportClient readServerClient, EurekaClientMetricFactory metricFactory) {
         this.registry = registry;
         this.writeServerClient = writeServerClient;
         this.readServerClient = readServerClient;
+        this.metricFactory = metricFactory;
     }
 
-    public static EurekaService forReadServer(EurekaRegistry<InstanceInfo> registry, TransportClient client) {
-        return new EurekaServiceImpl(registry, null, client);
+    public static EurekaService forReadServer(EurekaRegistry<InstanceInfo> registry, TransportClient client, EurekaClientMetricFactory metricFactory) {
+        return new EurekaServiceImpl(registry, null, client, metricFactory);
     }
 
-    public static EurekaService forWriteServer(TransportClient client) {
-        return new EurekaServiceImpl(null, client, null);
-    }
-
-    public static EurekaService forReadAndWriteServer(EurekaRegistry<InstanceInfo> registry,
-                                                      TransportClient readServerClient,
-                                                      TransportClient writeServerClient) {
-        return new EurekaServiceImpl(registry, writeServerClient, readServerClient);
+    public static EurekaService forWriteServer(TransportClient client, EurekaClientMetricFactory metricFactory) {
+        return new EurekaServiceImpl(null, client, null, metricFactory);
     }
 
     /**
@@ -46,7 +44,7 @@ public class EurekaServiceImpl implements EurekaService {
      */
     @Override
     public InterestChannel newInterestChannel() {
-        return new InterestChannelInvoker(new InterestChannelImpl(registry, readServerClient));
+        return new InterestChannelInvoker(new InterestChannelImpl(registry, readServerClient, metricFactory.getInterestChannelMetrics()));
     }
 
 
@@ -60,7 +58,7 @@ public class EurekaServiceImpl implements EurekaService {
      */
     @Override
     public RegistrationChannel newRegistrationChannel() {
-        return new RegistrationChannelInvoker(new RegistrationChannelImpl(writeServerClient));
+        return new RegistrationChannelInvoker(new RegistrationChannelImpl(writeServerClient, metricFactory.getRegistrationChannelMetrics()));
     }
 
     @Override
