@@ -36,6 +36,7 @@ import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Func1;
 
+import static com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory.clientMetrics;
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.*;
@@ -69,12 +70,12 @@ public class InterestChannelImplTest {
 
         @Override
         protected void before() throws Throwable {
-            registry = new EurekaRegistryImpl(EurekaClientMetricFactory.clientMetrics().getRegistryMetrics());
+            registry = new EurekaRegistryImpl(clientMetrics().getRegistryMetrics());
             when(serverConnection.sendAcknowledgment()).thenReturn(Observable.<Void>empty());
             when(serverConnection.sendWithAck(Mockito.anyObject())).thenReturn(Observable.<Void>empty());
             when(transportClient.connect()).thenReturn(Observable.from(serverConnection));
 
-            channel = new InterestChannelImpl(registry, transportClient);
+            channel = new InterestChannelImpl(registry, transportClient, clientMetrics().getInterestChannelMetrics());
 
             sampleInterestZuul = SampleInterest.ZuulApp.build();
             sampleAddMessagesZuul = SampleAddInstance.newMessages(SampleAddInstance.ZuulAdd, 10);

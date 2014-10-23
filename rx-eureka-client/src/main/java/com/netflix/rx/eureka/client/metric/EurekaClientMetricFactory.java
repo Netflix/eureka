@@ -19,6 +19,8 @@ package com.netflix.rx.eureka.client.metric;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import com.netflix.rx.eureka.client.service.InterestChannelMetrics;
+import com.netflix.rx.eureka.client.service.RegistrationChannelMetrics;
 import com.netflix.rx.eureka.client.transport.EurekaClientConnectionMetrics;
 import com.netflix.rx.eureka.registry.EurekaRegistryMetrics;
 
@@ -35,13 +37,21 @@ public class EurekaClientMetricFactory {
 
     private final EurekaClientConnectionMetrics discoveryServerConnectionMetrics;
 
+    private final RegistrationChannelMetrics registrationChannelMetrics;
+
+    private final InterestChannelMetrics interestChannelMetrics;
+
     @Inject
     public EurekaClientMetricFactory(EurekaRegistryMetrics registryMetrics,
                                      @Named("registration") EurekaClientConnectionMetrics registrationServerConnectionMetrics,
-                                     @Named("discovery") EurekaClientConnectionMetrics discoveryServerConnectionMetrics) {
+                                     @Named("discovery") EurekaClientConnectionMetrics discoveryServerConnectionMetrics,
+                                     RegistrationChannelMetrics registrationChannelMetrics,
+                                     InterestChannelMetrics interestChannelMetrics) {
         this.registryMetrics = registryMetrics;
         this.registrationServerConnectionMetrics = registrationServerConnectionMetrics;
         this.discoveryServerConnectionMetrics = discoveryServerConnectionMetrics;
+        this.registrationChannelMetrics = registrationChannelMetrics;
+        this.interestChannelMetrics = interestChannelMetrics;
     }
 
     public EurekaRegistryMetrics getRegistryMetrics() {
@@ -56,6 +66,14 @@ public class EurekaClientMetricFactory {
         return discoveryServerConnectionMetrics;
     }
 
+    public RegistrationChannelMetrics getRegistrationChannelMetrics() {
+        return registrationChannelMetrics;
+    }
+
+    public InterestChannelMetrics getInterestChannelMetrics() {
+        return interestChannelMetrics;
+    }
+
     public static EurekaClientMetricFactory clientMetrics() {
         if (INSTANCE == null) {
             synchronized (EurekaClientMetricFactory.class) {
@@ -68,7 +86,14 @@ public class EurekaClientMetricFactory {
                 EurekaClientConnectionMetrics discoveryServerConnectionMetrics = new EurekaClientConnectionMetrics("discovery");
                 discoveryServerConnectionMetrics.bindMetrics();
 
-                INSTANCE = new EurekaClientMetricFactory(registryMetrics, registrationServerConnectionMetrics, discoveryServerConnectionMetrics);
+                RegistrationChannelMetrics registrationChannelMetrics = new RegistrationChannelMetrics();
+                registrationChannelMetrics.bindMetrics();
+
+                InterestChannelMetrics interestChannelMetrics = new InterestChannelMetrics();
+                interestChannelMetrics.bindMetrics();
+
+                INSTANCE = new EurekaClientMetricFactory(registryMetrics, registrationServerConnectionMetrics,
+                        discoveryServerConnectionMetrics, registrationChannelMetrics, interestChannelMetrics);
             }
         }
         return INSTANCE;

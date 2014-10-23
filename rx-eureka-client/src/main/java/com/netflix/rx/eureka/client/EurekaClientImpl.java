@@ -21,6 +21,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import java.net.InetSocketAddress;
 
+import com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory;
 import com.netflix.rx.eureka.client.service.EurekaClientRegistry;
 import com.netflix.rx.eureka.client.transport.TransportClient;
 import com.netflix.rx.eureka.client.transport.TransportClients;
@@ -28,7 +29,6 @@ import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interest;
 import com.netflix.rx.eureka.interests.Interests;
 import com.netflix.rx.eureka.registry.EurekaRegistry;
-import com.netflix.rx.eureka.registry.EurekaRegistryMetrics;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.transport.EurekaTransports.Codec;
 import rx.Observable;
@@ -48,23 +48,23 @@ public class EurekaClientImpl extends EurekaClient {
         this.registrationHandler = registrationHandler;
     }
 
-    public EurekaClientImpl(TransportClient writeClient, TransportClient readClient, EurekaRegistryMetrics registryMetrics) {
-        this(new EurekaClientRegistry(readClient, registryMetrics), new RegistrationHandlerImpl(writeClient));
+    public EurekaClientImpl(TransportClient writeClient, TransportClient readClient, EurekaClientMetricFactory metricFactory) {
+        this(new EurekaClientRegistry(readClient, metricFactory), new RegistrationHandlerImpl(writeClient, metricFactory));
     }
 
     @Inject
     public EurekaClientImpl(@Named(READ_SERVER_RESOLVER_NAME) ServerResolver<InetSocketAddress> readServerResolver,
                             @Named(WRITE_SERVER_RESOLVER_NAME) ServerResolver<InetSocketAddress> writeServerResolver,
-                            EurekaRegistryMetrics registryMetrics) {
+                            EurekaClientMetricFactory metricFactory) {
         //TODO: Default to avro as we are always going to use avro by default. Today it expects avro schema in CP.
-        this(readServerResolver, writeServerResolver, Codec.Avro, registryMetrics);
+        this(readServerResolver, writeServerResolver, Codec.Avro, metricFactory);
     }
 
     public EurekaClientImpl(ServerResolver<InetSocketAddress> readServerResolver,
                             ServerResolver<InetSocketAddress> writeServerResolver,
                             Codec codec,
-                            EurekaRegistryMetrics registryMetrics) {
-        this(TransportClients.newTcpRegistrationClient(writeServerResolver, codec), TransportClients.newTcpDiscoveryClient(readServerResolver, codec), registryMetrics);
+                            EurekaClientMetricFactory metricFactory) {
+        this(TransportClients.newTcpRegistrationClient(writeServerResolver, codec), TransportClients.newTcpDiscoveryClient(readServerResolver, codec), metricFactory);
     }
 
     @Override

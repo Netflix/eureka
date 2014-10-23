@@ -30,13 +30,17 @@ import rx.functions.Func1;
 
     protected enum STATES {Idle, Registered, Closed}
 
-    public RegistrationChannelImpl(TransportClient transportClient) {
+    private final RegistrationChannelMetrics metrics;
+
+    public RegistrationChannelImpl(TransportClient transportClient, RegistrationChannelMetrics metrics) {
         super(STATES.Idle, transportClient, 30000);
+        this.metrics = metrics;
+        metrics.incrementStateCounter(STATES.Idle);
     }
 
     @Override
     public Observable<Void> register(final InstanceInfo instanceInfo) {
-        if (!state.compareAndSet(STATES.Idle, STATES.Registered)) {// State check. Only register if the state is Idle.
+        if (!moveToState(STATES.Idle, STATES.Registered)) {// State check. Only register if the state is Idle.
             STATES currentState = state.get();
             switch (currentState) {
                 case Registered:
@@ -78,22 +82,31 @@ import rx.functions.Func1;
 
     @Override
     public Observable<Void> unregister() {
-        STATES currentState = state.get();
-        switch (currentState) {
-            case Idle:
+        if (!moveToState(STATES.Registered, STATES.Closed)) {
+            STATES currentState = state.get();
+            if (currentState == STATES.Idle) {
                 return Observable.error(INSTANCE_NOT_REGISTERED_EXCEPTION);
-            case Registered:
-                //TODO: Need to serialize register -> update -> unregister. With this code both they can be interleaved
-                return connect().switchMap(new Func1<ServerConnection, Observable<? extends Void>>() {
-                    @Override
-                    public Observable<? extends Void> call(ServerConnection connection) {
-                        return connection.sendWithAck(new Unregister());
-                    }
-                });
-            case Closed:
+            }
+            if (currentState == STATES.Closed) {
                 return Observable.error(CHANNEL_CLOSED_EXCEPTION);
-            default:
-                return Observable.error(new IllegalStateException("Unrecognized channel state: " + currentState));
+            }
+            return Observable.error(new IllegalStateException("Unrecognized channel state: " + currentState));
         }
+        //TODO: Need to serialize register -> update -> unregister. With this code both they can be interleaved
+        return connect().switchMap(new Func1<ServerConnection, Observable<? extends Void>>() {
+            @Override
+            public Observable<? extends Void> call(ServerConnection connection) {
+                return connection.sendWithAck(new Unregister());
+            }
+        });
+    }
+
+    protected boolean moveToState(STATES from, STATES to) {
+        if (state.compareAndSet(from, to)) {
+            metrics.decrementStateCounter(from);
+            metrics.incrementStateCounter(to);
+            return true;
+        }
+        return false;
     }
 }

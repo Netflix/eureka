@@ -1,5 +1,6 @@
 package com.netflix.rx.eureka.client;
 
+import com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory;
 import com.netflix.rx.eureka.client.service.EurekaServiceImpl;
 import com.netflix.rx.eureka.client.transport.TransportClient;
 import com.netflix.rx.eureka.registry.InstanceInfo;
@@ -24,8 +25,8 @@ public class RegistrationHandlerImpl implements RegistrationHandler {
     private final ConcurrentHashMap<String, RegistrationChannel> instanceIdVsChannel;
     private volatile boolean shutdown;
 
-    public RegistrationHandlerImpl(TransportClient writeServerClient) {
-        clientService = EurekaServiceImpl.forWriteServer(writeServerClient);
+    public RegistrationHandlerImpl(TransportClient writeServerClient, EurekaClientMetricFactory metricFactory) {
+        clientService = EurekaServiceImpl.forWriteServer(writeServerClient, metricFactory);
         instanceIdVsChannel = new ConcurrentHashMap<>();
     }
 

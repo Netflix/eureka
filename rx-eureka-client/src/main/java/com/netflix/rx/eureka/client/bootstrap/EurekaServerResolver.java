@@ -23,6 +23,7 @@ import com.netflix.rx.eureka.client.EurekaClient;
 import com.netflix.rx.eureka.client.EurekaClients;
 import com.netflix.rx.eureka.client.ServerResolver;
 import com.netflix.rx.eureka.client.ServerResolver.ServerEntry.Action;
+import com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory;
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interest;
 import com.netflix.rx.eureka.interests.Interests;
@@ -43,10 +44,12 @@ public abstract class EurekaServerResolver implements ServerResolver<InetSocketA
 
     private final ServerResolver<InetSocketAddress> serverResolver;
     private final Protocol protocol;
+    private final EurekaClientMetricFactory metricFactory;
 
-    protected EurekaServerResolver(ServerResolver<InetSocketAddress> readClusterResolver, Protocol protocol) {
+    protected EurekaServerResolver(ServerResolver<InetSocketAddress> readClusterResolver, Protocol protocol, EurekaClientMetricFactory metricFactory) {
         this.serverResolver = readClusterResolver;
         this.protocol = protocol;
+        this.metricFactory = metricFactory;
     }
 
     protected abstract Interest<InstanceInfo> resolverInterests();
@@ -54,7 +57,7 @@ public abstract class EurekaServerResolver implements ServerResolver<InetSocketA
     @Override
     public Observable<ServerEntry<InetSocketAddress>> resolve() {
         final AtomicReference<EurekaClient> eurekaClientRef = new AtomicReference<>();
-        return EurekaClients.forDiscovery(serverResolver)
+        return EurekaClients.forDiscovery(serverResolver, metricFactory)
                 .take(1)
                 .doOnNext(new Action1<EurekaClient>() {
                     @Override
@@ -105,8 +108,8 @@ public abstract class EurekaServerResolver implements ServerResolver<InetSocketA
     public void close() {
     }
 
-    public static EurekaServerResolver fromVip(ServerResolver<InetSocketAddress> serverResolver, final String vip, Protocol protocol) {
-        return new EurekaServerResolver(serverResolver, protocol) {
+    public static EurekaServerResolver fromVip(ServerResolver<InetSocketAddress> serverResolver, final String vip, Protocol protocol, EurekaClientMetricFactory metricFactory) {
+        return new EurekaServerResolver(serverResolver, protocol,metricFactory) {
             @Override
             protected Interest<InstanceInfo> resolverInterests() {
                 return Interests.forVip(vip);
