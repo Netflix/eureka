@@ -1215,7 +1215,7 @@ public class DiscoveryClient implements LookupService {
             int registryFetchIntervalSeconds = clientConfig.getRegistryFetchIntervalSeconds();
             scheduler.scheduleWithFixedDelay(
                     new TimedSupervisorTask(
-                            cacheRefreshExecutor, registryFetchIntervalSeconds, new CacheRefreshThread()),
+                            "cacheRefresh", cacheRefreshExecutor, registryFetchIntervalSeconds, new CacheRefreshThread()),
                     registryFetchIntervalSeconds,
                     registryFetchIntervalSeconds, TimeUnit.SECONDS);
         }
@@ -1227,7 +1227,7 @@ public class DiscoveryClient implements LookupService {
             // Heartbeat timer
             scheduler.scheduleWithFixedDelay(
                     new TimedSupervisorTask(
-                            heartbeatExecutor, renewalIntervalInSecs, new HeartbeatThread()),
+                            "heartbeat", heartbeatExecutor, renewalIntervalInSecs, new HeartbeatThread()),
                     renewalIntervalInSecs,
                     renewalIntervalInSecs, TimeUnit.SECONDS);
 
