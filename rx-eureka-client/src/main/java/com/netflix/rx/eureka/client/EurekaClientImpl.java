@@ -89,7 +89,7 @@ public class EurekaClientImpl extends EurekaClient {
 
     @Override
     public Observable<ChangeNotification<InstanceInfo>> forApplication(String appName) {
-        return forInterest(Interests.forApplication(appName));
+        return forInterest(Interests.forApplications(appName));
     }
 
     @Override

@@ -56,8 +56,8 @@ public class EurekaClientTest {
         @Override
         protected void before() throws Throwable {
             interestAll = Interests.forFullRegistry();
-            interestDiscovery = Interests.forVip(SampleInstanceInfo.DiscoveryServer.build().getVipAddress());
-            interestZuul = Interests.forVip(SampleInstanceInfo.ZuulServer.build().getVipAddress());
+            interestDiscovery = Interests.forVips(SampleInstanceInfo.DiscoveryServer.build().getVipAddress());
+            interestZuul = Interests.forVips(SampleInstanceInfo.ZuulServer.build().getVipAddress());
 
             discoveryRegistry = Arrays.asList(
                     SampleChangeNotification.DiscoveryAdd.newNotification(),

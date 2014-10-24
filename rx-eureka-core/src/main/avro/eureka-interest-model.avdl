@@ -1,22 +1,38 @@
 @namespace("com.netflix.rx.eureka.interests")
 protocol EurekaInterestModel {
 
+    @namespace("com.netflix.rx.eureka.interests.Interest$")
+    enum Operator {
+        Equals, Like
+    }
     record ApplicationInterest {
         string applicationName;
+        union {
+            null,
+            com.netflix.rx.eureka.interests.Interest$.Operator
+        } operator;
     }
 
     record FullRegistryInterest {
     }
 
-    record VipsInterest {
-        @java-class("java.util.HashSet") array<string> vips;
+    record VipInterest {
+        string vip;
+        union {
+            null,
+            com.netflix.rx.eureka.interests.Interest$.Operator
+        } operator;
     }
 
     record InstanceInterest {
         string instanceId;
+        union {
+            null,
+            com.netflix.rx.eureka.interests.Interest$.Operator
+        } operator;
     }
 
     record MultipleInterests {
-        array< union {ApplicationInterest, FullRegistryInterest, VipsInterest, InstanceInterest} > interests;
+        array< union {ApplicationInterest, FullRegistryInterest, VipInterest, InstanceInterest} > interests;
     }
 }

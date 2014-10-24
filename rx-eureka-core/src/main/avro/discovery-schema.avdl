@@ -64,7 +64,7 @@ protocol DiscoveryProtocol {
             union {
                 com.netflix.rx.eureka.interests.ApplicationInterest,
                 com.netflix.rx.eureka.interests.FullRegistryInterest,
-                com.netflix.rx.eureka.interests.VipsInterest,
+                com.netflix.rx.eureka.interests.VipInterest,
                 com.netflix.rx.eureka.interests.InstanceInterest
             }
         > interests;

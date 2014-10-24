@@ -27,25 +27,25 @@ public enum SampleInterest {
     ZuulVip() {
         @Override
         public Interest<InstanceInfo> build() {
-            return Interests.forVip(SampleInstanceInfo.ZuulServer.build().getVipAddress());
+            return Interests.forVips(SampleInstanceInfo.ZuulServer.build().getVipAddress());
         }
     },
     ZuulApp() {
         @Override
         public Interest<InstanceInfo> build() {
-            return Interests.forApplication(SampleInstanceInfo.ZuulServer.build().getApp());
+            return Interests.forApplications(SampleInstanceInfo.ZuulServer.build().getApp());
         }
     },
     DiscoveryVip() {
         @Override
         public Interest<InstanceInfo> build() {
-            return Interests.forApplication(SampleInstanceInfo.DiscoveryServer.build().getVipAddress());
+            return Interests.forApplications(SampleInstanceInfo.DiscoveryServer.build().getVipAddress());
         }
     },
     DiscoveryApp() {
         @Override
         public Interest<InstanceInfo> build() {
-            return Interests.forApplication(SampleInstanceInfo.DiscoveryServer.build().getApp());
+            return Interests.forApplications(SampleInstanceInfo.DiscoveryServer.build().getApp());
         }
     },
     MultipleApps() {

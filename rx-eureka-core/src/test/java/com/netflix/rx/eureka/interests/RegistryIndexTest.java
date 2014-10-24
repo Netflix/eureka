@@ -48,7 +48,7 @@ public class RegistryIndexTest {
 
     @Test
     public void testCompositeIndex() throws Exception {
-        doTestWithIndex(forSome(forInstance(discoveryServer.getId()), forInstance(zuulServer.getId())));
+        doTestWithIndex(forSome(forInstances(discoveryServer.getId()), forInstances(zuulServer.getId())));
     }
 
     private void doTestWithIndex(Interest<InstanceInfo> interest) {

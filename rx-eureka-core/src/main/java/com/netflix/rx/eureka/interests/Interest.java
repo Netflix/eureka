@@ -9,5 +9,7 @@ package com.netflix.rx.eureka.interests;
  */
 public abstract class Interest<T> {
 
+    public enum Operator {Equals, Like}
+
     public abstract boolean matches(T data);
 }

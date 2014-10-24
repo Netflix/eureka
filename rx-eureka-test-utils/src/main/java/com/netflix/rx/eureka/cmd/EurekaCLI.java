@@ -39,6 +39,7 @@ import com.netflix.rx.eureka.client.transport.TransportClient;
 import com.netflix.rx.eureka.client.transport.TransportClients;
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interest;
+import com.netflix.rx.eureka.interests.Interest.Operator;
 import com.netflix.rx.eureka.interests.Interests;
 import com.netflix.rx.eureka.registry.Delta;
 import com.netflix.rx.eureka.registry.Delta.Builder;
@@ -437,7 +438,7 @@ public class EurekaCLI {
     }
 
     private void listenForInterest(String[] args) {
-        listenForRegistry(Interests.forVips(args));
+        listenForRegistry(Interests.forVips(Operator.Like, args));
     }
 
     private void listenForRegistry(final Interest<InstanceInfo> interest) {

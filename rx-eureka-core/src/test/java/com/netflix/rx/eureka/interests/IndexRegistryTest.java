@@ -31,8 +31,8 @@ public class IndexRegistryTest {
 
         @Override
         protected void before() throws Throwable {
-            interest1 = Interests.forInstance("abc");
-            interest2 = Interests.forInstance("123");
+            interest1 = Interests.forInstances("abc");
+            interest2 = Interests.forInstances("123");
 
             indexRegistry = new ViewableIndexRegistry<>();
             indexRegistry.forInterest(
