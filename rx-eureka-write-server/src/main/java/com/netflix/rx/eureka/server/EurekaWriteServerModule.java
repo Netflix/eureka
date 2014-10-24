@@ -20,8 +20,9 @@ import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.netflix.rx.eureka.client.transport.EurekaClientConnectionMetrics;
 import com.netflix.rx.eureka.registry.EurekaRegistry;
+import com.netflix.rx.eureka.registry.EurekaRegistryImpl;
 import com.netflix.rx.eureka.registry.EurekaRegistryMetrics;
-import com.netflix.rx.eureka.server.audit.AuditedRegistry;
+import com.netflix.rx.eureka.server.audit.AuditServiceController;
 import com.netflix.rx.eureka.server.metric.WriteServerMetricFactory;
 import com.netflix.rx.eureka.server.replication.ReplicationService;
 import com.netflix.rx.eureka.server.service.InterestChannelMetrics;
@@ -62,7 +63,8 @@ public class EurekaWriteServerModule extends AbstractModule {
         }
         bind(SelfRegistrationService.class).to(WriteSelfRegistrationService.class).asEagerSingleton();
 
-        bind(EurekaRegistry.class).to(AuditedRegistry.class);
+        bind(EurekaRegistry.class).to(EurekaRegistryImpl.class).asEagerSingleton();
+        bind(AuditServiceController.class).asEagerSingleton();
 
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("registration")).toInstance(new ServoEventsListenerFactory("registration-rx-client-", "registration-rx-server-"));
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new ServoEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));

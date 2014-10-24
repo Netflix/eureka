@@ -16,6 +16,7 @@
 
 package com.netflix.rx.eureka.registry;
 
+import javax.inject.Inject;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
@@ -53,6 +54,7 @@ public class EurekaRegistryImpl implements EurekaRegistry<InstanceInfo> {
     private final IndexRegistry<InstanceInfo> indexRegistry;
     private final EurekaRegistryMetrics metrics;
 
+    @Inject
     public EurekaRegistryImpl(EurekaRegistryMetrics metrics) {
         this.metrics = metrics;
         this.metrics.setRegistrySizeMonitor(new Callable<Integer>() {
