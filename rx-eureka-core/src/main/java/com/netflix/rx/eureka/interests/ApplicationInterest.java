@@ -1,5 +1,7 @@
 package com.netflix.rx.eureka.interests;
 
+import java.util.regex.Pattern;
+
 import com.netflix.rx.eureka.registry.InstanceInfo;
 
 /**
@@ -8,22 +10,42 @@ import com.netflix.rx.eureka.registry.InstanceInfo;
 public class ApplicationInterest extends Interest<InstanceInfo> {
 
     private final String applicationName;
+    private final Operator operator;
+
+    private volatile Pattern pattern;
 
     protected ApplicationInterest() {
         applicationName = null;
+        operator = null;
     }
 
     public ApplicationInterest(String applicationName) {
         this.applicationName = applicationName;
+        this.operator = Operator.Equals;
+    }
+
+    public ApplicationInterest(String applicationName, Operator operator) {
+        this.applicationName = applicationName;
+        this.operator = operator;
     }
 
     public String getApplicationName() {
         return applicationName;
     }
 
+    public Operator getOperator() {
+        return operator;
+    }
+
     @Override
     public boolean matches(InstanceInfo data) {
-        return applicationName.equals(data.getApp());
+        if (operator != Operator.Like) {
+            return applicationName.equals(data.getApp());
+        }
+        if (pattern == null) {
+            pattern = Pattern.compile(applicationName);
+        }
+        return pattern.matcher(data.getApp()).matches();
     }
 
     @Override
@@ -40,17 +62,22 @@ public class ApplicationInterest extends Interest<InstanceInfo> {
         if (applicationName != null ? !applicationName.equals(that.applicationName) : that.applicationName != null) {
             return false;
         }
+        if (operator != that.operator) {
+            return false;
+        }
 
         return true;
     }
 
     @Override
     public int hashCode() {
-        return applicationName != null ? applicationName.hashCode() : 0;
+        int result = applicationName != null ? applicationName.hashCode() : 0;
+        result = 31 * result + (operator != null ? operator.hashCode() : 0);
+        return result;
     }
 
     @Override
     public String toString() {
-        return "ApplicationInterest{applicationName='" + applicationName + '\'' + '}';
+        return "ApplicationInterest{applicationName='" + applicationName + '\'' + ", operator=" + operator + '}';
     }
 }

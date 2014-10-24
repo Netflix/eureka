@@ -126,7 +126,7 @@ public class InterestNotificationMultiplexerTest {
 
         InstanceController(InstanceInfo instance) {
             this.instance = instance;
-            interest = Interests.forInstance(instance.getId());
+            interest = Interests.forInstances(instance.getId());
             instanceSubject = ReplaySubject.create();
             addNotification = new ChangeNotification<>(Kind.Add, instance);
             modifyNotification = new ModifyNotification<>(instance, Collections.<Delta<?>>singleton(SampleDelta.StatusUp.build()));

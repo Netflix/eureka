@@ -103,7 +103,7 @@ public class EurekaRegistryImplTest {
         final List<String> returnedIds = new ArrayList<>();
 
         Observable<ChangeNotification<InstanceInfo>> interestStream =
-                registry.forInterest(Interests.forApplication(discovery1.getApp()));
+                registry.forInterest(Interests.forApplications(discovery1.getApp()));
 
         final CountDownLatch completionLatch = new CountDownLatch(1);
         interestStream.subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {

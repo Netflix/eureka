@@ -7,30 +7,30 @@ import com.netflix.rx.eureka.registry.InstanceInfo;
 /**
  * @author Nitesh Kant
  */
-public class InstanceInterest extends Interest<InstanceInfo> {
+public class VipInterest extends Interest<InstanceInfo> {
 
-    private final String instanceId;
+    private final String vip;
     private final Operator operator;
 
     private volatile Pattern pattern;
 
-    protected InstanceInterest() {
-        instanceId = null;
+    protected VipInterest() {
+        vip = null;
         operator = null;
     }
 
-    public InstanceInterest(String instanceId) {
-        this.instanceId = instanceId;
+    public VipInterest(String vip) {
+        this.vip = vip;
         this.operator = Operator.Equals;
     }
 
-    public InstanceInterest(String instanceId, Operator operator) {
-        this.instanceId = instanceId;
+    public VipInterest(String vip, Operator operator) {
+        this.vip = vip;
         this.operator = operator;
     }
 
-    public String getInstanceId() {
-        return instanceId;
+    public String getVip() {
+        return vip;
     }
 
     public Operator getOperator() {
@@ -40,12 +40,12 @@ public class InstanceInterest extends Interest<InstanceInfo> {
     @Override
     public boolean matches(InstanceInfo data) {
         if (operator != Operator.Like) {
-            return instanceId.equals(data.getId());
+            return vip.equals(data.getVipAddress());
         }
         if (pattern == null) {
-            pattern = Pattern.compile(instanceId);
+            pattern = Pattern.compile(vip);
         }
-        return pattern.matcher(data.getId()).matches();
+        return pattern.matcher(data.getVipAddress()).matches();
     }
 
     @Override
@@ -57,12 +57,12 @@ public class InstanceInterest extends Interest<InstanceInfo> {
             return false;
         }
 
-        InstanceInterest that = (InstanceInterest) o;
+        VipInterest that = (VipInterest) o;
 
-        if (instanceId != null ? !instanceId.equals(that.instanceId) : that.instanceId != null) {
+        if (operator != that.operator) {
             return false;
         }
-        if (operator != that.operator) {
+        if (vip != null ? !vip.equals(that.vip) : that.vip != null) {
             return false;
         }
 
@@ -71,13 +71,13 @@ public class InstanceInterest extends Interest<InstanceInfo> {
 
     @Override
     public int hashCode() {
-        int result = instanceId != null ? instanceId.hashCode() : 0;
+        int result = vip != null ? vip.hashCode() : 0;
         result = 31 * result + (operator != null ? operator.hashCode() : 0);
         return result;
     }
 
     @Override
     public String toString() {
-        return "InstanceInterest{instanceId='" + instanceId + '\'' + ", operator=" + operator + '}';
+        return "VipInterest{operator=" + operator + ", vip='" + vip + '\'' + '}';
     }
 }

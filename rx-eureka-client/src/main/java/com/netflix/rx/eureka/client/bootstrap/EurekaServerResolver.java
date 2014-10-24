@@ -112,7 +112,7 @@ public abstract class EurekaServerResolver implements ServerResolver<InetSocketA
         return new EurekaServerResolver(serverResolver, protocol,metricFactory) {
             @Override
             protected Interest<InstanceInfo> resolverInterests() {
-                return Interests.forVip(vip);
+                return Interests.forVips(vip);
             }
         };
     }

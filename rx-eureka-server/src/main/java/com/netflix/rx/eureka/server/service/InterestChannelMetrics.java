@@ -27,7 +27,7 @@ import com.netflix.rx.eureka.interests.FullRegistryInterest;
 import com.netflix.rx.eureka.interests.InstanceInterest;
 import com.netflix.rx.eureka.interests.Interest;
 import com.netflix.rx.eureka.interests.MultipleInterests;
-import com.netflix.rx.eureka.interests.VipsInterest;
+import com.netflix.rx.eureka.interests.VipInterest;
 import com.netflix.rx.eureka.metric.AbstractStateMachineMetrics;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.server.service.InterestChannelImpl.STATES;
@@ -151,8 +151,8 @@ public class InterestChannelMetrics extends AbstractStateMachineMetrics<STATES> 
                     newInstances.add(((InstanceInterest) basicInterest).getInstanceId());
                 } else if (basicInterest instanceof ApplicationInterest) {
                     newApplications.add(((ApplicationInterest) basicInterest).getApplicationName());
-                } else if (basicInterest instanceof VipsInterest) {
-                    newVips.addAll(((VipsInterest) basicInterest).getVips());
+                } else if (basicInterest instanceof VipInterest) {
+                    newVips.add(((VipInterest) basicInterest).getVip());
                 } else if (basicInterest instanceof FullRegistryInterest) {
                     newFullRegistry = true;
                 }
