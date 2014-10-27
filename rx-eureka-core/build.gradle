@@ -38,15 +38,14 @@ jar {
         instruction 'Bundle-DocURL', 'https://github.com/Netflix/eureka'
         instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
     }
+    from("${projectDir}/build/classes/main") {
+        include("*.avpr")
+    }
 }
 
 // Avro schema processing
 
-task prepareOutputDir {
-    mkdir "build/classes/main"
-}
-
-task buildRegistrationSchema (type: JavaExec) {
+task buildRegistrationSchema (type: JavaExec, dependsOn: 'compileJava') {
     group = "Avro"
     description = "Process Avro IDL files and generate Avro schema documents for registration protocol"
 
@@ -58,7 +57,7 @@ task buildRegistrationSchema (type: JavaExec) {
             "build/classes/main/registration-schema.avpr"
     ]
 }
-task buildReplicationSchema (type: JavaExec) {
+task buildReplicationSchema (type: JavaExec, dependsOn: 'compileJava') {
     group = "Avro"
     description = "Process Avro IDL files and generate Avro schema documents for replication protocol"
 
@@ -70,7 +69,7 @@ task buildReplicationSchema (type: JavaExec) {
             "build/classes/main/replication-schema.avpr"
     ]
 }
-task buildDiscoverySchema (type: JavaExec) {
+task buildDiscoverySchema (type: JavaExec, dependsOn: 'compileJava') {
     group = "Avro"
     description = "Process Avro IDL files and generate Avro schema documents for discovery protocol"
 
@@ -82,7 +81,4 @@ task buildDiscoverySchema (type: JavaExec) {
             "build/classes/main/discovery-schema.avpr"
     ]
 }
-buildRegistrationSchema.dependsOn prepareOutputDir
-buildReplicationSchema.dependsOn prepareOutputDir
-buildDiscoverySchema.dependsOn prepareOutputDir
-build.dependsOn buildRegistrationSchema, buildReplicationSchema, buildDiscoverySchema
+jar.dependsOn buildRegistrationSchema, buildReplicationSchema, buildDiscoverySchema

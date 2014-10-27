@@ -57,7 +57,7 @@ public class TcpReplicationServer extends AbstractTcpServer {
                 .build()
                 .start();
 
-        logger.info("Starting TCP replication server on port {}...", server.getServerPort());
+        logger.info("Starting TCP replication server on port {} with {} encoding...", server.getServerPort(), config.getCodec());
     }
 
 }

@@ -73,6 +73,8 @@ public class EurekaCLI {
 
     private static final Pattern ALIAS_DEF_PATTERN = Pattern.compile("\\s*alias\\s+(\\w+)=(.*)");
 
+    private final Codec codec;
+
     private enum Status {NotStarted, Initiated, Streaming, Complete, Failed}
 
     private final ConsoleReader consoleReader;
@@ -84,7 +86,8 @@ public class EurekaCLI {
     private Status registrationStatus = Status.NotStarted;
     private Status registryFetchStatus = Status.NotStarted;
 
-    public EurekaCLI() throws IOException {
+    public EurekaCLI(Codec codec) throws IOException {
+        this.codec = codec;
         Terminal terminal = TerminalFactory.create();
         terminal.setEchoEnabled(false);
         consoleReader = new ConsoleReader(System.in, System.out, terminal);
@@ -295,12 +298,12 @@ public class EurekaCLI {
         StaticServerResolver<InetSocketAddress> registryServers = new StaticServerResolver<>();
         registryServers.addServer(writeHost, new Protocol(registrationPort, ProtocolType.TcpRegistration));
         TransportClient writeClient =
-                TransportClients.newTcpRegistrationClient(registryServers, Codec.Json);
+                TransportClients.newTcpRegistrationClient(registryServers, codec);
 
         StaticServerResolver<InetSocketAddress> discoveryServers = new StaticServerResolver<>();
         discoveryServers.addServer(readHost, new Protocol(discoveryPort, ProtocolType.TcpDiscovery));
         TransportClient readClient =
-                TransportClients.newTcpDiscoveryClient(discoveryServers, Codec.Json);
+                TransportClients.newTcpDiscoveryClient(discoveryServers, codec);
 
         eurekaClient = new EurekaClientImpl(writeClient, readClient, EurekaClientMetricFactory.clientMetrics());
 
@@ -542,6 +545,20 @@ public class EurekaCLI {
     }
 
     public static void main(String[] args) throws IOException {
-        new EurekaCLI().readExecutePrintLoop();
+        Codec codec = null;
+        switch (args.length) {
+            case 0:
+                codec = Codec.Avro;
+                break;
+            case 2:
+                if ("-c".equals(args[0])) {
+                    codec = Codec.valueOf(args[1]);
+                    break;
+                }
+            default:
+                System.err.println("ERROR: invalid command line parameters; expected none or '-c <codec_name>");
+                System.exit(-1);
+        }
+        new EurekaCLI(codec).readExecutePrintLoop();
     }
 }

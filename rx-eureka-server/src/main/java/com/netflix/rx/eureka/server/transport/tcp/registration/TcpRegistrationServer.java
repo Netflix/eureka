@@ -57,6 +57,6 @@ public class TcpRegistrationServer extends AbstractTcpServer {
                 .build()
                 .start();
 
-        logger.info("Starting TCP registration server on port {}...", server.getServerPort());
+        logger.info("Starting TCP registration server on port {} with {} encoding...", server.getServerPort(), config.getCodec());
     }
 }

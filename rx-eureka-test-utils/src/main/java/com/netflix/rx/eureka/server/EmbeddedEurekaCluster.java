@@ -31,6 +31,7 @@ import com.netflix.rx.eureka.server.ServerInstance.EurekaBridgeServerInstance;
 import com.netflix.rx.eureka.server.ServerInstance.EurekaReadServerInstance;
 import com.netflix.rx.eureka.server.ServerInstance.EurekaWriteServerInstance;
 import com.netflix.rx.eureka.server.WriteServerConfig.WriteServerConfigBuilder;
+import com.netflix.rx.eureka.transport.EurekaTransports.Codec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,6 +68,7 @@ public class EmbeddedEurekaCluster {
                     .withWriteServerPort(port)
                     .withReadServerPort(port + 1)
                     .withReplicationPort(port + 2)
+                    .withCodec(Codec.Json)
                     .build();
             ServerInstance instance = new EurekaWriteServerInstance(config, writeClusterResolver);
             writeInstances.add(instance);
@@ -85,6 +87,7 @@ public class EmbeddedEurekaCluster {
                     .withVipAddress(READ_SERVER_NAME)
                     .withDataCenterType(DataCenterType.Basic)
                     .withReadServerPort(port)
+                    .withCodec(Codec.Json)
                     .withWriteClusterRegistrationPort(WRITE_SERVER_PORTS_FROM)
                     .withWriteClusterDiscoveryPort(WRITE_SERVER_PORTS_FROM + 1)
                     .build();
@@ -102,6 +105,7 @@ public class EmbeddedEurekaCluster {
                      .withWriteServerPort(port)
                      .withReadServerPort(port + 1)  // explicitly set it to a different port to verify
                      .withReplicationPort(port + 2)  // explicitly set it to a different port to verify
+                     .withCodec(Codec.Json)
                      .withRefreshRateSec(30)
                      .build();
             ServerInstance instance = new EurekaBridgeServerInstance(config, writeClusterResolver);
