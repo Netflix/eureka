@@ -25,6 +25,8 @@ import com.netflix.rx.eureka.client.EurekaClient;
 import com.netflix.rx.eureka.registry.DataCenterInfo;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.registry.InstanceInfo.Builder;
+import com.netflix.rx.eureka.registry.NetworkAddresses;
+import com.netflix.rx.eureka.registry.NetworkAddresses.Preference;
 import com.netflix.rx.eureka.registry.datacenter.LocalDataCenterInfo;
 import com.netflix.rx.eureka.server.ReadServerConfig;
 import org.slf4j.Logger;
@@ -96,11 +98,18 @@ public class ReadSelfRegistrationService implements SelfRegistrationService {
                 HashSet<Integer> ports = new HashSet<Integer>();
                 ports.add(config.getDiscoveryPort());
 
+                String address = NetworkAddresses.select(dataCenterInfo.getAddresses(),
+                        Preference.Ipv4Only, Preference.Public, Preference.HostName);
+
+                HashSet<String> healthCheckUrls = new HashSet<String>();
+                healthCheckUrls.add("http://" + address + ':' + config.getWebAdminPort() + "/healthcheck");
+
                 return new Builder()
                         .withId(instanceId)
                         .withApp(config.getAppName())
                         .withVipAddress(config.getVipAddress())
                         .withPorts(ports)
+                        .withHealthCheckUrls(healthCheckUrls)
                         .withDataCenterInfo(dataCenterInfo)
                         .build();
             }

@@ -178,31 +178,63 @@ public class InstanceInfo {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof InstanceInfo)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof InstanceInfo)) {
+            return false;
+        }
 
         InstanceInfo that = (InstanceInfo) o;
 
-        if (app != null ? !app.equals(that.app) : that.app != null) return false;
-        if (appGroup != null ? !appGroup.equals(that.appGroup) : that.appGroup != null) return false;
-        if (asg != null ? !asg.equals(that.asg) : that.asg != null) return false;
-        if (dataCenterInfo != null ? !dataCenterInfo.equals(that.dataCenterInfo) : that.dataCenterInfo != null)
+        if (app != null ? !app.equals(that.app) : that.app != null) {
             return false;
-        if (healthCheckUrls != null ? !healthCheckUrls.equals(that.healthCheckUrls) : that.healthCheckUrls != null)
+        }
+        if (appGroup != null ? !appGroup.equals(that.appGroup) : that.appGroup != null) {
             return false;
-        if (homePageUrl != null ? !homePageUrl.equals(that.homePageUrl) : that.homePageUrl != null) return false;
-        if (hostname != null ? !hostname.equals(that.hostname) : that.hostname != null) return false;
-        if (id != null ? !id.equals(that.id) : that.id != null) return false;
-        if (ip != null ? !ip.equals(that.ip) : that.ip != null) return false;
-        if (ports != null ? !ports.equals(that.ports) : that.ports != null) return false;
-        if (securePorts != null ? !securePorts.equals(that.securePorts) : that.securePorts != null) return false;
-        if (secureVipAddress != null ? !secureVipAddress.equals(that.secureVipAddress) : that.secureVipAddress != null)
+        }
+        if (asg != null ? !asg.equals(that.asg) : that.asg != null) {
             return false;
-        if (status != that.status) return false;
-        if (statusPageUrl != null ? !statusPageUrl.equals(that.statusPageUrl) : that.statusPageUrl != null)
+        }
+        if (dataCenterInfo != null ? !dataCenterInfo.equals(that.dataCenterInfo) : that.dataCenterInfo != null) {
             return false;
-        if (version != null ? !version.equals(that.version) : that.version != null) return false;
-        if (vipAddress != null ? !vipAddress.equals(that.vipAddress) : that.vipAddress != null) return false;
+        }
+        if (healthCheckUrls != null ? !healthCheckUrls.equals(that.healthCheckUrls) : that.healthCheckUrls != null) {
+            return false;
+        }
+        if (homePageUrl != null ? !homePageUrl.equals(that.homePageUrl) : that.homePageUrl != null) {
+            return false;
+        }
+        if (hostname != null ? !hostname.equals(that.hostname) : that.hostname != null) {
+            return false;
+        }
+        if (id != null ? !id.equals(that.id) : that.id != null) {
+            return false;
+        }
+        if (ip != null ? !ip.equals(that.ip) : that.ip != null) {
+            return false;
+        }
+        if (ports != null ? !ports.equals(that.ports) : that.ports != null) {
+            return false;
+        }
+        if (securePorts != null ? !securePorts.equals(that.securePorts) : that.securePorts != null) {
+            return false;
+        }
+        if (secureVipAddress != null ? !secureVipAddress.equals(that.secureVipAddress) : that.secureVipAddress != null) {
+            return false;
+        }
+        if (status != that.status) {
+            return false;
+        }
+        if (statusPageUrl != null ? !statusPageUrl.equals(that.statusPageUrl) : that.statusPageUrl != null) {
+            return false;
+        }
+        if (version != null ? !version.equals(that.version) : that.version != null) {
+            return false;
+        }
+        if (vipAddress != null ? !vipAddress.equals(that.vipAddress) : that.vipAddress != null) {
+            return false;
+        }
 
         return true;
     }
@@ -442,12 +474,22 @@ public class InstanceInfo {
         }
 
         public Builder withPorts(HashSet<Integer> ports) {
-            this.ports = ports;
+            if (ports == null || ports.isEmpty()) {
+                this.ports = null;
+            } else {
+                this.ports = new HashSet<>(ports);
+                this.ports.remove(null);
+            }
             return this;
         }
 
         public Builder withSecurePorts(HashSet<Integer> securePorts) {
-            this.securePorts = securePorts;
+            if (securePorts == null || securePorts.isEmpty()) {
+                this.securePorts = null;
+            } else {
+                this.securePorts = new HashSet<>(securePorts);
+                this.securePorts.remove(null);
+            }
             return this;
         }
 
@@ -467,7 +509,12 @@ public class InstanceInfo {
         }
 
         public Builder withHealthCheckUrls(HashSet<String> healthCheckUrls) {
-            this.healthCheckUrls = healthCheckUrls;
+            if (healthCheckUrls == null || healthCheckUrls.isEmpty()) {
+                this.healthCheckUrls = null;
+            } else {
+                this.healthCheckUrls = new HashSet<>(healthCheckUrls);
+                this.healthCheckUrls.remove(null); // Data cleanup
+            }
             return this;
         }
 
@@ -481,6 +528,9 @@ public class InstanceInfo {
                 this.version = -1l;
             }
 
+            if (id == null) {
+                throw new IllegalArgumentException("InstanceInfo id cannot be null");
+            }
             InstanceInfo result = new InstanceInfo(this.id, this.version);
             result.appGroup = this.appGroup;
             result.app = this.app;

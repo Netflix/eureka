@@ -63,6 +63,9 @@ public abstract class EurekaBootstrapConfig {
     @Configuration("writeCluster.domainName")
     private String writeClusterDomainName;
 
+    @Configuration("netflix.platform.admin.resources.port")
+    private int webAdminPort = 8077;
+
     // For property injection
     protected EurekaBootstrapConfig() {
     }
@@ -126,6 +129,10 @@ public abstract class EurekaBootstrapConfig {
 
     public String getWriteClusterDomainName() {
         return writeClusterDomainName;
+    }
+
+    public int getWebAdminPort() {
+        return webAdminPort;
     }
 
     public abstract static class EurekaBootstrapConfigBuilder<C extends EurekaBootstrapConfig, B extends EurekaBootstrapConfigBuilder<C, B>> {
