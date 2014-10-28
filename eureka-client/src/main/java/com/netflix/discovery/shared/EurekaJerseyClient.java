@@ -29,6 +29,7 @@ import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import com.sun.jersey.client.apache4.config.ApacheHttpClient4Config;
 import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
+import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.ssl.SSLSocketFactory;
@@ -238,6 +239,19 @@ public final class EurekaJerseyClient {
             try {
                 jerseyClientConfig = clientConfig;
                 jerseyClientConfig.getClasses().add(DiscoveryJerseyProvider.class);
+                
+                if ("true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
+                    Object propertyConnectionManager = jerseyClientConfig
+                          .getProperty(ApacheHttpClient4Config.PROPERTY_CONNECTION_MANAGER);
+                    if (propertyConnectionManager != null && propertyConnectionManager instanceof ClientConnectionManager) {
+                        ClientConnectionManager connectionManager = (ClientConnectionManager) propertyConnectionManager;
+                        Scheme httpsScheme = connectionManager.getSchemeRegistry().getScheme("https");
+                        connectionManager.getSchemeRegistry().register(
+                                new Scheme("https", httpsScheme == null ? 443 : httpsScheme.getDefaultPort(),
+                                SSLSocketFactory.getSystemSocketFactory()));
+                    }
+                }
+                
                 apacheHttpClient = ApacheHttpClient4.create(jerseyClientConfig);
                 HttpParams params = apacheHttpClient.getClientHandler().getHttpClient().getParams();
 
