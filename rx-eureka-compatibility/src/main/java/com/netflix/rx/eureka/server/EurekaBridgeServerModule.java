@@ -46,7 +46,8 @@ public class EurekaBridgeServerModule extends AbstractModule {
 
         bind(EurekaRegistry.class).to(EurekaBridgeRegistry.class);
 
-        bind(MetricEventsListenerFactory.class).toInstance(new ServoEventsListenerFactory());
+        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new ServoEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
+        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("replication")).toInstance(new ServoEventsListenerFactory("replication-rx-client-", "replication-rx-server-"));
         bind(TcpDiscoveryServer.class).asEagerSingleton();
         bind(TcpReplicationServer.class).asEagerSingleton();
 

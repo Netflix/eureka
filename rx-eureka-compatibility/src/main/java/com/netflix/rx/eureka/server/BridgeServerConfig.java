@@ -2,6 +2,7 @@ package com.netflix.rx.eureka.server;
 
 import com.netflix.governator.annotations.Configuration;
 import com.netflix.rx.eureka.registry.datacenter.LocalDataCenterInfo;
+import com.netflix.rx.eureka.transport.EurekaTransports.Codec;
 
 /**
  * @author David Liu
@@ -15,10 +16,10 @@ public class BridgeServerConfig extends EurekaBootstrapConfig {
     }
 
     public BridgeServerConfig(LocalDataCenterInfo.DataCenterType dataCenterType, String resolverType,
-                             int writeServerPort, int replicationPort, int readServerPort, int shutDownPort,
-                             String appName, String vipAddress, String writeClusterDomainName,
-                             String[] writeClusterServers, int refreshRateSec) {
-        super(dataCenterType, resolverType, writeServerPort, replicationPort, readServerPort, shutDownPort,
+                              int writeServerPort, int replicationPort, int readServerPort, Codec codec, int shutDownPort,
+                              String appName, String vipAddress, String writeClusterDomainName,
+                              String[] writeClusterServers, int refreshRateSec) {
+        super(dataCenterType, resolverType, writeServerPort, replicationPort, readServerPort, codec, shutDownPort,
                 appName, vipAddress, writeClusterDomainName, writeClusterServers);
         this.refreshRateSec = refreshRateSec;
     }
@@ -38,7 +39,7 @@ public class BridgeServerConfig extends EurekaBootstrapConfig {
         @Override
         public BridgeServerConfig build() {
             return new BridgeServerConfig(dataCenterType, resolverType, writeServerPort, replicationPort,
-                    readServerPort, shutDownPort, appName, vipAddress,  writeClusterDomainName, writeClusterServers,
+                    readServerPort, codec, shutDownPort, appName, vipAddress, writeClusterDomainName, writeClusterServers,
                     refreshRateSec);
         }
     }

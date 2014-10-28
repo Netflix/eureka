@@ -16,10 +16,10 @@
 
 package com.netflix.rx.eureka.server;
 
+import com.netflix.governator.annotations.Configuration;
 import com.netflix.rx.eureka.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.rx.eureka.transport.EurekaTransports;
 import com.netflix.rx.eureka.transport.EurekaTransports.Codec;
-import com.netflix.governator.annotations.Configuration;
 
 /**
  * This class contains essential configuration data that are required during Eureka write server
@@ -42,6 +42,9 @@ public abstract class EurekaBootstrapConfig {
     @Configuration("services.discovery.port")
     private int discoveryServerPort = EurekaTransports.DEFAULT_DISCOVERY_PORT;
 
+    @Configuration("services.transport.codec")
+    private Codec codec = Codec.Avro;
+
     @Configuration("services.shutdown.port")
     private int shutDownPort = 7700;
 
@@ -60,13 +63,17 @@ public abstract class EurekaBootstrapConfig {
     @Configuration("writeCluster.domainName")
     private String writeClusterDomainName;
 
+    @Configuration("netflix.platform.admin.resources.port")
+    private int webAdminPort = 8077;
+
     // For property injection
     protected EurekaBootstrapConfig() {
     }
 
     protected EurekaBootstrapConfig(DataCenterType dataCenterType, String resolverType,
-                                    int registrationPort, int replicationPort, int discoveryServerPort, int shutDownPort,
-                                    String appName, String vipAddress, String writeClusterDomainName, String[] writeClusterServers) {
+                                    int registrationPort, int replicationPort, int discoveryServerPort, Codec codec, int shutDownPort,
+                                    String appName, String vipAddress, String writeClusterDomainName,
+                                    String[] writeClusterServers) {
         this.resolverType = resolverType;
         this.registrationPort = registrationPort;
         this.replicationPort = replicationPort;
@@ -77,6 +84,7 @@ public abstract class EurekaBootstrapConfig {
         this.vipAddress = vipAddress;
         this.writeClusterDomainName = writeClusterDomainName;
         this.writeClusterServers = writeClusterServers;
+        this.codec = codec;
     }
 
     public DataCenterType getDataCenterType() {
@@ -99,6 +107,10 @@ public abstract class EurekaBootstrapConfig {
         return discoveryServerPort;
     }
 
+    public Codec getCodec() {
+        return codec;
+    }
+
     public int getShutDownPort() {
         return shutDownPort;
     }
@@ -119,8 +131,8 @@ public abstract class EurekaBootstrapConfig {
         return writeClusterDomainName;
     }
 
-    public Codec getCodec() {
-        return Codec.Json;
+    public int getWebAdminPort() {
+        return webAdminPort;
     }
 
     public abstract static class EurekaBootstrapConfigBuilder<C extends EurekaBootstrapConfig, B extends EurekaBootstrapConfigBuilder<C, B>> {
@@ -135,6 +147,7 @@ public abstract class EurekaBootstrapConfig {
         protected String vipAddress;
         protected String[] writeClusterServers;
         protected String writeClusterDomainName;
+        protected Codec codec;
 
         protected EurekaBootstrapConfigBuilder() {
         }
@@ -191,6 +204,11 @@ public abstract class EurekaBootstrapConfig {
 
         public B withWriteClusterDomainName(String writeClusterDomainName) {
             this.writeClusterDomainName = writeClusterDomainName;
+            return self();
+        }
+
+        public B withCodec(Codec codec) {
+            this.codec = codec;
             return self();
         }
 

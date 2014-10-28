@@ -25,6 +25,8 @@ import com.netflix.rx.eureka.registry.DataCenterInfo;
 import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.registry.InstanceInfo.Builder;
+import com.netflix.rx.eureka.registry.NetworkAddresses;
+import com.netflix.rx.eureka.registry.NetworkAddresses.Preference;
 import com.netflix.rx.eureka.registry.datacenter.LocalDataCenterInfo;
 import com.netflix.rx.eureka.server.WriteServerConfig;
 import org.slf4j.Logger;
@@ -86,11 +88,18 @@ public class WriteSelfRegistrationService implements SelfRegistrationService {
                 ports.add(config.getReplicationPort());
                 ports.add(config.getDiscoveryPort());
 
+                String address = NetworkAddresses.select(dataCenterInfo.getAddresses(),
+                        Preference.Ipv4Only, Preference.Public, Preference.HostName);
+
+                HashSet<String> healthCheckUrls = new HashSet<String>();
+                healthCheckUrls.add("http://" + address + ':' + config.getWebAdminPort() + "/healthcheck");
+
                 return new Builder()
                         .withId(instanceId)
                         .withApp(config.getAppName())
                         .withVipAddress(config.getVipAddress())
                         .withPorts(ports)
+                        .withHealthCheckUrls(healthCheckUrls)
                         .withDataCenterInfo(dataCenterInfo)
                         .build();
             }

@@ -49,7 +49,10 @@ public class EurekaClientImpl extends EurekaClient {
     }
 
     public EurekaClientImpl(TransportClient writeClient, TransportClient readClient, EurekaClientMetricFactory metricFactory) {
-        this(new EurekaClientRegistry(readClient, metricFactory), new RegistrationHandlerImpl(writeClient, metricFactory));
+        this(
+                readClient == null ? null : new EurekaClientRegistry(readClient, metricFactory),
+                writeClient == null ? null : new RegistrationHandlerImpl(writeClient, metricFactory)
+        );
     }
 
     @Inject

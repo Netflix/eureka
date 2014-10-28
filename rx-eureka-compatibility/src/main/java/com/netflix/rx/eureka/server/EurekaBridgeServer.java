@@ -37,7 +37,7 @@ public class EurekaBridgeServer extends AbstractEurekaServer<BridgeServerConfig>
                 List<Module> extModules = asList(new ExtensionLoader().asModuleArray());
 
                 all.addAll(extModules);
-                builder.withModules(all);
+                builder.withAdditionalModules(all);
             }
         });
     }

@@ -1,5 +1,6 @@
 package com.netflix.rx.eureka.transport;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
@@ -112,6 +113,7 @@ public abstract class TransportCompatibilityTestSuite {
 
         public void runTestSuite() {
             registrationTest();
+            registrationWithNullsTest();
             unregisterTest();
             updateTest();
             hearbeatTest();
@@ -119,6 +121,25 @@ public abstract class TransportCompatibilityTestSuite {
 
         private void registrationTest() {
             runClientToServerWithAck(new RegisterCopy(instanceInfo));
+        }
+
+        private void registrationWithNullsTest() {
+            // Verify data cleanup
+            HashSet<String> healthCheckUrls = new HashSet<>();
+            healthCheckUrls.add(null);
+            HashSet<Integer> ports = new HashSet<>();
+            ports.add(null);
+            HashSet<Integer> securePorts = new HashSet<>();
+            securePorts.add(null);
+
+            InstanceInfo emptyInstanceInfo = new InstanceInfo.Builder()
+                    .withId("id#empty")
+                    .withPorts(new HashSet<Integer>())
+                    .withPorts(ports)
+                    .withHealthCheckUrls(healthCheckUrls)
+                    .withSecurePorts(securePorts)
+                    .build();
+            runClientToServerWithAck(new RegisterCopy(emptyInstanceInfo));
         }
 
         private void unregisterTest() {

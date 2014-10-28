@@ -22,8 +22,6 @@ import com.netflix.rx.eureka.transport.utils.AvroUtils;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
 import io.reactivex.netty.pipeline.PipelineConfigurator;
 import org.apache.avro.Schema;
 
@@ -52,7 +50,6 @@ public class AvroPipelineConfigurator implements PipelineConfigurator<Object, Ob
 
     @Override
     public void configureNewPipeline(ChannelPipeline pipeline) {
-        pipeline.addFirst(new LoggingHandler(LogLevel.ERROR));
         pipeline.addLast(new LengthFieldBasedFrameDecoder(MAX_FRAME_LENGTH, 0, 4, 0, 4));
         pipeline.addLast(new LengthFieldPrepender(4));
         pipeline.addLast(new AvroCodec(protocolTypes, rootSchema));

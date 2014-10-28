@@ -16,8 +16,10 @@
 
 package com.netflix.rx.eureka.server;
 
-import com.netflix.rx.eureka.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.governator.annotations.Configuration;
+import com.netflix.rx.eureka.registry.datacenter.LocalDataCenterInfo.DataCenterType;
+import com.netflix.rx.eureka.transport.EurekaTransports;
+import com.netflix.rx.eureka.transport.EurekaTransports.Codec;
 
 /**
  * @author Tomasz Bak
@@ -25,19 +27,19 @@ import com.netflix.governator.annotations.Configuration;
 public class ReadServerConfig extends EurekaBootstrapConfig {
 
     @Configuration("writeCluster.registration.port")
-    private int writeClusterRegistrationPort;
+    private int writeClusterRegistrationPort = EurekaTransports.DEFAULT_REGISTRATION_PORT;
 
     @Configuration("writeCluster.discovery.port")
-    private int writeClusterDiscoveryPort;
+    private int writeClusterDiscoveryPort = EurekaTransports.DEFAULT_DISCOVERY_PORT;
 
     public ReadServerConfig() {
     }
 
     public ReadServerConfig(DataCenterType dataCenterType, String resolverType,
-                            int readServerPort, int shutDownPort,
+                            int readServerPort, Codec codec, int shutDownPort,
                             String appName, String vipAddress, String writeClusterDomainName,
                             String[] writeClusterServers, int writeClusterRegistrationPort, int writeClusterDiscoveryPort) {
-        super(dataCenterType, resolverType, -1, -1, readServerPort, shutDownPort, appName, vipAddress, writeClusterDomainName, writeClusterServers);
+        super(dataCenterType, resolverType, -1, -1, readServerPort, codec, shutDownPort, appName, vipAddress, writeClusterDomainName, writeClusterServers);
         this.writeClusterRegistrationPort = writeClusterRegistrationPort;
         this.writeClusterDiscoveryPort = writeClusterDiscoveryPort;
     }
@@ -67,9 +69,8 @@ public class ReadServerConfig extends EurekaBootstrapConfig {
 
         @Override
         public ReadServerConfig build() {
-            return new ReadServerConfig(dataCenterType, resolverType, readServerPort, shutDownPort, appName, vipAddress,
+            return new ReadServerConfig(dataCenterType, resolverType, readServerPort, codec, shutDownPort, appName, vipAddress,
                     writeClusterDomainName, writeClusterServers, writeClusterRegistrationPort, writeClusterDiscoveryPort);
         }
     }
-
 }

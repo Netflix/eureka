@@ -17,6 +17,7 @@
 package com.netflix.rx.eureka.server;
 
 import com.netflix.rx.eureka.registry.datacenter.LocalDataCenterInfo.DataCenterType;
+import com.netflix.rx.eureka.transport.EurekaTransports.Codec;
 
 /**
  * This class contains essential configuration data that are required during Eureka write server
@@ -31,9 +32,9 @@ public class WriteServerConfig extends EurekaBootstrapConfig {
     }
 
     public WriteServerConfig(DataCenterType dataCenterType, String resolverType,
-                             int writeServerPort, int replicationPort, int readServerPort, int shutDownPort,
+                             int writeServerPort, int replicationPort, int readServerPort, Codec codec, int shutDownPort,
                              String appName, String vipAddress, String writeClusterDomainName, String[] writeClusterServers) {
-        super(dataCenterType, resolverType, writeServerPort, replicationPort, readServerPort, shutDownPort,
+        super(dataCenterType, resolverType, writeServerPort, replicationPort, readServerPort, codec, shutDownPort,
                 appName, vipAddress, writeClusterDomainName, writeClusterServers);
     }
 
@@ -42,7 +43,7 @@ public class WriteServerConfig extends EurekaBootstrapConfig {
         @Override
         public WriteServerConfig build() {
             return new WriteServerConfig(dataCenterType, resolverType,
-                    writeServerPort, replicationPort, readServerPort, shutDownPort,
+                    writeServerPort, replicationPort, readServerPort, codec, shutDownPort,
                     appName, vipAddress, writeClusterDomainName, writeClusterServers);
         }
     }
