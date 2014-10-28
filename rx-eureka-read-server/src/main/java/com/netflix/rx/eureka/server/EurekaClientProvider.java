@@ -17,10 +17,10 @@
 package com.netflix.rx.eureka.server;
 
 import javax.inject.Provider;
+import javax.inject.Singleton;
 import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.inject.Inject;
 import com.netflix.rx.eureka.client.EurekaClient;
@@ -30,21 +30,17 @@ import com.netflix.rx.eureka.client.ServerResolver.Protocol;
 import com.netflix.rx.eureka.client.ServerResolver.ProtocolType;
 import com.netflix.rx.eureka.client.bootstrap.ServerResolvers;
 import com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory;
-import rx.Observable;
-import rx.subjects.ReplaySubject;
 
 import static java.util.Arrays.*;
 
 /**
  * @author Tomasz Bak
  */
+@Singleton
 public class EurekaClientProvider implements Provider<EurekaClient> {
 
     private final ReadServerConfig config;
     private final EurekaClientMetricFactory metricFactory;
-
-    private final AtomicBoolean connected = new AtomicBoolean();
-    private final ReplaySubject<EurekaClient> replaySubject = ReplaySubject.create();
 
     @Inject
     public EurekaClientProvider(ReadServerConfig config, EurekaClientMetricFactory metricFactory) {
@@ -55,13 +51,6 @@ public class EurekaClientProvider implements Provider<EurekaClient> {
     // TODO: we are blocking here to not propagate Observable<EurekaClient> further into the code. This will be fixed once Ribbon supports observable load balancer.
     @Override
     public EurekaClient get() {
-        if (connected.compareAndSet(false, true)) {
-            return connect().take(1).toBlocking().single();
-        }
-        return replaySubject.take(1).toBlocking().single();
-    }
-
-    private Observable<EurekaClient> connect() {
         ServerResolver<InetSocketAddress> resolver = createResolver();
         return EurekaClients.forRegistrationAndDiscovery(resolver, resolver, config.getCodec(), metricFactory);
     }

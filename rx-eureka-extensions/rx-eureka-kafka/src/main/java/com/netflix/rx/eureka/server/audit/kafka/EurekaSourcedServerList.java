@@ -63,13 +63,8 @@ public class EurekaSourcedServerList implements ServerList<Server> {
 
     @PostConstruct
     public void start() {
-        EurekaClients.forDiscovery(readClusterResolver).subscribe(new Action1<EurekaClient>() {
-            @Override
-            public void call(EurekaClient eurekaClient) {
-                EurekaSourcedServerList.this.eurekaClient = eurekaClient;
-                subscribeToVip();
-            }
-        });
+        eurekaClient = EurekaClients.forDiscovery(readClusterResolver);
+        subscribeToVip();
     }
 
     protected void subscribeToVip() {

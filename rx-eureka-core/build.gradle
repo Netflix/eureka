@@ -45,7 +45,11 @@ jar {
 
 // Avro schema processing
 
-task buildRegistrationSchema (type: JavaExec, dependsOn: 'compileJava') {
+task prepareOutputDir << {
+    mkdir "build/classes/main"
+}
+
+task buildRegistrationSchema (type: JavaExec, dependsOn: 'prepareOutputDir') {
     group = "Avro"
     description = "Process Avro IDL files and generate Avro schema documents for registration protocol"
 
@@ -57,7 +61,7 @@ task buildRegistrationSchema (type: JavaExec, dependsOn: 'compileJava') {
             "build/classes/main/registration-schema.avpr"
     ]
 }
-task buildReplicationSchema (type: JavaExec, dependsOn: 'compileJava') {
+task buildReplicationSchema (type: JavaExec, dependsOn: 'prepareOutputDir') {
     group = "Avro"
     description = "Process Avro IDL files and generate Avro schema documents for replication protocol"
 
@@ -69,7 +73,7 @@ task buildReplicationSchema (type: JavaExec, dependsOn: 'compileJava') {
             "build/classes/main/replication-schema.avpr"
     ]
 }
-task buildDiscoverySchema (type: JavaExec, dependsOn: 'compileJava') {
+task buildDiscoverySchema (type: JavaExec, dependsOn: 'prepareOutputDir') {
     group = "Avro"
     description = "Process Avro IDL files and generate Avro schema documents for discovery protocol"
 
@@ -81,4 +85,8 @@ task buildDiscoverySchema (type: JavaExec, dependsOn: 'compileJava') {
             "build/classes/main/discovery-schema.avpr"
     ]
 }
-jar.dependsOn buildRegistrationSchema, buildReplicationSchema, buildDiscoverySchema
+
+task avroSchemas << {}
+avroSchemas.dependsOn buildRegistrationSchema, buildReplicationSchema, buildDiscoverySchema
+
+compileJava.dependsOn avroSchemas

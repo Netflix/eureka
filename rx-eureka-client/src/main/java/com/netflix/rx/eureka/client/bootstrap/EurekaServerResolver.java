@@ -17,7 +17,6 @@
 package com.netflix.rx.eureka.client.bootstrap;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.rx.eureka.client.EurekaClient;
 import com.netflix.rx.eureka.client.EurekaClients;
@@ -30,7 +29,6 @@ import com.netflix.rx.eureka.interests.Interests;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import rx.Observable;
 import rx.functions.Action0;
-import rx.functions.Action1;
 import rx.functions.Func1;
 
 /**
@@ -56,48 +54,35 @@ public abstract class EurekaServerResolver implements ServerResolver<InetSocketA
 
     @Override
     public Observable<ServerEntry<InetSocketAddress>> resolve() {
-        final AtomicReference<EurekaClient> eurekaClientRef = new AtomicReference<>();
-        return EurekaClients.forDiscovery(serverResolver, metricFactory)
-                .take(1)
-                .doOnNext(new Action1<EurekaClient>() {
-                    @Override
-                    public void call(EurekaClient eurekaClient) {
-                        eurekaClientRef.set(eurekaClient);
-                    }
-                })
-                .flatMap(new Func1<EurekaClient, Observable<ChangeNotification<InstanceInfo>>>() {
-                    @Override
-                    public Observable<ChangeNotification<InstanceInfo>> call(EurekaClient eurekaClient) {
-                        return eurekaClient.forInterest(resolverInterests());
-                    }
-                }).map(new Func1<ChangeNotification<InstanceInfo>, ServerEntry<InetSocketAddress>>() {
-                    @Override
-                    public ServerEntry<InetSocketAddress> call(ChangeNotification<InstanceInfo> changeNotification) {
-                        switch (changeNotification.getKind()) {
-                            case Add:
-                                return new ServerEntry<InetSocketAddress>(
-                                        Action.Add,
-                                        // TODO: address selection process must be improved
-                                        new InetSocketAddress(changeNotification.getData().getDataCenterInfo().getFirstPublicAddress().getIpAddress(), 0),
-                                        protocol
-                                );
-                            case Delete:
-                                return new ServerEntry<InetSocketAddress>(
-                                        Action.Remove,
-                                        new InetSocketAddress(changeNotification.getData().getDataCenterInfo().getFirstPublicAddress().getIpAddress(), 0),
-                                        protocol
-                                );
-                            case Modify:
-                                // Ignore
-                        }
-                        return null;
-                    }
-                }).doOnCompleted(new Action0() {
-                    @Override
-                    public void call() {
-                        eurekaClientRef.get().close();
-                    }
-                });
+        final EurekaClient eurekaClient = EurekaClients.forDiscovery(serverResolver, metricFactory);
+        return eurekaClient.forInterest(resolverInterests()).map(new Func1<ChangeNotification<InstanceInfo>, ServerEntry<InetSocketAddress>>() {
+            @Override
+            public ServerEntry<InetSocketAddress> call(ChangeNotification<InstanceInfo> changeNotification) {
+                switch (changeNotification.getKind()) {
+                    case Add:
+                        return new ServerEntry<InetSocketAddress>(
+                                Action.Add,
+                                // TODO: address selection process must be improved
+                                new InetSocketAddress(changeNotification.getData().getDataCenterInfo().getFirstPublicAddress().getIpAddress(), 0),
+                                protocol
+                        );
+                    case Delete:
+                        return new ServerEntry<InetSocketAddress>(
+                                Action.Remove,
+                                new InetSocketAddress(changeNotification.getData().getDataCenterInfo().getFirstPublicAddress().getIpAddress(), 0),
+                                protocol
+                        );
+                    case Modify:
+                        // Ignore
+                }
+                return null;
+            }
+        }).doOnCompleted(new Action0() {
+            @Override
+            public void call() {
+                eurekaClient.close();
+            }
+        });
     }
 
     @Override
@@ -109,7 +94,7 @@ public abstract class EurekaServerResolver implements ServerResolver<InetSocketA
     }
 
     public static EurekaServerResolver fromVip(ServerResolver<InetSocketAddress> serverResolver, final String vip, Protocol protocol, EurekaClientMetricFactory metricFactory) {
-        return new EurekaServerResolver(serverResolver, protocol,metricFactory) {
+        return new EurekaServerResolver(serverResolver, protocol, metricFactory) {
             @Override
             protected Interest<InstanceInfo> resolverInterests() {
                 return Interests.forVips(vip);
