@@ -38,6 +38,7 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.EurekaJerseyClient;
 import com.netflix.discovery.shared.EurekaJerseyClient.JerseyClient;
+import com.netflix.discovery.shared.EurekaJerseyClient.SystemSSLCustomApacheHttpClientConfig;
 import com.netflix.discovery.shared.LookupService;
 import com.netflix.eventbus.spi.EventBus;
 import com.netflix.governator.guice.lazy.FineGrainedLazySingleton;
@@ -52,6 +53,7 @@ import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import com.sun.jersey.client.apache4.config.ApacheHttpClient4Config;
 import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +62,7 @@ import javax.annotation.PreDestroy;
 import javax.naming.directory.DirContext;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -266,12 +269,21 @@ public class DiscoveryClient implements LookupService {
                                     + instanceInfo.getId();
             }
 
-            MonitoredConnectionManager cm =
-                    new MonitoredConnectionManager("Proxy-DiscoveryClient-HTTPClient");
-            cm.setDefaultMaxPerRoute(clientConfig.getEurekaServerTotalConnectionsPerHost());
-            cm.setMaxTotal(clientConfig.getEurekaServerTotalConnections());
-            ClientConfig cc = new DefaultApacheHttpClient4Config();
-            cc.getProperties().put(ApacheHttpClient4Config.PROPERTY_CONNECTION_MANAGER, cm);
+            final ClientConfig cc;
+            if (eurekaServiceUrls.get().get(0).startsWith("https://") && 
+            		"true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
+            	cc = new SystemSSLCustomApacheHttpClientConfig(
+            			"Proxy-DiscoveryClient-HTTPClient", 
+            			clientConfig.getEurekaServerTotalConnectionsPerHost(), 
+            			clientConfig.getEurekaServerTotalConnections());
+            } else {
+	            MonitoredConnectionManager cm =
+	                    new MonitoredConnectionManager("Proxy-DiscoveryClient-HTTPClient");
+	            cm.setDefaultMaxPerRoute(clientConfig.getEurekaServerTotalConnectionsPerHost());
+	            cm.setMaxTotal(clientConfig.getEurekaServerTotalConnections());
+	            cc = new DefaultApacheHttpClient4Config();
+	            cc.getProperties().put(ApacheHttpClient4Config.PROPERTY_CONNECTION_MANAGER, cm);
+            }
 
             String proxyHost = clientConfig.getProxyHost();
             String proxyPort = clientConfig.getProxyPort();

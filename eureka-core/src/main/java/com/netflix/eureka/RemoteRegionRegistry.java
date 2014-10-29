@@ -29,6 +29,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
 import com.netflix.discovery.EurekaIdentityHeaderFilter;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,6 +84,16 @@ public class RemoteRegionRegistry implements LookupService<String> {
                     EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost(),
                     EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnections(),
                     EUREKA_SERVER_CONFIG.getRemoteRegionConnectionIdleTimeoutSeconds());
+        } else if ("true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
+            jerseyClientName = "Discovery-RemoteRegionSecureClient-" + regionName;
+            discoveryJerseyClient =
+                    EurekaJerseyClient.createSystemSSLJerseyClient(
+                            jerseyClientName,
+                            EUREKA_SERVER_CONFIG.getRemoteRegionConnectTimeoutMs(),
+                            EUREKA_SERVER_CONFIG.getRemoteRegionReadTimeoutMs(),
+                            EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost(),
+                            EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnections(),
+                            EUREKA_SERVER_CONFIG.getRemoteRegionConnectionIdleTimeoutSeconds());
         } else {
             jerseyClientName = "Discovery-RemoteRegionSecureClient-" + regionName;
             discoveryJerseyClient =

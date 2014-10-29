@@ -30,6 +30,7 @@ import javax.ws.rs.core.Response.Status;
 
 import com.netflix.discovery.EurekaIdentityHeaderFilter;
 import com.netflix.eureka.EurekaServerIdentity;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,12 +112,22 @@ public class PeerEurekaNode {
                         hostname = serviceUrl;
                     }
                     String jerseyClientName = "Discovery-PeerNodeClient-" + hostname;
-                    jerseyClient = EurekaJerseyClient.createJerseyClient(jerseyClientName,
-                            config.getPeerNodeConnectTimeoutMs(),
-                            config.getPeerNodeReadTimeoutMs(),
-                            config.getPeerNodeTotalConnections(),
-                            config.getPeerNodeTotalConnectionsPerHost(),
-                            config.getPeerNodeConnectionIdleTimeoutSeconds());
+                    if (serviceUrl.startsWith("https://") && 
+                    		"true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
+	                    jerseyClient = EurekaJerseyClient.createSystemSSLJerseyClient(jerseyClientName,
+	                            config.getPeerNodeConnectTimeoutMs(),
+	                            config.getPeerNodeReadTimeoutMs(),
+	                            config.getPeerNodeTotalConnections(),
+	                            config.getPeerNodeTotalConnectionsPerHost(),
+	                            config.getPeerNodeConnectionIdleTimeoutSeconds());
+                    }else{
+	                    jerseyClient = EurekaJerseyClient.createJerseyClient(jerseyClientName,
+	                            config.getPeerNodeConnectTimeoutMs(),
+	                            config.getPeerNodeReadTimeoutMs(),
+	                            config.getPeerNodeTotalConnections(),
+	                            config.getPeerNodeTotalConnectionsPerHost(),
+	                            config.getPeerNodeConnectionIdleTimeoutSeconds());
+                    }
                     jerseyApacheClient = jerseyClient.getClient();
                 } catch (Throwable e) {
                     throw new RuntimeException(
