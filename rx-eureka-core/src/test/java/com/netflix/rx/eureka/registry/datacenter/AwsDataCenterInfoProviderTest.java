@@ -22,6 +22,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.netflix.rx.eureka.registry.AddressSelector;
+import com.netflix.rx.eureka.registry.NetworkAddress;
 import com.netflix.rx.eureka.registry.SampleAwsDataCenterInfo;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -54,10 +56,10 @@ public class AwsDataCenterInfoProviderTest {
         AWS_META_INFO_MAP.put("/latest/meta-data/ami-id", DATA_CENTER_INFO.getAmiId());
         AWS_META_INFO_MAP.put("/latest/meta-data/instance-id", DATA_CENTER_INFO.getInstanceId());
         AWS_META_INFO_MAP.put("/latest/meta-data/instance-type", DATA_CENTER_INFO.getInstanceType());
-        AWS_META_INFO_MAP.put("/latest/meta-data/local-hostname", DATA_CENTER_INFO.getPrivateAddresses().get(0).getHostName());
-        AWS_META_INFO_MAP.put("/latest/meta-data/local-ipv4", DATA_CENTER_INFO.getPrivateAddresses().get(0).getIpAddress());
-        AWS_META_INFO_MAP.put("/latest/meta-data/public-hostname", DATA_CENTER_INFO.getPublicAddresses().get(0).getHostName());
-        AWS_META_INFO_MAP.put("/latest/meta-data/public-ipv4", DATA_CENTER_INFO.getPublicAddresses().get(0).getIpAddress());
+        AWS_META_INFO_MAP.put("/latest/meta-data/local-hostname", DATA_CENTER_INFO.getPrivateAddress().getHostName());
+        AWS_META_INFO_MAP.put("/latest/meta-data/local-ipv4", DATA_CENTER_INFO.getPrivateAddress().getIpAddress());
+        AWS_META_INFO_MAP.put("/latest/meta-data/public-hostname", DATA_CENTER_INFO.getPublicAddress().getHostName());
+        AWS_META_INFO_MAP.put("/latest/meta-data/public-ipv4", DATA_CENTER_INFO.getPublicAddress().getIpAddress());
         AWS_META_INFO_MAP.put("/latest/meta-data/placement/availability-zone", DATA_CENTER_INFO.getZone());
     }
 

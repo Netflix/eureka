@@ -4,11 +4,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.rx.eureka.protocol.replication.RegisterCopy;
-import com.netflix.rx.eureka.protocol.replication.UnregisterCopy;
-import com.netflix.rx.eureka.protocol.replication.UpdateCopy;
-import com.netflix.rx.eureka.registry.InstanceInfo;
-import com.netflix.rx.eureka.utils.Sets;
+import com.netflix.rx.eureka.interests.SampleInterest;
 import com.netflix.rx.eureka.protocol.Heartbeat;
 import com.netflix.rx.eureka.protocol.discovery.AddInstance;
 import com.netflix.rx.eureka.protocol.discovery.DeleteInstance;
@@ -18,11 +14,17 @@ import com.netflix.rx.eureka.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.rx.eureka.protocol.registration.Register;
 import com.netflix.rx.eureka.protocol.registration.Unregister;
 import com.netflix.rx.eureka.protocol.registration.Update;
+import com.netflix.rx.eureka.protocol.replication.RegisterCopy;
+import com.netflix.rx.eureka.protocol.replication.UnregisterCopy;
+import com.netflix.rx.eureka.protocol.replication.UpdateCopy;
 import com.netflix.rx.eureka.registry.Delta.Builder;
+import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.registry.InstanceInfoField;
 import com.netflix.rx.eureka.registry.SampleDelta;
-import com.netflix.rx.eureka.interests.SampleInterest;
+import com.netflix.rx.eureka.registry.SampleServicePort;
+import com.netflix.rx.eureka.registry.ServicePort;
 import com.netflix.rx.eureka.rx.RxBlocking;
+import com.netflix.rx.eureka.utils.Sets;
 import rx.Notification;
 import rx.Observable;
 
@@ -127,17 +129,13 @@ public abstract class TransportCompatibilityTestSuite {
             // Verify data cleanup
             HashSet<String> healthCheckUrls = new HashSet<>();
             healthCheckUrls.add(null);
-            HashSet<Integer> ports = new HashSet<>();
+            HashSet<ServicePort> ports = new HashSet<>();
             ports.add(null);
-            HashSet<Integer> securePorts = new HashSet<>();
-            securePorts.add(null);
 
             InstanceInfo emptyInstanceInfo = new InstanceInfo.Builder()
                     .withId("id#empty")
-                    .withPorts(new HashSet<Integer>())
                     .withPorts(ports)
                     .withHealthCheckUrls(healthCheckUrls)
-                    .withSecurePorts(securePorts)
                     .build();
             runClientToServerWithAck(new RegisterCopy(emptyInstanceInfo));
         }
@@ -199,9 +197,7 @@ public abstract class TransportCompatibilityTestSuite {
             runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.ASG, "newASG").build()));
             runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.VIP_ADDRESS, "newVipAddress").build()));
             runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.SECURE_VIP_ADDRESS, "newSecureVipAddress").build()));
-            runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.HOSTNAME, "newHostname").build()));
-            runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.PORTS, Sets.asSet(1111, 2222)).build()));
-            runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.SECURE_PORTS, Sets.asSet(1112, 2223)).build()));
+            runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.PORTS, SampleServicePort.httpPorts()).build()));
             runServerToClientWithAck(new UpdateInstanceInfo(SampleDelta.StatusDown.build()));
             runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.HOMEPAGE_URL, "newHomePageURL").build()));
             runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.STATUS_PAGE_URL, "newStatusPageURL").build()));

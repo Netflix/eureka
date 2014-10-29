@@ -22,27 +22,38 @@ package com.netflix.rx.eureka.registry;
  */
 public class NetworkAddress {
 
+    public static final String PUBLIC_ADDRESS = "public";
+    public static final String PRIVATE_ADDRESS = "private";
+
     public enum ProtocolType {
         IPv4, IPv6
     }
 
     private final ProtocolType protocolType;
-    private final boolean publicAddress;
+
+    private final String label;
     private final String ipAddress;
     private final String hostName;
 
     // For dynamic creation.
     protected NetworkAddress() {
         protocolType = null;
-        publicAddress = false;
-        ipAddress = hostName = null;
+        label = ipAddress = hostName = null;
     }
 
-    public NetworkAddress(ProtocolType protocolType, boolean publicAddress, String ipAddress, String hostName) {
+    public NetworkAddress(String label, ProtocolType protocolType, String ipAddress, String hostName) {
+        this.label = label;
         this.protocolType = protocolType;
-        this.publicAddress = publicAddress;
         this.ipAddress = ipAddress;
         this.hostName = hostName;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public boolean hasLabel(String otherLabel) {
+        return label.equals(otherLabel);
     }
 
     public ProtocolType getProtocolType() {
@@ -57,10 +68,6 @@ public class NetworkAddress {
         return hostName;
     }
 
-    public boolean isPublic() {
-        return publicAddress;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -70,18 +77,18 @@ public class NetworkAddress {
             return false;
         }
 
-        NetworkAddress that = (NetworkAddress) o;
+        NetworkAddress address = (NetworkAddress) o;
 
-        if (publicAddress != that.publicAddress) {
+        if (hostName != null ? !hostName.equals(address.hostName) : address.hostName != null) {
             return false;
         }
-        if (hostName != null ? !hostName.equals(that.hostName) : that.hostName != null) {
+        if (ipAddress != null ? !ipAddress.equals(address.ipAddress) : address.ipAddress != null) {
             return false;
         }
-        if (ipAddress != null ? !ipAddress.equals(that.ipAddress) : that.ipAddress != null) {
+        if (label != null ? !label.equals(address.label) : address.label != null) {
             return false;
         }
-        if (protocolType != null ? protocolType != that.protocolType : that.protocolType != null) {
+        if (protocolType != address.protocolType) {
             return false;
         }
 
@@ -91,7 +98,7 @@ public class NetworkAddress {
     @Override
     public int hashCode() {
         int result = protocolType != null ? protocolType.hashCode() : 0;
-        result = 31 * result + (publicAddress ? 1 : 0);
+        result = 31 * result + (label != null ? label.hashCode() : 0);
         result = 31 * result + (ipAddress != null ? ipAddress.hashCode() : 0);
         result = 31 * result + (hostName != null ? hostName.hashCode() : 0);
         return result;
@@ -101,25 +108,51 @@ public class NetworkAddress {
     public String toString() {
         return "NetworkAddress{" +
                 "protocolType=" + protocolType +
-                ", publicAddress=" + publicAddress +
+                ", label='" + label + '\'' +
                 ", ipAddress='" + ipAddress + '\'' +
                 ", hostName='" + hostName + '\'' +
                 '}';
     }
 
-    public static NetworkAddress publicIPv4(String ipAddress) {
-        return new NetworkAddress(ProtocolType.IPv4, true, ipAddress, null);
-    }
+    public static class NetworkAddressBuilder {
+        private ProtocolType protocolType;
+        private String label;
+        private String ipAddress;
+        private String hostName;
 
-    public static NetworkAddress publicHostNameIPv4(String hostName) {
-        return new NetworkAddress(ProtocolType.IPv4, true, null, hostName);
-    }
+        private NetworkAddressBuilder() {
+        }
 
-    public static NetworkAddress privateIPv4(String ipAddress) {
-        return new NetworkAddress(ProtocolType.IPv4, false, ipAddress, null);
-    }
+        public static NetworkAddressBuilder aNetworkAddress() {
+            return new NetworkAddressBuilder();
+        }
 
-    public static NetworkAddress privateHostNameIPv4(String hostName) {
-        return new NetworkAddress(ProtocolType.IPv4, false, null, hostName);
+        public NetworkAddressBuilder withProtocolType(ProtocolType protocolType) {
+            this.protocolType = protocolType;
+            return this;
+        }
+
+        public NetworkAddressBuilder withLabel(String label) {
+            this.label = label;
+            return this;
+        }
+
+        public NetworkAddressBuilder withIpAddress(String ipAddress) {
+            this.ipAddress = ipAddress;
+            return this;
+        }
+
+        public NetworkAddressBuilder withHostName(String hostName) {
+            this.hostName = hostName;
+            return this;
+        }
+
+        public NetworkAddressBuilder but() {
+            return aNetworkAddress().withProtocolType(protocolType).withLabel(label).withIpAddress(ipAddress).withHostName(hostName);
+        }
+
+        public NetworkAddress build() {
+            return new NetworkAddress(label, protocolType, ipAddress, hostName);
+        }
     }
 }

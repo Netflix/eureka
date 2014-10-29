@@ -24,6 +24,7 @@ import com.netflix.rx.eureka.client.ServerResolver.Protocol;
 import com.netflix.rx.eureka.client.ServerResolver.ServerEntry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.registry.NetworkAddress;
+import com.netflix.rx.eureka.registry.ServicePort;
 import com.netflix.rx.eureka.utils.SystemUtil;
 import rx.Observable.Operator;
 import rx.Subscriber;
@@ -33,9 +34,9 @@ import rx.Subscriber;
  */
 public class ServerResolverFilter implements Operator<ServerEntry<InetSocketAddress>, ServerEntry<InetSocketAddress>> {
     private final Set<String> blockedAddresses;
-    private final HashSet<Integer> blockedPorts;
+    private final Set<Integer> blockedPorts;
 
-    public ServerResolverFilter(Set<String> blockedAddresses, HashSet<Integer> blockedPorts) {
+    public ServerResolverFilter(Set<String> blockedAddresses, Set<Integer> blockedPorts) {
         this.blockedAddresses = blockedAddresses;
         this.blockedPorts = blockedPorts;
     }
@@ -85,6 +86,11 @@ public class ServerResolverFilter implements Operator<ServerEntry<InetSocketAddr
             addresses.add("localhost");
         }
 
-        return new ServerResolverFilter(addresses, instanceInfo.getPorts());
+        HashSet<ServicePort> servicePorts = instanceInfo.getPorts();
+        Set<Integer> portNumbers = new HashSet<>(servicePorts.size());
+        for (ServicePort sp : servicePorts) {
+            portNumbers.add(sp.getPort());
+        }
+        return new ServerResolverFilter(addresses, portNumbers);
     }
 }

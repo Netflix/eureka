@@ -2,6 +2,8 @@ package com.netflix.rx.eureka.transport;
 
 import java.util.HashSet;
 
+import com.netflix.rx.eureka.registry.SampleServicePort;
+import com.netflix.rx.eureka.registry.ServicePort;
 import com.netflix.rx.eureka.utils.Sets;
 import com.netflix.rx.eureka.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.rx.eureka.registry.Delta;
@@ -34,7 +36,7 @@ public class DeltaSerializationTest {
 
     @Test
     public void testDeltaSerializationWithAvro_HashSetInt() throws Exception {
-        HashSet<Integer> newPorts = Sets.asSet(111, 222);
+        HashSet<ServicePort> newPorts = SampleServicePort.httpPorts();
         Delta<?> delta = new Delta.Builder()
                 .withId(instanceInfo.getId())
                 .withVersion(instanceInfo.getVersion() + 1)

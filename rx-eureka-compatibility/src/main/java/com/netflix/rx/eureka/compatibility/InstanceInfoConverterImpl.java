@@ -1,13 +1,14 @@
 package com.netflix.rx.eureka.compatibility;
 
+import java.util.Collections;
+import java.util.HashSet;
+
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.rx.eureka.registry.DataCenterInfo;
 import com.netflix.rx.eureka.registry.InstanceInfo;
+import com.netflix.rx.eureka.registry.ServicePort;
 import com.netflix.rx.eureka.registry.datacenter.AwsDataCenterInfo;
 import com.netflix.rx.eureka.registry.datacenter.BasicDataCenterInfo;
-
-import java.util.Collections;
-import java.util.HashSet;
 
 /**
  * @author David Liu
@@ -23,14 +24,12 @@ public class InstanceInfoConverterImpl implements InstanceInfoConverter {
                 .withAsg(v1Info.getASGName())
                 .withVipAddress(v1Info.getVIPAddress())
                 .withSecureVipAddress(v1Info.getSecureVipAddress())
-                .withHostname(v1Info.getHostName())
-                .withIp(v1Info.getIPAddr())
-                .withPorts(toSet(v1Info.getPort()))
-                .withSecurePorts(toSet(v1Info.getSecurePort()))
+                .withPorts(toSet(new ServicePort(v1Info.getPort(), false), new ServicePort(v1Info.getSecurePort(), true)))
                 .withStatus(fromV1(v1Info.getStatus()))
                 .withHomePageUrl(v1Info.getHomePageUrl())
                 .withStatusPageUrl(v1Info.getStatusPageUrl())
                 .withHealthCheckUrls(new HashSet<>(v1Info.getHealthCheckUrls()))
+                .withMetaData(v1Info.getMetadata())
                 .withDataCenterInfo(fromV1(v1Info.getDataCenterInfo()));
 
         return builder.build();

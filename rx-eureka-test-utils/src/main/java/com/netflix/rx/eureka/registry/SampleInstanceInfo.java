@@ -2,6 +2,7 @@ package com.netflix.rx.eureka.registry;
 
 import com.netflix.rx.eureka.registry.InstanceInfo.Builder;
 import com.netflix.rx.eureka.registry.InstanceInfo.Status;
+import com.netflix.rx.eureka.utils.Sets;
 
 import java.util.HashSet;
 import java.util.Random;
@@ -46,20 +47,19 @@ public enum SampleInstanceInfo {
         securePorts.add(443);
         securePorts.add(8443);
         return new Builder()
-                .withId("id#"+name+"_"+UUID.randomUUID().toString())
-                .withApp("app#"+name)
-                .withAppGroup("group#"+name)
-                .withAsg("asg#"+name)
+                .withId("id#" + name + "_" + UUID.randomUUID().toString())
+                .withApp("app#" + name)
+                .withAppGroup("group#" + name)
+                .withAsg("asg#" + name)
                 .withHealthCheckUrls(healthCheckUrls)
-                .withHomePageUrl("http://eureka/home/"+name)
-                .withHostname(name+".test")
-                .withIp(randomIp())
-                .withPorts(ports)
-                .withSecurePorts(securePorts)
+                .withHomePageUrl("http://eureka/home/" + name)
+                .withPorts(Sets.asSet(new ServicePort(7200, false), new ServicePort(7210, true)))
                 .withSecureVipAddress("vipSecure#"+name)
                 .withStatus(Status.UP)
                 .withStatusPageUrl("http://eureka/status/"+name)
                 .withVipAddress("vip#"+name)
+                .withMetaData("optionA", "valueA")
+                .withMetaData("optionB", "valueB")
                 .withDataCenterInfo(SampleAwsDataCenterInfo.UsEast1a.build());
     }
 
