@@ -266,7 +266,7 @@ public class DiscoveryClient implements LookupService {
                                     + instanceInfo.getId();
             }
 
-            if (eurekaServiceUrls.get().get(0).startsWith("https://") && 
+            if (eurekaServiceUrls.get().get(0).startsWith("https://") &&
                     "true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
                 discoveryJerseyClient = EurekaJerseyClient.createSystemSSLJerseyClient("DiscoveryClient-HTTPClient-System",
                         clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000,
@@ -281,13 +281,13 @@ public class DiscoveryClient implements LookupService {
                         clientConfig.getEurekaServerTotalConnectionsPerHost(), 
                         clientConfig.getEurekaServerTotalConnections(),
                         clientConfig.getEurekaConnectionIdleTimeoutSeconds(),
-                        clientConfig.getProxyHost(), clientConfig.getProxyPort(), 
+                        clientConfig.getProxyHost(), clientConfig.getProxyPort(),
                         clientConfig.getProxyUserName(), clientConfig.getProxyPassword());
             } else {
                 discoveryJerseyClient = EurekaJerseyClient.createJerseyClient("DiscoveryClient-HTTPClient",
                         clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000,
                         clientConfig.getEurekaServerReadTimeoutSeconds() * 1000,
-                        clientConfig.getEurekaServerTotalConnectionsPerHost(), 
+                        clientConfig.getEurekaServerTotalConnectionsPerHost(),
                         clientConfig.getEurekaServerTotalConnections(),
                         clientConfig.getEurekaConnectionIdleTimeoutSeconds());
             }

@@ -283,7 +283,7 @@ public final class EurekaJerseyClient {
             }
 
         }
-    
+
         private static TrustManager[] createTrustManagers(KeyStore trustStore) {
             TrustManagerFactory factory;
             try {
