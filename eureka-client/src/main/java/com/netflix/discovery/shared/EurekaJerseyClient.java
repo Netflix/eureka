@@ -29,7 +29,6 @@ import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import com.sun.jersey.client.apache4.config.ApacheHttpClient4Config;
 import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
-import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.ssl.SSLSocketFactory;
@@ -186,7 +185,7 @@ public final class EurekaJerseyClient {
             throw new RuntimeException("Cannot create SSL Jersey client ", e);
         }
     }
-    
+
     /**
      * Creates the SSL based Jersey client with the given configuration
      * parameters and using a SystemSocketFactory to support standard keystore/truststore 
@@ -302,7 +301,7 @@ public final class EurekaJerseyClient {
         }
     }
     
-    public static class SystemSSLCustomApacheHttpClientConfig extends DefaultApacheHttpClient4Config {
+    private static class SystemSSLCustomApacheHttpClientConfig extends DefaultApacheHttpClient4Config {
     	private static final int HTTPS_PORT = 443;
     	private static final String PROTOCOL = "https";
     	
