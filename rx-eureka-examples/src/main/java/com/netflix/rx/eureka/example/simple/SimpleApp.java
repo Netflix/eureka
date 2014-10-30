@@ -50,8 +50,8 @@ public final class SimpleApp {
         // TODO: servers now use by default JSON codec. Remove it, once they are switch to Avro.
         TransportClients.setDefaultCodec(Codec.Json);
 
-        EurekaClient client1 = EurekaClients.forRegistration("localhost:7200").toBlocking().first();
-        EurekaClient client2 = EurekaClients.forDiscovery("localhost:7300").toBlocking().first();
+        EurekaClient client1 = EurekaClients.forRegistration("localhost:7200");
+        EurekaClient client2 = EurekaClients.forDiscovery("localhost:7300");
 
         // Client 2 collects notifications about ServiceA
         client2.forInterest(Interests.forFullRegistry()).subscribe(

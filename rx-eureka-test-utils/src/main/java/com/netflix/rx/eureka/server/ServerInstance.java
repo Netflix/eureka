@@ -77,7 +77,7 @@ public abstract class ServerInstance {
 
     public static class EurekaReadServerInstance extends ServerInstance {
         public EurekaReadServerInstance(ReadServerConfig config, final ServerResolver<InetSocketAddress> resolver) {
-            final EurekaClient eurekaClient = EurekaClients.forRegistrationAndDiscovery(resolver, resolver, config.getCodec()).toBlocking().first();
+            final EurekaClient eurekaClient = EurekaClients.forRegistrationAndDiscovery(resolver, resolver, config.getCodec());
             Module[] modules = {
                     new EurekaReadServerModule(config, eurekaClient),
             };
