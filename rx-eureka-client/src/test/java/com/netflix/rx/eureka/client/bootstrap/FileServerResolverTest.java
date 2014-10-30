@@ -49,28 +49,13 @@ public class FileServerResolverTest {
         updateFile("serverA", "serverB");
 
         // We need to force reload, as file last update time resolution is 1sec. Too long to wait.
-        resolver = new FileServerResolver(configurationFile, true, 10, TimeUnit.MILLISECONDS, Schedulers.io()) {
-            @Override
-            protected ResolverTask createResolveTask() {
-                return new FileResolveTask() {
-                    @Override
-                    boolean isUpdated() {
-                        return true;
-                    }
-                };
-            }
-        };
-        resolver.start();
+        resolver = new FileServerResolver(configurationFile, 10, 100, TimeUnit.MILLISECONDS, true, Schedulers.io());
     }
 
     @After
     public void tearDown() throws Exception {
         if (configurationFile != null && configurationFile.exists()) {
             configurationFile.delete();
-        }
-
-        if (resolver != null) {
-            resolver.close();
         }
     }
 

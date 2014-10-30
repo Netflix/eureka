@@ -21,11 +21,18 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.net.InetSocketAddress;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import com.netflix.rx.eureka.client.ServerResolver;
 import com.netflix.rx.eureka.client.ServerResolver.ServerEntry.Action;
+import com.netflix.rx.eureka.utils.rx.ResourceObservable;
+import com.netflix.rx.eureka.utils.rx.ResourceObservable.ResourceLoader;
+import com.netflix.rx.eureka.utils.rx.ResourceObservable.ResourceLoaderException;
+import com.netflix.rx.eureka.utils.rx.ResourceObservable.ResourceUpdate;
+import rx.Observable;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
 
@@ -38,69 +45,59 @@ import rx.schedulers.Schedulers;
  *
  * @author Tomasz Bak
  */
-public class FileServerResolver extends AbstractServerResolver<InetSocketAddress> {
-
-    private static final long FILE_RELOAD_INTERVAL = 30;
-    private static final TimeUnit FILE_RELOAD_INTERVAL_UNIT = TimeUnit.SECONDS;
+public class FileServerResolver implements ServerResolver<InetSocketAddress> {
 
     private final File textFile;
-    private final long reloadInterval;
-    private final TimeUnit reloadUnit;
+    private final boolean alwaysReload;
+    private final Observable<ServerEntry<InetSocketAddress>> resolverObservable;
 
-    public FileServerResolver(File textFile, boolean refresh) {
-        this(textFile, refresh, FILE_RELOAD_INTERVAL, FILE_RELOAD_INTERVAL_UNIT, Schedulers.io());
+    public FileServerResolver(File textFile, long reloadInterval, TimeUnit timeUnit) {
+        this(textFile, reloadInterval, -1, timeUnit, Schedulers.io());
     }
 
-    public FileServerResolver(File textFile, boolean refresh, long reloadInterval, TimeUnit reloadUnit, Scheduler scheduler) {
-        super(refresh, scheduler);
+    public FileServerResolver(File textFile, long reloadInterval, long idleTimeout, TimeUnit reloadUnit, Scheduler scheduler) {
+        this(textFile, reloadInterval, idleTimeout, reloadUnit, false, scheduler);
+    }
+
+    public FileServerResolver(File textFile, long reloadInterval, long idleTimeout, TimeUnit reloadUnit, boolean alwaysReload, Scheduler scheduler) {
         this.textFile = textFile;
-        this.reloadInterval = reloadInterval;
-        this.reloadUnit = reloadUnit;
+        this.alwaysReload = alwaysReload;
+        this.resolverObservable = ResourceObservable.fromResource(new FileResolveTask(), reloadInterval, idleTimeout, reloadUnit, scheduler);
     }
 
     @Override
-    protected ResolverTask createResolveTask() {
-        return new FileResolveTask();
+    public Observable<ServerEntry<InetSocketAddress>> resolve() {
+        return resolverObservable;
     }
 
-    @Override
-    protected IOException noServersFound(Exception ex) {
-        if (ex == null) {
-            return new IOException("File " + textFile + " does not contain any server");
-        }
-        return new IOException("Error during reading file " + textFile, ex);
-    }
-
-    class FileResolveTask implements ResolverTask {
+    class FileResolveTask implements ResourceLoader<ServerEntry<InetSocketAddress>> {
 
         private long lastModified = -1;
 
         @Override
-        public void call() {
-            boolean reschedule;
+        public ResourceUpdate<ServerEntry<InetSocketAddress>> reload(Set<ServerEntry<InetSocketAddress>> currentSnapshot) {
             if (!isUpdated()) {
-                reschedule = true;
-            } else {
-                try {
-                    LineNumberReader reader = new LineNumberReader(new FileReader(textFile));
-                    try {
-                        Set<ServerEntry<InetSocketAddress>> newAddresses = new HashSet<>();
-                        String line;
-                        while ((line = reader.readLine()) != null) {
-                            if (!(line = line.trim()).isEmpty()) {
-                                newAddresses.add(parseLine(reader.getLineNumber(), line));
-                            }
-                        }
-                        reschedule = onServerListUpdate(newAddresses);
-                    } finally {
-                        reader.close();
-                    }
-                } catch (IOException e) {
-                    reschedule = onUpdateError(e);
-                }
+                return new ResourceUpdate<>(currentSnapshot, Collections.<ServerEntry<InetSocketAddress>>emptySet());
             }
-            if (reschedule) {
-                scheduleLookup(this, reloadInterval, reloadUnit);
+            try {
+                LineNumberReader reader = new LineNumberReader(new FileReader(textFile));
+                try {
+                    Set<ServerEntry<InetSocketAddress>> newAddresses = new HashSet<>();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        if (!(line = line.trim()).isEmpty()) {
+                            newAddresses.add(parseLine(reader.getLineNumber(), line));
+                        }
+                    }
+                    return new ResourceUpdate<>(newAddresses, ServerEntry.cancellationSet(currentSnapshot, newAddresses));
+                } finally {
+                    reader.close();
+                }
+            } catch (IOException e) {
+                if (lastModified == -1) {
+                    throw new ResourceLoaderException("Server resolver file missing on startup " + textFile, false, e);
+                }
+                throw new ResourceLoaderException("Cannot reload server resolver file " + textFile, true, e);
             }
         }
 
@@ -150,6 +147,9 @@ public class FileServerResolver extends AbstractServerResolver<InetSocketAddress
         }
 
         boolean isUpdated() {
+            if (alwaysReload) {
+                return true;
+            }
             long newLastModified = textFile.lastModified();
             if (newLastModified <= lastModified) {
                 lastModified = newLastModified;

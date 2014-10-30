@@ -85,14 +85,6 @@ public abstract class EurekaServerResolver implements ServerResolver<InetSocketA
         });
     }
 
-    @Override
-    public void start() {
-    }
-
-    @Override
-    public void close() {
-    }
-
     public static EurekaServerResolver fromVip(ServerResolver<InetSocketAddress> serverResolver, final String vip, Protocol protocol, EurekaClientMetricFactory metricFactory) {
         return new EurekaServerResolver(serverResolver, protocol, metricFactory) {
             @Override

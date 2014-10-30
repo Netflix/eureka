@@ -83,8 +83,6 @@ public final class EurekaClients {
     public static EurekaClient forRegistrationAndDiscovery(String writeClusterDomainName, String readClusterDomainName) {
         ServerResolver<InetSocketAddress> writeClusterResolver = ServerResolvers.forDomainName(writeClusterDomainName, ProtocolType.TcpRegistration);
         ServerResolver<InetSocketAddress> readClusterResolver = ServerResolvers.forDomainName(readClusterDomainName, ProtocolType.TcpDiscovery);
-        writeClusterResolver.start();
-        readClusterResolver.start();
         return forRegistrationAndDiscovery(writeClusterResolver, readClusterResolver);
     }
 
@@ -112,13 +110,11 @@ public final class EurekaClients {
 
     public static EurekaClient forRegistration(String writeClusterDomainName) {
         ServerResolver<InetSocketAddress> writeClusterResolver = ServerResolvers.forDomainName(writeClusterDomainName, ProtocolType.TcpRegistration);
-        writeClusterResolver.start();
         return forRegistrationAndDiscovery(writeClusterResolver, (ServerResolver<InetSocketAddress>) null);
     }
 
     public static EurekaClient forDiscovery(String readClusterDomainName) {
         ServerResolver<InetSocketAddress> readClusterResolver = ServerResolvers.forDomainName(readClusterDomainName, ProtocolType.TcpDiscovery);
-        readClusterResolver.start();
         return forRegistrationAndDiscovery(null, readClusterResolver);
     }
 

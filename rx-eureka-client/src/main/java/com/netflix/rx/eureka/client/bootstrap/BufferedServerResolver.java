@@ -77,15 +77,6 @@ public class BufferedServerResolver<A extends SocketAddress> implements ServerRe
         );
     }
 
-    @Override
-    public void start() {
-    }
-
-    @Override
-    public void close() {
-        delegate.close();
-    }
-
     public static Observable<Void> completeOnPoolSize(final BufferedServerResolver<?> serverResolver, final int minDesiredSize, long timeout, TimeUnit timeUnit) {
         if (serverResolver.currentSnapshot().size() >= minDesiredSize) {
             return Observable.empty();
