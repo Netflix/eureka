@@ -1,14 +1,11 @@
 package com.netflix.rx.eureka.registry;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import java.util.Set;
 
-import com.netflix.rx.eureka.utils.Sets;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
 
 /**
  * @author David Liu
@@ -18,16 +15,9 @@ public class InstanceInfoTest {
     public void testApplyDelta() throws Exception {
         InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();
 
-        assertThat(instanceInfo.getStatus(), equalTo(InstanceInfo.Status.UP));
-        List<Integer> ports = new ArrayList<Integer>();
-        for (int i : instanceInfo.getPorts()) {
-            ports.add(i);
-        }
-        assertThat(ports, containsInAnyOrder(80, 8080));
-
         Delta delta = new Delta.Builder()
                 .withId(instanceInfo.getId())
-                .withVersion(instanceInfo.getVersion()+1)
+                .withVersion(instanceInfo.getVersion() + 1)
                 .withDelta(InstanceInfoField.STATUS, InstanceInfo.Status.OUT_OF_SERVICE)
                 .build();
 
@@ -52,14 +42,14 @@ public class InstanceInfoTest {
         // fake a new InstanceInfo that is different in all fields (except id)
         InstanceInfo newInstanceInfo = SampleInstanceInfo.ZuulServer.builder()
                 .withId(oldInstanceInfo.getId())
-                .withPorts(Sets.asSet(111,222))
-                .withSecurePorts(Sets.asSet(555,666))
+                .withPorts(SampleServicePort.httpPorts())
                 .withStatus(InstanceInfo.Status.DOWN)
+                .withMetaData(null)
                 .withDataCenterInfo(SampleAwsDataCenterInfo.UsEast1c.build())
                 .build();
 
         Set<Delta<?>> deltas = oldInstanceInfo.diffNewer(newInstanceInfo);
-        assertThat(deltas.size(), equalTo(14));
+        assertThat(deltas.size(), equalTo(12));
 
         for (Delta<?> delta : deltas) {
             oldInstanceInfo = oldInstanceInfo.applyDelta(delta);

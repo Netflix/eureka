@@ -34,14 +34,12 @@ public class InstanceInfoField<T> {
         Asg,
         VipAddress,
         SecureVipAddress,
-        Hostname,
-        Ip,
         Ports,
-        SecurePorts,
         Status,
         HomePageUrl,
         StatusPageUrl,
         HealthCheckUrls,
+        MetaData,
         DataCenterInfo;
 
         // Since enum values are capitalized, and field names start with lowercase letter,
@@ -134,58 +132,16 @@ public class InstanceInfoField<T> {
     });
 
     // ==================================================================
-    public static final InstanceInfoField<String> HOSTNAME
-            = new InstanceInfoField<String>(Name.Hostname, new Accessor<String>() {
+    public static final InstanceInfoField<HashSet<ServicePort>> PORTS
+            = new InstanceInfoField<HashSet<ServicePort>>(Name.Ports, new Accessor<HashSet<ServicePort>>() {
         @Override
-        public InstanceInfo.Builder update(InstanceInfo.Builder builder, String value) {
-            return builder.withHostname(value);
-        }
-
-        @Override
-        public String getValue(InstanceInfo instanceInfo) {
-            return instanceInfo.getHostname();
-        }
-    });
-
-    // ==================================================================
-    public static final InstanceInfoField<String> IP
-            = new InstanceInfoField<String>(Name.Ip, new Accessor<String>() {
-        @Override
-        public InstanceInfo.Builder update(InstanceInfo.Builder builder, String value) {
-            return builder.withIp(value);
-        }
-
-        @Override
-        public String getValue(InstanceInfo instanceInfo) {
-            return instanceInfo.getIp();
-        }
-    });
-
-    // ==================================================================
-    public static final InstanceInfoField<HashSet<Integer>> PORTS
-            = new InstanceInfoField<HashSet<Integer>>(Name.Ports, new Accessor<HashSet<Integer>>() {
-        @Override
-        public InstanceInfo.Builder update(InstanceInfo.Builder builder, HashSet<Integer> value) {
+        public InstanceInfo.Builder update(InstanceInfo.Builder builder, HashSet<ServicePort> value) {
             return builder.withPorts(value);
         }
 
         @Override
-        public HashSet<Integer> getValue(InstanceInfo instanceInfo) {
+        public HashSet<ServicePort> getValue(InstanceInfo instanceInfo) {
             return instanceInfo.getPorts();
-        }
-    });
-
-    // ==================================================================
-    public static final InstanceInfoField<HashSet<Integer>> SECURE_PORTS
-            = new InstanceInfoField<HashSet<Integer>>(Name.SecurePorts, new Accessor<HashSet<Integer>>() {
-        @Override
-        public InstanceInfo.Builder update(InstanceInfo.Builder builder, HashSet<Integer> value) {
-            return builder.withSecurePorts(value);
-        }
-
-        @Override
-        public HashSet<Integer> getValue(InstanceInfo instanceInfo) {
-            return instanceInfo.getSecurePorts();
         }
     });
 
@@ -246,6 +202,20 @@ public class InstanceInfoField<T> {
     });
 
     // ==================================================================
+    public static final InstanceInfoField<Map<String, String>> META_DATA
+            = new InstanceInfoField<Map<String, String>>(Name.MetaData, new Accessor<Map<String,String>>() {
+        @Override
+        public InstanceInfo.Builder update(InstanceInfo.Builder builder, Map<String,String> value) {
+            return builder.withMetaData(value);
+        }
+
+        @Override
+        public Map<String,String> getValue(InstanceInfo instanceInfo) {
+            return instanceInfo.getMetaData();
+        }
+    });
+
+    // ==================================================================
     public static final InstanceInfoField<DataCenterInfo> DATA_CENTER_INFO
             = new InstanceInfoField<DataCenterInfo>(Name.DataCenterInfo, new Accessor<DataCenterInfo>() {
         @Override
@@ -301,14 +271,8 @@ public class InstanceInfoField<T> {
                 return (InstanceInfoField<T>) VIP_ADDRESS;
             case SecureVipAddress:
                 return (InstanceInfoField<T>) SECURE_VIP_ADDRESS;
-            case Hostname:
-                return (InstanceInfoField<T>) HOSTNAME;
-            case Ip:
-                return (InstanceInfoField<T>) IP;
             case Ports:
                 return (InstanceInfoField<T>) PORTS;
-            case SecurePorts:
-                return (InstanceInfoField<T>) SECURE_PORTS;
             case Status:
                 return (InstanceInfoField<T>) STATUS;
             case HomePageUrl:
@@ -317,6 +281,8 @@ public class InstanceInfoField<T> {
                 return (InstanceInfoField<T>) STATUS_PAGE_URL;
             case HealthCheckUrls:
                 return (InstanceInfoField<T>) HEALTHCHECK_URLS;
+            case MetaData:
+                return (InstanceInfoField<T>) META_DATA;
             case DataCenterInfo:
                 return (InstanceInfoField<T>) DATA_CENTER_INFO;
         }

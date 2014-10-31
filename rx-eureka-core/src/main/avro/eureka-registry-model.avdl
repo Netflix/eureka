@@ -13,9 +13,9 @@ protocol EurekaRegistryModel {
 
     record NetworkAddress {
         com.netflix.rx.eureka.registry.NetworkAddress$.ProtocolType protocolType;
-        boolean publicAddress;
-        union {null, string} ipAddress;
-        union {null, string} hostName;
+        union { null, string } label;
+        union { null, string } ipAddress;
+        union { null, string } hostName;
     }
 
     @namespace("com.netflix.rx.eureka.registry.datacenter")
@@ -36,10 +36,18 @@ protocol EurekaRegistryModel {
         union { null, string } amiId;
         union { null, string } instanceId;
         union { null, string } instanceType;
+        union { null, com.netflix.rx.eureka.registry.NetworkAddress } publicAddress;
+        union { null, com.netflix.rx.eureka.registry.NetworkAddress } privateAddress;
+    }
+
+    record ServicePort {
+        union { null, string } name;
+        union { null, int } port;
+        union { null, boolean } secure;
         union {
             null,
-            @java-class("java.util.ArrayList") array<com.netflix.rx.eureka.registry.NetworkAddress>
-        } addresses;
+            @java-class("java.util.HashSet") array<string>
+        } addressLabels;
     }
 
     record InstanceInfo {
@@ -49,16 +57,10 @@ protocol EurekaRegistryModel {
         union { null, string } asg;
         union { null, string } vipAddress;
         union { null, string } secureVipAddress;
-        union { null, string } hostname;
-        union { null, string } ip;
         union {
             null,
-            @java-class("java.util.HashSet") array<int>
+            @java-class("java.util.HashSet") array<ServicePort>
         } ports;
-        union {
-            null,
-            @java-class("java.util.HashSet") array<int>
-        } securePorts;
         union {
             null,
             com.netflix.rx.eureka.registry.InstanceInfo$.Status
@@ -70,6 +72,10 @@ protocol EurekaRegistryModel {
             @java-class("java.util.HashSet") array<string>
         } healthCheckUrls;
         union { null, long } version;
+        union {
+            null,
+            @java-class("java.util.HashMap") map<string>
+        } metaData;
         union {
             null,
             com.netflix.rx.eureka.registry.datacenter.BasicDataCenterInfo,

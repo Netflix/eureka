@@ -9,6 +9,7 @@ import org.junit.Test;
 import org.junit.rules.ExternalResource;
 
 import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author David Liu
@@ -31,7 +32,7 @@ public class DeltaTest {
 
     @Test
     public void testSettingFieldOnInstanceInfo_HashSetInt() throws Exception {
-        HashSet<Integer> newPorts = Sets.asSet(111, 222);
+        HashSet<ServicePort> newPorts = SampleServicePort.httpPorts();
         Delta<?> delta = new Delta.Builder()
                 .withId(original.getId())
                 .withVersion(original.getVersion() + 1)

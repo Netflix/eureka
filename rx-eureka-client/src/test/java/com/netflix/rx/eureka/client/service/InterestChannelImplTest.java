@@ -337,8 +337,8 @@ public class InterestChannelImplTest {
         AddInstance message2 = new AddInstance(original2);
 
         // new messages with discovery instance with lower version, zuul instance with newer version
-        InstanceInfo new1 = new InstanceInfo.Builder().withInstanceInfo(original1).withVersion(10l).withHostname("foo").build();
-        InstanceInfo new2 = new InstanceInfo.Builder().withInstanceInfo(original2).withVersion(10l).withHostname("bar").build();
+        InstanceInfo new1 = new InstanceInfo.Builder().withInstanceInfo(original1).withVersion(10l).withAsg("foo").build();
+        InstanceInfo new2 = new InstanceInfo.Builder().withInstanceInfo(original2).withVersion(10l).withAsg("bar").build();
         Set<Delta<?>> delta1 = new1.diffOlder(original1);
         Set<Delta<?>> delta2 = new2.diffOlder(original2);
         assertThat(delta1.size(), equalTo(1));

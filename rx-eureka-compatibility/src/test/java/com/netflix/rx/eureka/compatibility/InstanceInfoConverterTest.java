@@ -1,17 +1,21 @@
 package com.netflix.rx.eureka.compatibility;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.netflix.appinfo.AmazonInfo;
+import com.netflix.rx.eureka.registry.AddressSelector;
 import com.netflix.rx.eureka.registry.DataCenterInfo;
 import com.netflix.rx.eureka.registry.InstanceInfo;
+import com.netflix.rx.eureka.registry.NetworkAddress;
+import com.netflix.rx.eureka.registry.ServicePort;
 import com.netflix.rx.eureka.registry.datacenter.AwsDataCenterInfo;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 
 /**
@@ -70,11 +74,8 @@ public class InstanceInfoConverterTest {
 
         assertThat(v2Info.getApp(), equalTo(sourceV1Info.getAppName()));
         assertThat(v2Info.getAppGroup(), equalTo(sourceV1Info.getAppGroupName()));
-        assertThat(v2Info.getHostname(), equalTo(sourceV1Info.getHostName()));
         assertThat(v2Info.getStatus().name(), equalTo(sourceV1Info.getStatus().name()));
-        assertThat(v2Info.getIp(), equalTo(sourceV1Info.getIPAddr()));
-        assertThat(v2Info.getPorts(), containsInAnyOrder(sourceV1Info.getPort()));
-        assertThat(v2Info.getSecurePorts(), containsInAnyOrder(sourceV1Info.getSecurePort()));
+        assertThat(v2Info.getPorts(), containsInAnyOrder(new ServicePort(sourceV1Info.getPort(), false), new ServicePort(sourceV1Info.getSecurePort(), true)));
         assertThat(v2Info.getHomePageUrl(), equalTo(sourceV1Info.getHomePageUrl()));
         assertThat(v2Info.getStatusPageUrl(), equalTo(sourceV1Info.getStatusPageUrl()));
         assertThat(v2Info.getHealthCheckUrls(), equalTo(sourceV1Info.getHealthCheckUrls()));
@@ -96,12 +97,10 @@ public class InstanceInfoConverterTest {
         assertThat(v2.getZone(), equalTo(v1.get(AmazonInfo.MetaDataKey.availabilityZone)));
         assertThat(v2.getRegion(), equalTo("us-east-1"));
 
-        assertThat(v2.getPublicAddresses().size(), equalTo(1));
-        assertThat(v2.getPublicAddresses().get(0).getIpAddress(), equalTo(v1.get(AmazonInfo.MetaDataKey.publicIpv4)));
-        assertThat(v2.getPublicAddresses().get(0).getHostName(), equalTo(v1.get(AmazonInfo.MetaDataKey.publicHostname)));
-
-        assertThat(v2.getPrivateAddresses().size(), equalTo(1));
-        assertThat(v2.getPrivateAddresses().get(0).getIpAddress(), equalTo(v1.get(AmazonInfo.MetaDataKey.localIpv4)));
+        assertThat(v2.getAddresses().size(), equalTo(2));
+        assertThat(v2.getPublicAddress().getIpAddress(), equalTo(v1.get(AmazonInfo.MetaDataKey.publicIpv4)));
+        assertThat(v2.getPublicAddress().getHostName(), equalTo(v1.get(AmazonInfo.MetaDataKey.publicHostname)));
+        assertThat(v2.getPrivateAddress().getIpAddress(), equalTo(v1.get(AmazonInfo.MetaDataKey.localIpv4)));
     }
 
     @Test

@@ -22,6 +22,7 @@ import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.netflix.rx.eureka.transport.Acknowledgement;
@@ -56,6 +57,7 @@ import org.codehaus.jackson.map.module.SimpleSerializers;
 import org.codehaus.jackson.map.ser.BeanSerializerFactory;
 import org.codehaus.jackson.map.ser.BeanSerializerModifier;
 import org.codehaus.jackson.map.ser.std.BeanSerializerBase;
+import org.codehaus.jackson.map.ser.std.MapSerializer;
 import org.codehaus.jackson.node.ArrayNode;
 
 /**
@@ -230,6 +232,9 @@ public class JsonCodec extends ByteToMessageCodec<Object> {
                 return true;
             }
             if (Collection.class.isAssignableFrom(rawClass)) {
+                return true;
+            }
+            if(Map.class.isAssignableFrom(rawClass)) {
                 return true;
             }
 

@@ -22,19 +22,22 @@ import java.util.List;
 
 import com.netflix.rx.eureka.registry.DataCenterInfo;
 import com.netflix.rx.eureka.registry.NetworkAddress;
-import com.netflix.rx.eureka.registry.NetworkAddress.ProtocolType;
+import com.netflix.rx.eureka.registry.NetworkAddress.*;
 import com.netflix.rx.eureka.utils.SystemUtil;
+
+import static com.netflix.rx.eureka.registry.NetworkAddress.*;
+import static com.netflix.rx.eureka.registry.NetworkAddress.NetworkAddressBuilder.*;
 
 /**
  * This class encapsulates basic server information. It can be created explicitly
- * with {@link com.netflix.rx.eureka.registry.datacenter.BasicDataCenterInfo.Builder} or deduced from the local server
- * system data.
+ * with {@link Builder} or deduced from the local server system data.
  *
  * @author Tomasz Bak
  */
 public class BasicDataCenterInfo extends DataCenterInfo {
     private final String name;
     private final List<NetworkAddress> addresses;
+    private volatile NetworkAddress defaultAddress;
 
     private BasicDataCenterInfo() {
         name = null;
@@ -54,6 +57,35 @@ public class BasicDataCenterInfo extends DataCenterInfo {
     @Override
     public List<NetworkAddress> getAddresses() {
         return addresses;
+    }
+
+    /**
+     * The order of selection: first public, next private.
+     * If there are multiple addresses within a group (for example multiple public IPs), the first in
+     * the list is be taken.
+     */
+    @Override
+    public NetworkAddress getDefaultAddress() {
+        if (defaultAddress != null) {
+            return defaultAddress;
+        }
+        if (addresses == null | addresses.isEmpty()) {
+            return null;
+        }
+        NetworkAddress best = null;
+        for (NetworkAddress address : addresses) {
+            if (best == null) {
+                best = address;
+                if (best.hasLabel(PUBLIC_ADDRESS)) {
+                    break;
+                }
+            } else if (address.hasLabel(PUBLIC_ADDRESS)) {
+                best = address;
+                break;
+            }
+        }
+        defaultAddress = best;
+        return defaultAddress;
     }
 
     @Override
@@ -96,7 +128,13 @@ public class BasicDataCenterInfo extends DataCenterInfo {
             if (!SystemUtil.isLoopbackIP(ip)) {
                 boolean isPublic = SystemUtil.isPublic(ip);
                 ProtocolType protocol = SystemUtil.isIPv6(ip) ? ProtocolType.IPv6 : ProtocolType.IPv4;
-                builder.withAddresses(new NetworkAddress(protocol, isPublic, ip, null));
+                builder.withAddresses(
+                        aNetworkAddress()
+                                .withLabel(isPublic ? PUBLIC_ADDRESS : NetworkAddress.PRIVATE_ADDRESS)
+                                .withProtocolType(protocol)
+                                .withIpAddress(ip)
+                                .build()
+                );
             }
         }
         return builder.build();

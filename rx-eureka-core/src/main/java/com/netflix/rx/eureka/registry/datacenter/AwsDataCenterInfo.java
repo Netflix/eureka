@@ -17,14 +17,13 @@
 package com.netflix.rx.eureka.registry.datacenter;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import com.netflix.rx.eureka.registry.DataCenterInfo;
 import com.netflix.rx.eureka.registry.NetworkAddress;
-import com.netflix.rx.eureka.registry.NetworkAddress.ProtocolType;
+
+import static com.netflix.rx.eureka.registry.NetworkAddress.*;
+import static com.netflix.rx.eureka.registry.NetworkAddress.NetworkAddressBuilder.*;
 
 /**
  * This class represents a location of a server in AWS datacenter.
@@ -40,12 +39,13 @@ public class AwsDataCenterInfo extends DataCenterInfo {
     private final String amiId;
     private final String instanceId;
     private final String instanceType;
-    private final List<NetworkAddress> addresses;
+    private final NetworkAddress publicAddress;
+    private final NetworkAddress privateAddress;
 
     // For object creation via reflection.
     private AwsDataCenterInfo() {
         name = region = zone = placementGroup = amiId = instanceId = instanceType = null;
-        addresses = null;
+        publicAddress = privateAddress = null;
     }
 
     private AwsDataCenterInfo(Builder builder) {
@@ -55,7 +55,19 @@ public class AwsDataCenterInfo extends DataCenterInfo {
         amiId = builder.amiId;
         name = instanceId = builder.instanceId;
         instanceType = builder.instanceType;
-        addresses = new ArrayList<NetworkAddress>(builder.addresses);
+
+        if (builder.privateIP != null || builder.privateHostName != null) {
+            privateAddress = aNetworkAddress().withLabel(PRIVATE_ADDRESS).withProtocolType(ProtocolType.IPv4)
+                    .withHostName(builder.privateHostName).withIpAddress(builder.privateIP).build();
+        } else {
+            privateAddress = null;
+        }
+        if (builder.publicIP != null || builder.publicHostName != null) {
+            publicAddress = aNetworkAddress().withLabel(PUBLIC_ADDRESS).withProtocolType(ProtocolType.IPv4)
+                    .withHostName(builder.publicHostName).withIpAddress(builder.publicIP).build();
+        } else {
+            publicAddress = null;
+        }
     }
 
     public String getRegion() {
@@ -77,7 +89,30 @@ public class AwsDataCenterInfo extends DataCenterInfo {
 
     @Override
     public List<NetworkAddress> getAddresses() {
+        List<NetworkAddress> addresses = new ArrayList<>(2);
+        if (publicAddress != null) {
+            addresses.add(publicAddress);
+        }
+        if (privateAddress != null) {
+            addresses.add(privateAddress);
+        }
         return addresses;
+    }
+
+    /**
+     * The order of selection: first public, next private.
+     */
+    @Override
+    public NetworkAddress getDefaultAddress() {
+        return publicAddress != null ? publicAddress : privateAddress;
+    }
+
+    public NetworkAddress getPublicAddress() {
+        return publicAddress;
+    }
+
+    public NetworkAddress getPrivateAddress() {
+        return privateAddress;
     }
 
     public String getAmiId() {
@@ -103,9 +138,6 @@ public class AwsDataCenterInfo extends DataCenterInfo {
 
         AwsDataCenterInfo that = (AwsDataCenterInfo) o;
 
-        if (addresses != null ? !addresses.equals(that.addresses) : that.addresses != null) {
-            return false;
-        }
         if (amiId != null ? !amiId.equals(that.amiId) : that.amiId != null) {
             return false;
         }
@@ -119,6 +151,12 @@ public class AwsDataCenterInfo extends DataCenterInfo {
             return false;
         }
         if (placementGroup != null ? !placementGroup.equals(that.placementGroup) : that.placementGroup != null) {
+            return false;
+        }
+        if (privateAddress != null ? !privateAddress.equals(that.privateAddress) : that.privateAddress != null) {
+            return false;
+        }
+        if (publicAddress != null ? !publicAddress.equals(that.publicAddress) : that.publicAddress != null) {
             return false;
         }
         if (region != null ? !region.equals(that.region) : that.region != null) {
@@ -140,7 +178,8 @@ public class AwsDataCenterInfo extends DataCenterInfo {
         result = 31 * result + (amiId != null ? amiId.hashCode() : 0);
         result = 31 * result + (instanceId != null ? instanceId.hashCode() : 0);
         result = 31 * result + (instanceType != null ? instanceType.hashCode() : 0);
-        result = 31 * result + (addresses != null ? addresses.hashCode() : 0);
+        result = 31 * result + (publicAddress != null ? publicAddress.hashCode() : 0);
+        result = 31 * result + (privateAddress != null ? privateAddress.hashCode() : 0);
         return result;
     }
 
@@ -154,7 +193,8 @@ public class AwsDataCenterInfo extends DataCenterInfo {
                 ", amiId='" + amiId + '\'' +
                 ", instanceId='" + instanceId + '\'' +
                 ", instanceType='" + instanceType + '\'' +
-                ", addresses=" + addresses +
+                ", publicAddress=" + publicAddress +
+                ", privateAddress=" + privateAddress +
                 '}';
     }
 
@@ -165,7 +205,6 @@ public class AwsDataCenterInfo extends DataCenterInfo {
         private String amiId;
         private String instanceId;
         private String instanceType;
-        private final Set<NetworkAddress> addresses = new HashSet<NetworkAddress>();
         private String privateIP;
         private String privateHostName;
         private String publicIP;
@@ -201,11 +240,6 @@ public class AwsDataCenterInfo extends DataCenterInfo {
             return this;
         }
 
-        public Builder withAddresses(NetworkAddress... addresses) {
-            Collections.addAll(this.addresses, addresses);
-            return this;
-        }
-
         public Builder withPrivateIPv4(String privateIP) {
             this.privateIP = privateIP;
             return this;
@@ -228,14 +262,7 @@ public class AwsDataCenterInfo extends DataCenterInfo {
 
         @Override
         public AwsDataCenterInfo build() {
-            if(privateIP != null || privateHostName != null) {
-                addresses.add(new NetworkAddress(ProtocolType.IPv4, false, privateIP, privateHostName));
-            }
-            if(publicIP != null || publicHostName != null) {
-                addresses.add(new NetworkAddress(ProtocolType.IPv4, true, publicIP, publicHostName));
-            }
-
-            if(region == null && zone != null && !zone.isEmpty()) { // We will take it from zone name
+            if (region == null && zone != null && !zone.isEmpty()) { // We will take it from zone name
                 region = zone.substring(0, zone.length() - 1);
             }
 
