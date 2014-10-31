@@ -74,7 +74,7 @@ public class TimedSupervisorTaskTest {
     public void testSupervisorTaskDefaultSingleTestTaskHappyCase() throws Exception {
         // testTask should never timeout
         TestTask testTask = new TestTask(1);
-        TimedSupervisorTask supervisorTask = new TimedSupervisorTask(executor, 5, testTask);
+        TimedSupervisorTask supervisorTask = new TimedSupervisorTask("test", executor, 5, testTask);
 
         helperExecutor.submit(supervisorTask).get();
 
@@ -90,7 +90,7 @@ public class TimedSupervisorTaskTest {
     public void testSupervisorTaskCancelsTimedOutTask() throws Exception {
         // testTask will always timeout
         TestTask testTask = new TestTask(5);
-        TimedSupervisorTask supervisorTask = new TimedSupervisorTask(executor, 1, testTask);
+        TimedSupervisorTask supervisorTask = new TimedSupervisorTask("test", executor, 1, testTask);
 
         helperExecutor.submit(supervisorTask).get();
         Thread.sleep(500);  // wait a little bit for the subtask interrupt handler
@@ -107,7 +107,7 @@ public class TimedSupervisorTaskTest {
     public void testSupervisorRejectNewTasksIfThreadPoolIsFullForIncompleteTasks() throws Exception {
         // testTask should always timeout
         TestTask testTask = new TestTask(4);
-        TimedSupervisorTask supervisorTask = new TimedSupervisorTask(executor, 1, testTask);
+        TimedSupervisorTask supervisorTask = new TimedSupervisorTask("test", executor, 1, testTask);
 
         ListenableFuture a = helperExecutor.submit(supervisorTask);
         ListenableFuture b = helperExecutor.submit(supervisorTask);
@@ -128,7 +128,7 @@ public class TimedSupervisorTaskTest {
     public void testSupervisorTaskAsPeriodicScheduledJobHappyCase() throws Exception {
         // testTask should never timeout
         TestTask testTask = new TestTask(1);
-        TimedSupervisorTask supervisorTask = new TimedSupervisorTask(executor, 4, testTask);
+        TimedSupervisorTask supervisorTask = new TimedSupervisorTask("test", executor, 4, testTask);
 
         scheduler.scheduleWithFixedDelay(supervisorTask, 0, 2, TimeUnit.SECONDS);
         Thread.sleep(5000);  // let the scheduler run for long enough for some results
@@ -143,7 +143,7 @@ public class TimedSupervisorTaskTest {
     public void testSupervisorTaskAsPeriodicScheduledJobTestTaskTimingOut() throws Exception {
         // testTask should always timeout
         TestTask testTask = new TestTask(5);
-        TimedSupervisorTask supervisorTask = new TimedSupervisorTask(executor, 1, testTask);
+        TimedSupervisorTask supervisorTask = new TimedSupervisorTask("test", executor, 1, testTask);
 
         scheduler.scheduleWithFixedDelay(supervisorTask, 0, 2, TimeUnit.SECONDS);
         Thread.sleep(5000);  // let the scheduler run for long enough for some results
