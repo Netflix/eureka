@@ -39,7 +39,6 @@ public class BufferedServerResolverTest {
     public void testBuffering() throws Exception {
         StaticServerResolver<InetSocketAddress> resolver = new StaticServerResolver<>();
         BufferedServerResolver<InetSocketAddress> bufferedResolver = new BufferedServerResolver<>(resolver);
-        bufferedResolver.start();
 
         final CountDownLatch completed = new CountDownLatch(1);
         BufferedServerResolver.completeOnPoolSize(bufferedResolver, 1, 1, TimeUnit.SECONDS)

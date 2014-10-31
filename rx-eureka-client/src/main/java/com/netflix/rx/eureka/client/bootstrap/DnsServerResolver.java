@@ -22,7 +22,6 @@ import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.HashSet;
@@ -30,7 +29,13 @@ import java.util.Hashtable;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import com.netflix.rx.eureka.client.ServerResolver;
 import com.netflix.rx.eureka.client.ServerResolver.ServerEntry.Action;
+import com.netflix.rx.eureka.utils.rx.ResourceObservable;
+import com.netflix.rx.eureka.utils.rx.ResourceObservable.ResourceLoader;
+import com.netflix.rx.eureka.utils.rx.ResourceObservable.ResourceLoaderException;
+import com.netflix.rx.eureka.utils.rx.ResourceObservable.ResourceUpdate;
+import rx.Observable;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
 
@@ -40,48 +45,54 @@ import rx.schedulers.Schedulers;
  *
  * @author Tomasz Bak
  */
-public class DnsServerResolver extends AbstractServerResolver<InetSocketAddress> {
+public class DnsServerResolver implements ServerResolver<InetSocketAddress> {
 
     private static final long DNS_LOOKUP_INTERVAL = 30;
-    private static final TimeUnit DNS_LOOKUP_INTERVAL_UNIT = TimeUnit.SECONDS;
+    private static final long IDLE_TIMEOUT = 300;
 
     private final String domainName;
     private final Set<Protocol> protocols;
+    private final Observable<ServerEntry<InetSocketAddress>> resolverObservable;
 
-    public DnsServerResolver(String domainName, Set<Protocol> protocols, boolean refresh) {
-        this(domainName, protocols, refresh, Schedulers.io());
+    public DnsServerResolver(String domainName, Set<Protocol> protocols) {
+        this(domainName, protocols, DNS_LOOKUP_INTERVAL, IDLE_TIMEOUT, TimeUnit.SECONDS, Schedulers.io());
     }
 
-    public DnsServerResolver(String domainName, Set<Protocol> protocols, boolean refresh, Scheduler scheduler) {
-        super(refresh, scheduler);
+    public DnsServerResolver(String domainName, Set<Protocol> protocols, long reloadInterval, TimeUnit timeUnit) {
+        this(domainName, protocols, reloadInterval, -1, timeUnit, Schedulers.io());
+    }
+
+    public DnsServerResolver(String domainName, Set<Protocol> protocols, long reloadInterval, long idleTimeout, TimeUnit reloadUnit, Scheduler scheduler) {
         this.domainName = domainName;
         this.protocols = protocols;
-    }
-
-    @Override
-    protected DnsResolverTask createResolveTask() {
-        return new DnsResolverTask();
-    }
-
-    @Override
-    protected IOException noServersFound(Exception ex) {
-        if (ex == null) {
-            return new IOException("No address available for DN entry " + domainName);
+        if ("localhost".equals(domainName)) {
+            this.resolverObservable = Observable.just(new ServerEntry<InetSocketAddress>(Action.Add, new InetSocketAddress(domainName, 0), protocols));
+        } else {
+            this.resolverObservable = ResourceObservable.fromResource(new DnsResolverTask(), reloadInterval, idleTimeout, reloadUnit, scheduler);
         }
-        return new IOException("Could not resolve domain name " + domainName, ex);
     }
 
-    class DnsResolverTask implements ResolverTask {
+    @Override
+    public Observable<ServerEntry<InetSocketAddress>> resolve() {
+        return resolverObservable;
+    }
+
+    class DnsResolverTask implements ResourceLoader<ServerEntry<InetSocketAddress>> {
+
+        private boolean succeededOnce;
+
         @Override
-        public void call() {
-            boolean reschedule;
+        public ResourceUpdate<ServerEntry<InetSocketAddress>> reload(Set<ServerEntry<InetSocketAddress>> currentSnapshot) {
             try {
-                reschedule = onServerListUpdate(resolveEurekaServerDN());
-            } catch (Exception ex) {
-                reschedule = onUpdateError(ex);
-            }
-            if (reschedule) {
-                scheduleLookup(this, DNS_LOOKUP_INTERVAL, DNS_LOOKUP_INTERVAL_UNIT);
+                Set<ServerEntry<InetSocketAddress>> newAddresses = resolveEurekaServerDN();
+                succeededOnce = true;
+                return new ResourceUpdate<>(newAddresses, ServerEntry.cancellationSet(currentSnapshot, newAddresses));
+            } catch (NamingException e) {
+                if (succeededOnce) {
+                    throw new ResourceLoaderException("DNS failure on subsequent access", true, e);
+                } else {
+                    throw new ResourceLoaderException("Cannot resolve DNS entry on startup", false, e);
+                }
             }
         }
 

@@ -40,28 +40,16 @@ public class DnsServerResolverTest {
     @Ignore // Because the DNS resolution fails on CloudBees
     public void testPublicAddressResolution() throws Exception {
         // Google has a long list of addresses.
-        DnsServerResolver resolver = new DnsServerResolver("google.com", null, false);
-        resolver.start();
-        try {
-            List<ServerEntry<InetSocketAddress>> serverEntries = resolver.resolve().take(2).toList().toBlocking().toFuture().get(30, TimeUnit.SECONDS);
-
-            assertEquals("Expected server list with more than one entry", 2, serverEntries.size());
-        } finally {
-            resolver.close();
-        }
+        DnsServerResolver resolver = new DnsServerResolver("google.com", null);
+        List<ServerEntry<InetSocketAddress>> serverEntries = resolver.resolve().take(2).toList().toBlocking().toFuture().get(30, TimeUnit.SECONDS);
+        assertEquals("Expected server list with more than one entry", 2, serverEntries.size());
     }
 
     @Test
     @Ignore
     public void testLocalhost() throws Exception {
-        DnsServerResolver resolver = new DnsServerResolver("localhost", Protocol.setOf(7300, ProtocolType.TcpDiscovery), false);
-        resolver.start();
-        try {
-            List<ServerEntry<InetSocketAddress>> serverEntries = resolver.resolve().take(1).toList().toBlocking().toFuture().get(30, TimeUnit.SECONDS);
-
-            assertEquals("Expected single localhost entry", 1, serverEntries.size());
-        } finally {
-            resolver.close();
-        }
+        DnsServerResolver resolver = new DnsServerResolver("localhost", Protocol.setOf(7300, ProtocolType.TcpDiscovery));
+        List<ServerEntry<InetSocketAddress>> serverEntries = resolver.resolve().take(1).toList().toBlocking().toFuture().get(30, TimeUnit.SECONDS);
+        assertEquals("Expected single localhost entry", 1, serverEntries.size());
     }
 }

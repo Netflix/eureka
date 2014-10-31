@@ -16,10 +16,10 @@
 
 package com.netflix.rx.eureka.client;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 import com.netflix.rx.eureka.transport.EurekaTransports;
@@ -38,18 +38,6 @@ public interface ServerResolver<A extends SocketAddress> {
      * @return A stream of {@link ServerEntry}
      */
     Observable<ServerEntry<A>> resolve();
-
-    // TODO: refactor the code to use lazy initialization on first #resolve request, and get rid of explicit start
-    @PostConstruct
-    void start();
-
-    /**
-     * Most resolvers will be active components doing background work. To release the resources a
-     * client must call this method. Calling {@link #close()} will also complete the {@link ServerEntry}
-     * observable returned by {@link #resolve()}.
-     */
-    @PreDestroy
-    void close();
 
     enum ProtocolType {
         Undefined(-1),
@@ -176,6 +164,16 @@ public interface ServerResolver<A extends SocketAddress> {
         @Override
         public String toString() {
             return "ServerEntry{action=" + action + ", server=" + server + ", protocols=" + protocols + '}';
+        }
+
+        public static Set<ServerEntry<InetSocketAddress>> cancellationSet(Set<ServerEntry<InetSocketAddress>> oldSet, Set<ServerEntry<InetSocketAddress>> newSet) {
+            Set<ServerEntry<InetSocketAddress>> cancelled = new HashSet<>();
+            for (ServerEntry<InetSocketAddress> entry : oldSet) {
+                if (!newSet.contains(entry)) {
+                    cancelled.add(new ServerEntry<InetSocketAddress>(Action.Remove, entry.getServer(), entry.getProtocols()));
+                }
+            }
+            return cancelled;
         }
     }
 }

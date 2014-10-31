@@ -42,13 +42,13 @@ public final class ServerResolvers {
         if (idx != -1) {
             throw new IllegalArgumentException("Expected server domain name without port number attached; protocol ports are defined explicitly");
         }
-        return new DnsServerResolver(domainName, protocols == null ? null : new HashSet<Protocol>(Arrays.asList(protocols)), true);
+        return new DnsServerResolver(domainName, protocols == null ? null : new HashSet<Protocol>(Arrays.asList(protocols)));
     }
 
     public static ServerResolver<InetSocketAddress> forDomainName(String domainName, ProtocolType protocolType) {
         int idx = domainName.indexOf(':');
         int port = idx == -1 ? protocolType.defaultPort() : Integer.parseInt(domainName.substring(idx + 1));
-        return new DnsServerResolver(domainName, Collections.singleton(new Protocol(port, protocolType)), true);
+        return new DnsServerResolver(domainName, Collections.singleton(new Protocol(port, protocolType)));
     }
 
     /**

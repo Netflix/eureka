@@ -72,9 +72,13 @@ public abstract class EurekaServerResolver implements ServerResolver<InetSocketA
                     case Add:
                         return Observable.just(addServerEntry(changeNotification));
                     case Delete:
-                        return Observable.just(removeServerEntry(changeNotification));
+                        ServerEntry<InetSocketAddress> dRemove = removeServerEntry(changeNotification);
+                        return dRemove == null ? Observable.<ServerEntry<InetSocketAddress>>empty() :
+                                Observable.just(removeServerEntry(changeNotification));
                     case Modify:
-                        return Observable.from(removeServerEntry(changeNotification), addServerEntry(changeNotification));
+                        ServerEntry<InetSocketAddress> mRemove = removeServerEntry(changeNotification);
+                        return mRemove == null ? Observable.just(addServerEntry(changeNotification)) :
+                                Observable.from(mRemove, addServerEntry(changeNotification));
                 }
                 return null;
             }
@@ -86,14 +90,6 @@ public abstract class EurekaServerResolver implements ServerResolver<InetSocketA
         });
     }
 
-    protected ServerEntry<InetSocketAddress> removeServerEntry(ChangeNotification<InstanceInfo> changeNotification) {
-        InetSocketAddress activeAddress = activeAddresses.get(changeNotification.getData().getId());
-        if (activeAddress == null) {
-            return null;
-        }
-        return new ServerEntry<InetSocketAddress>(Action.Remove, activeAddress, protocol);
-    }
-
     protected ServerEntry<InetSocketAddress> addServerEntry(ChangeNotification<InstanceInfo> changeNotification) {
         InstanceInfo instanceInfo = changeNotification.getData();
         InetSocketAddress address = addressQuery.returnServiceAddress(instanceInfo);
@@ -101,12 +97,12 @@ public abstract class EurekaServerResolver implements ServerResolver<InetSocketA
         return new ServerEntry<InetSocketAddress>(Action.Add, address, protocol);
     }
 
-    @Override
-    public void start() {
-    }
-
-    @Override
-    public void close() {
+    protected ServerEntry<InetSocketAddress> removeServerEntry(ChangeNotification<InstanceInfo> changeNotification) {
+        InetSocketAddress activeAddress = activeAddresses.get(changeNotification.getData().getId());
+        if (activeAddress == null) {
+            return null;
+        }
+        return new ServerEntry<InetSocketAddress>(Action.Remove, activeAddress, protocol);
     }
 
     public static EurekaServerResolver fromVip(ServerResolver<InetSocketAddress> serverResolver, final String vip, Protocol protocol, EurekaClientMetricFactory metricFactory) {

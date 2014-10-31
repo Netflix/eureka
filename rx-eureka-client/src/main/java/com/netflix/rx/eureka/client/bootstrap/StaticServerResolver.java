@@ -109,14 +109,6 @@ public class StaticServerResolver<A extends SocketAddress> implements ServerReso
         });
     }
 
-    @Override
-    public void start() {
-    }
-
-    @Override
-    public void close() {
-    }
-
     public static StaticServerResolver<InetSocketAddress> hostResolver(String host, int port) {
         return new StaticServerResolver<InetSocketAddress>(new InetSocketAddress(host, port));
     }
