@@ -27,6 +27,7 @@ import org.codehaus.jackson.annotate.JsonAutoDetect.Visibility;
 import org.codehaus.jackson.annotate.JsonMethod;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig.Feature;
+import org.codehaus.jackson.map.annotate.JsonSerialize.Inclusion;
 
 /**
  * A set of helper methods to convert to/from JSON format.
@@ -38,7 +39,11 @@ public final class Json {
 
     static {
         MAPPER.setVisibility(JsonMethod.FIELD, Visibility.ANY);
+        MAPPER.setVisibility(JsonMethod.GETTER, Visibility.NONE);
+        MAPPER.setVisibility(JsonMethod.IS_GETTER, Visibility.NONE);
+        MAPPER.setVisibility(JsonMethod.SETTER, Visibility.NONE);
         MAPPER.configure(Feature.FAIL_ON_EMPTY_BEANS, false);
+        MAPPER.setSerializationInclusion(Inclusion.NON_NULL);
     }
 
     private Json() {
