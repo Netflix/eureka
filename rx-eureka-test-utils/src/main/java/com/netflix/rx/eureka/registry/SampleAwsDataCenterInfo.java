@@ -17,7 +17,6 @@
 package com.netflix.rx.eureka.registry;
 
 import com.netflix.rx.eureka.registry.datacenter.AwsDataCenterInfo;
-import com.netflix.rx.eureka.registry.NetworkAddress.ProtocolType;
 
 /**
  * @author Tomasz Bak
@@ -34,8 +33,10 @@ public enum SampleAwsDataCenterInfo {
                     .withAmiId("ami-12345678")
                     .withInstanceId("id-12345678")
                     .withInstanceType("m1.large")
-                    .withAddresses(new NetworkAddress(ProtocolType.IPv4, false, "192.168.0.1", "us-east-1a-vm.internal"))
-                    .withAddresses(new NetworkAddress(ProtocolType.IPv4, true, "10.10.0.1", "us-east-1a-vm.public"));
+                    .withPrivateHostName("us-east-1a-vm.internal")
+                    .withPrivateIPv4("192.168.0.1")
+                    .withPublicHostName("us-east-1a-vm.public")
+                    .withPublicIPv4("10.10.0.1");
         }
     },
     UsEast1c() {
@@ -48,10 +49,10 @@ public enum SampleAwsDataCenterInfo {
                     .withAmiId("ami-12345678")
                     .withInstanceId("id-12345678")
                     .withInstanceType("m1.large")
-                    .withAddresses(NetworkAddress.privateIPv4("192.168.1.1"), NetworkAddress.publicHostNameIPv4("us-east-1c-vm.test"));
+                    .withPrivateHostName("us-east-1c-vm.test")
+                    .withPrivateIPv4("192.168.1.1");
         }
     };
-
 
     public abstract AwsDataCenterInfo.Builder builder();
 

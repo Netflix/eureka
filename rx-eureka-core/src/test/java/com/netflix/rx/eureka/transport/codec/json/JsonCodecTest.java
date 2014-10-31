@@ -1,10 +1,9 @@
 package com.netflix.rx.eureka.transport.codec.json;
 
-import com.netflix.rx.eureka.transport.base.SampleObject;
-import com.netflix.rx.eureka.transport.base.SampleObject.Internal;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
+import static com.netflix.rx.eureka.transport.base.SampleObject.*;
 import static org.junit.Assert.*;
 
 /**
@@ -14,14 +13,12 @@ public class JsonCodecTest {
 
     @Test
     public void testCodec() throws Exception {
-        EmbeddedChannel ch = new EmbeddedChannel(new JsonCodec(SampleObject.SAMPLE_OBJECT_MODEL_SET));
-
-        SampleObject message = new SampleObject(new Internal("stringValue"));
-        assertTrue("Message should be written successfuly to the channel", ch.writeOutbound(message));
+        EmbeddedChannel ch = new EmbeddedChannel(new JsonCodec(SAMPLE_OBJECT_MODEL_SET));
+        assertTrue("Message should be written successfully to the channel", ch.writeOutbound(CONTENT));
 
         ch.writeInbound(ch.readOutbound());
         Object received = ch.readInbound();
 
-        assertEquals(message, received);
+        assertEquals(CONTENT, received);
     }
 }

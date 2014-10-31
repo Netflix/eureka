@@ -60,7 +60,9 @@ public class SchemaReflectData extends ReflectData {
                 addSchema(schema.getElementType());
                 break;
             case MAP:
-                throw new RuntimeException("MAP type not supported yet");
+                String name = schema.getName() + '#' + schema.getValueType().getFullName();
+                schemaMap.put(name, schema);
+                break;
             case UNION:
                 for (Schema unionItem : schema.getTypes()) {
                     addSchema(unionItem);

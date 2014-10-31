@@ -16,7 +16,13 @@
 
 package com.netflix.rx.eureka.registry;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 /**
@@ -34,14 +40,12 @@ public class InstanceInfo {
     protected String asg;
     protected String vipAddress;
     protected String secureVipAddress;
-    protected String hostname;
-    protected String ip;
-    protected HashSet<Integer> ports;
-    protected HashSet<Integer> securePorts;
+    protected HashSet<ServicePort> ports;
     protected Status status;
     protected String homePageUrl;
     protected String statusPageUrl;
     protected HashSet<String> healthCheckUrls;
+    protected Map<String, String> metaData;
     protected DataCenterInfo dataCenterInfo;
 
     // for serializers
@@ -92,7 +96,7 @@ public class InstanceInfo {
         return asg;
     }
 
-    /**
+    /**4
      * @return the vip addresses of this instance
      */
     public String getVipAddress() {
@@ -107,31 +111,10 @@ public class InstanceInfo {
     }
 
     /**
-     * @return the hostname of this instance
-     */
-    public String getHostname() {
-        return hostname;
-    }
-
-    /**
-     * @return ip address of this instance
-     */
-    public String getIp() {
-        return ip;
-    }
-
-    /**
      * @return the port numbers that is used for servicing requests
      */
-    public HashSet<Integer> getPorts() {
+    public HashSet<ServicePort> getPorts() {
         return ports;
-    }
-
-    /**
-     * @return the secure port numbers that is used for servicing requests
-     */
-    public HashSet<Integer> getSecurePorts() {
-        return securePorts;
     }
 
     /**
@@ -171,6 +154,14 @@ public class InstanceInfo {
         return dataCenterInfo;
     }
 
+    public Map<String, String> getMetaData() {
+        return metaData == null ? null : Collections.unmodifiableMap(metaData);
+    }
+
+    public Iterator<ServiceEndpoint> serviceEndpoints() {
+        return ServiceEndpoint.iteratorFom(this);
+    }
+
     // ------------------------------------------
     // Non-bean methods
     // ------------------------------------------
@@ -181,7 +172,7 @@ public class InstanceInfo {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof InstanceInfo)) {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
@@ -205,19 +196,13 @@ public class InstanceInfo {
         if (homePageUrl != null ? !homePageUrl.equals(that.homePageUrl) : that.homePageUrl != null) {
             return false;
         }
-        if (hostname != null ? !hostname.equals(that.hostname) : that.hostname != null) {
-            return false;
-        }
         if (id != null ? !id.equals(that.id) : that.id != null) {
             return false;
         }
-        if (ip != null ? !ip.equals(that.ip) : that.ip != null) {
+        if (metaData != null ? !metaData.equals(that.metaData) : that.metaData != null) {
             return false;
         }
         if (ports != null ? !ports.equals(that.ports) : that.ports != null) {
-            return false;
-        }
-        if (securePorts != null ? !securePorts.equals(that.securePorts) : that.securePorts != null) {
             return false;
         }
         if (secureVipAddress != null ? !secureVipAddress.equals(that.secureVipAddress) : that.secureVipAddress != null) {
@@ -248,14 +233,12 @@ public class InstanceInfo {
         result = 31 * result + (asg != null ? asg.hashCode() : 0);
         result = 31 * result + (vipAddress != null ? vipAddress.hashCode() : 0);
         result = 31 * result + (secureVipAddress != null ? secureVipAddress.hashCode() : 0);
-        result = 31 * result + (hostname != null ? hostname.hashCode() : 0);
-        result = 31 * result + (ip != null ? ip.hashCode() : 0);
         result = 31 * result + (ports != null ? ports.hashCode() : 0);
-        result = 31 * result + (securePorts != null ? securePorts.hashCode() : 0);
         result = 31 * result + (status != null ? status.hashCode() : 0);
         result = 31 * result + (homePageUrl != null ? homePageUrl.hashCode() : 0);
         result = 31 * result + (statusPageUrl != null ? statusPageUrl.hashCode() : 0);
         result = 31 * result + (healthCheckUrls != null ? healthCheckUrls.hashCode() : 0);
+        result = 31 * result + (metaData != null ? metaData.hashCode() : 0);
         result = 31 * result + (dataCenterInfo != null ? dataCenterInfo.hashCode() : 0);
         return result;
     }
@@ -264,20 +247,18 @@ public class InstanceInfo {
     public String toString() {
         return "InstanceInfo{" +
                 "id='" + id + '\'' +
+                ", version=" + version +
                 ", appGroup='" + appGroup + '\'' +
                 ", app='" + app + '\'' +
                 ", asg='" + asg + '\'' +
                 ", vipAddress='" + vipAddress + '\'' +
                 ", secureVipAddress='" + secureVipAddress + '\'' +
-                ", hostname='" + hostname + '\'' +
-                ", ip='" + ip + '\'' +
                 ", ports=" + ports +
-                ", securePorts=" + securePorts +
                 ", status=" + status +
                 ", homePageUrl='" + homePageUrl + '\'' +
                 ", statusPageUrl='" + statusPageUrl + '\'' +
                 ", healthCheckUrls=" + healthCheckUrls +
-                ", version=" + version +
+                ", metaData=" + metaData +
                 ", dataCenterInfo=" + dataCenterInfo +
                 '}';
     }
@@ -397,15 +378,13 @@ public class InstanceInfo {
         private String asg;
         private String vipAddress;
         private String secureVipAddress;
-        private String hostname;
-        private String ip;
-        private HashSet<Integer> ports;
-        private HashSet<Integer> securePorts;
+        private HashSet<ServicePort> ports;
         private Status status;
         private String homePageUrl;
         private String statusPageUrl;
         private HashSet<String> healthCheckUrls;
         private DataCenterInfo dataCenterInfo;
+        private Map<String, String> metaData;
 
         public Builder withInstanceInfo(InstanceInfo another) {
             this.id = another.id;
@@ -416,14 +395,12 @@ public class InstanceInfo {
             this.asg = another.asg;
             this.vipAddress = another.vipAddress;
             this.secureVipAddress = another.secureVipAddress;
-            this.hostname = another.hostname;
-            this.ip = another.ip;
             this.ports = another.ports;
-            this.securePorts = another.securePorts;
             this.status = another.status;
             this.homePageUrl = another.homePageUrl;
             this.statusPageUrl = another.statusPageUrl;
             this.healthCheckUrls = another.healthCheckUrls;
+            this.metaData = another.metaData;
             this.dataCenterInfo = another.dataCenterInfo;
             return this;
         }
@@ -463,32 +440,12 @@ public class InstanceInfo {
             return this;
         }
 
-        public Builder withHostname(String hostname) {
-            this.hostname = hostname;
-            return this;
-        }
-
-        public Builder withIp(String ip) {
-            this.ip = ip;
-            return this;
-        }
-
-        public Builder withPorts(HashSet<Integer> ports) {
+        public Builder withPorts(HashSet<ServicePort> ports) {
             if (ports == null || ports.isEmpty()) {
                 this.ports = null;
             } else {
                 this.ports = new HashSet<>(ports);
                 this.ports.remove(null);
-            }
-            return this;
-        }
-
-        public Builder withSecurePorts(HashSet<Integer> securePorts) {
-            if (securePorts == null || securePorts.isEmpty()) {
-                this.securePorts = null;
-            } else {
-                this.securePorts = new HashSet<>(securePorts);
-                this.securePorts.remove(null);
             }
             return this;
         }
@@ -518,6 +475,19 @@ public class InstanceInfo {
             return this;
         }
 
+        public Builder withMetaData(String key, String value) {
+            if(metaData == null) {
+                metaData = new HashMap<>();
+            }
+            metaData.put(key, value);
+            return this;
+        }
+
+        public Builder withMetaData(Map<String, String> metaData) {
+            this.metaData = metaData;
+            return this;
+        }
+
         public Builder withDataCenterInfo(DataCenterInfo location) {
             this.dataCenterInfo = location;
             return this;
@@ -537,17 +507,75 @@ public class InstanceInfo {
             result.asg = this.asg;
             result.vipAddress = this.vipAddress;
             result.secureVipAddress = this.secureVipAddress;
-            result.hostname = this.hostname;
-            result.ip = this.ip;
             result.ports = this.ports;
-            result.securePorts = this.securePorts;
             result.status = this.status;
             result.homePageUrl = this.homePageUrl;
             result.statusPageUrl = this.statusPageUrl;
             result.healthCheckUrls = this.healthCheckUrls;
+            result.metaData = metaData;
             result.dataCenterInfo = this.dataCenterInfo;
 
             return result;
+        }
+    }
+
+    public static class ServiceEndpoint {
+
+        private final NetworkAddress address;
+        private final ServicePort servicePort;
+
+        private ServiceEndpoint(NetworkAddress address, ServicePort servicePort) {
+            this.address = address;
+            this.servicePort = servicePort;
+        }
+
+        public NetworkAddress getAddress() {
+            return address;
+        }
+
+        public ServicePort getServicePort() {
+            return servicePort;
+        }
+
+        public static Iterator<ServiceEndpoint> iteratorFom(final InstanceInfo instanceInfo) {
+            final List<NetworkAddress> addresses = instanceInfo.getDataCenterInfo().getAddresses();
+            final HashSet<ServicePort> ports = instanceInfo.getPorts();
+            if (ports == null || ports.isEmpty() || addresses == null || addresses.isEmpty()) {
+                return Collections.emptyIterator();
+            }
+
+            return new Iterator<ServiceEndpoint>() {
+                private final Iterator<ServicePort> servicePortIt = ports.iterator();
+                private ServicePort currentPort = servicePortIt.next();
+
+                private Iterator<NetworkAddress> networkAddressIt = addresses.iterator();
+
+                @Override
+                public boolean hasNext() {
+                    if (networkAddressIt.hasNext()) {
+                        return true;
+                    }
+                    if (servicePortIt.hasNext()) {
+                        currentPort = servicePortIt.next();
+                        networkAddressIt = addresses.iterator();
+                        return true;
+                    }
+                    return false;
+                }
+
+                @Override
+                public ServiceEndpoint next() {
+                    if (hasNext()) {
+                        return new ServiceEndpoint(networkAddressIt.next(), currentPort);
+                    }
+                    throw new NoSuchElementException();
+                }
+
+                @Override
+                public void remove() {
+                    throw new IllegalStateException("Operation not supported");
+                }
+            };
         }
     }
 }

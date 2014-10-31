@@ -23,6 +23,7 @@ import java.util.Set;
 import com.netflix.rx.eureka.registry.Delta;
 import com.netflix.rx.eureka.registry.InstanceInfoField;
 import com.netflix.rx.eureka.registry.InstanceInfoField.Name;
+import com.netflix.rx.eureka.registry.ServicePort;
 
 /**
  * @author Tomasz Bak
@@ -87,8 +88,8 @@ public class UpdateInstanceInfo<T> implements InterestSetNotification {
             ParameterizedType ptype = (ParameterizedType) type;
             if (Set.class.isAssignableFrom((Class<?>) ptype.getRawType())) {
                 Type targ = ptype.getActualTypeArguments()[0];
-                if (Integer.class.equals(targ)) {
-                    return new SetIntDeltaDTO((Delta<Set<Integer>>) delta);
+                if (ServicePort.class.equals(targ)) {
+                    return new SetServicePortDeltaDTO((Delta<Set<ServicePort>>) delta);
                 } else if (String.class.equals(targ)) {
                     return new SetStringDeltaDTO((Delta<Set<String>>) delta);
                 }
@@ -210,19 +211,19 @@ public class UpdateInstanceInfo<T> implements InterestSetNotification {
         }
     }
 
-    public static class SetIntDeltaDTO extends DeltaDTO<Set<Integer>> {
-        Set<Integer> value;
+    public static class SetServicePortDeltaDTO extends DeltaDTO<Set<ServicePort>> {
+        Set<ServicePort> value;
 
-        public SetIntDeltaDTO() {
+        public SetServicePortDeltaDTO() {
         }
 
-        public SetIntDeltaDTO(Delta<Set<Integer>> delta) {
+        public SetServicePortDeltaDTO(Delta<Set<ServicePort>> delta) {
             super(delta);
             value = delta.getValue();
         }
 
         @Override
-        public Set<Integer> getValue() {
+        public Set<ServicePort> getValue() {
             return value;
         }
     }

@@ -22,14 +22,13 @@ import rx.Observable;
 import rx.functions.Func1;
 
 import static com.netflix.rx.eureka.rx.RxSniffer.*;
+import static com.netflix.rx.eureka.transport.base.SampleObject.CONTENT;
 import static org.junit.Assert.*;
 
 /**
  * @author Tomasz Bak
  */
 public class BaseMessageBrokerTest {
-
-    private static final SampleObject CONTENT = new SampleObject(new Internal("abc"));
 
     private RxServer<Object, Object> server;
 

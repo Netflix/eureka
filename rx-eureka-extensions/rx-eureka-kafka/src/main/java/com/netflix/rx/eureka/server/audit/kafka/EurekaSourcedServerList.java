@@ -32,6 +32,7 @@ import com.netflix.rx.eureka.registry.NetworkAddress;
 import com.netflix.loadbalancer.ILoadBalancer;
 import com.netflix.loadbalancer.Server;
 import com.netflix.loadbalancer.ServerList;
+import com.netflix.rx.eureka.registry.ServiceSelector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Subscriber;
@@ -116,7 +117,7 @@ public class EurekaSourcedServerList implements ServerList<Server> {
             switch (notification.getKind()) {
                 case Add:
                 case Modify:
-                    NetworkAddress address = instanceInfo.getDataCenterInfo().getFirstPublicAddress();
+                    NetworkAddress address = instanceInfo.getDataCenterInfo().getDefaultAddress();
                     servers.put(instanceId, new Server(address.getIpAddress(), defaultPort));
                 case Delete:
                     servers.remove(instanceId);

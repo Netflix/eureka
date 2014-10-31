@@ -1,6 +1,5 @@
 package com.netflix.rx.eureka.registry;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -20,34 +19,7 @@ public abstract class DataCenterInfo {
 
     public abstract List<NetworkAddress> getAddresses();
 
-    public List<NetworkAddress> getPublicAddresses() {
-        List<NetworkAddress> publicAddresses = new ArrayList<>();
-        for (NetworkAddress n : getAddresses()) {
-            if (n.isPublic()) {
-                publicAddresses.add(n);
-            }
-        }
-        return publicAddresses;
-    }
-
-    public List<NetworkAddress> getPrivateAddresses() {
-        List<NetworkAddress> privateAddresses = new ArrayList<>();
-        for (NetworkAddress n : getAddresses()) {
-            if (!n.isPublic()) {
-                privateAddresses.add(n);
-            }
-        }
-        return privateAddresses;
-    }
-
-    public NetworkAddress getFirstPublicAddress() {
-        for (NetworkAddress n : getAddresses()) {
-            if (n.isPublic()) {
-                return n;
-            }
-        }
-        return null;
-    }
+    public abstract NetworkAddress getDefaultAddress();
 
     public abstract static class DataCenterInfoBuilder<I extends DataCenterInfo> {
         public abstract I build();

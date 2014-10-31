@@ -21,12 +21,13 @@ import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.inject.Inject;
+import com.netflix.rx.eureka.Names;
 import com.netflix.rx.eureka.client.EurekaClient;
+import com.netflix.rx.eureka.registry.AddressSelector;
 import com.netflix.rx.eureka.registry.DataCenterInfo;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.registry.InstanceInfo.Builder;
-import com.netflix.rx.eureka.registry.NetworkAddresses;
-import com.netflix.rx.eureka.registry.NetworkAddresses.Preference;
+import com.netflix.rx.eureka.registry.ServicePort;
 import com.netflix.rx.eureka.registry.datacenter.LocalDataCenterInfo;
 import com.netflix.rx.eureka.server.ReadServerConfig;
 import org.slf4j.Logger;
@@ -95,12 +96,10 @@ public class ReadSelfRegistrationService implements SelfRegistrationService {
             public InstanceInfo call(DataCenterInfo dataCenterInfo) {
                 final String instanceId = config.getAppName() + '#' + System.currentTimeMillis();
 
-                HashSet<Integer> ports = new HashSet<Integer>();
-                ports.add(config.getDiscoveryPort());
+                HashSet<ServicePort> ports = new HashSet<>();
+                ports.add(new ServicePort(Names.DISCOVERY, config.getDiscoveryPort(), false));
 
-                String address = NetworkAddresses.select(dataCenterInfo.getAddresses(),
-                        Preference.Ipv4Only, Preference.Public, Preference.HostName);
-
+                String address = AddressSelector.selectBy().publicIp(true).or().any().returnNameOrIp(dataCenterInfo.getAddresses());
                 HashSet<String> healthCheckUrls = new HashSet<String>();
                 healthCheckUrls.add("http://" + address + ':' + config.getWebAdminPort() + "/healthcheck");
 
