@@ -93,6 +93,47 @@ public final class EurekaJerseyClient {
     }
 
     /**
+     * Creates a Jersey client with the given configuration parameters.
+     *
+     *
+     * @param clientName
+     * @param connectionTimeout
+     *            - The connection timeout of the connection in milliseconds
+     * @param readTimeout
+     *            - The read timeout of the connection in milliseconds
+     * @param maxConnectionsPerHost
+     *            - The maximum number of connections to a particular host
+     * @param maxTotalConnections
+     *            - The maximum number of total connections across all hosts
+     * @param connectionIdleTimeout
+     *            - The idle timeout after which the connections will be cleaned
+     *            up in seconds
+     * @param proxyHost 
+     *            - The hostname of the proxy
+     * @param proxyPort 
+     *            - The port number the proxy is listening on
+     * @param proxyUserName
+     *            - The username to use to authenticate to the proxy
+     * @param proxyPassword
+     *            - The password to use to authenticate to the proxy
+     * @return - The jersey client object encapsulating the connection
+     */
+    public static JerseyClient createProxyJerseyClient(String clientName, int connectionTimeout,
+            int readTimeout, int maxConnectionsPerHost, int maxTotalConnections, int connectionIdleTimeout, 
+            String proxyHost, String proxyPort, String proxyUserName, String proxyPassword) {
+      Preconditions.checkNotNull(clientName, "Client name can not be null.");
+      try {
+          ClientConfig jerseyClientConfig = new ProxyCustomApacheHttpClientConfig(clientName, maxConnectionsPerHost,
+                  maxTotalConnections, proxyHost, proxyPort, proxyUserName, proxyPassword);
+          
+          return new JerseyClient(connectionTimeout, readTimeout, 
+                                  connectionIdleTimeout, jerseyClientConfig);
+      } catch (Throwable e) {
+          throw new RuntimeException("Cannot create Jersey client ", e);
+      }
+    }
+    
+    /**
      * Creates the SSL based Jersey client with the given configuration
      * parameters.
      *
@@ -134,6 +175,41 @@ public final class EurekaJerseyClient {
         }
     }
 
+    /**
+     * Creates the SSL based Jersey client with the given configuration
+     * parameters and using a SystemSocketFactory to support standard keystore/truststore 
+     * system properties.
+     *
+     * @param clientName
+     * @param connectionTimeout
+     *            - The connection timeout of the connection in milliseconds
+     * @param readTimeout
+     *            - The read timeout of the connection in milliseconds
+     * @param maxConnectionsPerHost
+     *            - The maximum number of connections to a particular host
+     * @param maxTotalConnections
+     *            - The maximum number of total connections across all hosts
+     * @param connectionIdleTimeout
+     *            - The idle timeout after which the connections will be cleaned
+     *            up in seconds
+     * @return - The jersey client object encapsulating the connection
+     */
+    
+    public static JerseyClient createSystemSSLJerseyClient(String clientName, int connectionTimeout,
+    		int readTimeout, int maxConnectionsPerHost,
+    		int maxTotalConnections, int connectionIdleTimeout) {
+    	Preconditions.checkNotNull(clientName, "Client name can not be null.");	
+     	try {
+    		ClientConfig jerseyClientConfig = new SystemSSLCustomApacheHttpClientConfig(
+    				clientName, maxConnectionsPerHost, maxTotalConnections);
+    		
+    		return new JerseyClient(connectionTimeout, readTimeout,
+    				connectionIdleTimeout, jerseyClientConfig);
+    	} catch (Throwable e) {
+    		throw new RuntimeException("Cannot create System SSL Jersey client ", e);
+    	}
+    }
+
     private static class CustomApacheHttpClientConfig extends DefaultApacheHttpClient4Config {
 
         public CustomApacheHttpClientConfig(String clientName, int maxConnectionsPerHost, int maxTotalConnections)
@@ -145,6 +221,31 @@ public final class EurekaJerseyClient {
         }
     }
 
+    private static class ProxyCustomApacheHttpClientConfig extends DefaultApacheHttpClient4Config {
+      
+      public ProxyCustomApacheHttpClientConfig(String clientName, int maxConnectionsPerHost, int maxTotalConnections,
+              String proxyHost, String proxyPort, String proxyUserName, String proxyPassword)
+          throws Throwable {
+        MonitoredConnectionManager cm = new MonitoredConnectionManager(clientName);
+        cm.setDefaultMaxPerRoute(maxConnectionsPerHost);
+        cm.setMaxTotal(maxTotalConnections);
+        getProperties().put(ApacheHttpClient4Config.PROPERTY_CONNECTION_MANAGER, cm);
+        
+        if (proxyUserName != null && proxyPassword != null) {
+          getProperties().put(ApacheHttpClient4Config.PROPERTY_PROXY_USERNAME, proxyUserName);
+          getProperties().put(ApacheHttpClient4Config.PROPERTY_PROXY_PASSWORD, proxyPassword);
+        } else {
+          // Due to bug in apache client, user name/password must always be set.
+          // Otherwise proxy configuration is ignored.
+          getProperties().put(ApacheHttpClient4Config.PROPERTY_PROXY_USERNAME, "guest");
+          getProperties().put(ApacheHttpClient4Config.PROPERTY_PROXY_PASSWORD, "guest");
+        }
+        getProperties().put(
+                DefaultApacheHttpClient4Config.PROPERTY_PROXY_URI,
+                "http://" + proxyHost + ":" + proxyPort);
+      }
+    }
+    
     private static class SSLCustomApacheHttpClientConfig extends DefaultApacheHttpClient4Config {
         private static final String PROTOCOL_SCHEME = "SSL";
         private static final int HTTPS_PORT = 443;
@@ -200,6 +301,25 @@ public final class EurekaJerseyClient {
             return managers;
 
         }
+    }
+    
+    private static class SystemSSLCustomApacheHttpClientConfig extends DefaultApacheHttpClient4Config {
+    	private static final int HTTPS_PORT = 443;
+    	private static final String PROTOCOL = "https";
+    	
+    	public SystemSSLCustomApacheHttpClientConfig(String clientName, int maxConnectionsPerHost,
+    			int maxTotalConnections) throws Throwable {
+    		
+    		SSLSocketFactory sslSocketFactory = SSLSocketFactory.getSystemSocketFactory();
+    		SchemeRegistry sslSchemeRegistry = new SchemeRegistry();
+    		sslSchemeRegistry.register(new Scheme(PROTOCOL, HTTPS_PORT, sslSocketFactory));
+    		
+    		MonitoredConnectionManager cm = new MonitoredConnectionManager(clientName, sslSchemeRegistry);
+    		cm.setDefaultMaxPerRoute(maxConnectionsPerHost);
+    		cm.setMaxTotal(maxTotalConnections);
+    		getProperties().put(ApacheHttpClient4Config.PROPERTY_CONNECTION_MANAGER, cm);
+    		
+    	}
     }
 
     public static class JerseyClient {

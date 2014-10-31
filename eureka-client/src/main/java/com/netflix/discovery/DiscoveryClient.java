@@ -266,38 +266,31 @@ public class DiscoveryClient implements LookupService {
                                     + instanceInfo.getId();
             }
 
-            MonitoredConnectionManager cm =
-                    new MonitoredConnectionManager("Proxy-DiscoveryClient-HTTPClient");
-            cm.setDefaultMaxPerRoute(clientConfig.getEurekaServerTotalConnectionsPerHost());
-            cm.setMaxTotal(clientConfig.getEurekaServerTotalConnections());
-            ClientConfig cc = new DefaultApacheHttpClient4Config();
-            cc.getProperties().put(ApacheHttpClient4Config.PROPERTY_CONNECTION_MANAGER, cm);
-
-            String proxyHost = clientConfig.getProxyHost();
-            String proxyPort = clientConfig.getProxyPort();
-            if (proxyHost != null && proxyPort != null) {
-                String proxyUserName = clientConfig.getProxyUserName();
-                String proxyPassword = clientConfig.getProxyPassword();
-                if(proxyUserName != null && proxyPassword != null) {
-                    cc.getProperties().put(ApacheHttpClient4Config.PROPERTY_PROXY_USERNAME, proxyUserName);
-                    cc.getProperties().put(ApacheHttpClient4Config.PROPERTY_PROXY_PASSWORD, proxyPassword);
-                } else {
-                    // Due to bug in apache client, user name/password must always be set.
-                    // Otherwise proxy configuration is ignored.
-                    cc.getProperties().put(ApacheHttpClient4Config.PROPERTY_PROXY_USERNAME, "guest");
-                    cc.getProperties().put(ApacheHttpClient4Config.PROPERTY_PROXY_PASSWORD, "guest");
-                }
-                cc.getProperties().put(
-                        DefaultApacheHttpClient4Config.PROPERTY_PROXY_URI,
-                        "http://" + proxyHost + ":" + proxyPort);
+            if (eurekaServiceUrls.get().get(0).startsWith("https://") &&
+                    "true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
+                discoveryJerseyClient = EurekaJerseyClient.createSystemSSLJerseyClient("DiscoveryClient-HTTPClient-System",
+                        clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000,
+                        clientConfig.getEurekaServerReadTimeoutSeconds() * 1000,
+                        clientConfig.getEurekaServerTotalConnectionsPerHost(), 
+                        clientConfig.getEurekaServerTotalConnections(),
+                        clientConfig.getEurekaConnectionIdleTimeoutSeconds());
+            } else if (clientConfig.getProxyHost() != null && clientConfig.getProxyPort() != null) {
+                discoveryJerseyClient = EurekaJerseyClient.createProxyJerseyClient("Proxy-DiscoveryClient-HTTPClient",
+                        clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000,
+                        clientConfig.getEurekaServerReadTimeoutSeconds() * 1000,
+                        clientConfig.getEurekaServerTotalConnectionsPerHost(), 
+                        clientConfig.getEurekaServerTotalConnections(),
+                        clientConfig.getEurekaConnectionIdleTimeoutSeconds(),
+                        clientConfig.getProxyHost(), clientConfig.getProxyPort(),
+                        clientConfig.getProxyUserName(), clientConfig.getProxyPassword());
+            } else {
+                discoveryJerseyClient = EurekaJerseyClient.createJerseyClient("DiscoveryClient-HTTPClient",
+                        clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000,
+                        clientConfig.getEurekaServerReadTimeoutSeconds() * 1000,
+                        clientConfig.getEurekaServerTotalConnectionsPerHost(),
+                        clientConfig.getEurekaServerTotalConnections(),
+                        clientConfig.getEurekaConnectionIdleTimeoutSeconds());
             }
-
-            discoveryJerseyClient = new EurekaJerseyClient.JerseyClient(
-                    clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000,
-                    clientConfig.getEurekaServerReadTimeoutSeconds() * 1000,
-                    clientConfig.getEurekaConnectionIdleTimeoutSeconds(),
-                    cc
-            );
             discoveryApacheClient = discoveryJerseyClient.getClient();
             remoteRegionsToFetch = new AtomicReference<String>(clientConfig.fetchRegistryForRemoteRegions());
             AzToRegionMapper azToRegionMapper;

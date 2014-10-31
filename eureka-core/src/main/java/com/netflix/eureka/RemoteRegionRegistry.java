@@ -83,6 +83,16 @@ public class RemoteRegionRegistry implements LookupService<String> {
                     EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost(),
                     EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnections(),
                     EUREKA_SERVER_CONFIG.getRemoteRegionConnectionIdleTimeoutSeconds());
+        } else if ("true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
+            jerseyClientName = "Discovery-RemoteRegionSystemSecureClient-" + regionName;
+            discoveryJerseyClient =
+                    EurekaJerseyClient.createSystemSSLJerseyClient(
+                            jerseyClientName,
+                            EUREKA_SERVER_CONFIG.getRemoteRegionConnectTimeoutMs(),
+                            EUREKA_SERVER_CONFIG.getRemoteRegionReadTimeoutMs(),
+                            EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost(),
+                            EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnections(),
+                            EUREKA_SERVER_CONFIG.getRemoteRegionConnectionIdleTimeoutSeconds());
         } else {
             jerseyClientName = "Discovery-RemoteRegionSecureClient-" + regionName;
             discoveryJerseyClient =
