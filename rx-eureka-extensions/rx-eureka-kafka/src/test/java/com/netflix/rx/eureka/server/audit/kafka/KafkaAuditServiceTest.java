@@ -47,8 +47,12 @@ public class KafkaAuditServiceTest {
         if (kafkaPropertyValue == null) {
             fail(format("This is integration test and requires that system property %s is set", KafkaAuditConfig.KAFKA_SERVERS_KEY));
         }
+        String kafkaTopic = System.getProperty(KafkaAuditConfig.KAFKA_TOPIC_KEY);
+        if (kafkaTopic == null) {
+            fail(format("This is integration test and requires that system property %s is set", KafkaAuditConfig.KAFKA_TOPIC_KEY));
+        }
         PropertySourcedServerList kafkaServerList = new PropertySourcedServerList(kafkaPropertyValue, KafkaAuditConfig.KAFKA_PORT_DEFAULT);
-        KafkaAuditConfig config = new KafkaAuditConfig();
+        KafkaAuditConfig config = new KafkaAuditConfig(kafkaPropertyValue, null, -1, kafkaTopic);
         auditService = new KafkaAuditService(context, config, kafkaServerList);
         auditService.start();
     }
