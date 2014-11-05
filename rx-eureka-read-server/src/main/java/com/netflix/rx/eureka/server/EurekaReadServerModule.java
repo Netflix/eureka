@@ -28,7 +28,7 @@ import com.netflix.rx.eureka.server.service.ReadSelfRegistrationService;
 import com.netflix.rx.eureka.server.service.RegistrationChannelMetrics;
 import com.netflix.rx.eureka.server.service.ReplicationChannelMetrics;
 import com.netflix.rx.eureka.server.service.SelfRegistrationService;
-import com.netflix.rx.eureka.server.transport.EurekaServerConnectionMetrics;
+import com.netflix.rx.eureka.transport.base.MessageConnectionMetrics;
 import com.netflix.rx.eureka.server.transport.tcp.discovery.TcpDiscoveryServer;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 import io.reactivex.netty.servo.ServoEventsListenerFactory;
@@ -75,9 +75,9 @@ public class EurekaReadServerModule extends AbstractModule {
         bind(EurekaRegistry.class).to(EurekaReadServerRegistry.class);
 
         // Metrics
-        bind(EurekaServerConnectionMetrics.class).annotatedWith(Names.named("registration")).toInstance(new EurekaServerConnectionMetrics("registration"));
-        bind(EurekaServerConnectionMetrics.class).annotatedWith(Names.named("replication")).toInstance(new EurekaServerConnectionMetrics("replication"));
-        bind(EurekaServerConnectionMetrics.class).annotatedWith(Names.named("discovery")).toInstance(new EurekaServerConnectionMetrics("discovery"));
+        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("registration")).toInstance(new MessageConnectionMetrics("registration"));
+        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("replication")).toInstance(new MessageConnectionMetrics("replication"));
+        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("discovery")).toInstance(new MessageConnectionMetrics("discovery"));
 
         bind(EurekaClientConnectionMetrics.class).annotatedWith(Names.named("registration")).toInstance(new EurekaClientConnectionMetrics("registration"));
         bind(EurekaClientConnectionMetrics.class).annotatedWith(Names.named("discovery")).toInstance(new EurekaClientConnectionMetrics("discovery"));

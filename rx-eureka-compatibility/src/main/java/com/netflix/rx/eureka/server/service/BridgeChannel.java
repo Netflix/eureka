@@ -143,11 +143,6 @@ public class BridgeChannel implements ServiceChannel {
     }
 
     @Override
-    public void heartbeat() {
-        // N/A
-    }
-
-    @Override
     public void close() {
         discoveryClient.shutdown();
         registry.shutdown();

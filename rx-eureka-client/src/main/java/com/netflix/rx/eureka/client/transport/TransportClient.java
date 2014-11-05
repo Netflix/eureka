@@ -16,6 +16,7 @@
 
 package com.netflix.rx.eureka.client.transport;
 
+import com.netflix.rx.eureka.transport.MessageConnection;
 import rx.Observable;
 
 /**
@@ -24,11 +25,11 @@ import rx.Observable;
 public interface TransportClient {
 
     /**
-     * Returns a {@link ServerConnection} to communicate to a eureka server.
+     * Returns a {@link MessageConnection} to communicate to a eureka server.
      *
-     * @return A {@link ServerConnection}.
+     * @return A {@link MessageConnection}.
      */
-    Observable<ServerConnection> connect();
+    Observable<MessageConnection> connect();
 
     /**
      * Shutdown this client.

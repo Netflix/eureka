@@ -10,11 +10,6 @@ import com.netflix.client.DefaultLoadBalancerRetryHandler;
 import com.netflix.client.RetryHandler;
 import com.netflix.client.config.DefaultClientConfigImpl;
 import com.netflix.client.config.IClientConfig;
-import com.netflix.rx.eureka.client.ServerResolver;
-import com.netflix.rx.eureka.client.ServerResolver.ProtocolType;
-import com.netflix.rx.eureka.client.ServerResolver.ServerEntry;
-import com.netflix.rx.eureka.client.transport.tcp.TcpServerConnection;
-import com.netflix.rx.eureka.transport.base.BaseMessageBroker;
 import com.netflix.loadbalancer.DummyPing;
 import com.netflix.loadbalancer.IPing;
 import com.netflix.loadbalancer.RoundRobinRule;
@@ -22,6 +17,13 @@ import com.netflix.loadbalancer.Server;
 import com.netflix.loadbalancer.ServerList;
 import com.netflix.loadbalancer.ZoneAwareLoadBalancer;
 import com.netflix.ribbon.transport.netty.RibbonTransport;
+import com.netflix.rx.eureka.client.ServerResolver;
+import com.netflix.rx.eureka.client.ServerResolver.ProtocolType;
+import com.netflix.rx.eureka.client.ServerResolver.ServerEntry;
+import com.netflix.rx.eureka.transport.MessageConnection;
+import com.netflix.rx.eureka.transport.base.BaseMessageConnection;
+import com.netflix.rx.eureka.transport.base.HeartBeatConnection;
+import com.netflix.rx.eureka.transport.base.MessageConnectionMetrics;
 import io.reactivex.netty.channel.ObservableConnection;
 import io.reactivex.netty.client.RxClient;
 import io.reactivex.netty.pipeline.PipelineConfigurator;
@@ -30,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.schedulers.Schedulers;
 
 /**
  * Convenience base implementation for {@link TransportClient} that reads the server list from a {@link ServerResolver}
@@ -46,7 +49,7 @@ public abstract class ResolverBasedTransportClient<A extends SocketAddress> impl
     private final ProtocolType protocolType;
     protected final IClientConfig clientConfig;
     private final PipelineConfigurator<Object, Object> pipelineConfigurator;
-    private final EurekaClientConnectionMetrics metrics;
+    private final MessageConnectionMetrics metrics;
     protected final ZoneAwareLoadBalancer<Server> loadBalancer;
 
     private RxClient<Object, Object> tcpClient;
@@ -55,7 +58,7 @@ public abstract class ResolverBasedTransportClient<A extends SocketAddress> impl
                                            ProtocolType protocolType,
                                            IClientConfig clientConfig,
                                            PipelineConfigurator<Object, Object> pipelineConfigurator,
-                                           EurekaClientConnectionMetrics metrics) {
+                                           MessageConnectionMetrics metrics) {
         this.resolver = resolver;
         this.protocolType = protocolType;
         this.clientConfig = clientConfig;
@@ -66,20 +69,20 @@ public abstract class ResolverBasedTransportClient<A extends SocketAddress> impl
     }
 
     @Override
-    public Observable<ServerConnection> connect() {
+    public Observable<MessageConnection> connect() {
         // TODO: look into this later once we know more about possible transport errors.
         RetryHandler retryHandler = new DefaultLoadBalancerRetryHandler(0, 1, true);
         tcpClient = RibbonTransport.newTcpClient(loadBalancer, pipelineConfigurator, clientConfig, retryHandler);
-        Observable<ServerConnection> connection = tcpClient.connect()
+        Observable<MessageConnection> connection = tcpClient.connect()
                 .take(1)
-                .map(new Func1<ObservableConnection<Object, Object>, ServerConnection>() {
+                .map(new Func1<ObservableConnection<Object, Object>, MessageConnection>() {
                     @Override
-                    public ServerConnection call(ObservableConnection<Object, Object> connection) {
-                        return new TcpServerConnection(new BaseMessageBroker(connection), metrics);
+                    public MessageConnection call(ObservableConnection<Object, Object> connection) {
+                        return new HeartBeatConnection(new BaseMessageConnection(connection, metrics), 3, 30000, Schedulers.computation());
                     }
                 });
         return Observable.concat(
-                resolver.resolve().take(1).ignoreElements().cast(ServerConnection.class), // Load balancer will through exception if no servers in pool
+                resolver.resolve().take(1).ignoreElements().cast(MessageConnection.class), // Load balancer will through exception if no servers in pool
                 connection
         );
     }

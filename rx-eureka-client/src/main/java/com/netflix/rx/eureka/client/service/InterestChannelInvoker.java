@@ -1,11 +1,11 @@
 package com.netflix.rx.eureka.client.service;
 
+import java.util.concurrent.Callable;
+
 import com.netflix.rx.eureka.interests.Interest;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.service.InterestChannel;
 import rx.Observable;
-
-import java.util.concurrent.Callable;
 
 /**
  * A decorator of {@link InterestChannel} which delegates to an actual {@link InterestChannel} making sure that all
@@ -18,7 +18,7 @@ import java.util.concurrent.Callable;
 
     private final ClientInterestChannel delegate;
 
-    public InterestChannelInvoker(ClientInterestChannel delegate) {
+    InterestChannelInvoker(ClientInterestChannel delegate) {
         this.delegate = delegate;
     }
 
@@ -30,17 +30,6 @@ import java.util.concurrent.Callable;
                 return delegate.change(newInterest);
             }
         });
-    }
-
-    @Override
-    public void heartbeat() {
-        submitForAck(new Callable<Observable<Void>>() {
-            @Override
-            public Observable<Void> call() throws Exception {
-                delegate.heartbeat();
-                return Observable.empty();
-            }
-        }).onErrorResumeNext(Observable.<Void>empty()).subscribe();
     }
 
     @Override

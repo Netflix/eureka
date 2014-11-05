@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.netflix.rx.eureka.server.transport;
+package com.netflix.rx.eureka.transport.base;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.rx.eureka.metric.EurekaMetrics;
+import com.netflix.rx.eureka.transport.MessageConnection;
 import com.netflix.rx.eureka.utils.ServoUtils;
 import com.netflix.servo.monitor.BasicCounter;
 import com.netflix.servo.monitor.Counter;
@@ -28,11 +29,11 @@ import com.netflix.servo.monitor.LongGauge;
 import com.netflix.servo.monitor.Timer;
 
 /**
- * Metrics class for instances of {@link ClientConnection}.
+ * Metrics class for instances of {@link MessageConnection}s.
  *
  * @author Tomasz Bak
  */
-public class EurekaServerConnectionMetrics extends EurekaMetrics {
+public class MessageConnectionMetrics extends EurekaMetrics {
 
     private final LongGauge connectedClients;
     private final Timer connectionTime;
@@ -46,7 +47,7 @@ public class EurekaServerConnectionMetrics extends EurekaMetrics {
     private final Counter totalIncomingMessages;
     private final Counter totalOutgoingMessages;
 
-    public EurekaServerConnectionMetrics(String context) {
+    public MessageConnectionMetrics(String context) {
         super(context);
         this.connectedClients = newLongGauge("connectedClients");
         this.connectionTime = newTimer("connectionTime");

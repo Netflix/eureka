@@ -19,11 +19,6 @@ import rx.Observable;
 public interface ServiceChannel {
 
     /**
-     * Sends a heartbeat to the receiver of this channel.
-     */
-    void heartbeat();
-
-    /**
      * Closes this channel.
      */
     void close();

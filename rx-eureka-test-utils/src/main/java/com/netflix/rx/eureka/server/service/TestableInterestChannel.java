@@ -16,15 +16,15 @@
 
 package com.netflix.rx.eureka.server.service;
 
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interest;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.service.InterestChannel;
 import rx.Observable;
 import rx.subjects.PublishSubject;
-
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Stub implementation of {@link InterestChannel} suitable for unit testing.
@@ -35,8 +35,6 @@ public class TestableInterestChannel implements InterestChannel {
 
     private final BlockingQueue<Object> updateQueue = new LinkedBlockingQueue<Object>();
 
-    private final BlockingQueue<Long> heartbeatsQueue = new LinkedBlockingQueue<Long>();
-
     private PublishSubject<ChangeNotification<InstanceInfo>> notificationsObservable = PublishSubject.create();
 
     private PublishSubject<Void> closeObservable = PublishSubject.create();
@@ -45,11 +43,6 @@ public class TestableInterestChannel implements InterestChannel {
     public Observable<Void> change(Interest<InstanceInfo> newInterest) {
         updateQueue.add(newInterest);
         return Observable.empty();
-    }
-
-    @Override
-    public void heartbeat() {
-        heartbeatsQueue.add(System.currentTimeMillis());
     }
 
     @Override

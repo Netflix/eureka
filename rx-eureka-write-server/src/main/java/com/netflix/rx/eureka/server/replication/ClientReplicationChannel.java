@@ -16,10 +16,8 @@
 
 package com.netflix.rx.eureka.server.replication;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.netflix.rx.eureka.client.transport.ServerConnection;
 import com.netflix.rx.eureka.client.transport.TransportClient;
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interests;
@@ -30,14 +28,13 @@ import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.registry.EurekaRegistry.Origin;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.server.service.ReplicationChannel;
+import com.netflix.rx.eureka.transport.MessageConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
-import rx.Subscription;
 import rx.functions.Action1;
 import rx.functions.Func1;
-import rx.schedulers.Schedulers;
 import rx.subjects.ReplaySubject;
 
 /**
@@ -53,7 +50,6 @@ public class ClientReplicationChannel implements ReplicationChannel {
 
     private final EurekaRegistry<InstanceInfo> registry;
     private final TransportClient transportClient;
-    private final long heartbeatIntervalMs;
 
     private final AtomicReference<STATE> state;
     private final ReplaySubject<Void> lifecycle = ReplaySubject.create();
@@ -68,31 +64,21 @@ public class ClientReplicationChannel implements ReplicationChannel {
      * connection. Now, the connection creation is lazy (in {@link #connect()} so we need a way to update this
      * {@link Observable}. Hence a {@link rx.subjects.Subject} and one that replays the single connection created.
      */
-    private final ReplaySubject<ServerConnection> singleConnectionSubject = ReplaySubject.create();
-    private volatile ServerConnection connectionIfConnected;
+    private final ReplaySubject<MessageConnection> singleConnectionSubject = ReplaySubject.create();
+    private volatile MessageConnection connectionIfConnected;
 
-    private Subscription heartbeatTickSubscription;
-
-    public ClientReplicationChannel(final EurekaRegistry<InstanceInfo> registry, TransportClient transportClient, long heartbeatIntervalMs) {
+    public ClientReplicationChannel(final EurekaRegistry<InstanceInfo> registry, TransportClient transportClient) {
         this.registry = registry;
         this.transportClient = transportClient;
-        this.heartbeatIntervalMs = heartbeatIntervalMs;
         this.state = new AtomicReference<>(STATE.Idle);
 
         startRegistryReplication();
-        startHeartBeating();
-    }
-
-    protected void startHeartBeating() {
-        heartbeatTickSubscription = Observable.interval(heartbeatIntervalMs, TimeUnit.MILLISECONDS,
-                Schedulers.computation())
-                .subscribe(new HeartbeatChecker());
     }
 
     protected void startRegistryReplication() {
-        connect().switchMap(new Func1<ServerConnection, Observable<ChangeNotification<InstanceInfo>>>() {
+        connect().switchMap(new Func1<MessageConnection, Observable<ChangeNotification<InstanceInfo>>>() {
             @Override
-            public Observable<ChangeNotification<InstanceInfo>> call(ServerConnection newConnection) {
+            public Observable<ChangeNotification<InstanceInfo>> call(MessageConnection newConnection) {
                 return registry.forInterest(Interests.forFullRegistry(), Origin.LOCAL);
             }
         }).subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
@@ -124,13 +110,6 @@ public class ClientReplicationChannel implements ReplicationChannel {
     }
 
     @Override
-    public void heartbeat() {
-        if (connectionIfConnected != null) {
-            subscribeToTransportSend(connectionIfConnected.sendHeartbeat(), "heartbeat request");
-        }
-    }
-
-    @Override
     public void close() {
         if (state.getAndSet(STATE.Closed) == STATE.Closed) {
             return;
@@ -140,10 +119,8 @@ public class ClientReplicationChannel implements ReplicationChannel {
             logger.debug("Closing client replication channel with state: " + state.get());
         }
 
-        heartbeatTickSubscription.unsubscribe();
-
         if (null != connectionIfConnected) {
-            connectionIfConnected.close();
+            connectionIfConnected.shutdown();
         }
 
         lifecycle.onCompleted();
@@ -160,7 +137,7 @@ public class ClientReplicationChannel implements ReplicationChannel {
             return Observable.error(CHANNEL_CLOSED_EXCEPTION);
         }
 
-        return connectionIfConnected.send(new RegisterCopy(instanceInfo));
+        return connectionIfConnected.submit(new RegisterCopy(instanceInfo));
     }
 
     @Override
@@ -169,7 +146,7 @@ public class ClientReplicationChannel implements ReplicationChannel {
             return Observable.error(CHANNEL_CLOSED_EXCEPTION);
         }
 
-        return connectionIfConnected.send(new UpdateCopy(newInfo));
+        return connectionIfConnected.submit(new UpdateCopy(newInfo));
     }
 
     @Override
@@ -178,7 +155,7 @@ public class ClientReplicationChannel implements ReplicationChannel {
             return Observable.error(CHANNEL_CLOSED_EXCEPTION);
         }
 
-        return connectionIfConnected.send(new UnregisterCopy(instanceId));
+        return connectionIfConnected.submit(new UnregisterCopy(instanceId));
     }
 
     /**
@@ -186,13 +163,13 @@ public class ClientReplicationChannel implements ReplicationChannel {
      *
      * @return The one and only connection associated with this channel.
      */
-    protected Observable<ServerConnection> connect() {
+    protected Observable<MessageConnection> connect() {
         if (state.compareAndSet(STATE.Idle, STATE.Connected)) {
             return transportClient.connect()
                     .take(1)
-                    .map(new Func1<ServerConnection, ServerConnection>() {
+                    .map(new Func1<MessageConnection, MessageConnection>() {
                         @Override
-                        public ServerConnection call(final ServerConnection serverConnection) {
+                        public MessageConnection call(final MessageConnection serverConnection) {
                             // Guarded by the connection state, so it will only be invoked once.
                             connectionIfConnected = serverConnection;
                             singleConnectionSubject.onNext(serverConnection);
@@ -220,24 +197,5 @@ public class ClientReplicationChannel implements ReplicationChannel {
                 lifecycle.onError(throwable);
             }
         });
-    }
-
-    private class HeartbeatChecker extends Subscriber<Long> {
-
-        @Override
-        public void onCompleted() {
-            close();
-        }
-
-        @Override
-        public void onError(Throwable e) {
-            logger.error("Heartbeat checker subscription got an error. This will close this replication channel.", e);
-            close();
-        }
-
-        @Override
-        public void onNext(Long aLong) {
-            heartbeat();
-        }
     }
 }

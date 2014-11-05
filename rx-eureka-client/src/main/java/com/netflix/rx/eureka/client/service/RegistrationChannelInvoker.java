@@ -52,17 +52,6 @@ import java.util.concurrent.Callable;
     }
 
     @Override
-    public void heartbeat() {
-        submitForAck(new Callable<Observable<Void>>() {
-            @Override
-            public Observable<Void> call() throws Exception {
-                delegate.heartbeat();
-                return Observable.empty();
-            }
-        }).onErrorResumeNext(Observable.<Void>empty()).subscribe();
-    }
-
-    @Override
     public void close() {
         try {
             shutdown();

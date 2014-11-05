@@ -29,6 +29,7 @@ import com.netflix.rx.eureka.rx.RxBlocking;
 import com.netflix.rx.eureka.transport.Acknowledgement;
 import com.netflix.rx.eureka.transport.EurekaTransports;
 import com.netflix.rx.eureka.transport.EurekaTransports.Codec;
+import com.netflix.rx.eureka.transport.MessageConnection;
 import io.netty.handler.logging.LogLevel;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ConnectionHandler;
@@ -95,9 +96,9 @@ public class ResolverBasedTransportClientTest {
         resolver.addServer(new InetSocketAddress("localhost", 0), new Protocol(server.getServerPort(), ProtocolType.TcpRegistration));
         transportClient.loadBalancer.updateListOfServers(); // We do not want to wait for the background thread to refresh it.
 
-        ServerConnection connection = transportClient.connect().toBlocking().toFuture().get(30, TimeUnit.SECONDS);
+        MessageConnection connection = transportClient.connect().toBlocking().toFuture().get(30, TimeUnit.SECONDS);
         assertNotNull("Connection not established", connection);
-        Observable<Void> ackObservable = connection.sendWithAck(new Register(SampleInstanceInfo.DiscoveryServer.build()));
+        Observable<Void> ackObservable = connection.submitWithAck(new Register(SampleInstanceInfo.DiscoveryServer.build()));
 
         assertTrue("Acknowledgment not received in time", RxBlocking.isCompleted(30, TimeUnit.SECONDS, ackObservable));
     }

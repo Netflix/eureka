@@ -23,7 +23,7 @@ import javax.inject.Singleton;
 import com.netflix.rx.eureka.server.service.InterestChannelMetrics;
 import com.netflix.rx.eureka.server.service.RegistrationChannelMetrics;
 import com.netflix.rx.eureka.server.service.ReplicationChannelMetrics;
-import com.netflix.rx.eureka.server.transport.EurekaServerConnectionMetrics;
+import com.netflix.rx.eureka.transport.base.MessageConnectionMetrics;
 
 /**
  * @author Tomasz Bak
@@ -33,18 +33,18 @@ public class EurekaServerMetricFactory {
 
     private static EurekaServerMetricFactory INSTANCE;
 
-    private final EurekaServerConnectionMetrics registrationConnectionMetrics;
-    private final EurekaServerConnectionMetrics replicationConnectionMetrics;
-    private final EurekaServerConnectionMetrics discoveryConnectionMetrics;
+    private final MessageConnectionMetrics registrationConnectionMetrics;
+    private final MessageConnectionMetrics replicationConnectionMetrics;
+    private final MessageConnectionMetrics discoveryConnectionMetrics;
     private final RegistrationChannelMetrics registrationChannelMetrics;
     private final ReplicationChannelMetrics replicationChannelMetrics;
     private final InterestChannelMetrics interestChannelMetrics;
 
     @Inject
     public EurekaServerMetricFactory(
-            @Named("registration") EurekaServerConnectionMetrics registrationConnectionMetrics,
-            @Named("replication") EurekaServerConnectionMetrics replicationConnectionMetrics,
-            @Named("discovery") EurekaServerConnectionMetrics discoveryConnectionMetrics,
+            @Named("registration") MessageConnectionMetrics registrationConnectionMetrics,
+            @Named("replication") MessageConnectionMetrics replicationConnectionMetrics,
+            @Named("discovery") MessageConnectionMetrics discoveryConnectionMetrics,
             RegistrationChannelMetrics registrationChannelMetrics,
             ReplicationChannelMetrics replicationChannelMetrics,
             InterestChannelMetrics interestChannelMetrics) {
@@ -56,15 +56,15 @@ public class EurekaServerMetricFactory {
         this.interestChannelMetrics = interestChannelMetrics;
     }
 
-    public EurekaServerConnectionMetrics getRegistrationConnectionMetrics() {
+    public MessageConnectionMetrics getRegistrationConnectionMetrics() {
         return registrationConnectionMetrics;
     }
 
-    public EurekaServerConnectionMetrics getReplicationConnectionMetrics() {
+    public MessageConnectionMetrics getReplicationConnectionMetrics() {
         return replicationConnectionMetrics;
     }
 
-    public EurekaServerConnectionMetrics getDiscoveryConnectionMetrics() {
+    public MessageConnectionMetrics getDiscoveryConnectionMetrics() {
         return discoveryConnectionMetrics;
     }
 
@@ -84,9 +84,9 @@ public class EurekaServerMetricFactory {
         if (INSTANCE == null) {
             synchronized (EurekaServerMetricFactory.class) {
                 INSTANCE = new EurekaServerMetricFactory(
-                        new EurekaServerConnectionMetrics("registration"),
-                        new EurekaServerConnectionMetrics("replication"),
-                        new EurekaServerConnectionMetrics("discovery"),
+                        new MessageConnectionMetrics("registration"),
+                        new MessageConnectionMetrics("replication"),
+                        new MessageConnectionMetrics("discovery"),
                         new RegistrationChannelMetrics(),
                         new ReplicationChannelMetrics(),
                         new InterestChannelMetrics()

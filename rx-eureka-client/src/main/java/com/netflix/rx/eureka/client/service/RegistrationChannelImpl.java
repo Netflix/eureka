@@ -1,12 +1,12 @@
 package com.netflix.rx.eureka.client.service;
 
-import com.netflix.rx.eureka.client.transport.ServerConnection;
 import com.netflix.rx.eureka.client.transport.TransportClient;
 import com.netflix.rx.eureka.protocol.registration.Register;
 import com.netflix.rx.eureka.protocol.registration.Unregister;
 import com.netflix.rx.eureka.protocol.registration.Update;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.service.RegistrationChannel;
+import com.netflix.rx.eureka.transport.MessageConnection;
 import rx.Observable;
 import rx.functions.Func1;
 
@@ -33,7 +33,7 @@ import rx.functions.Func1;
     private final RegistrationChannelMetrics metrics;
 
     public RegistrationChannelImpl(TransportClient transportClient, RegistrationChannelMetrics metrics) {
-        super(STATES.Idle, transportClient, 30000);
+        super(STATES.Idle, transportClient);
         this.metrics = metrics;
         metrics.incrementStateCounter(STATES.Idle);
     }
@@ -51,10 +51,10 @@ import rx.functions.Func1;
         }
 
         //TODO: Need to serialize register -> update -> unregister. With this code both they can be interleaved
-        return connect().switchMap(new Func1<ServerConnection, Observable<? extends Void>>() {
+        return connect().switchMap(new Func1<MessageConnection, Observable<? extends Void>>() {
             @Override
-            public Observable<? extends Void> call(ServerConnection connection) {
-                return connection.sendWithAck(new Register(instanceInfo));
+            public Observable<? extends Void> call(MessageConnection connection) {
+                return connection.submitWithAck(new Register(instanceInfo));
             }
         });
     }
@@ -67,10 +67,10 @@ import rx.functions.Func1;
                 return Observable.error(INSTANCE_NOT_REGISTERED_EXCEPTION);
             case Registered:
                 //TODO: Need to serialize register -> update -> unregister. With this code both they can be interleaved
-                return connect().switchMap(new Func1<ServerConnection, Observable<? extends Void>>() {
+                return connect().switchMap(new Func1<MessageConnection, Observable<? extends Void>>() {
                     @Override
-                    public Observable<? extends Void> call(ServerConnection connection) {
-                        return connection.sendWithAck(new Update(newInfo));
+                    public Observable<? extends Void> call(MessageConnection connection) {
+                        return connection.submitWithAck(new Update(newInfo));
                     }
                 });
             case Closed:
@@ -93,10 +93,10 @@ import rx.functions.Func1;
             return Observable.error(new IllegalStateException("Unrecognized channel state: " + currentState));
         }
         //TODO: Need to serialize register -> update -> unregister. With this code both they can be interleaved
-        return connect().switchMap(new Func1<ServerConnection, Observable<? extends Void>>() {
+        return connect().switchMap(new Func1<MessageConnection, Observable<? extends Void>>() {
             @Override
-            public Observable<? extends Void> call(ServerConnection connection) {
-                return connection.sendWithAck(new Unregister());
+            public Observable<? extends Void> call(MessageConnection connection) {
+                return connection.submitWithAck(Unregister.INSTANCE);
             }
         });
     }

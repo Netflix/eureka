@@ -3,15 +3,19 @@ package com.netflix.rx.eureka.server.service;
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interest;
 import com.netflix.rx.eureka.interests.Interests;
+import com.netflix.rx.eureka.interests.ModifyNotification;
 import com.netflix.rx.eureka.protocol.EurekaProtocolError;
-import com.netflix.rx.eureka.protocol.Heartbeat;
+import com.netflix.rx.eureka.protocol.discovery.AddInstance;
+import com.netflix.rx.eureka.protocol.discovery.DeleteInstance;
 import com.netflix.rx.eureka.protocol.discovery.InterestRegistration;
 import com.netflix.rx.eureka.protocol.discovery.UnregisterInterestSet;
+import com.netflix.rx.eureka.protocol.discovery.UpdateInstanceInfo;
+import com.netflix.rx.eureka.registry.Delta;
 import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.server.service.InterestChannelMetrics.ChannelSubscriptionMonitor;
-import com.netflix.rx.eureka.server.transport.ClientConnection;
 import com.netflix.rx.eureka.service.InterestChannel;
+import com.netflix.rx.eureka.transport.MessageConnection;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action1;
@@ -33,8 +37,8 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
     private final InterestNotificationMultiplexer notificationMultiplexer;
     private final ChannelSubscriptionMonitor channelSubscriptionMonitor;
 
-    public InterestChannelImpl(final EurekaRegistry<InstanceInfo> registry, final ClientConnection transport, final InterestChannelMetrics metrics) {
-        super(STATES.Idle, transport, registry, 3, 30000);
+    public InterestChannelImpl(final EurekaRegistry<InstanceInfo> registry, final MessageConnection transport, final InterestChannelMetrics metrics) {
+        super(STATES.Idle, transport, registry);
         this.metrics = metrics;
         this.notificationMultiplexer = new InterestNotificationMultiplexer(registry);
         this.channelSubscriptionMonitor = new ChannelSubscriptionMonitor(metrics);
@@ -66,12 +70,9 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
                             sendErrorOnTransport(CHANNEL_CLOSED_EXCEPTION);
                             break;
                     }
-                } else if (message instanceof Heartbeat) {
-                    heartbeat();
                 } else {
                     sendErrorOnTransport(new EurekaProtocolError("Unexpected message " + message));
                 }
-
             }
         });
 
@@ -95,11 +96,39 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
                     @Override
                     public void onNext(ChangeNotification<InstanceInfo> notification) {
                         metrics.incrementApplicationNotificationCounter(notification.getData().getApp());
-                        sendNotificationOnTransport(notification);
+                        subscribeToTransportSend(sendNotification(notification), "notification");
                     }
                 });
     }
 
+    public Observable<Void> sendNotification(ChangeNotification<InstanceInfo> notification) {
+        switch (notification.getKind()) {
+            case Add:
+                return transport.submitWithAck(new AddInstance(notification.getData()));
+            case Delete:
+                return transport.submitWithAck(new DeleteInstance(notification.getData().getId()));
+            case Modify:
+                final ModifyNotification<InstanceInfo> modifyNotification = (ModifyNotification<InstanceInfo>) notification;
+
+                /**
+                 * Below will only work correctly if {@link MessageBroker#submitWithAck(Object)} is a lazy submit i.e.
+                 * the message is only sent over the wire when subscribed. If it is eager i.e. the message is written
+                 * to the underlying connection without subscription then {@link Observable#concatWith(Observable)}
+                 * will eagerly write all the messages without waiting for an ack.
+                 */
+                Observable<Void> toReturn = null;
+                for (final Delta<?> delta : modifyNotification.getDelta()) {
+                    if (null == toReturn) {
+                        toReturn = transport.submitWithAck(new UpdateInstanceInfo(delta));
+                    } else {
+                        toReturn.concatWith(transport.submitWithAck(new UpdateInstanceInfo(delta)));
+                    }
+                }
+                return toReturn;
+        }
+        return Observable.error(new IllegalArgumentException("Unknown change notification type: " +
+                notification.getKind()));
+    }
 
     @Override
     public Observable<Void> change(Interest<InstanceInfo> newInterest) {
@@ -115,7 +144,7 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
         channelSubscriptionMonitor.update(newInterest);
         notificationMultiplexer.update(newInterest);
 
-        Observable<Void> toReturn = transport.sendAcknowledgment();
+        Observable<Void> toReturn = transport.acknowledge();
         subscribeToTransportSend(toReturn, "acknowledgment"); // Subscribe eagerly and not require the caller to subscribe.
         return toReturn;
     }

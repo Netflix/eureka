@@ -16,13 +16,13 @@
 
 package com.netflix.rx.eureka.server.service;
 
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.service.RegistrationChannel;
 import rx.Observable;
 import rx.subjects.PublishSubject;
-
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * @author Tomasz Bak
@@ -30,8 +30,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class TestableRegistrationChannel implements RegistrationChannel {
 
     private final BlockingQueue<Object> updateQueue = new LinkedBlockingQueue<Object>();
-
-    private final BlockingQueue<Long> heartbeatsQueue = new LinkedBlockingQueue<Long>();
 
     private final PublishSubject<Void> closeObservable = PublishSubject.create();
 
@@ -53,11 +51,6 @@ public class TestableRegistrationChannel implements RegistrationChannel {
     }
 
     @Override
-    public void heartbeat() {
-        heartbeatsQueue.add(System.currentTimeMillis());
-    }
-
-    @Override
     public void close() {
         closeObservable.onCompleted();
     }
@@ -73,10 +66,6 @@ public class TestableRegistrationChannel implements RegistrationChannel {
 
     public BlockingQueue<Object> viewUpdates() {
         return updateQueue;
-    }
-
-    public BlockingQueue<Long> viewHeartbeats() {
-        return heartbeatsQueue;
     }
 
     /**
