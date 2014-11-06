@@ -396,6 +396,8 @@ public class Applications {
                                   @Nullable InstanceRegionChecker instanceRegionChecker) {
         this.virtualHostNameAppMap.clear();
         this.secureVirtualHostNameAppMap.clear();
+        this.shuffleVirtualHostNameMap.clear();
+        this.shuffledSecureVirtualHostNameMap.clear();
         for (Application application : appNameApplicationMap.values()) {
             if (indexByRemoteRegions) {
                 application.shuffleAndStoreInstances(remoteRegionsRegistry, clientConfig, instanceRegionChecker);
