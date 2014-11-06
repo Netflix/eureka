@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.netflix.appinfo.AbstractEurekaIdentity;
 import com.netflix.appinfo.EurekaClientIdentity;
@@ -83,7 +85,9 @@ public class RateLimitingFilter implements Filter {
             Arrays.asList(EurekaClientIdentity.DEFAULT_CLIENT_NAME, EurekaServerIdentity.DEFAULT_SERVER_NAME)
     );
 
-    enum Target {FullFetch, DeltaFetch, Other}
+    private static final Pattern TARGET_RE = Pattern.compile("^.*/apps(/[^/]*)?$");
+
+    enum Target {FullFetch, DeltaFetch, Application, Other}
 
     /**
      * Includes both full and delta fetches.
@@ -125,11 +129,15 @@ public class RateLimitingFilter implements Filter {
             HttpServletRequest httpRequest = (HttpServletRequest) request;
 
             if ("GET".equals(httpRequest.getMethod())) {
-                String path = httpRequest.getPathInfo();
-                if (path.endsWith("/apps") || path.endsWith("/apps/")) {
-                    target = Target.FullFetch;
-                } else if (path.endsWith("/apps/delta") || path.endsWith("/apps/delta/")) {
-                    target = Target.DeltaFetch;
+                Matcher matcher = TARGET_RE.matcher(httpRequest.getPathInfo());
+                if (matcher.matches()) {
+                    if (matcher.groupCount() == 0 || "/".equals(matcher.group(1))) {
+                        target = Target.FullFetch;
+                    } else if ("/delta".equals(matcher.group(1))) {
+                        target = Target.DeltaFetch;
+                    } else {
+                        target = Target.Application;
+                    }
                 }
             }
         }
@@ -154,7 +162,7 @@ public class RateLimitingFilter implements Filter {
         int fetchWindowSize = config().getRateLimiterRegistryFetchAverageRate();
         boolean overloaded = !registryFetchRateLimiter.acquire(maxInWindow, fetchWindowSize);
 
-        if (target == Target.FullFetch) {
+        if (target == Target.FullFetch || target == Target.Application) {
             int fullFetchWindowSize = config().getRateLimiterFullFetchAverageRate();
             overloaded |= !registryFullFetchRateLimiter.acquire(maxInWindow, fullFetchWindowSize);
         }

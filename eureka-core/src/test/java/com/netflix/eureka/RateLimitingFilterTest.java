@@ -43,6 +43,7 @@ public class RateLimitingFilterTest {
 
     private static final String FULL_FETCH = "base/apps";
     private static final String DELTA_FETCH = "base/apps/delta";
+    private static final String APP_FETCH = "base/apps/myAppId";
 
     private static final String CUSTOM_CLIENT = "CustomClient";
     private static final String PYTHON_CLIENT = "PythonClient";
@@ -83,7 +84,7 @@ public class RateLimitingFilterTest {
         whenRequest(DELTA_FETCH, EurekaClientIdentity.DEFAULT_CLIENT_NAME);
         filter.doFilter(request, response, filterChain);
 
-        whenRequest(FULL_FETCH, EurekaServerIdentity.DEFAULT_SERVER_NAME);
+        whenRequest(APP_FETCH, EurekaServerIdentity.DEFAULT_SERVER_NAME);
         filter.doFilter(request, response, filterChain);
 
         verify(filterChain, times(3)).doFilter(request, response);
@@ -91,7 +92,7 @@ public class RateLimitingFilterTest {
     }
 
     @Test
-    public void testStandardClientsThrottled() throws Exception {
+    public void testStandardClientsThrottlingEnforceable() throws Exception {
         ConfigurationManager.getConfigInstance().setProperty("eureka.rateLimiter.throttleStandardClients", true);
 
         // Custom clients will go up to the window limit
