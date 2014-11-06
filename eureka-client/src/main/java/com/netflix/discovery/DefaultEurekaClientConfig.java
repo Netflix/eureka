@@ -446,6 +446,12 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 namespace + "client.heartbeat.threadPoolSize", 2).get();
     }
 
+    @Override
+    public int getHeartbeatExecutorExponentialBackOffBound() {
+        return configInstance.getIntProperty(
+                namespace + "client.heartbeat.exponentialBackOffBound", 10).get();
+    }
+
     /**
      * (non-Javadoc)
      *
@@ -455,5 +461,11 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     public int getCacheRefreshExecutorThreadPoolSize() {
         return configInstance.getIntProperty(
                 namespace + "client.cacheRefresh.threadPoolSize", 2).get();
+    }
+
+    @Override
+    public int getCacheRefreshExecutorExponentialBackOffBound() {
+        return configInstance.getIntProperty(
+                namespace + "client.cacheRefresh.exponentialBackOffBound", 10).get();
     }
 }

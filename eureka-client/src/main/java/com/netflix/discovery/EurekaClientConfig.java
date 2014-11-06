@@ -452,9 +452,27 @@ public interface EurekaClientConfig {
     int getHeartbeatExecutorThreadPoolSize();
 
     /**
+     * Heartbeat executor exponential back off related property.
+     * It is a maximum multiplier value for retry delay, in case where a sequence of timeouts
+     * occurred.
+     *
+     * @return maximum multiplier value for retry delay
+     */
+    int getHeartbeatExecutorExponentialBackOffBound();
+
+    /**
      * The thread pool size for the cacheRefreshExecutor to initialise with
      *
      * @return the cacheRefreshExecutor thread pool size
      */
     int getCacheRefreshExecutorThreadPoolSize();
+
+    /**
+     * Cache refresh executor exponential back off related property.
+     * It is a maximum multiplier value for retry delay, in case where a sequence of timeouts
+     * occurred.
+     *
+     * @return maximum multiplier value for retry delay
+     */
+    int getCacheRefreshExecutorExponentialBackOffBound();
 }

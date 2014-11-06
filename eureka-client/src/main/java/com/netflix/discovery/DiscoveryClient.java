@@ -41,17 +41,13 @@ import com.netflix.discovery.shared.EurekaJerseyClient.JerseyClient;
 import com.netflix.discovery.shared.LookupService;
 import com.netflix.eventbus.spi.EventBus;
 import com.netflix.governator.guice.lazy.FineGrainedLazySingleton;
-import com.netflix.http4.MonitoredConnectionManager;
 import com.netflix.servo.monitor.Counter;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
-import com.sun.jersey.client.apache4.config.ApacheHttpClient4Config;
-import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1206,22 +1202,36 @@ public class DiscoveryClient implements LookupService {
         if (clientConfig.shouldFetchRegistry()) {
             // registry cache refresh timer
             int registryFetchIntervalSeconds = clientConfig.getRegistryFetchIntervalSeconds();
-            scheduler.scheduleWithFixedDelay(
+            int expBackOffBound = clientConfig.getCacheRefreshExecutorExponentialBackOffBound();
+            scheduler.schedule(
                     new TimedSupervisorTask(
-                            "cacheRefresh", cacheRefreshExecutor, registryFetchIntervalSeconds, new CacheRefreshThread()),
-                    registryFetchIntervalSeconds,
+                            "cacheRefresh",
+                            scheduler,
+                            cacheRefreshExecutor,
+                            registryFetchIntervalSeconds,
+                            TimeUnit.SECONDS,
+                            expBackOffBound,
+                            new CacheRefreshThread()
+                    ),
                     registryFetchIntervalSeconds, TimeUnit.SECONDS);
         }
 
         if (shouldRegister(instanceInfo)) {
             int renewalIntervalInSecs = instanceInfo.getLeaseInfo().getRenewalIntervalInSecs();
+            int expBackOffBound = clientConfig.getHeartbeatExecutorExponentialBackOffBound();
             logger.info("Starting heartbeat executor: " + "renew interval is: " + renewalIntervalInSecs);
 
             // Heartbeat timer
-            scheduler.scheduleWithFixedDelay(
+            scheduler.schedule(
                     new TimedSupervisorTask(
-                            "heartbeat", heartbeatExecutor, renewalIntervalInSecs, new HeartbeatThread()),
-                    renewalIntervalInSecs,
+                            "heartbeat",
+                            scheduler,
+                            heartbeatExecutor,
+                            renewalIntervalInSecs,
+                            TimeUnit.SECONDS,
+                            expBackOffBound,
+                            new HeartbeatThread()
+                    ),
                     renewalIntervalInSecs, TimeUnit.SECONDS);
 
             // InstanceInfo replication timer

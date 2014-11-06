@@ -1,7 +1,12 @@
 package com.netflix.discovery;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -10,14 +15,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
 public class TimedSupervisorTaskTest {
+
+    private static final int EXP_BACK_OFF_BOUND = 10;
 
     private ScheduledExecutorService scheduler;
     private ListeningExecutorService helperExecutor;
@@ -73,8 +73,8 @@ public class TimedSupervisorTaskTest {
     @Test
     public void testSupervisorTaskDefaultSingleTestTaskHappyCase() throws Exception {
         // testTask should never timeout
-        TestTask testTask = new TestTask(1);
-        TimedSupervisorTask supervisorTask = new TimedSupervisorTask("test", executor, 5, testTask);
+        TestTask testTask = new TestTask(1, false);
+        TimedSupervisorTask supervisorTask = new TimedSupervisorTask("test", scheduler, executor, 5, TimeUnit.SECONDS, EXP_BACK_OFF_BOUND, testTask);
 
         helperExecutor.submit(supervisorTask).get();
 
@@ -89,8 +89,8 @@ public class TimedSupervisorTaskTest {
     @Test
     public void testSupervisorTaskCancelsTimedOutTask() throws Exception {
         // testTask will always timeout
-        TestTask testTask = new TestTask(5);
-        TimedSupervisorTask supervisorTask = new TimedSupervisorTask("test", executor, 1, testTask);
+        TestTask testTask = new TestTask(5, false);
+        TimedSupervisorTask supervisorTask = new TimedSupervisorTask("test", scheduler, executor, 1, TimeUnit.SECONDS, EXP_BACK_OFF_BOUND, testTask);
 
         helperExecutor.submit(supervisorTask).get();
         Thread.sleep(500);  // wait a little bit for the subtask interrupt handler
@@ -106,14 +106,11 @@ public class TimedSupervisorTaskTest {
     @Test
     public void testSupervisorRejectNewTasksIfThreadPoolIsFullForIncompleteTasks() throws Exception {
         // testTask should always timeout
-        TestTask testTask = new TestTask(4);
-        TimedSupervisorTask supervisorTask = new TimedSupervisorTask("test", executor, 1, testTask);
+        TestTask testTask = new TestTask(4, true);
+        TimedSupervisorTask supervisorTask = new TimedSupervisorTask("test", scheduler, executor, 1, TimeUnit.MILLISECONDS, EXP_BACK_OFF_BOUND, testTask);
 
-        ListenableFuture a = helperExecutor.submit(supervisorTask);
-        ListenableFuture b = helperExecutor.submit(supervisorTask);
-        ListenableFuture c = helperExecutor.submit(supervisorTask);
-        ListenableFuture d = helperExecutor.submit(supervisorTask);
-        Futures.successfulAsList(a, b, c, d).get();
+        scheduler.schedule(supervisorTask, 0, TimeUnit.SECONDS);
+
         Thread.sleep(500);  // wait a little bit for the subtask interrupt handlers
 
         Assert.assertEquals(3, maxConcurrentTestTasks.get());
@@ -121,16 +118,16 @@ public class TimedSupervisorTaskTest {
 
         Assert.assertEquals(3, testTaskStartCounter.get());
         Assert.assertEquals(0, testTaskSuccessfulCounter.get());
-        Assert.assertEquals(3, testTaskInterruptedCounter.get());
+        Assert.assertEquals(0, testTaskInterruptedCounter.get());
     }
 
     @Test
     public void testSupervisorTaskAsPeriodicScheduledJobHappyCase() throws Exception {
         // testTask should never timeout
-        TestTask testTask = new TestTask(1);
-        TimedSupervisorTask supervisorTask = new TimedSupervisorTask("test", executor, 4, testTask);
+        TestTask testTask = new TestTask(1, false);
+        TimedSupervisorTask supervisorTask = new TimedSupervisorTask("test", scheduler, executor, 4, TimeUnit.SECONDS, EXP_BACK_OFF_BOUND, testTask);
 
-        scheduler.scheduleWithFixedDelay(supervisorTask, 0, 2, TimeUnit.SECONDS);
+        scheduler.schedule(supervisorTask, 0, TimeUnit.SECONDS);
         Thread.sleep(5000);  // let the scheduler run for long enough for some results
 
         Assert.assertEquals(1, maxConcurrentTestTasks.get());
@@ -142,10 +139,10 @@ public class TimedSupervisorTaskTest {
     @Test
     public void testSupervisorTaskAsPeriodicScheduledJobTestTaskTimingOut() throws Exception {
         // testTask should always timeout
-        TestTask testTask = new TestTask(5);
-        TimedSupervisorTask supervisorTask = new TimedSupervisorTask("test", executor, 1, testTask);
+        TestTask testTask = new TestTask(5, false);
+        TimedSupervisorTask supervisorTask = new TimedSupervisorTask("test", scheduler, executor, 2, TimeUnit.SECONDS, EXP_BACK_OFF_BOUND, testTask);
 
-        scheduler.scheduleWithFixedDelay(supervisorTask, 0, 2, TimeUnit.SECONDS);
+        scheduler.schedule(supervisorTask, 0, TimeUnit.SECONDS);
         Thread.sleep(5000);  // let the scheduler run for long enough for some results
 
         Assert.assertEquals(1, maxConcurrentTestTasks.get());
@@ -157,9 +154,11 @@ public class TimedSupervisorTaskTest {
 
     private class TestTask implements Runnable {
         private final int runTimeSecs;
+        private final boolean blockInterrupt;
 
-        public TestTask(int runTimeSecs) {
+        public TestTask(int runTimeSecs, boolean blockInterrupt) {
             this.runTimeSecs = runTimeSecs;
+            this.blockInterrupt = blockInterrupt;
         }
 
         public void run() {
@@ -174,7 +173,16 @@ public class TimedSupervisorTaskTest {
                     }
                 }
 
-                Thread.sleep(runTimeSecs * 1000);
+                long endTime = System.currentTimeMillis() + runTimeSecs * 1000;
+                while (endTime >= System.currentTimeMillis()) {
+                    try {
+                        Thread.sleep(runTimeSecs * 1000);
+                    } catch (InterruptedException e) {
+                        if (!blockInterrupt) {
+                            throw e;
+                        }
+                    }
+                }
 
                 testTaskCounter.decrementAndGet();
                 testTaskSuccessfulCounter.incrementAndGet();
