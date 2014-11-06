@@ -518,12 +518,19 @@ public interface EurekaServerConfig {
     boolean isRateLimiterEnabled();
 
     /**
-     * A list of certified clients. This is in addition to standard eureka Java clients.
+     * Indicate if rate limit standard clients. If set to false, only non standard clients
+     * will be rate limited.
      */
-    Set<String> getRateLimiterPrivilidgedClients();
+    boolean isRateLimiterThrottleStandardClients();
 
     /**
-     * Rate limiter, token bucket algorithm property. See also {@link #getRateLimiterAverageRate()}.
+     * A list of certified clients. This is in addition to standard eureka Java clients.
+     */
+    Set<String> getRateLimiterPrivilegedClients();
+
+    /**
+     * Rate limiter, token bucket algorithm property. See also {@link #getRateLimiterRegistryFetchAverageRate()}
+     * and {@link #getRateLimiterFullFetchAverageRate()}.
      */
     int getRateLimiterBurstSize();
 
@@ -531,5 +538,11 @@ public interface EurekaServerConfig {
      * Rate limiter, token bucket algorithm property. Specifies the average enforced request rate.
      * See also {@link #getRateLimiterBurstSize()}.
      */
-    int getRateLimiterAverageRate();
+    int getRateLimiterRegistryFetchAverageRate();
+
+    /**
+     * Rate limiter, token bucket algorithm property. Specifies the average enforced request rate.
+     * See also {@link #getRateLimiterBurstSize()}.
+     */
+    int getRateLimiterFullFetchAverageRate();
 }

@@ -63,7 +63,9 @@ public enum EurekaMonitors {
     REJECTED_REPLICATIONS("numOfRejectedReplications", "Number of replications rejected because of full queue"),
     FAILED_REPLICATIONS("numOfFailedReplications", "Number of failed replications - likely from timeouts"),
     RATE_LIMITED("numOfRateLimitedRequests", "Number of requests discarded by the rate limiter"),
-    RATE_LIMITED_CANDIDATES("numOfRateLimitedRequestCandidates", "Number of requests that would be discarded if the rate limiter's throttling is activated");
+    RATE_LIMITED_CANDIDATES("numOfRateLimitedRequestCandidates", "Number of requests that would be discarded if the rate limiter's throttling is activated"),
+    RATE_LIMITED_FULL_FETCH("numOfRateLimitedFullFetchRequests", "Number of full registry fetch requests discarded by the rate limiter"),
+    RATE_LIMITED_FULL_FETCH_CANDIDATES("numOfRateLimitedFullFetchRequestCandidates", "Number of full registry fetch requests that would be discarded if the rate limiter's throttling is activated");
 
     private final String name;
 
