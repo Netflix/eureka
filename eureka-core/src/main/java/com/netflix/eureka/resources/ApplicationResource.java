@@ -26,6 +26,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import com.netflix.eureka.util.EurekaMonitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,6 +76,9 @@ public class ApplicationResource {
         if (!PeerAwareInstanceRegistry.getInstance().shouldAllowAccess(false)) {
             return Response.status(Status.FORBIDDEN).build();
         }
+
+        EurekaMonitors.GET_APPLICATION.increment();
+
         CurrentRequestVersion.set(Version.toEnum(version));
         KeyType keyType = KeyType.JSON;
         if (acceptHeader == null || !acceptHeader.contains("json")) {

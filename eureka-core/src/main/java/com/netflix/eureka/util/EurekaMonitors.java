@@ -55,6 +55,7 @@ public enum EurekaMonitors {
     GET_ALL("getAllCounter", "Number of total registry queries seen since startup"),
     GET_ALL_WITH_REMOTE_REGIONS("getAllWithRemoteRegionCounter",
             "Number of total registry queries with remote regions, seen since startup"),
+    GET_APPLICATION("getApplicationCounter", "Number of total application queries seen since startup"),
     REGISTER("registerCounter", "Number of total registers seen since startup"),
     EXPIRED("expiredCounter", "Number of total expired leases since startup"),
     STATUS_UPDATE("statusUpdateCounter", "Number of total admin status updates since startup"),

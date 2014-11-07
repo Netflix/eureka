@@ -35,6 +35,8 @@ import com.netflix.appinfo.AbstractEurekaIdentity;
 import com.netflix.appinfo.EurekaClientIdentity;
 import com.netflix.eureka.util.EurekaMonitors;
 import com.netflix.eureka.util.RateLimiter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Rate limiting filter, with configurable threshold above which non-privileged clients
@@ -80,6 +82,8 @@ import com.netflix.eureka.util.RateLimiter;
  * @author Tomasz Bak
  */
 public class RateLimitingFilter implements Filter {
+
+    private static final Logger logger = LoggerFactory.getLogger(RateLimitingFilter.class);
 
     private static final Set<String> DEFAULT_PRIVILEGED_CLIENTS = new HashSet<String>(
             Arrays.asList(EurekaClientIdentity.DEFAULT_CLIENT_NAME, EurekaServerIdentity.DEFAULT_SERVER_NAME)
@@ -127,11 +131,12 @@ public class RateLimitingFilter implements Filter {
         Target target = Target.Other;
         if (request instanceof HttpServletRequest) {
             HttpServletRequest httpRequest = (HttpServletRequest) request;
+            String pathInfo = httpRequest.getRequestURI();
 
-            if ("GET".equals(httpRequest.getMethod())) {
-                Matcher matcher = TARGET_RE.matcher(httpRequest.getPathInfo());
+            if ("GET".equals(httpRequest.getMethod()) && pathInfo != null) {
+                Matcher matcher = TARGET_RE.matcher(pathInfo);
                 if (matcher.matches()) {
-                    if (matcher.groupCount() == 0 || "/".equals(matcher.group(1))) {
+                    if (matcher.groupCount() == 0 || matcher.group(1) == null || "/".equals(matcher.group(1))) {
                         target = Target.FullFetch;
                     } else if ("/delta".equals(matcher.group(1))) {
                         target = Target.DeltaFetch;
@@ -140,12 +145,24 @@ public class RateLimitingFilter implements Filter {
                     }
                 }
             }
+            if (target == Target.Other) {
+                logger.debug("URL path {} not matched by rate limiting filter", pathInfo);
+            }
         }
         return target;
     }
 
     private static boolean isRateLimited(HttpServletRequest request, Target target) {
-        return !isPrivileged(request) && isOverloaded(target);
+        if (isPrivileged(request)) {
+            logger.debug("Privileged {} request", target);
+            return false;
+        }
+        if (isOverloaded(target)) {
+            logger.debug("Overloaded {} request; discarding it", target);
+            return true;
+        }
+        logger.debug("{} request admitted", target);
+        return false;
     }
 
     private static boolean isPrivileged(HttpServletRequest request) {
@@ -162,7 +179,7 @@ public class RateLimitingFilter implements Filter {
         int fetchWindowSize = config().getRateLimiterRegistryFetchAverageRate();
         boolean overloaded = !registryFetchRateLimiter.acquire(maxInWindow, fetchWindowSize);
 
-        if (target == Target.FullFetch || target == Target.Application) {
+        if (target == Target.FullFetch) {
             int fullFetchWindowSize = config().getRateLimiterFullFetchAverageRate();
             overloaded |= !registryFullFetchRateLimiter.acquire(maxInWindow, fullFetchWindowSize);
         }
