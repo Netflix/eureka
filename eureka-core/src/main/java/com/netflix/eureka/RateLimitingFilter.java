@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.netflix.appinfo.AbstractEurekaIdentity;
 import com.netflix.appinfo.EurekaClientIdentity;
@@ -35,23 +37,31 @@ import com.netflix.eureka.util.EurekaMonitors;
 import com.netflix.eureka.util.RateLimiter;
 
 /**
- * Rate limiting filter, with configurable threshold above which non-privilidged clients
+ * Rate limiting filter, with configurable threshold above which non-privileged clients
  * will be dropped. This feature enables cutting off non-standard and potentially harmful clients
- * in case of system overload.
+ * in case of system overload. Since it is critical to always allow client registrations and heartbeats into
+ * the system, which at the same time are relatively cheap operations, the rate limiting is applied only to
+ * full and delta registry fetches. Furthermore, since delta fetches are much smaller than full fetches,
+ * and if not served my result in following full registry fetch from the client, they have relatively
+ * higher priority. This is implemented by two parallel rate limiters, one for overall number of
+ * full/delta fetches (higher threshold) and one for full fetches only (low threshold).
+ * <p>
  * The client is identified by {@link AbstractEurekaIdentity#AUTH_NAME_HEADER_KEY} HTTP header
- * value. The privilidged group by default contains:
+ * value. The privileged group by default contains:
  * <ul>
  * <li>
  *     {@link EurekaClientIdentity#DEFAULT_CLIENT_NAME} - standard Java eureka-client. Applications using
- *     this client automatically belong to the privilidged group.
+ *     this client automatically belong to the privileged group.
  * </li>
  * <li>
  *     {@link com.netflix.eureka.EurekaServerIdentity#DEFAULT_SERVER_NAME} - connections from peer Eureka servers
  *     (internal only, traffic replication)
  * </li>
  * </ul>
- *
- * This feature is not enabled by default, but can be turned on via configuration. Even when disabled,
+ * It is possible to turn off privileged client filtering via
+ * {@link EurekaServerConfig#isRateLimiterThrottleStandardClients()} property.
+ * <p>
+ * Rate limiting is not enabled by default, but can be turned on via configuration. Even when disabled,
  * the throttling statistics are still counted, although on a separate counter, so it is possible to
  * measure the impact of this feature before activation.
  *
@@ -71,11 +81,23 @@ import com.netflix.eureka.util.RateLimiter;
  */
 public class RateLimitingFilter implements Filter {
 
-    private static final Set<String> DEFAULT_PRIVILEDGED_CLIENTS = new HashSet<String>(
+    private static final Set<String> DEFAULT_PRIVILEGED_CLIENTS = new HashSet<String>(
             Arrays.asList(EurekaClientIdentity.DEFAULT_CLIENT_NAME, EurekaServerIdentity.DEFAULT_SERVER_NAME)
     );
 
-    private static final RateLimiter rateLimiter = new RateLimiter();
+    private static final Pattern TARGET_RE = Pattern.compile("^.*/apps(/[^/]*)?$");
+
+    enum Target {FullFetch, DeltaFetch, Application, Other}
+
+    /**
+     * Includes both full and delta fetches.
+     */
+    private static final RateLimiter registryFetchRateLimiter = new RateLimiter();
+
+    /**
+     * Only full registry fetches.
+     */
+    private static final RateLimiter registryFullFetchRateLimiter = new RateLimiter();
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
@@ -83,35 +105,86 @@ public class RateLimitingFilter implements Filter {
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-        if (request instanceof HttpServletRequest) {
-            if (isRateLimited((HttpServletRequest) request)) {
-                if (EurekaServerConfigurationManager.getInstance().getConfiguration().isRateLimiterEnabled()) {
-                    EurekaMonitors.RATE_LIMITED.increment();
-                    ((HttpServletResponse) response).setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-                } else {
-                    EurekaMonitors.RATE_LIMITED_CANDIDATES.increment();
-                    chain.doFilter(request, response);
-                }
+        Target target = getTarget(request);
+        if (target == Target.Other) {
+            chain.doFilter(request, response);
+            return;
+        }
+
+        HttpServletRequest httpRequest = (HttpServletRequest) request;
+
+        if (isRateLimited(httpRequest, target)) {
+            incrementStats(target);
+            if (config().isRateLimiterEnabled()) {
+                ((HttpServletResponse) response).setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                 return;
             }
         }
         chain.doFilter(request, response);
     }
 
-    private static boolean isRateLimited(HttpServletRequest request) {
-        return !isPrivilidged(request) && isOverloaded();
+    private static Target getTarget(ServletRequest request) {
+        Target target = Target.Other;
+        if (request instanceof HttpServletRequest) {
+            HttpServletRequest httpRequest = (HttpServletRequest) request;
+
+            if ("GET".equals(httpRequest.getMethod())) {
+                Matcher matcher = TARGET_RE.matcher(httpRequest.getPathInfo());
+                if (matcher.matches()) {
+                    if (matcher.groupCount() == 0 || "/".equals(matcher.group(1))) {
+                        target = Target.FullFetch;
+                    } else if ("/delta".equals(matcher.group(1))) {
+                        target = Target.DeltaFetch;
+                    } else {
+                        target = Target.Application;
+                    }
+                }
+            }
+        }
+        return target;
     }
 
-    private static boolean isPrivilidged(HttpServletRequest request) {
-        Set<String> privilidgedClients = EurekaServerConfigurationManager.getInstance().getConfiguration().getRateLimiterPrivilidgedClients();
+    private static boolean isRateLimited(HttpServletRequest request, Target target) {
+        return !isPrivileged(request) && isOverloaded(target);
+    }
+
+    private static boolean isPrivileged(HttpServletRequest request) {
+        if (config().isRateLimiterThrottleStandardClients()) {
+            return false;
+        }
+        Set<String> privilegedClients = config().getRateLimiterPrivilegedClients();
         String clientName = request.getHeader(AbstractEurekaIdentity.AUTH_NAME_HEADER_KEY);
-        return privilidgedClients.contains(clientName) || DEFAULT_PRIVILEDGED_CLIENTS.contains(clientName);
+        return privilegedClients.contains(clientName) || DEFAULT_PRIVILEGED_CLIENTS.contains(clientName);
     }
 
-    private static boolean isOverloaded() {
-        int maxInWindow = EurekaServerConfigurationManager.getInstance().getConfiguration().getRateLimiterBurstSize();
-        int windowSize = EurekaServerConfigurationManager.getInstance().getConfiguration().getRateLimiterAverageRate();
-        return !rateLimiter.acquire(maxInWindow, windowSize);
+    private static boolean isOverloaded(Target target) {
+        int maxInWindow = config().getRateLimiterBurstSize();
+        int fetchWindowSize = config().getRateLimiterRegistryFetchAverageRate();
+        boolean overloaded = !registryFetchRateLimiter.acquire(maxInWindow, fetchWindowSize);
+
+        if (target == Target.FullFetch || target == Target.Application) {
+            int fullFetchWindowSize = config().getRateLimiterFullFetchAverageRate();
+            overloaded |= !registryFullFetchRateLimiter.acquire(maxInWindow, fullFetchWindowSize);
+        }
+        return overloaded;
+    }
+
+    private static void incrementStats(Target target) {
+        if (config().isRateLimiterEnabled()) {
+            EurekaMonitors.RATE_LIMITED.increment();
+            if (target == Target.FullFetch) {
+                EurekaMonitors.RATE_LIMITED_FULL_FETCH.increment();
+            }
+        } else {
+            EurekaMonitors.RATE_LIMITED_CANDIDATES.increment();
+            if (target == Target.FullFetch) {
+                EurekaMonitors.RATE_LIMITED_FULL_FETCH_CANDIDATES.increment();
+            }
+        }
+    }
+
+    private static EurekaServerConfig config() {
+        return EurekaServerConfigurationManager.getInstance().getConfiguration();
     }
 
     @Override
@@ -120,6 +193,7 @@ public class RateLimitingFilter implements Filter {
 
     // For testing purposes
     static void reset() {
-        rateLimiter.reset();
+        registryFetchRateLimiter.reset();
+        registryFullFetchRateLimiter.reset();
     }
 }

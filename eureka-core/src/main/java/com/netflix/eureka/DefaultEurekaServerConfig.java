@@ -76,11 +76,13 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
 
     // These counters are checked for each HTTP request. Instantiating them per request like for the other
     // properties would be too costly.
-    private final DynamicStringSetProperty rateLimiterPrivilidgedClients =
-            new DynamicStringSetProperty(namespace + "rateLimiter.privilidgedClients", Collections.<String>emptySet());
+    private final DynamicStringSetProperty rateLimiterPrivilegedClients =
+            new DynamicStringSetProperty(namespace + "rateLimiter.privilegedClients", Collections.<String>emptySet());
     private final DynamicBooleanProperty rateLimiterEnabled = configInstance.getBooleanProperty(namespace + "rateLimiter.enabled", false);
+    private final DynamicBooleanProperty rateLimiterThrottleStandardClients = configInstance.getBooleanProperty(namespace + "rateLimiter.throttleStandardClients", false);
     private final DynamicIntProperty rateLimiterBurstSize = configInstance.getIntProperty(namespace + "rateLimiter.burstSize", 10);
-    private final DynamicIntProperty rateLimiterAverageRate = configInstance.getIntProperty(namespace + "rateLimiter.averageRate", 1000);
+    private final DynamicIntProperty rateLimiterRegistryFetchAverageRate = configInstance.getIntProperty(namespace + "rateLimiter.registryFetchAverageRate", 500);
+    private final DynamicIntProperty rateLimiterFullFetchAverageRate = configInstance.getIntProperty(namespace + "rateLimiter.fullFetchAverageRate", 100);
 
     public DefaultEurekaServerConfig() {
         init();
@@ -551,8 +553,13 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     }
 
     @Override
-    public Set<String> getRateLimiterPrivilidgedClients() {
-        return rateLimiterPrivilidgedClients.get();
+    public boolean isRateLimiterThrottleStandardClients() {
+        return rateLimiterThrottleStandardClients.get();
+    }
+
+    @Override
+    public Set<String> getRateLimiterPrivilegedClients() {
+        return rateLimiterPrivilegedClients.get();
     }
 
     @Override
@@ -561,7 +568,12 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     }
 
     @Override
-    public int getRateLimiterAverageRate() {
-        return rateLimiterAverageRate.get();
+    public int getRateLimiterRegistryFetchAverageRate() {
+        return rateLimiterRegistryFetchAverageRate.get();
+    }
+
+    @Override
+    public int getRateLimiterFullFetchAverageRate() {
+        return rateLimiterFullFetchAverageRate.get();
     }
 }
