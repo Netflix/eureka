@@ -150,7 +150,7 @@ public class RateLimitingFilterTest {
 
     private void whenRequest(String path, String client) {
         when(request.getMethod()).thenReturn("GET");
-        when(request.getPathInfo()).thenReturn(path);
+        when(request.getRequestURI()).thenReturn(path);
         when(request.getHeader(AbstractEurekaIdentity.AUTH_NAME_HEADER_KEY)).thenReturn(client);
     }
 }

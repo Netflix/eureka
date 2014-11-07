@@ -45,6 +45,14 @@
     <url-pattern>/*</url-pattern>
   </filter-mapping>
 
+  <!-- Uncomment this to enable rate limiter filter.
+  <filter-mapping>
+    <filter-name>rateLimitingFilter</filter-name>
+    <url-pattern>/v2/apps</url-pattern>
+    <url-pattern>/v2/apps/*</url-pattern>
+  </filter-mapping>
+  -->
+
   <filter-mapping>
     <filter-name>jersey</filter-name>
     <url-pattern>/*</url-pattern>
