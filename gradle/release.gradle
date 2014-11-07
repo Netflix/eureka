@@ -1,4 +1,3 @@
-
 apply plugin: 'release'
 
 [ uploadIvyLocal: 'uploadLocal', uploadArtifactory: 'artifactoryPublish', buildWithArtifactory: 'build' ].each { key, value ->
