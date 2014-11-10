@@ -1,6 +1,5 @@
-package com.netflix.rx.eureka.client.service;
+package com.netflix.rx.eureka.utils;
 
-import com.netflix.rx.eureka.service.ServiceChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -19,29 +18,29 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- * An abstract implementation to serialize access to {@link ServiceChannel} for the client.
+ * An abstract implementation that allows extending classes to be able to serialize operations without need for locking.
  *
  * @author Nitesh Kant
  */
-/* pkg private: Channel invokers are always decorators for the actual channel */ abstract class AbstractChannelInvoker {
+public abstract class SerializedTaskInvoker {
 
-    private static final Logger logger = LoggerFactory.getLogger(AbstractChannelInvoker.class);
+    private static final Logger logger = LoggerFactory.getLogger(SerializedTaskInvoker.class);
 
     private final QueueSubject taskSubject = QueueSubject.create();
     private final Subscription taskSubscription;
 
-    protected AbstractChannelInvoker() {
+    protected SerializedTaskInvoker() {
         taskSubscription = taskSubject.subscribeOn(Schedulers.io()) /*Since subscription blocks on the underlying queue.*/
                 .subscribe(new Subscriber<InvokerTask>() {
 
                     @Override
                     public void onCompleted() {
-                        logger.debug("Channel invoker subscription complete. No more tasks will be invoked on this channel.");
+                        logger.debug("SerializedTaskInvoker subscription complete. No more tasks will be invoked.");
                     }
 
                     @Override
                     public void onError(Throwable e) {
-                        logger.error("Error to channel invoker task subscriber. No more tasks will be invoked on this channel.", e);
+                        logger.error("Error to SerializedTaskInvoker subscriber. No more tasks will be invoked.", e);
                     }
 
                     @Override
@@ -147,7 +146,7 @@ import java.util.concurrent.LinkedBlockingQueue;
                     } catch (InterruptedException e) {
                         Thread.interrupted(); // Reset the interrupted flag for the code upstream.
                         logger.error(
-                                "Interrupted while waiting for next channel invocation task. Exiting the subscription",
+                                "Interrupted while waiting for next task. Exiting the subscription",
                                 e);
                         subscriber.onError(e);
                         terminate = true;
@@ -194,7 +193,7 @@ import java.util.concurrent.LinkedBlockingQueue;
                         })
                         .subscribe();
             } catch (Throwable e) {
-                logger.error("Exception invoking the channel invocation task.", e);
+                logger.error("Exception invoking the InvokerTaskWithAck task.", e);
                 subscriberForThisTask.onError(e);
             }
         }
@@ -214,7 +213,7 @@ import java.util.concurrent.LinkedBlockingQueue;
                 subscriberForThisTask.onNext(actual.call());
                 subscriberForThisTask.onCompleted();
             } catch (Throwable e) {
-                logger.error("Exception invoking the channel invocation task.", e);
+                logger.error("Exception invoking the InvokerTaskWithResult task.", e);
                 subscriberForThisTask.onError(e);
             }
         }

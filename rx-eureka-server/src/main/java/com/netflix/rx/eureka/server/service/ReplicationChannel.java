@@ -11,12 +11,12 @@ import static com.netflix.rx.eureka.registry.EurekaRegistry.*;
  * between two Eureka write servers.
  *
  * The client side of the channel is a source of data, that comes from its own registry, and is limited
- * to entries with {@link Origin#LOCAL}.
+ * to entries with {@link Source.Origin#LOCAL}.
  *
- * On the server side the data are put into the registry with origin set to {@link Origin#REPLICATED}.
+ * On the server side the data are put into the registry with origin set to {@link Source.Origin#REPLICATED}.
  * A replicated entry is removed from the registry under following circumstances:
  * <ul>
- *     <li>Explicite {@link #unregister(String)} call - an entry was removed from the source registry</li>
+ *     <li>Explicit {@link #unregister(String)} call - an entry was removed from the source registry</li>
  *     <li>Replication connection termination - invalidates all entries replicated over this connection</li>
  *     <li>No heartbeat within configured period of time - equivalent to connection termination</li>
  * </ul>

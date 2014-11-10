@@ -18,6 +18,7 @@ package com.netflix.rx.eureka.server;
 
 import com.google.inject.Inject;
 import com.netflix.rx.eureka.client.EurekaClient;
+import com.netflix.rx.eureka.data.Source;
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interest;
 import com.netflix.rx.eureka.registry.Delta;
@@ -62,7 +63,7 @@ public class EurekaReadServerRegistry implements EurekaRegistry<InstanceInfo> {
     }
 
     @Override
-    public Observable<Void> register(InstanceInfo instanceInfo, Origin origin) {
+    public Observable<Void> register(InstanceInfo instanceInfo, Source source) {
         throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
     }
 
@@ -72,7 +73,17 @@ public class EurekaReadServerRegistry implements EurekaRegistry<InstanceInfo> {
     }
 
     @Override
+    public Observable<Void> unregister(String instanceId, Source source) {
+        throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
+    }
+
+    @Override
     public Observable<Void> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
+        throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
+    }
+
+    @Override
+    public Observable<Void> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas, Source source) {
         throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
     }
 
@@ -87,7 +98,7 @@ public class EurekaReadServerRegistry implements EurekaRegistry<InstanceInfo> {
     }
 
     @Override
-    public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, Origin origin) {
+    public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, Source source) {
         throw new IllegalStateException("Origin filtering not supported by EurekaReadServerRegistry");
     }
 

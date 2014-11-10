@@ -3,6 +3,7 @@ package com.netflix.rx.eureka.client.service;
 import com.netflix.rx.eureka.interests.Interest;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.service.InterestChannel;
+import com.netflix.rx.eureka.utils.SerializedTaskInvoker;
 import rx.Observable;
 
 import java.util.concurrent.Callable;
@@ -13,7 +14,7 @@ import java.util.concurrent.Callable;
  *
  * @author Nitesh Kant
  */
-/*pkg-private: Used by EurekaClientService only*/class InterestChannelInvoker extends AbstractChannelInvoker
+/*pkg-private: Used by EurekaClientService only*/class InterestChannelInvoker extends SerializedTaskInvoker
         implements ClientInterestChannel {
 
     private final ClientInterestChannel delegate;

@@ -16,6 +16,7 @@
 
 package com.netflix.rx.eureka.registry;
 
+import com.netflix.rx.eureka.data.Source;
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interest;
 import rx.Observable;
@@ -27,28 +28,23 @@ import java.util.Set;
  */
 public interface EurekaRegistry<T> {
 
-    /**
-     * Each entry in a registry is associated with exactly one origin:
-     * <ul>
-     * <li>{@link #LOCAL}</li> - there is an opened registration client connection to the write local server
-     * <li>{@link #REPLICATED}</li> - replicated entry from another server
-     * </ul>
-     */
-    enum Origin { LOCAL, REPLICATED }
-
     Observable<Void> register(T instanceInfo);
 
-    Observable<Void> register(T instanceInfo, Origin origin);
+    Observable<Void> register(T instanceInfo, Source source);
 
     Observable<Void> unregister(String instanceId);
 
+    Observable<Void> unregister(String instanceId, Source source);
+
     Observable<Void> update(T updatedInfo, Set<Delta<?>> deltas);
+
+    Observable<Void> update(T updatedInfo, Set<Delta<?>> deltas, Source source);
 
     Observable<T> forSnapshot(Interest<T> interest);
 
     Observable<ChangeNotification<T>> forInterest(Interest<T> interest);
 
-    Observable<ChangeNotification<T>> forInterest(Interest<T> interest, Origin origin);
+    Observable<ChangeNotification<T>> forInterest(Interest<T> interest, Source source);
 
     Observable<Void> shutdown();
 }
