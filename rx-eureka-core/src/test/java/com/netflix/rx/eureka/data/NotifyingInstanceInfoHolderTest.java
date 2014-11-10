@@ -37,8 +37,8 @@ public class NotifyingInstanceInfoHolderTest {
         NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(notificationSubject, firstInfo.getId());
         holder.update(Source.localSource(), firstInfo).toBlocking().firstOrDefault(null);
 
-        assertThat(holder.numCopies(), equalTo(1));
-        assertThat(holder.getSnapshot().getData(), equalTo(firstInfo));
+        assertThat(holder.size(), equalTo(1));
+        assertThat(holder.get(), equalTo(firstInfo));
 
         InstanceInfo secondInfo = builder
                 .withStatus(InstanceInfo.Status.UP)
@@ -46,9 +46,9 @@ public class NotifyingInstanceInfoHolderTest {
 
         holder.update(Source.localSource(), secondInfo).toBlocking().firstOrDefault(null);
 
-        assertThat(holder.numCopies(), equalTo(1));
-        assertThat(holder.getSnapshot().getData(), not(equalTo(firstInfo)));
-        assertThat(holder.getSnapshot().getData(), equalTo(secondInfo));
+        assertThat(holder.size(), equalTo(1));
+        assertThat(holder.get(), not(equalTo(firstInfo)));
+        assertThat(holder.get(), equalTo(secondInfo));
     }
 
     @Test
@@ -61,8 +61,8 @@ public class NotifyingInstanceInfoHolderTest {
         NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(notificationSubject, firstInfo.getId());
         holder.update(Source.localSource(), firstInfo).toBlocking().firstOrDefault(null);
 
-        assertThat(holder.numCopies(), equalTo(1));
-        assertThat(holder.getSnapshot().getData(), equalTo(firstInfo));
+        assertThat(holder.size(), equalTo(1));
+        assertThat(holder.get(), equalTo(firstInfo));
 
         InstanceInfo secondInfo = builder
                 .withStatus(InstanceInfo.Status.UP)
@@ -71,11 +71,11 @@ public class NotifyingInstanceInfoHolderTest {
         Source fooSource = Source.replicationSource("foo");
         holder.update(fooSource, secondInfo).toBlocking().firstOrDefault(null);
 
-        assertThat(holder.numCopies(), equalTo(2));
-        assertThat(holder.getSnapshot().getData(), equalTo(firstInfo));
-        assertThat(holder.getSnapshot().getData(), not(equalTo(secondInfo)));
+        assertThat(holder.size(), equalTo(2));
+        assertThat(holder.get(), equalTo(firstInfo));
+        assertThat(holder.get(), not(equalTo(secondInfo)));
 
-        assertThat(holder.getCopyForSource(fooSource), equalTo(secondInfo));
+        assertThat(holder.get(fooSource), equalTo(secondInfo));
 
         InstanceInfo thirdInfo = builder
                 .withStatus(InstanceInfo.Status.DOWN)
@@ -83,11 +83,11 @@ public class NotifyingInstanceInfoHolderTest {
 
         holder.update(fooSource, thirdInfo).toBlocking().firstOrDefault(null);
 
-        assertThat(holder.numCopies(), equalTo(2));
-        assertThat(holder.getSnapshot().getData(), equalTo(firstInfo));
-        assertThat(holder.getSnapshot().getData(), not(equalTo(secondInfo)));
+        assertThat(holder.size(), equalTo(2));
+        assertThat(holder.get(), equalTo(firstInfo));
+        assertThat(holder.get(), not(equalTo(secondInfo)));
 
-        assertThat(holder.getCopyForSource(fooSource), equalTo(thirdInfo));
+        assertThat(holder.get(fooSource), equalTo(thirdInfo));
     }
 
     @Test
@@ -100,14 +100,14 @@ public class NotifyingInstanceInfoHolderTest {
         NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(notificationSubject, firstInfo.getId());
         holder.update(Source.localSource(), firstInfo).toBlocking().firstOrDefault(null);
 
-        assertThat(holder.numCopies(), equalTo(1));
-        assertThat(holder.getSnapshot().getData(), equalTo(firstInfo));
+        assertThat(holder.size(), equalTo(1));
+        assertThat(holder.get(), equalTo(firstInfo));
 
         holder.remove(Source.localSource()).toBlocking().firstOrDefault(null);
 
-        assertThat(holder.numCopies(), equalTo(0));
-        assertThat(holder.getSnapshot(), equalTo(null));
-        assertThat(holder.getCopyForSource(Source.localSource()), equalTo(null));
+        assertThat(holder.size(), equalTo(0));
+        assertThat(holder.get(), equalTo(null));
+        assertThat(holder.get(Source.localSource()), equalTo(null));
     }
 
     @Test
@@ -120,8 +120,8 @@ public class NotifyingInstanceInfoHolderTest {
         NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(notificationSubject, localInfo.getId());
         holder.update(Source.localSource(), localInfo).toBlocking().firstOrDefault(null);
 
-        assertThat(holder.numCopies(), equalTo(1));
-        assertThat(holder.getSnapshot().getData(), equalTo(localInfo));
+        assertThat(holder.size(), equalTo(1));
+        assertThat(holder.get(), equalTo(localInfo));
 
         InstanceInfo fooInfo = builder
                 .withStatus(InstanceInfo.Status.UP)
@@ -130,17 +130,17 @@ public class NotifyingInstanceInfoHolderTest {
         Source fooSource = Source.replicationSource("foo");
         holder.update(fooSource, fooInfo).toBlocking().firstOrDefault(null);
 
-        assertThat(holder.numCopies(), equalTo(2));
-        assertThat(holder.getSnapshot().getData(), equalTo(localInfo));
-        assertThat(holder.getSnapshot().getData(), not(equalTo(fooInfo)));
+        assertThat(holder.size(), equalTo(2));
+        assertThat(holder.get(), equalTo(localInfo));
+        assertThat(holder.get(), not(equalTo(fooInfo)));
 
-        assertThat(holder.getCopyForSource(fooSource), equalTo(fooInfo));
+        assertThat(holder.get(fooSource), equalTo(fooInfo));
 
         holder.remove(fooSource).toBlocking().firstOrDefault(null);
 
-        assertThat(holder.numCopies(), equalTo(1));
-        assertThat(holder.getSnapshot().getData(), equalTo(localInfo));
-        assertThat(holder.getCopyForSource(fooSource), equalTo(null));
+        assertThat(holder.size(), equalTo(1));
+        assertThat(holder.get(), equalTo(localInfo));
+        assertThat(holder.get(fooSource), equalTo(null));
     }
 
     @Test
@@ -153,8 +153,8 @@ public class NotifyingInstanceInfoHolderTest {
         NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(notificationSubject, localInfo.getId());
         holder.update(Source.localSource(), localInfo).toBlocking().firstOrDefault(null);
 
-        assertThat(holder.numCopies(), equalTo(1));
-        assertThat(holder.getSnapshot().getData(), equalTo(localInfo));
+        assertThat(holder.size(), equalTo(1));
+        assertThat(holder.get(), equalTo(localInfo));
 
         InstanceInfo fooInfo = builder
                 .withStatus(InstanceInfo.Status.UP)
@@ -163,18 +163,18 @@ public class NotifyingInstanceInfoHolderTest {
         Source fooSource = Source.replicationSource("foo");
         holder.update(fooSource, fooInfo).toBlocking().firstOrDefault(null);
 
-        assertThat(holder.numCopies(), equalTo(2));
-        assertThat(holder.getSnapshot().getData(), equalTo(localInfo));
-        assertThat(holder.getSnapshot().getData(), not(equalTo(fooInfo)));
+        assertThat(holder.size(), equalTo(2));
+        assertThat(holder.get(), equalTo(localInfo));
+        assertThat(holder.get(), not(equalTo(fooInfo)));
 
-        assertThat(holder.getCopyForSource(fooSource), equalTo(fooInfo));
+        assertThat(holder.get(fooSource), equalTo(fooInfo));
 
         holder.remove(Source.localSource()).toBlocking().firstOrDefault(null);
 
-        assertThat(holder.numCopies(), equalTo(1));
-        assertThat(holder.getSnapshot().getData(), equalTo(fooInfo));
-        assertThat(holder.getCopyForSource(fooSource), equalTo(fooInfo));
-        assertThat(holder.getCopyForSource(Source.localSource()), not(equalTo(localInfo)));
+        assertThat(holder.size(), equalTo(1));
+        assertThat(holder.get(), equalTo(fooInfo));
+        assertThat(holder.get(fooSource), equalTo(fooInfo));
+        assertThat(holder.get(Source.localSource()), not(equalTo(localInfo)));
     }
 
     @Test

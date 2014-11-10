@@ -22,24 +22,29 @@ public interface MultiSourcedDataHolder<V> {
     String getId();
 
     /**
-     * @return the view of the data
-     */
-    ChangeNotification<V> getSnapshot();
-
-    /**
-     * @return the view of the data if it matches the specified source
-     */
-    ChangeNotification<V> getSnapshotIfMatch(Source source);
-
-    /**
      * @return the number of copies of data currently in this holder
      */
-    int numCopies();
+    int size();
+
+    /**
+     * @return the view copy of the data, if exists
+     */
+    V get();
 
     /**
      * @return the copy of data for the given source, if exists
      */
-    V getCopyForSource(Source source);
+    V get(Source source);
+
+    /**
+     * @return the source of the view copy of the data, if exists
+     */
+    Source getSource();
+
+    /**
+     * @return the view copy of the data as a change notification, if exists
+     */
+    ChangeNotification<V> getChangeNotification();
 
     /**
      * @param source the source to update

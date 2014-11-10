@@ -8,8 +8,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory;
 import com.netflix.rx.eureka.data.MultiSourcedDataHolder;
-import com.netflix.rx.eureka.data.NotifyingInstanceInfoHolder;
-import com.netflix.rx.eureka.data.Source;
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interests;
 import org.junit.Rule;
@@ -20,7 +18,6 @@ import rx.Subscriber;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
 
 
 /**
@@ -145,8 +142,8 @@ public class EurekaRegistryImplTest {
         assertThat(internalStore.size(), equalTo(1));
 
         MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
-        assertThat(holder.numCopies(), equalTo(1));
-        InstanceInfo snapshot1 = holder.getSnapshot().getData();
+        assertThat(holder.size(), equalTo(1));
+        InstanceInfo snapshot1 = holder.get();
         assertThat(snapshot1, equalTo(original));
     }
 
@@ -161,15 +158,15 @@ public class EurekaRegistryImplTest {
         assertThat(internalStore.size(), equalTo(1));
 
         MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
-        assertThat(holder.numCopies(), equalTo(1));
-        InstanceInfo snapshot1 = holder.getSnapshot().getData();
+        assertThat(holder.size(), equalTo(1));
+        InstanceInfo snapshot1 = holder.get();
         assertThat(snapshot1, equalTo(original));
 
         registry.unregister(original.getId());
 
         assertThat(internalStore.size(), equalTo(1));
         holder = internalStore.values().iterator().next();
-        assertThat(holder.numCopies(), equalTo(0));
+        assertThat(holder.size(), equalTo(0));
         // TODO: add asserts for expiry queue
     }
 
@@ -184,8 +181,8 @@ public class EurekaRegistryImplTest {
         assertThat(internalStore.size(), equalTo(1));
 
         MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
-        assertThat(holder.numCopies(), equalTo(1));
-        InstanceInfo snapshot1 = holder.getSnapshot().getData();
+        assertThat(holder.size(), equalTo(1));
+        InstanceInfo snapshot1 = holder.get();
         assertThat(snapshot1, equalTo(original));
 
         InstanceInfo newInstanceInfo = new InstanceInfo.Builder().withInstanceInfo(original)
@@ -194,8 +191,8 @@ public class EurekaRegistryImplTest {
 
         assertThat(internalStore.size(), equalTo(1));
 
-        assertThat(holder.numCopies(), equalTo(1));
-        InstanceInfo snapshot2 = holder.getSnapshot().getData();
+        assertThat(holder.size(), equalTo(1));
+        InstanceInfo snapshot2 = holder.get();
         assertThat(snapshot2, equalTo(newInstanceInfo));
     }
 

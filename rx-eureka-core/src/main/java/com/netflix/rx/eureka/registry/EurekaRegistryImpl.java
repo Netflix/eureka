@@ -167,7 +167,7 @@ public class EurekaRegistryImpl implements EurekaRegistry<InstanceInfo> {
                 .map(new Func1<MultiSourcedDataHolder<InstanceInfo>, InstanceInfo>() {
                     @Override
                     public InstanceInfo call(MultiSourcedDataHolder<InstanceInfo> holder) {
-                        ChangeNotification<InstanceInfo> notification = holder.getSnapshot();
+                        ChangeNotification<InstanceInfo> notification = holder.getChangeNotification();
                         return notification == null ? null : notification.getData();
                     }
                 })
@@ -208,7 +208,7 @@ public class EurekaRegistryImpl implements EurekaRegistry<InstanceInfo> {
             @Override
             public Boolean call(ChangeNotification<InstanceInfo> changeNotification) {
                 MultiSourcedDataHolder<InstanceInfo> holder = internalStore.get(changeNotification.getData().getId());
-                return holder != null && holder.getSnapshotIfMatch(source) != null;
+                return holder != null && source.equals(holder.getSource());
             }
         });
     }
@@ -242,7 +242,7 @@ public class EurekaRegistryImpl implements EurekaRegistry<InstanceInfo> {
 
             while (delegate.hasNext()) { // Iterate till we get a matching item.
                 MultiSourcedDataHolder<InstanceInfo> possibleNext = delegate.next();
-                ChangeNotification<InstanceInfo> notification = possibleNext.getSnapshot();
+                ChangeNotification<InstanceInfo> notification = possibleNext.getChangeNotification();
                 if (notification != null && interest.matches(notification.getData())) {
                     next = notification;
                     return true;

@@ -17,7 +17,8 @@ import java.util.concurrent.Callable;
 /**
  * This holder maintains the data copies in a list ordered by write time. It also maintains a consistent "snapshot"
  * view of the copies, sourced from the head of the ordered list of copies. This snapshot is updated w.r.t. the
- * previous snapshot for each write into this holder, if the write it to the head copy.
+ * previous snapshot for each write into this holder, if the write is to the head copy. When the head copy is removed,
+ * the next copy in line is promoted as the new view.
  *
  * This holder serializes actions between update and remove by queuing (via SerializedTaskInvoker)
  * TODO think about a more efficient way of dealing with the concurrency here without needing to lock
@@ -46,29 +47,37 @@ public class NotifyingInstanceInfoHolder extends SerializedTaskInvoker implement
     }
 
     @Override
-    public int numCopies() {
+    public int size() {
         return dataMap.size();
     }
 
     @Override
-    public ChangeNotification<InstanceInfo> getSnapshot() {
+    public InstanceInfo get() {
+        if (snapshot != null) {
+            return snapshot.data;
+        }
+        return null;
+    }
+
+    @Override
+    public InstanceInfo get(Source source) {
+        return dataMap.get(source);
+    }
+
+    @Override
+    public Source getSource() {
+        if (snapshot != null) {
+            return snapshot.source;
+        }
+        return null;
+    }
+
+    @Override
+    public ChangeNotification<InstanceInfo> getChangeNotification() {
         if (snapshot != null) {
             return snapshot.notification;
         }
         return null;
-    }
-
-    @Override
-    public ChangeNotification<InstanceInfo> getSnapshotIfMatch(Source source) {
-        if (snapshot != null && snapshot.source.equals(source)) {
-            return snapshot.notification;
-        }
-        return null;
-    }
-
-    @Override
-    public InstanceInfo getCopyForSource(Source source) {
-        return dataMap.get(source);
     }
 
     /**
