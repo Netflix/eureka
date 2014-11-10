@@ -163,7 +163,7 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
             return Observable.error(new IllegalStateException("Unrecognized channel state: " + currentState));
         }
 
-        Observable<Void> updateResult = registry.unregister(currentInfo.getId());  // TODO: deal with channel ownership
+        Observable<Void> updateResult = registry.unregister(currentInfo.getId());
         updateResult.subscribe(new Subscriber<Void>() {
             @Override
             public void onCompleted() {

@@ -3,8 +3,10 @@ package com.netflix.rx.eureka.client.service;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import com.netflix.rx.eureka.client.transport.TransportClient;
+import com.netflix.rx.eureka.data.Source;
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interest;
 import com.netflix.rx.eureka.interests.ModifyNotification;
@@ -44,6 +46,8 @@ import rx.observers.SafeSubscriber;
     private static final IllegalStateException INTEREST_NOT_REGISTERED_EXCEPTION =
             new IllegalStateException("No interest is registered on this channel.");
 
+    private final Source interestSource;
+
     /**
      * Since we assume single threaded access to this channel, no need for concurrency control
      */
@@ -78,11 +82,12 @@ import rx.observers.SafeSubscriber;
 
     public InterestChannelImpl(final EurekaRegistry<InstanceInfo> registry, TransportClient client, InterestChannelMetrics metrics) {
         super(STATES.Idle, client);
+        this.interestSource = Source.interestSource(UUID.randomUUID().toString());
         this.registry = registry;
         this.metrics = metrics;
         metrics.incrementStateCounter(STATES.Idle);
         channelInterest = new MultipleInterests<>();  // blank channelInterest to start with
-        channelInterestSubscriber = new ChannelInterestSubscriber(registry);
+        channelInterestSubscriber = new ChannelInterestSubscriber(registry, interestSource);
         channelInterestStream = createInterestStream();
     }
 
@@ -266,7 +271,7 @@ import rx.observers.SafeSubscriber;
     }
 
     protected static class ChannelInterestSubscriber extends SafeSubscriber<ChangeNotification<InstanceInfo>> {
-        public ChannelInterestSubscriber(final EurekaRegistry<InstanceInfo> registry) {
+        public ChannelInterestSubscriber(final EurekaRegistry<InstanceInfo> registry, final Source interestSource) {
             super(new Subscriber<ChangeNotification<InstanceInfo>>() {
                 @Override
                 public void onCompleted() {
@@ -284,15 +289,15 @@ import rx.observers.SafeSubscriber;
                 public void onNext(ChangeNotification<InstanceInfo> notification) {
                     switch (notification.getKind()) {  // these are in-mem blocking ops
                         case Add:
-                            registry.register(notification.getData());
+                            registry.register(notification.getData(), interestSource);
                             break;
                         case Modify:
                             ModifyNotification<InstanceInfo> modifyNotification
                                     = (ModifyNotification<InstanceInfo>) notification;
-                            registry.update(modifyNotification.getData(), modifyNotification.getDelta());
+                            registry.update(modifyNotification.getData(), modifyNotification.getDelta(), interestSource);
                             break;
                         case Delete:
-                            registry.unregister(notification.getData().getId());
+                            registry.unregister(notification.getData().getId(), interestSource);
                             break;
                         default:
                             logger.error("Unrecognized notification kind");

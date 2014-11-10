@@ -18,8 +18,8 @@ package com.netflix.rx.eureka.registry;
 
 import java.util.concurrent.Callable;
 
+import com.netflix.rx.eureka.data.Source;
 import com.netflix.rx.eureka.metric.EurekaMetrics;
-import com.netflix.rx.eureka.registry.EurekaRegistry.Origin;
 import com.netflix.servo.monitor.BasicGauge;
 import com.netflix.servo.monitor.Counter;
 
@@ -55,7 +55,7 @@ public class EurekaRegistryMetrics extends EurekaMetrics {
         unregistrationsTotal = newCounter("unregistrationsTotal");
     }
 
-    public void incrementRegistrationCounter(Origin origin) {
+    public void incrementRegistrationCounter(Source.Origin origin) {
         switch (origin) {
             case LOCAL:
                 registrationsLocal.increment();
@@ -67,7 +67,7 @@ public class EurekaRegistryMetrics extends EurekaMetrics {
         registrationsTotal.increment();
     }
 
-    public void incrementUnregistrationCounter(Origin origin) {
+    public void incrementUnregistrationCounter(Source.Origin origin) {
         switch (origin) {
             case LOCAL:
                 unregistrationsLocal.increment();

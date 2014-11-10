@@ -2,10 +2,12 @@ package com.netflix.rx.eureka.registry;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory;
+import com.netflix.rx.eureka.data.MultiSourcedDataHolder;
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interests;
 import org.junit.Rule;
@@ -16,7 +18,6 @@ import rx.Subscriber;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
 
 
 /**
@@ -24,14 +25,14 @@ import static org.junit.Assert.*;
  */
 public class EurekaRegistryImplTest {
 
-    private EurekaRegistryImpl registry;
+    private TestEurekaRegistry registry;
 
     @Rule
     public final ExternalResource registryResource = new ExternalResource() {
 
         @Override
         protected void before() throws Throwable {
-            registry = new EurekaRegistryImpl(EurekaClientMetricFactory.clientMetrics().getRegistryMetrics());
+            registry = new TestEurekaRegistry(EurekaClientMetricFactory.clientMetrics().getRegistryMetrics());
         }
 
         @Override
@@ -131,42 +132,79 @@ public class EurekaRegistryImplTest {
     }
 
     @Test
-    public void shouldUpdateInstanceStatus() {
+    public void testRegister() {
         InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
                 .withStatus(InstanceInfo.Status.UP)
                 .build();
         registry.register(original).toBlocking().lastOrDefault(null);
 
-        Lease<InstanceInfo> lease = registry.getLease(original.getId()).toBlocking().lastOrDefault(null);
-        assertTrue(lease != null);
-        assertEquals(InstanceInfo.Status.UP, lease.getHolder().getStatus());
+        ConcurrentHashMap<String, MultiSourcedDataHolder<InstanceInfo>> internalStore = registry.getInternalStore();
+        assertThat(internalStore.size(), equalTo(1));
+
+        MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
+        assertThat(holder.size(), equalTo(1));
+        InstanceInfo snapshot1 = holder.get();
+        assertThat(snapshot1, equalTo(original));
+    }
+
+    @Test
+    public void testUnregister() {
+        InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
+                .withStatus(InstanceInfo.Status.UP)
+                .build();
+        registry.register(original).toBlocking().lastOrDefault(null);
+
+        ConcurrentHashMap<String, MultiSourcedDataHolder<InstanceInfo>> internalStore = registry.getInternalStore();
+        assertThat(internalStore.size(), equalTo(1));
+
+        MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
+        assertThat(holder.size(), equalTo(1));
+        InstanceInfo snapshot1 = holder.get();
+        assertThat(snapshot1, equalTo(original));
+
+        registry.unregister(original.getId());
+
+        assertThat(internalStore.size(), equalTo(1));
+        holder = internalStore.values().iterator().next();
+        assertThat(holder.size(), equalTo(0));
+        // TODO: add asserts for expiry queue
+    }
+
+    @Test
+    public void testUpdate() {
+        InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
+                .withStatus(InstanceInfo.Status.UP)
+                .build();
+        registry.register(original).toBlocking().lastOrDefault(null);
+
+        ConcurrentHashMap<String, MultiSourcedDataHolder<InstanceInfo>> internalStore = registry.getInternalStore();
+        assertThat(internalStore.size(), equalTo(1));
+
+        MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
+        assertThat(holder.size(), equalTo(1));
+        InstanceInfo snapshot1 = holder.get();
+        assertThat(snapshot1, equalTo(original));
 
         InstanceInfo newInstanceInfo = new InstanceInfo.Builder().withInstanceInfo(original)
                 .withStatus(InstanceInfo.Status.OUT_OF_SERVICE).build();
         registry.update(newInstanceInfo, newInstanceInfo.diffOlder(original));
-        lease = registry.getLease(original.getId()).toBlocking().lastOrDefault(null);
-        assertTrue(lease != null);
-        assertEquals(InstanceInfo.Status.OUT_OF_SERVICE, lease.getHolder().getStatus());
+
+        assertThat(internalStore.size(), equalTo(1));
+
+        assertThat(holder.size(), equalTo(1));
+        InstanceInfo snapshot2 = holder.get();
+        assertThat(snapshot2, equalTo(newInstanceInfo));
     }
 
-    @Test
-    public void shouldRegisterExistingInstanceOverwritingExisting() throws Exception {
-        InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
-                .withStatus(InstanceInfo.Status.UP)
-                .build();
-        registry.register(original).toBlocking().lastOrDefault(null);
 
-        Lease<InstanceInfo> lease = registry.getLease(original.getId()).toBlocking().lastOrDefault(null);
-        assertTrue(lease != null);
-        assertEquals(InstanceInfo.Status.UP, lease.getHolder().getStatus());
+    private static class TestEurekaRegistry extends EurekaRegistryImpl {
 
-        InstanceInfo newInstance = SampleInstanceInfo.DiscoveryServer.builder()
-                .withStatus(InstanceInfo.Status.DOWN)
-                .build();
-        registry.register(newInstance).toBlocking().lastOrDefault(null);
+        public TestEurekaRegistry(EurekaRegistryMetrics metrics) {
+            super(metrics);
+        }
 
-        lease = registry.getLease(newInstance.getId()).toBlocking().lastOrDefault(null);
-        assertTrue(lease != null);
-        assertEquals(InstanceInfo.Status.DOWN, lease.getHolder().getStatus());
+        public ConcurrentHashMap<String, MultiSourcedDataHolder<InstanceInfo>> getInternalStore() {
+            return internalStore;
+        }
     }
 }
