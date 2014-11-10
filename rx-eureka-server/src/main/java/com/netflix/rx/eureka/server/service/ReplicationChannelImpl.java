@@ -3,7 +3,9 @@ package com.netflix.rx.eureka.server.service;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
+import com.netflix.rx.eureka.data.Source;
 import com.netflix.rx.eureka.protocol.EurekaProtocolError;
 import com.netflix.rx.eureka.protocol.Heartbeat;
 import com.netflix.rx.eureka.protocol.replication.RegisterCopy;
@@ -11,7 +13,6 @@ import com.netflix.rx.eureka.protocol.replication.UnregisterCopy;
 import com.netflix.rx.eureka.protocol.replication.UpdateCopy;
 import com.netflix.rx.eureka.registry.Delta;
 import com.netflix.rx.eureka.registry.EurekaRegistry;
-import com.netflix.rx.eureka.registry.EurekaRegistry.Origin;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.server.transport.ClientConnection;
 import org.slf4j.Logger;
@@ -27,6 +28,7 @@ import rx.functions.Action1;
 public class ReplicationChannelImpl extends AbstractChannel<ReplicationChannelImpl.STATES> implements ReplicationChannel {
 
     private static final Logger logger = LoggerFactory.getLogger(ReplicationChannelImpl.class);
+    private final Source replicationSource;
     private final ReplicationChannelMetrics metrics;
 
     protected enum STATES {Opened, Closed}
@@ -35,7 +37,7 @@ public class ReplicationChannelImpl extends AbstractChannel<ReplicationChannelIm
 
     public ReplicationChannelImpl(ClientConnection transport, EurekaRegistry<InstanceInfo> registry, ReplicationChannelMetrics metrics) {
         super(STATES.Opened, transport, registry, 3, 30000);
-
+        this.replicationSource = Source.replicationSource(UUID.randomUUID().toString());  // FIXME use the sent over replication source id
         this.metrics = metrics;
         this.metrics.incrementStateCounter(STATES.Opened);
 
@@ -73,7 +75,7 @@ public class ReplicationChannelImpl extends AbstractChannel<ReplicationChannelIm
             logger.info("Overwriting existing registration entry for instance {}", instanceInfo.getId());
         }
 
-        Observable<Void> registerResult = registry.register(instanceInfo, Origin.REPLICATED);
+        Observable<Void> registerResult = registry.register(instanceInfo, replicationSource);
         registerResult.subscribe(new Subscriber<Void>() {
             @Override
             public void onCompleted() {
@@ -115,7 +117,7 @@ public class ReplicationChannelImpl extends AbstractChannel<ReplicationChannelIm
 
         // TODO: shall we chain ack observable with update?
         // TODO: we must handle conflicts somehow like maintaining multiple versions of instanceInfo (per source)
-        Observable<Void> updateResult = registry.update(newInfo, deltas);
+        Observable<Void> updateResult = registry.update(newInfo, deltas, replicationSource);
         updateResult.subscribe(new Subscriber<Void>() {
             @Override
             public void onCompleted() {
@@ -154,7 +156,7 @@ public class ReplicationChannelImpl extends AbstractChannel<ReplicationChannelIm
         }
 
         // TODO: we must handle conflicts somehow like maintaining multiple versions of instanceInfo (per source)
-        Observable<Void> updateResult = registry.unregister(instanceId);
+        Observable<Void> updateResult = registry.unregister(instanceId, replicationSource);
         updateResult.subscribe(new Subscriber<Void>() {
             @Override
             public void onCompleted() {

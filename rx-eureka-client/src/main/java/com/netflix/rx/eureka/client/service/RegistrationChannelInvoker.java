@@ -2,6 +2,7 @@ package com.netflix.rx.eureka.client.service;
 
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.service.RegistrationChannel;
+import com.netflix.rx.eureka.utils.SerializedTaskInvoker;
 import rx.Observable;
 
 import java.util.concurrent.Callable;
@@ -13,7 +14,7 @@ import java.util.concurrent.Callable;
  * @author Nitesh Kant
  */
 /*pkg-private: Used by EurekaClientService only*/class RegistrationChannelInvoker
-        extends AbstractChannelInvoker implements RegistrationChannel {
+        extends SerializedTaskInvoker implements RegistrationChannel {
 
     private final RegistrationChannel delegate;
 

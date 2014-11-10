@@ -5,6 +5,7 @@ import java.util.Set;
 
 import com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory;
 import com.netflix.rx.eureka.client.transport.TransportClient;
+import com.netflix.rx.eureka.data.Source;
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interest;
 import com.netflix.rx.eureka.registry.Delta;
@@ -55,8 +56,8 @@ public class EurekaClientRegistry implements EurekaRegistry<InstanceInfo> {
     }
 
     @Override
-    public Observable<Void> register(InstanceInfo instanceInfo, Origin origin) {
-        return registry.register(instanceInfo, origin);
+    public Observable<Void> register(InstanceInfo instanceInfo, Source source) {
+        return registry.register(instanceInfo, source);
     }
 
     @Override
@@ -65,8 +66,18 @@ public class EurekaClientRegistry implements EurekaRegistry<InstanceInfo> {
     }
 
     @Override
+    public Observable<Void> unregister(String instanceId, Source source) {
+        return registry.unregister(instanceId, source);
+    }
+
+    @Override
     public Observable<Void> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
         return registry.update(updatedInfo, deltas);
+    }
+
+    @Override
+    public Observable<Void> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas, Source source) {
+        return registry.update(updatedInfo, deltas, source);
     }
 
     @Override
@@ -85,7 +96,7 @@ public class EurekaClientRegistry implements EurekaRegistry<InstanceInfo> {
     }
 
     @Override
-    public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, Origin origin) {
+    public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, Source source) {
         throw new IllegalStateException("Origin filtering not supported by EurekaClientRegistry");
     }
 
