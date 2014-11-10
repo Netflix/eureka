@@ -25,31 +25,15 @@ import rx.Observable;
  * <p>FIXME Lifecycle concept exists at multiple levels. Can we abstract it away and share the implementation?
  * <p>FIXME What to do with unrecognized messages - dead letter mailbox?
  * <p>
- * One to one bidirectional communication endpoint. Equivalent to {@link ObservableConnection}
+ * Bidirectional communication channel between Eureka client and server. Equivalent to {@link ObservableConnection}
  * in RxNetty, with higher level message passing semantics.
  *
  * Messages can be send with and without acknowledgement. If acknowledgment is not received within
  * defined timeout period, the corresponding observable is completed with a {@link TimeoutException} error.
  *
- * <h2>Why {@link MessageBroker} has no type parameters?</h2>
- * Initially {@link MessageBroker} was a parametrized interface with input/output message
- * type parameters. It was dropped, as the overhead it introduced diminished the benefits:
- * <ul>
- * <li>
- *     A common base type must be used for all messages, as Java does not support union types.
- * </li>
- * <li>
- *     Related to the above, not posibile code reuse (for example heartbeat message would have to be
- *     declered separately for each protocol).
- * </li>
- * <li>
- *     Extreamly long parametrized type declarations, considerable limiting code readibility.
- * </li>
- * </ul>
- *
  * @author Tomasz Bak
  */
-public interface MessageBroker {
+public interface MessageConnection {
 
     /**
      * Submit a message one-way.
@@ -83,15 +67,25 @@ public interface MessageBroker {
     /**
      * Send back an acknowledgement. Acknowledgement request is ignored if a timeout expired.
      *
-     * @return observable completing normally if acknowledgement was successfuly submitted,
+     * @return observable completing normally if acknowledgement was successfully submitted,
      *         or with exception if message could not be delivered
      */
-    Observable<Void> acknowledge(Object message);
+    Observable<Void> acknowledge();
 
     /**
      * @return observable of messages send by the other side of a connection
      */
     Observable<Object> incoming();
+
+    /**
+     * FIXME: why would we need this method?
+     */
+    Observable<Void> onError(Throwable error);
+
+    /**
+     * FIXME: why would we need this method?
+     */
+    Observable<Void> onCompleted();
 
     /**
      * Close a connection.

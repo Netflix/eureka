@@ -52,19 +52,17 @@ public class ReplicationChannelMonitor {
     private final EurekaRegistry eurekaRegistry;
     private final TransportClient transportClient;
     private final long reconnectDelayMs;
-    private final long heartbeatIntervalMs;
 
     private final AtomicReference<ClientReplicationChannel> replicationChannelRef = new AtomicReference<>();
     private final Worker worker;
     private volatile STATE state;
 
     public ReplicationChannelMonitor(String targetName, EurekaRegistry eurekaRegistry, TransportClient transportClient,
-                                     long reconnectDelayMs, long heartbeatIntervalMs) {
+                                     long reconnectDelayMs) {
         this.targetName = targetName;
         this.eurekaRegistry = eurekaRegistry;
         this.transportClient = transportClient;
         this.reconnectDelayMs = reconnectDelayMs;
-        this.heartbeatIntervalMs = heartbeatIntervalMs;
         this.state = STATE.Open;
         worker = Schedulers.computation().createWorker();
         connect();
@@ -75,7 +73,7 @@ public class ReplicationChannelMonitor {
 
         closeChannel();
         ClientReplicationChannel replicationChannel = new ClientReplicationChannel(
-                eurekaRegistry, transportClient, heartbeatIntervalMs);
+                eurekaRegistry, transportClient);
         replicationChannelRef.set(replicationChannel);
 
         replicationChannel.asLifecycleObservable().subscribe(new Subscriber<Void>() {

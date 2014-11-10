@@ -6,8 +6,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.netflix.rx.eureka.rx.RxBlocking;
-import com.netflix.rx.eureka.transport.MessageBroker;
-import com.netflix.rx.eureka.transport.base.SampleObject.Internal;
+import com.netflix.rx.eureka.transport.MessageConnection;
 import com.netflix.rx.eureka.transport.codec.avro.AvroPipelineConfigurator;
 import io.netty.handler.logging.LogLevel;
 import io.reactivex.netty.RxNetty;
@@ -28,37 +27,40 @@ import static org.junit.Assert.*;
 /**
  * @author Tomasz Bak
  */
-public class BaseMessageBrokerTest {
+public class BaseMessageConnectionTest {
 
     private RxServer<Object, Object> server;
 
-    volatile MessageBroker serverBroker;
-    volatile MessageBroker clientBroker;
+    volatile MessageConnection serverBroker;
+    volatile MessageConnection clientBroker;
+
+    private final MessageConnectionMetrics clientMetrics = new MessageConnectionMetrics("client-compatibility");
+    private final MessageConnectionMetrics serverMetrics = new MessageConnectionMetrics("server-compatibility");
 
     @Before
     public void setUp() throws Exception {
         AvroPipelineConfigurator codecPipeline =
                 new AvroPipelineConfigurator(SampleObject.SAMPLE_OBJECT_MODEL_SET, SampleObject.rootSchema());
 
-        final LinkedBlockingQueue<MessageBroker> queue = new LinkedBlockingQueue<>();
+        final LinkedBlockingQueue<MessageConnection> queue = new LinkedBlockingQueue<>();
         server = RxNetty.newTcpServerBuilder(0, new ConnectionHandler<Object, Object>() {
             @Override
             public Observable<Void> handle(ObservableConnection<Object, Object> connection) {
-                BaseMessageBroker messageBroker = new BaseMessageBroker(connection);
+                BaseMessageConnection messageBroker = new BaseMessageConnection(connection, serverMetrics);
                 queue.add(messageBroker);
                 return messageBroker.lifecycleObservable();
             }
         }).pipelineConfigurator(codecPipeline).enableWireLogging(LogLevel.ERROR).build().start();
 
         int port = server.getServerPort();
-        Observable<MessageBroker> clientObservable = RxNetty.newTcpClientBuilder("localhost", port)
+        Observable<MessageConnection> clientObservable = RxNetty.newTcpClientBuilder("localhost", port)
                 .pipelineConfigurator(codecPipeline)
                 .enableWireLogging(LogLevel.ERROR)
                 .build().connect()
-                .map(new Func1<ObservableConnection<Object, Object>, MessageBroker>() {
+                .map(new Func1<ObservableConnection<Object, Object>, MessageConnection>() {
                     @Override
-                    public MessageBroker call(ObservableConnection<Object, Object> connection) {
-                        return new BaseMessageBroker(connection);
+                    public MessageConnection call(ObservableConnection<Object, Object> connection) {
+                        return new BaseMessageConnection(connection, clientMetrics);
                     }
                 });
         clientBroker = clientObservable.toBlocking().single();
@@ -100,7 +102,7 @@ public class BaseMessageBrokerTest {
         SampleObject receivedMessage = (SampleObject) serverIncoming.next();
         assertNotNull("expected message on server side", receivedMessage);
 
-        assertTrue("Ack not sent", RxBlocking.isCompleted(1, TimeUnit.SECONDS, serverBroker.acknowledge(receivedMessage)));
+        assertTrue("Ack not sent", RxBlocking.isCompleted(1, TimeUnit.SECONDS, serverBroker.acknowledge()));
         assertTrue("Expected completed ack observable", RxBlocking.isCompleted(1, TimeUnit.SECONDS, ackObservable));
     }
 

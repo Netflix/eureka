@@ -7,8 +7,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory;
-import com.netflix.rx.eureka.client.transport.ServerConnection;
 import com.netflix.rx.eureka.client.transport.TransportClient;
 import com.netflix.rx.eureka.interests.Interest;
 import com.netflix.rx.eureka.interests.Interests;
@@ -23,6 +21,7 @@ import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.registry.EurekaRegistryImpl;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.registry.SampleInstanceInfo;
+import com.netflix.rx.eureka.transport.MessageConnection;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,7 +35,7 @@ import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Func1;
 
-import static com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory.clientMetrics;
+import static com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory.*;
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.*;
@@ -48,7 +47,7 @@ import static org.mockito.Mockito.*;
 public class InterestChannelImplTest {
 
     @Mock
-    protected ServerConnection serverConnection;
+    protected MessageConnection serverConnection;
 
     @Mock
     protected TransportClient transportClient;
@@ -71,8 +70,8 @@ public class InterestChannelImplTest {
         @Override
         protected void before() throws Throwable {
             registry = new EurekaRegistryImpl(clientMetrics().getRegistryMetrics());
-            when(serverConnection.sendAcknowledgment()).thenReturn(Observable.<Void>empty());
-            when(serverConnection.sendWithAck(Mockito.anyObject())).thenReturn(Observable.<Void>empty());
+            when(serverConnection.acknowledge()).thenReturn(Observable.<Void>empty());
+            when(serverConnection.submitWithAck(Mockito.anyObject())).thenReturn(Observable.<Void>empty());
             when(transportClient.connect()).thenReturn(Observable.from(serverConnection));
 
             channel = new InterestChannelImpl(registry, transportClient, clientMetrics().getInterestChannelMetrics());
@@ -97,7 +96,7 @@ public class InterestChannelImplTest {
     @Test
     public void testChangeWithNewInterest() throws Exception {
         final CountDownLatch streamEndLatch = new CountDownLatch(1);
-        when(serverConnection.getInput())
+        when(serverConnection.incoming())
                 .thenReturn(sampleAddMessagesZuul.cast(Object.class).doOnCompleted(new Action0() {
                     @Override
                     public void call() {
@@ -142,7 +141,7 @@ public class InterestChannelImplTest {
     @Test
     public void testChangeWithNonIntersectingInterest() throws Exception {
         final CountDownLatch streamEndLatch = new CountDownLatch(1);
-        when(serverConnection.getInput())
+        when(serverConnection.incoming())
                 .thenReturn(sampleAddMessagesAll.cast(Object.class).doOnCompleted(new Action0() {
                     @Override
                     public void call() {
@@ -207,7 +206,7 @@ public class InterestChannelImplTest {
     @Test
     public void testChangeWithIntersectingInterest() throws Exception {
         final CountDownLatch streamEndLatch = new CountDownLatch(1);
-        when(serverConnection.getInput())
+        when(serverConnection.incoming())
                 .thenReturn(sampleAddMessagesAll.cast(Object.class).doOnCompleted(new Action0() {
                     @Override
                     public void call() {
@@ -285,7 +284,7 @@ public class InterestChannelImplTest {
         AddInstance message4 = new AddInstance(new2);
 
         final CountDownLatch streamEndLatch = new CountDownLatch(1);
-        when(serverConnection.getInput())
+        when(serverConnection.incoming())
                 .thenReturn(Observable.from(Arrays.asList(message1, message2, message3, message4))
                         .cast(Object.class).doOnCompleted(new Action0() {
                             @Override
@@ -347,7 +346,7 @@ public class InterestChannelImplTest {
         UpdateInstanceInfo<?> message4 = new UpdateInstanceInfo<>(delta2.iterator().next());
 
         final CountDownLatch streamEndLatch = new CountDownLatch(1);
-        when(serverConnection.getInput())
+        when(serverConnection.incoming())
                 .thenReturn(Observable.from(Arrays.asList(message1, message2, message3, message4))
                         .cast(Object.class).doOnCompleted(new Action0() {
                             @Override
@@ -401,7 +400,7 @@ public class InterestChannelImplTest {
         DeleteInstance message3 = new DeleteInstance(original1.getId());
 
         final CountDownLatch streamEndLatch = new CountDownLatch(1);
-        when(serverConnection.getInput())
+        when(serverConnection.incoming())
                 .thenReturn(Observable.from(Arrays.asList(message1, message2, message3))
                         .cast(Object.class).doOnCompleted(new Action0() {
                             @Override

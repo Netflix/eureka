@@ -3,12 +3,12 @@ package com.netflix.rx.eureka.server.service;
 import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.server.metric.EurekaServerMetricFactory;
-import com.netflix.rx.eureka.server.transport.ClientConnection;
 import com.netflix.rx.eureka.service.InterestChannel;
 import com.netflix.rx.eureka.service.RegistrationChannel;
+import com.netflix.rx.eureka.transport.MessageConnection;
 
 /**
- * An implementation of {@link EurekaServerService} associated with strictly one {@link ClientConnection}
+ * An implementation of {@link EurekaServerService} associated with strictly one {@link MessageConnection}
  *
  * <h2>Thread safety</h2>
  *
@@ -19,11 +19,11 @@ import com.netflix.rx.eureka.service.RegistrationChannel;
 public class EurekaServiceImpl implements EurekaServerService {
 
     private final EurekaRegistry<InstanceInfo> registry;
-    private final ClientConnection connection;
+    private final MessageConnection connection;
     private final EurekaServerMetricFactory metricFactory;
 
     public EurekaServiceImpl(EurekaRegistry<InstanceInfo> registry,
-                             ClientConnection connection,
+                             MessageConnection connection,
                              EurekaServerMetricFactory metricFactory) {
         this.registry = registry;
         this.connection = connection;

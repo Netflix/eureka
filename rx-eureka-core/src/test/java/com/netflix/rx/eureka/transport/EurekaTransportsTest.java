@@ -4,11 +4,12 @@ import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.rx.eureka.rx.RxBlocking;
-import com.netflix.rx.eureka.transport.EurekaTransports.Codec;
+import com.netflix.rx.eureka.transport.EurekaTransports.*;
 import com.netflix.rx.eureka.transport.TransportCompatibilityTestSuite.DiscoveryProtocolTest;
 import com.netflix.rx.eureka.transport.TransportCompatibilityTestSuite.RegistrationProtocolTest;
 import com.netflix.rx.eureka.transport.TransportCompatibilityTestSuite.ReplicationProtocolTest;
-import com.netflix.rx.eureka.transport.base.BaseMessageBroker;
+import com.netflix.rx.eureka.transport.base.BaseMessageConnection;
+import com.netflix.rx.eureka.transport.base.MessageConnectionMetrics;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ConnectionHandler;
 import io.reactivex.netty.channel.ObservableConnection;
@@ -19,6 +20,8 @@ import org.junit.Test;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
+import static com.netflix.rx.eureka.transport.EurekaTransports.*;
+
 /**
  * This is protocol compatibility test for any underlying transport we implement.
  *
@@ -27,6 +30,9 @@ import rx.subjects.PublishSubject;
 public class EurekaTransportsTest {
 
     private RxServer<Object, Object> server;
+
+    private MessageConnectionMetrics clientMetrics = new MessageConnectionMetrics("client-compatibility");
+    private MessageConnectionMetrics serverMetrics = new MessageConnectionMetrics("server-compatibility");
 
     @After
     public void tearDown() throws Exception {
@@ -66,9 +72,12 @@ public class EurekaTransportsTest {
     }
 
     public void registrationProtocolTest(Codec codec) throws Exception {
-        Iterator<MessageBroker> serverBrokerIterator = RxBlocking.iteratorFrom(1, TimeUnit.SECONDS, serverConnection(EurekaTransports.registrationPipeline(codec)));
-        MessageBroker clientBroker = clientConnection(EurekaTransports.registrationPipeline(codec));
-        MessageBroker serverBroker = serverBrokerIterator.next();
+        Iterator<MessageConnection> serverBrokerIterator = RxBlocking.iteratorFrom(
+                1, TimeUnit.SECONDS,
+                serverConnection(registrationPipeline(codec))
+        );
+        MessageConnection clientBroker = clientConnection(registrationPipeline(codec));
+        MessageConnection serverBroker = serverBrokerIterator.next();
 
         new RegistrationProtocolTest(
                 clientBroker,
@@ -77,9 +86,12 @@ public class EurekaTransportsTest {
     }
 
     public void replicationProtocolTest(Codec codec) throws Exception {
-        Iterator<MessageBroker> serverBrokerIterator = RxBlocking.iteratorFrom(1, TimeUnit.SECONDS, serverConnection(EurekaTransports.replicationPipeline(codec)));
-        MessageBroker clientBroker = clientConnection(EurekaTransports.replicationPipeline(codec));
-        MessageBroker serverBroker = serverBrokerIterator.next();
+        Iterator<MessageConnection> serverBrokerIterator = RxBlocking.iteratorFrom(
+                1, TimeUnit.SECONDS,
+                serverConnection(replicationPipeline(codec))
+        );
+        MessageConnection clientBroker = clientConnection(replicationPipeline(codec));
+        MessageConnection serverBroker = serverBrokerIterator.next();
 
         new ReplicationProtocolTest(
                 clientBroker,
@@ -88,9 +100,12 @@ public class EurekaTransportsTest {
     }
 
     public void discoveryProtocolTest(Codec codec) throws Exception {
-        Iterator<MessageBroker> serverBrokerIterator = RxBlocking.iteratorFrom(1, TimeUnit.SECONDS, serverConnection(EurekaTransports.discoveryPipeline(codec)));
-        MessageBroker clientBroker = clientConnection(EurekaTransports.discoveryPipeline(codec));
-        MessageBroker serverBroker = serverBrokerIterator.next();
+        Iterator<MessageConnection> serverBrokerIterator = RxBlocking.iteratorFrom(
+                1, TimeUnit.SECONDS,
+                serverConnection(discoveryPipeline(codec))
+        );
+        MessageConnection clientBroker = clientConnection(discoveryPipeline(codec));
+        MessageConnection serverBroker = serverBrokerIterator.next();
 
         new DiscoveryProtocolTest(
                 clientBroker,
@@ -98,12 +113,12 @@ public class EurekaTransportsTest {
         ).runTestSuite();
     }
 
-    private Observable<MessageBroker> serverConnection(PipelineConfigurator<Object, Object> pipelineConfigurator) {
-        final PublishSubject<MessageBroker> subject = PublishSubject.create();
+    private Observable<MessageConnection> serverConnection(PipelineConfigurator<Object, Object> pipelineConfigurator) {
+        final PublishSubject<MessageConnection> subject = PublishSubject.create();
         server = RxNetty.createTcpServer(0, pipelineConfigurator, new ConnectionHandler<Object, Object>() {
             @Override
             public Observable<Void> handle(ObservableConnection<Object, Object> connection) {
-                BaseMessageBroker messageBroker = new BaseMessageBroker(connection);
+                BaseMessageConnection messageBroker = new BaseMessageConnection(connection, serverMetrics);
                 subject.onNext(messageBroker);
                 return messageBroker.lifecycleObservable();
             }
@@ -111,9 +126,9 @@ public class EurekaTransportsTest {
         return subject;
     }
 
-    private MessageBroker clientConnection(PipelineConfigurator<Object, Object> pipelineConfigurator) {
+    private MessageConnection clientConnection(PipelineConfigurator<Object, Object> pipelineConfigurator) {
         ObservableConnection<Object, Object> clientConnection = RxNetty.createTcpClient("localhost", server.getServerPort(), pipelineConfigurator)
                 .connect().take(1).timeout(1, TimeUnit.SECONDS).toBlocking().single();
-        return new BaseMessageBroker(clientConnection);
+        return new BaseMessageConnection(clientConnection, clientMetrics);
     }
 }

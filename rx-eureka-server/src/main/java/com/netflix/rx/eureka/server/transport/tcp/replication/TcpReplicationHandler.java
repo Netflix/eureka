@@ -21,11 +21,13 @@ import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.server.metric.EurekaServerMetricFactory;
 import com.netflix.rx.eureka.server.service.EurekaServerService;
 import com.netflix.rx.eureka.server.service.EurekaServiceImpl;
-import com.netflix.rx.eureka.server.transport.ClientConnectionImpl;
-import com.netflix.rx.eureka.transport.base.BaseMessageBroker;
+import com.netflix.rx.eureka.transport.MessageConnection;
+import com.netflix.rx.eureka.transport.base.BaseMessageConnection;
+import com.netflix.rx.eureka.transport.base.HeartBeatConnection;
 import io.reactivex.netty.channel.ConnectionHandler;
 import io.reactivex.netty.channel.ObservableConnection;
 import rx.Observable;
+import rx.schedulers.Schedulers;
 
 /**
  * @author Tomasz Bak
@@ -43,8 +45,12 @@ public class TcpReplicationHandler implements ConnectionHandler<Object, Object> 
 
     @Override
     public Observable<Void> handle(ObservableConnection<Object, Object> connection) {
-        final ClientConnectionImpl eurekaConn = new ClientConnectionImpl(new BaseMessageBroker(connection), metricFactory.getReplicationConnectionMetrics());
-        final EurekaServerService service = new EurekaServiceImpl(registry, eurekaConn, metricFactory);
+        MessageConnection broker = new HeartBeatConnection(
+                new BaseMessageConnection(connection, metricFactory.getReplicationConnectionMetrics()),
+                3, 30000,
+                Schedulers.computation()
+        );
+        final EurekaServerService service = new EurekaServiceImpl(registry, broker, metricFactory);
         return service.newReplicationChannel().asLifecycleObservable();
     }
 }

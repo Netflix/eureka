@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import com.netflix.rx.eureka.client.transport.ServerConnection;
 import com.netflix.rx.eureka.client.transport.TransportClient;
 import com.netflix.rx.eureka.data.Source;
 import com.netflix.rx.eureka.interests.ChangeNotification;
@@ -21,6 +20,7 @@ import com.netflix.rx.eureka.registry.Delta;
 import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.service.InterestChannel;
+import com.netflix.rx.eureka.transport.MessageConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -74,14 +74,14 @@ import rx.observers.SafeSubscriber;
      *
      * <h2>Thread safety</h2>
      *
-     * Since this channel directly leverages the underlying {@link ServerConnection} and our underlying stack guarantees
+     * Since this channel directly leverages the underlying {@link MessageConnection} and our underlying stack guarantees
      * that there are not concurrent updates sent to the input reader, we can safely assume that this code is single
      * threaded.
      */
     private final Map<String, InstanceInfo> idVsInstance = new HashMap<>();
 
     public InterestChannelImpl(final EurekaRegistry<InstanceInfo> registry, TransportClient client, InterestChannelMetrics metrics) {
-        super(STATES.Idle, client, 30000);
+        super(STATES.Idle, client);
         this.interestSource = Source.interestSource(UUID.randomUUID().toString());
         this.registry = registry;
         this.metrics = metrics;
@@ -95,10 +95,10 @@ import rx.observers.SafeSubscriber;
     @Override
     public Observable<Void> change(final Interest<InstanceInfo> newInterest) {
         Observable<Void> serverRequest = connect() // Connect is idempotent and does not connect on every call.
-                .switchMap(new Func1<ServerConnection, Observable<Void>>() {
+                .switchMap(new Func1<MessageConnection, Observable<Void>>() {
                     @Override
-                    public Observable<Void> call(ServerConnection serverConnection) {
-                        return serverConnection.sendWithAck(new InterestRegistration(newInterest))
+                    public Observable<Void> call(MessageConnection serverConnection) {
+                        return serverConnection.submitWithAck(new InterestRegistration(newInterest))
                                 .doOnCompleted(new UpdateLocalInterest(newInterest));
 
                     }
@@ -147,10 +147,10 @@ import rx.observers.SafeSubscriber;
 
     protected Observable<ChangeNotification<InstanceInfo>> createInterestStream() {
 
-        return connect().switchMap(new Func1<ServerConnection, Observable<? extends ChangeNotification<InstanceInfo>>>() {
+        return connect().switchMap(new Func1<MessageConnection, Observable<? extends ChangeNotification<InstanceInfo>>>() {
             @Override
-            public Observable<? extends ChangeNotification<InstanceInfo>> call(final ServerConnection connection) {
-                return connection.getInput().filter(new Func1<Object, Boolean>() {
+            public Observable<? extends ChangeNotification<InstanceInfo>> call(final MessageConnection connection) {
+                return connection.incoming().filter(new Func1<Object, Boolean>() {
                     @Override
                     public Boolean call(Object message) {
                         boolean isKnown = message instanceof InterestSetNotification;

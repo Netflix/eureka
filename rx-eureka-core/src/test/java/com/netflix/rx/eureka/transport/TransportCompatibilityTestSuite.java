@@ -37,12 +37,12 @@ import static org.junit.Assert.*;
  */
 public abstract class TransportCompatibilityTestSuite {
 
-    protected final MessageBroker clientBroker;
-    protected final MessageBroker serverBroker;
+    protected final MessageConnection clientBroker;
+    protected final MessageConnection serverBroker;
     protected final Iterator<Object> serverIterator;
     protected final Iterator<Object> clientIterator;
 
-    protected TransportCompatibilityTestSuite(MessageBroker clientBroker, MessageBroker serverBroker) {
+    protected TransportCompatibilityTestSuite(MessageConnection clientBroker, MessageConnection serverBroker) {
         this.clientBroker = clientBroker;
         this.serverBroker = serverBroker;
         serverIterator = serverBroker.incoming().toBlocking().getIterator();
@@ -63,21 +63,21 @@ public abstract class TransportCompatibilityTestSuite {
         runWithAck(serverBroker, clientBroker, clientIterator, content);
     }
 
-    private <T> void runWithAck(MessageBroker source, MessageBroker dest, Iterator<Object> destIt, T content) {
+    private <T> void runWithAck(MessageConnection source, MessageConnection dest, Iterator<Object> destIt, T content) {
         Observable<Void> ack = sniff("ack", source.submitWithAck(content));
         Iterator<Notification<Void>> ackIterator = ack.materialize().toBlocking().getIterator();
 
         T receivedMsg = (T) destIt.next();
         assertEquals(content, receivedMsg);
 
-        RxBlocking.isCompleted(1000, TimeUnit.SECONDS, dest.acknowledge(receivedMsg));
+        RxBlocking.isCompleted(1000, TimeUnit.SECONDS, dest.acknowledge());
 
         assertTrue("Expected successful acknowledgement", ackIterator.next().isOnCompleted());
     }
 
     public static class RegistrationProtocolTest extends TransportCompatibilityTestSuite {
 
-        public RegistrationProtocolTest(MessageBroker clientBroker, MessageBroker serverBroker) {
+        public RegistrationProtocolTest(MessageConnection clientBroker, MessageConnection serverBroker) {
             super(clientBroker, serverBroker);
         }
 
@@ -109,7 +109,7 @@ public abstract class TransportCompatibilityTestSuite {
 
         private final InstanceInfo instanceInfo = DiscoveryServer.build();
 
-        public ReplicationProtocolTest(MessageBroker clientBroker, MessageBroker serverBroker) {
+        public ReplicationProtocolTest(MessageConnection clientBroker, MessageConnection serverBroker) {
             super(clientBroker, serverBroker);
         }
 
@@ -154,7 +154,7 @@ public abstract class TransportCompatibilityTestSuite {
     }
 
     public static class DiscoveryProtocolTest extends TransportCompatibilityTestSuite {
-        public DiscoveryProtocolTest(MessageBroker clientBroker, MessageBroker serverBroker) {
+        public DiscoveryProtocolTest(MessageConnection clientBroker, MessageConnection serverBroker) {
             super(clientBroker, serverBroker);
         }
 

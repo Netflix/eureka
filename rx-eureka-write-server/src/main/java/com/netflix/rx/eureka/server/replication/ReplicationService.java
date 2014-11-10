@@ -54,7 +54,6 @@ public class ReplicationService {
 
     // TODO: make this dynamic properties
     private final long reconnectDelay = 30000;
-    private final long heartbeatInterval = 5000;
 
     private final AtomicReference<STATE> state = new AtomicReference<>(STATE.Idle);
     private final EurekaRegistry eurekaRegistry;
@@ -123,7 +122,7 @@ public class ReplicationService {
                                             targetName,
                                             eurekaRegistry,
                                             new ReplicationTransportClient(address, codec, metricFactory.getReplicationServerConnectionMetrics()),
-                                            reconnectDelay, heartbeatInterval
+                                            reconnectDelay
                                     );
                                     replicationWatchdogs.put(address, monitor);
                                 }

@@ -18,18 +18,19 @@ package com.netflix.rx.eureka.server.replication;
 
 import java.net.InetSocketAddress;
 
-import com.netflix.rx.eureka.client.transport.EurekaClientConnectionMetrics;
-import com.netflix.rx.eureka.client.transport.ServerConnection;
 import com.netflix.rx.eureka.client.transport.TransportClient;
-import com.netflix.rx.eureka.client.transport.tcp.TcpServerConnection;
 import com.netflix.rx.eureka.transport.EurekaTransports;
 import com.netflix.rx.eureka.transport.EurekaTransports.Codec;
-import com.netflix.rx.eureka.transport.base.BaseMessageBroker;
+import com.netflix.rx.eureka.transport.MessageConnection;
+import com.netflix.rx.eureka.transport.base.BaseMessageConnection;
+import com.netflix.rx.eureka.transport.base.HeartBeatConnection;
+import com.netflix.rx.eureka.transport.base.MessageConnectionMetrics;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ObservableConnection;
 import io.reactivex.netty.client.RxClient;
 import rx.Observable;
 import rx.functions.Func1;
+import rx.schedulers.Schedulers;
 
 /**
  * {@link ReplicationTransportClient} is always associated with single write server.
@@ -39,9 +40,9 @@ import rx.functions.Func1;
 public class ReplicationTransportClient implements TransportClient {
 
     private final RxClient<Object, Object> rxClient;
-    private final EurekaClientConnectionMetrics metrics;
+    private final MessageConnectionMetrics metrics;
 
-    public ReplicationTransportClient(InetSocketAddress address, Codec codec, EurekaClientConnectionMetrics metrics) {
+    public ReplicationTransportClient(InetSocketAddress address, Codec codec, MessageConnectionMetrics metrics) {
         this.metrics = metrics;
         this.rxClient = RxNetty.newTcpClientBuilder(address.getHostName(), address.getPort())
                 .pipelineConfigurator(EurekaTransports.replicationPipeline(codec))
@@ -49,13 +50,13 @@ public class ReplicationTransportClient implements TransportClient {
     }
 
     @Override
-    public Observable<ServerConnection> connect() {
+    public Observable<MessageConnection> connect() {
         return rxClient.connect()
                 .take(1)
-                .map(new Func1<ObservableConnection<Object, Object>, ServerConnection>() {
+                .map(new Func1<ObservableConnection<Object, Object>, MessageConnection>() {
                     @Override
-                    public ServerConnection call(ObservableConnection<Object, Object> connection) {
-                        return new TcpServerConnection(new BaseMessageBroker(connection), metrics);
+                    public MessageConnection call(ObservableConnection<Object, Object> connection) {
+                        return new HeartBeatConnection(new BaseMessageConnection(connection, metrics), 30000, 3, Schedulers.computation());
                     }
                 });
     }

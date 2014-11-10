@@ -7,14 +7,13 @@ import java.util.UUID;
 
 import com.netflix.rx.eureka.data.Source;
 import com.netflix.rx.eureka.protocol.EurekaProtocolError;
-import com.netflix.rx.eureka.protocol.Heartbeat;
 import com.netflix.rx.eureka.protocol.replication.RegisterCopy;
 import com.netflix.rx.eureka.protocol.replication.UnregisterCopy;
 import com.netflix.rx.eureka.protocol.replication.UpdateCopy;
 import com.netflix.rx.eureka.registry.Delta;
 import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
-import com.netflix.rx.eureka.server.transport.ClientConnection;
+import com.netflix.rx.eureka.transport.MessageConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -35,8 +34,8 @@ public class ReplicationChannelImpl extends AbstractChannel<ReplicationChannelIm
 
     private final Map<String, InstanceInfo> instanceInfoById = new HashMap<>();
 
-    public ReplicationChannelImpl(ClientConnection transport, EurekaRegistry<InstanceInfo> registry, ReplicationChannelMetrics metrics) {
-        super(STATES.Opened, transport, registry, 3, 30000);
+    public ReplicationChannelImpl(MessageConnection transport, EurekaRegistry<InstanceInfo> registry, ReplicationChannelMetrics metrics) {
+        super(STATES.Opened, transport, registry);
         this.replicationSource = Source.replicationSource(UUID.randomUUID().toString());  // FIXME use the sent over replication source id
         this.metrics = metrics;
         this.metrics.incrementStateCounter(STATES.Opened);
@@ -52,8 +51,6 @@ public class ReplicationChannelImpl extends AbstractChannel<ReplicationChannelIm
                 } else if (message instanceof UpdateCopy) {
                     InstanceInfo instanceInfo = ((UpdateCopy) message).getInstanceInfo();
                     update(instanceInfo);// No need to subscribe, the update() call does the subscription.
-                } else if (message instanceof Heartbeat) {
-                    heartbeat();
                 } else {
                     sendErrorOnTransport(new EurekaProtocolError("Unexpected message " + message));
                 }

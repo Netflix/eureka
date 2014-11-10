@@ -3,15 +3,14 @@ package com.netflix.rx.eureka.server.service;
 import java.util.Set;
 
 import com.netflix.rx.eureka.protocol.EurekaProtocolError;
-import com.netflix.rx.eureka.protocol.Heartbeat;
 import com.netflix.rx.eureka.protocol.registration.Register;
 import com.netflix.rx.eureka.protocol.registration.Unregister;
 import com.netflix.rx.eureka.protocol.registration.Update;
 import com.netflix.rx.eureka.registry.Delta;
 import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
-import com.netflix.rx.eureka.server.transport.ClientConnection;
 import com.netflix.rx.eureka.service.RegistrationChannel;
+import com.netflix.rx.eureka.transport.MessageConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -38,8 +37,8 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
 
     protected enum STATES {Idle, Registered, Closed}
 
-    public RegistrationChannelImpl(EurekaRegistry registry, ClientConnection transport, RegistrationChannelMetrics metrics) {
-        super(STATES.Idle, transport, registry, 3, 30000);
+    public RegistrationChannelImpl(EurekaRegistry registry, MessageConnection transport, RegistrationChannelMetrics metrics) {
+        super(STATES.Idle, transport, registry);
         this.metrics = metrics;
 
         metrics.incrementStateCounter(STATES.Idle);
@@ -56,8 +55,6 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
                 } else if (message instanceof Update) {
                     InstanceInfo instanceInfo = ((Update) message).getInstanceInfo();
                     update(instanceInfo);// No need to subscribe, the update() call does the subscription.
-                } else if (message instanceof Heartbeat) {
-                    heartbeat();
                 } else {
                     sendErrorOnTransport(new EurekaProtocolError("Unexpected message " + message));
                 }

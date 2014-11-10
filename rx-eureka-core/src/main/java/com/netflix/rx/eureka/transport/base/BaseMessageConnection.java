@@ -23,7 +23,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.rx.eureka.transport.Acknowledgement;
-import com.netflix.rx.eureka.transport.MessageBroker;
+import com.netflix.rx.eureka.transport.MessageConnection;
 import io.reactivex.netty.channel.ObservableConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,12 +41,14 @@ import rx.subjects.ReplaySubject;
 /**
  * @author Tomasz Bak
  */
-public class BaseMessageBroker implements MessageBroker {
+public class BaseMessageConnection implements MessageConnection {
 
-    private static final Logger logger = LoggerFactory.getLogger(BaseMessageBroker.class);
+    private static final Logger logger = LoggerFactory.getLogger(BaseMessageConnection.class);
 
     private final ObservableConnection<Object, Object> connection;
+    private final MessageConnectionMetrics metrics;
     private final Worker schedulerWorker;
+    private final long startTime;
 
     private final PublishSubject<Void> lifecycleSubject = PublishSubject.create();
 
@@ -69,20 +71,24 @@ public class BaseMessageBroker implements MessageBroker {
                 }
             } catch (RuntimeException e) {
                 logger.error("Acknowledgement cleanup task failed with an exception: " + e.getMessage());
-                logger.debug("Acknowledgement failure stacktrace", e);
+                logger.debug("Acknowledgement failure stack trace", e);
                 throw e;
             }
         }
     };
 
-    public BaseMessageBroker(ObservableConnection<Object, Object> connection) {
-        this(connection, Schedulers.computation());
+    public BaseMessageConnection(ObservableConnection<Object, Object> connection, MessageConnectionMetrics metrics) {
+        this(connection, metrics, Schedulers.computation());
     }
 
-    public BaseMessageBroker(ObservableConnection<Object, Object> connection, Scheduler expiryScheduler) {
+    public BaseMessageConnection(ObservableConnection<Object, Object> connection, MessageConnectionMetrics metrics, Scheduler expiryScheduler) {
         this.connection = connection;
+        this.metrics = metrics;
         schedulerWorker = expiryScheduler.createWorker();
         installAcknowledgementHandler();
+
+        this.startTime = System.currentTimeMillis();
+        metrics.incrementConnectedClients();
     }
 
     private void installAcknowledgementHandler() {
@@ -127,10 +133,11 @@ public class BaseMessageBroker implements MessageBroker {
     }
 
     @Override
-    public Observable<Void> acknowledge(Object message) {
+    public Observable<Void> acknowledge() {
         return writeWhenSubscribed(Acknowledgement.INSTANCE);
     }
 
+    // TODO: Return always the same observable
     @Override
     public Observable<Object> incoming() {
         return connection.getInput().filter(new Func1<Object, Boolean>() {
@@ -138,11 +145,29 @@ public class BaseMessageBroker implements MessageBroker {
             public Boolean call(Object message) {
                 return !(message instanceof Acknowledgement);
             }
+        }).doOnNext(new Action1<Object>() {
+            @Override
+            public void call(Object o) {
+                metrics.incrementIncomingMessageCounter(o.getClass(), 1);
+            }
         });
     }
 
     @Override
+    public Observable<Void> onError(Throwable error) {
+        return Observable.error(error);
+    }
+
+    @Override
+    public Observable<Void> onCompleted() {
+        return Observable.empty();
+    }
+
+    @Override
     public void shutdown() {
+        metrics.decrementConnectedClients();
+        metrics.clientConnectionTime(startTime);
+
         Observable<Void> closeObservable = connection.close();
         closeObservable.subscribe(lifecycleSubject);
         schedulerWorker.unsubscribe();
@@ -164,6 +189,7 @@ public class BaseMessageBroker implements MessageBroker {
                         observableRef.set(connection.writeAndFlush(message));
                     }
                 }
+                metrics.incrementOutgoingMessageCounter(message.getClass(), 1);
                 observableRef.get().subscribe(subscriber);
             }
         });
