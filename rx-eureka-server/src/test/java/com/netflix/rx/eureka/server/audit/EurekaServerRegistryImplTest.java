@@ -1,4 +1,4 @@
-package com.netflix.rx.eureka.registry;
+package com.netflix.rx.eureka.server.audit;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,33 +6,36 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory;
-import com.netflix.rx.eureka.data.MultiSourcedDataHolder;
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interests;
+import com.netflix.rx.eureka.registry.InstanceInfo;
+import com.netflix.rx.eureka.registry.SampleInstanceInfo;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistryImpl;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistryMetrics;
+import com.netflix.rx.eureka.server.registry.MultiSourcedDataHolder;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import rx.Observable;
 import rx.Subscriber;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 
 
 /**
  * @author David Liu
  */
-public class EurekaRegistryImplTest {
+public class EurekaServerRegistryImplTest {
 
-    private TestEurekaRegistry registry;
+    private TestEurekaServerRegistry registry;
 
     @Rule
     public final ExternalResource registryResource = new ExternalResource() {
 
         @Override
         protected void before() throws Throwable {
-            registry = new TestEurekaRegistry(EurekaClientMetricFactory.clientMetrics().getRegistryMetrics());
+            registry = new TestEurekaServerRegistry(new EurekaServerRegistryMetrics("serverRegistry"));
         }
 
         @Override
@@ -162,7 +165,7 @@ public class EurekaRegistryImplTest {
         InstanceInfo snapshot1 = holder.get();
         assertThat(snapshot1, equalTo(original));
 
-        registry.unregister(original.getId());
+        registry.unregister(original).toBlocking().lastOrDefault(null);
 
         assertThat(internalStore.size(), equalTo(1));
         holder = internalStore.values().iterator().next();
@@ -185,9 +188,11 @@ public class EurekaRegistryImplTest {
         InstanceInfo snapshot1 = holder.get();
         assertThat(snapshot1, equalTo(original));
 
-        InstanceInfo newInstanceInfo = new InstanceInfo.Builder().withInstanceInfo(original)
+        InstanceInfo newInstanceInfo = new InstanceInfo.Builder()
+                .withInstanceInfo(original)
+                .withVersion(1L)
                 .withStatus(InstanceInfo.Status.OUT_OF_SERVICE).build();
-        registry.update(newInstanceInfo, newInstanceInfo.diffOlder(original));
+        registry.update(newInstanceInfo, newInstanceInfo.diffOlder(original)).toBlocking().firstOrDefault(null);
 
         assertThat(internalStore.size(), equalTo(1));
 
@@ -197,9 +202,9 @@ public class EurekaRegistryImplTest {
     }
 
 
-    private static class TestEurekaRegistry extends EurekaRegistryImpl {
+    private static class TestEurekaServerRegistry extends EurekaServerRegistryImpl {
 
-        public TestEurekaRegistry(EurekaRegistryMetrics metrics) {
+        public TestEurekaServerRegistry(EurekaServerRegistryMetrics metrics) {
             super(metrics);
         }
 

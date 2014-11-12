@@ -1,5 +1,11 @@
 package com.netflix.rx.eureka.server.service;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
@@ -7,7 +13,7 @@ import com.netflix.rx.eureka.compatibility.InstanceInfoConverter;
 import com.netflix.rx.eureka.compatibility.InstanceInfoConverterImpl;
 import com.netflix.rx.eureka.compatibility.OperatorInstanceInfoFromV1;
 import com.netflix.rx.eureka.registry.Delta;
-import com.netflix.rx.eureka.registry.EurekaRegistry;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.service.ServiceChannel;
 import org.slf4j.Logger;
@@ -21,12 +27,6 @@ import rx.schedulers.Schedulers;
 import rx.subjects.ReplaySubject;
 import rx.subjects.Subject;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
 /**
  * A bridge channel that handles changes between snapshots of v1 instanceInfo
  *
@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class BridgeChannel implements ServiceChannel {
     private static final Logger logger = LoggerFactory.getLogger(BridgeChannel.class);
 
-    private final EurekaRegistry<InstanceInfo> registry;
+    private final EurekaServerRegistry<InstanceInfo> registry;
     private final DiscoveryClient discoveryClient;
     private final InstanceInfoConverter converter;
     private final int refreshRateSec;
@@ -44,10 +44,10 @@ public class BridgeChannel implements ServiceChannel {
 
     private final Subject<Void, Void> lifecycle;
 
-    public BridgeChannel(EurekaRegistry<InstanceInfo> registry,
+    public BridgeChannel(EurekaServerRegistry<InstanceInfo> registry,
                          DiscoveryClient discoveryClient,
                          int refreshRateSec) {
-        this.registry =registry;
+        this.registry = registry;
         this.discoveryClient = discoveryClient;
         this.refreshRateSec = refreshRateSec;
 
@@ -102,20 +102,20 @@ public class BridgeChannel implements ServiceChannel {
                         });
 
                 currentSnapshot.keySet().removeAll(newSnapshot.keySet());
-                Observable.from(currentSnapshot.keySet())
-                        .subscribe(new Subscriber<String>() {
+                Observable.from(currentSnapshot.values())
+                        .subscribe(new Subscriber<InstanceInfo>() {
                             @Override
-                            public void onCompleted() {}
+                            public void onCompleted() {
+                            }
 
                             @Override
                             public void onError(Throwable e) {
                                 logger.warn("error unregistering from v1 stream", e);
-                                e.printStackTrace();
                             }
 
                             @Override
-                            public void onNext(String instanceId) {
-                                registry.unregister(instanceId);
+                            public void onNext(InstanceInfo instanceInfo) {
+                                registry.unregister(instanceInfo);
                                 unregisterCount.incrementAndGet();
                             }
                         });
@@ -123,7 +123,7 @@ public class BridgeChannel implements ServiceChannel {
                 currentSnapshot = newSnapshot;
 
                 logger.info("Finished new round of replication from v1 to v2." +
-                        " Total: {}, registers: {}, updates: {}, unregisters: {}",
+                                " Total: {}, registers: {}, updates: {}, unregisters: {}",
                         totalCount.get(), registerCount.get(), updateCount.get(), unregisterCount.get());
             }
         }, 0, refreshRateSec, TimeUnit.SECONDS);

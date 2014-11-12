@@ -17,6 +17,7 @@
 package com.netflix.rx.eureka.client.bootstrap;
 
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -76,9 +77,9 @@ public abstract class EurekaServerResolver implements ServerResolver<InetSocketA
                         return dRemove == null ? Observable.<ServerEntry<InetSocketAddress>>empty() :
                                 Observable.just(removeServerEntry(changeNotification));
                     case Modify:
-                        ServerEntry<InetSocketAddress> mRemove = removeServerEntry(changeNotification);
-                        return mRemove == null ? Observable.just(addServerEntry(changeNotification)) :
-                                Observable.from(mRemove, addServerEntry(changeNotification));
+                        ServerEntry<InetSocketAddress> toRemove = removeServerEntry(changeNotification);
+                        ServerEntry<InetSocketAddress> toAdd = addServerEntry(changeNotification);
+                        return toRemove == null ? Observable.just(toAdd) : Observable.from(Arrays.asList(toRemove, toAdd));
                 }
                 return null;
             }

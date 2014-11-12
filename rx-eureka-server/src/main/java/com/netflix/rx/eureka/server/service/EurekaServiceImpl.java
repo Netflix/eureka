@@ -1,8 +1,9 @@
 package com.netflix.rx.eureka.server.service;
 
-import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.server.metric.EurekaServerMetricFactory;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry;
+import com.netflix.rx.eureka.server.registry.EvictionQueue;
 import com.netflix.rx.eureka.service.InterestChannel;
 import com.netflix.rx.eureka.service.RegistrationChannel;
 import com.netflix.rx.eureka.transport.MessageConnection;
@@ -18,14 +19,17 @@ import com.netflix.rx.eureka.transport.MessageConnection;
  */
 public class EurekaServiceImpl implements EurekaServerService {
 
-    private final EurekaRegistry<InstanceInfo> registry;
+    private final EurekaServerRegistry<InstanceInfo> registry;
+    private final EvictionQueue evictionQueue;
     private final MessageConnection connection;
     private final EurekaServerMetricFactory metricFactory;
 
-    public EurekaServiceImpl(EurekaRegistry<InstanceInfo> registry,
+    public EurekaServiceImpl(EurekaServerRegistry<InstanceInfo> registry,
+                             EvictionQueue evictionQueue,
                              MessageConnection connection,
                              EurekaServerMetricFactory metricFactory) {
         this.registry = registry;
+        this.evictionQueue = evictionQueue;
         this.connection = connection;
         this.metricFactory = metricFactory;
     }
@@ -37,12 +41,12 @@ public class EurekaServiceImpl implements EurekaServerService {
 
     @Override
     public RegistrationChannel newRegistrationChannel() {
-        return new RegistrationChannelImpl(registry, connection, metricFactory.getRegistrationChannelMetrics());
+        return new RegistrationChannelImpl(registry, evictionQueue, connection, metricFactory.getRegistrationChannelMetrics());
     }
 
     @Override
     public ReplicationChannel newReplicationChannel() {
-        return new ReplicationChannelImpl(connection, registry, metricFactory.getReplicationChannelMetrics());
+        return new ReplicationChannelImpl(connection, registry, evictionQueue, metricFactory.getReplicationChannelMetrics());
     }
 
     @Override

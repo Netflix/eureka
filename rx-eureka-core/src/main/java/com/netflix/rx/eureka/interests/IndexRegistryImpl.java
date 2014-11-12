@@ -39,7 +39,7 @@ public class IndexRegistryImpl<T> implements IndexRegistry<T> {
     }
 
     @Override
-    public Observable<ChangeNotification<T>> forCompositeInterest(MultipleInterests<T> interest, EurekaRegistry<T> registry) {
+    public Observable<ChangeNotification<T>> forCompositeInterest(MultipleInterests<T> interest, EurekaRegistry<T, ?> registry) {
         List<Observable<ChangeNotification<T>>> indexes = new ArrayList<>();
         for (Interest<T> atomicInterest : interest.flatten()) {
             indexes.add(registry.forInterest(atomicInterest));

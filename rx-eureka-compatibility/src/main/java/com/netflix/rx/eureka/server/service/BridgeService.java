@@ -1,16 +1,17 @@
 package com.netflix.rx.eureka.server.service;
 
-import com.netflix.discovery.DiscoveryClient;
-import com.netflix.rx.eureka.registry.EurekaRegistry;
-import com.netflix.rx.eureka.server.BridgeServerConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.concurrent.atomic.AtomicReference;
+
+import com.netflix.discovery.DiscoveryClient;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry;
+import com.netflix.rx.eureka.registry.InstanceInfo;
+import com.netflix.rx.eureka.server.BridgeServerConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author David Liu
@@ -20,14 +21,14 @@ public class BridgeService {
     private static final Logger logger = LoggerFactory.getLogger(BridgeService.class);
 
     private final BridgeServerConfig config;
-    private final EurekaRegistry registry;
+    private final EurekaServerRegistry<InstanceInfo> registry;
     private final DiscoveryClient discoveryClient;
 
     private final AtomicReference<BridgeChannel> channelRef;
 
     @Inject
     public BridgeService(BridgeServerConfig config,
-                         EurekaRegistry registry,
+                         EurekaServerRegistry registry,
                          DiscoveryClient discoveryClient) {
 
         this.config = config;

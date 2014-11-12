@@ -22,7 +22,7 @@ import javax.inject.Singleton;
 
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interests;
-import com.netflix.rx.eureka.registry.EurekaRegistry;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,11 +36,11 @@ public class AuditServiceController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuditServiceController.class);
 
-    private final EurekaRegistry<InstanceInfo> registry;
+    private final EurekaServerRegistry<InstanceInfo> registry;
     private final AuditService auditService;
 
     @Inject
-    public AuditServiceController(EurekaRegistry registry, AuditService auditService) {
+    public AuditServiceController(EurekaServerRegistry registry, AuditService auditService) {
         this.registry = registry;
         this.auditService = auditService;
     }

@@ -26,7 +26,7 @@ import com.netflix.rx.eureka.interests.Interests;
 import com.netflix.rx.eureka.interests.ModifyNotification;
 import com.netflix.rx.eureka.interests.MultipleInterests;
 import com.netflix.rx.eureka.registry.Delta;
-import com.netflix.rx.eureka.registry.EurekaRegistry;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.registry.SampleDelta;
 import com.netflix.rx.eureka.registry.SampleInstanceInfo;
@@ -52,7 +52,7 @@ import static org.mockito.Mockito.*;
 public class InterestNotificationMultiplexerTest {
 
     @Mock
-    private EurekaRegistry<InstanceInfo> registryMock;
+    private EurekaServerRegistry<InstanceInfo> registryMock;
 
     private InterestNotificationMultiplexer multiplexer;
     private Iterator<ChangeNotification<InstanceInfo>> notifications;

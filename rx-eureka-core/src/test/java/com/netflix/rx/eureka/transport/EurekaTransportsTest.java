@@ -118,7 +118,7 @@ public class EurekaTransportsTest {
         server = RxNetty.createTcpServer(0, pipelineConfigurator, new ConnectionHandler<Object, Object>() {
             @Override
             public Observable<Void> handle(ObservableConnection<Object, Object> connection) {
-                BaseMessageConnection messageBroker = new BaseMessageConnection(connection, serverMetrics);
+                BaseMessageConnection messageBroker = new BaseMessageConnection("test", connection, serverMetrics);
                 subject.onNext(messageBroker);
                 return messageBroker.lifecycleObservable();
             }
@@ -129,6 +129,6 @@ public class EurekaTransportsTest {
     private MessageConnection clientConnection(PipelineConfigurator<Object, Object> pipelineConfigurator) {
         ObservableConnection<Object, Object> clientConnection = RxNetty.createTcpClient("localhost", server.getServerPort(), pipelineConfigurator)
                 .connect().take(1).timeout(1, TimeUnit.SECONDS).toBlocking().single();
-        return new BaseMessageConnection(clientConnection, clientMetrics);
+        return new BaseMessageConnection("test", clientConnection, clientMetrics);
     }
 }

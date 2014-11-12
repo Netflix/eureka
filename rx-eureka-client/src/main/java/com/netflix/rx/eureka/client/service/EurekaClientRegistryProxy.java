@@ -4,13 +4,13 @@ import javax.inject.Inject;
 import java.util.Set;
 
 import com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory;
+import com.netflix.rx.eureka.client.registry.EurekaClientRegistry;
+import com.netflix.rx.eureka.client.registry.EurekaClientRegistryImpl;
 import com.netflix.rx.eureka.client.transport.TransportClient;
-import com.netflix.rx.eureka.data.Source;
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interest;
 import com.netflix.rx.eureka.registry.Delta;
 import com.netflix.rx.eureka.registry.EurekaRegistry;
-import com.netflix.rx.eureka.registry.EurekaRegistryImpl;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.service.EurekaService;
 import com.netflix.rx.eureka.service.InterestChannel;
@@ -25,7 +25,7 @@ import rx.Subscriber;
  *
  * <h2>Storage</h2>
  *
- * This registry uses {@link EurekaRegistryImpl} for actual data storage.
+ * This registry uses {@link EurekaClientRegistryImpl} for actual data storage.
  *
  * <h2>Reconnects</h2>
  *
@@ -36,15 +36,15 @@ import rx.Subscriber;
  *
  * @author Nitesh Kant
  */
-public class EurekaClientRegistry implements EurekaRegistry<InstanceInfo> {
+public class EurekaClientRegistryProxy implements EurekaClientRegistry<InstanceInfo> {
 
     private final EurekaService service;
-    private final EurekaRegistry<InstanceInfo> registry;
+    private final EurekaClientRegistry<InstanceInfo> registry;
     private final ClientInterestChannel interestChannel;
 
     @Inject
-    public EurekaClientRegistry(final TransportClient readServerClient, EurekaClientMetricFactory metricFactory) {
-        registry = new EurekaRegistryImpl(metricFactory.getRegistryMetrics());
+    public EurekaClientRegistryProxy(final TransportClient readServerClient, EurekaClientMetricFactory metricFactory) {
+        registry = new EurekaClientRegistryImpl(metricFactory.getRegistryMetrics());
 
         service = EurekaServiceImpl.forReadServer(registry, readServerClient, metricFactory);
         interestChannel = (ClientInterestChannel) service.newInterestChannel();
@@ -56,28 +56,13 @@ public class EurekaClientRegistry implements EurekaRegistry<InstanceInfo> {
     }
 
     @Override
-    public Observable<Void> register(InstanceInfo instanceInfo, Source source) {
-        return registry.register(instanceInfo, source);
-    }
-
-    @Override
-    public Observable<Void> unregister(String instanceId) {
-        return registry.unregister(instanceId);
-    }
-
-    @Override
-    public Observable<Void> unregister(String instanceId, Source source) {
-        return registry.unregister(instanceId, source);
+    public Observable<Void> unregister(InstanceInfo instanceInfo) {
+        return registry.unregister(instanceInfo);
     }
 
     @Override
     public Observable<Void> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
         return registry.update(updatedInfo, deltas);
-    }
-
-    @Override
-    public Observable<Void> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas, Source source) {
-        return registry.update(updatedInfo, deltas, source);
     }
 
     @Override
@@ -93,11 +78,6 @@ public class EurekaClientRegistry implements EurekaRegistry<InstanceInfo> {
                 .mergeWith(registry.forInterest(interest));
 
         return toReturn;
-    }
-
-    @Override
-    public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, Source source) {
-        throw new IllegalStateException("Origin filtering not supported by EurekaClientRegistry");
     }
 
     @Override

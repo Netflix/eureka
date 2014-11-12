@@ -1,4 +1,4 @@
-package com.netflix.rx.eureka.data;
+package com.netflix.rx.eureka.server.registry;
 
 import java.util.UUID;
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.rx.eureka.registry;
+package com.netflix.rx.eureka.server.registry;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -25,9 +25,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.netflix.rx.eureka.data.MultiSourcedDataHolder;
-import com.netflix.rx.eureka.data.NotifyingInstanceInfoHolder;
-import com.netflix.rx.eureka.data.Source;
 import com.netflix.rx.eureka.datastore.NotificationsSubject;
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.IndexRegistry;
@@ -35,20 +32,25 @@ import com.netflix.rx.eureka.interests.IndexRegistryImpl;
 import com.netflix.rx.eureka.interests.InstanceInfoInitStateHolder;
 import com.netflix.rx.eureka.interests.Interest;
 import com.netflix.rx.eureka.interests.MultipleInterests;
+import com.netflix.rx.eureka.registry.Delta;
+import com.netflix.rx.eureka.registry.InstanceInfo;
+import com.netflix.rx.eureka.server.registry.NotifyingInstanceInfoHolder.NotificationTaskInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
+import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.subjects.ReplaySubject;
 
 /**
  * TODO: fix race in adding/removing from store and sending notification to notificationSubject
  * TODO: threadpool for async add/put to internalStore?
  * @author David Liu
  */
-public class EurekaRegistryImpl implements EurekaRegistry<InstanceInfo> {
+public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceInfo> {
 
-    private static final Logger logger = LoggerFactory.getLogger(EurekaRegistryImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(EurekaServerRegistryImpl.class);
 
     /**
      * TODO: define a better contract for base implementation and decorators
@@ -56,10 +58,11 @@ public class EurekaRegistryImpl implements EurekaRegistry<InstanceInfo> {
     protected final ConcurrentHashMap<String, MultiSourcedDataHolder<InstanceInfo>> internalStore;
     private final NotificationsSubject<InstanceInfo> notificationSubject;  // subject for all changes in the registry
     private final IndexRegistry<InstanceInfo> indexRegistry;
-    private final EurekaRegistryMetrics metrics;
+    private final EurekaServerRegistryMetrics metrics;
+    private final NotificationTaskInvoker invoker = new NotificationTaskInvoker();
 
     @Inject
-    public EurekaRegistryImpl(EurekaRegistryMetrics metrics) {
+    public EurekaServerRegistryImpl(EurekaServerRegistryMetrics metrics) {
         this.metrics = metrics;
         this.metrics.setRegistrySizeMonitor(new Callable<Integer>() {
             @Override
@@ -76,80 +79,100 @@ public class EurekaRegistryImpl implements EurekaRegistry<InstanceInfo> {
     // -------------------------------------------------
     // Registry manipulation
     // -------------------------------------------------
-    /**
-     * Can we remove lease duration?
-     */
+
     @Override
-    public Observable<Void> register(final InstanceInfo instanceInfo) {
+    public Observable<Status> register(final InstanceInfo instanceInfo) {
         return register(instanceInfo, Source.localSource());
     }
 
     @Override
-    public Observable<Void> register(InstanceInfo instanceInfo, Source source) {
-        MultiSourcedDataHolder<InstanceInfo> newHolder = new NotifyingInstanceInfoHolder(notificationSubject, instanceInfo.getId());
+    public Observable<Status> register(InstanceInfo instanceInfo, Source source) {
+        MultiSourcedDataHolder<InstanceInfo> newHolder = new NotifyingInstanceInfoHolder(notificationSubject, invoker, instanceInfo.getId());
         MultiSourcedDataHolder<InstanceInfo> currentHolder = internalStore.putIfAbsent(instanceInfo.getId(), newHolder);
 
-        Observable<Void> toReturn;
+        Observable<Status> toReturn;
         if (currentHolder != null) {
             toReturn = currentHolder.update(source, instanceInfo);
-            metrics.incrementRegistrationCounter(source.getOrigin());  // this is a true new registration
         } else {
             toReturn = newHolder.update(source, instanceInfo);
+            metrics.incrementRegistrationCounter(source.getOrigin());  // this is a true new registration
         }
-
-        toReturn.toBlocking().firstOrDefault(null);  // TODO: revisit whether we should plumb the observable all the way or stop here
-        return Observable.empty();
+        return subscribeToUpdateResult(toReturn);
     }
 
     @Override
-    public Observable<Void> unregister(final String instanceId) {
-        return unregister(instanceId, Source.localSource());
+    public Observable<Status> unregister(final InstanceInfo instanceInfo) {
+        return unregister(instanceInfo, Source.localSource());
     }
 
     @Override
-    public Observable<Void> unregister(final String instanceId, Source source) {
-        final MultiSourcedDataHolder<InstanceInfo> currentHolder = internalStore.get(instanceId);
-
-        Observable<Void> toReturn = Observable.empty();
-        if (currentHolder != null) {
-            toReturn = currentHolder.remove(source);
-            metrics.incrementUnregistrationCounter(source.getOrigin());  // FIXME: move this to the expiry queue?
+    public Observable<Status> unregister(final InstanceInfo instanceInfo, final Source source) {
+        final MultiSourcedDataHolder<InstanceInfo> currentHolder = internalStore.get(instanceInfo.getId());
+        if (currentHolder == null) {
+            return Observable.just(Status.RemoveExpired);
         }
 
-        toReturn.toBlocking().firstOrDefault(null);
-        return Observable.create(new Observable.OnSubscribe<Void>() {
+        Observable<Status> result = currentHolder.remove(source, instanceInfo).doOnNext(new Action1<Status>() {
             @Override
-            public void call(Subscriber<? super Void> subscriber) {
-                if (currentHolder == null) {
-                    subscriber.onError(new InstanceNotRegisteredException(instanceId));
-                } else {
-                    subscriber.onCompleted();
+            public void call(Status status) {
+                if (status != Status.RemoveExpired) {
+                    metrics.incrementUnregistrationCounter(source.getOrigin());
                 }
             }
         });
+        return subscribeToUpdateResult(result);
     }
 
     @Override
-    public Observable<Void> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
+    public Observable<Status> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
         return update(updatedInfo, deltas, Source.localSource());
     }
 
     @Override
-    public Observable<Void> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas, Source source) {
-        MultiSourcedDataHolder<InstanceInfo> newHolder = new NotifyingInstanceInfoHolder(notificationSubject, updatedInfo.getId());
+    public Observable<Status> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas, Source source) {
+        MultiSourcedDataHolder<InstanceInfo> newHolder = new NotifyingInstanceInfoHolder(notificationSubject, invoker, updatedInfo.getId());
         MultiSourcedDataHolder<InstanceInfo> currentHolder = internalStore.putIfAbsent(updatedInfo.getId(), newHolder);
 
-        Observable<Void> toReturn;
-        if (currentHolder != null) {  // this is an add
+        Observable<Status> toReturn;
+        if (currentHolder != null) {
             toReturn = currentHolder.update(source, updatedInfo);
-        } else {
+        } else { // this is an add
             toReturn = newHolder.update(source, updatedInfo);
         }
 
         metrics.incrementUpdateCounter();
+        return subscribeToUpdateResult(toReturn);
+    }
 
-        toReturn.toBlocking().firstOrDefault(null);
-        return Observable.empty();
+    /**
+     * TODO: do we have to eagerly subscribe? This code is inefficient.
+     */
+    private static Observable<Status> subscribeToUpdateResult(Observable<Status> status) {
+        final ReplaySubject<Status> result = ReplaySubject.create();
+        status.subscribe(new Subscriber<Status>() {
+            @Override
+            public void onCompleted() {
+                result.onCompleted();
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                logger.error("Registry update failure", e);
+                result.onError(e);
+            }
+
+            @Override
+            public void onNext(Status status) {
+                logger.debug("Registray updated completed with status {}", status);
+                result.onNext(status);
+            }
+        });
+        return result;
+    }
+
+    @Override
+    public int size() {
+        return internalStore.size();
     }
 
     /**

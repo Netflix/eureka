@@ -78,7 +78,7 @@ public abstract class ResolverBasedTransportClient<A extends SocketAddress> impl
                 .map(new Func1<ObservableConnection<Object, Object>, MessageConnection>() {
                     @Override
                     public MessageConnection call(ObservableConnection<Object, Object> connection) {
-                        return new HeartBeatConnection(new BaseMessageConnection(connection, metrics), 3, 30000, Schedulers.computation());
+                        return new HeartBeatConnection(new BaseMessageConnection("discoveryClient", connection, metrics), 30000, 3, Schedulers.computation());
                     }
                 });
         return Observable.concat(

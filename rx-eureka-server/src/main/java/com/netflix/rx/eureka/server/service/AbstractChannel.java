@@ -1,7 +1,7 @@
 package com.netflix.rx.eureka.server.service;
 
 import com.netflix.rx.eureka.interests.ChangeNotification;
-import com.netflix.rx.eureka.registry.EurekaRegistry;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.service.AbstractServiceChannel;
 import com.netflix.rx.eureka.transport.MessageConnection;
@@ -21,9 +21,9 @@ public abstract class AbstractChannel<STATE extends Enum> extends AbstractServic
     protected static final Logger logger = LoggerFactory.getLogger(AbstractChannel.class);
 
     protected final MessageConnection transport;
-    protected final EurekaRegistry<InstanceInfo> registry;
+    protected final EurekaServerRegistry<InstanceInfo> registry;
 
-    protected AbstractChannel(STATE initState, MessageConnection transport, final EurekaRegistry<InstanceInfo> registry) {
+    protected AbstractChannel(STATE initState, MessageConnection transport, final EurekaServerRegistry<InstanceInfo> registry) {
         super(initState);
         this.transport = transport;
         this.registry = registry;

@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.netflix.rx.eureka.client.ServerResolver.ProtocolType;
 import com.netflix.rx.eureka.client.ServerResolver.ServerEntry;
 import com.netflix.rx.eureka.client.bootstrap.ServerResolverFilter;
-import com.netflix.rx.eureka.registry.EurekaRegistry;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.server.EurekaBootstrapConfig;
 import com.netflix.rx.eureka.server.WriteClusterResolverProvider;
@@ -56,7 +56,7 @@ public class ReplicationService {
     private final long reconnectDelay = 30000;
 
     private final AtomicReference<STATE> state = new AtomicReference<>(STATE.Idle);
-    private final EurekaRegistry eurekaRegistry;
+    private final EurekaServerRegistry<InstanceInfo> eurekaRegistry;
     private final SelfRegistrationService selfRegistrationService;
     private final WriteClusterResolverProvider writeClusterResolverProvider;
     private final WriteServerMetricFactory metricFactory;
@@ -67,7 +67,7 @@ public class ReplicationService {
 
     @Inject
     public ReplicationService(EurekaBootstrapConfig config,
-                              EurekaRegistry eurekaRegistry,
+                              EurekaServerRegistry eurekaRegistry,
                               SelfRegistrationService selfRegistrationService,
                               WriteClusterResolverProvider writeClusterResolverProvider,
                               WriteServerMetricFactory metricFactory) {
@@ -116,7 +116,7 @@ public class ReplicationService {
                         switch (serverEntry.getAction()) {
                             case Add:
                                 if (!replicationWatchdogs.containsKey(address)) {
-                                    logger.debug("Adding replication channel to server " + address);
+                                    logger.info("Adding replication channel to server " + address);
                                     String targetName = address.toString();
                                     ReplicationChannelMonitor monitor = new ReplicationChannelMonitor(
                                             targetName,
@@ -129,7 +129,7 @@ public class ReplicationService {
                                 break;
                             case Remove:
                                 if (replicationWatchdogs.containsKey(address)) {
-                                    logger.debug("Removing replication channel to server " + address);
+                                    logger.info("Removing replication channel to server " + address);
                                     replicationWatchdogs.get(address).close();
                                 }
                                 break;

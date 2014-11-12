@@ -4,7 +4,12 @@ import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.netflix.rx.eureka.client.transport.EurekaClientConnectionMetrics;
 import com.netflix.rx.eureka.registry.EurekaRegistry;
-import com.netflix.rx.eureka.registry.EurekaRegistryMetrics;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistryMetrics;
+import com.netflix.rx.eureka.server.registry.EvictionQueue;
+import com.netflix.rx.eureka.server.registry.EvictionQueueImpl;
+import com.netflix.rx.eureka.server.registry.EvictionStrategies;
+import com.netflix.rx.eureka.server.registry.EvictionStrategy;
 import com.netflix.rx.eureka.server.replication.ReplicationService;
 import com.netflix.rx.eureka.server.service.BridgeSelfRegistrationService;
 import com.netflix.rx.eureka.server.service.BridgeService;
@@ -23,6 +28,10 @@ import io.reactivex.netty.servo.ServoEventsListenerFactory;
  * @author David Liu
  */
 public class EurekaBridgeServerModule extends AbstractModule {
+
+    // TODO: this should be configurable property
+    private static final int ALLOWED_DROP = 20;
+    private static final long EVICTION_TIMEOUT = 3 * 30000;
 
     private final BridgeServerConfig config;
 
@@ -44,7 +53,9 @@ public class EurekaBridgeServerModule extends AbstractModule {
         }
         bind(SelfRegistrationService.class).to(BridgeSelfRegistrationService.class).asEagerSingleton();
 
-        bind(EurekaRegistry.class).to(EurekaBridgeRegistry.class);
+        bind(EurekaServerRegistry.class).to(EurekaBridgeRegistry.class);
+        bind(EvictionQueue.class).toInstance(new EvictionQueueImpl(EVICTION_TIMEOUT));
+        bind(EvictionStrategy.class).toInstance(EvictionStrategies.percentageDrop(ALLOWED_DROP));
 
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new ServoEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("replication")).toInstance(new ServoEventsListenerFactory("replication-rx-client-", "replication-rx-server-"));
@@ -62,6 +73,10 @@ public class EurekaBridgeServerModule extends AbstractModule {
         bind(MessageConnectionMetrics.class).annotatedWith(Names.named("replication")).toInstance(new MessageConnectionMetrics("replication"));
         bind(MessageConnectionMetrics.class).annotatedWith(Names.named("discovery")).toInstance(new MessageConnectionMetrics("discovery"));
 
+        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("clientRegistration")).toInstance(new MessageConnectionMetrics("clientRegistration"));
+        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("clientDiscovery")).toInstance(new MessageConnectionMetrics("clientDiscovery"));
+        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("clientReplication")).toInstance(new MessageConnectionMetrics("clientReplication"));
+
         bind(EurekaClientConnectionMetrics.class).annotatedWith(Names.named("registration")).toInstance(new EurekaClientConnectionMetrics("registration"));
         bind(EurekaClientConnectionMetrics.class).annotatedWith(Names.named("discovery")).toInstance(new EurekaClientConnectionMetrics("discovery"));
         bind(EurekaClientConnectionMetrics.class).annotatedWith(Names.named("replication")).toInstance(new EurekaClientConnectionMetrics("replication"));
@@ -70,7 +85,7 @@ public class EurekaBridgeServerModule extends AbstractModule {
         bind(ReplicationChannelMetrics.class).toInstance(new ReplicationChannelMetrics());
         bind(InterestChannelMetrics.class).toInstance(new InterestChannelMetrics());
 
-        bind(EurekaRegistryMetrics.class).toInstance(new EurekaRegistryMetrics("bridgeServer"));
+        bind(EurekaServerRegistryMetrics.class).toInstance(new EurekaServerRegistryMetrics("bridgeServer"));
 
         bind(ExtensionContext.class).asEagerSingleton();
     }

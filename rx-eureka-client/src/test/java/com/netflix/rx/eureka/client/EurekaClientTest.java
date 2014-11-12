@@ -7,13 +7,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory;
+import com.netflix.rx.eureka.client.registry.EurekaClientRegistry;
+import com.netflix.rx.eureka.client.registry.EurekaClientRegistryImpl;
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interest;
 import com.netflix.rx.eureka.interests.Interests;
 import com.netflix.rx.eureka.interests.MultipleInterests;
 import com.netflix.rx.eureka.interests.SampleChangeNotification;
-import com.netflix.rx.eureka.registry.EurekaRegistry;
-import com.netflix.rx.eureka.registry.EurekaRegistryImpl;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.registry.SampleInstanceInfo;
 import com.netflix.rx.eureka.service.InterestChannel;
@@ -41,7 +41,7 @@ public class EurekaClientTest {
     protected InterestChannel interestChannel;
 
     protected EurekaClient client;
-    protected EurekaRegistry<InstanceInfo> registry;
+    protected EurekaClientRegistry<InstanceInfo> registry;
     protected List<ChangeNotification<InstanceInfo>> allRegistry;
     protected List<ChangeNotification<InstanceInfo>> discoveryRegistry;
     protected List<ChangeNotification<InstanceInfo>> zuulRegistry;
@@ -70,7 +70,7 @@ public class EurekaClientTest {
             allRegistry = new ArrayList<>(discoveryRegistry);
             allRegistry.addAll(zuulRegistry);
 
-            registry = new EurekaRegistryImpl(EurekaClientMetricFactory.clientMetrics().getRegistryMetrics());
+            registry = new EurekaClientRegistryImpl(EurekaClientMetricFactory.clientMetrics().getRegistryMetrics());
             for (ChangeNotification<InstanceInfo> notification : allRegistry) {
                 registry.register(notification.getData());
             }

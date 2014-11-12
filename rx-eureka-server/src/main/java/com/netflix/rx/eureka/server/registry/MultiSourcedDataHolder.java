@@ -1,6 +1,7 @@
-package com.netflix.rx.eureka.data;
+package com.netflix.rx.eureka.server.registry;
 
 import com.netflix.rx.eureka.interests.ChangeNotification;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry.Status;
 import rx.Observable;
 
 /**
@@ -50,15 +51,15 @@ public interface MultiSourcedDataHolder<V> {
      * @param source the source to update
      * @param data the data copy
      */
-    Observable<Void> update(Source source, V data);
+    Observable<Status> update(Source source, V data);
 
     /**
      * @param source the source to delete
      */
-    Observable<Void> remove(Source source);
+    Observable<Status> remove(Source source, V data);
 
 
-    static final class Snapshot<V> {
+    final class Snapshot<V> {
         protected final Source source;
         protected final V data;
         protected final ChangeNotification<V> notification;
