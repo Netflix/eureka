@@ -3,10 +3,9 @@ package com.netflix.rx.eureka.client.service;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
+import com.netflix.rx.eureka.client.registry.EurekaClientRegistry;
 import com.netflix.rx.eureka.client.transport.TransportClient;
-import com.netflix.rx.eureka.data.Source;
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interest;
 import com.netflix.rx.eureka.interests.ModifyNotification;
@@ -17,7 +16,6 @@ import com.netflix.rx.eureka.protocol.discovery.InterestRegistration;
 import com.netflix.rx.eureka.protocol.discovery.InterestSetNotification;
 import com.netflix.rx.eureka.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.rx.eureka.registry.Delta;
-import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.service.InterestChannel;
 import com.netflix.rx.eureka.transport.MessageConnection;
@@ -46,8 +44,6 @@ import rx.observers.SafeSubscriber;
     private static final IllegalStateException INTEREST_NOT_REGISTERED_EXCEPTION =
             new IllegalStateException("No interest is registered on this channel.");
 
-    private final Source interestSource;
-
     /**
      * Since we assume single threaded access to this channel, no need for concurrency control
      */
@@ -60,7 +56,7 @@ import rx.observers.SafeSubscriber;
 
     private final InterestChannelMetrics metrics;
 
-    protected EurekaRegistry<InstanceInfo> registry;
+    protected EurekaClientRegistry<InstanceInfo> registry;
 
     /**
      * A local copy of instances received by this channel from the server. This is used for:
@@ -80,14 +76,13 @@ import rx.observers.SafeSubscriber;
      */
     private final Map<String, InstanceInfo> idVsInstance = new HashMap<>();
 
-    public InterestChannelImpl(final EurekaRegistry<InstanceInfo> registry, TransportClient client, InterestChannelMetrics metrics) {
+    InterestChannelImpl(final EurekaClientRegistry<InstanceInfo> registry, TransportClient client, InterestChannelMetrics metrics) {
         super(STATES.Idle, client);
-        this.interestSource = Source.interestSource(UUID.randomUUID().toString());
         this.registry = registry;
         this.metrics = metrics;
         metrics.incrementStateCounter(STATES.Idle);
         channelInterest = new MultipleInterests<>();  // blank channelInterest to start with
-        channelInterestSubscriber = new ChannelInterestSubscriber(registry, interestSource);
+        channelInterestSubscriber = new ChannelInterestSubscriber(registry);
         channelInterestStream = createInterestStream();
     }
 
@@ -271,7 +266,7 @@ import rx.observers.SafeSubscriber;
     }
 
     protected static class ChannelInterestSubscriber extends SafeSubscriber<ChangeNotification<InstanceInfo>> {
-        public ChannelInterestSubscriber(final EurekaRegistry<InstanceInfo> registry, final Source interestSource) {
+        public ChannelInterestSubscriber(final EurekaClientRegistry<InstanceInfo> registry) {
             super(new Subscriber<ChangeNotification<InstanceInfo>>() {
                 @Override
                 public void onCompleted() {
@@ -289,15 +284,15 @@ import rx.observers.SafeSubscriber;
                 public void onNext(ChangeNotification<InstanceInfo> notification) {
                     switch (notification.getKind()) {  // these are in-mem blocking ops
                         case Add:
-                            registry.register(notification.getData(), interestSource);
+                            registry.register(notification.getData());
                             break;
                         case Modify:
                             ModifyNotification<InstanceInfo> modifyNotification
                                     = (ModifyNotification<InstanceInfo>) notification;
-                            registry.update(modifyNotification.getData(), modifyNotification.getDelta(), interestSource);
+                            registry.update(modifyNotification.getData(), modifyNotification.getDelta());
                             break;
                         case Delete:
-                            registry.unregister(notification.getData().getId(), interestSource);
+                            registry.unregister(notification.getData());
                             break;
                         default:
                             logger.error("Unrecognized notification kind");

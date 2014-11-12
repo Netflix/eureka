@@ -16,23 +16,6 @@
 
 package com.netflix.rx.eureka.server.replication;
 
-import com.netflix.rx.eureka.client.resolver.ServerResolver;
-import com.netflix.rx.eureka.client.resolver.ServerResolver.Server;
-import com.netflix.rx.eureka.client.resolver.ServerResolverFilter;
-import com.netflix.rx.eureka.registry.EurekaRegistry;
-import com.netflix.rx.eureka.registry.InstanceInfo;
-import com.netflix.rx.eureka.server.EurekaBootstrapConfig;
-import com.netflix.rx.eureka.server.WriteClusterResolverProvider;
-import com.netflix.rx.eureka.server.metric.WriteServerMetricFactory;
-import com.netflix.rx.eureka.server.service.SelfRegistrationService;
-import com.netflix.rx.eureka.transport.EurekaTransports.Codec;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import rx.Observable;
-import rx.Subscriber;
-import rx.Subscription;
-import rx.functions.Func1;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
@@ -42,24 +25,39 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.netflix.rx.eureka.client.resolver.ServerResolver;
+import com.netflix.rx.eureka.client.resolver.ServerResolver.Server;
+import com.netflix.rx.eureka.client.resolver.ServerResolverFilter;
+import com.netflix.rx.eureka.registry.InstanceInfo;
+import com.netflix.rx.eureka.server.EurekaBootstrapConfig;
+import com.netflix.rx.eureka.server.WriteClusterResolverProvider;
+import com.netflix.rx.eureka.server.metric.WriteServerMetricFactory;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry;
+import com.netflix.rx.eureka.server.service.SelfRegistrationService;
+import com.netflix.rx.eureka.transport.EurekaTransports.Codec;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rx.Observable;
+import rx.Subscriber;
+import rx.Subscription;
+import rx.functions.Func1;
+
 /**
  * @author Tomasz Bak
  */
 @Singleton
 public class ReplicationService {
 
+    enum STATE {Idle, Connected, Closed}
 
-
-    enum STATE {Idle, Connected, Closed;}
     private static final Logger logger = LoggerFactory.getLogger(ReplicationService.class);
 
     // TODO: make this dynamic properties
-    private final long reconnectDelay = 30000;
+    private static final long reconnectDelay = 30000;
 
     private final AtomicReference<STATE> state = new AtomicReference<>(STATE.Idle);
-
     private final int replicationPort;
-    private final EurekaRegistry eurekaRegistry;
+    private final EurekaServerRegistry<InstanceInfo> eurekaRegistry;
     private final SelfRegistrationService selfRegistrationService;
     private final WriteClusterResolverProvider writeClusterResolverProvider;
     private final WriteServerMetricFactory metricFactory;
@@ -70,7 +68,7 @@ public class ReplicationService {
 
     @Inject
     public ReplicationService(EurekaBootstrapConfig config,
-                              EurekaRegistry eurekaRegistry,
+                              EurekaServerRegistry eurekaRegistry,
                               SelfRegistrationService selfRegistrationService,
                               WriteClusterResolverProvider writeClusterResolverProvider,
                               WriteServerMetricFactory metricFactory) {

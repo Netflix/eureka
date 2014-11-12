@@ -1,5 +1,7 @@
 package com.netflix.rx.eureka.client.transport;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 import com.netflix.rx.eureka.client.resolver.ServerResolver;
 import com.netflix.rx.eureka.transport.MessageConnection;
 import com.netflix.rx.eureka.transport.base.BaseMessageConnection;
@@ -12,8 +14,6 @@ import io.reactivex.netty.pipeline.PipelineConfigurator;
 import rx.Observable;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
-
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Convenience base implementation for {@link TransportClient} that reads the server list from a {@link ServerResolver}
@@ -39,37 +39,37 @@ public abstract class ResolverBasedTransportClient implements TransportClient {
     @Override
     public Observable<MessageConnection> connect() {
         return resolver.resolve()
-                       .take(1)
-                       .map(new Func1<ServerResolver.Server, RxClient<Object, Object>>() {
-                           @Override
-                           public RxClient<Object, Object> call(ServerResolver.Server server) {
-                               // This should be invoked from a single thread.
-                               RxClient<Object, Object> client = clients.get(server);
-                               if (null == client) {
-                                   client = RxNetty.createTcpClient(server.getHost(), server.getPort(),
-                                                                    pipelineConfigurator);
-                                   clients.put(server, client);
-                               }
-                               return client;
-                           }
-                       })
-                       .flatMap(new Func1<RxClient<Object, Object>, Observable<MessageConnection>>() {
-                           @Override
-                           public Observable<MessageConnection> call(RxClient<Object, Object> client) {
-                               return client.connect()
-                                            .map(new Func1<ObservableConnection<Object, Object>, MessageConnection>() {
-                                                @Override
-                                                public MessageConnection call(
-                                                        ObservableConnection<Object, Object> conn) {
-                                                    return new HeartBeatConnection(new BaseMessageConnection(conn,
-                                                                                                             metrics),
-                                                                                   3,
-                                                                                   30000, Schedulers.computation());
-                                                }
-                                            });
-                           }
-                       })
-                       .retry(1); // TODO: Better retry strategy?
+                .take(1)
+                .map(new Func1<ServerResolver.Server, RxClient<Object, Object>>() {
+                    @Override
+                    public RxClient<Object, Object> call(ServerResolver.Server server) {
+                        // This should be invoked from a single thread.
+                        RxClient<Object, Object> client = clients.get(server);
+                        if (null == client) {
+                            client = RxNetty.createTcpClient(server.getHost(), server.getPort(),
+                                    pipelineConfigurator);
+                            clients.put(server, client);
+                        }
+                        return client;
+                    }
+                })
+                .flatMap(new Func1<RxClient<Object, Object>, Observable<MessageConnection>>() {
+                    @Override
+                    public Observable<MessageConnection> call(RxClient<Object, Object> client) {
+                        return client.connect()
+                                .map(new Func1<ObservableConnection<Object, Object>, MessageConnection>() {
+                                    @Override
+                                    public MessageConnection call(
+                                            ObservableConnection<Object, Object> conn) {
+                                        return new HeartBeatConnection(
+                                                new BaseMessageConnection("client", conn, metrics),
+                                                30000, 3, Schedulers.computation()
+                                        );
+                                    }
+                                });
+                    }
+                })
+                .retry(1); // TODO: Better retry strategy?
     }
 
     @Override

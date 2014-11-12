@@ -91,6 +91,11 @@ public class HeartBeatConnection implements MessageConnection {
     }
 
     @Override
+    public String name() {
+        return delegate.name();
+    }
+
+    @Override
     public Observable<Void> submit(Object message) {
         return delegate.submit(message);
     }
@@ -146,6 +151,7 @@ public class HeartBeatConnection implements MessageConnection {
         }
 
         void onHeartbeatReceived() {
+            logger.debug("Received heartbeat message from {}", delegate.name());
             missingHeartbeatsCount.decrementAndGet();
         }
 
@@ -156,16 +162,17 @@ public class HeartBeatConnection implements MessageConnection {
 
         @Override
         public void onError(Throwable e) {
-            logger.error("Heartbeat receiver subscription got an error. This will close the connection.", e);
+            logger.error("Heartbeat receiver subscription got an error. This will close the connection " + delegate.name(), e);
             shutdown();
         }
 
         @Override
         public void onNext(Long aLong) {
             if (missingHeartbeatsCount.incrementAndGet() > tolerance) {
-                logger.warn("More than {} heartbeat messages missed; closing the connection", tolerance);
+                logger.warn("More than {} heartbeat messages missed; closing the connection {}", tolerance, delegate.name());
                 shutdown();
             } else {
+                logger.debug("Sending heartbeat message in the connection {}", delegate.name());
                 submit(Heartbeat.INSTANCE).subscribe(new Subscriber<Void>() {
                     @Override
                     public void onCompleted() {
@@ -173,7 +180,7 @@ public class HeartBeatConnection implements MessageConnection {
 
                     @Override
                     public void onError(Throwable e) {
-                        logger.warn("Failed to send heartbeat message; terminating the connection", e);
+                        logger.warn("Failed to send heartbeat message; terminating the connection " + delegate.name(), e);
                         shutdown();
                     }
 

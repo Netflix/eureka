@@ -21,6 +21,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.netflix.rx.eureka.transport.Acknowledgement;
 import com.netflix.rx.eureka.transport.MessageConnection;
@@ -45,6 +47,9 @@ public class BaseMessageConnection implements MessageConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(BaseMessageConnection.class);
 
+    private static final Pattern NETTY_CHANNEL_NAME_RE = Pattern.compile("\\[.*=>\\s*(.*)\\]");
+
+    private final String name;
     private final ObservableConnection<Object, Object> connection;
     private final MessageConnectionMetrics metrics;
     private final Worker schedulerWorker;
@@ -77,18 +82,28 @@ public class BaseMessageConnection implements MessageConnection {
         }
     };
 
-    public BaseMessageConnection(ObservableConnection<Object, Object> connection, MessageConnectionMetrics metrics) {
-        this(connection, metrics, Schedulers.computation());
+    public BaseMessageConnection(String name, ObservableConnection<Object, Object> connection, MessageConnectionMetrics metrics) {
+        this(name, connection, metrics, Schedulers.computation());
     }
 
-    public BaseMessageConnection(ObservableConnection<Object, Object> connection, MessageConnectionMetrics metrics, Scheduler expiryScheduler) {
+    public BaseMessageConnection(String name, ObservableConnection<Object, Object> connection, MessageConnectionMetrics metrics, Scheduler expiryScheduler) {
         this.connection = connection;
         this.metrics = metrics;
+        this.name = descriptiveName(name);
         schedulerWorker = expiryScheduler.createWorker();
         installAcknowledgementHandler();
 
         this.startTime = System.currentTimeMillis();
         metrics.incrementConnectedClients();
+    }
+
+    private String descriptiveName(String name) {
+        String endpointName = connection.getChannel().toString();
+        Matcher matcher = NETTY_CHANNEL_NAME_RE.matcher(endpointName);
+        if (matcher.matches()) {
+            endpointName = matcher.group(1);
+        }
+        return name + "=>" + endpointName;
     }
 
     private void installAcknowledgementHandler() {
@@ -108,6 +123,11 @@ public class BaseMessageConnection implements MessageConnection {
         });
 
         schedulerWorker.schedule(cleanupTask, 1, TimeUnit.SECONDS);
+    }
+
+    @Override
+    public String name() {
+        return name;
     }
 
     @Override

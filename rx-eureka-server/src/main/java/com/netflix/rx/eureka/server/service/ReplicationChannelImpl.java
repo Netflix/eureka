@@ -5,14 +5,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import com.netflix.rx.eureka.data.Source;
 import com.netflix.rx.eureka.protocol.EurekaProtocolError;
 import com.netflix.rx.eureka.protocol.replication.RegisterCopy;
 import com.netflix.rx.eureka.protocol.replication.UnregisterCopy;
 import com.netflix.rx.eureka.protocol.replication.UpdateCopy;
 import com.netflix.rx.eureka.registry.Delta;
-import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry.Status;
+import com.netflix.rx.eureka.server.registry.EvictionQueue;
+import com.netflix.rx.eureka.server.registry.Source;
 import com.netflix.rx.eureka.transport.MessageConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,16 +31,22 @@ public class ReplicationChannelImpl extends AbstractChannel<ReplicationChannelIm
     private static final Logger logger = LoggerFactory.getLogger(ReplicationChannelImpl.class);
     private final Source replicationSource;
     private final ReplicationChannelMetrics metrics;
+    private long currentVersion;
 
     protected enum STATES {Opened, Closed}
 
     private final Map<String, InstanceInfo> instanceInfoById = new HashMap<>();
 
-    public ReplicationChannelImpl(MessageConnection transport, EurekaRegistry<InstanceInfo> registry, ReplicationChannelMetrics metrics) {
+    public ReplicationChannelImpl(MessageConnection transport,
+                                  EurekaServerRegistry<InstanceInfo> registry,
+                                  final EvictionQueue evictionQueue,
+                                  ReplicationChannelMetrics metrics) {
         super(STATES.Opened, transport, registry);
         this.replicationSource = Source.replicationSource(UUID.randomUUID().toString());  // FIXME use the sent over replication source id
         this.metrics = metrics;
         this.metrics.incrementStateCounter(STATES.Opened);
+
+        currentVersion = System.currentTimeMillis();
 
         subscribeToTransportInput(new Action1<Object>() {
             @Override
@@ -53,6 +61,31 @@ public class ReplicationChannelImpl extends AbstractChannel<ReplicationChannelIm
                     update(instanceInfo);// No need to subscribe, the update() call does the subscription.
                 } else {
                     sendErrorOnTransport(new EurekaProtocolError("Unexpected message " + message));
+                }
+            }
+        });
+
+        transport.lifecycleObservable().subscribe(new Subscriber<Void>() {
+            @Override
+            public void onCompleted() {
+                evict();
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                evict();
+            }
+
+            @Override
+            public void onNext(Void aVoid) {
+                // No op
+            }
+
+            private void evict() {
+                logger.info("Replication channel disconnected; putting all registrations from the channel in the eviction queue");
+                for (InstanceInfo instanceInfo : instanceInfoById.values()) {
+                    logger.info("Replication channel disconnected; adding instance {} to the eviction queue", instanceInfo.getId());
+                    evictionQueue.add(instanceInfo, replicationSource);
                 }
             }
         });
@@ -72,8 +105,11 @@ public class ReplicationChannelImpl extends AbstractChannel<ReplicationChannelIm
             logger.info("Overwriting existing registration entry for instance {}", instanceInfo.getId());
         }
 
-        Observable<Void> registerResult = registry.register(instanceInfo, replicationSource);
-        registerResult.subscribe(new Subscriber<Void>() {
+        InstanceInfo tempNewInfo = new InstanceInfo.Builder()
+                .withInstanceInfo(instanceInfo).withVersion(currentVersion++).build();
+
+        Observable<Status> registerResult = registry.register(tempNewInfo, replicationSource);
+        registerResult.subscribe(new Subscriber<Status>() {
             @Override
             public void onCompleted() {
                 instanceInfoById.put(instanceInfo.getId(), instanceInfo);
@@ -86,11 +122,11 @@ public class ReplicationChannelImpl extends AbstractChannel<ReplicationChannelIm
             }
 
             @Override
-            public void onNext(Void aVoid) {
-                // Nothing to do for a void.
+            public void onNext(Status status) {
+                // No op
             }
         }); // Callers aren't required to subscribe, so it is eagerly subscribed.
-        return registerResult;
+        return registerResult.ignoreElements().cast(Void.class);
     }
 
     @Override
@@ -109,13 +145,15 @@ public class ReplicationChannelImpl extends AbstractChannel<ReplicationChannelIm
             return register(newInfo);
         }
 
-        Set<Delta<?>> deltas = newInfo.diffOlder(currentInfo);
+        InstanceInfo tempNewInfo = new InstanceInfo.Builder()
+                .withInstanceInfo(newInfo).withVersion(currentVersion++).build();
+        Set<Delta<?>> deltas = tempNewInfo.diffOlder(currentInfo);
         logger.debug("Set of InstanceInfo modified fields: {}", deltas);
 
         // TODO: shall we chain ack observable with update?
         // TODO: we must handle conflicts somehow like maintaining multiple versions of instanceInfo (per source)
-        Observable<Void> updateResult = registry.update(newInfo, deltas, replicationSource);
-        updateResult.subscribe(new Subscriber<Void>() {
+        Observable<Status> updateResult = registry.update(tempNewInfo, deltas, replicationSource);
+        updateResult.subscribe(new Subscriber<Status>() {
             @Override
             public void onCompleted() {
                 instanceInfoById.put(newInfo.getId(), newInfo);
@@ -128,11 +166,11 @@ public class ReplicationChannelImpl extends AbstractChannel<ReplicationChannelIm
             }
 
             @Override
-            public void onNext(Void aVoid) {
+            public void onNext(Status status) {
                 // No op
             }
         });
-        return updateResult;
+        return updateResult.ignoreElements().cast(Void.class);
     }
 
     @Override
@@ -146,15 +184,16 @@ public class ReplicationChannelImpl extends AbstractChannel<ReplicationChannelIm
             return Observable.error(CHANNEL_CLOSED_EXCEPTION);
         }
 
-        if (!instanceInfoById.containsKey(instanceId)) {
+        InstanceInfo toUnregister = instanceInfoById.get(instanceId);
+        if (toUnregister == null) {
             logger.info("Replicated unregister request for unknown instance {}", instanceId);
             sendAckOnTransport();
             return Observable.empty();
         }
 
         // TODO: we must handle conflicts somehow like maintaining multiple versions of instanceInfo (per source)
-        Observable<Void> updateResult = registry.unregister(instanceId, replicationSource);
-        updateResult.subscribe(new Subscriber<Void>() {
+        Observable<Status> updateResult = registry.unregister(toUnregister, replicationSource);
+        updateResult.subscribe(new Subscriber<Status>() {
             @Override
             public void onCompleted() {
                 instanceInfoById.remove(instanceId);
@@ -167,11 +206,11 @@ public class ReplicationChannelImpl extends AbstractChannel<ReplicationChannelIm
             }
 
             @Override
-            public void onNext(Void aVoid) {
+            public void onNext(Status status) {
                 // No op
             }
         });
-        return updateResult;
+        return updateResult.ignoreElements().cast(Void.class);
     }
 
     @Override

@@ -19,9 +19,10 @@ package com.netflix.rx.eureka.server;
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.netflix.rx.eureka.client.EurekaClient;
+import com.netflix.rx.eureka.client.metric.EurekaClientRegistryMetrics;
 import com.netflix.rx.eureka.client.transport.EurekaClientConnectionMetrics;
-import com.netflix.rx.eureka.registry.EurekaRegistry;
-import com.netflix.rx.eureka.registry.EurekaRegistryMetrics;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistryMetrics;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry;
 import com.netflix.rx.eureka.server.metric.EurekaServerMetricFactory;
 import com.netflix.rx.eureka.server.service.InterestChannelMetrics;
 import com.netflix.rx.eureka.server.service.ReadSelfRegistrationService;
@@ -72,7 +73,7 @@ public class EurekaReadServerModule extends AbstractModule {
 
         bind(SelfRegistrationService.class).to(ReadSelfRegistrationService.class).asEagerSingleton();
 
-        bind(EurekaRegistry.class).to(EurekaReadServerRegistry.class);
+        bind(EurekaServerRegistry.class).to(EurekaReadServerRegistry.class);
 
         // Metrics
         bind(MessageConnectionMetrics.class).annotatedWith(Names.named("registration")).toInstance(new MessageConnectionMetrics("registration"));
@@ -87,7 +88,8 @@ public class EurekaReadServerModule extends AbstractModule {
         bind(ReplicationChannelMetrics.class).toInstance(new ReplicationChannelMetrics());
         bind(InterestChannelMetrics.class).toInstance(new InterestChannelMetrics());
 
-        bind(EurekaRegistryMetrics.class).toInstance(new EurekaRegistryMetrics("readServer"));
+        bind(EurekaServerRegistryMetrics.class).toInstance(new EurekaServerRegistryMetrics("readServer"));
+        bind(EurekaClientRegistryMetrics.class).toInstance(new EurekaClientRegistryMetrics("readServer"));
         bind(EurekaServerMetricFactory.class).asEagerSingleton();
     }
 }

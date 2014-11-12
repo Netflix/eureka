@@ -36,6 +36,12 @@ import rx.Observable;
 public interface MessageConnection {
 
     /**
+     * Connection readable name, which should include enough information to identify
+     * the other side.
+     */
+    String name();
+
+    /**
      * Submit a message one-way.
      *
      * @return observable completing normally if acknowledgement was received, or with

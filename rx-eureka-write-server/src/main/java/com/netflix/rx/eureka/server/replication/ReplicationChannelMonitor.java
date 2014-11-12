@@ -20,7 +20,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.rx.eureka.client.transport.TransportClient;
-import com.netflix.rx.eureka.registry.EurekaRegistry;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry;
+import com.netflix.rx.eureka.registry.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Scheduler.Worker;
@@ -49,7 +50,7 @@ public class ReplicationChannelMonitor {
      */
     private final String targetName;
 
-    private final EurekaRegistry eurekaRegistry;
+    private final EurekaServerRegistry<InstanceInfo> eurekaRegistry;
     private final TransportClient transportClient;
     private final long reconnectDelayMs;
 
@@ -57,7 +58,7 @@ public class ReplicationChannelMonitor {
     private final Worker worker;
     private volatile STATE state;
 
-    public ReplicationChannelMonitor(String targetName, EurekaRegistry eurekaRegistry, TransportClient transportClient,
+    public ReplicationChannelMonitor(String targetName, EurekaServerRegistry eurekaRegistry, TransportClient transportClient,
                                      long reconnectDelayMs) {
         this.targetName = targetName;
         this.eurekaRegistry = eurekaRegistry;

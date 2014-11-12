@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.netflix.rx.eureka.registry;
+package com.netflix.rx.eureka.server.registry;
 
 import java.util.concurrent.Callable;
 
-import com.netflix.rx.eureka.data.Source;
 import com.netflix.rx.eureka.metric.EurekaMetrics;
 import com.netflix.servo.monitor.BasicGauge;
 import com.netflix.servo.monitor.Counter;
@@ -26,7 +25,7 @@ import com.netflix.servo.monitor.Counter;
 /**
  * @author Tomasz Bak
  */
-public class EurekaRegistryMetrics extends EurekaMetrics {
+public class EurekaServerRegistryMetrics extends EurekaMetrics {
 
     private final Counter registrationsLocal;
     private final Counter registrationsReplicated;
@@ -40,7 +39,7 @@ public class EurekaRegistryMetrics extends EurekaMetrics {
     private final Counter unregistrationsReplicated;
     private final Counter unregistrationsTotal;
 
-    public EurekaRegistryMetrics(String id) {
+    public EurekaServerRegistryMetrics(String id) {
         super(id);
         registrationsLocal = newCounter("registrationsLocal");
         registrationsReplicated = newCounter("registrationsReplicated");

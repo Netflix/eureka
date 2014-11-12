@@ -18,7 +18,8 @@ package com.netflix.rx.eureka.server.transport.tcp.discovery;
 
 import javax.inject.Inject;
 
-import com.netflix.rx.eureka.registry.EurekaRegistry;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry;
+import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.server.metric.EurekaServerMetricFactory;
 import com.netflix.rx.eureka.server.service.EurekaServerService;
 import com.netflix.rx.eureka.server.service.EurekaServiceImpl;
@@ -40,11 +41,11 @@ public class TcpDiscoveryHandler implements ConnectionHandler<Object, Object> {
 
     private static final Logger logger = LoggerFactory.getLogger(TcpDiscoveryHandler.class);
 
-    private final EurekaRegistry registry;
+    private final EurekaServerRegistry<InstanceInfo> registry;
     private final EurekaServerMetricFactory metricFactory;
 
     @Inject
-    public TcpDiscoveryHandler(EurekaRegistry registry, EurekaServerMetricFactory metricFactory) {
+    public TcpDiscoveryHandler(EurekaServerRegistry registry, EurekaServerMetricFactory metricFactory) {
         this.registry = registry;
         this.metricFactory = metricFactory;
     }
@@ -55,11 +56,11 @@ public class TcpDiscoveryHandler implements ConnectionHandler<Object, Object> {
             logger.debug("New TCP discovery client connection");
         }
         MessageConnection broker = new HeartBeatConnection(
-                new BaseMessageConnection(connection, metricFactory.getDiscoveryConnectionMetrics()),
-                3, 30000,
+                new BaseMessageConnection("discovery", connection, metricFactory.getDiscoveryConnectionMetrics()),
+                30000, 3,
                 Schedulers.computation()
         );
-        final EurekaServerService service = new EurekaServiceImpl(registry, broker, metricFactory);
+        final EurekaServerService service = new EurekaServiceImpl(registry, null, broker, metricFactory);
         // Since this is a discovery handler which only handles interest subscriptions,
         // the channel is created on connection accept. We subscribe here for the sake
         // of logging only.

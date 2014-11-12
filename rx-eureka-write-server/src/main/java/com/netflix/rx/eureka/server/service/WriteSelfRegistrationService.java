@@ -24,7 +24,7 @@ import com.google.inject.Inject;
 import com.netflix.rx.eureka.Names;
 import com.netflix.rx.eureka.registry.AddressSelector;
 import com.netflix.rx.eureka.registry.DataCenterInfo;
-import com.netflix.rx.eureka.registry.EurekaRegistry;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.registry.InstanceInfo.Builder;
 import com.netflix.rx.eureka.registry.ServicePort;
@@ -48,13 +48,13 @@ public class WriteSelfRegistrationService implements SelfRegistrationService {
     private static final Logger logger = LoggerFactory.getLogger(WriteSelfRegistrationService.class);
 
     private final WriteServerConfig config;
-    private final EurekaRegistry eurekaRegistry;
+    private final EurekaServerRegistry<InstanceInfo> eurekaRegistry;
 
     private final AtomicBoolean connected = new AtomicBoolean();
     private final ReplaySubject<InstanceInfo> replaySubject = ReplaySubject.create();
 
     @Inject
-    public WriteSelfRegistrationService(WriteServerConfig config, EurekaRegistry eurekaRegistry) {
+    public WriteSelfRegistrationService(WriteServerConfig config, EurekaServerRegistry eurekaRegistry) {
         this.config = config;
         this.eurekaRegistry = eurekaRegistry;
     }

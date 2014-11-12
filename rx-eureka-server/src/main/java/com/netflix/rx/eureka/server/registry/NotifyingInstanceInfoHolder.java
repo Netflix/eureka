@@ -1,18 +1,19 @@
-package com.netflix.rx.eureka.data;
+package com.netflix.rx.eureka.server.registry;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.concurrent.Callable;
 
 import com.netflix.rx.eureka.datastore.NotificationsSubject;
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.ModifyNotification;
 import com.netflix.rx.eureka.registry.InstanceInfo;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry.Status;
 import com.netflix.rx.eureka.utils.SerializedTaskInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Action1;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.concurrent.Callable;
 
 /**
  * This holder maintains the data copies in a list ordered by write time. It also maintains a consistent "snapshot"
@@ -25,18 +26,20 @@ import java.util.concurrent.Callable;
  *
  * @author David Liu
  */
-public class NotifyingInstanceInfoHolder extends SerializedTaskInvoker implements MultiSourcedDataHolder<InstanceInfo> {
+public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<InstanceInfo> {
 
     private static final Logger logger = LoggerFactory.getLogger(NotifyingInstanceInfoHolder.class);
 
     private final NotificationsSubject<InstanceInfo> notificationSubject;  // subject for all changes in the registry
 
     private final LinkedHashMap<Source, InstanceInfo> dataMap;  // for order
+    private final NotificationTaskInvoker invoker;
     private final String id;
     private Snapshot<InstanceInfo> snapshot;
 
-    public NotifyingInstanceInfoHolder(NotificationsSubject<InstanceInfo> notificationSubject, String id) {
+    public NotifyingInstanceInfoHolder(NotificationsSubject<InstanceInfo> notificationSubject, NotificationTaskInvoker invoker, String id) {
         this.notificationSubject = notificationSubject;
+        this.invoker = invoker;
         this.id = id;
         this.dataMap = new LinkedHashMap<>();
     }
@@ -86,27 +89,39 @@ public class NotifyingInstanceInfoHolder extends SerializedTaskInvoker implement
      * else no-op.
      */
     @Override
-    public Observable<Void> update(final Source source, final InstanceInfo data) {
-        return submitForAck(new Callable<Observable<Void>>() {
+    public Observable<Status> update(final Source source, final InstanceInfo data) {
+        return invoker.submitTask(new Callable<Observable<Status>>() {
             @Override
-            public Observable<Void> call() throws Exception {
-                InstanceInfo prev = dataMap.put(source, data);
-                //TODO take itself out of the expiry queue
+            public Observable<Status> call() throws Exception {
+                // Do not overwrite with older version
+                // This should never happen for adds coming from the channel, as they
+                // are always processed in order (unlike remove which has eviction queue).
+                InstanceInfo prev = dataMap.get(source);
+                if (prev != null && prev.getVersion() > data.getVersion()) {
+                    return Observable.just(Status.AddExpired);
+                }
+
+                dataMap.put(source, data);
 
                 Snapshot<InstanceInfo> currSnapshot = snapshot;
                 Snapshot<InstanceInfo> newSnapshot = new Snapshot<>(source, data);
+                Status result = Status.AddedChange;
+
                 if (currSnapshot == null) {  // real add to the head
                     snapshot = newSnapshot;
                     notificationSubject.onNext(newSnapshot.notification);
-                } else if (currSnapshot.source.equals(newSnapshot.source)) {  // modify to current snapshot
-                    snapshot = newSnapshot;
-                    ChangeNotification<InstanceInfo> modifyNotification
-                            = new ModifyNotification<>(newSnapshot.data, newSnapshot.data.diffOlder(currSnapshot.data));
-                    notificationSubject.onNext(modifyNotification);
-                } else {  // different source, no-op
-                    logger.debug("Different source from current snapshot, not updating");
+                    result = Status.AddedFirst;
+                } else {
+                    if (currSnapshot.source.equals(newSnapshot.source)) {  // modify to current snapshot
+                        snapshot = newSnapshot;
+                        ChangeNotification<InstanceInfo> modifyNotification
+                                = new ModifyNotification<>(newSnapshot.data, newSnapshot.data.diffOlder(currSnapshot.data));
+                        notificationSubject.onNext(modifyNotification);
+                    } else {  // different source, no-op
+                        logger.debug("Different source from current snapshot, not updating");
+                    }
                 }
-                return Observable.empty();
+                return Observable.just(result);
             }
         }).doOnError(new Action1<Throwable>() {
             @Override
@@ -122,15 +137,25 @@ public class NotifyingInstanceInfoHolder extends SerializedTaskInvoker implement
      * else no-op.
      */
     @Override
-    public Observable<Void> remove(final Source source) {
-        return submitForAck(new Callable<Observable<Void>>() {
+    public Observable<Status> remove(final Source source, final InstanceInfo data) {
+        return invoker.submitTask(new Callable<Observable<Status>>() {
             @Override
-            public Observable<Void> call() throws Exception {
-                InstanceInfo removed = dataMap.remove(source);
+            public Observable<Status> call() throws Exception {
+                // Do not remove older version.
+                // Older version may come from eviction queue, after registration from
+                // new connection was already processed.
+                InstanceInfo prev = dataMap.get(source);
+                if (prev != null && prev.getVersion() > data.getVersion()) {
+                    return Observable.just(Status.RemoveExpired);
+                }
 
+                InstanceInfo removed = dataMap.remove(source);
                 Snapshot<InstanceInfo> currSnapshot = snapshot;
+                Status result = Status.RemovedFragment;
+
                 if (removed == null) {  // nothing removed, no-op
                     logger.debug("source:data does not exist, no-op");
+                    result = Status.RemoveExpired;
                 } else if (source.equals(currSnapshot.source)) {  // remove of current snapshot
                     Map.Entry<Source, InstanceInfo> newHead = dataMap.isEmpty() ? null : dataMap.entrySet().iterator().next();
                     if (newHead == null) {  // removed last copy
@@ -139,7 +164,7 @@ public class NotifyingInstanceInfoHolder extends SerializedTaskInvoker implement
                                 = new ChangeNotification<>(ChangeNotification.Kind.Delete, removed);
                         notificationSubject.onNext(deleteNotification);
                         logger.debug("Removed last copy from holder, adding holder to expiry queue");
-                        // TODO add to expiry queue, this should not be blocking
+                        result = Status.RemovedLast;
                     } else {  // promote the newHead as the snapshot and publish a modify notification
                         Snapshot<InstanceInfo> newSnapshot = new Snapshot<>(newHead.getKey(), newHead.getValue());
                         snapshot = newSnapshot;
@@ -150,7 +175,7 @@ public class NotifyingInstanceInfoHolder extends SerializedTaskInvoker implement
                 } else {  // remove of copy that's not the source of the snapshot, no-op
                     logger.debug("removed non-head copy of source:data");
                 }
-                return Observable.empty();
+                return Observable.just(result);
             }
         }).doOnError(new Action1<Throwable>() {
             @Override
@@ -162,16 +187,27 @@ public class NotifyingInstanceInfoHolder extends SerializedTaskInvoker implement
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof NotifyingInstanceInfoHolder)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof NotifyingInstanceInfoHolder)) {
+            return false;
+        }
 
         NotifyingInstanceInfoHolder that = (NotifyingInstanceInfoHolder) o;
 
-        if (!dataMap.equals(that.dataMap)) return false;
-        if (id != null ? !id.equals(that.id) : that.id != null) return false;
-        if (notificationSubject != null ? !notificationSubject.equals(that.notificationSubject) : that.notificationSubject != null)
+        if (!dataMap.equals(that.dataMap)) {
             return false;
-        if (snapshot != null ? !snapshot.equals(that.snapshot) : that.snapshot != null) return false;
+        }
+        if (id != null ? !id.equals(that.id) : that.id != null) {
+            return false;
+        }
+        if (notificationSubject != null ? !notificationSubject.equals(that.notificationSubject) : that.notificationSubject != null) {
+            return false;
+        }
+        if (snapshot != null ? !snapshot.equals(that.snapshot) : that.snapshot != null) {
+            return false;
+        }
 
         return true;
     }
@@ -193,5 +229,11 @@ public class NotifyingInstanceInfoHolder extends SerializedTaskInvoker implement
                 ", id='" + id + '\'' +
                 ", snapshot=" + snapshot +
                 "} " + super.toString();
+    }
+
+    static class NotificationTaskInvoker extends SerializedTaskInvoker {
+        Observable<Status> submitTask(Callable<Observable<Status>> task) {
+            return submitForResult(task);
+        }
     }
 }

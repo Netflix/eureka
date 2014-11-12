@@ -21,9 +21,10 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.server.EurekaBootstrapConfig;
 import com.netflix.rx.eureka.server.metric.EurekaServerMetricFactory;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry;
+import com.netflix.rx.eureka.server.registry.EvictionQueue;
 import com.netflix.rx.eureka.server.transport.tcp.AbstractTcpServer;
 import com.netflix.rx.eureka.transport.EurekaTransports;
 import io.reactivex.netty.RxNetty;
@@ -39,19 +40,23 @@ public class TcpRegistrationServer extends AbstractTcpServer {
 
     private static final Logger logger = LoggerFactory.getLogger(TcpRegistrationServer.class);
 
+    private final EvictionQueue evictionQueue;
+
     @Inject
     public TcpRegistrationServer(EurekaBootstrapConfig config,
-                                 EurekaRegistry eurekaRegistry,
+                                 EurekaServerRegistry eurekaRegistry,
+                                 EvictionQueue evictionQueue,
                                  @Named("registration") MetricEventsListenerFactory servoEventsListenerFactory,
                                  EurekaServerMetricFactory metricFactory) {
         super(eurekaRegistry, servoEventsListenerFactory, config, metricFactory);
+        this.evictionQueue = evictionQueue;
     }
 
     @PostConstruct
     public void start() {
         server = RxNetty.newTcpServerBuilder(
                 config.getRegistrationPort(),
-                new TcpRegistrationHandler(eurekaRegistry, metricFactory))
+                new TcpRegistrationHandler(eurekaRegistry, evictionQueue, metricFactory))
                 .pipelineConfigurator(EurekaTransports.registrationPipeline(config.getCodec()))
                 .withMetricEventsListenerFactory(servoEventsListenerFactory)
                 .build()

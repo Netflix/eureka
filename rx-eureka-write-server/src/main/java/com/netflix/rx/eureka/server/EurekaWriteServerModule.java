@@ -18,11 +18,16 @@ package com.netflix.rx.eureka.server;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
-import com.netflix.rx.eureka.registry.EurekaRegistry;
-import com.netflix.rx.eureka.registry.EurekaRegistryImpl;
-import com.netflix.rx.eureka.registry.EurekaRegistryMetrics;
 import com.netflix.rx.eureka.server.audit.AuditServiceController;
 import com.netflix.rx.eureka.server.metric.WriteServerMetricFactory;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistryImpl;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistryMetrics;
+import com.netflix.rx.eureka.server.registry.EvictionQueue;
+import com.netflix.rx.eureka.server.registry.EvictionQueueImpl;
+import com.netflix.rx.eureka.server.registry.EvictionStrategies;
+import com.netflix.rx.eureka.server.registry.EvictionStrategy;
+import com.netflix.rx.eureka.server.registry.PreservableEurekaRegistry;
 import com.netflix.rx.eureka.server.replication.ReplicationService;
 import com.netflix.rx.eureka.server.service.InterestChannelMetrics;
 import com.netflix.rx.eureka.server.service.RegistrationChannelMetrics;
@@ -30,10 +35,10 @@ import com.netflix.rx.eureka.server.service.ReplicationChannelMetrics;
 import com.netflix.rx.eureka.server.service.SelfRegistrationService;
 import com.netflix.rx.eureka.server.service.WriteSelfRegistrationService;
 import com.netflix.rx.eureka.server.spi.ExtensionContext;
-import com.netflix.rx.eureka.transport.base.MessageConnectionMetrics;
 import com.netflix.rx.eureka.server.transport.tcp.discovery.TcpDiscoveryServer;
 import com.netflix.rx.eureka.server.transport.tcp.registration.TcpRegistrationServer;
 import com.netflix.rx.eureka.server.transport.tcp.replication.TcpReplicationServer;
+import com.netflix.rx.eureka.transport.base.MessageConnectionMetrics;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 import io.reactivex.netty.servo.ServoEventsListenerFactory;
 
@@ -41,6 +46,10 @@ import io.reactivex.netty.servo.ServoEventsListenerFactory;
  * @author Tomasz Bak
  */
 public class EurekaWriteServerModule extends AbstractModule {
+
+    // TODO: this should be configurable property
+    private static final int ALLOWED_DROP = 20;
+    private static final long EVICTION_TIMEOUT = 3 * 30000;
 
     private final WriteServerConfig config;
 
@@ -62,7 +71,10 @@ public class EurekaWriteServerModule extends AbstractModule {
         }
         bind(SelfRegistrationService.class).to(WriteSelfRegistrationService.class).asEagerSingleton();
 
-        bind(EurekaRegistry.class).to(EurekaRegistryImpl.class).asEagerSingleton();
+        bind(EurekaServerRegistry.class).annotatedWith(Names.named("delegate")).to(EurekaServerRegistryImpl.class).asEagerSingleton();
+        bind(EurekaServerRegistry.class).to(PreservableEurekaRegistry.class).asEagerSingleton();
+        bind(EvictionQueue.class).toInstance(new EvictionQueueImpl(EVICTION_TIMEOUT));
+        bind(EvictionStrategy.class).toInstance(EvictionStrategies.percentageDrop(ALLOWED_DROP));
         bind(AuditServiceController.class).asEagerSingleton();
 
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("registration")).toInstance(new ServoEventsListenerFactory("registration-rx-client-", "registration-rx-server-"));
@@ -89,7 +101,7 @@ public class EurekaWriteServerModule extends AbstractModule {
         bind(ReplicationChannelMetrics.class).toInstance(new ReplicationChannelMetrics());
         bind(InterestChannelMetrics.class).toInstance(new InterestChannelMetrics());
 
-        bind(EurekaRegistryMetrics.class).toInstance(new EurekaRegistryMetrics("writerServer"));
+        bind(EurekaServerRegistryMetrics.class).toInstance(new EurekaServerRegistryMetrics("writerServer"));
         bind(WriteServerMetricFactory.class).asEagerSingleton();
     }
 }

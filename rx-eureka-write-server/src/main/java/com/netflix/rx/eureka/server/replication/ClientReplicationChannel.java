@@ -16,29 +16,25 @@
 
 package com.netflix.rx.eureka.server.replication;
 
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.rx.eureka.client.transport.TransportClient;
-import com.netflix.rx.eureka.data.Source;
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interests;
 import com.netflix.rx.eureka.protocol.replication.RegisterCopy;
 import com.netflix.rx.eureka.protocol.replication.UnregisterCopy;
 import com.netflix.rx.eureka.protocol.replication.UpdateCopy;
-import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry;
+import com.netflix.rx.eureka.server.registry.Source;
 import com.netflix.rx.eureka.server.service.ReplicationChannel;
 import com.netflix.rx.eureka.transport.MessageConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
-import rx.Subscription;
 import rx.functions.Action1;
 import rx.functions.Func1;
-import rx.schedulers.Schedulers;
 import rx.subjects.ReplaySubject;
 
 /**
@@ -52,9 +48,7 @@ public class ClientReplicationChannel implements ReplicationChannel {
 
     private static final IllegalStateException CHANNEL_CLOSED_EXCEPTION = new IllegalStateException("Channel is already closed.");
 
-    private final Source replicationSource;
-
-    private final EurekaRegistry<InstanceInfo> registry;
+    private final EurekaServerRegistry<InstanceInfo> registry;
     private final TransportClient transportClient;
 
     private final AtomicReference<STATE> state;
@@ -73,8 +67,7 @@ public class ClientReplicationChannel implements ReplicationChannel {
     private final ReplaySubject<MessageConnection> singleConnectionSubject = ReplaySubject.create();
     private volatile MessageConnection connectionIfConnected;
 
-    public ClientReplicationChannel(final EurekaRegistry<InstanceInfo> registry, TransportClient transportClient) {
-        this.replicationSource = Source.replicationSource(UUID.randomUUID().toString());  // FIXME use the serverId here and send to the replication destination
+    public ClientReplicationChannel(final EurekaServerRegistry<InstanceInfo> registry, TransportClient transportClient) {
         this.registry = registry;
         this.transportClient = transportClient;
         this.state = new AtomicReference<>(STATE.Idle);

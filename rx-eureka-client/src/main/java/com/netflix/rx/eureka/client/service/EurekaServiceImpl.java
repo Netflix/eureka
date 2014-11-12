@@ -1,8 +1,8 @@
 package com.netflix.rx.eureka.client.service;
 
 import com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory;
+import com.netflix.rx.eureka.client.registry.EurekaClientRegistry;
 import com.netflix.rx.eureka.client.transport.TransportClient;
-import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.service.EurekaService;
 import com.netflix.rx.eureka.service.InterestChannel;
@@ -13,12 +13,12 @@ import com.netflix.rx.eureka.service.RegistrationChannel;
  */
 public class EurekaServiceImpl implements EurekaService {
 
-    private final EurekaRegistry<InstanceInfo> registry; /*Null for write server only service*/
+    private final EurekaClientRegistry<InstanceInfo> registry; /*Null for write server only service*/
     private final TransportClient readServerClient; /*Null for write server only service*/
     private final TransportClient writeServerClient; /*Null for read server only service*/
     private final EurekaClientMetricFactory metricFactory;
 
-    protected EurekaServiceImpl(EurekaRegistry<InstanceInfo> registry, TransportClient writeServerClient,
+    protected EurekaServiceImpl(EurekaClientRegistry<InstanceInfo> registry, TransportClient writeServerClient,
                                 TransportClient readServerClient, EurekaClientMetricFactory metricFactory) {
         this.registry = registry;
         this.writeServerClient = writeServerClient;
@@ -26,7 +26,7 @@ public class EurekaServiceImpl implements EurekaService {
         this.metricFactory = metricFactory;
     }
 
-    public static EurekaService forReadServer(EurekaRegistry<InstanceInfo> registry, TransportClient client, EurekaClientMetricFactory metricFactory) {
+    public static EurekaService forReadServer(EurekaClientRegistry<InstanceInfo> registry, TransportClient client, EurekaClientMetricFactory metricFactory) {
         return new EurekaServiceImpl(registry, null, client, metricFactory);
     }
 

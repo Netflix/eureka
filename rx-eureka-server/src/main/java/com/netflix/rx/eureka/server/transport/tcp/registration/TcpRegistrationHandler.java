@@ -17,8 +17,10 @@
 package com.netflix.rx.eureka.server.transport.tcp.registration;
 
 import com.google.inject.Inject;
-import com.netflix.rx.eureka.registry.EurekaRegistry;
+import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.server.metric.EurekaServerMetricFactory;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry;
+import com.netflix.rx.eureka.server.registry.EvictionQueue;
 import com.netflix.rx.eureka.server.service.EurekaServerService;
 import com.netflix.rx.eureka.server.service.EurekaServiceImpl;
 import com.netflix.rx.eureka.transport.MessageConnection;
@@ -34,23 +36,25 @@ import rx.schedulers.Schedulers;
  */
 public class TcpRegistrationHandler implements ConnectionHandler<Object, Object> {
 
-    private final EurekaRegistry registry;
+    private final EurekaServerRegistry<InstanceInfo> registry;
+    private final EvictionQueue evictionQueue;
     private final EurekaServerMetricFactory metricFactory;
 
     @Inject
-    public TcpRegistrationHandler(EurekaRegistry registry, EurekaServerMetricFactory metricFactory) {
+    public TcpRegistrationHandler(EurekaServerRegistry registry, EvictionQueue evictionQueue, EurekaServerMetricFactory metricFactory) {
         this.registry = registry;
+        this.evictionQueue = evictionQueue;
         this.metricFactory = metricFactory;
     }
 
     @Override
     public Observable<Void> handle(ObservableConnection<Object, Object> connection) {
         MessageConnection broker = new HeartBeatConnection(
-                new BaseMessageConnection(connection, metricFactory.getRegistrationConnectionMetrics()),
-                3, 30000,
+                new BaseMessageConnection("registration", connection, metricFactory.getRegistrationConnectionMetrics()),
+                30000, 3,
                 Schedulers.computation()
         );
-        final EurekaServerService service = new EurekaServiceImpl(registry, broker, metricFactory);
+        final EurekaServerService service = new EurekaServiceImpl(registry, evictionQueue, broker, metricFactory);
         return service.newRegistrationChannel()
                 .asLifecycleObservable(); // Since this is a discovery handler which only handles interest subscriptions,
         // the channel is created on connection accept.

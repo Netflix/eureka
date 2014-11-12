@@ -12,7 +12,7 @@ public interface IndexRegistry<T> {
                                                   Observable<ChangeNotification<T>> dataSource,
                                                   Index.InitStateHolder<T> initStateHolder);
 
-    Observable<ChangeNotification<T>> forCompositeInterest(MultipleInterests<T> interest, EurekaRegistry<T> registry);
+    Observable<ChangeNotification<T>> forCompositeInterest(MultipleInterests<T> interest, EurekaRegistry<T, ?> registry);
 
     Observable<Void> shutdown();
 }

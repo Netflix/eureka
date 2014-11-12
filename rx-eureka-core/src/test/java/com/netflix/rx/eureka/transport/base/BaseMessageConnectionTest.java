@@ -46,7 +46,7 @@ public class BaseMessageConnectionTest {
         server = RxNetty.newTcpServerBuilder(0, new ConnectionHandler<Object, Object>() {
             @Override
             public Observable<Void> handle(ObservableConnection<Object, Object> connection) {
-                BaseMessageConnection messageBroker = new BaseMessageConnection(connection, serverMetrics);
+                BaseMessageConnection messageBroker = new BaseMessageConnection("test", connection, serverMetrics);
                 queue.add(messageBroker);
                 return messageBroker.lifecycleObservable();
             }
@@ -60,7 +60,7 @@ public class BaseMessageConnectionTest {
                 .map(new Func1<ObservableConnection<Object, Object>, MessageConnection>() {
                     @Override
                     public MessageConnection call(ObservableConnection<Object, Object> connection) {
-                        return new BaseMessageConnection(connection, clientMetrics);
+                        return new BaseMessageConnection("test", connection, clientMetrics);
                     }
                 });
         clientBroker = clientObservable.toBlocking().single();

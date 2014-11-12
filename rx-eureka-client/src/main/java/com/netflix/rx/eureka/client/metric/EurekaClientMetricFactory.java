@@ -21,7 +21,6 @@ import javax.inject.Named;
 
 import com.netflix.rx.eureka.client.service.InterestChannelMetrics;
 import com.netflix.rx.eureka.client.service.RegistrationChannelMetrics;
-import com.netflix.rx.eureka.registry.EurekaRegistryMetrics;
 import com.netflix.rx.eureka.transport.base.MessageConnectionMetrics;
 
 /**
@@ -31,7 +30,7 @@ public class EurekaClientMetricFactory {
 
     private static EurekaClientMetricFactory INSTANCE;
 
-    private final EurekaRegistryMetrics registryMetrics;
+    private final EurekaClientRegistryMetrics registryMetrics;
 
     private final MessageConnectionMetrics registrationServerConnectionMetrics;
 
@@ -42,7 +41,7 @@ public class EurekaClientMetricFactory {
     private final InterestChannelMetrics interestChannelMetrics;
 
     @Inject
-    public EurekaClientMetricFactory(EurekaRegistryMetrics registryMetrics,
+    public EurekaClientMetricFactory(EurekaClientRegistryMetrics registryMetrics,
                                      @Named("registration") MessageConnectionMetrics registrationServerConnectionMetrics,
                                      @Named("discovery") MessageConnectionMetrics discoveryServerConnectionMetrics,
                                      RegistrationChannelMetrics registrationChannelMetrics,
@@ -54,7 +53,7 @@ public class EurekaClientMetricFactory {
         this.interestChannelMetrics = interestChannelMetrics;
     }
 
-    public EurekaRegistryMetrics getRegistryMetrics() {
+    public EurekaClientRegistryMetrics getRegistryMetrics() {
         return registryMetrics;
     }
 
@@ -77,7 +76,7 @@ public class EurekaClientMetricFactory {
     public static EurekaClientMetricFactory clientMetrics() {
         if (INSTANCE == null) {
             synchronized (EurekaClientMetricFactory.class) {
-                EurekaRegistryMetrics registryMetrics = new EurekaRegistryMetrics("client");
+                EurekaClientRegistryMetrics registryMetrics = new EurekaClientRegistryMetrics("client");
                 registryMetrics.bindMetrics();
 
                 MessageConnectionMetrics registrationServerConnectionMetrics = new MessageConnectionMetrics("clientRegistration");

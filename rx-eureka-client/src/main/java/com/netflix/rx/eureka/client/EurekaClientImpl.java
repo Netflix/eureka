@@ -17,12 +17,12 @@
 package com.netflix.rx.eureka.client;
 
 import com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory;
-import com.netflix.rx.eureka.client.service.EurekaClientRegistry;
+import com.netflix.rx.eureka.client.registry.EurekaClientRegistry;
+import com.netflix.rx.eureka.client.service.EurekaClientRegistryProxy;
 import com.netflix.rx.eureka.client.transport.TransportClient;
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interest;
 import com.netflix.rx.eureka.interests.Interests;
-import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import rx.Observable;
 
@@ -34,10 +34,10 @@ import javax.inject.Singleton;
 @Singleton
 public class EurekaClientImpl extends EurekaClient {
 
-    private final EurekaRegistry<InstanceInfo> registry;
+    private final EurekaClientRegistry<InstanceInfo> registry;
     private final RegistrationHandler registrationHandler;
 
-    public EurekaClientImpl(EurekaRegistry<InstanceInfo> registry,
+    public EurekaClientImpl(EurekaClientRegistry<InstanceInfo> registry,
                             RegistrationHandler registrationHandler) {
         this.registry = registry;
         this.registrationHandler = registrationHandler;
@@ -45,7 +45,7 @@ public class EurekaClientImpl extends EurekaClient {
 
     public EurekaClientImpl(TransportClient writeClient, TransportClient readClient, EurekaClientMetricFactory metricFactory) {
         this(
-                readClient == null ? null : new EurekaClientRegistry(readClient, metricFactory),
+                readClient == null ? null : new EurekaClientRegistryProxy(readClient, metricFactory),
                 writeClient == null ? null : new RegistrationHandlerImpl(writeClient, metricFactory)
         );
     }

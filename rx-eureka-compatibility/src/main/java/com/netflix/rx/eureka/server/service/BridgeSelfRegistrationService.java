@@ -8,11 +8,11 @@ import com.google.inject.Inject;
 import com.netflix.rx.eureka.Names;
 import com.netflix.rx.eureka.registry.AddressSelector;
 import com.netflix.rx.eureka.registry.DataCenterInfo;
-import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.registry.ServicePort;
 import com.netflix.rx.eureka.registry.datacenter.LocalDataCenterInfo;
 import com.netflix.rx.eureka.server.BridgeServerConfig;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Notification;
@@ -30,13 +30,13 @@ public class BridgeSelfRegistrationService implements SelfRegistrationService {
     private static final Logger logger = LoggerFactory.getLogger(BridgeSelfRegistrationService.class);
 
     private final BridgeServerConfig config;
-    private final EurekaRegistry eurekaRegistry;
+    private final EurekaServerRegistry<InstanceInfo> eurekaRegistry;
 
     private final AtomicBoolean connected = new AtomicBoolean();
     private final ReplaySubject<InstanceInfo> replaySubject = ReplaySubject.create();
 
     @Inject
-    public BridgeSelfRegistrationService(BridgeServerConfig config, EurekaRegistry eurekaRegistry) {
+    public BridgeSelfRegistrationService(BridgeServerConfig config, EurekaServerRegistry eurekaRegistry) {
         this.config = config;
         this.eurekaRegistry = eurekaRegistry;
     }

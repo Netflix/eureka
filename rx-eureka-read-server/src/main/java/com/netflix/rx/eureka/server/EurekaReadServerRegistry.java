@@ -16,19 +16,20 @@
 
 package com.netflix.rx.eureka.server;
 
+import java.util.Set;
+
 import com.google.inject.Inject;
 import com.netflix.rx.eureka.client.EurekaClient;
-import com.netflix.rx.eureka.data.Source;
+import com.netflix.rx.eureka.server.registry.Source;
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interest;
 import com.netflix.rx.eureka.registry.Delta;
 import com.netflix.rx.eureka.registry.EurekaRegistry;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.service.InterestChannel;
 import com.netflix.rx.eureka.service.ServiceChannel;
 import rx.Observable;
-
-import java.util.Set;
 
 /**
  * Registry implemented on top of eureka-client. It does not story anything, just
@@ -48,7 +49,7 @@ import java.util.Set;
  *
  * @author Tomasz Bak
  */
-public class EurekaReadServerRegistry implements EurekaRegistry<InstanceInfo> {
+public class EurekaReadServerRegistry implements EurekaServerRegistry<InstanceInfo> {
 
     private final EurekaClient eurekaClient;
 
@@ -58,32 +59,37 @@ public class EurekaReadServerRegistry implements EurekaRegistry<InstanceInfo> {
     }
 
     @Override
-    public Observable<Void> register(InstanceInfo instanceInfo) {
+    public Observable<Status> register(InstanceInfo instanceInfo) {
         throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
     }
 
     @Override
-    public Observable<Void> register(InstanceInfo instanceInfo, Source source) {
+    public Observable<Status> register(InstanceInfo instanceInfo, Source source) {
         throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
     }
 
     @Override
-    public Observable<Void> unregister(String instanceId) {
+    public Observable<Status> unregister(InstanceInfo instanceInfo) {
         throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
     }
 
     @Override
-    public Observable<Void> unregister(String instanceId, Source source) {
+    public Observable<Status> unregister(InstanceInfo instanceInfo, Source source) {
         throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
     }
 
     @Override
-    public Observable<Void> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
+    public Observable<Status> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
         throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
     }
 
     @Override
-    public Observable<Void> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas, Source source) {
+    public Observable<Status> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas, Source source) {
+        throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
+    }
+
+    @Override
+    public int size() {
         throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
     }
 

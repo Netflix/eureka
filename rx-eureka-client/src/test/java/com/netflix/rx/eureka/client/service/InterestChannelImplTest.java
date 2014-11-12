@@ -7,6 +7,8 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import com.netflix.rx.eureka.client.registry.EurekaClientRegistry;
+import com.netflix.rx.eureka.client.registry.EurekaClientRegistryImpl;
 import com.netflix.rx.eureka.client.transport.TransportClient;
 import com.netflix.rx.eureka.interests.Interest;
 import com.netflix.rx.eureka.interests.Interests;
@@ -17,8 +19,6 @@ import com.netflix.rx.eureka.protocol.discovery.DeleteInstance;
 import com.netflix.rx.eureka.protocol.discovery.SampleAddInstance;
 import com.netflix.rx.eureka.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.rx.eureka.registry.Delta;
-import com.netflix.rx.eureka.registry.EurekaRegistry;
-import com.netflix.rx.eureka.registry.EurekaRegistryImpl;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.registry.SampleInstanceInfo;
 import com.netflix.rx.eureka.transport.MessageConnection;
@@ -52,7 +52,7 @@ public class InterestChannelImplTest {
     @Mock
     protected TransportClient transportClient;
 
-    protected EurekaRegistry<InstanceInfo> registry;
+    protected EurekaClientRegistry<InstanceInfo> registry;
     protected InterestChannelImpl channel;
 
     protected Interest<InstanceInfo> sampleInterestZuul;
@@ -69,10 +69,10 @@ public class InterestChannelImplTest {
 
         @Override
         protected void before() throws Throwable {
-            registry = new EurekaRegistryImpl(clientMetrics().getRegistryMetrics());
+            registry = new EurekaClientRegistryImpl(clientMetrics().getRegistryMetrics());
             when(serverConnection.acknowledge()).thenReturn(Observable.<Void>empty());
             when(serverConnection.submitWithAck(Mockito.anyObject())).thenReturn(Observable.<Void>empty());
-            when(transportClient.connect()).thenReturn(Observable.from(serverConnection));
+            when(transportClient.connect()).thenReturn(Observable.just(serverConnection));
 
             channel = new InterestChannelImpl(registry, transportClient, clientMetrics().getInterestChannelMetrics());
 

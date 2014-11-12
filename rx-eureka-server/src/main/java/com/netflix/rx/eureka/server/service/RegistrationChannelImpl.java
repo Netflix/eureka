@@ -7,8 +7,11 @@ import com.netflix.rx.eureka.protocol.registration.Register;
 import com.netflix.rx.eureka.protocol.registration.Unregister;
 import com.netflix.rx.eureka.protocol.registration.Update;
 import com.netflix.rx.eureka.registry.Delta;
-import com.netflix.rx.eureka.registry.EurekaRegistry;
 import com.netflix.rx.eureka.registry.InstanceInfo;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry.Status;
+import com.netflix.rx.eureka.server.registry.EvictionQueue;
+import com.netflix.rx.eureka.server.registry.Source;
 import com.netflix.rx.eureka.service.RegistrationChannel;
 import com.netflix.rx.eureka.transport.MessageConnection;
 import org.slf4j.Logger;
@@ -37,7 +40,10 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
 
     protected enum STATES {Idle, Registered, Closed}
 
-    public RegistrationChannelImpl(EurekaRegistry registry, MessageConnection transport, RegistrationChannelMetrics metrics) {
+    public RegistrationChannelImpl(EurekaServerRegistry registry,
+                                   final EvictionQueue evictionQueue,
+                                   MessageConnection transport,
+                                   RegistrationChannelMetrics metrics) {
         super(STATES.Idle, transport, registry);
         this.metrics = metrics;
 
@@ -57,6 +63,30 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
                     update(instanceInfo);// No need to subscribe, the update() call does the subscription.
                 } else {
                     sendErrorOnTransport(new EurekaProtocolError("Unexpected message " + message));
+                }
+            }
+        });
+
+        transport.lifecycleObservable().subscribe(new Subscriber<Void>() {
+            @Override
+            public void onCompleted() {
+                evictIfRegistered();
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                evictIfRegistered();
+            }
+
+            @Override
+            public void onNext(Void aVoid) {
+                // No op
+            }
+
+            private void evictIfRegistered() {
+                if (state.get() == STATES.Registered) {
+                    logger.info("Connection terminated without unregister; adding instance {} to eviction queue", currentInfo.getId());
+                    evictionQueue.add(currentInfo, Source.localSource());
                 }
             }
         });
@@ -82,8 +112,8 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
         final InstanceInfo tempNewInfo = new InstanceInfo.Builder()
                 .withInstanceInfo(instanceInfo).withVersion(tempNewVersion).build();
 
-        Observable<Void> registerResult = registry.register(tempNewInfo);
-        registerResult.subscribe(new Subscriber<Void>() {
+        Observable<Status> registerResult = registry.register(tempNewInfo);
+        registerResult.subscribe(new Subscriber<Status>() {
             @Override
             public void onCompleted() {
                 currentVersion = tempNewVersion;
@@ -99,11 +129,11 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
             }
 
             @Override
-            public void onNext(Void aVoid) {
-                // Nothing to do for a void.
+            public void onNext(Status status) {
+                // No op
             }
         }); // Callers aren't required to subscribe, so it is eagerly subscribed.
-        return registerResult;
+        return registerResult.ignoreElements().cast(Void.class);
     }
 
     @Override
@@ -123,8 +153,8 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
                 logger.debug("Set of InstanceInfo modified fields: {}", deltas);
 
                 // TODO: shall we chain ack observable with update?
-                Observable<Void> updateResult = registry.update(tempNewInfo, deltas);
-                updateResult.subscribe(new Subscriber<Void>() {
+                Observable<Status> updateResult = registry.update(tempNewInfo, deltas);
+                updateResult.subscribe(new Subscriber<Status>() {
                     @Override
                     public void onCompleted() {
                         currentVersion = tempNewVersion;
@@ -138,11 +168,11 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
                     }
 
                     @Override
-                    public void onNext(Void aVoid) {
+                    public void onNext(Status status) {
                         // No op
                     }
                 });
-                return updateResult;
+                return updateResult.ignoreElements().cast(Void.class);
             case Closed:
                 return Observable.error(CHANNEL_CLOSED_EXCEPTION);
             default:
@@ -163,8 +193,8 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
             return Observable.error(new IllegalStateException("Unrecognized channel state: " + currentState));
         }
 
-        Observable<Void> updateResult = registry.unregister(currentInfo.getId());
-        updateResult.subscribe(new Subscriber<Void>() {
+        Observable<Status> updateResult = registry.unregister(currentInfo);
+        updateResult.subscribe(new Subscriber<Status>() {
             @Override
             public void onCompleted() {
                 currentInfo = null;
@@ -177,12 +207,12 @@ public class RegistrationChannelImpl extends AbstractChannel<RegistrationChannel
             }
 
             @Override
-            public void onNext(Void aVoid) {
+            public void onNext(Status status) {
                 // No op
             }
         });
 
-        return updateResult;
+        return updateResult.ignoreElements().cast(Void.class);
 
     }
 

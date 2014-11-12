@@ -56,7 +56,7 @@ public class ReplicationTransportClient implements TransportClient {
                 .map(new Func1<ObservableConnection<Object, Object>, MessageConnection>() {
                     @Override
                     public MessageConnection call(ObservableConnection<Object, Object> connection) {
-                        return new HeartBeatConnection(new BaseMessageConnection(connection, metrics), 30000, 3, Schedulers.computation());
+                        return new HeartBeatConnection(new BaseMessageConnection("replicationClient", connection, metrics), 30000, 3, Schedulers.computation());
                     }
                 });
     }
