@@ -39,6 +39,9 @@ public class VipInterest extends Interest<InstanceInfo> {
 
     @Override
     public boolean matches(InstanceInfo data) {
+        if(data.getVipAddress() == null) {
+            return false;
+        }
         if (operator != Operator.Like) {
             return vip.equals(data.getVipAddress());
         }
