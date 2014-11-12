@@ -16,14 +16,8 @@
 
 package com.netflix.rx.eureka.server;
 
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-
-import com.netflix.rx.eureka.client.ServerResolver.Protocol;
-import com.netflix.rx.eureka.client.ServerResolver.ProtocolType;
-import com.netflix.rx.eureka.client.bootstrap.StaticServerResolver;
+import com.netflix.rx.eureka.client.resolver.ServerResolver;
+import com.netflix.rx.eureka.client.resolver.ServerResolvers;
 import com.netflix.rx.eureka.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.rx.eureka.server.BridgeServerConfig.BridgeServerConfigBuilder;
 import com.netflix.rx.eureka.server.ReadServerConfig.ReadServerConfigBuilder;
@@ -34,6 +28,10 @@ import com.netflix.rx.eureka.server.WriteServerConfig.WriteServerConfigBuilder;
 import com.netflix.rx.eureka.transport.EurekaTransports.Codec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Run multi-node Eureka write/read clusters within single JVM.
@@ -56,27 +54,39 @@ public class EmbeddedEurekaCluster {
     private final List<ServerInstance> bridgeInstances = new ArrayList<>();
 
     public EmbeddedEurekaCluster(int writeCount, int readCount, boolean useBridge) {
-        StaticServerResolver<InetSocketAddress> writeClusterResolver = new StaticServerResolver<>();
+
+        ServerResolver.Server[] discoveryResolverServersList = new ServerResolver.Server[writeCount];
+        ServerResolver.Server[] registrationResolverServersList = new ServerResolver.Server[writeCount];
+        ServerResolver.Server[] replicationResolverServersList = new ServerResolver.Server[writeCount];
+        WriteServerConfig[] writeServerConfigs = new WriteServerConfig[writeCount];
 
         // Write cluster
         for (int i = 0; i < writeCount; i++) {
-            int port = WRITE_SERVER_PORTS_FROM + 10 * i;
-            WriteServerConfig config = new WriteServerConfigBuilder()
+            int registrationPort = WRITE_SERVER_PORTS_FROM + 10 * i;
+            int discoveryPort = registrationPort + 1;
+            int replicationPort = registrationPort + 2;
+
+            discoveryResolverServersList[i] = new ServerResolver.Server("127.0.0.1", discoveryPort);
+            registrationResolverServersList[i] = new ServerResolver.Server("127.0.0.1", registrationPort);
+            replicationResolverServersList[i] = new ServerResolver.Server("127.0.0.1", replicationPort);
+            writeServerConfigs[i] = new WriteServerConfigBuilder()
                     .withAppName(WRITE_SERVER_NAME)
                     .withVipAddress(WRITE_SERVER_NAME)
                     .withDataCenterType(DataCenterType.Basic)
-                    .withWriteServerPort(port)
-                    .withReadServerPort(port + 1)
-                    .withReplicationPort(port + 2)
+                    .withWriteServerPort(registrationPort)
+                    .withReadServerPort(discoveryPort)
+                    .withReplicationPort(replicationPort)
                     .withCodec(Codec.Json)
                     .build();
-            ServerInstance instance = new EurekaWriteServerInstance(config, writeClusterResolver);
+        }
+
+        ServerResolver discoveryResolver = ServerResolvers.from(discoveryResolverServersList);
+        ServerResolver registrationResolver = ServerResolvers.from(registrationResolverServersList);
+        ServerResolver replicationResolver = ServerResolvers.from(replicationResolverServersList);
+
+        for (int i = 0; i < writeCount; i++) {
+            ServerInstance instance = new EurekaWriteServerInstance(writeServerConfigs[i], replicationResolver);
             writeInstances.add(instance);
-            writeClusterResolver.addServer(
-                    new InetSocketAddress("localhost", 0),
-                    new Protocol(port, ProtocolType.TcpRegistration),
-                    new Protocol(port + 1, ProtocolType.TcpDiscovery),
-                    new Protocol(port + 2, ProtocolType.TcpReplication));
         }
 
         // Read cluster
@@ -91,24 +101,24 @@ public class EmbeddedEurekaCluster {
                     .withWriteClusterRegistrationPort(WRITE_SERVER_PORTS_FROM)
                     .withWriteClusterDiscoveryPort(WRITE_SERVER_PORTS_FROM + 1)
                     .build();
-            ServerInstance instance = new EurekaReadServerInstance(config, writeClusterResolver);
+            ServerInstance instance = new EurekaReadServerInstance(config, registrationResolver, discoveryResolver);
             readInstances.add(instance);
         }
 
         // Bridge cluster
         if (useBridge) {
-             int port = BRIDGE_SERVER_PORTS_FROM;
-             BridgeServerConfig config = new BridgeServerConfigBuilder()
-                     .withAppName(BRIDGE_SERVER_NAME)
-                     .withVipAddress(BRIDGE_SERVER_NAME)
-                     .withDataCenterType(DataCenterType.Basic)
-                     .withWriteServerPort(port)
-                     .withReadServerPort(port + 1)  // explicitly set it to a different port to verify
-                     .withReplicationPort(port + 2)  // explicitly set it to a different port to verify
-                     .withCodec(Codec.Json)
-                     .withRefreshRateSec(30)
-                     .build();
-            ServerInstance instance = new EurekaBridgeServerInstance(config, writeClusterResolver);
+            int port = BRIDGE_SERVER_PORTS_FROM;
+            BridgeServerConfig config = new BridgeServerConfigBuilder()
+                    .withAppName(BRIDGE_SERVER_NAME)
+                    .withVipAddress(BRIDGE_SERVER_NAME)
+                    .withDataCenterType(DataCenterType.Basic)
+                    .withWriteServerPort(port)
+                    .withReadServerPort(port + 1)  // explicitly set it to a different port to verify
+                    .withReplicationPort(port + 2)  // explicitly set it to a different port to verify
+                    .withCodec(Codec.Json)
+                    .withRefreshRateSec(30)
+                    .build();
+            ServerInstance instance = new EurekaBridgeServerInstance(config, replicationResolver);
             bridgeInstances.add(instance);
         }
     }

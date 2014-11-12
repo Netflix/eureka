@@ -16,12 +16,7 @@
 
 package com.netflix.rx.eureka.client.transport;
 
-import java.net.InetSocketAddress;
-import java.util.concurrent.TimeUnit;
-
-import com.netflix.rx.eureka.client.ServerResolver.Protocol;
-import com.netflix.rx.eureka.client.ServerResolver.ProtocolType;
-import com.netflix.rx.eureka.client.bootstrap.StaticServerResolver;
+import com.netflix.rx.eureka.client.resolver.ServerResolver;
 import com.netflix.rx.eureka.client.transport.tcp.TcpRegistrationClient;
 import com.netflix.rx.eureka.protocol.registration.Register;
 import com.netflix.rx.eureka.registry.SampleInstanceInfo;
@@ -41,8 +36,13 @@ import org.junit.Test;
 import rx.Observable;
 import rx.functions.Func1;
 
-import static com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory.*;
-import static org.junit.Assert.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory.clientMetrics;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * @author Tomasz Bak
@@ -78,11 +78,19 @@ public class ResolverBasedTransportClientTest {
 
     @Test
     public void testRibbonLoadBalancer() throws Exception {
-        StaticServerResolver<InetSocketAddress> resolver = new StaticServerResolver<>();
-        resolver.addServer(new InetSocketAddress("localhost", 0), new Protocol(1, ProtocolType.TcpRegistration));
 
-        ResolverBasedTransportClient<InetSocketAddress> transportClient =
-                new TcpRegistrationClient(resolver, Codec.Json, clientMetrics().getRegistrationServerConnectionMetrics());
+        final AtomicReference<ServerResolver.Server> expectedServer = new AtomicReference<>(new ServerResolver.Server("localhost", 0));
+
+        final ServerResolver resolver = new ServerResolver() {
+            @Override
+            public Observable<Server> resolve() {
+                return Observable.just(expectedServer.get());
+            }
+        };
+
+        ResolverBasedTransportClient transportClient =
+                new TcpRegistrationClient(resolver, Codec.Json,
+                                          clientMetrics().getRegistrationServerConnectionMetrics());
 
         // Single, non-existent server - should fail on it
         try {
@@ -93,8 +101,7 @@ public class ResolverBasedTransportClientTest {
         }
 
         // Now add our test server
-        resolver.addServer(new InetSocketAddress("localhost", 0), new Protocol(server.getServerPort(), ProtocolType.TcpRegistration));
-        transportClient.loadBalancer.updateListOfServers(); // We do not want to wait for the background thread to refresh it.
+        expectedServer.set(new ServerResolver.Server("localhost", server.getServerPort()));
 
         MessageConnection connection = transportClient.connect().toBlocking().toFuture().get(30, TimeUnit.SECONDS);
         assertNotNull("Connection not established", connection);

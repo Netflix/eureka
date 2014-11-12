@@ -25,14 +25,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.netflix.rx.eureka.client.ServerResolver.ProtocolType;
-import com.netflix.rx.eureka.client.ServerResolver.ServerEntry;
-import com.netflix.rx.eureka.client.bootstrap.ServerResolverFilter;
-import com.netflix.rx.eureka.server.registry.EurekaServerRegistry;
+import com.netflix.rx.eureka.client.resolver.ServerResolver;
+import com.netflix.rx.eureka.client.resolver.ServerResolver.Server;
+import com.netflix.rx.eureka.client.resolver.ServerResolverFilter;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.server.EurekaBootstrapConfig;
 import com.netflix.rx.eureka.server.WriteClusterResolverProvider;
 import com.netflix.rx.eureka.server.metric.WriteServerMetricFactory;
+import com.netflix.rx.eureka.server.registry.EurekaServerRegistry;
 import com.netflix.rx.eureka.server.service.SelfRegistrationService;
 import com.netflix.rx.eureka.transport.EurekaTransports.Codec;
 import org.slf4j.Logger;
@@ -53,9 +53,10 @@ public class ReplicationService {
     private static final Logger logger = LoggerFactory.getLogger(ReplicationService.class);
 
     // TODO: make this dynamic properties
-    private final long reconnectDelay = 30000;
+    private static final long reconnectDelay = 30000;
 
     private final AtomicReference<STATE> state = new AtomicReference<>(STATE.Idle);
+    private final int replicationPort;
     private final EurekaServerRegistry<InstanceInfo> eurekaRegistry;
     private final SelfRegistrationService selfRegistrationService;
     private final WriteClusterResolverProvider writeClusterResolverProvider;
@@ -76,6 +77,7 @@ public class ReplicationService {
         this.writeClusterResolverProvider = writeClusterResolverProvider;
         this.metricFactory = metricFactory;
         this.codec = config.getCodec();
+        replicationPort = config.getReplicationPort();
     }
 
     @PostConstruct
@@ -90,13 +92,13 @@ public class ReplicationService {
         }
 
         resolverSubscription = selfRegistrationService.resolve()
-                .flatMap(new Func1<InstanceInfo, Observable<ServerEntry<InetSocketAddress>>>() {
+                .flatMap(new Func1<InstanceInfo, Observable<Server>>() {
                     @Override
-                    public Observable<ServerEntry<InetSocketAddress>> call(InstanceInfo instanceInfo) {
+                    public Observable<Server> call(InstanceInfo instanceInfo) {
                         return writeClusterResolverProvider.get().resolve().lift(ServerResolverFilter.filterOut(instanceInfo, true));
                     }
                 })
-                .subscribe(new Subscriber<ServerEntry<InetSocketAddress>>() {
+                .subscribe(new Subscriber<ServerResolver.Server>() {
                     @Override
                     public void onCompleted() {
                         logger.debug("Replication server resolver stream completed - write cluster server list will no longer be updated");
@@ -108,32 +110,22 @@ public class ReplicationService {
                     }
 
                     @Override
-                    public void onNext(ServerEntry<InetSocketAddress> serverEntry) {
-                        InetSocketAddress address = new InetSocketAddress(
-                                serverEntry.getServer().getAddress(),
-                                serverEntry.getPort(ProtocolType.TcpReplication)
-                        );
-                        switch (serverEntry.getAction()) {
-                            case Add:
-                                if (!replicationWatchdogs.containsKey(address)) {
-                                    logger.info("Adding replication channel to server " + address);
-                                    String targetName = address.toString();
-                                    ReplicationChannelMonitor monitor = new ReplicationChannelMonitor(
-                                            targetName,
-                                            eurekaRegistry,
-                                            new ReplicationTransportClient(address, codec, metricFactory.getReplicationServerConnectionMetrics()),
-                                            reconnectDelay
-                                    );
-                                    replicationWatchdogs.put(address, monitor);
-                                }
-                                break;
-                            case Remove:
-                                if (replicationWatchdogs.containsKey(address)) {
-                                    logger.info("Removing replication channel to server " + address);
-                                    replicationWatchdogs.get(address).close();
-                                }
-                                break;
+                    public void onNext(Server server) {
+                        InetSocketAddress address = new InetSocketAddress(server.getHost(), replicationPort);
+                        if (!replicationWatchdogs.containsKey(address)) {
+                            logger.debug("Adding replication channel to server " + address);
+                            String targetName = address.toString();
+                            ReplicationChannelMonitor monitor = new ReplicationChannelMonitor(
+                                    targetName,
+                                    eurekaRegistry,
+                                    new ReplicationTransportClient(address, codec, metricFactory
+                                            .getReplicationServerConnectionMetrics()),
+                                    reconnectDelay
+                            );
+                            replicationWatchdogs.put(address, monitor);
                         }
+
+                        //TODO: We need a better abstraction for this server list.
                     }
                 });
     }

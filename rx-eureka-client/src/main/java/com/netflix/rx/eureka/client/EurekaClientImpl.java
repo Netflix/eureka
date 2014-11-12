@@ -16,22 +16,17 @@
 
 package com.netflix.rx.eureka.client;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
-import java.net.InetSocketAddress;
-
 import com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory;
 import com.netflix.rx.eureka.client.registry.EurekaClientRegistry;
 import com.netflix.rx.eureka.client.service.EurekaClientRegistryProxy;
 import com.netflix.rx.eureka.client.transport.TransportClient;
-import com.netflix.rx.eureka.client.transport.TransportClients;
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interest;
 import com.netflix.rx.eureka.interests.Interests;
 import com.netflix.rx.eureka.registry.InstanceInfo;
-import com.netflix.rx.eureka.transport.EurekaTransports.Codec;
 import rx.Observable;
+
+import javax.inject.Singleton;
 
 /**
  * @author Tomasz Bak
@@ -53,21 +48,6 @@ public class EurekaClientImpl extends EurekaClient {
                 readClient == null ? null : new EurekaClientRegistryProxy(readClient, metricFactory),
                 writeClient == null ? null : new RegistrationHandlerImpl(writeClient, metricFactory)
         );
-    }
-
-    @Inject
-    public EurekaClientImpl(@Named(READ_SERVER_RESOLVER_NAME) ServerResolver<InetSocketAddress> readServerResolver,
-                            @Named(WRITE_SERVER_RESOLVER_NAME) ServerResolver<InetSocketAddress> writeServerResolver,
-                            EurekaClientMetricFactory metricFactory) {
-        //TODO: Default to avro as we are always going to use avro by default. Today it expects avro schema in CP.
-        this(readServerResolver, writeServerResolver, Codec.Avro, metricFactory);
-    }
-
-    public EurekaClientImpl(ServerResolver<InetSocketAddress> readServerResolver,
-                            ServerResolver<InetSocketAddress> writeServerResolver,
-                            Codec codec,
-                            EurekaClientMetricFactory metricFactory) {
-        this(TransportClients.newTcpRegistrationClient(writeServerResolver, codec), TransportClients.newTcpDiscoveryClient(readServerResolver, codec), metricFactory);
     }
 
     @Override

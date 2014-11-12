@@ -14,20 +14,8 @@
  * limitations under the License.
  */
 
-package com.netflix.rx.eureka.client.bootstrap;
+package com.netflix.rx.eureka.client.resolver;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.LineNumberReader;
-import java.net.InetSocketAddress;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
-import com.netflix.rx.eureka.client.ServerResolver;
-import com.netflix.rx.eureka.client.ServerResolver.ServerEntry.Action;
 import com.netflix.rx.eureka.utils.rx.ResourceObservable;
 import com.netflix.rx.eureka.utils.rx.ResourceObservable.ResourceLoader;
 import com.netflix.rx.eureka.utils.rx.ResourceObservable.ResourceLoaderException;
@@ -36,20 +24,33 @@ import rx.Observable;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
 
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.LineNumberReader;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
 /**
  * A list of server addresses read from a local configuration file. The file can be
  * optionally re-read at specified interval.
  * The file should consist of a set of lines, one per server in the following format:
  * <br>
- * {@code host name | ip address [;protocol=(TcpRegistration|TcpDiscovery)&port=port_number]}
+ * {@code host name | ip address [;port=port_number]}
  *
  * @author Tomasz Bak
  */
-public class FileServerResolver implements ServerResolver<InetSocketAddress> {
+public class FileServerResolver implements ServerResolver {
 
     private final File textFile;
     private final boolean alwaysReload;
-    private final Observable<ServerEntry<InetSocketAddress>> resolverObservable;
+    private final Observable<Server> resolverObservable;
+
+    public FileServerResolver(File textFile) {
+        this(textFile, -1, TimeUnit.MINUTES);
+    }
 
     public FileServerResolver(File textFile, long reloadInterval, TimeUnit timeUnit) {
         this(textFile, reloadInterval, -1, timeUnit, Schedulers.io());
@@ -66,32 +67,29 @@ public class FileServerResolver implements ServerResolver<InetSocketAddress> {
     }
 
     @Override
-    public Observable<ServerEntry<InetSocketAddress>> resolve() {
+    public Observable<Server> resolve() {
         return resolverObservable;
     }
 
-    class FileResolveTask implements ResourceLoader<ServerEntry<InetSocketAddress>> {
+    class FileResolveTask implements ResourceLoader<Server> {
 
         private long lastModified = -1;
 
         @Override
-        public ResourceUpdate<ServerEntry<InetSocketAddress>> reload(Set<ServerEntry<InetSocketAddress>> currentSnapshot) {
+        public ResourceUpdate<Server> reload(Set<Server> currentSnapshot) {
             if (!isUpdated()) {
-                return new ResourceUpdate<>(currentSnapshot, Collections.<ServerEntry<InetSocketAddress>>emptySet());
+                return new ResourceUpdate<>(currentSnapshot, Collections.<Server>emptySet());
             }
             try {
-                LineNumberReader reader = new LineNumberReader(new FileReader(textFile));
-                try {
-                    Set<ServerEntry<InetSocketAddress>> newAddresses = new HashSet<>();
+                try (LineNumberReader reader = new LineNumberReader(new FileReader(textFile))) {
+                    Set<Server> newAddresses = new HashSet<>();
                     String line;
                     while ((line = reader.readLine()) != null) {
                         if (!(line = line.trim()).isEmpty()) {
                             newAddresses.add(parseLine(reader.getLineNumber(), line));
                         }
                     }
-                    return new ResourceUpdate<>(newAddresses, ServerEntry.cancellationSet(currentSnapshot, newAddresses));
-                } finally {
-                    reader.close();
+                    return new ResourceUpdate<>(newAddresses, cancellationSet(currentSnapshot, newAddresses));
                 }
             } catch (IOException e) {
                 if (lastModified == -1) {
@@ -101,13 +99,22 @@ public class FileServerResolver implements ServerResolver<InetSocketAddress> {
             }
         }
 
-        private ServerEntry<InetSocketAddress> parseLine(int lineNumber, String line) {
+        private Set<Server> cancellationSet(Set<Server> currentSnapshot, Set<Server> newAddresses) {
+            Set<Server> cancelled = new HashSet<>();
+            for (Server entry : currentSnapshot) {
+                if (!newAddresses.contains(entry)) {
+                    cancelled.add(entry);
+                }
+            }
+            return cancelled;
+        }
+
+        private Server parseLine(int lineNumber, String line) {
             int idx = line.indexOf(';');
             if (idx == -1) {
-                return new ServerEntry<InetSocketAddress>(Action.Add, new InetSocketAddress(line, 0));
+                return new Server(line, 0);
             }
             String address = line.substring(0, idx);
-            ProtocolType protocolType = null;
             Integer port = null;
             int pos = idx + 1;
             while (pos < line.length()) {
@@ -121,13 +128,7 @@ public class FileServerResolver implements ServerResolver<InetSocketAddress> {
                     ampIdx = line.length();
                 }
                 String value = line.substring(eqIdx + 1, ampIdx);
-                if ("protocol".equals(name)) {
-                    try {
-                        protocolType = ProtocolType.valueOf(value);
-                    } catch (IllegalArgumentException ignored) {
-                        throw new IllegalArgumentException("Syntax error at line " + lineNumber + " - unrecognized protocol");
-                    }
-                } else if ("port".equals(name)) {
+                if ("port".equals(name)) {
                     try {
                         port = Integer.valueOf(value);
                     } catch (NumberFormatException ignored) {
@@ -137,13 +138,10 @@ public class FileServerResolver implements ServerResolver<InetSocketAddress> {
                     throw new IllegalArgumentException("Syntax error at line " + lineNumber + " - unrecognized property");
                 }
             }
-            if (protocolType == null && port == null) {
-                return new ServerEntry<InetSocketAddress>(Action.Add, new InetSocketAddress(line, 0));
+            if (port == null) {
+                throw new IllegalArgumentException("Syntax error at line " + lineNumber + " - port number must be defined");
             }
-            if (protocolType == null || port == null) {
-                throw new IllegalArgumentException("Syntax error at line " + lineNumber + " - both protocol and port number must be defined");
-            }
-            return new ServerEntry<InetSocketAddress>(Action.Add, new InetSocketAddress(address, port), new Protocol(port, protocolType));
+            return new Server(address, port);
         }
 
         boolean isUpdated() {

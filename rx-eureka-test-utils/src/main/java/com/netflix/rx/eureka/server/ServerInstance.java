@@ -16,18 +16,16 @@
 
 package com.netflix.rx.eureka.server;
 
-import java.net.InetSocketAddress;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.google.inject.Module;
-import com.netflix.rx.eureka.client.EurekaClient;
-import com.netflix.rx.eureka.client.EurekaClients;
-import com.netflix.rx.eureka.client.ServerResolver;
-import com.netflix.rx.eureka.server.spi.ExtensionLoader;
 import com.netflix.governator.guice.LifecycleInjector;
 import com.netflix.governator.guice.LifecycleInjectorBuilder;
 import com.netflix.governator.lifecycle.LifecycleManager;
+import com.netflix.rx.eureka.client.Eureka;
+import com.netflix.rx.eureka.client.EurekaClient;
+import com.netflix.rx.eureka.client.resolver.ServerResolver;
+import com.netflix.rx.eureka.server.spi.ExtensionLoader;
 
 /**
  * @author Tomasz Bak
@@ -60,13 +58,14 @@ public abstract class ServerInstance {
 
 
     public static class EurekaWriteServerInstance extends ServerInstance {
-        public EurekaWriteServerInstance(final WriteServerConfig config, final ServerResolver<InetSocketAddress> writeClusterResolver) {
+
+        public EurekaWriteServerInstance(final WriteServerConfig config, final ServerResolver replicationResolver) {
             Module[] modules = {
                     new EurekaWriteServerModule(config),
                     new AbstractModule() {
                         @Override
                         protected void configure() {
-                            bind(WriteClusterResolverProvider.class).toInstance(new WriteClusterResolverProvider(writeClusterResolver));
+                            bind(WriteClusterResolverProvider.class).toInstance(new WriteClusterResolverProvider(replicationResolver));
                         }
                     }
             };
@@ -76,8 +75,11 @@ public abstract class ServerInstance {
     }
 
     public static class EurekaReadServerInstance extends ServerInstance {
-        public EurekaReadServerInstance(ReadServerConfig config, final ServerResolver<InetSocketAddress> resolver) {
-            final EurekaClient eurekaClient = EurekaClients.forRegistrationAndDiscovery(resolver, resolver, config.getCodec());
+
+        public EurekaReadServerInstance(ReadServerConfig config, final ServerResolver registrationResolver,
+                                        ServerResolver discoveryResolver) {
+            final EurekaClient eurekaClient = Eureka.newClientBuilder(discoveryResolver, registrationResolver)
+                                                    .withCodec(config.getCodec()).build();
             Module[] modules = {
                     new EurekaReadServerModule(config, eurekaClient),
             };
@@ -87,7 +89,8 @@ public abstract class ServerInstance {
     }
 
     public static class EurekaBridgeServerInstance extends ServerInstance {
-        public EurekaBridgeServerInstance(final BridgeServerConfig config,  final ServerResolver<InetSocketAddress> writeClusterResolver) {
+
+        public EurekaBridgeServerInstance(final BridgeServerConfig config,  final ServerResolver writeClusterResolver) {
             Module[] modules = {
                     new EurekaBridgeServerModule(config),
                     new AbstractModule() {

@@ -1,36 +1,17 @@
 package com.netflix.rx.eureka.client.transport;
 
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 
-import com.netflix.client.DefaultLoadBalancerRetryHandler;
-import com.netflix.client.RetryHandler;
-import com.netflix.client.config.DefaultClientConfigImpl;
-import com.netflix.client.config.IClientConfig;
-import com.netflix.loadbalancer.DummyPing;
-import com.netflix.loadbalancer.IPing;
-import com.netflix.loadbalancer.RoundRobinRule;
-import com.netflix.loadbalancer.Server;
-import com.netflix.loadbalancer.ServerList;
-import com.netflix.loadbalancer.ZoneAwareLoadBalancer;
-import com.netflix.ribbon.transport.netty.RibbonTransport;
-import com.netflix.rx.eureka.client.ServerResolver;
-import com.netflix.rx.eureka.client.ServerResolver.ProtocolType;
-import com.netflix.rx.eureka.client.ServerResolver.ServerEntry;
+import com.netflix.rx.eureka.client.resolver.ServerResolver;
 import com.netflix.rx.eureka.transport.MessageConnection;
 import com.netflix.rx.eureka.transport.base.BaseMessageConnection;
 import com.netflix.rx.eureka.transport.base.HeartBeatConnection;
 import com.netflix.rx.eureka.transport.base.MessageConnectionMetrics;
+import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ObservableConnection;
 import io.reactivex.netty.client.RxClient;
 import io.reactivex.netty.pipeline.PipelineConfigurator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import rx.Observable;
-import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
@@ -39,113 +20,62 @@ import rx.schedulers.Schedulers;
  *
  * @author Nitesh Kant
  */
-public abstract class ResolverBasedTransportClient<A extends SocketAddress> implements TransportClient {
+public abstract class ResolverBasedTransportClient implements TransportClient {
 
-    private static final Logger logger = LoggerFactory.getLogger(ResolverBasedTransportClient.class);
-
-    private static final IPing DUMMY_PING = new DummyPing();
-
-    private final ServerResolver<A> resolver;
-    private final ProtocolType protocolType;
-    protected final IClientConfig clientConfig;
+    private final ServerResolver resolver;
     private final PipelineConfigurator<Object, Object> pipelineConfigurator;
     private final MessageConnectionMetrics metrics;
-    protected final ZoneAwareLoadBalancer<Server> loadBalancer;
+    private ConcurrentHashMap<ServerResolver.Server, RxClient<Object, Object>> clients;
 
-    private RxClient<Object, Object> tcpClient;
-
-    protected ResolverBasedTransportClient(ServerResolver<A> resolver,
-                                           ProtocolType protocolType,
-                                           IClientConfig clientConfig,
+    protected ResolverBasedTransportClient(ServerResolver resolver,
                                            PipelineConfigurator<Object, Object> pipelineConfigurator,
                                            MessageConnectionMetrics metrics) {
         this.resolver = resolver;
-        this.protocolType = protocolType;
-        this.clientConfig = clientConfig;
         this.pipelineConfigurator = pipelineConfigurator;
         this.metrics = metrics;
-        ServerList<Server> serverList = new ResolverServerList(resolver);
-        loadBalancer = new ZoneAwareLoadBalancer<>(clientConfig, new RoundRobinRule(), DUMMY_PING, serverList, null /* filter */);
+        clients = new ConcurrentHashMap<>();
     }
 
     @Override
     public Observable<MessageConnection> connect() {
-        // TODO: look into this later once we know more about possible transport errors.
-        RetryHandler retryHandler = new DefaultLoadBalancerRetryHandler(0, 1, true);
-        tcpClient = RibbonTransport.newTcpClient(loadBalancer, pipelineConfigurator, clientConfig, retryHandler);
-        Observable<MessageConnection> connection = tcpClient.connect()
+        return resolver.resolve()
                 .take(1)
-                .map(new Func1<ObservableConnection<Object, Object>, MessageConnection>() {
+                .map(new Func1<ServerResolver.Server, RxClient<Object, Object>>() {
                     @Override
-                    public MessageConnection call(ObservableConnection<Object, Object> connection) {
-                        return new HeartBeatConnection(new BaseMessageConnection("discoveryClient", connection, metrics), 30000, 3, Schedulers.computation());
+                    public RxClient<Object, Object> call(ServerResolver.Server server) {
+                        // This should be invoked from a single thread.
+                        RxClient<Object, Object> client = clients.get(server);
+                        if (null == client) {
+                            client = RxNetty.createTcpClient(server.getHost(), server.getPort(),
+                                    pipelineConfigurator);
+                            clients.put(server, client);
+                        }
+                        return client;
                     }
-                });
-        return Observable.concat(
-                resolver.resolve().take(1).ignoreElements().cast(MessageConnection.class), // Load balancer will through exception if no servers in pool
-                connection
-        );
+                })
+                .flatMap(new Func1<RxClient<Object, Object>, Observable<MessageConnection>>() {
+                    @Override
+                    public Observable<MessageConnection> call(RxClient<Object, Object> client) {
+                        return client.connect()
+                                .map(new Func1<ObservableConnection<Object, Object>, MessageConnection>() {
+                                    @Override
+                                    public MessageConnection call(
+                                            ObservableConnection<Object, Object> conn) {
+                                        return new HeartBeatConnection(
+                                                new BaseMessageConnection("client", conn, metrics),
+                                                30000, 3, Schedulers.computation()
+                                        );
+                                    }
+                                });
+                    }
+                })
+                .retry(1); // TODO: Better retry strategy?
     }
 
     @Override
     public void shutdown() {
-        if (tcpClient != null) {
-            tcpClient.shutdown();
-        }
-    }
-
-    protected abstract boolean matches(ServerEntry<A> entry);
-
-    protected static IClientConfig getClientConfig(String name) {
-        // TODO: figure out what we want to configure, and how to provide this configuration information.
-        DefaultClientConfigImpl config = new DefaultClientConfigImpl("eureka.");
-        config.setClientName(name);
-        return config;
-    }
-
-    class ResolverServerList implements ServerList<Server> {
-
-        private final CopyOnWriteArrayList<ServerEntry<A>> servers = new CopyOnWriteArrayList<>();
-
-        ResolverServerList(ServerResolver<A> resolver) {
-            resolver.resolve()
-                    .subscribe(new Action1<ServerEntry<A>>() {
-                        @Override
-                        public void call(ServerResolver.ServerEntry<A> entry) {
-                            if (matches(entry)) {
-                                switch (entry.getAction()) {
-                                    case Add:
-                                        servers.add(entry);
-                                        break;
-                                    case Remove:
-                                        servers.remove(entry);
-                                        break;
-                                }
-                            }
-                        }
-                    }, new Action1<Throwable>() {
-                        @Override
-                        public void call(Throwable throwable) {
-                            logger.error("Server resolver sent an error. This means the server list is not going to be updated. " +
-                                    "Current server list: " + servers, throwable);
-                        }
-                    });
-        }
-
-        @Override
-        public List<Server> getInitialListOfServers() {
-            return getUpdatedListOfServers();
-        }
-
-        @Override
-        public List<Server> getUpdatedListOfServers() {
-            List<Server> newList = new ArrayList<>(servers.size());
-            for (ServerEntry<A> entry : servers) {
-                InetSocketAddress address = (InetSocketAddress) entry.getServer();
-                logger.debug("Adding server {}:{}", address.getHostName(), entry.getPort(protocolType));
-                newList.add(new Server(address.getHostName(), entry.getPort(protocolType)));
-            }
-            return newList;
+        for (RxClient<Object, Object> client : clients.values()) {
+            client.shutdown();
         }
     }
 }
