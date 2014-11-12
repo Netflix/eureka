@@ -16,8 +16,6 @@
 
 package com.netflix.rx.eureka.server.config;
 
-import java.util.List;
-
 import com.netflix.rx.eureka.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.rx.eureka.server.EurekaBootstrapConfig;
 import com.netflix.rx.eureka.server.EurekaBootstrapConfig.EurekaBootstrapConfigBuilder;
@@ -27,7 +25,9 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 
-import static com.netflix.rx.eureka.transport.EurekaTransports.*;
+import java.util.List;
+
+import static com.netflix.rx.eureka.transport.EurekaTransports.DEFAULT_DISCOVERY_PORT;
 
 /**
  * @author Tomasz Bak
@@ -51,6 +51,7 @@ public abstract class EurekaCommandLineParser<C extends EurekaBootstrapConfig, B
                 .addOption("d", true, "datacenter type (AWS|Basic). Default Basic")
                 .addOption("q", true, "server resolver type (dns|inline); default inline")
                 .addOption("s", true, "shutdown port; default 7700")
+                .addOption("a", true, "admin port; default 8077")
                 .addOption("r", true, "TCP discovery server port; default " + DEFAULT_DISCOVERY_PORT)
                 .addOption("n", true, "server instance name");
     }
@@ -88,6 +89,7 @@ public abstract class EurekaCommandLineParser<C extends EurekaBootstrapConfig, B
                 throw new IllegalArgumentException("missing required server name option ('-n <server_name>')");
             }
             builder.withAppName(cli.getOptionValue("n"));
+            builder.withWebAdminPort(Integer.parseInt(cli.getOptionValue("a", "8077")));
             builder.withVipAddress(cli.getOptionValue("n"));
             builder.withWriteClusterAddresses(((List<String>) cli.getArgList()).toArray(new String[cli.getArgList().size()]));
         }

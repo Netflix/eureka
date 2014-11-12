@@ -16,13 +16,13 @@
 
 package com.netflix.rx.eureka.server.audit.kafka;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-
-import com.netflix.rx.eureka.client.bootstrap.StaticServerResolver;
-import com.netflix.rx.eureka.server.spi.ExtensionContext;
 import com.netflix.loadbalancer.Server;
 import com.netflix.loadbalancer.ServerList;
+import com.netflix.rx.eureka.client.resolver.ServerResolvers;
+import com.netflix.rx.eureka.server.spi.ExtensionContext;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
 
 /**
  * This class creates {@link ServerList} with Kafka addresses that can be set
@@ -47,8 +47,8 @@ public class KafkaServerListProvider implements Provider<ServerList<Server>> {
     public ServerList<Server> get() {
         ServerList<Server> servers;
         if (config.getKafkaServerList() == null) {
-            servers = new EurekaSourcedServerList(
-                    new StaticServerResolver<>(context.getInteralReadServerAddress()),
+            servers = new EurekaSourcedServerList(ServerResolvers.just(context.getInteralReadServerHost(),
+                                                                       context.getInteralReadServerPort()),
                     config.getKafkaVip(),
                     config.getKafkaPort()
             );

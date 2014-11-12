@@ -16,33 +16,94 @@
 
 package com.netflix.rx.eureka.client;
 
+import com.netflix.rx.eureka.client.resolver.ServerResolver;
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interest;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import rx.Observable;
 
 /**
+ * A client for connecting to eureka servers.
  *
+ * Use {@link Eureka} to create concrete instances of this class.
+ *
+ * <h2>Registration</h2>
+ *
+ * When configured with an appropriate {@link ServerResolver} for resolving eureka write servers, this client can be
+ * used to register one or more instances with eureka.
+ *
+ * <h2>Registry read</h2>
+ *
+ * When configured with an appropriate {@link ServerResolver} for resolving eureka write servers, this client can be
+ * used to discovery instances in the eureka registry for different {@link Interest}.
+ *
+ * <h4>Interest Streams</h4>
+ *
+ * Any registry information fetched by this client is expressed as an infinite stream of {@link ChangeNotification}, this
+ * stream will complete only on shutdown of this client.
+ * In case, a stream completes with an error, the caller must retry the subscription to the returned stream.
  *
  * @author Nitesh Kant
  */
 public abstract class EurekaClient {
 
-    public static final String READ_SERVER_RESOLVER_NAME = "eureka_read_server_resolver";
-
-    public static final String WRITE_SERVER_RESOLVER_NAME = "eureka_write_server_resolver";
-
+    /**
+     * Registers a new instance with eureka.
+     *
+     * @param instanceInfo Instance to register.
+     *
+     * @return An {@link Observable} representing an acknowledgment for the registration.
+     */
     public abstract Observable<Void> register(InstanceInfo instanceInfo);
 
+    /**
+     * Updates an instance, previous registered from this client with eureka. If this instance was not registered
+     * previously, this is treated as a registration.
+     *
+     * @param instanceInfo Instance to update.
+     *
+     * @return An {@link Observable} representing an acknowledgment for the update.
+     */
     public abstract Observable<Void> update(InstanceInfo instanceInfo);
 
+    /**
+     * Unregister the passed instance from eureka. If the instance was not registered, this call is ignored.
+     *
+     * @param instanceInfo Instance to unregister.
+     *
+     * @return An {@link Observable} representing an acknowledgment for the unregistration.
+     */
     public abstract Observable<Void> unregister(InstanceInfo instanceInfo);
 
+    /**
+     * Creates a stream of {@link ChangeNotification} for the passed interest.
+     *
+     * @param interest Interest for the registry.
+     *
+     * @return Stream of {@link ChangeNotification} for the passed interest.
+     */
     public abstract Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest);
 
+    /**
+     * Creates a stream of {@link ChangeNotification} for the passed application.
+     *
+     * @param appName Application name of interest.
+     *
+     * @return Stream of {@link ChangeNotification} for the passed application.
+     */
     public abstract Observable<ChangeNotification<InstanceInfo>> forApplication(String appName);
 
+    /**
+     * Creates a stream of {@link ChangeNotification} for the passed vips.
+     *
+     * @param vips Vips of interest.
+     *
+     * @return Stream of {@link ChangeNotification} for the passed vips.
+     */
     public abstract Observable<ChangeNotification<InstanceInfo>> forVips(String... vips);
 
+    /**
+     * Closes this client.
+     */
     public abstract void close();
 }

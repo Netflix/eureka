@@ -14,18 +14,28 @@
  * limitations under the License.
  */
 
-package com.netflix.rx.eureka.client;
+package com.netflix.rx.eureka.client.resolver;
 
-import com.netflix.rx.eureka.registry.InstanceInfo;
 import rx.Observable;
 
 /**
- * Provides local application's {@link InstanceInfo} object. This information is
- * required during the registration process, and is used by other applications to
- * connect to this instance.
+ * An implementation of {@link ServerResolver} using a static list of {@link ServerResolver.Server} instances.
+ *
+ * The usage of this implementation is not recommended for production use, for which the other implementations supporting
+ * dynamic server lists must be used.
  *
  * @author Tomasz Bak
  */
-public interface InstanceInfoProvider {
-    Observable<InstanceInfo> localInstanceInfo();
+public class StaticServerResolver implements ServerResolver {
+
+    private Observable<Server> stream;
+
+    public StaticServerResolver(Server... serverList) {
+        stream = Observable.from(serverList);
+    }
+
+    @Override
+    public Observable<Server> resolve() {
+        return stream;
+    }
 }

@@ -14,14 +14,9 @@
  * limitations under the License.
  */
 
-package com.netflix.rx.eureka.client.bootstrap;
+package com.netflix.rx.eureka.client.resolver;
 
-import java.net.InetSocketAddress;
-import java.util.HashSet;
-import java.util.Set;
-
-import com.netflix.rx.eureka.client.ServerResolver.Protocol;
-import com.netflix.rx.eureka.client.ServerResolver.ServerEntry;
+import com.netflix.rx.eureka.client.resolver.ServerResolver.Server;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.registry.NetworkAddress;
 import com.netflix.rx.eureka.registry.ServicePort;
@@ -29,10 +24,14 @@ import com.netflix.rx.eureka.utils.SystemUtil;
 import rx.Observable.Operator;
 import rx.Subscriber;
 
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * @author Tomasz Bak
  */
-public class ServerResolverFilter implements Operator<ServerEntry<InetSocketAddress>, ServerEntry<InetSocketAddress>> {
+public class ServerResolverFilter implements Operator<Server, Server> {
+
     private final Set<String> blockedAddresses;
     private final Set<Integer> blockedPorts;
 
@@ -42,8 +41,8 @@ public class ServerResolverFilter implements Operator<ServerEntry<InetSocketAddr
     }
 
     @Override
-    public Subscriber<? super ServerEntry<InetSocketAddress>> call(final Subscriber<? super ServerEntry<InetSocketAddress>> subscriber) {
-        return new Subscriber<ServerEntry<InetSocketAddress>>() {
+    public Subscriber<? super Server> call(final Subscriber<? super ServerResolver.Server> subscriber) {
+        return new Subscriber<ServerResolver.Server>() {
             @Override
             public void onCompleted() {
                 subscriber.onCompleted();
@@ -55,16 +54,14 @@ public class ServerResolverFilter implements Operator<ServerEntry<InetSocketAddr
             }
 
             @Override
-            public void onNext(ServerEntry<InetSocketAddress> serverEntry) {
-                String newAddress = serverEntry.getServer().getHostString();
+            public void onNext(Server server) {
+                String newAddress = server.getHost();
                 if (blockedAddresses.contains(newAddress) && blockedPorts != null) {
-                    for (Protocol protocol : serverEntry.getProtocols()) {
-                        if (blockedPorts.contains(protocol.getPort())) {
-                            return;
-                        }
+                    if (blockedPorts.contains(server.getPort())) {
+                        return;
                     }
                 }
-                subscriber.onNext(serverEntry);
+                subscriber.onNext(server);
             }
         };
     }

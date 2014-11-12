@@ -16,15 +16,16 @@
 
 package com.netflix.rx.eureka.example.simple;
 
+import com.netflix.rx.eureka.client.Eureka;
 import com.netflix.rx.eureka.client.EurekaClient;
-import com.netflix.rx.eureka.client.EurekaClients;
+import com.netflix.rx.eureka.client.resolver.ServerResolvers;
 import com.netflix.rx.eureka.client.transport.TransportClients;
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interests;
-import com.netflix.rx.eureka.registry.datacenter.BasicDataCenterInfo;
 import com.netflix.rx.eureka.registry.InstanceInfo;
 import com.netflix.rx.eureka.registry.InstanceInfo.Builder;
 import com.netflix.rx.eureka.registry.InstanceInfo.Status;
+import com.netflix.rx.eureka.registry.datacenter.BasicDataCenterInfo;
 import com.netflix.rx.eureka.transport.EurekaTransports.Codec;
 import rx.Subscriber;
 
@@ -50,11 +51,11 @@ public final class SimpleApp {
         // TODO: servers now use by default JSON codec. Remove it, once they are switch to Avro.
         TransportClients.setDefaultCodec(Codec.Json);
 
-        EurekaClient client1 = EurekaClients.forRegistration("localhost:7200");
-        EurekaClient client2 = EurekaClients.forDiscovery("localhost:7300");
+        EurekaClient client = Eureka.newClientBuilder(ServerResolvers.just("127.0.0.1", 7001),
+                                                     ServerResolvers.just("127.0.0.1", 7002))
+                                   .withCodec(Codec.Json).build();
 
-        // Client 2 collects notifications about ServiceA
-        client2.forInterest(Interests.forFullRegistry()).subscribe(
+        client.forInterest(Interests.forFullRegistry()).subscribe(
                 new Subscriber<ChangeNotification<InstanceInfo>>() {
                     @Override
                     public void onCompleted() {
@@ -74,23 +75,22 @@ public final class SimpleApp {
 
         // Register client 1
         System.out.println("Registering SERVICE_A with Eureka...");
-        client1.register(SERVICE_A).toBlocking().singleOrDefault(null);
+        client.register(SERVICE_A).toBlocking().singleOrDefault(null);
         Thread.sleep(1000);
 
         // Modify client 1 status
         System.out.println("Updating service status to DOWN...");
         InstanceInfo updatedInfo = new Builder().withInstanceInfo(SERVICE_A).withStatus(Status.DOWN).build();
-        client1.update(updatedInfo).toBlocking().singleOrDefault(null);
+        client.update(updatedInfo).toBlocking().singleOrDefault(null);
         Thread.sleep(1000);
 
         // Unregister client 1
         System.out.println("Unregistering SERVICE_A from Eureka...");
-        client1.unregister(updatedInfo).toBlocking().singleOrDefault(null);
+        client.unregister(updatedInfo).toBlocking().singleOrDefault(null);
         Thread.sleep(1000);
 
         // Terminate both clients.
         System.out.println("Shutting down clients");
-        client1.close();
-        client2.close();
+        client.close();
     }
 }
