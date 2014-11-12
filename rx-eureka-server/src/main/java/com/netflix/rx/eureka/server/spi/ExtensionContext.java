@@ -16,13 +16,13 @@
 
 package com.netflix.rx.eureka.server.spi;
 
+import com.netflix.rx.eureka.server.EurekaBootstrapConfig;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.net.InetSocketAddress;
 import java.util.Properties;
 import java.util.ServiceLoader;
-
-import com.netflix.rx.eureka.server.EurekaBootstrapConfig;
 
 /**
  * Eureka extensions discovery is based on {@link ServiceLoader} mechanism.
@@ -53,8 +53,12 @@ public class ExtensionContext {
     /**
      * TODO: this should be replaced with internal EurekaClient API connecting us directly to local registry
      */
-    public InetSocketAddress getInteralReadServerAddress() {
-        return new InetSocketAddress("localhost", config.getDiscoveryPort());
+    public String getInteralReadServerHost() {
+        return "localhost";
+    }
+
+    public int getInteralReadServerPort() {
+        return config.getDiscoveryPort();
     }
 
     public static class ExtensionContextBuilder {

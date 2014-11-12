@@ -14,23 +14,8 @@
  * limitations under the License.
  */
 
-package com.netflix.rx.eureka.client.bootstrap;
+package com.netflix.rx.eureka.client.resolver;
 
-import javax.naming.NamingEnumeration;
-import javax.naming.NamingException;
-import javax.naming.directory.Attribute;
-import javax.naming.directory.Attributes;
-import javax.naming.directory.DirContext;
-import javax.naming.directory.InitialDirContext;
-import java.net.InetSocketAddress;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
-import com.netflix.rx.eureka.client.ServerResolver;
-import com.netflix.rx.eureka.client.ServerResolver.ServerEntry.Action;
 import com.netflix.rx.eureka.utils.rx.ResourceObservable;
 import com.netflix.rx.eureka.utils.rx.ResourceObservable.ResourceLoader;
 import com.netflix.rx.eureka.utils.rx.ResourceObservable.ResourceLoaderException;
@@ -39,54 +24,71 @@ import rx.Observable;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
 
+import javax.naming.NamingEnumeration;
+import javax.naming.NamingException;
+import javax.naming.directory.Attribute;
+import javax.naming.directory.Attributes;
+import javax.naming.directory.DirContext;
+import javax.naming.directory.InitialDirContext;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
 /**
  * Load server list from DNS. Optionally, the list can be refreshed at a specified
  * interval.
  *
  * @author Tomasz Bak
  */
-public class DnsServerResolver implements ServerResolver<InetSocketAddress> {
+public class DnsServerResolver implements ServerResolver {
 
     private static final long DNS_LOOKUP_INTERVAL = 30;
     private static final long IDLE_TIMEOUT = 300;
 
     private final String domainName;
-    private final Set<Protocol> protocols;
-    private final Observable<ServerEntry<InetSocketAddress>> resolverObservable;
+    private final Observable<Server> resolverObservable;
 
-    public DnsServerResolver(String domainName, Set<Protocol> protocols) {
-        this(domainName, protocols, DNS_LOOKUP_INTERVAL, IDLE_TIMEOUT, TimeUnit.SECONDS, Schedulers.io());
+    public DnsServerResolver(String domainName, int port) {
+        this(domainName, port, DNS_LOOKUP_INTERVAL, IDLE_TIMEOUT, TimeUnit.SECONDS, Schedulers.io());
     }
 
-    public DnsServerResolver(String domainName, Set<Protocol> protocols, long reloadInterval, TimeUnit timeUnit) {
-        this(domainName, protocols, reloadInterval, -1, timeUnit, Schedulers.io());
+    public DnsServerResolver(String domainName, int port, long reloadInterval, TimeUnit timeUnit) {
+        this(domainName, port, reloadInterval, -1, timeUnit, Schedulers.io());
     }
 
-    public DnsServerResolver(String domainName, Set<Protocol> protocols, long reloadInterval, long idleTimeout, TimeUnit reloadUnit, Scheduler scheduler) {
+    public DnsServerResolver(String domainName, int port, long reloadInterval, long idleTimeout, TimeUnit reloadUnit,
+                             Scheduler scheduler) {
         this.domainName = domainName;
-        this.protocols = protocols;
         if ("localhost".equals(domainName)) {
-            this.resolverObservable = Observable.just(new ServerEntry<InetSocketAddress>(Action.Add, new InetSocketAddress(domainName, 0), protocols));
+            this.resolverObservable = Observable.just(new Server(domainName, port));
         } else {
-            this.resolverObservable = ResourceObservable.fromResource(new DnsResolverTask(), reloadInterval, idleTimeout, reloadUnit, scheduler);
+            this.resolverObservable = ResourceObservable.fromResource(new DnsResolverTask(port), reloadInterval,
+                                                                      idleTimeout, reloadUnit, scheduler);
         }
     }
 
     @Override
-    public Observable<ServerEntry<InetSocketAddress>> resolve() {
+    public Observable<Server> resolve() {
         return resolverObservable;
     }
 
-    class DnsResolverTask implements ResourceLoader<ServerEntry<InetSocketAddress>> {
+    class DnsResolverTask implements ResourceLoader<Server> {
 
+        private final int port;
         private boolean succeededOnce;
 
+        public DnsResolverTask(int port) {
+            this.port = port;
+        }
+
         @Override
-        public ResourceUpdate<ServerEntry<InetSocketAddress>> reload(Set<ServerEntry<InetSocketAddress>> currentSnapshot) {
+        public ResourceUpdate<Server> reload(Set<Server> currentSnapshot) {
             try {
-                Set<ServerEntry<InetSocketAddress>> newAddresses = resolveEurekaServerDN();
+                Set<Server> newAddresses = resolveEurekaServerDN();
                 succeededOnce = true;
-                return new ResourceUpdate<>(newAddresses, ServerEntry.cancellationSet(currentSnapshot, newAddresses));
+                return new ResourceUpdate<>(newAddresses, cancellationSet(currentSnapshot, newAddresses));
             } catch (NamingException e) {
                 if (succeededOnce) {
                     throw new ResourceLoaderException("DNS failure on subsequent access", true, e);
@@ -96,7 +98,17 @@ public class DnsServerResolver implements ServerResolver<InetSocketAddress> {
             }
         }
 
-        private Set<ServerEntry<InetSocketAddress>> resolveEurekaServerDN() throws NamingException {
+        private Set<Server> cancellationSet(Set<Server> currentSnapshot, Set<Server> newAddresses) {
+            Set<Server> cancelled = new HashSet<>();
+            for (Server entry : currentSnapshot) {
+                if (!newAddresses.contains(entry)) {
+                    cancelled.add(entry);
+                }
+            }
+            return cancelled;
+        }
+
+        private Set<Server> resolveEurekaServerDN() throws NamingException {
             Hashtable<String, String> env = new Hashtable<String, String>();
             env.put("java.naming.factory.initial", "com.sun.jndi.dns.DnsContextFactory");
             DirContext dirContext = new InitialDirContext(env);
@@ -107,10 +119,10 @@ public class DnsServerResolver implements ServerResolver<InetSocketAddress> {
             }
         }
 
-        private Set<ServerEntry<InetSocketAddress>> resolveName(DirContext dirContext, String targetDN) throws NamingException {
+        private Set<Server> resolveName(DirContext dirContext, String targetDN) throws NamingException {
             while (true) {
                 Attributes attrs = dirContext.getAttributes(targetDN, new String[]{"A", "CNAME"});
-                Set<ServerEntry<InetSocketAddress>> addresses = toSetOfServerEntries(attrs, "A");
+                Set<Server> addresses = toSetOfServerEntries(attrs, "A");
                 if (!addresses.isEmpty()) {
                     return addresses;
                 }
@@ -137,16 +149,16 @@ public class DnsServerResolver implements ServerResolver<InetSocketAddress> {
             return resultSet;
         }
 
-        private Set<ServerEntry<InetSocketAddress>> toSetOfServerEntries(Attributes attrs, String attrName) throws NamingException {
+        private Set<Server> toSetOfServerEntries(Attributes attrs, String attrName) throws NamingException {
             Attribute attr = attrs.get(attrName);
             if (attr == null) {
                 return Collections.emptySet();
             }
-            Set<ServerEntry<InetSocketAddress>> resultSet = new HashSet<>();
+            Set<Server> resultSet = new HashSet<>();
             NamingEnumeration<?> it = attr.getAll();
             while (it.hasMore()) {
                 Object value = it.next();
-                resultSet.add(new ServerEntry<InetSocketAddress>(Action.Add, new InetSocketAddress(value.toString(), 0), protocols));
+                resultSet.add(new Server(value.toString(), port));
             }
             return resultSet;
         }

@@ -14,35 +14,29 @@
  * limitations under the License.
  */
 
-package com.netflix.rx.eureka.client.bootstrap;
+package com.netflix.rx.eureka.client.resolver;
 
-import java.net.SocketAddress;
-
-import com.netflix.rx.eureka.client.ServerResolver;
 import rx.Observable;
 import rx.functions.Func1;
 
 /**
- * Provide means to use multiple sources of bootstrap server list.
+ * Provide means to use multiple sources of resolve server list.
  *
  * @author Tomasz Bak
  */
-public class ServerResolverFailoverChain<A extends SocketAddress> implements ServerResolver<A> {
+public class ServerResolverFailoverChain implements ServerResolver {
 
-    private final Observable<ServerEntry<A>> servers;
-    private final ServerResolver<A>[] resolvers;
+    private final Observable<Server> servers;
 
-    @SafeVarargs
-    public ServerResolverFailoverChain(ServerResolver<A>... resolvers) {
-        this.resolvers = resolvers;
-        Observable<ServerEntry<A>> chain = null;
-        for (final ServerResolver<A> resolver : resolvers) {
+    public ServerResolverFailoverChain(ServerResolver... resolvers) {
+        Observable<Server> chain = null;
+        for (final ServerResolver resolver : resolvers) {
             if (null == chain) {
                 chain = resolver.resolve();
             } else {
-                chain = chain.onErrorResumeNext(new Func1<Throwable, Observable<? extends ServerEntry<A>>>() {
+                chain = chain.onErrorResumeNext(new Func1<Throwable, Observable<? extends Server>>() {
                     @Override
-                    public Observable<? extends ServerEntry<A>> call(Throwable throwable) {
+                    public Observable<? extends Server> call(Throwable throwable) {
                         return resolver.resolve();
                     }
                 });
@@ -53,7 +47,7 @@ public class ServerResolverFailoverChain<A extends SocketAddress> implements Ser
     }
 
     @Override
-    public Observable<ServerEntry<A>> resolve() {
+    public Observable<Server> resolve() {
         return servers;
     }
 }

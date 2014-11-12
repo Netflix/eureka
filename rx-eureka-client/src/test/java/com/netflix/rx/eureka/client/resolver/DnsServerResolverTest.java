@@ -14,19 +14,16 @@
  * limitations under the License.
  */
 
-package com.netflix.rx.eureka.client.bootstrap;
+package com.netflix.rx.eureka.client.resolver;
 
-import java.net.InetSocketAddress;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import com.netflix.rx.eureka.client.ServerResolver.Protocol;
-import com.netflix.rx.eureka.client.ServerResolver.ProtocolType;
-import com.netflix.rx.eureka.client.ServerResolver.ServerEntry;
+import com.netflix.rx.eureka.client.resolver.ServerResolver.Server;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * TODO: The test is using public DNSes, to resolve public domain names.
@@ -40,16 +37,16 @@ public class DnsServerResolverTest {
     @Ignore // Because the DNS resolution fails on CloudBees
     public void testPublicAddressResolution() throws Exception {
         // Google has a long list of addresses.
-        DnsServerResolver resolver = new DnsServerResolver("google.com", null);
-        List<ServerEntry<InetSocketAddress>> serverEntries = resolver.resolve().take(2).toList().toBlocking().toFuture().get(30, TimeUnit.SECONDS);
+        DnsServerResolver resolver = new DnsServerResolver("google.com", 80);
+        List<ServerResolver.Server> serverEntries = resolver.resolve().take(2).toList().toBlocking().toFuture().get(30, TimeUnit.SECONDS);
         assertEquals("Expected server list with more than one entry", 2, serverEntries.size());
     }
 
     @Test
     @Ignore
     public void testLocalhost() throws Exception {
-        DnsServerResolver resolver = new DnsServerResolver("localhost", Protocol.setOf(7300, ProtocolType.TcpDiscovery));
-        List<ServerEntry<InetSocketAddress>> serverEntries = resolver.resolve().take(1).toList().toBlocking().toFuture().get(30, TimeUnit.SECONDS);
+        DnsServerResolver resolver = new DnsServerResolver("localhost", 7300);
+        List<Server> serverEntries = resolver.resolve().take(1).toList().toBlocking().toFuture().get(30, TimeUnit.SECONDS);
         assertEquals("Expected single localhost entry", 1, serverEntries.size());
     }
 }

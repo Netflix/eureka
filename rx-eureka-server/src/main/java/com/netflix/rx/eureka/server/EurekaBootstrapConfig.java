@@ -73,12 +73,13 @@ public abstract class EurekaBootstrapConfig {
     protected EurekaBootstrapConfig(DataCenterType dataCenterType, String resolverType,
                                     int registrationPort, int replicationPort, int discoveryServerPort, Codec codec, int shutDownPort,
                                     String appName, String vipAddress, String writeClusterDomainName,
-                                    String[] writeClusterServers) {
+                                    String[] writeClusterServers, int webAdminPort) {
         this.resolverType = resolverType;
         this.registrationPort = registrationPort;
         this.replicationPort = replicationPort;
         this.discoveryServerPort = discoveryServerPort;
         this.shutDownPort = shutDownPort;
+        this.webAdminPort = webAdminPort;
         this.dataCenterType = dataCenterType.name();
         this.appName = appName;
         this.vipAddress = vipAddress;
@@ -138,16 +139,17 @@ public abstract class EurekaBootstrapConfig {
     public abstract static class EurekaBootstrapConfigBuilder<C extends EurekaBootstrapConfig, B extends EurekaBootstrapConfigBuilder<C, B>> {
         protected boolean helpOption;
         protected DataCenterType dataCenterType;
-        protected String resolverType;
+        protected String resolverType = "inline";
         protected int writeServerPort;
         protected int replicationPort;
         protected int readServerPort;
         protected int shutDownPort;
         protected String appName;
         protected String vipAddress;
-        protected String[] writeClusterServers;
+        protected String[] writeClusterServers = new String[] {"127.0.0.1"};
         protected String writeClusterDomainName;
-        protected Codec codec;
+        protected Codec codec = Codec.Json;
+        protected int webAdminPort;
 
         protected EurekaBootstrapConfigBuilder() {
         }
@@ -174,6 +176,11 @@ public abstract class EurekaBootstrapConfig {
 
         public B withReadServerPort(int readServerPort) {
             this.readServerPort = readServerPort;
+            return self();
+        }
+
+        public B withWebAdminPort(int webAdminPort) {
+            this.webAdminPort = webAdminPort;
             return self();
         }
 

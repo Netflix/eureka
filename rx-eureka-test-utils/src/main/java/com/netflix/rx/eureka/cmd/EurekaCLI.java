@@ -16,27 +16,9 @@
 
 package com.netflix.rx.eureka.cmd;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.LineNumberReader;
-import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.ListIterator;
-import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
+import com.netflix.rx.eureka.client.Eureka;
 import com.netflix.rx.eureka.client.EurekaClient;
-import com.netflix.rx.eureka.client.EurekaClientImpl;
-import com.netflix.rx.eureka.client.ServerResolver.Protocol;
-import com.netflix.rx.eureka.client.ServerResolver.ProtocolType;
-import com.netflix.rx.eureka.client.bootstrap.StaticServerResolver;
-import com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory;
-import com.netflix.rx.eureka.client.transport.TransportClient;
-import com.netflix.rx.eureka.client.transport.TransportClients;
+import com.netflix.rx.eureka.client.resolver.ServerResolvers;
 import com.netflix.rx.eureka.interests.ChangeNotification;
 import com.netflix.rx.eureka.interests.Interest;
 import com.netflix.rx.eureka.interests.Interest.Operator;
@@ -56,6 +38,18 @@ import jline.console.history.History;
 import jline.console.history.History.Entry;
 import rx.Subscriber;
 import rx.observers.SafeSubscriber;
+
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.LineNumberReader;
+import java.util.Arrays;
+import java.util.ListIterator;
+import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Simple command line Eureka client interface.
@@ -292,20 +286,10 @@ public class EurekaCLI {
                 break;
         }
 
-        InetSocketAddress writeHost = new InetSocketAddress(host, registrationPort);
-        InetSocketAddress readHost = new InetSocketAddress(host, discoveryPort);
-
-        StaticServerResolver<InetSocketAddress> registryServers = new StaticServerResolver<>();
-        registryServers.addServer(writeHost, new Protocol(registrationPort, ProtocolType.TcpRegistration));
-        TransportClient writeClient =
-                TransportClients.newTcpRegistrationClient(registryServers, codec);
-
-        StaticServerResolver<InetSocketAddress> discoveryServers = new StaticServerResolver<>();
-        discoveryServers.addServer(readHost, new Protocol(discoveryPort, ProtocolType.TcpDiscovery));
-        TransportClient readClient =
-                TransportClients.newTcpDiscoveryClient(discoveryServers, codec);
-
-        eurekaClient = new EurekaClientImpl(writeClient, readClient, EurekaClientMetricFactory.clientMetrics());
+        eurekaClient = Eureka.newClientBuilder(ServerResolvers.just(host, discoveryPort),
+                                               ServerResolvers.just(host, registrationPort))
+                             .withCodec(codec)
+                             .build();
 
         System.out.format("Connected to Eureka server at %s:%d (registry) and %s:%d (discovery)\n", host,
                 registrationPort, host, discoveryPort);

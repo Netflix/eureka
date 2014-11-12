@@ -16,22 +16,15 @@
 
 package com.netflix.rx.eureka.server;
 
+import com.google.inject.Inject;
+import com.netflix.rx.eureka.client.Eureka;
+import com.netflix.rx.eureka.client.EurekaClient;
+import com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory;
+import com.netflix.rx.eureka.client.resolver.ServerResolver;
+import com.netflix.rx.eureka.client.resolver.ServerResolvers;
+
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import java.net.InetSocketAddress;
-import java.util.HashSet;
-import java.util.Set;
-
-import com.google.inject.Inject;
-import com.netflix.rx.eureka.client.EurekaClient;
-import com.netflix.rx.eureka.client.EurekaClients;
-import com.netflix.rx.eureka.client.ServerResolver;
-import com.netflix.rx.eureka.client.ServerResolver.Protocol;
-import com.netflix.rx.eureka.client.ServerResolver.ProtocolType;
-import com.netflix.rx.eureka.client.bootstrap.ServerResolvers;
-import com.netflix.rx.eureka.client.metric.EurekaClientMetricFactory;
-
-import static java.util.Arrays.*;
 
 /**
  * @author Tomasz Bak
@@ -48,34 +41,39 @@ public class EurekaClientProvider implements Provider<EurekaClient> {
         this.metricFactory = metricFactory;
     }
 
-    // TODO: we are blocking here to not propagate Observable<EurekaClient> further into the code. This will be fixed once Ribbon supports observable load balancer.
     @Override
     public EurekaClient get() {
-        ServerResolver<InetSocketAddress> resolver = createResolver();
-        return EurekaClients.forRegistrationAndDiscovery(resolver, resolver, config.getCodec(), metricFactory);
+        ServerResolver discoveryResolver = createWriteServerResolver(config.getWriteClusterDiscoveryPort());
+        ServerResolver registrationResolver = createWriteServerResolver(config.getWriteClusterRegistrationPort());
+        return Eureka.newClientBuilder(discoveryResolver, registrationResolver)
+                     .withCodec(config.getCodec())
+                     .withMetricFactory(metricFactory)
+                     .build();
     }
 
-    private ServerResolver<InetSocketAddress> createResolver() {
-        ServerResolver<InetSocketAddress> resolver;
-
-        Protocol[] protocols = {
-                new Protocol(config.getWriteClusterRegistrationPort(), ProtocolType.TcpRegistration),
-                new Protocol(config.getWriteClusterDiscoveryPort(), ProtocolType.TcpDiscovery)
-        };
+    private ServerResolver createWriteServerResolver(int port) {
+        ServerResolver resolver;
 
         if (config.getResolverType() == null) {
             throw new IllegalArgumentException("resolver type not configured");
         }
+
+        String[] writeClusterServers = config.getWriteClusterServers();
         switch (config.getResolverType()) {
             case "dns":
-                resolver = ServerResolvers.forDomainName(config.getWriteClusterServers()[0], protocols);
+                String serverDnsName = writeClusterServers[0];
+                resolver = ServerResolvers.forDnsName(serverDnsName, port);
                 break;
             case "inline":
-                Set<Protocol> protocolSet = new HashSet<>(asList(protocols));
-                resolver = ServerResolvers.fromList(protocolSet, config.getWriteClusterServers());
+                ServerResolver.Server[] servers = new ServerResolver.Server[writeClusterServers.length];
+                for (int i = 0; i < writeClusterServers.length; i++) {
+                    String serverHostName = writeClusterServers[i];
+                    servers[i] = new ServerResolver.Server(serverHostName, port);
+                }
+                resolver = ServerResolvers.from(servers);
                 break;
             default:
-                throw new IllegalArgumentException("invalid resolver type: " + config.getResolverType());
+                throw new IllegalArgumentException("Invalid resolver type: " + config.getResolverType());
         }
         return resolver;
     }

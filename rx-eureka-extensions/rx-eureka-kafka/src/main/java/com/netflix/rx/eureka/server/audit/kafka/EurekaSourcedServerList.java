@@ -16,27 +16,24 @@
 
 package com.netflix.rx.eureka.server.audit.kafka;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-
-import com.netflix.rx.eureka.client.EurekaClient;
-import com.netflix.rx.eureka.client.EurekaClients;
-import com.netflix.rx.eureka.client.ServerResolver;
-import com.netflix.rx.eureka.interests.ChangeNotification;
-import com.netflix.rx.eureka.registry.InstanceInfo;
-import com.netflix.rx.eureka.registry.NetworkAddress;
 import com.netflix.loadbalancer.ILoadBalancer;
 import com.netflix.loadbalancer.Server;
 import com.netflix.loadbalancer.ServerList;
-import com.netflix.rx.eureka.registry.ServiceSelector;
+import com.netflix.rx.eureka.client.Eureka;
+import com.netflix.rx.eureka.client.EurekaClient;
+import com.netflix.rx.eureka.client.resolver.ServerResolver;
+import com.netflix.rx.eureka.interests.ChangeNotification;
+import com.netflix.rx.eureka.registry.InstanceInfo;
+import com.netflix.rx.eureka.registry.NetworkAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Subscriber;
-import rx.functions.Action1;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * {@link ServerList} provider for Ribbon {@link ILoadBalancer}. This is utility class
@@ -50,13 +47,13 @@ public class EurekaSourcedServerList implements ServerList<Server> {
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaSourcedServerList.class);
 
-    private final ServerResolver<InetSocketAddress> readClusterResolver;
+    private final ServerResolver readClusterResolver;
     private final String vip;
     private final int defaultPort;
     private volatile EurekaClient eurekaClient;
     private final ConcurrentHashMap<String, Server> servers = new ConcurrentHashMap<>();
 
-    public EurekaSourcedServerList(ServerResolver<InetSocketAddress> readClusterResolver, String vip, int defaultPort) {
+    public EurekaSourcedServerList(ServerResolver readClusterResolver, String vip, int defaultPort) {
         this.readClusterResolver = readClusterResolver;
         this.vip = vip;
         this.defaultPort = defaultPort;
@@ -64,7 +61,7 @@ public class EurekaSourcedServerList implements ServerList<Server> {
 
     @PostConstruct
     public void start() {
-        eurekaClient = EurekaClients.forDiscovery(readClusterResolver);
+        eurekaClient = Eureka.newClient(readClusterResolver);
         subscribeToVip();
     }
 

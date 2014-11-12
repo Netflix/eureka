@@ -38,8 +38,10 @@ public class ReadServerConfig extends EurekaBootstrapConfig {
     public ReadServerConfig(DataCenterType dataCenterType, String resolverType,
                             int readServerPort, Codec codec, int shutDownPort,
                             String appName, String vipAddress, String writeClusterDomainName,
-                            String[] writeClusterServers, int writeClusterRegistrationPort, int writeClusterDiscoveryPort) {
-        super(dataCenterType, resolverType, -1, -1, readServerPort, codec, shutDownPort, appName, vipAddress, writeClusterDomainName, writeClusterServers);
+                            String[] writeClusterServers, int writeClusterRegistrationPort,
+                            int writeClusterDiscoveryPort, int webAdminPort) {
+        super(dataCenterType, resolverType, -1, -1, readServerPort, codec, shutDownPort, appName, vipAddress,
+              writeClusterDomainName, writeClusterServers, webAdminPort);
         this.writeClusterRegistrationPort = writeClusterRegistrationPort;
         this.writeClusterDiscoveryPort = writeClusterDiscoveryPort;
     }
@@ -53,8 +55,8 @@ public class ReadServerConfig extends EurekaBootstrapConfig {
     }
 
     public static class ReadServerConfigBuilder extends EurekaBootstrapConfigBuilder<ReadServerConfig, ReadServerConfigBuilder> {
-        private int writeClusterRegistrationPort;
 
+        private int writeClusterRegistrationPort;
         private int writeClusterDiscoveryPort;
 
         public ReadServerConfigBuilder withWriteClusterRegistrationPort(int writeClusterRegistrationPort) {
@@ -70,7 +72,8 @@ public class ReadServerConfig extends EurekaBootstrapConfig {
         @Override
         public ReadServerConfig build() {
             return new ReadServerConfig(dataCenterType, resolverType, readServerPort, codec, shutDownPort, appName, vipAddress,
-                    writeClusterDomainName, writeClusterServers, writeClusterRegistrationPort, writeClusterDiscoveryPort);
+                    writeClusterDomainName, writeClusterServers, writeClusterRegistrationPort,
+                    writeClusterDiscoveryPort, webAdminPort);
         }
     }
 }

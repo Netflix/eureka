@@ -1,36 +1,29 @@
 package com.netflix.rx.eureka.server;
 
+import com.netflix.rx.eureka.client.resolver.ServerResolver;
+import com.netflix.rx.eureka.client.resolver.ServerResolvers;
+
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import java.net.InetSocketAddress;
-import java.util.HashSet;
-import java.util.Set;
-
-import com.netflix.rx.eureka.client.ServerResolver;
-import com.netflix.rx.eureka.client.ServerResolver.Protocol;
-import com.netflix.rx.eureka.client.ServerResolver.ProtocolType;
-import com.netflix.rx.eureka.client.bootstrap.ServerResolvers;
-
-import static java.util.Arrays.*;
 
 /**
  * @author Tomasz Bak
  */
 @Singleton
-public class WriteClusterResolverProvider implements Provider<ServerResolver<InetSocketAddress>> {
+public class WriteClusterResolverProvider implements Provider<ServerResolver> {
 
     private final EurekaBootstrapConfig config;
 
-    private ServerResolver<InetSocketAddress> resolver;
+    private ServerResolver resolver;
 
     @Inject
     public WriteClusterResolverProvider(EurekaBootstrapConfig config) {
         this.config = config;
     }
 
-    public WriteClusterResolverProvider(ServerResolver<InetSocketAddress> resolver) {
+    public WriteClusterResolverProvider(ServerResolver resolver) {
         this.config = null;
         this.resolver = resolver;
     }
@@ -38,21 +31,25 @@ public class WriteClusterResolverProvider implements Provider<ServerResolver<Ine
     @PostConstruct
     public void createResolver() {
         if (resolver == null) {
-            Protocol[] protocols = {
-                    new Protocol(config.getReplicationPort(), ProtocolType.TcpReplication)
-            };
 
             if (config.getResolverType() == null) {
-                throw new IllegalArgumentException("Write cluster resolver type node defined");
+                throw new IllegalArgumentException("Write cluster resolver type not defined");
             }
 
+            final int replicationPort = config.getReplicationPort();
+            String[] writeClusterServers = config.getWriteClusterServers();
             switch (config.getResolverType()) {
                 case "dns":
-                    resolver = ServerResolvers.forDomainName(config.getWriteClusterServers()[0], protocols);
+                    String writeServerDnsName = writeClusterServers[0];
+                    resolver = ServerResolvers.forDnsName(writeServerDnsName, replicationPort);
                     break;
                 case "inline":
-                    Set<Protocol> protocolSet = new HashSet<>(asList(protocols));
-                    resolver = ServerResolvers.fromList(protocolSet, config.getWriteClusterServers());
+                    ServerResolver.Server[] servers = new ServerResolver.Server[writeClusterServers.length];
+                    for (int i = 0; i < writeClusterServers.length; i++) {
+                        String serverHostName = writeClusterServers[i];
+                        servers[i] = new ServerResolver.Server(serverHostName, replicationPort);
+                    }
+                    resolver = ServerResolvers.from(servers);
                     break;
                 default:
                     throw new IllegalArgumentException("Unrecognized write cluster resolver");
@@ -61,7 +58,7 @@ public class WriteClusterResolverProvider implements Provider<ServerResolver<Ine
     }
 
     @Override
-    public ServerResolver<InetSocketAddress> get() {
+    public ServerResolver get() {
         return resolver;
     }
 }

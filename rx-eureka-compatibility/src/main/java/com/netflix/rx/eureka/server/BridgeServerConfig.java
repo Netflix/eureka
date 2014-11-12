@@ -18,9 +18,9 @@ public class BridgeServerConfig extends EurekaBootstrapConfig {
     public BridgeServerConfig(LocalDataCenterInfo.DataCenterType dataCenterType, String resolverType,
                               int writeServerPort, int replicationPort, int readServerPort, Codec codec, int shutDownPort,
                               String appName, String vipAddress, String writeClusterDomainName,
-                              String[] writeClusterServers, int refreshRateSec) {
+                              String[] writeClusterServers, int refreshRateSec, int webAdminPort) {
         super(dataCenterType, resolverType, writeServerPort, replicationPort, readServerPort, codec, shutDownPort,
-                appName, vipAddress, writeClusterDomainName, writeClusterServers);
+                appName, vipAddress, writeClusterDomainName, writeClusterServers, webAdminPort);
         this.refreshRateSec = refreshRateSec;
     }
 
@@ -40,7 +40,7 @@ public class BridgeServerConfig extends EurekaBootstrapConfig {
         public BridgeServerConfig build() {
             return new BridgeServerConfig(dataCenterType, resolverType, writeServerPort, replicationPort,
                     readServerPort, codec, shutDownPort, appName, vipAddress, writeClusterDomainName, writeClusterServers,
-                    refreshRateSec);
+                    refreshRateSec, webAdminPort);
         }
     }
 
