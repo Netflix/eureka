@@ -56,7 +56,6 @@ public class ReplicationService {
     private static final long reconnectDelay = 30000;
 
     private final AtomicReference<STATE> state = new AtomicReference<>(STATE.Idle);
-    private final int replicationPort;
     private final EurekaServerRegistry<InstanceInfo> eurekaRegistry;
     private final SelfRegistrationService selfRegistrationService;
     private final WriteClusterResolverProvider writeClusterResolverProvider;
@@ -77,7 +76,6 @@ public class ReplicationService {
         this.writeClusterResolverProvider = writeClusterResolverProvider;
         this.metricFactory = metricFactory;
         this.codec = config.getCodec();
-        replicationPort = config.getReplicationPort();
     }
 
     @PostConstruct
@@ -111,9 +109,9 @@ public class ReplicationService {
 
                     @Override
                     public void onNext(Server server) {
-                        InetSocketAddress address = new InetSocketAddress(server.getHost(), replicationPort);
+                        InetSocketAddress address = new InetSocketAddress(server.getHost(), server.getPort());
                         if (!replicationWatchdogs.containsKey(address)) {
-                            logger.debug("Adding replication channel to server " + address);
+                            logger.debug("Adding replication channel to server {}", address);
                             String targetName = address.toString();
                             ReplicationChannelMonitor monitor = new ReplicationChannelMonitor(
                                     targetName,
