@@ -54,9 +54,9 @@ public class EurekaServerRegistryImplTest {
         InstanceInfo discovery2 = SampleInstanceInfo.DiscoveryServer.build();
         InstanceInfo discovery3 = SampleInstanceInfo.DiscoveryServer.build();
 
-        registry.register(discovery1);
-        registry.register(discovery2);
-        registry.register(discovery3);
+        registry.register(discovery1).toBlocking().firstOrDefault(null);
+        registry.register(discovery2).toBlocking().firstOrDefault(null);
+        registry.register(discovery3).toBlocking().firstOrDefault(null);
 
         Observable<InstanceInfo> snapshot = registry.forSnapshot(Interests.forFullRegistry());
 
@@ -77,7 +77,7 @@ public class EurekaServerRegistryImplTest {
             @Override
             public void onNext(InstanceInfo instanceInfo) {
                 returnedInstanceInfos.add(instanceInfo);
-                registry.register(SampleInstanceInfo.ZuulServer.build());
+                registry.register(SampleInstanceInfo.ZuulServer.build()).toBlocking().firstOrDefault(null);
             }
         });
 
@@ -103,9 +103,9 @@ public class EurekaServerRegistryImplTest {
         InstanceInfo discovery3 = SampleInstanceInfo.DiscoveryServer.build();
         InstanceInfo zuul1 = SampleInstanceInfo.ZuulServer.build();
 
-        registry.register(discovery1);
-        registry.register(discovery2);
-        registry.register(discovery3);
+        registry.register(discovery1).toBlocking().firstOrDefault(null);
+        registry.register(discovery2).toBlocking().firstOrDefault(null);
+        registry.register(discovery3).toBlocking().firstOrDefault(null);
         registry.register(zuul1);
 
         final List<String> returnedIds = new ArrayList<>();
