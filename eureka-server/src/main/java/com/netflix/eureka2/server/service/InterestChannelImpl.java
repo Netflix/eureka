@@ -96,7 +96,13 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
                     @Override
                     public void onNext(ChangeNotification<InstanceInfo> notification) {
                         metrics.incrementApplicationNotificationCounter(notification.getData().getApp());
-                        subscribeToTransportSend(sendNotification(notification), "notification");
+                        Observable<Void> sendResult = sendNotification(notification);
+                        if(sendResult != null) {
+                            subscribeToTransportSend(sendResult, "notification");
+                        } else {
+                            // TODO: how to report effectively invariant violations that should never happen in a valid code, but are not errors?
+                            logger.warn("No-effect modify in the interest channel: {}", notification);
+                        }
                     }
                 });
     }
