@@ -96,16 +96,18 @@ public abstract class SerializedTaskInvoker {
     private static final class QueueSubject extends Subject<InvokerTask, InvokerTask> {
 
         private final LinkedBlockingQueue<Object> notifications;
+        private final OnSubscribeAction onSubscribeAction;
         private final NotificationLite<Object> nl = NotificationLite.instance();
 
-        private QueueSubject(final LinkedBlockingQueue<Object> notifications) {
-            super(new OnSubscribeAction(notifications));
+        private QueueSubject(final LinkedBlockingQueue<Object> notifications, OnSubscribeAction onSubscribeAction) {
+            super(onSubscribeAction);
             this.notifications = notifications;
+            this.onSubscribeAction = onSubscribeAction;
         }
 
         protected static QueueSubject create() {
             final LinkedBlockingQueue<Object> notifications = new LinkedBlockingQueue<>();
-            return new QueueSubject(notifications);
+            return new QueueSubject(notifications, new OnSubscribeAction(notifications));
         }
 
         @Override
@@ -126,10 +128,16 @@ public abstract class SerializedTaskInvoker {
             notifications.add(nl.next(task));
         }
 
+        @Override
+        public boolean hasObservers() {
+            return onSubscribeAction.hasObservers;
+        }
+
         private static class OnSubscribeAction implements OnSubscribe<InvokerTask> {
 
             private final LinkedBlockingQueue<Object> notifications;
             private final NotificationLite<InvokerTask<?>> nl = NotificationLite.instance();
+            private volatile boolean hasObservers;
 
             public OnSubscribeAction(LinkedBlockingQueue<Object> notifications) {
                 this.notifications = notifications;
@@ -137,6 +145,7 @@ public abstract class SerializedTaskInvoker {
 
             @Override
             public void call(Subscriber<? super InvokerTask> subscriber) {
+                hasObservers = true;
                 boolean terminate = false;
                 while (!terminate) {
                     try {
