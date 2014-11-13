@@ -123,6 +123,11 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
         return toReturn;
     }
 
+    @Override
+    public boolean hasObservers() {
+        return notificationsSubject.hasObservers();
+    }
+
     /**
      * An initial data source for {@link com.netflix.eureka2.interests.Index}.
      *
