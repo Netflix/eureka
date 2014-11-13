@@ -39,12 +39,12 @@ task runReadServer (dependsOn: [classes], type: JavaExec) {
     group = "Run tasks"
     description = "Run Eureka 2.0 read server"
 
-    main = "com.netflix.rx.eureka.server.EurekaReadServer"
+    main = "com.netflix.eureka2.server.EurekaReadServer"
     classpath = sourceSets.main.runtimeClasspath
 
     systemProperty 'java.awt.headless', 'true'
     systemProperty 'archaius.deployment.environment', 'dev'
-    systemProperty 'org.slf4j.simpleLogger.log.com.netflix.rx.eureka', 'debug'
+    systemProperty 'org.slf4j.simpleLogger.log.com.netflix.eureka2', 'debug'
     systemProperty 'org.slf4j.simpleLogger.log.io.netty.handler.logging.LoggingHandler', 'debug'
 
     args "-n", "eurekaRead",  // Server name

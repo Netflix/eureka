@@ -1,7 +1,7 @@
-@namespace("com.netflix.rx.eureka.interests")
+@namespace("com.netflix.eureka2.interests")
 protocol EurekaInterestModel {
 
-    @namespace("com.netflix.rx.eureka.interests.Interest$")
+    @namespace("com.netflix.eureka2.interests.Interest$")
     enum Operator {
         Equals, Like
     }
@@ -9,7 +9,7 @@ protocol EurekaInterestModel {
         string applicationName;
         union {
             null,
-            com.netflix.rx.eureka.interests.Interest$.Operator
+            com.netflix.eureka2.interests.Interest$.Operator
         } operator;
     }
 
@@ -20,7 +20,7 @@ protocol EurekaInterestModel {
         string vip;
         union {
             null,
-            com.netflix.rx.eureka.interests.Interest$.Operator
+            com.netflix.eureka2.interests.Interest$.Operator
         } operator;
     }
 
@@ -28,7 +28,7 @@ protocol EurekaInterestModel {
         string instanceId;
         union {
             null,
-            com.netflix.rx.eureka.interests.Interest$.Operator
+            com.netflix.eureka2.interests.Interest$.Operator
         } operator;
     }
 

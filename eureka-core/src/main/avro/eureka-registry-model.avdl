@@ -1,33 +1,33 @@
-@namespace("com.netflix.rx.eureka.registry")
+@namespace("com.netflix.eureka2.registry")
 protocol EurekaRegistryModel {
 
-    @namespace("com.netflix.rx.eureka.registry.InstanceInfo$")
+    @namespace("com.netflix.eureka2.registry.InstanceInfo$")
     enum Status {
         UP, DOWN, STARTING, OUT_OF_SERVICE, UNKNOWN
     }
 
-    @namespace("com.netflix.rx.eureka.registry.NetworkAddress$")
+    @namespace("com.netflix.eureka2.registry.NetworkAddress$")
     enum ProtocolType {
         IPv4, IPv6
     }
 
     record NetworkAddress {
-        com.netflix.rx.eureka.registry.NetworkAddress$.ProtocolType protocolType;
+        com.netflix.eureka2.registry.NetworkAddress$.ProtocolType protocolType;
         union { null, string } label;
         union { null, string } ipAddress;
         union { null, string } hostName;
     }
 
-    @namespace("com.netflix.rx.eureka.registry.datacenter")
+    @namespace("com.netflix.eureka2.registry.datacenter")
     record BasicDataCenterInfo {
         union { null, string } name;
         union {
             null,
-            @java-class("java.util.ArrayList") array<com.netflix.rx.eureka.registry.NetworkAddress>
+            @java-class("java.util.ArrayList") array<com.netflix.eureka2.registry.NetworkAddress>
         } addresses;
     }
 
-    @namespace("com.netflix.rx.eureka.registry.datacenter")
+    @namespace("com.netflix.eureka2.registry.datacenter")
     record AwsDataCenterInfo {
         union { null, string } name;
         union { null, string } region;
@@ -36,8 +36,8 @@ protocol EurekaRegistryModel {
         union { null, string } amiId;
         union { null, string } instanceId;
         union { null, string } instanceType;
-        union { null, com.netflix.rx.eureka.registry.NetworkAddress } publicAddress;
-        union { null, com.netflix.rx.eureka.registry.NetworkAddress } privateAddress;
+        union { null, com.netflix.eureka2.registry.NetworkAddress } publicAddress;
+        union { null, com.netflix.eureka2.registry.NetworkAddress } privateAddress;
     }
 
     record ServicePort {
@@ -63,7 +63,7 @@ protocol EurekaRegistryModel {
         } ports;
         union {
             null,
-            com.netflix.rx.eureka.registry.InstanceInfo$.Status
+            com.netflix.eureka2.registry.InstanceInfo$.Status
         } status;
         union { null, string } homePageUrl;
         union { null, string } statusPageUrl;
@@ -78,8 +78,8 @@ protocol EurekaRegistryModel {
         } metaData;
         union {
             null,
-            com.netflix.rx.eureka.registry.datacenter.BasicDataCenterInfo,
-            com.netflix.rx.eureka.registry.datacenter.AwsDataCenterInfo
+            com.netflix.eureka2.registry.datacenter.BasicDataCenterInfo,
+            com.netflix.eureka2.registry.datacenter.AwsDataCenterInfo
         } dataCenterInfo;
     }
 }

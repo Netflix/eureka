@@ -1,47 +1,47 @@
-@namespace("com.netflix.rx.eureka.protocol.discovery")
+@namespace("com.netflix.eureka2.protocol.discovery")
 protocol DiscoveryProtocol {
 
     import idl "eureka-registry-model.avdl";
     import idl "eureka-interest-model.avdl";
 
-    @namespace("com.netflix.rx.eureka.transport")
+    @namespace("com.netflix.eureka2.transport")
     record Acknowledgement {
     }
 
-    @namespace("com.netflix.rx.eureka.protocol")
+    @namespace("com.netflix.eureka2.protocol")
     record Heartbeat {
     }
 
     record AddInstance {
-        com.netflix.rx.eureka.registry.InstanceInfo instanceInfo;
+        com.netflix.eureka2.registry.InstanceInfo instanceInfo;
     }
 
     record DeleteInstance {
         string instanceId;
     }
 
-    @namespace("com.netflix.rx.eureka.protocol.discovery.UpdateInstanceInfo$")
+    @namespace("com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$")
     record StringDeltaDTO {
         string id;
         long version;
         string fieldName;
         string value;
     }
-    @namespace("com.netflix.rx.eureka.protocol.discovery.UpdateInstanceInfo$")
+    @namespace("com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$")
     record EnumDeltaDTO {
         string id;
         long version;
         string fieldName;
-        com.netflix.rx.eureka.registry.InstanceInfo$.Status value;
+        com.netflix.eureka2.registry.InstanceInfo$.Status value;
     }
-    @namespace("com.netflix.rx.eureka.protocol.discovery.UpdateInstanceInfo$")
+    @namespace("com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$")
     record SetServicePortDeltaDTO {
         string id;
         long version;
         string fieldName;
-        @java-class("java.util.HashSet") array<com.netflix.rx.eureka.registry.ServicePort> value;
+        @java-class("java.util.HashSet") array<com.netflix.eureka2.registry.ServicePort> value;
     }
-    @namespace("com.netflix.rx.eureka.protocol.discovery.UpdateInstanceInfo$")
+    @namespace("com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$")
     record SetStringDeltaDTO {
         string id;
         long version;
@@ -51,21 +51,21 @@ protocol DiscoveryProtocol {
 
     record UpdateInstanceInfo {
         union {
-            com.netflix.rx.eureka.protocol.discovery.UpdateInstanceInfo$.StringDeltaDTO,
-            com.netflix.rx.eureka.protocol.discovery.UpdateInstanceInfo$.EnumDeltaDTO,
-            com.netflix.rx.eureka.protocol.discovery.UpdateInstanceInfo$.SetServicePortDeltaDTO,
-            com.netflix.rx.eureka.protocol.discovery.UpdateInstanceInfo$.SetStringDeltaDTO
+            com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.StringDeltaDTO,
+            com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.EnumDeltaDTO,
+            com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.SetServicePortDeltaDTO,
+            com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.SetStringDeltaDTO
         } deltaDTO;
     }
 
     record InterestRegistration {
-        @java-class("[Lcom.netflix.rx.eureka.interests.Interest;")
+        @java-class("[Lcom.netflix.eureka2.interests.Interest;")
         array<
             union {
-                com.netflix.rx.eureka.interests.ApplicationInterest,
-                com.netflix.rx.eureka.interests.FullRegistryInterest,
-                com.netflix.rx.eureka.interests.VipInterest,
-                com.netflix.rx.eureka.interests.InstanceInterest
+                com.netflix.eureka2.interests.ApplicationInterest,
+                com.netflix.eureka2.interests.FullRegistryInterest,
+                com.netflix.eureka2.interests.VipInterest,
+                com.netflix.eureka2.interests.InstanceInterest
             }
         > interests;
     }
@@ -80,8 +80,8 @@ protocol DiscoveryProtocol {
             UpdateInstanceInfo,
             InterestRegistration,
             UnregisterInterestSet,
-            com.netflix.rx.eureka.transport.Acknowledgement,
-            com.netflix.rx.eureka.protocol.Heartbeat
+            com.netflix.eureka2.transport.Acknowledgement,
+            com.netflix.eureka2.protocol.Heartbeat
         } message;
     }
 }

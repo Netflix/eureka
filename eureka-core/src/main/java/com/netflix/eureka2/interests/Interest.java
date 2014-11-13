@@ -1,0 +1,15 @@
+package com.netflix.eureka2.interests;
+
+/**
+ * Eureka provides an interest based subscription model to subscribe for changes to eureka's registry, either locally
+ * (directly with a local registry on client/server) or remote (remote server).
+ * This class identifies an interest.
+ *
+ * @author Nitesh Kant
+ */
+public abstract class Interest<T> {
+
+    public enum Operator {Equals, Like}
+
+    public abstract boolean matches(T data);
+}

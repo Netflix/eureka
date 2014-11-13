@@ -27,7 +27,7 @@ task runCluster (dependsOn: [classes], type: JavaExec) {
     group = "Examples"
     description = "Run Eureka cluster (default -Pwrite=1 -Pread=2)"
 
-    main = "com.netflix.rx.eureka.server.EmbeddedEurekaCluster"
+    main = "com.netflix.eureka2.server.EmbeddedEurekaCluster"
     classpath = sourceSets.main.runtimeClasspath
 
     args = [
@@ -43,7 +43,7 @@ build << {
 
     script.withPrintWriter {
         it.println '#!/bin/sh'
-        it.println "java -cp ${getRuntimeClasspath()} com.netflix.rx.eureka.cmd.EurekaCLI \"\$@\""
+        it.println "java -cp ${getRuntimeClasspath()} com.netflix.eureka2.cmd.EurekaCLI \"\$@\""
     }
 
     // make it executable
