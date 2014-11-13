@@ -1,8 +1,14 @@
 package com.netflix.eureka2.server.registry;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
+
 import com.netflix.eureka2.datastore.NotificationsSubject;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ModifyNotification;
+import com.netflix.eureka2.registry.Delta;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry.Status;
 import com.netflix.eureka2.utils.SerializedTaskInvoker;
@@ -10,10 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Action1;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.concurrent.Callable;
 
 /**
  * This holder maintains the data copies in a list ordered by write time. It also maintains a consistent "snapshot"
@@ -114,13 +116,23 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
                 } else {
                     if (currSnapshot.source.equals(newSnapshot.source)) {  // modify to current snapshot
                         snapshot = newSnapshot;
-                        ChangeNotification<InstanceInfo> modifyNotification
-                                = new ModifyNotification<>(newSnapshot.data, newSnapshot.data.diffOlder(currSnapshot.data));
-                        notificationSubject.onNext(modifyNotification);
+
+                        Set<Delta<?>> delta = newSnapshot.data.diffOlder(currSnapshot.data);
+                        if (!delta.isEmpty()) {
+                            ChangeNotification<InstanceInfo> modifyNotification
+                                    = new ModifyNotification<>(newSnapshot.data, delta);
+                            notificationSubject.onNext(modifyNotification);
+                        } else {
+                            logger.debug("No-change update for {}#{}", currSnapshot.source, currSnapshot.data.getId());
+                        }
                     } else {  // different source, no-op
-                        logger.debug("Different source from current snapshot, not updating");
+                        logger.debug(
+                                "Different source from current snapshot, not updating (head={}, received={})",
+                                currSnapshot.source, newSnapshot.source
+                        );
                     }
                 }
+
                 return Observable.just(result);
             }
         }).doOnError(new Action1<Throwable>() {
@@ -168,12 +180,18 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
                     } else {  // promote the newHead as the snapshot and publish a modify notification
                         Snapshot<InstanceInfo> newSnapshot = new Snapshot<>(newHead.getKey(), newHead.getValue());
                         snapshot = newSnapshot;
-                        ChangeNotification<InstanceInfo> modifyNotification
-                                = new ModifyNotification<>(newSnapshot.data, newSnapshot.data.diffOlder(currSnapshot.data));
-                        notificationSubject.onNext(modifyNotification);
+
+                        Set<Delta<?>> delta = newSnapshot.data.diffOlder(currSnapshot.data);
+                        if (!delta.isEmpty()) {
+                            ChangeNotification<InstanceInfo> modifyNotification
+                                    = new ModifyNotification<>(newSnapshot.data, delta);
+                            notificationSubject.onNext(modifyNotification);
+                        } else {
+                            logger.debug("No-change update for {}#{}", currSnapshot.source, currSnapshot.data.getId());
+                        }
                     }
                 } else {  // remove of copy that's not the source of the snapshot, no-op
-                    logger.debug("removed non-head copy of source:data");
+                    logger.debug("removed non-head (head={}, received={})", currSnapshot.source, source);
                 }
                 return Observable.just(result);
             }
