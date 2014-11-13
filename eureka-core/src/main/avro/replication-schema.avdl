@@ -1,0 +1,35 @@
+@namespace("com.netflix.eureka2.protocol.replication")
+protocol ReplicationProtocol {
+
+    import idl "eureka-registry-model.avdl";
+
+    @namespace("com.netflix.eureka2.transport")
+    record Acknowledgement {
+    }
+
+    @namespace("com.netflix.eureka2.protocol")
+    record Heartbeat {
+    }
+
+    record RegisterCopy {
+        com.netflix.eureka2.registry.InstanceInfo instanceInfo;
+    }
+
+    record UnregisterCopy {
+        string instanceId;
+    }
+
+    record UpdateCopy {
+        com.netflix.eureka2.registry.InstanceInfo instanceInfo;
+    }
+
+    record ReplicationMessages {
+        union {
+            RegisterCopy,
+            UnregisterCopy,
+            UpdateCopy,
+            com.netflix.eureka2.transport.Acknowledgement,
+            com.netflix.eureka2.protocol.Heartbeat
+        } message;
+    }
+}

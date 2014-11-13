@@ -1,0 +1,38 @@
+@namespace("com.netflix.eureka2.interests")
+protocol EurekaInterestModel {
+
+    @namespace("com.netflix.eureka2.interests.Interest$")
+    enum Operator {
+        Equals, Like
+    }
+    record ApplicationInterest {
+        string applicationName;
+        union {
+            null,
+            com.netflix.eureka2.interests.Interest$.Operator
+        } operator;
+    }
+
+    record FullRegistryInterest {
+    }
+
+    record VipInterest {
+        string vip;
+        union {
+            null,
+            com.netflix.eureka2.interests.Interest$.Operator
+        } operator;
+    }
+
+    record InstanceInterest {
+        string instanceId;
+        union {
+            null,
+            com.netflix.eureka2.interests.Interest$.Operator
+        } operator;
+    }
+
+    record MultipleInterests {
+        array< union {ApplicationInterest, FullRegistryInterest, VipInterest, InstanceInterest} > interests;
+    }
+}

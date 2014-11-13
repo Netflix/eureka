@@ -1,0 +1,87 @@
+@namespace("com.netflix.eureka2.protocol.discovery")
+protocol DiscoveryProtocol {
+
+    import idl "eureka-registry-model.avdl";
+    import idl "eureka-interest-model.avdl";
+
+    @namespace("com.netflix.eureka2.transport")
+    record Acknowledgement {
+    }
+
+    @namespace("com.netflix.eureka2.protocol")
+    record Heartbeat {
+    }
+
+    record AddInstance {
+        com.netflix.eureka2.registry.InstanceInfo instanceInfo;
+    }
+
+    record DeleteInstance {
+        string instanceId;
+    }
+
+    @namespace("com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$")
+    record StringDeltaDTO {
+        string id;
+        long version;
+        string fieldName;
+        string value;
+    }
+    @namespace("com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$")
+    record EnumDeltaDTO {
+        string id;
+        long version;
+        string fieldName;
+        com.netflix.eureka2.registry.InstanceInfo$.Status value;
+    }
+    @namespace("com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$")
+    record SetServicePortDeltaDTO {
+        string id;
+        long version;
+        string fieldName;
+        @java-class("java.util.HashSet") array<com.netflix.eureka2.registry.ServicePort> value;
+    }
+    @namespace("com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$")
+    record SetStringDeltaDTO {
+        string id;
+        long version;
+        string fieldName;
+        @java-class("java.util.HashSet") array<string> value;
+    }
+
+    record UpdateInstanceInfo {
+        union {
+            com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.StringDeltaDTO,
+            com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.EnumDeltaDTO,
+            com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.SetServicePortDeltaDTO,
+            com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.SetStringDeltaDTO
+        } deltaDTO;
+    }
+
+    record InterestRegistration {
+        @java-class("[Lcom.netflix.eureka2.interests.Interest;")
+        array<
+            union {
+                com.netflix.eureka2.interests.ApplicationInterest,
+                com.netflix.eureka2.interests.FullRegistryInterest,
+                com.netflix.eureka2.interests.VipInterest,
+                com.netflix.eureka2.interests.InstanceInterest
+            }
+        > interests;
+    }
+
+    record UnregisterInterestSet {
+    }
+
+    record DiscoveryMessage {
+        union {
+            AddInstance,
+            DeleteInstance,
+            UpdateInstanceInfo,
+            InterestRegistration,
+            UnregisterInterestSet,
+            com.netflix.eureka2.transport.Acknowledgement,
+            com.netflix.eureka2.protocol.Heartbeat
+        } message;
+    }
+}
