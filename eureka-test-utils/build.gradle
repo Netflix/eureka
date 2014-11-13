@@ -17,7 +17,7 @@
 dependencies {
     compile project(':eureka-read-server')
     compile project(':eureka-write-server')
-    compile project(':eureka-compatibility')
+    compile project(':eureka-bridge')
 //    compile project(':eureka-extensions:eureka-kafka')
     compile "jline:jline:${jline_version}"
     testCompile "junit:junit:${junit_version}"

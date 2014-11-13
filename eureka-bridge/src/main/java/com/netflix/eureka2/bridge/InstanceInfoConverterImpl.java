@@ -1,4 +1,4 @@
-package com.netflix.eureka2.compatibility;
+package com.netflix.eureka2.bridge;
 
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.eureka2.registry.DataCenterInfo;

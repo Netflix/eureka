@@ -29,7 +29,7 @@ dependencies {
 
 jar {
     manifest {
-        name = 'eureka-compatibility'
+        name = 'eureka-bridge'
         instruction 'Bundle-Vendor', 'Netflix'
         instruction 'Bundle-DocURL', 'https://github.com/Netflix/eureka'
         instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
