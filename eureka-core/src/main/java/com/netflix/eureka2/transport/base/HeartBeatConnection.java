@@ -154,7 +154,7 @@ public class HeartBeatConnection implements MessageConnection {
         }
 
         void onHeartbeatReceived() {
-            logger.info("Received heartbeat message from {}", delegate.name());
+            logger.debug("Received heartbeat message from {}", delegate.name());
             missingHeartbeatsCount.decrementAndGet();
         }
 
