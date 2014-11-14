@@ -52,6 +52,9 @@ public class HeartBeatConnection implements MessageConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(HeartBeatConnection.class);
 
+    // TODO centralize heartbeats
+    public static final long DEFAULT_HEARTBEAT_INTERVAL_MILLIS = 30000;
+
     private final MessageConnection delegate;
     private final long heartbeatIntervalMs;
     private final long tolerance;
@@ -151,7 +154,7 @@ public class HeartBeatConnection implements MessageConnection {
         }
 
         void onHeartbeatReceived() {
-            logger.debug("Received heartbeat message from {}", delegate.name());
+            logger.info("Received heartbeat message from {}", delegate.name());
             missingHeartbeatsCount.decrementAndGet();
         }
 
