@@ -18,6 +18,7 @@ import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
+import static com.netflix.eureka2.server.metric.EurekaServerMetricFactory.*;
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 
@@ -35,7 +36,7 @@ public class EurekaServerRegistryImplTest {
 
         @Override
         protected void before() throws Throwable {
-            registry = new TestEurekaServerRegistry(new EurekaServerRegistryMetrics("serverRegistry"), testScheduler);
+            registry = new TestEurekaServerRegistry(testScheduler);
         }
 
         @Override
@@ -152,7 +153,6 @@ public class EurekaServerRegistryImplTest {
         assertThat(internalStore.size(), equalTo(1));
         holder = internalStore.values().iterator().next();
         assertThat(holder.size(), equalTo(0));
-        // TODO: add asserts for expiry queue
     }
 
     @Test
@@ -190,8 +190,8 @@ public class EurekaServerRegistryImplTest {
 
     private static class TestEurekaServerRegistry extends EurekaServerRegistryImpl {
 
-        public TestEurekaServerRegistry(EurekaServerRegistryMetrics metrics, Scheduler testScheduler) {
-            super(metrics, testScheduler);
+        TestEurekaServerRegistry(Scheduler testScheduler) {
+            super(serverMetrics(), testScheduler);
         }
 
         public ConcurrentHashMap<String, MultiSourcedDataHolder<InstanceInfo>> getInternalStore() {

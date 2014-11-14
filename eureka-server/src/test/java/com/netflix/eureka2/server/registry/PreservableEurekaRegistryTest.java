@@ -28,6 +28,9 @@ import com.netflix.eureka2.registry.Delta;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.registry.SampleInstanceInfo;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry.Status;
+import com.netflix.eureka2.server.registry.eviction.EvictionItem;
+import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
+import com.netflix.eureka2.server.registry.eviction.EvictionStrategy;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,6 +41,7 @@ import rx.Producer;
 import rx.Subscriber;
 import rx.subjects.PublishSubject;
 
+import static com.netflix.eureka2.server.metric.EurekaServerMetricFactory.*;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -77,7 +81,7 @@ public class PreservableEurekaRegistryTest {
     @Before
     public void setUp() throws Exception {
         when(evictionQueue.pendingEvictions()).thenReturn(evictionItemObservable);
-        preservableRegistry = new PreservableEurekaRegistry(baseRegistry, evictionQueue, evictionStrategy);
+        preservableRegistry = new PreservableEurekaRegistry(baseRegistry, evictionQueue, evictionStrategy, serverMetrics());
     }
 
     @Test

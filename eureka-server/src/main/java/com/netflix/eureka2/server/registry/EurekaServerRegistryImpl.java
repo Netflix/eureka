@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.eureka2.datastore.NotificationsSubject;
@@ -34,6 +33,7 @@ import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.registry.Delta;
 import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;
 import com.netflix.eureka2.server.registry.NotifyingInstanceInfoHolder.NotificationTaskInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,18 +64,13 @@ public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceIn
     private final NotificationTaskInvoker invoker;
 
     @Inject
-    public EurekaServerRegistryImpl(EurekaServerRegistryMetrics metrics) {
-        this(metrics, Schedulers.computation());
+    public EurekaServerRegistryImpl(EurekaServerMetricFactory metricsFactory) {
+        this(metricsFactory, Schedulers.computation());
     }
 
-    public EurekaServerRegistryImpl(EurekaServerRegistryMetrics metrics, Scheduler scheduler) {
-        this.metrics = metrics;
-        this.metrics.setRegistrySizeMonitor(new Callable<Integer>() {
-            @Override
-            public Integer call() throws Exception {
-                return internalStore.size();
-            }
-        });
+    public EurekaServerRegistryImpl(EurekaServerMetricFactory metricsFactory, Scheduler scheduler) {
+        this.metrics = metricsFactory.getEurekaServerRegistryMetrics();
+        this.metrics.setRegistrySizeMonitor(this);
 
         invoker = new NotificationTaskInvoker(scheduler);
         internalStore = new ConcurrentHashMap<>();
@@ -147,7 +142,7 @@ public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceIn
             toReturn = newHolder.update(source, updatedInfo);
         }
 
-        metrics.incrementUpdateCounter();
+        metrics.incrementUpdateCounter(source.getOrigin());
         return subscribeToUpdateResult(toReturn);
     }
 

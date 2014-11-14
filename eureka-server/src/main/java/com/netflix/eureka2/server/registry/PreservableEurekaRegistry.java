@@ -25,6 +25,10 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.registry.Delta;
 import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;
+import com.netflix.eureka2.server.registry.eviction.EvictionItem;
+import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
+import com.netflix.eureka2.server.registry.eviction.EvictionStrategy;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
@@ -66,11 +70,16 @@ public class PreservableEurekaRegistry implements EurekaServerRegistry<InstanceI
     };
 
     @Inject
-    public PreservableEurekaRegistry(@Named("delegate") EurekaServerRegistry eurekaRegistry, EvictionQueue evictionQueue, EvictionStrategy evictionStrategy) {
+    public PreservableEurekaRegistry(@Named("delegate") EurekaServerRegistry eurekaRegistry,
+                                     EvictionQueue evictionQueue,
+                                     EvictionStrategy evictionStrategy,
+                                     EurekaServerMetricFactory metricFactory) {
         this.eurekaRegistry = eurekaRegistry;
         this.evictionStrategy = evictionStrategy;
         this.evictionSubscriber = new EvictionSubscriber();
         this.evictionSubscription = evictionQueue.pendingEvictions().subscribe(evictionSubscriber);
+
+        metricFactory.getEurekaServerRegistryMetrics().setSelfPreservationMonitor(this);
     }
 
     @Override
@@ -129,6 +138,10 @@ public class PreservableEurekaRegistry implements EurekaServerRegistry<InstanceI
     @Override
     public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, Source source) {
         return eurekaRegistry.forInterest(interest, source);
+    }
+
+    public boolean isInSelfPreservation() {
+        return selfPreservation.get();
     }
 
     @Override

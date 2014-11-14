@@ -16,13 +16,15 @@
 
 package com.netflix.eureka2.server.metric;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+
+import com.netflix.eureka2.server.registry.EurekaServerRegistryMetrics;
+import com.netflix.eureka2.server.registry.eviction.EvictionQueueMetrics;
 import com.netflix.eureka2.server.service.InterestChannelMetrics;
 import com.netflix.eureka2.server.service.RegistrationChannelMetrics;
 import com.netflix.eureka2.server.service.ReplicationChannelMetrics;
 import com.netflix.eureka2.transport.base.MessageConnectionMetrics;
-
-import javax.inject.Inject;
-import javax.inject.Named;
 
 /**
  * @author Tomasz Bak
@@ -43,9 +45,12 @@ public class WriteServerMetricFactory extends EurekaServerMetricFactory {
             @Named("clientReplication") MessageConnectionMetrics replicationServerConnectionMetrics,
             RegistrationChannelMetrics registrationChannelMetrics,
             ReplicationChannelMetrics replicationChannelMetrics,
-            InterestChannelMetrics interestChannelMetrics) {
+            InterestChannelMetrics interestChannelMetrics,
+            EurekaServerRegistryMetrics eurekaServerRegistryMetrics,
+            EvictionQueueMetrics evictionQueueMetrics) {
         super(registrationConnectionMetrics, replicationConnectionMetrics, discoveryConnectionMetrics,
-                registrationChannelMetrics, replicationChannelMetrics, interestChannelMetrics);
+                registrationChannelMetrics, replicationChannelMetrics, interestChannelMetrics,
+                eurekaServerRegistryMetrics, evictionQueueMetrics);
         this.registrationServerConnectionMetrics = registrationServerConnectionMetrics;
         this.discoveryServerConnectionMetrics = discoveryServerConnectionMetrics;
         this.replicationServerConnectionMetrics = replicationServerConnectionMetrics;
@@ -66,16 +71,28 @@ public class WriteServerMetricFactory extends EurekaServerMetricFactory {
     public static WriteServerMetricFactory writeServerMetrics() {
         if (INSTANCE == null) {
             synchronized (WriteServerMetricFactory.class) {
+
+                MessageConnectionMetrics clientRegistration = new MessageConnectionMetrics("clientRegistration");
+                clientRegistration.bindMetrics();
+
+                MessageConnectionMetrics clientDiscovery = new MessageConnectionMetrics("clientDiscovery");
+                clientDiscovery.bindMetrics();
+
+                MessageConnectionMetrics clientReplication = new MessageConnectionMetrics("clientReplication");
+                clientReplication.bindMetrics();
+
                 INSTANCE = new WriteServerMetricFactory(
                         serverMetrics().getRegistrationConnectionMetrics(),
                         serverMetrics().getReplicationConnectionMetrics(),
                         serverMetrics().getDiscoveryConnectionMetrics(),
-                        new MessageConnectionMetrics("clientRegistration"),
-                        new MessageConnectionMetrics("clientDiscovery"),
-                        new MessageConnectionMetrics("clientReplication"),
+                        clientRegistration,
+                        clientDiscovery,
+                        clientReplication,
                         serverMetrics().getRegistrationChannelMetrics(),
                         serverMetrics().getReplicationChannelMetrics(),
-                        serverMetrics().getInterestChannelMetrics()
+                        serverMetrics().getInterestChannelMetrics(),
+                        serverMetrics().getEurekaServerRegistryMetrics(),
+                        serverMetrics().getEvictionQueueMetrics()
                 );
             }
         }

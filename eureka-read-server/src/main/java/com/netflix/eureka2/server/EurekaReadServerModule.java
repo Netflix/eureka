@@ -23,7 +23,6 @@ import com.netflix.eureka2.client.metric.EurekaClientRegistryMetrics;
 import com.netflix.eureka2.client.transport.EurekaClientConnectionMetrics;
 import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.server.registry.EurekaServerRegistryMetrics;
 import com.netflix.eureka2.server.service.InterestChannelMetrics;
 import com.netflix.eureka2.server.service.ReadSelfRegistrationService;
 import com.netflix.eureka2.server.service.RegistrationChannelMetrics;
@@ -88,7 +87,6 @@ public class EurekaReadServerModule extends AbstractModule {
         bind(ReplicationChannelMetrics.class).toInstance(new ReplicationChannelMetrics());
         bind(InterestChannelMetrics.class).toInstance(new InterestChannelMetrics());
 
-        bind(EurekaServerRegistryMetrics.class).toInstance(new EurekaServerRegistryMetrics("readServer"));
         bind(EurekaClientRegistryMetrics.class).toInstance(new EurekaClientRegistryMetrics("readServer"));
         bind(EurekaServerMetricFactory.class).asEagerSingleton();
     }

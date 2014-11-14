@@ -16,13 +16,14 @@
 
 package com.netflix.eureka2.server.config;
 
+import com.netflix.eureka2.server.EurekaBootstrapConfig;
 import com.netflix.eureka2.server.WriteServerConfig;
 import com.netflix.eureka2.server.WriteServerConfig.WriteServerConfigBuilder;
+import com.netflix.eureka2.server.registry.eviction.EvictionStrategyProvider.StrategyType;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 
-import static com.netflix.eureka2.transport.EurekaTransports.DEFAULT_REGISTRATION_PORT;
-import static com.netflix.eureka2.transport.EurekaTransports.DEFAULT_REPLICATION_PORT;
+import static com.netflix.eureka2.transport.EurekaTransports.*;
 
 /**
  * @author Tomasz Bak
@@ -36,6 +37,9 @@ public class WriteCommandLineParser extends EurekaCommandLineParser<WriteServerC
     protected void additionalOptions(Options options) {
         options.addOption("w", true, "TCP registration server port; default " + DEFAULT_REGISTRATION_PORT);
         options.addOption("p", true, "TCP replication server port; default " + DEFAULT_REPLICATION_PORT);
+        options.addOption("et", true, "eviction timeout in milliseconds (default 30sec)");
+        options.addOption("es", true, "eviction strategy (default PercentageDrop)");
+        options.addOption("ev", true, "eviction strategy parameter (default 20)");
     }
 
     @Override
@@ -43,5 +47,8 @@ public class WriteCommandLineParser extends EurekaCommandLineParser<WriteServerC
         super.process(cli);
         builder.withWriteServerPort(Integer.parseInt(cli.getOptionValue("w", "" + DEFAULT_REGISTRATION_PORT)));
         builder.withReplicationPort(Integer.parseInt(cli.getOptionValue("p", "" + DEFAULT_REPLICATION_PORT)));
+        builder.withEvictionTimeout(Integer.parseInt(cli.getOptionValue("et", "" + EurekaBootstrapConfig.DEFAULT_EVICTION_TIMEOUT)));
+        builder.withEvictionStrategyType(StrategyType.valueOf(cli.getOptionValue("es", StrategyType.PercentageDrop.name())));
+        builder.withEvictionStrategyValue(cli.getOptionValue("ev", "20"));
     }
 }

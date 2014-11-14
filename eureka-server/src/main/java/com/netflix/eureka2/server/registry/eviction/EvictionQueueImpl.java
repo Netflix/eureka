@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server.registry;
+package com.netflix.eureka2.server.registry.eviction;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Deque;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
@@ -23,6 +25,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.server.EurekaBootstrapConfig;
+import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;
+import com.netflix.eureka2.server.registry.Source;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -37,18 +42,20 @@ import rx.schedulers.Schedulers;
 /**
  * @author Tomasz Bak
  */
+@Singleton
 public class EvictionQueueImpl implements EvictionQueue {
 
     private static final Logger logger = LoggerFactory.getLogger(EvictionQueueImpl.class);
 
-    private final Worker worker;
-
     private final long evictionTimeoutMs;
+    private final EvictionQueueMetrics evictionQueueMetrics;
+
+    private final Worker worker;
 
     private final Deque<EvictionItem> queue = new ConcurrentLinkedDeque<>();
     private final AtomicReference<Subscriber<EvictionItem>> evictionSubscriber = new AtomicReference<>();
-    private final AtomicLong evictionQuota = new AtomicLong();
 
+    private final AtomicLong evictionQuota = new AtomicLong();
     private final Action0 pushAction = new Action0() {
         @Override
         public void call() {
@@ -56,6 +63,8 @@ public class EvictionQueueImpl implements EvictionQueue {
             while (evictionQuota.get() > 0 && !queue.isEmpty() && queue.peek().getExpiryTime() <= now) {
                 EvictionItem item = queue.poll();
                 evictionQuota.decrementAndGet();
+
+                evictionQueueMetrics.decrementEvictionQueueCounter();
 
                 logger.info("Evicting registry entry {}/{}", item.getSource(), item.getInstanceInfo().getId());
                 evictionSubscriber.get().onNext(item);
@@ -74,17 +83,22 @@ public class EvictionQueueImpl implements EvictionQueue {
         }
     };
 
-    public EvictionQueueImpl(long evictionTimeoutMs) {
-        this(evictionTimeoutMs, Schedulers.computation());
+    @Inject
+    public EvictionQueueImpl(EurekaBootstrapConfig config, EurekaServerMetricFactory metricFactory) {
+        this(config, metricFactory, Schedulers.computation());
     }
 
-    public EvictionQueueImpl(long evictionTimeoutMs, Scheduler scheduler) {
-        this.evictionTimeoutMs = evictionTimeoutMs;
+    public EvictionQueueImpl(EurekaBootstrapConfig config, EurekaServerMetricFactory metricFactory, Scheduler scheduler) {
+        this.evictionTimeoutMs = config.getEvictionTimeout();
+        this.evictionQueueMetrics = metricFactory.getEvictionQueueMetrics();
         this.worker = scheduler.createWorker();
+
+        evictionQueueMetrics.setEvictionQueueSizeMonitor(this);
     }
 
     @Override
     public void add(InstanceInfo instanceInfo, Source source) {
+        evictionQueueMetrics.incrementEvictionQueueAddCounter();
         queue.addLast(new EvictionItem(instanceInfo, source, worker.now() + evictionTimeoutMs));
     }
 
@@ -105,5 +119,10 @@ public class EvictionQueueImpl implements EvictionQueue {
                 worker.schedule(pushAction, evictionTimeoutMs, TimeUnit.MILLISECONDS);
             }
         });
+    }
+
+    @Override
+    public int size() {
+        return queue.size();
     }
 }
