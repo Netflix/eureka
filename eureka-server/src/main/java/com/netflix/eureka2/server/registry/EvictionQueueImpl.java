@@ -16,22 +16,23 @@
 
 package com.netflix.eureka2.server.registry;
 
+import java.util.Deque;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+
 import com.netflix.eureka2.registry.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Observable.OnSubscribe;
 import rx.Producer;
+import rx.Scheduler;
 import rx.Scheduler.Worker;
 import rx.Subscriber;
 import rx.functions.Action0;
 import rx.schedulers.Schedulers;
-
-import java.util.Deque;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Tomasz Bak
@@ -62,19 +63,29 @@ public class EvictionQueueImpl implements EvictionQueue {
             long scheduleDelay = evictionTimeoutMs;
             if (!queue.isEmpty()) {
                 scheduleDelay = queue.peek().getExpiryTime() - now;
+                if (scheduleDelay <= 0) {
+                    // We have no quota to consume expired items from the queue.
+                    // To avoid rescheduling conditionally from multiple places, which would require
+                    // locking, we actively reschedule the task, with reasonable frequency.
+                    scheduleDelay = Math.max(100, evictionTimeoutMs / 10);
+                }
             }
             worker.schedule(pushAction, scheduleDelay, TimeUnit.MILLISECONDS);
         }
     };
 
     public EvictionQueueImpl(long evictionTimeoutMs) {
+        this(evictionTimeoutMs, Schedulers.computation());
+    }
+
+    public EvictionQueueImpl(long evictionTimeoutMs, Scheduler scheduler) {
         this.evictionTimeoutMs = evictionTimeoutMs;
-        this.worker = Schedulers.computation().createWorker();
+        this.worker = scheduler.createWorker();
     }
 
     @Override
     public void add(InstanceInfo instanceInfo, Source source) {
-        queue.addLast(new EvictionItem(instanceInfo, source, System.currentTimeMillis() + evictionTimeoutMs));
+        queue.addLast(new EvictionItem(instanceInfo, source, worker.now() + evictionTimeoutMs));
     }
 
     @Override

@@ -205,42 +205,6 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof NotifyingInstanceInfoHolder)) {
-            return false;
-        }
-
-        NotifyingInstanceInfoHolder that = (NotifyingInstanceInfoHolder) o;
-
-        if (!dataMap.equals(that.dataMap)) {
-            return false;
-        }
-        if (id != null ? !id.equals(that.id) : that.id != null) {
-            return false;
-        }
-        if (notificationSubject != null ? !notificationSubject.equals(that.notificationSubject) : that.notificationSubject != null) {
-            return false;
-        }
-        if (snapshot != null ? !snapshot.equals(that.snapshot) : that.snapshot != null) {
-            return false;
-        }
-
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = notificationSubject != null ? notificationSubject.hashCode() : 0;
-        result = 31 * result + (dataMap.hashCode());
-        result = 31 * result + (id != null ? id.hashCode() : 0);
-        result = 31 * result + (snapshot != null ? snapshot.hashCode() : 0);
-        return result;
-    }
-
-    @Override
     public String toString() {
         return "NotifyingInstanceInfoHolder{" +
                 "notificationSubject=" + notificationSubject +

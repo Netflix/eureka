@@ -16,6 +16,11 @@
 
 package com.netflix.eureka2.server.registry;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.registry.Delta;
@@ -24,11 +29,6 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
 import rx.functions.Action1;
-
-import javax.inject.Inject;
-import javax.inject.Named;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * {@link EurekaServerRegistry} implementation that cooperates with eviction queue
@@ -43,8 +43,8 @@ public class PreservableEurekaRegistry implements EurekaServerRegistry<InstanceI
     private final Subscription evictionSubscription;
     private final EvictionSubscriber evictionSubscriber;
 
-    private volatile int expectedRegistrySize;
-    private final AtomicBoolean selfPreservation = new AtomicBoolean();
+    /* Visible for testing */ volatile int expectedRegistrySize;
+    /* Visible for testing */ final AtomicBoolean selfPreservation = new AtomicBoolean();
 
     private final Action1<Status> increaseExpectedSize = new Action1<Status>() {
         @Override
@@ -75,7 +75,9 @@ public class PreservableEurekaRegistry implements EurekaServerRegistry<InstanceI
 
     @Override
     public Observable<Status> register(final InstanceInfo instanceInfo) {
-        return register(instanceInfo, Source.localSource());
+        Observable<Status> result = eurekaRegistry.register(instanceInfo);
+        result.subscribe(increaseExpectedSize);
+        return result;
     }
 
     @Override
