@@ -1,21 +1,20 @@
 package com.netflix.eureka2.utils;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
+import rx.Scheduler.Worker;
 import rx.Subscriber;
-import rx.Subscription;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
-import rx.internal.operators.NotificationLite;
-import rx.observers.SerializedSubscriber;
 import rx.schedulers.Schedulers;
-import rx.subjects.Subject;
-
-import java.util.concurrent.Callable;
-import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * An abstract implementation that allows extending classes to be able to serialize operations without need for locking.
@@ -26,35 +25,41 @@ public abstract class SerializedTaskInvoker {
 
     private static final Logger logger = LoggerFactory.getLogger(SerializedTaskInvoker.class);
 
-    private final QueueSubject taskSubject = QueueSubject.create();
-    private final Subscription taskSubscription;
+    private static final Exception TASK_CANCELLED = new CancellationException("Task cancelled");
+
+    private final Worker worker;
+    private final ConcurrentLinkedDeque<InvokerTask<?, ?>> taskQueue = new ConcurrentLinkedDeque<>();
+
+    private final AtomicBoolean executorScheduled = new AtomicBoolean();
+    private final Action0 executeAction = new Action0() {
+        @Override
+        public void call() {
+            executorScheduled.set(false);
+            while (!taskQueue.isEmpty()) {
+                InvokerTask<?, ?> task = taskQueue.poll();
+                try {
+                    task.execute();
+                } catch (Exception e) {
+                    logger.error("Task execution failure", e);
+                    task.cancel();
+                }
+            }
+        }
+    };
 
     protected SerializedTaskInvoker() {
-        taskSubscription = taskSubject.subscribeOn(Schedulers.io()) /*Since subscription blocks on the underlying queue.*/
-                .subscribe(new Subscriber<InvokerTask>() {
+        this(Schedulers.computation());
+    }
 
-                    @Override
-                    public void onCompleted() {
-                        logger.debug("SerializedTaskInvoker subscription complete. No more tasks will be invoked.");
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        logger.error("Error to SerializedTaskInvoker subscriber. No more tasks will be invoked.", e);
-                    }
-
-                    @Override
-                    public void onNext(InvokerTask invokerTask) {
-                        invokerTask.execute(); // blocks till the task completes (Observable<Void> returned by task completes)
-                    }
-                });
+    protected SerializedTaskInvoker(Scheduler scheduler) {
+        this.worker = scheduler.createWorker();
     }
 
     protected Observable<Void> submitForAck(final Callable<Observable<Void>> task) {
         return Observable.create(new Observable.OnSubscribe<Void>() {
             @Override
             public void call(Subscriber<? super Void> subscriber) {
-                taskSubject.onNext(new InvokerTaskWithAck(task, subscriber));
+                addAndSchedule(new InvokerTaskWithAck(task, subscriber));
             }
         });
     }
@@ -63,7 +68,7 @@ public abstract class SerializedTaskInvoker {
         return Observable.create(new Observable.OnSubscribe<Observable<T>>() {
             @Override
             public void call(Subscriber<? super Observable<T>> subscriber) {
-                taskSubject.onNext(new InvokerTaskWithResult<>(task, subscriber));
+                addAndSchedule(new InvokerTaskWithResult<>(task, subscriber));
             }
         }).switchMap(new Func1<Observable<T>, Observable<? extends T>>() {
             @Override
@@ -73,109 +78,44 @@ public abstract class SerializedTaskInvoker {
         });
     }
 
+    private void addAndSchedule(InvokerTask<?, ?> invokerTask) {
+        taskQueue.add(invokerTask);
+        if (executorScheduled.compareAndSet(false, true)) {
+            worker.schedule(executeAction);
+        }
+    }
+
     protected void shutdown() {
-        taskSubject.onCompleted();
-        taskSubscription.unsubscribe();
-    }
-
-    /**
-     * A {@link Subject} implementation which relays all notifications via an internal queue.
-     *
-     * <b>This must always be subscribed using {@link Observable#subscribeOn(Scheduler)} as the subscription call
-     * blocks.</b>
-     *
-     * <h2>Can we use {@link SerializedSubscriber} instead</h2>
-     * We want to strictly serialize these tasks, some of which ({@link InvokerTaskWithAck}) return an
-     * acknowledgment which needs to be completed before we can execute the next task. The easiest way to do this is
-     * by blocking the onNext() from this subject. Since {@link SerializedSubscriber} passes through the onNext when
-     * there isn't any concurrency, blocking onNext() isn't possible.
-     *
-     * The other way to do this without blocking would be to use RxJava's backpressure subscriber which only requests
-     * one item at a time. We do not have the backpressure version of rxjava as yet.
-     */
-    private static final class QueueSubject extends Subject<InvokerTask, InvokerTask> {
-
-        private final LinkedBlockingQueue<Object> notifications;
-        private final NotificationLite<Object> nl = NotificationLite.instance();
-
-        private QueueSubject(final LinkedBlockingQueue<Object> notifications) {
-            super(new OnSubscribeAction(notifications));
-            this.notifications = notifications;
-        }
-
-        protected static QueueSubject create() {
-            final LinkedBlockingQueue<Object> notifications = new LinkedBlockingQueue<>();
-            return new QueueSubject(notifications);
-        }
-
-        @Override
-        @SuppressWarnings("unchecked")
-        public void onCompleted() {
-            notifications.add(nl.completed());
-        }
-
-        @Override
-        @SuppressWarnings("unchecked")
-        public void onError(Throwable e) {
-            notifications.add(nl.error(e));
-        }
-
-        @Override
-        @SuppressWarnings("unchecked")
-        public void onNext(final InvokerTask task) {
-            notifications.add(nl.next(task));
-        }
-
-        private static class OnSubscribeAction implements OnSubscribe<InvokerTask> {
-
-            private final LinkedBlockingQueue<Object> notifications;
-            private final NotificationLite<InvokerTask<?>> nl = NotificationLite.instance();
-
-            public OnSubscribeAction(LinkedBlockingQueue<Object> notifications) {
-                this.notifications = notifications;
-            }
-
-            @Override
-            public void call(Subscriber<? super InvokerTask> subscriber) {
-                boolean terminate = false;
-                while (!terminate) {
-                    try {
-                        // TODO: handle InterruptedException here better
-                        Object notification = notifications.take(); // Blocks when nothing available.
-                        nl.accept(subscriber, notification);
-                    } catch (InterruptedException e) {
-                        Thread.interrupted(); // Reset the interrupted flag for the code upstream.
-                        logger.error(
-                                "Interrupted while waiting for next task. Exiting the subscription",
-                                e);
-                        subscriber.onError(e);
-                        terminate = true;
-                    }
-                }
-            }
+        worker.unsubscribe();
+        while (!taskQueue.isEmpty()) {
+            taskQueue.poll().cancel();
         }
     }
 
-    private abstract class InvokerTask<T> {
+    private abstract static class InvokerTask<T, R> {
 
         protected final Callable<Observable<T>> actual;
+        protected final Subscriber<? super R> subscriberForThisTask;
 
-        private InvokerTask(Callable<Observable<T>> actual) {
+        private InvokerTask(Callable<Observable<T>> actual, Subscriber<? super R> subscriberForThisTask) {
             this.actual = actual;
-        }
-
-        protected abstract void execute();
-    }
-
-    private class InvokerTaskWithAck extends InvokerTask<Void> {
-
-        private final Subscriber<? super Void> subscriberForThisTask;
-
-        private InvokerTaskWithAck(Callable<Observable<Void>> actual, Subscriber<? super Void> subscriberForThisTask) {
-            super(actual);
             this.subscriberForThisTask = subscriberForThisTask;
         }
 
+        protected abstract void execute();
+
+        protected void cancel() {
+            subscriberForThisTask.onError(TASK_CANCELLED);
+        }
+    }
+
+    private class InvokerTaskWithAck extends InvokerTask<Void, Void> {
+
+        private InvokerTaskWithAck(Callable<Observable<Void>> actual, Subscriber<? super Void> subscriberForThisTask) {
+            super(actual, subscriberForThisTask);
+        }
+
+        @Override
         protected void execute() {
             try {
                 actual.call().firstOrDefault(null).ignoreElements()
@@ -199,15 +139,13 @@ public abstract class SerializedTaskInvoker {
         }
     }
 
-    private class InvokerTaskWithResult<T> extends InvokerTask<T> {
-
-        private final Subscriber<? super Observable<T>> subscriberForThisTask;
+    private class InvokerTaskWithResult<T> extends InvokerTask<T, Observable<T>> {
 
         private InvokerTaskWithResult(Callable<Observable<T>> actual, Subscriber<? super Observable<T>> subscriberForThisTask) {
-            super(actual);
-            this.subscriberForThisTask = subscriberForThisTask;
+            super(actual, subscriberForThisTask);
         }
 
+        @Override
         protected void execute() {
             try {
                 subscriberForThisTask.onNext(actual.call());

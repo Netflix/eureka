@@ -15,6 +15,7 @@ import com.netflix.eureka2.utils.SerializedTaskInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.Scheduler;
 import rx.functions.Action1;
 
 /**
@@ -250,6 +251,11 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
     }
 
     static class NotificationTaskInvoker extends SerializedTaskInvoker {
+
+        NotificationTaskInvoker(Scheduler scheduler) {
+            super(scheduler);
+        }
+
         Observable<Status> submitTask(Callable<Observable<Status>> task) {
             return submitForResult(task);
         }

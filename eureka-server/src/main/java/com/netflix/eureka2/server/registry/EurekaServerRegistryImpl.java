@@ -16,6 +16,15 @@
 
 package com.netflix.eureka2.server.registry;
 
+import javax.inject.Inject;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+
 import com.netflix.eureka2.datastore.NotificationsSubject;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.IndexRegistry;
@@ -29,19 +38,12 @@ import com.netflix.eureka2.server.registry.NotifyingInstanceInfoHolder.Notificat
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.schedulers.Schedulers;
 import rx.subjects.ReplaySubject;
-
-import javax.inject.Inject;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * TODO: fix race in adding/removing from store and sending notification to notificationSubject
@@ -59,10 +61,14 @@ public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceIn
     private final NotificationsSubject<InstanceInfo> notificationSubject;  // subject for all changes in the registry
     private final IndexRegistry<InstanceInfo> indexRegistry;
     private final EurekaServerRegistryMetrics metrics;
-    private final NotificationTaskInvoker invoker = new NotificationTaskInvoker();
+    private final NotificationTaskInvoker invoker;
 
     @Inject
     public EurekaServerRegistryImpl(EurekaServerRegistryMetrics metrics) {
+        this(metrics, Schedulers.computation());
+    }
+
+    public EurekaServerRegistryImpl(EurekaServerRegistryMetrics metrics, Scheduler scheduler) {
         this.metrics = metrics;
         this.metrics.setRegistrySizeMonitor(new Callable<Integer>() {
             @Override
@@ -71,6 +77,7 @@ public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceIn
             }
         });
 
+        invoker = new NotificationTaskInvoker(scheduler);
         internalStore = new ConcurrentHashMap<>();
         indexRegistry = new IndexRegistryImpl<>();
         notificationSubject = NotificationsSubject.create();
@@ -213,6 +220,7 @@ public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceIn
     public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest) {
         try {
             // TODO: this method can be run concurrently from different channels, unless we run everything on single server event loop.
+            // It is possible that the same instance info will be both in snapshot and paused notification queue.
             notificationSubject.pause(); // Pause notifications till we get a snapshot of current registry (registry.values())
             if (interest instanceof MultipleInterests) {
                 return indexRegistry.forCompositeInterest((MultipleInterests) interest, this);
