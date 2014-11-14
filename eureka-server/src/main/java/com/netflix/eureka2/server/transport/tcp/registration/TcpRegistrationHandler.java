@@ -36,6 +36,12 @@ import rx.schedulers.Schedulers;
  */
 public class TcpRegistrationHandler implements ConnectionHandler<Object, Object> {
 
+    // FIXME add an override from sys property for now
+    private static final long HEARTBEAT_INTERVAL_MILLIS = Long.getLong(
+            "eureka2.registration.heartbeat.intervalMillis",
+            HeartBeatConnection.DEFAULT_HEARTBEAT_INTERVAL_MILLIS
+    );
+
     private final EurekaServerRegistry<InstanceInfo> registry;
     private final EvictionQueue evictionQueue;
     private final EurekaServerMetricFactory metricFactory;
@@ -51,7 +57,7 @@ public class TcpRegistrationHandler implements ConnectionHandler<Object, Object>
     public Observable<Void> handle(ObservableConnection<Object, Object> connection) {
         MessageConnection broker = new HeartBeatConnection(
                 new BaseMessageConnection("registration", connection, metricFactory.getRegistrationConnectionMetrics()),
-                30000, 3,
+                HEARTBEAT_INTERVAL_MILLIS, 3,
                 Schedulers.computation()
         );
         final EurekaServerService service = new EurekaServiceImpl(registry, evictionQueue, broker, metricFactory);
