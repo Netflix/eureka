@@ -20,6 +20,7 @@ import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.transport.ResolverBasedTransportClient;
 import com.netflix.eureka2.client.transport.TransportClient;
 import com.netflix.eureka2.transport.EurekaTransports;
+import com.netflix.eureka2.transport.base.HeartBeatConnection;
 import com.netflix.eureka2.transport.base.MessageConnectionMetrics;
 
 /**
@@ -29,7 +30,18 @@ import com.netflix.eureka2.transport.base.MessageConnectionMetrics;
  */
 public class TcpDiscoveryClient extends ResolverBasedTransportClient {
 
+    // FIXME add an override from sys property for now
+    private static final long HEARTBEAT_INTERVAL_MILLIS = Long.getLong(
+            "eureka2.discovery.heartbeat.intervalMillis",
+            HeartBeatConnection.DEFAULT_HEARTBEAT_INTERVAL_MILLIS
+    );
+
     public TcpDiscoveryClient(ServerResolver resolver, EurekaTransports.Codec codec, MessageConnectionMetrics metrics) {
         super(resolver, EurekaTransports.discoveryPipeline(codec), metrics);
+    }
+
+    @Override
+    public long getHeartbeatIntervalMillis() {
+        return HEARTBEAT_INTERVAL_MILLIS;
     }
 }
