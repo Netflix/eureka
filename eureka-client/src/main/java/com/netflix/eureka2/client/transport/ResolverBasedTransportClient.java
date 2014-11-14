@@ -22,6 +22,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public abstract class ResolverBasedTransportClient implements TransportClient {
 
+    // FIXME just get from System props for now
+    private static final int HEARTBEAT_INTERVAL_MILLIS = Integer.getInteger("eureka2.heartbeat.intervalMillis", 30000);
+
     private final ServerResolver resolver;
     private final PipelineConfigurator<Object, Object> pipelineConfigurator;
     private final MessageConnectionMetrics metrics;
@@ -63,7 +66,7 @@ public abstract class ResolverBasedTransportClient implements TransportClient {
                                             ObservableConnection<Object, Object> conn) {
                                         return new HeartBeatConnection(
                                                 new BaseMessageConnection("client", conn, metrics),
-                                                30000, 3, Schedulers.computation()
+                                                HEARTBEAT_INTERVAL_MILLIS, 3, Schedulers.computation()
                                         );
                                     }
                                 });

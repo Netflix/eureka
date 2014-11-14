@@ -63,6 +63,11 @@ public class NotificationsSubject<T> extends Subject<ChangeNotification<T>, Chan
         paused.set(true);
     }
 
+    @Override
+    public boolean hasObservers() {
+        return notificationSubject.hasObservers();
+    }
+
     public ResumeResult resume() {
         if (isPaused()) {
             if (resumeState.compareAndSet(ResumeState.NotPaused.ordinal(), ResumeState.Resuming.ordinal())) {

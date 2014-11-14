@@ -48,8 +48,9 @@ import io.reactivex.netty.servo.ServoEventsListenerFactory;
 public class EurekaWriteServerModule extends AbstractModule {
 
     // TODO: this should be configurable property
-    private static final int ALLOWED_DROP = 20;
-    private static final long EVICTION_TIMEOUT = 3 * 30000;
+    // get from system props for now
+    private static final int ALLOWED_DROP = Integer.getInteger("eureka2.eviction.allowedPercentage", 20);
+    private static final long EVICTION_TIMEOUT = Integer.getInteger("eureka2.eviction.timeoutMillis", 3 * 30000);
 
     private final WriteServerConfig config;
 

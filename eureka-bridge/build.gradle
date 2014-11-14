@@ -22,13 +22,14 @@ configurations {
 
 dependencies {
     compile project(':eureka-write-server')
+    compile 'io.reactivex:rxjava:1.0.0-rc.7'
     compile "com.netflix.eureka:eureka-client:${eureka_v1_version}"
     testCompile project(':eureka-test-utils')
 }
 
 jar {
     manifest {
-        name = 'eureka-compatibility'
+        name = 'eureka-bridge'
         instruction 'Bundle-Vendor', 'Netflix'
         instruction 'Bundle-DocURL', 'https://github.com/Netflix/eureka'
         instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
