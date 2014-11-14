@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+    <head lang="en">
+        <meta charset="UTF-8">
+        <title>Eureka Dashboard</title>
+
+<script type="text/javascript" charset="utf-8">
+    var ws = new WebSocket('ws://localhost:9000');
+
+    ws.onopen = function() {
+        ws.send("get status");
+    };
+
+    ws.onmessage = function(data, flags) {
+        document.write(data.data + "<br>");
+    };
+</script>
+
+</head>
+<body>
+    <h1>Registry in text form</h1>
+    <ul>
+        <li>Instance10</li>
+        <li>Instance20</li>
+    </ul>
+</body>
+</html>
