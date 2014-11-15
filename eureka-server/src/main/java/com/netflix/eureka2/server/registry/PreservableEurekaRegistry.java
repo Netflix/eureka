@@ -16,19 +16,23 @@
 
 package com.netflix.eureka2.server.registry;
 
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.registry.Delta;
-import com.netflix.eureka2.registry.InstanceInfo;
-import rx.Observable;
-import rx.Subscriber;
-import rx.Subscription;
-import rx.functions.Action1;
-
 import javax.inject.Inject;
 import javax.inject.Named;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.Interest;
+import com.netflix.eureka2.registry.Delta;
+import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;
+import com.netflix.eureka2.server.registry.eviction.EvictionItem;
+import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
+import com.netflix.eureka2.server.registry.eviction.EvictionStrategy;
+import rx.Observable;
+import rx.Subscriber;
+import rx.Subscription;
+import rx.functions.Action1;
 
 /**
  * {@link EurekaServerRegistry} implementation that cooperates with eviction queue
@@ -43,8 +47,8 @@ public class PreservableEurekaRegistry implements EurekaServerRegistry<InstanceI
     private final Subscription evictionSubscription;
     private final EvictionSubscriber evictionSubscriber;
 
-    private volatile int expectedRegistrySize;
-    private final AtomicBoolean selfPreservation = new AtomicBoolean();
+    /* Visible for testing */ volatile int expectedRegistrySize;
+    /* Visible for testing */ final AtomicBoolean selfPreservation = new AtomicBoolean();
 
     private final Action1<Status> increaseExpectedSize = new Action1<Status>() {
         @Override
@@ -66,16 +70,23 @@ public class PreservableEurekaRegistry implements EurekaServerRegistry<InstanceI
     };
 
     @Inject
-    public PreservableEurekaRegistry(@Named("delegate") EurekaServerRegistry eurekaRegistry, EvictionQueue evictionQueue, EvictionStrategy evictionStrategy) {
+    public PreservableEurekaRegistry(@Named("delegate") EurekaServerRegistry eurekaRegistry,
+                                     EvictionQueue evictionQueue,
+                                     EvictionStrategy evictionStrategy,
+                                     EurekaServerMetricFactory metricFactory) {
         this.eurekaRegistry = eurekaRegistry;
         this.evictionStrategy = evictionStrategy;
         this.evictionSubscriber = new EvictionSubscriber();
         this.evictionSubscription = evictionQueue.pendingEvictions().subscribe(evictionSubscriber);
+
+        metricFactory.getEurekaServerRegistryMetrics().setSelfPreservationMonitor(this);
     }
 
     @Override
     public Observable<Status> register(final InstanceInfo instanceInfo) {
-        return register(instanceInfo, Source.localSource());
+        Observable<Status> result = eurekaRegistry.register(instanceInfo);
+        result.subscribe(increaseExpectedSize);
+        return result;
     }
 
     @Override
@@ -127,6 +138,10 @@ public class PreservableEurekaRegistry implements EurekaServerRegistry<InstanceI
     @Override
     public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, Source source) {
         return eurekaRegistry.forInterest(interest, source);
+    }
+
+    public boolean isInSelfPreservation() {
+        return selfPreservation.get();
     }
 
     @Override

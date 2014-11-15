@@ -7,6 +7,7 @@ import com.netflix.eureka2.server.registry.NotifyingInstanceInfoHolder.Notificat
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
+import rx.schedulers.Schedulers;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -27,7 +28,7 @@ public class NotifyingInstanceInfoHolderTest {
         }
     };
 
-    private final NotificationTaskInvoker invoker = new NotificationTaskInvoker();
+    private final NotificationTaskInvoker invoker = new NotificationTaskInvoker(Schedulers.computation());
 
     @Test
     public void testUpdateSameSource() throws Exception {

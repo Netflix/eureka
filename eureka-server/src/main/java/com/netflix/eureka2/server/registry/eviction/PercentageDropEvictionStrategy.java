@@ -14,34 +14,24 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server.registry;
-
-import com.netflix.eureka2.registry.InstanceInfo;
+package com.netflix.eureka2.server.registry.eviction;
 
 /**
  * @author Tomasz Bak
  */
-public class EvictionItem {
+public class PercentageDropEvictionStrategy implements EvictionStrategy {
 
-    private final InstanceInfo instanceInfo;
-    private final Source source;
-    private final long expiryTime;
+    private final double dropRatio;
 
-    public EvictionItem(InstanceInfo instanceInfo, Source source, long expiryTime) {
-        this.instanceInfo = instanceInfo;
-        this.source = source;
-        this.expiryTime = expiryTime;
+    public PercentageDropEvictionStrategy(int allowedPercentageDrop) {
+        this.dropRatio = allowedPercentageDrop / 100D;
     }
 
-    public InstanceInfo getInstanceInfo() {
-        return instanceInfo;
-    }
-
-    public Source getSource() {
-        return source;
-    }
-
-    public long getExpiryTime() {
-        return expiryTime;
+    @Override
+    public int allowedToEvict(int expectedRegistrySize, int actualRegistrySize) {
+        int maxAllowed = (int) (dropRatio * expectedRegistrySize);
+        int currentDif = expectedRegistrySize - actualRegistrySize;
+        int delta = maxAllowed - currentDif;
+        return delta <= 0 ? 0 : delta;
     }
 }

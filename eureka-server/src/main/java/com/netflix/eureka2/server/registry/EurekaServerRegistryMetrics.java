@@ -16,11 +16,12 @@
 
 package com.netflix.eureka2.server.registry;
 
+import java.util.concurrent.Callable;
+
 import com.netflix.eureka2.metric.EurekaMetrics;
+import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.servo.monitor.BasicGauge;
 import com.netflix.servo.monitor.Counter;
-
-import java.util.concurrent.Callable;
 
 /**
  * @author Tomasz Bak
@@ -39,8 +40,8 @@ public class EurekaServerRegistryMetrics extends EurekaMetrics {
     private final Counter unregistrationsReplicated;
     private final Counter unregistrationsTotal;
 
-    public EurekaServerRegistryMetrics(String id) {
-        super(id);
+    public EurekaServerRegistryMetrics() {
+        super("eurekaServerRegistry");
         registrationsLocal = newCounter("registrationsLocal");
         registrationsReplicated = newCounter("registrationsReplicated");
         registrationsTotal = newCounter("registrationsTotal");
@@ -78,13 +79,37 @@ public class EurekaServerRegistryMetrics extends EurekaMetrics {
         unregistrationsTotal.increment();
     }
 
-    public void incrementUpdateCounter() {
-        updatesLocal.increment(); // TODO: fix registration implementation so we can track it per origin
+    public void incrementUpdateCounter(Source.Origin origin) {
+        switch (origin) {
+            case LOCAL:
+                updatesLocal.increment();
+                break;
+            case REPLICATED:
+                updatesReplicated.increment();
+                break;
+        }
         updatesTotal.increment();
     }
 
-    public void setRegistrySizeMonitor(Callable<Integer> registrySizeCallable) {
+    public void setRegistrySizeMonitor(final EurekaServerRegistry<InstanceInfo> registry) {
+        Callable<Integer> registrySizeCallable = new Callable<Integer>() {
+            @Override
+            public Integer call() throws Exception {
+                return registry.size();
+            }
+        };
         BasicGauge<Integer> gauge = new BasicGauge<>(monitorConfig("registrySize"), registrySizeCallable);
+        register(gauge);
+    }
+
+    public void setSelfPreservationMonitor(final PreservableEurekaRegistry registry) {
+        Callable<Integer> selfPreservationCallable = new Callable<Integer>() {
+            @Override
+            public Integer call() throws Exception {
+                return registry.isInSelfPreservation() ? 1 : 0;
+            }
+        };
+        BasicGauge<Integer> gauge = new BasicGauge<>(monitorConfig("selfPreservation"), selfPreservationCallable);
         register(gauge);
     }
 }

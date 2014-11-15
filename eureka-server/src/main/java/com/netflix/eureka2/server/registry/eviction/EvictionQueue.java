@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server.registry;
+package com.netflix.eureka2.server.registry.eviction;
 
 import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.server.registry.Source;
 import rx.Observable;
 
 /**
@@ -42,5 +43,12 @@ public interface EvictionQueue {
      * @return {@link EvictionItem} objects to be removed from the registry
      */
     Observable<EvictionItem> pendingEvictions();
+
+    /**
+     * Number of elements in the eviction queue.
+     *
+     * @return eviction queue size
+     */
+    int size();
 }
 

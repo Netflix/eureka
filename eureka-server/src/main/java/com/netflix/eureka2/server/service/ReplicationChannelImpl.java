@@ -8,7 +8,7 @@ import com.netflix.eureka2.registry.Delta;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry.Status;
-import com.netflix.eureka2.server.registry.EvictionQueue;
+import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.registry.Source;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.slf4j.Logger;

@@ -20,7 +20,7 @@ import com.google.inject.Singleton;
 import com.netflix.eureka2.server.EurekaBootstrapConfig;
 import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.server.registry.EvictionQueue;
+import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.transport.tcp.AbstractTcpServer;
 import com.netflix.eureka2.transport.EurekaTransports;
 import io.reactivex.netty.RxNetty;

@@ -16,10 +16,10 @@
 
 package com.netflix.eureka2.server;
 
-import com.netflix.governator.annotations.Configuration;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
+import com.netflix.governator.annotations.Configuration;
 
 /**
  * @author Tomasz Bak
@@ -39,9 +39,11 @@ public class ReadServerConfig extends EurekaBootstrapConfig {
                             int readServerPort, Codec codec, int shutDownPort,
                             String appName, String vipAddress, String writeClusterDomainName,
                             String[] writeClusterServers, int writeClusterRegistrationPort,
-                            int writeClusterDiscoveryPort, int webAdminPort) {
+                            int writeClusterDiscoveryPort, int webAdminPort,
+                            long registryEvictionTimeout, String evictionStrategyType, String evictionStrategyValue) {
         super(dataCenterType, resolverType, -1, -1, readServerPort, codec, shutDownPort, appName, vipAddress,
-              writeClusterDomainName, writeClusterServers, webAdminPort);
+                writeClusterDomainName, writeClusterServers, webAdminPort,
+                registryEvictionTimeout, evictionStrategyType, evictionStrategyValue);
         this.writeClusterRegistrationPort = writeClusterRegistrationPort;
         this.writeClusterDiscoveryPort = writeClusterDiscoveryPort;
     }
@@ -71,9 +73,10 @@ public class ReadServerConfig extends EurekaBootstrapConfig {
 
         @Override
         public ReadServerConfig build() {
-            return new ReadServerConfig(dataCenterType, resolverType, readServerPort, codec, shutDownPort, appName, vipAddress,
+            return new ReadServerConfig(dataCenterType, resolverType, discoveryPort, codec, shutDownPort, appName, vipAddress,
                     writeClusterDomainName, writeClusterServers, writeClusterRegistrationPort,
-                    writeClusterDiscoveryPort, webAdminPort);
+                    writeClusterDiscoveryPort, webAdminPort,
+                    evictionTimeout, evictionStrategyType.name(), evictionStrategyValue);
         }
     }
 }
