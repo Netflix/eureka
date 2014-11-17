@@ -16,15 +16,13 @@
 
 package com.netflix.eureka2.server;
 
-import com.google.inject.Module;
-import com.netflix.governator.guice.LifecycleInjectorBuilder;
-import com.netflix.governator.guice.LifecycleInjectorBuilderSuite;
+import java.util.List;
+
 import com.netflix.eureka2.server.config.ReadCommandLineParser;
+import com.netflix.governator.guice.BootstrapBinder;
+import com.netflix.governator.guice.BootstrapModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author Tomasz Bak
@@ -42,13 +40,11 @@ public class EurekaReadServer extends AbstractEurekaServer<ReadServerConfig> {
     }
 
     @Override
-    protected void additionalModules(List<LifecycleInjectorBuilderSuite> suites) {
-        suites.add(new LifecycleInjectorBuilderSuite() {
+    protected void additionalModules(List<BootstrapModule> bootstrapModules) {
+        bootstrapModules.add(new BootstrapModule() {
             @Override
-            public void configure(LifecycleInjectorBuilder builder) {
-                List<Module> all = new ArrayList<>();
-                all.add(new EurekaReadServerModule(config));
-                builder.withAdditionalModules(all);
+            public void configure(BootstrapBinder binder) {
+                binder.include(new EurekaReadServerModule(config));
             }
         });
     }
