@@ -6,6 +6,7 @@ import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka2.bridge.InstanceInfoConverter;
 import com.netflix.eureka2.bridge.InstanceInfoConverterImpl;
 import com.netflix.eureka2.bridge.OperatorInstanceInfoFromV1;
+import com.netflix.eureka2.metric.BridgeChannelMetrics;
 import com.netflix.eureka2.registry.Delta;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
@@ -38,6 +39,7 @@ public class BridgeChannel implements ServiceChannel {
     private final EurekaServerRegistry<InstanceInfo> registry;
     private final DiscoveryClient discoveryClient;
     private final InstanceInfoConverter converter;
+    private final BridgeChannelMetrics metrics;
     private final int refreshRateSec;
     private final Scheduler.Worker worker;
     private Map<String, InstanceInfo> currentSnapshot;
@@ -46,10 +48,12 @@ public class BridgeChannel implements ServiceChannel {
 
     public BridgeChannel(EurekaServerRegistry<InstanceInfo> registry,
                          DiscoveryClient discoveryClient,
-                         int refreshRateSec) {
+                         int refreshRateSec,
+                         BridgeChannelMetrics metrics) {
         this.registry = registry;
         this.discoveryClient = discoveryClient;
         this.refreshRateSec = refreshRateSec;
+        this.metrics = metrics;
 
         converter = new InstanceInfoConverterImpl();
         worker = Schedulers.computation().createWorker();
@@ -63,7 +67,7 @@ public class BridgeChannel implements ServiceChannel {
             @Override
             public void call() {
                 logger.info("Starting new round of replication from v1 to v2");
-                final AtomicLong totalCount = new AtomicLong(0);  // TODO: servo-fy
+                final AtomicLong totalCount = new AtomicLong(0);
                 final AtomicLong updateCount = new AtomicLong(0);
                 final AtomicLong registerCount = new AtomicLong(0);
                 final AtomicLong unregisterCount = new AtomicLong(0);
@@ -125,6 +129,11 @@ public class BridgeChannel implements ServiceChannel {
                 logger.info("Finished new round of replication from v1 to v2." +
                                 " Total: {}, registers: {}, updates: {}, unregisters: {}",
                         totalCount.get(), registerCount.get(), updateCount.get(), unregisterCount.get());
+                metrics.setTotalCount(totalCount.get());
+                metrics.setRegisterCount(registerCount.get());
+                metrics.setUpdateCount(updateCount.get());
+                metrics.setUnregisterCount(unregisterCount.get());
+
             }
         }, 0, refreshRateSec, TimeUnit.SECONDS);
     }
