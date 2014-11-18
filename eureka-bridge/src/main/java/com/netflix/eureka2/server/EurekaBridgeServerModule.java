@@ -3,7 +3,8 @@ package com.netflix.eureka2.server;
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.netflix.eureka2.client.transport.EurekaClientConnectionMetrics;
-import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
+import com.netflix.eureka2.metric.BridgeChannelMetrics;
+import com.netflix.eureka2.metric.BridgeServerMetricFactory;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.registry.eviction.EvictionQueueImpl;
@@ -75,10 +76,12 @@ public class EurekaBridgeServerModule extends AbstractModule {
         bind(EurekaClientConnectionMetrics.class).annotatedWith(Names.named("discovery")).toInstance(new EurekaClientConnectionMetrics("discovery"));
         bind(EurekaClientConnectionMetrics.class).annotatedWith(Names.named("replication")).toInstance(new EurekaClientConnectionMetrics("replication"));
 
+        bind(BridgeChannelMetrics.class).annotatedWith(Names.named("bridge")).toInstance(new BridgeChannelMetrics());
+
         bind(RegistrationChannelMetrics.class).toInstance(new RegistrationChannelMetrics());
         bind(ReplicationChannelMetrics.class).toInstance(new ReplicationChannelMetrics());
         bind(InterestChannelMetrics.class).toInstance(new InterestChannelMetrics());
 
-        bind(WriteServerMetricFactory.class).asEagerSingleton();
+        bind(BridgeServerMetricFactory.class).asEagerSingleton();
     }
 }
