@@ -396,8 +396,6 @@ public class Applications {
                                   @Nullable InstanceRegionChecker instanceRegionChecker) {
         this.virtualHostNameAppMap.clear();
         this.secureVirtualHostNameAppMap.clear();
-        this.shuffleVirtualHostNameMap.clear();
-        this.shuffledSecureVirtualHostNameMap.clear();
         for (Application application : appNameApplicationMap.values()) {
             if (indexByRemoteRegions) {
                 application.shuffleAndStoreInstances(remoteRegionsRegistry, clientConfig, instanceRegionChecker);
@@ -464,6 +462,11 @@ public class Applications {
             instanceInfoList.set(l);
             vipIndexMap.put(entries.getKey(), new AtomicLong(0));
         }
+
+        // finally remove all vips that are completed deleted (i.e. missing) from the srcSet
+        Set<String> srcVips = srcMap.keySet();
+        Set<String> destVips = destMap.keySet();
+        destVips.retainAll(srcVips);
     }
 
     /**
