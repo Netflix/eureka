@@ -1,4 +1,4 @@
-package com.netflix.eureka2.client.service;
+package com.netflix.eureka2.client.channel;
 
 import com.netflix.eureka2.client.registry.EurekaClientRegistry;
 import com.netflix.eureka2.client.transport.TransportClient;

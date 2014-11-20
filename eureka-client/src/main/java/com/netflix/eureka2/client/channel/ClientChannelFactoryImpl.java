@@ -1,37 +1,31 @@
-package com.netflix.eureka2.client.service;
+package com.netflix.eureka2.client.channel;
 
 import com.netflix.eureka2.client.metric.EurekaClientMetricFactory;
 import com.netflix.eureka2.client.registry.EurekaClientRegistry;
 import com.netflix.eureka2.client.transport.TransportClient;
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.service.EurekaService;
 import com.netflix.eureka2.service.InterestChannel;
 import com.netflix.eureka2.service.RegistrationChannel;
 
 /**
  * @author Nitesh Kant
  */
-public class EurekaServiceImpl implements EurekaService {
+public class ClientChannelFactoryImpl implements ClientChannelFactory {
 
-    private final EurekaClientRegistry<InstanceInfo> registry; /*Null for write server only service*/
     private final TransportClient readServerClient; /*Null for write server only service*/
     private final TransportClient writeServerClient; /*Null for read server only service*/
     private final EurekaClientMetricFactory metricFactory;
+    private final Mode channelMode;
 
-    protected EurekaServiceImpl(EurekaClientRegistry<InstanceInfo> registry, TransportClient writeServerClient,
-                                TransportClient readServerClient, EurekaClientMetricFactory metricFactory) {
-        this.registry = registry;
+    public ClientChannelFactoryImpl(TransportClient writeServerClient,
+                                    TransportClient readServerClient, EurekaClientMetricFactory metricFactory) {
+        if (writeServerClient == null && readServerClient == null) {
+            throw new IllegalArgumentException("Both read and write transport clients are null");
+        }
         this.writeServerClient = writeServerClient;
         this.readServerClient = readServerClient;
         this.metricFactory = metricFactory;
-    }
-
-    public static EurekaService forReadServer(EurekaClientRegistry<InstanceInfo> registry, TransportClient client, EurekaClientMetricFactory metricFactory) {
-        return new EurekaServiceImpl(registry, null, client, metricFactory);
-    }
-
-    public static EurekaService forWriteServer(TransportClient client, EurekaClientMetricFactory metricFactory) {
-        return new EurekaServiceImpl(null, client, null, metricFactory);
+        this.channelMode = writeServerClient == null ? Mode.Read : readServerClient == null ? Mode.Write : Mode.ReadWrite;
     }
 
     /**
@@ -43,8 +37,8 @@ public class EurekaServiceImpl implements EurekaService {
      * @return An {@link InterestChannel} which is not yet connected to any eureka servers.
      */
     @Override
-    public InterestChannel newInterestChannel() {
-        return new InterestChannelInvoker(new InterestChannelImpl(registry, readServerClient, metricFactory.getInterestChannelMetrics()));
+    public ClientInterestChannel newInterestChannel(EurekaClientRegistry<InstanceInfo> clientRegistry) {
+        return new InterestChannelInvoker(new InterestChannelImpl(clientRegistry, readServerClient, metricFactory.getInterestChannelMetrics()));
     }
 
 
@@ -62,6 +56,11 @@ public class EurekaServiceImpl implements EurekaService {
     }
 
     @Override
+    public Mode mode() {
+        return channelMode;
+    }
+
+    @Override
     public void shutdown() {
         if (null != readServerClient) {
             readServerClient.shutdown();
@@ -69,14 +68,5 @@ public class EurekaServiceImpl implements EurekaService {
         if (null != writeServerClient) {
             writeServerClient.shutdown();
         }
-        if (null != registry) {
-            registry.shutdown();
-        }
-    }
-
-    // for debugging
-    @Override
-    public String toString() {
-        return registry.toString();
     }
 }

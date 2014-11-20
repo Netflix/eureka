@@ -9,25 +9,25 @@ import com.netflix.eureka2.service.RegistrationChannel;
 import com.netflix.eureka2.transport.MessageConnection;
 
 /**
- * An implementation of {@link EurekaServerService} associated with strictly one {@link MessageConnection}
+ * An implementation of {@link ServerChannelFactory} associated with strictly one {@link MessageConnection}
  *
  * <h2>Thread safety</h2>
  *
- * See {@link EurekaServerService} for details. This service assumes sequential (single threaded) invocations.
+ * See {@link ServerChannelFactory} for details. This service assumes sequential (single threaded) invocations.
  *
  * @author Nitesh Kant
  */
-public class EurekaServiceImpl implements EurekaServerService {
+public class ChannelFactoryImpl implements ServerChannelFactory {
 
     private final EurekaServerRegistry<InstanceInfo> registry;
     private final EvictionQueue evictionQueue;
     private final MessageConnection connection;
     private final EurekaServerMetricFactory metricFactory;
 
-    public EurekaServiceImpl(EurekaServerRegistry<InstanceInfo> registry,
-                             EvictionQueue evictionQueue,
-                             MessageConnection connection,
-                             EurekaServerMetricFactory metricFactory) {
+    public ChannelFactoryImpl(EurekaServerRegistry<InstanceInfo> registry,
+                              EvictionQueue evictionQueue,
+                              MessageConnection connection,
+                              EurekaServerMetricFactory metricFactory) {
         this.registry = registry;
         this.evictionQueue = evictionQueue;
         this.connection = connection;

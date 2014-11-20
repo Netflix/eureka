@@ -22,7 +22,7 @@ import com.google.inject.Inject;
 import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.protocol.registration.Update;
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.server.service.EurekaServerService;
+import com.netflix.eureka2.server.service.ServerChannelFactory;
 import com.netflix.eureka2.service.RegistrationChannel;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -40,12 +40,12 @@ import rx.functions.Func1;
 public class RegistrationHttpRequestRouter implements RequestRouter<HttpServerRequest<Object>, HttpServerResponse<Object>> {
 
     private final String appsBaseURI;
-    private final EurekaServerService eurekaServerService;
+    private final ServerChannelFactory eurekaServerService;
 
     private final ConcurrentHashMap<String, RegistrationChannel> activeRegistrationChannels = new ConcurrentHashMap<String, RegistrationChannel>();
 
     @Inject
-    public RegistrationHttpRequestRouter(EurekaServerService eurekaServerService, String baseURI) {
+    public RegistrationHttpRequestRouter(ServerChannelFactory eurekaServerService, String baseURI) {
         this.eurekaServerService = eurekaServerService;
         this.appsBaseURI = baseURI + "/apps";
     }

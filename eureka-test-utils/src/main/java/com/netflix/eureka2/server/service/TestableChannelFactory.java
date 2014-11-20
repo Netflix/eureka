@@ -23,12 +23,12 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- * Stub implementation of {@link EurekaServerService} and related channels for
+ * Stub implementation of {@link ServerChannelFactory} and related channels for
  * testing purposes.
  *
  * @author Tomasz Bak
  */
-public class TestableEurekaService implements EurekaServerService {
+public class TestableChannelFactory implements ServerChannelFactory {
 
     private final BlockingQueue<RegistrationChannel> registrationChannels = new LinkedBlockingQueue<RegistrationChannel>();
 

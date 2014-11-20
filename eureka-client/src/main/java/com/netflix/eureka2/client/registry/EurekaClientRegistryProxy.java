@@ -1,21 +1,20 @@
-package com.netflix.eureka2.client.service;
+package com.netflix.eureka2.client.registry;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.Set;
+
+import com.netflix.eureka2.client.channel.ClientChannelFactory;
+import com.netflix.eureka2.client.channel.ClientInterestChannel;
 import com.netflix.eureka2.client.metric.EurekaClientMetricFactory;
-import com.netflix.eureka2.client.registry.EurekaClientRegistry;
-import com.netflix.eureka2.client.registry.EurekaClientRegistryImpl;
-import com.netflix.eureka2.client.transport.TransportClient;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.registry.Delta;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.service.EurekaService;
 import com.netflix.eureka2.service.InterestChannel;
 import rx.Observable;
 import rx.Subscriber;
-
-import javax.inject.Inject;
-import java.util.Set;
 
 /**
  * An implementation of {@link EurekaRegistry} to be used by the eureka client.
@@ -36,18 +35,18 @@ import java.util.Set;
  *
  * @author Nitesh Kant
  */
+@Singleton
 public class EurekaClientRegistryProxy implements EurekaClientRegistry<InstanceInfo> {
 
-    private final EurekaService service;
+    private final ClientChannelFactory channelFactory;
     private final EurekaClientRegistry<InstanceInfo> registry;
     private final ClientInterestChannel interestChannel;
 
     @Inject
-    public EurekaClientRegistryProxy(final TransportClient readServerClient, EurekaClientMetricFactory metricFactory) {
-        registry = new EurekaClientRegistryImpl(metricFactory.getRegistryMetrics());
-
-        service = EurekaServiceImpl.forReadServer(registry, readServerClient, metricFactory);
-        interestChannel = (ClientInterestChannel) service.newInterestChannel();
+    public EurekaClientRegistryProxy(ClientChannelFactory channelFactory, EurekaClientMetricFactory metricFactory) {
+        this.channelFactory = channelFactory;
+        this.registry = new EurekaClientRegistryImpl(metricFactory.getRegistryMetrics());
+        this.interestChannel = channelFactory.newInterestChannel(registry);
     }
 
     @Override
@@ -86,7 +85,7 @@ public class EurekaClientRegistryProxy implements EurekaClientRegistry<InstanceI
             @Override
             public void call(Subscriber<? super Void> subscriber) {
                 interestChannel.close();
-                service.shutdown();  // service will shutdown registry and transport clients
+                channelFactory.shutdown();  // channelFactory will shutdown registry and transport clients
             }
         });
     }

@@ -1,4 +1,11 @@
-package com.netflix.eureka2.client.service;
+package com.netflix.eureka2.client.channel;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.client.registry.EurekaClientRegistry;
 import com.netflix.eureka2.client.registry.EurekaClientRegistryImpl;
@@ -28,18 +35,10 @@ import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Func1;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import static com.netflix.eureka2.client.metric.EurekaClientMetricFactory.clientMetrics;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
-import static org.mockito.Mockito.when;
+import static com.netflix.eureka2.client.metric.EurekaClientMetricFactory.*;
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
+import static org.mockito.Mockito.*;
 
 /**
  * @author David Liu

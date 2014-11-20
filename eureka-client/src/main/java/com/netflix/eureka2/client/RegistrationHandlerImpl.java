@@ -1,33 +1,34 @@
 package com.netflix.eureka2.client;
 
-import com.netflix.eureka2.client.metric.EurekaClientMetricFactory;
-import com.netflix.eureka2.client.service.EurekaServiceImpl;
-import com.netflix.eureka2.client.transport.TransportClient;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.service.EurekaService;
 import com.netflix.eureka2.service.RegistrationChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
  * @author Nitesh Kant
  */
+@Singleton
 public class RegistrationHandlerImpl implements RegistrationHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(RegistrationHandlerImpl.class);
 
-    private final EurekaService clientService;
+    private final ClientChannelFactory channelFactory;
     private final ConcurrentHashMap<String, RegistrationChannel> instanceIdVsChannel;
     private volatile boolean shutdown;
 
-    public RegistrationHandlerImpl(TransportClient writeServerClient, EurekaClientMetricFactory metricFactory) {
-        clientService = EurekaServiceImpl.forWriteServer(writeServerClient, metricFactory);
-        instanceIdVsChannel = new ConcurrentHashMap<>();
+    @Inject
+    public RegistrationHandlerImpl(ClientChannelFactory channelFactory) {
+        this.channelFactory = channelFactory;
+        this.instanceIdVsChannel = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -36,7 +37,7 @@ public class RegistrationHandlerImpl implements RegistrationHandler {
             return Observable.error(new IllegalStateException("Registration handler is already shutdown."));
         }
 
-        final RegistrationChannel newChannel = clientService.newRegistrationChannel();
+        final RegistrationChannel newChannel = channelFactory.newRegistrationChannel();
         final RegistrationChannel existing = instanceIdVsChannel.putIfAbsent(instanceInfo.getId(), newChannel);
         if (null != existing) {
             return existing.update(instanceInfo); // Be more acceptable to failure in contract adherence from the user.
@@ -68,7 +69,7 @@ public class RegistrationHandlerImpl implements RegistrationHandler {
 
         final RegistrationChannel registrationChannel = instanceIdVsChannel.get(instanceInfo.getId());
         if (null == registrationChannel) {
-            logger.info("Instance: %s is not registered. Relaying update as register.", instanceInfo );
+            logger.info("Instance: %s is not registered. Relaying update as register.", instanceInfo);
             return register(instanceInfo); // Be more acceptable to errors from user.
         }
         return registrationChannel.update(instanceInfo);
@@ -77,7 +78,7 @@ public class RegistrationHandlerImpl implements RegistrationHandler {
     @Override
     public void shutdown() {
         shutdown = true;
-        clientService.shutdown();
+        channelFactory.shutdown();
         Set<Map.Entry<String, RegistrationChannel>> entries = instanceIdVsChannel.entrySet();
         for (Map.Entry<String, RegistrationChannel> entry : entries) {
             String instanceId = entry.getKey();

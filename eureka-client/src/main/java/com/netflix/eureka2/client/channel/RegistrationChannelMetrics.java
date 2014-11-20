@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.client.service;
+package com.netflix.eureka2.client.channel;
 
-import com.netflix.eureka2.client.service.RegistrationChannelImpl.STATES;
+import com.netflix.eureka2.client.channel.RegistrationChannelImpl.STATES;
 import com.netflix.eureka2.metric.AbstractStateMachineMetrics;
 
 /**

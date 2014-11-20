@@ -1,4 +1,4 @@
-package com.netflix.eureka2.client.service;
+package com.netflix.eureka2.client.channel;
 
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.registry.InstanceInfo;
@@ -19,7 +19,7 @@ import rx.Observable;
  *
  * @author Nitesh Kant
  */
-interface ClientInterestChannel extends InterestChannel {
+public interface ClientInterestChannel extends InterestChannel {
 
     /**
      * Appends the passed interest to the existing {@link Interest}.

@@ -19,8 +19,8 @@ package com.netflix.eureka2.server.transport.tcp.discovery;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.server.service.EurekaServerService;
-import com.netflix.eureka2.server.service.EurekaServiceImpl;
+import com.netflix.eureka2.server.service.ServerChannelFactory;
+import com.netflix.eureka2.server.service.ChannelFactoryImpl;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
@@ -66,7 +66,7 @@ public class TcpDiscoveryHandler implements ConnectionHandler<Object, Object> {
                 HEARTBEAT_INTERVAL_MILLIS, 3,
                 Schedulers.computation()
         );
-        final EurekaServerService service = new EurekaServiceImpl(registry, null, broker, metricFactory);
+        final ServerChannelFactory service = new ChannelFactoryImpl(registry, null, broker, metricFactory);
         // Since this is a discovery handler which only handles interest subscriptions,
         // the channel is created on connection accept. We subscribe here for the sake
         // of logging only.
