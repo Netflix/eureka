@@ -22,7 +22,7 @@ configurations {
 
 dependencies {
     compile project(':eureka-write-server')
-    compile 'io.reactivex:rxjava:1.0.0-rc.7'
+    compile "io.reactivex:rxjava:${rx_java_version}"
     compile "com.netflix.eureka:eureka-client:${eureka_v1_version}"
     testCompile project(':eureka-test-utils')
 }
