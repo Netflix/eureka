@@ -66,9 +66,17 @@ subprojects { project ->
 
 apply plugin: 'github-pages' // Used to create publishGhPages task
 
+if (JavaVersion.current().isJava8Compatible()) {
+    allprojects {
+        tasks.withType(Javadoc) {
+            options.addStringOption('Xdoclint:none', '-quiet')
+        }
+    }
+}
+
 def docTasks = [:]
 [Javadoc,ScalaDoc,Groovydoc].each{ Class docClass ->
-    def allSources = allprojects.tasks*.withType(docClass).flatten()*.source 
+    def allSources = allprojects.tasks*.withType(docClass).flatten()*.source
     if (allSources) {
         def shortName = docClass.simpleName.toLowerCase()
         def docTask = task "aggregate${shortName.capitalize()}"(type: docClass, description: "Aggregate subproject ${shortName}s") {
