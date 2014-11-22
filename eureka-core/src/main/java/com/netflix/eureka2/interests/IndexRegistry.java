@@ -15,4 +15,6 @@ public interface IndexRegistry<T> {
     Observable<ChangeNotification<T>> forCompositeInterest(MultipleInterests<T> interest, EurekaRegistry<T, ?> registry);
 
     Observable<Void> shutdown();
+
+    Observable<Void> shutdown(Throwable cause);
 }

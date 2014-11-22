@@ -46,6 +46,4 @@ public interface EurekaServerRegistry<T> extends EurekaRegistry<T, Status> {
     Observable<Status> update(T updatedInfo, Set<Delta<?>> deltas, Source source);
 
     Observable<ChangeNotification<T>> forInterest(Interest<T> interest, Source source);
-
-    int size();
 }

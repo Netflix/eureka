@@ -16,6 +16,13 @@
 
 package com.netflix.eureka2.client.registry;
 
+import javax.inject.Inject;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+
 import com.netflix.eureka2.client.metric.EurekaClientRegistryMetrics;
 import com.netflix.eureka2.datastore.NotificationsSubject;
 import com.netflix.eureka2.interests.ChangeNotification;
@@ -30,14 +37,7 @@ import com.netflix.eureka2.registry.InstanceInfo;
 import rx.Observable;
 import rx.functions.Func1;
 
-import javax.inject.Inject;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-
-import static com.netflix.eureka2.interests.ChangeNotification.Kind;
+import static com.netflix.eureka2.interests.ChangeNotification.*;
 
 /**
  * @author Tomasz Bak
@@ -92,6 +92,11 @@ public class EurekaClientRegistryImpl implements EurekaClientRegistry<InstanceIn
         return Observable.empty();
     }
 
+    @Override
+    public int size() {
+        return internalStore.size();
+    }
+
     /**
      * Return a snapshot of the current registry for the passed {@code interest} as a stream of {@link InstanceInfo}s.
      * This view of the snapshot is eventual consistent and any instances that successfully registers while the
@@ -142,6 +147,11 @@ public class EurekaClientRegistryImpl implements EurekaClientRegistry<InstanceIn
     @Override
     public Observable<Void> shutdown() {
         return indexRegistry.shutdown();
+    }
+
+    @Override
+    public Observable<Void> shutdown(Throwable cause) {
+        return indexRegistry.shutdown(cause);
     }
 
     private static class FilteredIterator implements Iterator<ChangeNotification<InstanceInfo>> {
