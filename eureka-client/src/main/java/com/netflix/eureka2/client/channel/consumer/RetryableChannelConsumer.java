@@ -29,6 +29,15 @@ import rx.Subscriber;
 import rx.functions.Action0;
 
 /**
+ * Channel consumer that reconnects underlying channel in case of failures. It provides
+ * a set of template methods/steps for the reconnect algorithm:
+ * <ul>
+ * <li>reestablish - create a new channel, parallel to the broken one</li>
+ * <li>repopulate - re-establish the desired state from the new channel, prior to swapping it with the broken one</li>
+ * <li>release - release all the resources allocated for the broken channel; this step is performed after the channel swap</li>
+ * </ul>
+ * After execution of these steps, the original channel is closed.
+ *
  * @author Tomasz Bak
  */
 public abstract class RetryableChannelConsumer<C extends ServiceChannel, S> {
@@ -55,6 +64,9 @@ public abstract class RetryableChannelConsumer<C extends ServiceChannel, S> {
         }
     }
 
+    // Channel descriptive name to be used in the log file - that should come from channel API
+    private final String name = getClass().getSimpleName();
+
     private final long retryInitialDelayMs;
     private final long maxRetryDelayMs;
     private final Worker worker;
@@ -76,6 +88,9 @@ public abstract class RetryableChannelConsumer<C extends ServiceChannel, S> {
 
     public void shutdownRetryableConsumer() {
         worker.unsubscribe();
+        if (currentStateWithChannel.get() != null && currentStateWithChannel.get().channel != null) {
+            currentStateWithChannel.get().channel.close();
+        }
     }
 
     protected abstract StateWithChannel reestablish();
@@ -84,12 +99,18 @@ public abstract class RetryableChannelConsumer<C extends ServiceChannel, S> {
 
     protected abstract void release(StateWithChannel oldState);
 
+    protected Worker getWorker() {
+        return worker;
+    }
+
     protected void initializeRetryableConsumer() {
         currentStateWithChannel.set(reestablish());
         subscribeToChannelLifecycle();
     }
 
     private void retry() {
+        logger.info("Reconnecting channel {}", name);
+
         final StateWithChannel newStateWithChannel = reestablish();
         lastConnectTime = worker.now();
 
@@ -99,10 +120,13 @@ public abstract class RetryableChannelConsumer<C extends ServiceChannel, S> {
                 StateWithChannel oldState = currentStateWithChannel.getAndSet(newStateWithChannel);
                 subscribeToChannelLifecycle();
                 release(oldState);
+
+                logger.info("Channel {} successfully reconnected and the state has been restored", name);
             }
 
             @Override
             public void onError(Throwable e) {
+                logger.error("Failed to reconnect channel " + name, e);
                 scheduleRetry();
             }
 
@@ -113,7 +137,7 @@ public abstract class RetryableChannelConsumer<C extends ServiceChannel, S> {
         });
     }
 
-    protected void scheduleRetry() {
+    private void scheduleRetry() {
         worker.schedule(retryAction, retryDelay, TimeUnit.MILLISECONDS);
         bumpUpRetryDelay();
     }
@@ -127,7 +151,7 @@ public abstract class RetryableChannelConsumer<C extends ServiceChannel, S> {
         lifecycleObservable.subscribe(new Subscriber<Void>() {
             @Override
             public void onCompleted() {
-                logger.info("Interest channel closed gracefully and must be reconnected");
+                logger.info("Channel closed gracefully and must be reconnected");
                 long closedAfter = worker.now() - lastConnectTime;
                 if (closedAfter >= maxRetryDelayMs) {
                     retryDelay = retryInitialDelayMs;
@@ -137,7 +161,7 @@ public abstract class RetryableChannelConsumer<C extends ServiceChannel, S> {
 
             @Override
             public void onError(Throwable e) {
-                logger.info("Interest channel failure; reconnecting", e);
+                logger.info("Channel failure; scheduling the reconnection in " + retryDelay + "ms", e);
                 scheduleRetry();
             }
 

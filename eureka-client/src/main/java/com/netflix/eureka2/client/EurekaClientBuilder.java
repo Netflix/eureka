@@ -5,6 +5,8 @@ import java.util.concurrent.TimeUnit;
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.client.channel.ClientChannelFactoryImpl;
 import com.netflix.eureka2.client.metric.EurekaClientMetricFactory;
+import com.netflix.eureka2.client.registration.RegistrationHandler;
+import com.netflix.eureka2.client.registration.RegistrationHandlerImpl;
 import com.netflix.eureka2.client.registry.EurekaClientRegistryProxy;
 import com.netflix.eureka2.client.registry.swap.RegistrySwapStrategyFactory;
 import com.netflix.eureka2.client.registry.swap.ThresholdStrategy;
@@ -44,6 +46,7 @@ public class EurekaClientBuilder {
         ClientChannelFactory channelFactory = new ClientChannelFactoryImpl(
                 writeServerResolver == null ? null : TransportClients.newTcpRegistrationClient(writeServerResolver, codec),
                 readServerResolver == null ? null : TransportClients.newTcpDiscoveryClient(readServerResolver, codec),
+                retryDelayMs,
                 metricFactory
         );
         RegistrationHandler registrationHandler = null;
@@ -52,7 +55,7 @@ public class EurekaClientBuilder {
         }
         EurekaClientRegistryProxy registryProxy = null;
         if (readServerResolver != null) {
-            if(swapStrategyFactory != null) {
+            if (swapStrategyFactory == null) {
                 swapStrategyFactory = ThresholdStrategy.factoryFor(MIN_REGISTRY_SWAP_PERCENTAGE, RELAX_INTERVAL_MS);
             }
             registryProxy = new EurekaClientRegistryProxy(channelFactory, swapStrategyFactory, retryDelayMs, metricFactory);

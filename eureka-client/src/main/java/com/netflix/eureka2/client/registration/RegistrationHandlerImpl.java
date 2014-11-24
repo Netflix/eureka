@@ -1,4 +1,4 @@
-package com.netflix.eureka2.client;
+package com.netflix.eureka2.client.registration;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

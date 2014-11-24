@@ -78,7 +78,6 @@ public class InterestChannelImpl extends AbstractChannel<InterestChannelImpl.STA
 
         state.set(STATES.Open);
         this.metrics.incrementStateCounter(STATES.Open);
-        sendAckOnTransport();
 
         notificationMultiplexer.changeNotifications().subscribe(
                 new Subscriber<ChangeNotification<InstanceInfo>>() {

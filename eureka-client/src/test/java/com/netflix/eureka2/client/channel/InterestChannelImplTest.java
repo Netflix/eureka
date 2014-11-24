@@ -34,6 +34,7 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Func1;
+import rx.subjects.ReplaySubject;
 
 import static com.netflix.eureka2.client.metric.EurekaClientMetricFactory.*;
 import static org.hamcrest.MatcherAssert.*;
@@ -64,6 +65,7 @@ public class InterestChannelImplTest {
     protected Interest<InstanceInfo> sampleInterestAll;
     protected Observable<AddInstance> sampleAddMessagesAll;
 
+    private final ReplaySubject<Void> serverConnectionLifecycle = ReplaySubject.create();
     @Rule
     public final ExternalResource testResource = new ExternalResource() {
 
@@ -72,6 +74,7 @@ public class InterestChannelImplTest {
             registry = new EurekaClientRegistryImpl(clientMetrics().getRegistryMetrics());
             when(serverConnection.acknowledge()).thenReturn(Observable.<Void>empty());
             when(serverConnection.submitWithAck(Mockito.anyObject())).thenReturn(Observable.<Void>empty());
+            when(serverConnection.lifecycleObservable()).thenReturn(serverConnectionLifecycle);
             when(transportClient.connect()).thenReturn(Observable.just(serverConnection));
 
             channel = new InterestChannelImpl(registry, transportClient, clientMetrics().getInterestChannelMetrics());

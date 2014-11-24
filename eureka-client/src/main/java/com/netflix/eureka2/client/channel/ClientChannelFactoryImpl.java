@@ -6,6 +6,8 @@ import com.netflix.eureka2.client.transport.TransportClient;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.service.InterestChannel;
 import com.netflix.eureka2.service.RegistrationChannel;
+import rx.functions.Func0;
+import rx.schedulers.Schedulers;
 
 /**
  * @author Nitesh Kant
@@ -16,9 +18,13 @@ public class ClientChannelFactoryImpl implements ClientChannelFactory {
     private final TransportClient writeServerClient; /*Null for read server only service*/
     private final EurekaClientMetricFactory metricFactory;
     private final Mode channelMode;
+    private final long retryInitialDelayMs;
 
     public ClientChannelFactoryImpl(TransportClient writeServerClient,
-                                    TransportClient readServerClient, EurekaClientMetricFactory metricFactory) {
+                                    TransportClient readServerClient,
+                                    long retryInitialDelayMs,
+                                    EurekaClientMetricFactory metricFactory) {
+        this.retryInitialDelayMs = retryInitialDelayMs;
         if (writeServerClient == null && readServerClient == null) {
             throw new IllegalArgumentException("Both read and write transport clients are null");
         }
@@ -52,7 +58,14 @@ public class ClientChannelFactoryImpl implements ClientChannelFactory {
      */
     @Override
     public RegistrationChannel newRegistrationChannel() {
-        return new RegistrationChannelInvoker(new RegistrationChannelImpl(writeServerClient, metricFactory.getRegistrationChannelMetrics()));
+        return new RegistrationChannelInvoker(
+                new RetryableRegistrationChannel(new Func0<RegistrationChannel>() {
+                    @Override
+                    public RegistrationChannel call() {
+                        return new RegistrationChannelImpl(writeServerClient, metricFactory.getRegistrationChannelMetrics());
+                    }
+                }, retryInitialDelayMs, Schedulers.computation())
+        );
     }
 
     @Override

@@ -19,6 +19,7 @@ package com.netflix.eureka2.client;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import com.netflix.eureka2.client.registration.RegistrationHandler;
 import com.netflix.eureka2.client.registry.EurekaClientRegistry;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;

@@ -35,7 +35,7 @@ public abstract class AbstractChannel<STATE extends Enum> extends AbstractServic
      * connection. Now, the connection creation is lazy (in {@link #connect()} so we need a way to update this
      * {@link Observable}. Hence a {@link Subject} and one that replays the single connection created.
      */
-    private ReplaySubject<MessageConnection> singleConnectionSubject;
+    private final ReplaySubject<MessageConnection> singleConnectionSubject;
 
     private volatile MessageConnection connectionIfConnected; // External callers should use "singleConnectionSubject"
     private final AtomicBoolean connectionRequestedOnce = new AtomicBoolean();
@@ -44,11 +44,6 @@ public abstract class AbstractChannel<STATE extends Enum> extends AbstractServic
         super(initState);
         this.client = client;
         singleConnectionSubject = ReplaySubject.create();
-    }
-
-    @Override
-    public Observable<Void> asLifecycleObservable() {
-        return lifecycle;
     }
 
     @Override
@@ -78,6 +73,10 @@ public abstract class AbstractChannel<STATE extends Enum> extends AbstractServic
                             connectionIfConnected = serverConnection;
                             singleConnectionSubject.onNext(serverConnection);
                             singleConnectionSubject.onCompleted();
+
+                            // Join channel lifecycle with the connection lifecycle
+                            serverConnection.lifecycleObservable().subscribe(lifecycle);
+
                             return serverConnection;
                         }
                     });
