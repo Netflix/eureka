@@ -46,6 +46,8 @@ apply from: file('gradle/maven.gradle')
 apply from: file('gradle/license.gradle')
 apply from: file('gradle/release.gradle')
 
+apply plugin: 'idea'
+
 subprojects {
 
     group = "com.netflix.eureka2"
