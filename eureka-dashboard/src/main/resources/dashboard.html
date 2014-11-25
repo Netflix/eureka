@@ -1,27 +1,51 @@
 <!DOCTYPE html>
 <html>
-    <head lang="en">
-        <meta charset="UTF-8">
-        <title>Eureka Dashboard</title>
+<head lang="en">
+  <meta charset="UTF-8">
+  <title></title>
+  <link rel="stylesheet" href="lib/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="lib/css/jquery-ui.min.css"/>
+  <link rel="stylesheet" href="dashboard.css"/>
 
-<script type="text/javascript" charset="utf-8">
-    var ws = new WebSocket('ws://localhost:9000');
-
-    ws.onopen = function() {
-        ws.send("get status");
-    };
-
-    ws.onmessage = function(data, flags) {
-        document.write(data.data + "<br>");
-    };
-</script>
-
+  <script src="lib/jquery.min.js"></script>
+  <script src="lib/bootstrap.min.js"></script>
+  <script src="lib/jquery-ui.min.js"></script>
+  <script src="lib/d3.v3.js"></script>
+  <script src="page-nav-ctrl.js"></script>
+  <script src="simple-tree-view.js"></script>
+  <script src="utils.js"></script>
+  <script src="eureka-reg-ctrl.js"></script>
+  <script src="eureka-reg-view.js"></script>
+  <script type="text/javascript" charset="utf-8">
+    eurekaRegistryCtrl.load();
+    eurekaRegistryView.init();
+  </script>
 </head>
 <body>
-    <h1>Registry in text form</h1>
-    <ul>
-        <li>Instance10</li>
-        <li>Instance20</li>
-    </ul>
+
+<div id="header">
+</div>
+
+<div class="container">
+  <h1>Eureka Registry</h1>
+  <div class="msg">Loading eureka registry...</div>
+  <div class="reg-cont">
+    <h4 class="reg-count">total instance count : <span class="val"></span></h4>
+
+    <div id="registry"></div>
+
+    <div id="search-box-cont">
+      <div class="col-lg-4">
+        <input type="text" class="form-control input-small" id="search-app" placeholder="Search instances for app">
+      </div>
+    </div>
+    <section class="inst-list-cont">
+      <h4>Instances for app <span class="app"></span></h4>
+
+      <div id="inst-list"></div>
+    </section>
+  </div>
+</div>
+
 </body>
 </html>

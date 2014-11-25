@@ -13,7 +13,7 @@ public class Main {
         final ExecutorService executor = Executors.newFixedThreadPool(2);
 
         final Injector injector = Guice.createInjector();
-        final StaticFileServer staticFileServer = injector.getInstance(StaticFileServer.class);
+        final MainAppServer staticFileServer = injector.getInstance(MainAppServer.class);
         final WebSocketServer webSocketServer = injector.getInstance(WebSocketServer.class);
 
         try {

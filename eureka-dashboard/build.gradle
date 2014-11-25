@@ -19,6 +19,7 @@ apply plugin: 'osgi'
 dependencies {
     compile project(':eureka-client')
     compile ('com.google.inject:guice:3.0')
+    compile ('com.google.code.gson:gson:2.1')
 }
 
 jar {
