@@ -57,9 +57,9 @@ public class EurekaReadServerModule extends AbstractModule {
     @Override
     public void configure() {
         if (config == null) {
-            bind(EurekaBootstrapConfig.class).to(ReadServerConfig.class).asEagerSingleton();
+            bind(EurekaServerConfig.class).to(ReadServerConfig.class).asEagerSingleton();
         } else {
-            bind(EurekaBootstrapConfig.class).toInstance(config);
+            bind(EurekaServerConfig.class).toInstance(config);
             bind(ReadServerConfig.class).toInstance(config);
         }
         if (eurekaClient == null) {

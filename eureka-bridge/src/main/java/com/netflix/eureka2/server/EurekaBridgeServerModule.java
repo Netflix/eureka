@@ -42,9 +42,9 @@ public class EurekaBridgeServerModule extends AbstractModule {
     @Override
     public void configure() {
         if (config == null) {
-            bind(EurekaBootstrapConfig.class).to(BridgeServerConfig.class).asEagerSingleton();
+            bind(EurekaServerConfig.class).to(BridgeServerConfig.class).asEagerSingleton();
         } else {
-            bind(EurekaBootstrapConfig.class).toInstance(config);
+            bind(EurekaServerConfig.class).toInstance(config);
             bind(BridgeServerConfig.class).toInstance(config);
         }
         bind(SelfRegistrationService.class).to(BridgeSelfRegistrationService.class).asEagerSingleton();

@@ -7,7 +7,7 @@ import com.netflix.governator.annotations.Configuration;
 /**
  * @author David Liu
  */
-public class BridgeServerConfig extends EurekaBootstrapConfig {
+public class BridgeServerConfig extends EurekaServerConfig {
 
     @Configuration("bridgeServer.refreshRateSec")
     private int refreshRateSec = 30;
@@ -30,7 +30,7 @@ public class BridgeServerConfig extends EurekaBootstrapConfig {
         return refreshRateSec;
     }
 
-    public static class BridgeServerConfigBuilder extends EurekaBootstrapConfigBuilder<BridgeServerConfig, BridgeServerConfigBuilder> {
+    public static class BridgeServerConfigBuilder extends EurekaServerConfigBuilder<BridgeServerConfig, BridgeServerConfigBuilder> {
         private int refreshRateSec;
 
         public BridgeServerConfigBuilder withRefreshRateSec(int refreshRateSec) {

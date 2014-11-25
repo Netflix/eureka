@@ -19,7 +19,7 @@ package com.netflix.eureka2.server.registry.eviction;
 import javax.inject.Inject;
 import javax.inject.Provider;
 
-import com.netflix.eureka2.server.EurekaBootstrapConfig;
+import com.netflix.eureka2.server.EurekaServerConfig;
 
 /**
  * @author Tomasz Bak
@@ -30,10 +30,10 @@ public class EvictionStrategyProvider implements Provider<EvictionStrategy> {
         PercentageDrop
     }
 
-    private final EurekaBootstrapConfig config;
+    private final EurekaServerConfig config;
 
     @Inject
-    public EvictionStrategyProvider(EurekaBootstrapConfig config) {
+    public EvictionStrategyProvider(EurekaServerConfig config) {
         this.config = config;
     }
 

@@ -22,7 +22,7 @@ import java.util.Properties;
 import java.util.ServiceLoader;
 
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.server.EurekaBootstrapConfig;
+import com.netflix.eureka2.server.EurekaServerConfig;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 
 /**
@@ -37,11 +37,11 @@ public class ExtensionContext {
 
     public static final String PROPERTY_KEYS_PREFIX = "eureka.ext";
 
-    private final EurekaBootstrapConfig config;
+    private final EurekaServerConfig config;
     private final EurekaServerRegistry<InstanceInfo> localRegistry;
 
     @Inject
-    protected ExtensionContext(EurekaBootstrapConfig config, EurekaServerRegistry localRegistry) {
+    protected ExtensionContext(EurekaServerConfig config, EurekaServerRegistry localRegistry) {
         this.config = config;
         this.localRegistry = localRegistry;
     }

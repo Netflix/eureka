@@ -17,7 +17,7 @@
 package com.netflix.eureka2.server.transport.tcp;
 
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.server.EurekaBootstrapConfig;
+import com.netflix.eureka2.server.EurekaServerConfig;
 import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
@@ -30,14 +30,14 @@ import javax.annotation.PreDestroy;
  */
 public class AbstractTcpServer {
 
-    protected final EurekaBootstrapConfig config;
+    protected final EurekaServerConfig config;
     protected final EurekaServerRegistry<InstanceInfo> eurekaRegistry;
     protected final MetricEventsListenerFactory servoEventsListenerFactory;
     protected final EurekaServerMetricFactory metricFactory;
     protected RxServer<Object, Object> server;
 
     public AbstractTcpServer(EurekaServerRegistry eurekaRegistry, MetricEventsListenerFactory servoEventsListenerFactory,
-                             EurekaBootstrapConfig config, EurekaServerMetricFactory metricFactory) {
+                             EurekaServerConfig config, EurekaServerMetricFactory metricFactory) {
         this.eurekaRegistry = eurekaRegistry;
         this.servoEventsListenerFactory = servoEventsListenerFactory;
         this.config = config;
