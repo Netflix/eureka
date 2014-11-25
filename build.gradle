@@ -25,6 +25,8 @@ buildscript {
 }
 
 allprojects {
+    apply plugin: 'idea'
+
     repositories {
 //        mavenLocal()
         mavenCentral() // maven { url: 'http://jcenter.bintray.com' }
@@ -44,14 +46,14 @@ apply from: file('gradle/maven.gradle')
 apply from: file('gradle/license.gradle')
 apply from: file('gradle/release.gradle')
 
+apply plugin: 'idea'
+
 subprojects {
 
     group = "com.netflix.eureka2"
 
     apply plugin: 'groovy'
-
     apply plugin: 'eclipse'
-    apply plugin: 'idea'
 
     /**
      * Exclude from the transitive dependencies all artifacts that we
