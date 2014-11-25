@@ -14,30 +14,11 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.registry;
-
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.Interest;
-import rx.Observable;
-
-import java.util.Set;
+package com.netflix.eureka2.client.registry.swap;
 
 /**
- * @author Nitesh Kant
+ * @author Tomasz Bak
  */
-public interface EurekaRegistry<T, R> {
-
-    Observable<R> register(T instanceInfo);
-
-    Observable<R> unregister(T instanceInfo);
-
-    Observable<R> update(T updatedInfo, Set<Delta<?>> deltas);
-
-    int size();
-
-    Observable<T> forSnapshot(Interest<T> interest);
-
-    Observable<ChangeNotification<T>> forInterest(Interest<T> interest);
-
-    Observable<Void> shutdown();
+public interface RegistrySwapStrategyFactory {
+    RegistrySwapStrategy newInstance();
 }

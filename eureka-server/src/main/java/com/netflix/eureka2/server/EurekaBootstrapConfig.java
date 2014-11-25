@@ -46,7 +46,7 @@ public abstract class EurekaBootstrapConfig {
     private int discoveryPort = EurekaTransports.DEFAULT_DISCOVERY_PORT;
 
     @Configuration("services.transport.codec")
-    private Codec codec = Codec.Avro;
+    private String codec = "Avro";
 
     @Configuration("services.shutdown.port")
     private int shutDownPort = 7700;
@@ -98,7 +98,7 @@ public abstract class EurekaBootstrapConfig {
         this.vipAddress = vipAddress;
         this.writeClusterDomainName = writeClusterDomainName;
         this.writeClusterServers = writeClusterServers;
-        this.codec = codec;
+        this.codec = codec.name();
         this.evictionTimeout = evictionTimeout;
         this.evictionStrategyType = evictionStrategyType;
         this.evictionStrategyValue = evictionStrategyValue;
@@ -125,7 +125,7 @@ public abstract class EurekaBootstrapConfig {
     }
 
     public Codec getCodec() {
-        return codec;
+        return Codec.valueOf(codec);
     }
 
     public int getShutDownPort() {
