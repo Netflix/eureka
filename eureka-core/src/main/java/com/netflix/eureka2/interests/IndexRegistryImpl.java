@@ -56,6 +56,15 @@ public class IndexRegistryImpl<T> implements IndexRegistry<T> {
         return Observable.empty();
     }
 
+    @Override
+    public Observable<Void> shutdown(Throwable cause) {
+        for (Index<T> index : interestVsIndex.values()) {
+            index.onError(cause);
+        }
+        interestVsIndex.clear();
+        return Observable.empty();
+    }
+
     // pretty print for debugging
     @Override
     public String toString() {

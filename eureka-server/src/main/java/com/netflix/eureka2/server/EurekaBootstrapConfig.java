@@ -16,10 +16,11 @@
 
 package com.netflix.eureka2.server;
 
-import com.netflix.governator.annotations.Configuration;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
+import com.netflix.eureka2.server.registry.eviction.EvictionStrategyProvider.StrategyType;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
+import com.netflix.governator.annotations.Configuration;
 
 /**
  * This class contains essential configuration data that are required during Eureka write server
@@ -29,6 +30,8 @@ import com.netflix.eureka2.transport.EurekaTransports.Codec;
  * @author Tomasz Bak
  */
 public abstract class EurekaBootstrapConfig {
+
+    public static final long DEFAULT_EVICTION_TIMEOUT = 30000;
 
     @Configuration("writeCluster.resolverType")
     private String resolverType = "inline";
@@ -40,10 +43,10 @@ public abstract class EurekaBootstrapConfig {
     private int replicationPort = EurekaTransports.DEFAULT_REPLICATION_PORT;
 
     @Configuration("services.discovery.port")
-    private int discoveryServerPort = EurekaTransports.DEFAULT_DISCOVERY_PORT;
+    private int discoveryPort = EurekaTransports.DEFAULT_DISCOVERY_PORT;
 
     @Configuration("services.transport.codec")
-    private Codec codec = Codec.Avro;
+    private String codec = "Avro";
 
     @Configuration("services.shutdown.port")
     private int shutDownPort = 7700;
@@ -66,18 +69,28 @@ public abstract class EurekaBootstrapConfig {
     @Configuration("netflix.platform.admin.resources.port")
     private int webAdminPort = 8077;
 
+    @Configuration("registry.evictionTimeout")
+    private long evictionTimeout = DEFAULT_EVICTION_TIMEOUT;
+
+    @Configuration("registry.evictionStrategy.type")
+    private String evictionStrategyType = StrategyType.PercentageDrop.name();
+
+    @Configuration("registry.evictionStrategy.value")
+    private String evictionStrategyValue = "20";
+
     // For property injection
     protected EurekaBootstrapConfig() {
     }
 
     protected EurekaBootstrapConfig(DataCenterType dataCenterType, String resolverType,
-                                    int registrationPort, int replicationPort, int discoveryServerPort, Codec codec, int shutDownPort,
+                                    int registrationPort, int replicationPort, int discoveryPort, Codec codec, int shutDownPort,
                                     String appName, String vipAddress, String writeClusterDomainName,
-                                    String[] writeClusterServers, int webAdminPort) {
+                                    String[] writeClusterServers, int webAdminPort,
+                                    long evictionTimeout, String evictionStrategyType, String evictionStrategyValue) {
         this.resolverType = resolverType;
         this.registrationPort = registrationPort;
         this.replicationPort = replicationPort;
-        this.discoveryServerPort = discoveryServerPort;
+        this.discoveryPort = discoveryPort;
         this.shutDownPort = shutDownPort;
         this.webAdminPort = webAdminPort;
         this.dataCenterType = dataCenterType.name();
@@ -85,7 +98,10 @@ public abstract class EurekaBootstrapConfig {
         this.vipAddress = vipAddress;
         this.writeClusterDomainName = writeClusterDomainName;
         this.writeClusterServers = writeClusterServers;
-        this.codec = codec;
+        this.codec = codec.name();
+        this.evictionTimeout = evictionTimeout;
+        this.evictionStrategyType = evictionStrategyType;
+        this.evictionStrategyValue = evictionStrategyValue;
     }
 
     public DataCenterType getDataCenterType() {
@@ -105,11 +121,11 @@ public abstract class EurekaBootstrapConfig {
     }
 
     public int getDiscoveryPort() {
-        return discoveryServerPort;
+        return discoveryPort;
     }
 
     public Codec getCodec() {
-        return codec;
+        return Codec.valueOf(codec);
     }
 
     public int getShutDownPort() {
@@ -136,20 +152,35 @@ public abstract class EurekaBootstrapConfig {
         return webAdminPort;
     }
 
+    public long getEvictionTimeout() {
+        return evictionTimeout;
+    }
+
+    public String getEvictionStrategyType() {
+        return evictionStrategyType;
+    }
+
+    public String getEvictionStrategyValue() {
+        return evictionStrategyValue;
+    }
+
     public abstract static class EurekaBootstrapConfigBuilder<C extends EurekaBootstrapConfig, B extends EurekaBootstrapConfigBuilder<C, B>> {
         protected boolean helpOption;
-        protected DataCenterType dataCenterType;
+        protected DataCenterType dataCenterType = DataCenterType.Basic;
         protected String resolverType = "inline";
-        protected int writeServerPort;
-        protected int replicationPort;
-        protected int readServerPort;
-        protected int shutDownPort;
+        protected int registrationPort = EurekaTransports.DEFAULT_REGISTRATION_PORT;
+        protected int replicationPort = EurekaTransports.DEFAULT_REPLICATION_PORT;
+        protected int discoveryPort = EurekaTransports.DEFAULT_DISCOVERY_PORT;
+        protected int shutDownPort = 7700;
         protected String appName;
         protected String vipAddress;
-        protected String[] writeClusterServers = new String[] {"127.0.0.1"};
+        protected String[] writeClusterServers = {"127.0.0.1"};
         protected String writeClusterDomainName;
-        protected Codec codec = Codec.Json;
-        protected int webAdminPort;
+        protected Codec codec = Codec.Avro;
+        protected int webAdminPort = 8077;
+        protected long evictionTimeout = DEFAULT_EVICTION_TIMEOUT;
+        protected StrategyType evictionStrategyType = StrategyType.PercentageDrop;
+        protected String evictionStrategyValue = "20";
 
         protected EurekaBootstrapConfigBuilder() {
         }
@@ -165,7 +196,7 @@ public abstract class EurekaBootstrapConfig {
         }
 
         public B withWriteServerPort(int writeServerPort) {
-            this.writeServerPort = writeServerPort;
+            this.registrationPort = writeServerPort;
             return self();
         }
 
@@ -175,7 +206,7 @@ public abstract class EurekaBootstrapConfig {
         }
 
         public B withReadServerPort(int readServerPort) {
-            this.readServerPort = readServerPort;
+            this.discoveryPort = readServerPort;
             return self();
         }
 
@@ -216,6 +247,21 @@ public abstract class EurekaBootstrapConfig {
 
         public B withCodec(Codec codec) {
             this.codec = codec;
+            return self();
+        }
+
+        public B withEvictionTimeout(long evictionTimeout) {
+            this.evictionTimeout = evictionTimeout;
+            return self();
+        }
+
+        public B withEvictionStrategyType(StrategyType strategyType) {
+            this.evictionStrategyType = strategyType;
+            return self();
+        }
+
+        public B withEvictionStrategyValue(String strategyValue) {
+            this.evictionStrategyValue = strategyValue;
             return self();
         }
 

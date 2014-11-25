@@ -21,7 +21,7 @@ import com.netflix.eureka2.protocol.registration.Update;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.registry.InstanceInfo.Builder;
 import com.netflix.eureka2.rx.RxBlocking;
-import com.netflix.eureka2.server.service.EurekaServerService;
+import com.netflix.eureka2.server.service.ServerChannelFactory;
 import com.netflix.eureka2.server.transport.http.registration.RegistrationHttpRequestRouter;
 import com.netflix.eureka2.service.RegistrationChannel;
 import io.netty.handler.codec.http.HttpMethod;
@@ -51,7 +51,7 @@ public class RegistrationHttpRequestRouterTest {
     private static final String BASE_URI = "/test";
 
     @Mock
-    private EurekaServerService eurekaService;
+    private ServerChannelFactory eurekaService;
 
     @Mock
     private HttpServerResponse<Object> response;

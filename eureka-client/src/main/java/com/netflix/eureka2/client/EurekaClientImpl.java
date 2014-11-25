@@ -16,17 +16,16 @@
 
 package com.netflix.eureka2.client;
 
-import com.netflix.eureka2.client.metric.EurekaClientMetricFactory;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import com.netflix.eureka2.client.registration.RegistrationHandler;
 import com.netflix.eureka2.client.registry.EurekaClientRegistry;
-import com.netflix.eureka2.client.service.EurekaClientRegistryProxy;
-import com.netflix.eureka2.client.transport.TransportClient;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.InstanceInfo;
 import rx.Observable;
-
-import javax.inject.Singleton;
 
 /**
  * @author Tomasz Bak
@@ -34,20 +33,13 @@ import javax.inject.Singleton;
 @Singleton
 public class EurekaClientImpl extends EurekaClient {
 
-    private final EurekaClientRegistry<InstanceInfo> registry;
+    private final EurekaClientRegistry<InstanceInfo> clientRegistry;
     private final RegistrationHandler registrationHandler;
 
-    public EurekaClientImpl(EurekaClientRegistry<InstanceInfo> registry,
-                            RegistrationHandler registrationHandler) {
-        this.registry = registry;
+    @Inject
+    public EurekaClientImpl(EurekaClientRegistry clientRegistry, RegistrationHandler registrationHandler) {
+        this.clientRegistry = clientRegistry;
         this.registrationHandler = registrationHandler;
-    }
-
-    public EurekaClientImpl(TransportClient writeClient, TransportClient readClient, EurekaClientMetricFactory metricFactory) {
-        this(
-                readClient == null ? null : new EurekaClientRegistryProxy(readClient, metricFactory),
-                writeClient == null ? null : new RegistrationHandlerImpl(writeClient, metricFactory)
-        );
     }
 
     @Override
@@ -67,7 +59,7 @@ public class EurekaClientImpl extends EurekaClient {
 
     @Override
     public Observable<ChangeNotification<InstanceInfo>> forInterest(final Interest<InstanceInfo> interest) {
-        return registry.forInterest(interest);
+        return clientRegistry.forInterest(interest);
     }
 
     @Override
@@ -82,7 +74,7 @@ public class EurekaClientImpl extends EurekaClient {
 
     @Override
     public void close() {
-        registry.shutdown();
+        clientRegistry.shutdown();
         if (null != registrationHandler) {
             registrationHandler.shutdown();
         }
@@ -90,6 +82,6 @@ public class EurekaClientImpl extends EurekaClient {
 
     @Override
     public String toString() {
-        return registry.toString();
+        return clientRegistry.toString();
     }
 }

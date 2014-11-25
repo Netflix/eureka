@@ -16,25 +16,30 @@
 
 package com.netflix.eureka2.server;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Injector;
-import com.netflix.adminresources.resources.KaryonWebAdminModule;
-import com.netflix.governator.guice.LifecycleInjector;
-import com.netflix.governator.guice.LifecycleInjectorBuilder;
-import com.netflix.governator.guice.LifecycleInjectorBuilderSuite;
-import com.netflix.governator.lifecycle.LifecycleManager;
-import com.netflix.karyon.archaius.ArchaiusSuite;
-import com.netflix.karyon.health.AlwaysHealthyHealthCheck;
-import com.netflix.karyon.health.HealthCheckHandler;
-import com.netflix.karyon.health.HealthCheckInvocationStrategy;
-import com.netflix.karyon.health.SyncHealthCheckInvocationStrategy;
-import com.netflix.karyon.servo.KaryonServoModule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+
+import com.google.inject.AbstractModule;
+import com.google.inject.Injector;
+import com.netflix.governator.configuration.ArchaiusConfigurationProvider;
+import com.netflix.governator.configuration.ArchaiusConfigurationProvider.Builder;
+import com.netflix.governator.configuration.ConfigurationOwnershipPolicies;
+import com.netflix.governator.guice.BootstrapBinder;
+import com.netflix.governator.guice.BootstrapModule;
+import com.netflix.governator.guice.LifecycleInjector;
+import com.netflix.governator.lifecycle.LifecycleManager;
+import netflix.adminresources.resources.KaryonWebAdminModule;
+import netflix.karyon.archaius.DefaultPropertiesLoader;
+import netflix.karyon.archaius.PropertiesLoader;
+import netflix.karyon.health.AlwaysHealthyHealthCheck;
+import netflix.karyon.health.HealthCheckHandler;
+import netflix.karyon.health.HealthCheckInvocationStrategy;
+import netflix.karyon.health.SyncHealthCheckInvocationStrategy;
+import netflix.karyon.servo.KaryonServoModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -60,20 +65,36 @@ public abstract class AbstractEurekaServer<C extends EurekaBootstrapConfig> {
         this.name = null;
     }
 
-    public void start() throws Exception {
-        List<LifecycleInjectorBuilderSuite> suites = new ArrayList<>();
-        if (config == null) {
-            suites.add(new ArchaiusSuite(name));
+    private static class PropertiesInitializer {
+        @Inject
+        private PropertiesInitializer(PropertiesLoader loader) {
+            loader.load();
         }
-        suites.add(KaryonWebAdminModule.asSuite());
+    }
 
-        // TODO: replace fake health check with a real one.
-        suites.add(new LifecycleInjectorBuilderSuite() {
+    public void start() throws Exception {
+        List<BootstrapModule> bootstrapModules = new ArrayList<>();
+        if (config == null) {
+            bootstrapModules.add(new BootstrapModule() {
+                @Override
+                public void configure(BootstrapBinder bootstrapBinder) {
+                    bootstrapBinder.bind(PropertiesLoader.class).toInstance(new DefaultPropertiesLoader(name));
+                    bootstrapBinder.bind(PropertiesInitializer.class).asEagerSingleton();
+                    Builder builder = ArchaiusConfigurationProvider.builder();
+                    builder.withOwnershipPolicy(ConfigurationOwnershipPolicies.ownsAll());
+                    bootstrapBinder.bindConfigurationProvider().toInstance(builder.build());
+                }
+            });
+        }
+        bootstrapModules.add(new BootstrapModule() {
             @Override
-            public void configure(LifecycleInjectorBuilder builder) {
-                builder.withAdditionalModules(new AbstractModule() {
+            public void configure(BootstrapBinder binder) {
+                binder.include(KaryonWebAdminModule.class);
+                binder.include(KaryonServoModule.class);
+                binder.include(new AbstractModule() {
                     @Override
                     protected void configure() {
+                        // TODO: replace fake health check with a real one.
                         bind(HealthCheckHandler.class).to(AlwaysHealthyHealthCheck.class).asEagerSingleton();
                         bind(HealthCheckInvocationStrategy.class).to(SyncHealthCheckInvocationStrategy.class).asEagerSingleton();
                     }
@@ -81,15 +102,15 @@ public abstract class AbstractEurekaServer<C extends EurekaBootstrapConfig> {
             }
         });
 
-        suites.add(KaryonServoModule.asSuite());
-        additionalModules(suites);
+        additionalModules(bootstrapModules);
         injector = LifecycleInjector.bootstrap(
                 this.getClass(),
-                suites.toArray(new LifecycleInjectorBuilderSuite[suites.size()]));
+                bootstrapModules.toArray(new BootstrapModule[bootstrapModules.size()])
+        );
         startLifecycleManager();
     }
 
-    protected abstract void additionalModules(List<LifecycleInjectorBuilderSuite> suites);
+    protected abstract void additionalModules(List<BootstrapModule> suites);
 
     private void startLifecycleManager() throws Exception {
         lifecycleManager = injector.getInstance(LifecycleManager.class);

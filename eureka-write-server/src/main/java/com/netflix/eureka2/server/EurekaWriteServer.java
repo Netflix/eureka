@@ -16,19 +16,15 @@
 
 package com.netflix.eureka2.server;
 
-import com.google.inject.Module;
-import com.netflix.governator.guice.LifecycleInjectorBuilder;
-import com.netflix.governator.guice.LifecycleInjectorBuilderSuite;
-import com.netflix.eureka2.server.config.WriteCommandLineParser;
-import com.netflix.eureka2.server.spi.ExtensionLoader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static java.util.Arrays.asList;
+import com.netflix.eureka2.server.config.WriteCommandLineParser;
+import com.netflix.eureka2.server.spi.ExtensionLoader;
+import com.netflix.governator.guice.BootstrapBinder;
+import com.netflix.governator.guice.BootstrapModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Tomasz Bak
@@ -46,19 +42,14 @@ public class EurekaWriteServer extends AbstractEurekaServer<WriteServerConfig> {
     }
 
     @Override
-    protected void additionalModules(List<LifecycleInjectorBuilderSuite> suites) {
-        suites.add(new LifecycleInjectorBuilderSuite() {
+    protected void additionalModules(List<BootstrapModule> bootstrapModules) {
+        bootstrapModules.add(new BootstrapModule() {
             @Override
-            public void configure(LifecycleInjectorBuilder builder) {
-                List<Module> all = new ArrayList<>();
-                all.add(new EurekaWriteServerModule(config));
-
-                List<Module> extModules = asList(new ExtensionLoader().asModuleArray());
-
-                all.addAll(extModules);
-                builder.withAdditionalModules(all);
+            public void configure(BootstrapBinder binder) {
+                binder.include(new EurekaWriteServerModule(config));
             }
         });
+        bootstrapModules.add(new ExtensionLoader().asBootstrapModule());
     }
 
     public static void main(String[] args) {

@@ -16,13 +16,13 @@
 
 package com.netflix.eureka2.server;
 
-import com.netflix.karyon.ShutdownModule;
+import netflix.karyon.ShutdownModule;
 
 /**
  * TODO: we shall not need this class. Fix karyon.
  *
-* @author Tomasz Bak
-*/
+ * @author Tomasz Bak
+ */
 public class EurekaShutdownModule extends ShutdownModule {
     public EurekaShutdownModule(int port) {
         super(port);

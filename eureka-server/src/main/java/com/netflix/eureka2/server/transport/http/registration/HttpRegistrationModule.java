@@ -16,7 +16,7 @@
 
 package com.netflix.eureka2.server.transport.http.registration;
 
-import com.netflix.karyon.transport.http.KaryonHttpModule;
+import netflix.karyon.transport.http.KaryonHttpModule;
 
 /**
  * HTTP server module for discovery registration endpoint.

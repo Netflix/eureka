@@ -25,13 +25,13 @@ dependencies {
     compile "commons-cli:commons-cli:${commons_cli_version}"
     compile project(':eureka-core')
     compile "com.netflix.governator:governator:${governator_version}"
-    compile "com.netflix.rxnetty:rx-netty-servo:${rx_netty_version}"
-    compile "com.netflix.karyon:karyon-governator:${karyon_version}"
-    compile "com.netflix.karyon:karyon-archaius:${karyon_version}"
-    compile "com.netflix.karyon:karyon-servo:${karyon_version}"
+    compile "io.reactivex:rxnetty-servo:${rxnetty_version}"
+    compile "com.netflix.karyon2:karyon-governator:${karyon_version}"
+    compile "com.netflix.karyon2:karyon-archaius:${karyon_version}"
+    compile "com.netflix.karyon2:karyon-servo:${karyon_version}"
 
     // Karyon admin and its dependencies
-    compile "com.netflix.karyon:karyon-admin-web:${karyon_version}"
+    compile "com.netflix.karyon2:karyon-admin-web:${karyon_version}"
     compile "commons-codec:commons-codec:${commons_codec_version}"
 
     testCompile project(':eureka-test-utils')

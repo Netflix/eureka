@@ -17,9 +17,12 @@
 package com.netflix.eureka2.client.registry;
 
 import com.netflix.eureka2.registry.EurekaRegistry;
+import rx.Observable;
 
 /**
  * @author Tomasz Bak
  */
 public interface EurekaClientRegistry<T> extends EurekaRegistry<T, Void> {
+
+    Observable<Void> shutdown(Throwable cause);
 }

@@ -16,36 +16,36 @@
 
 package com.netflix.eureka2.server.transport.http.registration;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 import com.google.inject.Inject;
-import com.netflix.karyon.transport.http.HttpRequestRouter;
 import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.protocol.registration.Update;
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.server.service.EurekaServerService;
+import com.netflix.eureka2.server.service.ServerChannelFactory;
 import com.netflix.eureka2.service.RegistrationChannel;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.netty.protocol.http.server.HttpServerRequest;
 import io.reactivex.netty.protocol.http.server.HttpServerResponse;
+import netflix.karyon.transport.RequestRouter;
 import rx.Observable;
 import rx.functions.Func1;
-
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * FIXME Implement heartbeat mechanism.
  *
  * @author Tomasz Bak
  */
-public class RegistrationHttpRequestRouter implements HttpRequestRouter<Object, Object> {
+public class RegistrationHttpRequestRouter implements RequestRouter<HttpServerRequest<Object>, HttpServerResponse<Object>> {
 
     private final String appsBaseURI;
-    private final EurekaServerService eurekaServerService;
+    private final ServerChannelFactory eurekaServerService;
 
     private final ConcurrentHashMap<String, RegistrationChannel> activeRegistrationChannels = new ConcurrentHashMap<String, RegistrationChannel>();
 
     @Inject
-    public RegistrationHttpRequestRouter(EurekaServerService eurekaServerService, String baseURI) {
+    public RegistrationHttpRequestRouter(ServerChannelFactory eurekaServerService, String baseURI) {
         this.eurekaServerService = eurekaServerService;
         this.appsBaseURI = baseURI + "/apps";
     }

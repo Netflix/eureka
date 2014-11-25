@@ -22,12 +22,11 @@ import com.netflix.eureka2.server.audit.AuditServiceController;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.server.registry.EurekaServerRegistryImpl;
-import com.netflix.eureka2.server.registry.EurekaServerRegistryMetrics;
-import com.netflix.eureka2.server.registry.EvictionQueue;
-import com.netflix.eureka2.server.registry.EvictionQueueImpl;
-import com.netflix.eureka2.server.registry.EvictionStrategies;
-import com.netflix.eureka2.server.registry.EvictionStrategy;
 import com.netflix.eureka2.server.registry.PreservableEurekaRegistry;
+import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
+import com.netflix.eureka2.server.registry.eviction.EvictionQueueImpl;
+import com.netflix.eureka2.server.registry.eviction.EvictionStrategy;
+import com.netflix.eureka2.server.registry.eviction.EvictionStrategyProvider;
 import com.netflix.eureka2.server.replication.ReplicationService;
 import com.netflix.eureka2.server.service.InterestChannelMetrics;
 import com.netflix.eureka2.server.service.RegistrationChannelMetrics;
@@ -46,10 +45,6 @@ import io.reactivex.netty.servo.ServoEventsListenerFactory;
  * @author Tomasz Bak
  */
 public class EurekaWriteServerModule extends AbstractModule {
-
-    // TODO: this should be configurable property
-    private static final int ALLOWED_DROP = 20;
-    private static final long EVICTION_TIMEOUT = 3 * 30000;
 
     private final WriteServerConfig config;
 
@@ -73,8 +68,8 @@ public class EurekaWriteServerModule extends AbstractModule {
 
         bind(EurekaServerRegistry.class).annotatedWith(Names.named("delegate")).to(EurekaServerRegistryImpl.class).asEagerSingleton();
         bind(EurekaServerRegistry.class).to(PreservableEurekaRegistry.class).asEagerSingleton();
-        bind(EvictionQueue.class).toInstance(new EvictionQueueImpl(EVICTION_TIMEOUT));
-        bind(EvictionStrategy.class).toInstance(EvictionStrategies.percentageDrop(ALLOWED_DROP));
+        bind(EvictionQueue.class).to(EvictionQueueImpl.class).asEagerSingleton();
+        bind(EvictionStrategy.class).toProvider(EvictionStrategyProvider.class);
         bind(AuditServiceController.class).asEagerSingleton();
 
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("registration")).toInstance(new ServoEventsListenerFactory("registration-rx-client-", "registration-rx-server-"));
@@ -101,7 +96,6 @@ public class EurekaWriteServerModule extends AbstractModule {
         bind(ReplicationChannelMetrics.class).toInstance(new ReplicationChannelMetrics());
         bind(InterestChannelMetrics.class).toInstance(new InterestChannelMetrics());
 
-        bind(EurekaServerRegistryMetrics.class).toInstance(new EurekaServerRegistryMetrics("writerServer"));
         bind(WriteServerMetricFactory.class).asEagerSingleton();
     }
 }

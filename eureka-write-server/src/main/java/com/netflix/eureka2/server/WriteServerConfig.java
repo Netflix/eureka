@@ -34,9 +34,11 @@ public class WriteServerConfig extends EurekaBootstrapConfig {
     public WriteServerConfig(DataCenterType dataCenterType, String resolverType,
                              int writeServerPort, int replicationPort, int readServerPort, Codec codec, int shutDownPort,
                              String appName, String vipAddress, String writeClusterDomainName,
-                             String[] writeClusterServers, int webAdminPort) {
+                             String[] writeClusterServers, int webAdminPort,
+                             long registryEvictionTimeout, String evictionStrategyType, String evictionStrategyValue) {
         super(dataCenterType, resolverType, writeServerPort, replicationPort, readServerPort, codec, shutDownPort,
-                appName, vipAddress, writeClusterDomainName, writeClusterServers, webAdminPort);
+                appName, vipAddress, writeClusterDomainName, writeClusterServers, webAdminPort,
+                registryEvictionTimeout, evictionStrategyType, evictionStrategyValue);
     }
 
     public static class WriteServerConfigBuilder extends EurekaBootstrapConfigBuilder<WriteServerConfig, WriteServerConfigBuilder> {
@@ -44,8 +46,9 @@ public class WriteServerConfig extends EurekaBootstrapConfig {
         @Override
         public WriteServerConfig build() {
             return new WriteServerConfig(dataCenterType, resolverType,
-                    writeServerPort, replicationPort, readServerPort, codec, shutDownPort,
-                    appName, vipAddress, writeClusterDomainName, writeClusterServers, webAdminPort);
+                    registrationPort, replicationPort, discoveryPort, codec, shutDownPort,
+                    appName, vipAddress, writeClusterDomainName, writeClusterServers, webAdminPort,
+                    evictionTimeout, evictionStrategyType.name(), evictionStrategyValue);
         }
     }
 }

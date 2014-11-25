@@ -33,6 +33,8 @@ public interface EurekaRegistry<T, R> {
 
     Observable<R> update(T updatedInfo, Set<Delta<?>> deltas);
 
+    int size();
+
     Observable<T> forSnapshot(Interest<T> interest);
 
     Observable<ChangeNotification<T>> forInterest(Interest<T> interest);

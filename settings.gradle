@@ -5,7 +5,7 @@ include 'eureka-client',\
         'eureka-write-server',\
         'eureka-core',\
         'eureka-dashboard',\
-        'eureka-compatibility',\
+        'eureka-bridge',\
         'eureka-test-utils',\
         'eureka-extensions:eureka-kafka',\
         'eureka-examples'

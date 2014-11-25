@@ -36,6 +36,10 @@ public abstract class ResolverBasedTransportClient implements TransportClient {
         clients = new ConcurrentHashMap<>();
     }
 
+    public long getHeartbeatIntervalMillis() {
+        return HeartBeatConnection.DEFAULT_HEARTBEAT_INTERVAL_MILLIS;
+    }
+
     @Override
     public Observable<MessageConnection> connect() {
         return resolver.resolve()
@@ -63,7 +67,7 @@ public abstract class ResolverBasedTransportClient implements TransportClient {
                                             ObservableConnection<Object, Object> conn) {
                                         return new HeartBeatConnection(
                                                 new BaseMessageConnection("client", conn, metrics),
-                                                30000, 3, Schedulers.computation()
+                                                getHeartbeatIntervalMillis(), 3, Schedulers.computation()
                                         );
                                     }
                                 });

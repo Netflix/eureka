@@ -18,6 +18,7 @@ package com.netflix.eureka2.rx;
 
 import rx.Observable;
 import rx.functions.Action2;
+import rx.functions.Func0;
 import rx.functions.Func1;
 import rx.functions.Func2;
 
@@ -26,6 +27,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Tomasz Bak
@@ -40,7 +42,15 @@ public class Observables {
         List<Observable<ItemCollector<T>>> buckets = new ArrayList<Observable<ItemCollector<T>>>();
 
         for (int i = 0; i < observables.length; i++) {
-            buckets.add(observables[i].collect(new ItemCollector<T>(i), new Action2<ItemCollector<T>, T>() {
+            final int j = i;
+            buckets.add(observables[j].collect(
+                    new Func0<ItemCollector<T>>() {
+                        @Override
+                        public ItemCollector<T> call() {
+                            return new ItemCollector<>(j);
+                        }
+                    },
+                    new Action2<ItemCollector<T>, T>() {
                 @Override
                 public void call(ItemCollector<T> collector, T t) {
                     collector.add(t);
