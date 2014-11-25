@@ -25,7 +25,7 @@ dependencies {
     compile "commons-cli:commons-cli:${commons_cli_version}"
     compile project(':eureka-core')
     compile "com.netflix.governator:governator:${governator_version}"
-    compile "io.reactivex:rxnetty-servo:${rx_netty_version}"
+    compile "io.reactivex:rxnetty-servo:${rxnetty_version}"
     compile "com.netflix.karyon2:karyon-governator:${karyon_version}"
     compile "com.netflix.karyon2:karyon-archaius:${karyon_version}"
     compile "com.netflix.karyon2:karyon-servo:${karyon_version}"

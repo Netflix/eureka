@@ -25,6 +25,8 @@ buildscript {
 }
 
 allprojects {
+    apply plugin: 'idea'
+
     repositories {
 //        mavenLocal()
         mavenCentral() // maven { url: 'http://jcenter.bintray.com' }
@@ -49,9 +51,7 @@ subprojects {
     group = "com.netflix.eureka2"
 
     apply plugin: 'groovy'
-
     apply plugin: 'eclipse'
-    apply plugin: 'idea'
 
     dependencies {
         compile "org.slf4j:slf4j-api:${slf4j_version}"
