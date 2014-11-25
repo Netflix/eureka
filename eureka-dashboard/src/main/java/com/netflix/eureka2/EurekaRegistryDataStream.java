@@ -14,12 +14,12 @@ import com.google.inject.Inject;
 public class EurekaRegistryDataStream {
 
     private final EurekaClient eurekaClient;
-    private static final String EUREKA_WRITE_INSTANCE = "ec2-50-17-247-165.compute-1.amazonaws.com";
-    private final int Eureka_DISCOVERY_PORT = 12103;
+    private static final String EUREKA_WRITE_INSTANCE = "localhost";
+    private static final int Eureka_DISCOVERY_PORT = 8080;
 
     @Inject
     public EurekaRegistryDataStream() {
-        eurekaClient = Eureka.newClientBuilder(ServerResolvers.just(EUREKA_WRITE_INSTANCE, 12103)).build();
+        eurekaClient = Eureka.newClientBuilder(ServerResolvers.just(EUREKA_WRITE_INSTANCE, Eureka_DISCOVERY_PORT)).build();
     }
 
     public Observable<ChangeNotification<InstanceInfo>> getStream() {
