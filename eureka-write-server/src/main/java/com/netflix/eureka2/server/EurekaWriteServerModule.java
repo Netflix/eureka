@@ -59,9 +59,9 @@ public class EurekaWriteServerModule extends AbstractModule {
     @Override
     public void configure() {
         if (config == null) {
-            bind(EurekaBootstrapConfig.class).to(WriteServerConfig.class).asEagerSingleton();
+            bind(EurekaServerConfig.class).to(WriteServerConfig.class).asEagerSingleton();
         } else {
-            bind(EurekaBootstrapConfig.class).toInstance(config);
+            bind(EurekaServerConfig.class).toInstance(config);
             bind(WriteServerConfig.class).toInstance(config);
         }
         bind(SelfRegistrationService.class).to(WriteSelfRegistrationService.class).asEagerSingleton();

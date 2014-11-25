@@ -16,26 +16,28 @@
 
 package com.netflix.eureka2.server.audit.kafka;
 
+import java.net.InetSocketAddress;
+
 import com.google.inject.TypeLiteral;
-import com.netflix.loadbalancer.Server;
-import com.netflix.loadbalancer.ServerList;
 import com.netflix.eureka2.server.audit.AuditService;
 import com.netflix.eureka2.server.spi.ExtAbstractModule;
 import com.netflix.eureka2.server.spi.ExtensionLoader.StandardExtension;
+import com.netflix.eureka2.utils.StreamedDataCollector;
 
 /**
- * Guice module for injecting {@link AuditService} with suro persistence.
+ * Guice module for injecting {@link AuditService} with Kafka persistence.
  *
  * @author Tomasz Bak
  */
 public class KafkaAuditServiceModule extends ExtAbstractModule {
 
-    private static final TypeLiteral<ServerList<Server>> SERVER_LIST_TYPE_LITERAL = new TypeLiteral<ServerList<Server>>() {
-    };
+    private static final TypeLiteral<StreamedDataCollector<InetSocketAddress>> STREAMED_DATA_COLLECTOR_TYPE_LITERAL =
+            new TypeLiteral<StreamedDataCollector<InetSocketAddress>>() {
+            };
 
     @Override
     protected void configure() {
-        bind(SERVER_LIST_TYPE_LITERAL).toProvider(KafkaServerListProvider.class);
+        bind(STREAMED_DATA_COLLECTOR_TYPE_LITERAL).toProvider(KafkaServersProvider.class);
         bind(AuditService.class).to(KafkaAuditService.class);
     }
 

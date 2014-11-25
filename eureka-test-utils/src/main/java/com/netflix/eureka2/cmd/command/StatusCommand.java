@@ -14,19 +14,28 @@
  * limitations under the License.
  */
 
-apply plugin: 'osgi'
+package com.netflix.eureka2.cmd.command;
 
-dependencies {
-    compile project(':eureka-client')
-    compile project(':eureka-server')
-    compile ('com.google.code.gson:gson:2.1')
-}
+import com.netflix.eureka2.cmd.Command;
+import com.netflix.eureka2.cmd.Context;
 
-jar {
-    manifest {
-        name = 'eureka-dashboard'
-        instruction 'Bundle-Vendor', 'Netflix'
-        instruction 'Bundle-DocURL', 'https://github.com/Netflix/eureka'
-        instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
+/**
+* @author Tomasz Bak
+*/
+public class StatusCommand extends Command {
+
+    public StatusCommand() {
+        super("status");
+    }
+
+    @Override
+    public String getDescription() {
+        return "print system status";
+    }
+
+    @Override
+    protected boolean executeCommand(Context context, String[] args) {
+        context.printStatus();
+        return true;
     }
 }

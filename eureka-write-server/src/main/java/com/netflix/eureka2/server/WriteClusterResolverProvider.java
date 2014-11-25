@@ -14,12 +14,12 @@ import javax.inject.Singleton;
 @Singleton
 public class WriteClusterResolverProvider implements Provider<ServerResolver> {
 
-    private final EurekaBootstrapConfig config;
+    private final EurekaServerConfig config;
 
     private ServerResolver resolver;
 
     @Inject
-    public WriteClusterResolverProvider(EurekaBootstrapConfig config) {
+    public WriteClusterResolverProvider(EurekaServerConfig config) {
         this.config = config;
     }
 

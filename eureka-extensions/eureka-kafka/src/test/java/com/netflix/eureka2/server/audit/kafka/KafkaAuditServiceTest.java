@@ -16,6 +16,8 @@
 
 package com.netflix.eureka2.server.audit.kafka;
 
+import java.util.ServiceLoader;
+
 import com.google.inject.Module;
 import com.netflix.eureka2.server.audit.AuditRecord;
 import com.netflix.eureka2.server.audit.SampleAuditRecord;
@@ -26,11 +28,8 @@ import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.ServiceLoader;
-
 import static java.lang.String.format;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 /**
  * @author Tomasz Bak
@@ -52,9 +51,10 @@ public class KafkaAuditServiceTest {
         if (kafkaTopic == null) {
             fail(format("This is integration test and requires that system property %s is set", KafkaAuditConfig.KAFKA_TOPIC_KEY));
         }
-        PropertySourcedServerList kafkaServerList = new PropertySourcedServerList(kafkaPropertyValue, KafkaAuditConfig.KAFKA_PORT_DEFAULT);
-        KafkaAuditConfig config = new KafkaAuditConfig(kafkaPropertyValue, null, -1, kafkaTopic);
-        auditService = new KafkaAuditService(context, config, kafkaServerList);
+        KafkaAuditConfig config = new KafkaAuditConfig(kafkaPropertyValue, null, -1, kafkaTopic,
+                KafkaAuditConfig.DEFAULT_RETRY_INTERVAL_MS, KafkaAuditConfig.DEFAULT_MAX_QUEUE_SIZE);
+        KafkaServersProvider kafkaServersProvider = new KafkaServersProvider(context, config);
+        auditService = new KafkaAuditService(context, config, kafkaServersProvider);
         auditService.start();
     }
 
@@ -87,6 +87,9 @@ public class KafkaAuditServiceTest {
         setUpAuditService();
 
         AuditRecord auditRecord = SampleAuditRecord.ZuulServerAdd.build();
-        auditService.write(auditRecord);
+        for (int i = 0; i < 100; i++) {
+            auditService.write(auditRecord);
+            Thread.sleep(1000);
+        }
     }
 }

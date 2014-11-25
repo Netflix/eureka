@@ -29,8 +29,12 @@ public class KafkaAuditConfig {
     public static final String KAFKA_VIP_KEY = "eureka.ext.audit.kafka.vip";
     public static final String KAFKA_PORT_KEY = "eureka.ext.audit.kafka.port";
     public static final String KAFKA_TOPIC_KEY = "eureka.ext.audit.kafka.topic";
+    public static final String KAFKA_RETRY_INTERVAL_KEY = "eureka.ext.audit.kafka.retryInterval";
+    public static final String KAFKA_MAX_QUEUE_SIZE_KEY = "eureka.ext.audit.kafka.maxQueueSize";
 
-    public static final int KAFKA_PORT_DEFAULT = 7101;
+    public static final int DEFAULT_KAFKA_PORT = 7101;
+    public static final long DEFAULT_RETRY_INTERVAL_MS = 30000;
+    public static final int DEFAULT_MAX_QUEUE_SIZE = 10000;
 
     /**
      * Kafka server list can be injected directly via configuration, in the following format:
@@ -60,15 +64,30 @@ public class KafkaAuditConfig {
     @Configuration(KAFKA_TOPIC_KEY)
     private String kafkaTopic;
 
+    /**
+     * Kafka reconnect retry interval.
+     */
+    @Configuration(KAFKA_RETRY_INTERVAL_KEY)
+    private long retryIntervalMs = DEFAULT_RETRY_INTERVAL_MS;
+
+    /**
+     * Kafka reconnect retry interval.
+     */
+    @Configuration(KAFKA_MAX_QUEUE_SIZE_KEY)
+    private int maxQueueSize = DEFAULT_MAX_QUEUE_SIZE;
+
     // For configuration injection
     public KafkaAuditConfig() {
     }
 
-    public KafkaAuditConfig(String kafkaServerList, String kafkaVip, int kafkaPort, String kafkaTopic) {
+    public KafkaAuditConfig(String kafkaServerList, String kafkaVip, int kafkaPort, String kafkaTopic,
+                            long retryIntervalMs, int maxQueueSize) {
         this.kafkaServerList = kafkaServerList;
         this.kafkaVip = kafkaVip;
         this.kafkaPort = kafkaPort;
         this.kafkaTopic = kafkaTopic;
+        this.retryIntervalMs = retryIntervalMs;
+        this.maxQueueSize = maxQueueSize;
     }
 
     public String getKafkaServerList() {
@@ -80,11 +99,19 @@ public class KafkaAuditConfig {
     }
 
     public int getKafkaPort() {
-        return kafkaPort;
+        return kafkaPort <= 0 ? DEFAULT_KAFKA_PORT : kafkaPort;
     }
 
     public String getKafkaTopic() {
         return kafkaTopic;
+    }
+
+    public long getRetryIntervalMs() {
+        return retryIntervalMs;
+    }
+
+    public int getMaxQueueSize() {
+        return maxQueueSize;
     }
 
     public void validateConfiguration() {

@@ -23,11 +23,11 @@ import rx.Observable;
  * by implementing this interface.
  *
  * <h1>Thread safety</h1>
- * Registry updates can be done concurrently, hance {@link AuditService} must be thread safe.
+ * Registry updates serialized, hence {@link AuditService} does not have to be thread safe.
  *
  * <h1>Error handling</h1>
  * {@link AuditService#write(AuditRecord)} returns observable of void that should complete
- * with error, if the underlying implementation cannot fullfil the request. This
+ * with error, if the underlying implementation cannot fulfill the request. This
  * information is ignored by Eureka when writing audit logs, but can be used by
  * implementations to provide fallback storage.
  *
@@ -39,7 +39,7 @@ public interface AuditService {
      * Write an audit record.
      *
      * @return observable that completes immediately or propagates an error, if the
-     *         underlying audit service implementation cannot fullfil the request
+     *         underlying audit service implementation cannot fulfill the request
      */
     Observable<Void> write(AuditRecord record);
 }

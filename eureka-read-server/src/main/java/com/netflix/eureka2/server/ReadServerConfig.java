@@ -24,7 +24,7 @@ import com.netflix.governator.annotations.Configuration;
 /**
  * @author Tomasz Bak
  */
-public class ReadServerConfig extends EurekaBootstrapConfig {
+public class ReadServerConfig extends EurekaServerConfig {
 
     @Configuration("writeCluster.registration.port")
     private int writeClusterRegistrationPort = EurekaTransports.DEFAULT_REGISTRATION_PORT;
@@ -56,7 +56,7 @@ public class ReadServerConfig extends EurekaBootstrapConfig {
         return writeClusterDiscoveryPort;
     }
 
-    public static class ReadServerConfigBuilder extends EurekaBootstrapConfigBuilder<ReadServerConfig, ReadServerConfigBuilder> {
+    public static class ReadServerConfigBuilder extends EurekaServerConfigBuilder<ReadServerConfig, ReadServerConfigBuilder> {
 
         private int writeClusterRegistrationPort;
         private int writeClusterDiscoveryPort;

@@ -55,6 +55,18 @@ subprojects {
     apply plugin: 'groovy'
     apply plugin: 'eclipse'
 
+    /**
+     * Exclude from the transitive dependencies all artifacts that we
+     * include explicitly. Version resolution is usually done right by
+     * gradle build, but confuses Intellij a lot.
+     */
+    configurations {
+        all*.exclude group: 'com.netflix.rxjava' // Use io.reactivex:rxjava
+        all*.exclude group: 'com.netflix.rxnetty' // Use io.reactivex:rxnetty
+        all*.exclude module: 'log4j' // From ocelli
+        all*.exclude module: 'slf4j-log4j12' // From ocelli
+    }
+
     dependencies {
         compile "org.slf4j:slf4j-api:${slf4j_version}"
 

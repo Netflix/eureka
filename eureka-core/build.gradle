@@ -26,6 +26,7 @@ dependencies {
     compile "javax.inject:javax.inject:${javax_inject_version}"
     compile "io.reactivex:rxjava:${rxjava_version}"
     compile "io.reactivex:rxnetty:${rxnetty_version}"
+    compile "com.netflix.ocelli:ocelli-core:${ocelli_version}"
     compile "org.apache.avro:avro:${avro_version}"
     compile "org.apache.commons:commons-compress:${commons_compress_version}"
     compile "com.netflix.servo:servo-core:${servo_version}"
