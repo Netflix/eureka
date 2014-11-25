@@ -16,22 +16,32 @@
 
 package com.netflix.eureka2.server.audit.kafka;
 
-import com.netflix.loadbalancer.Server;
-import com.netflix.loadbalancer.ServerList;
-import com.netflix.eureka2.server.audit.AuditRecord;
-import com.netflix.eureka2.server.audit.AuditService;
-import com.netflix.eureka2.server.spi.ExtensionContext;
-import com.netflix.eureka2.utils.Json;
-import kafka.javaapi.producer.Producer;
-import kafka.producer.KeyedMessage;
-import kafka.producer.ProducerConfig;
-import rx.Observable;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import com.netflix.eureka2.server.audit.AuditRecord;
+import com.netflix.eureka2.server.audit.AuditService;
+import com.netflix.eureka2.server.spi.ExtensionContext;
+import com.netflix.eureka2.utils.Json;
+import com.netflix.eureka2.utils.StreamedDataCollector;
+import kafka.javaapi.producer.Producer;
+import kafka.producer.KeyedMessage;
+import kafka.producer.ProducerConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rx.Observable;
+import rx.Scheduler;
+import rx.Scheduler.Worker;
+import rx.functions.Action0;
+import rx.schedulers.Schedulers;
 
 /**
  * {@link AuditService} implementation with persistence to Kafka. {@link AuditRecord} is encoded
@@ -42,35 +52,69 @@ import java.util.Properties;
 @Singleton
 public class KafkaAuditService implements AuditService {
 
-    private final ServerList<Server> kafkaServerList;
+    private static final Logger logger = LoggerFactory.getLogger(KafkaAuditService.class);
+
+    private static final Exception QUEUE_FULL_ERROR = new Exception("Kafka audit queue full");
+
     private final String topic;
+    private final StreamedDataCollector<InetSocketAddress> serverSource;
+    private final Worker worker;
+    private final KafkaAuditConfig config;
+
     /* Access from test */ volatile Producer<String, byte[]> kafkaProducer;
+    private final ConcurrentLinkedQueue<AuditRecord> auditRecordQueue = new ConcurrentLinkedQueue<>();
+
+    private final AtomicBoolean processorScheduled = new AtomicBoolean();
+    private final Action0 processorAction = new Action0() {
+        @Override
+        public void call() {
+            processorScheduled.set(false);
+            while (!auditRecordQueue.isEmpty()) {
+                Producer<String, byte[]> currentKafkaProducer = kafkaProducer;
+                if (currentKafkaProducer != null) {
+                    AuditRecord record = auditRecordQueue.peek();
+                    try {
+                        KeyedMessage<String, byte[]> message = new KeyedMessage<>(topic, Json.toByteArrayJson(record));
+                        kafkaProducer.send(message);
+                        auditRecordQueue.poll();
+                    } catch (Exception e) {
+                        logger.error("Kafka message send error; reconnecting", e);
+                        kafkaProducer = null;
+                        scheduleReconnect();
+                        return;
+                    }
+                }
+            }
+        }
+    };
 
     @Inject
-    public KafkaAuditService(ExtensionContext context, KafkaAuditConfig config, ServerList<Server> kafkaServerList) {
+    public KafkaAuditService(ExtensionContext context,
+                             KafkaAuditConfig config,
+                             KafkaServersProvider kafkaServersProvider) {
+        this(context, config, kafkaServersProvider, Schedulers.io());
+    }
+
+    public KafkaAuditService(ExtensionContext context,
+                             KafkaAuditConfig config,
+                             KafkaServersProvider kafkaServersProvider,
+                             Scheduler scheduler) {
         config.validateConfiguration();
-        this.kafkaServerList = kafkaServerList;
+        this.config = config;
         this.topic = config.getKafkaTopic() == null ? context.getEurekaClusterName() : config.getKafkaTopic();
+        this.serverSource = kafkaServersProvider.get();
+        this.worker = scheduler.createWorker();
     }
 
     @PostConstruct
     public void start() {
-        StringBuilder sb = new StringBuilder(",");
-        for (Server server : kafkaServerList.getInitialListOfServers()) {
-            sb.append(server.getHostPort());
-        }
-        String serverProperty = sb.substring(1);
-
-        Properties props = new Properties();
-        props.setProperty("metadata.broker.list", serverProperty);
-        props.setProperty("producer.type", "async");
-        props.setProperty("request.required.acks", "0");
-
-        kafkaProducer = new Producer<String, byte[]>(new ProducerConfig(props));
+        reconnect();
     }
 
     @PreDestroy
     public void stop() {
+        worker.unsubscribe();
+        serverSource.close();
         if (kafkaProducer != null) {
             kafkaProducer.close();
             kafkaProducer = null;
@@ -79,8 +123,53 @@ public class KafkaAuditService implements AuditService {
 
     @Override
     public Observable<Void> write(AuditRecord record) {
-        KeyedMessage<String, byte[]> message = new KeyedMessage<>(topic, Json.toByteArrayJson(record));
-        kafkaProducer.send(message);
+        if (auditRecordQueue.size() < config.getMaxQueueSize()) {
+            auditRecordQueue.add(record);
+            if (kafkaProducer != null && processorScheduled.compareAndSet(false, true)) {
+                scheduleQueueProcessing();
+            }
+        } else {
+            logger.warn("Kafka audit queue full; dropping audit message {}", record);
+            return Observable.error(QUEUE_FULL_ERROR);
+        }
         return Observable.empty();
+    }
+
+    private void reconnect() {
+        List<InetSocketAddress> addresses = serverSource.latestSnapshot();
+        if (addresses.isEmpty()) {
+            scheduleReconnect();
+        } else {
+            kafkaProducer = createKafkaProducer(addresses);
+            scheduleQueueProcessing();
+        }
+    }
+
+    private void scheduleReconnect() {
+        worker.schedule(new Action0() {
+            @Override
+            public void call() {
+                reconnect();
+            }
+        }, config.getRetryIntervalMs(), TimeUnit.MILLISECONDS);
+    }
+
+    private void scheduleQueueProcessing() {
+        worker.schedule(processorAction);
+    }
+
+    private static Producer<String, byte[]> createKafkaProducer(List<InetSocketAddress> addresses) {
+        StringBuilder sb = new StringBuilder();
+        for (InetSocketAddress server : addresses) {
+            sb.append(server.getHostString()).append(':').append(server.getPort()).append(',');
+        }
+        String serverProperty = sb.substring(0, sb.length() - 1);
+
+        Properties props = new Properties();
+        props.setProperty("metadata.broker.list", serverProperty);
+        props.setProperty("producer.type", "async");
+        props.setProperty("request.required.acks", "0");
+
+        return new Producer<String, byte[]>(new ProducerConfig(props));
     }
 }

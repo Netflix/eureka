@@ -19,7 +19,6 @@ apply plugin: 'osgi'
 dependencies {
     compile project(':eureka-server')
     compile project(':eureka-client')
-    compile "com.netflix.ribbon:ribbon-loadbalancer:${ribbon_version}"
     compile("org.apache.kafka:kafka_2.9.2:${kafka_version}") {
         exclude module: 'jms'
         exclude module: 'jmxtools'

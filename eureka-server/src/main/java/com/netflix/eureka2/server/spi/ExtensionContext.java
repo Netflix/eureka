@@ -16,17 +16,18 @@
 
 package com.netflix.eureka2.server.spi;
 
-import com.netflix.eureka2.server.EurekaBootstrapConfig;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.net.InetSocketAddress;
 import java.util.Properties;
 import java.util.ServiceLoader;
 
+import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.server.EurekaBootstrapConfig;
+import com.netflix.eureka2.server.registry.EurekaServerRegistry;
+
 /**
  * Eureka extensions discovery is based on {@link ServiceLoader} mechanism.
- * For seamless configuration this class providesd basic information, that should
+ * For seamless configuration this class provided basic information, that should
  * be sufficient for the extension bootstrapping.
  *
  * @author Tomasz Bak
@@ -37,10 +38,12 @@ public class ExtensionContext {
     public static final String PROPERTY_KEYS_PREFIX = "eureka.ext";
 
     private final EurekaBootstrapConfig config;
+    private final EurekaServerRegistry<InstanceInfo> localRegistry;
 
     @Inject
-    protected ExtensionContext(EurekaBootstrapConfig config) {
+    protected ExtensionContext(EurekaBootstrapConfig config, EurekaServerRegistry localRegistry) {
         this.config = config;
+        this.localRegistry = localRegistry;
     }
 
     /**
@@ -48,6 +51,10 @@ public class ExtensionContext {
      */
     public String getEurekaClusterName() {
         return config.getAppName();
+    }
+
+    public EurekaServerRegistry<InstanceInfo> getLocalRegistry() {
+        return localRegistry;
     }
 
     /**
@@ -64,17 +71,11 @@ public class ExtensionContext {
     public static class ExtensionContextBuilder {
 
         private String eurekaClusterName;
-        private InetSocketAddress internalReadServerAddress;
         private Properties properties;
         private boolean addSystemProperties;
 
         public ExtensionContextBuilder withEurekaClusterName(String eurekaClusterName) {
             this.eurekaClusterName = eurekaClusterName;
-            return this;
-        }
-
-        public ExtensionContextBuilder withInternalReadServerAddress(InetSocketAddress internalReadServerAddress) {
-            this.internalReadServerAddress = internalReadServerAddress;
             return this;
         }
 
