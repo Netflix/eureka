@@ -1,38 +1,93 @@
 var eurekaRegistryView = (function () {
-    var msgElm;
-    var options;
     var containerId;
     var diameter;
     var registry = [];
-    var root = { children: [] };
     var totalInstCount = 0;
     var sortedAppList = [];
     var instancesTblView, // ref to SimpleTreeView for instance list
             selectAppAutoCompleteBox;
+    var firstViewLoaded = false;
+    var svg, bubble, format, color; // visualization
 
     function init(options) {
         options = options || {};
         containerId = options.containerId || 'registry';
-        diameter = options.diameter || 660;
+        diameter = options.diameter || 800;
 
-        $(function () {
-            msgElm = $('.msg');
-            window.setTimeout(function () {
-                registry = eurekaRegistryCtrl.getRegistry();
-                console.log(registry);
-                hideMsg();
-                render();
-            }, 8000);
+        $(window).on('InstanceNotificationReceived', function (e, data) {
+            updateReceived(data);
         });
+
+        window.setInterval(function () {
+            refreshView();
+        }, 1000);
+
+    }
+
+    var updatedInstInfo = [];
+    function updateReceived(data) {
+        var instInfo = data.instInfo;
+        updatedInstInfo.push(instInfo);
+
+        if (data.type === 'Add') {
+            if (instInfo['app'] in registry) {
+                registry[instInfo['app']].push(instInfo);
+            } else {
+                registry[instInfo['app']] = [instInfo];
+            }
+        } else {
+            // remove
+            if (instInfo['app'] in registry) {
+                registry[instInfo['app']] = registry[instInfo['app']].filter(function (elm) {
+                    return elm['id'] !== instInfo['id'];
+                });
+            }
+        }
+
+        if (firstViewLoaded) {
+            updateLiveStream(data);
+        }
+    }
+
+    function updateLiveStream(data) {
+        $('.live-stream').show().prepend($('<li>' + buildLiveStreamEntry(data) + '</li>'));
+    }
+
+    function buildLiveStreamEntry(data) {
+        var vipAddress = data['instInfo']['vipAddress'] || '';
+        var markup = [];
+
+        markup.push('<span class="entry-type">' + data.type + '</span>');
+        markup.push(' => ');
+        markup.push('<span class="app-name">' + data['instInfo']['app'] + '</span>, ' );
+        if (vipAddress) {
+            markup.push(vipAddress + ", ");
+        }
+        markup.push(data['instInfo']['dataCenterInfo']['instanceId']);
+        return markup.join('');
+    }
+
+    function refreshView() {
+        console.log("REfreshing");
+        if (updatedInstInfo.length > 0) {
+            console.log("For Real");
+            hideMsg();
+            render();
+        }
+        if (!firstViewLoaded) {
+            firstViewLoaded = true;
+        }
+        updatedInstInfo = [];
     }
 
     function hideMsg() {
-        msgElm.text('');
+        $('.msg').text('');
     }
 
     function buildAndLoadSortedAppList() {
         var instanceCount;
         totalInstCount = 0;
+        sortedAppList = [];
         for (var appId in registry) {
             instanceCount = registry[appId].length;
             sortedAppList.push({name: appId, value: instanceCount});
@@ -43,7 +98,7 @@ var eurekaRegistryView = (function () {
             return b['value'] - a['value'];
         });
 
-        root.children = sortedAppList;
+        return { children: sortedAppList };
     }
 
     function showTotalCount() {
@@ -53,8 +108,6 @@ var eurekaRegistryView = (function () {
     }
 
     function showInstanceList(app, instances) {
-        console.log("Instances ");
-        console.log(instances);
         instancesTblView = SimpleTreeView({contId: 'inst-list', data: buildInstancesMapByStatus(instances)});
         instancesTblView.init();
 
@@ -65,7 +118,7 @@ var eurekaRegistryView = (function () {
 
     function buildInstancesMapByStatus(instances) {
         var instStatusMap = {};
-        instances.forEach(function(inst) {
+        instances.forEach(function (inst) {
             var nacLink = Utils.buildNACLinkForInstance(inst['dataCenterInfo']['instanceId']);
             if (inst['status'] in instStatusMap) {
                 instStatusMap[inst['status']].push(nacLink);
@@ -79,7 +132,9 @@ var eurekaRegistryView = (function () {
 
     function wireSearchBox() {
         selectAppAutoCompleteBox = $('#search-app').autocomplete({
-            source: sortedAppList.map(function(o) { return o.name;}),
+            source: sortedAppList.map(function (o) {
+                return o.name;
+            }),
             select: function (event, ui) {
                 searchApp(ui.item.value);
             }
@@ -96,104 +151,109 @@ var eurekaRegistryView = (function () {
     }
 
     function render() {
-        buildAndLoadSortedAppList();
-        renderBubbleChart();
+        var data = buildAndLoadSortedAppList();
+        renderBubbleChart(data);
         showTotalCount();
         showSearchBox();
         wireSearchBox();
     }
 
-    function renderBubbleChart() {
-        var format = d3.format(",d"),
-                color = d3.scale.category20c();
 
-        var bubble = d3.layout.pack()
+    function renderBubbleChart(data) {
+        format = d3.format(",d");
+        color = d3.scale.category20c();
+
+        bubble = d3.layout.pack()
                 .sort(null)
                 .size([diameter, diameter])
                 .padding(1.5);
+        clear();
 
-        var svg = d3.select('#' + containerId).append("svg")
+        svg = d3.select('#' + containerId).append("svg")
                 .attr("width", diameter)
                 .attr("height", diameter)
                 .attr("class", "bubble");
 
-        renderBubbles();
+        updateView(data);
         d3.select(self.frameElement).style("height", diameter + "px");
 
         function clear() {
-            d3.select('#' + containerId).clear();
+            $('#' + containerId).empty();
         }
+    }
 
-        function renderBubbles() {
-            var nodes = svg.selectAll(".node")
-                    .data(bubble.nodes(root)
-                            .filter(function (d) {
-                                return !d.children;
-                            }), function (d) {
-                        return d.name;
-                    });
+    function handleOnClickNode(d) {
+        $('#search-app').val(d.name.toLowerCase()); // update search box text to keep it in sync
+        searchApp(d.name);
+    }
 
-            var node = nodes.enter().append("g")
-                    .attr("class", "node")
-                    .attr("transform", function (d) {
-                        return "translate(" + d.x + "," + d.y + ")";
-                    });
+    function updateView(data) {
+        var nodes = svg.selectAll(".node")
+                .data(bubble.nodes(data)
+                        .filter(function (d) {
+                            return !d.children;
+                        }), function (d) {
+                    return d.name + "-" + d.value;
+                });
 
-            node.append("title")
-                    .text(function (d) {
-                        return d.name + ": " + format(d.value);
-                    });
+        // remove nodes on exit
+        nodes.exit().remove();
 
-            node.append("circle")
-                    .attr("r", function (d) {
-                        return d.r;
-                    })
-                    .style("fill", function (d) {
-                        return color(d.name);
-                    }).on('mouseover', function (d) {
-                        d3.select(this).style('cursor', 'pointer');
-                    }).on('click', function (d) {
-                        handleOnClickNode(d);
-                    });
+        var node = nodes.enter().append("g")
+                .attr("class", "node")
+                .attr("transform", function (d) {
+                    return "translate(" + d.x + "," + d.y + ")";
+                });
 
-            var labels = node.append("text")
-                    .attr("dy", ".3em")
-                    .style("text-anchor", "middle")
-                    .text(function (d) {
-                        if (d.name) {
-                            return d.name.substring(0, d.r / 3);
-                        }
-                        return "";
-                    }).on('mouseover', function (d) {
-                        d3.select(this).style('cursor', 'pointer');
-                    }).on('click', function (d) {
-                        handleOnClickNode(d);
-                    });
+        node.append("title")
+                .text(function (d) {
+                    return d.name + ": " + format(d.value);
+                });
 
-            labels.append('tspan')
-                    .attr('y', function (d) {
-                        return (d.r / 2.0);
-                    })
-                    .attr('x', '0')
-                    .style("text-anchor", "middle")
-                    .text(function (d) {
-                        if (d.r > 20) {
-                            return format(d.value);
-                        }
-                        return '';
-                    });
+        node.append("circle")
+                .attr("r", function (d) {
+                    return d.r;
+                })
+                .style("fill", function (d) {
+                    return color(d.name);
+                }).on('mouseover', function (d) {
+                    d3.select(this).style('cursor', 'pointer');
+                }).on('click', function (d) {
+                    handleOnClickNode(d);
+                });
 
-            // remove nodes on exit
-            nodes.exit().remove();
-        }
+        var labels = node.append("text")
+                .attr("dy", ".3em")
+                .style("text-anchor", "middle")
+                .text(function (d) {
+                    if (d.name) {
+                        return d.name.substring(0, d.r / 3);
+                    }
+                    return "";
+                }).on('mouseover', function (d) {
+                    d3.select(this).style('cursor', 'pointer');
+                }).on('click', function (d) {
+                    handleOnClickNode(d);
+                });
 
-        function handleOnClickNode(d) {
-            $('#search-app').val(d.name.toLowerCase()); // update search box text to keep it in sync
-            searchApp(d.name);
-        }
+        labels.append('tspan')
+                .attr('y', function (d) {
+                    return (d.r / 2.0);
+                })
+                .attr('x', '0')
+                .style("text-anchor", "middle")
+                .text(function (d) {
+                    if (d.r > 20) {
+                        return format(d.value);
+                    }
+                    return '';
+                });
+
     }
 
     return {
-        init: init
+        init  : init
     }
-})();
+})
+
+();

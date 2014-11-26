@@ -5,6 +5,33 @@ body {
 
 .container {
   font: 10px sans-serif;
+  width:85%;
+}
+
+.left-col {
+  float: left;
+}
+
+.right-col {
+  float: right;
+  margin-left: 35px;
+}
+
+.live-stream {
+  width: 600px;
+  border: 1px dashed darkgray;
+  float: right;
+  height: 700px;
+  overflow-y: scroll;
+  padding-left: 10px;
+  display: none;
+}
+
+.live-stream .app-name {
+  color: lightcoral;
+}
+.live-stream .entry-type {
+  color: green;
 }
 
 h1 {
@@ -40,6 +67,7 @@ section h2 {
 #search-box-cont {
   display: none;
   width: 60%;
+  clear: both;
 }
 
 ul {

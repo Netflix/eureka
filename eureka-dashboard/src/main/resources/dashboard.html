@@ -30,9 +30,15 @@
   <h1>Eureka Registry</h1>
   <div class="msg">Loading eureka registry...</div>
   <div class="reg-cont">
-    <h4 class="reg-count">total instance count : <span class="val"></span></h4>
+    <div class="left-col">
+      <h4 class="reg-count">total instance count : <span class="val"></span></h4>
+      <div id="registry"></div>
+    </div>
 
-    <div id="registry"></div>
+    <div class="right-col">
+      <ul class="live-stream"></ul>
+    </div>
+
 
     <div id="search-box-cont">
       <div class="col-lg-4">
@@ -41,9 +47,9 @@
     </div>
     <section class="inst-list-cont">
       <h4>Instances for app <span class="app"></span></h4>
-
       <div id="inst-list"></div>
     </section>
+
   </div>
 </div>
 

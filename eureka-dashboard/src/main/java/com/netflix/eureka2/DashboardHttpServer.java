@@ -50,7 +50,7 @@ public class DashboardHttpServer {
     public void start() {
         server = RxNetty.createHttpServer(config.getDashboardPort(),
                 RequestHandlerWithErrorMapper.from(
-                        new MainRequestHandler(),
+                        new MainRequestHandler(config),
                         new FileErrorResponseMapper())).start();
         logger.info("Starting HTTP dashboard server on port {}...", server.getServerPort());
     }

@@ -7,6 +7,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 
+import com.netflix.eureka2.config.EurekaDashboardConfig;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.netty.protocol.http.server.HttpError;
@@ -23,8 +24,10 @@ import static io.netty.handler.codec.http.HttpResponseStatus.*;
 public class MainRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
 
     private static final Logger logger = LoggerFactory.getLogger(MainRequestHandler.class);
+    public static final String REQ_PATH_GETCONFIG = "/getconfig";
 
     private final StaticFileHandler staticFileHandler;
+    private EurekaDashboardConfig config;
 
     public static class StaticFileHandler extends ClassPathFileRequestHandler {
         public StaticFileHandler() {
@@ -103,19 +106,16 @@ public class MainRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
         }
     }
 
-    public MainRequestHandler() {
+    public MainRequestHandler(EurekaDashboardConfig config) {
+        this.config = config;
         staticFileHandler = new StaticFileHandler();
     }
 
     @Override
     public Observable<Void> handle(HttpServerRequest<ByteBuf> request, HttpServerResponse<ByteBuf> response) {
         final String reqPath = request.getPath();
-        if (reqPath.equals("/dump")) {
-            response.getHeaders().set("Content-Type", "application/json");
-            final String resp = "{ \"name\" : \"amit\", \"age\" : 35 }";
-            ByteBuf output = response.getAllocator().buffer().writeBytes(resp.getBytes());
-            response.setStatus(HttpResponseStatus.OK);
-            return response.writeAndFlush(output);
+        if (reqPath.equals(REQ_PATH_GETCONFIG)) {
+            return sendConfig(response);
         } else if (staticFileHandler.isStaticResource(reqPath)) {
             return staticFileHandler.handle(request, response);
         } else {
@@ -123,4 +123,14 @@ public class MainRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
             return response.writeStringAndFlush("Not implemented yet\n");
         }
     }
+
+    private Observable<Void> sendConfig(HttpServerResponse<ByteBuf> response) {
+        response.getHeaders().set("Content-Type", "application/json");
+        final String resp = "{ \"wsport\" : " + "\"" + config.getWebSocketPort() + "\" }";
+        ByteBuf output = response.getAllocator().buffer().writeBytes(resp.getBytes());
+        response.setStatus(HttpResponseStatus.OK);
+        return response.writeAndFlush(output);
+    }
+
+
 }
