@@ -39,7 +39,7 @@ task runBridgeServer (dependsOn: [classes], type: JavaExec) {
     group = "Run tasks"
     description = "Run Eureka 2.0 bridge server"
 
-    main = "com.netflix.rx.eureka.server.EurekaBridgeServer"
+    main = "com.netflix.eureka2.server.EurekaBridgeServer"
     classpath = sourceSets.main.runtimeClasspath
 
     systemProperty 'java.awt.headless', 'true'

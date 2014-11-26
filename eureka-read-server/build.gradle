@@ -47,8 +47,8 @@ task runReadServer (dependsOn: [classes], type: JavaExec) {
     systemProperty 'org.slf4j.simpleLogger.log.com.netflix.eureka2', 'debug'
     systemProperty 'org.slf4j.simpleLogger.log.io.netty.handler.logging.LoggingHandler', 'debug'
 
-    args "-n", "eurekaRead",  // Server name
-         "-r", "7300",        // Discovery port number of this instance
-         "-s", "7701",        // Shutdown port number of this instance
-         "localhost"          // List of write server host names
+//    args "-n", "eurekaRead",  // Server name
+//         "-r", "7300",        // Discovery port number of this instance
+//         "-s", "7701",        // Shutdown port number of this instance
+//         "localhost"          // List of write server host names
 }

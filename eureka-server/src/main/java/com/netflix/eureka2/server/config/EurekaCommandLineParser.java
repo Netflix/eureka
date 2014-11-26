@@ -19,8 +19,7 @@ package com.netflix.eureka2.server.config;
 import java.util.List;
 
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
-import com.netflix.eureka2.server.EurekaBootstrapConfig;
-import com.netflix.eureka2.server.EurekaBootstrapConfig.EurekaBootstrapConfigBuilder;
+import com.netflix.eureka2.server.config.EurekaBootstrapConfig.EurekaBootstrapConfigBuilder;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
@@ -68,12 +67,12 @@ public abstract class EurekaCommandLineParser<C extends EurekaBootstrapConfig, B
                 switch (resolverType) {
                     case "dns":
                         if (cli.getArgList().size() != 1) {
-                            throw new IllegalArgumentException("provide Eureka Write cluster domain name as parameter");
+                            throw new IllegalArgumentException("provide Eureka Write cluster <domain_name:reg:disc:repl> as parameter");
                         }
                         break;
                     case "inline":
                         if (cli.getArgList().size() < 1) {
-                            throw new IllegalArgumentException("provide Eureka Write cluster server addresses as parameter list");
+                            throw new IllegalArgumentException("provide Eureka Write cluster server <addresse:reg:disc:repl>s as parameter list");
                         }
                         break;
                     default:
@@ -87,7 +86,7 @@ public abstract class EurekaCommandLineParser<C extends EurekaBootstrapConfig, B
             }
             builder.withAppName(cli.getOptionValue("n"));
             builder.withWebAdminPort(Integer.parseInt(cli.getOptionValue("a", "8077")));
-            builder.withWriteClusterAddresses(((List<String>) cli.getArgList()).toArray(new String[cli.getArgList().size()]));
+            builder.withWriteClusterServers(((List<String>) cli.getArgList()).toArray(new String[cli.getArgList().size()]));
         }
     }
 

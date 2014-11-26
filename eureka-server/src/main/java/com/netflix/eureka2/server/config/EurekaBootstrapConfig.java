@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server;
+package com.netflix.eureka2.server.config;
 
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
@@ -24,29 +24,32 @@ import com.netflix.governator.annotations.Configuration;
  * @author Tomasz Bak
  */
 public class EurekaBootstrapConfig {
-    @Configuration("writeCluster.resolverType")
+
+    // common write server configs
+    @Configuration("common.writeCluster.resolverType")
     protected String resolverType = "inline";
 
+    @Configuration("common.writeCluster.servers")
+    protected String[] inlineWriteClusterServers = {"localhost:12102:12103:12104"};
+
+    @Configuration("common.writeCluster.domainName")
+    protected String dnsWriteClusterServer;
+
+    // self configs
     @Configuration("services.transport.codec")
     protected String codec = "Avro";
 
     @Configuration("services.shutdown.port")
     protected int shutDownPort = 7700;
 
-    @Configuration("dataCenter.type")
+    @Configuration("info.dataCenter.type")
     protected String dataCenterType = DataCenterType.Basic.name();
 
-    @Configuration("applicationName")
+    @Configuration("info.applicationName")
     protected String appName = "eurekaWriteCluster";
 
-    @Configuration("vipAddress")
+    @Configuration("info.vipAddress")
     private String vipAddress;
-
-    @Configuration("writeCluster.servers")
-    protected String[] writeClusterServers = {"localhost"};
-
-    @Configuration("writeCluster.domainName")
-    protected String writeClusterDomainName;
 
     @Configuration("netflix.platform.admin.resources.port")
     protected int webAdminPort = 8077;
@@ -57,14 +60,14 @@ public class EurekaBootstrapConfig {
 
     protected EurekaBootstrapConfig(DataCenterType dataCenterType, String resolverType,
                                     Codec codec, int shutDownPort,
-                                    String appName, String vipAddress, String writeClusterDomainName,
-                                    String[] writeClusterServers, int webAdminPort) {
+                                    String appName, String vipAddress, String dnsWriteClusterServer,
+                                    String[] inlineWriteClusterServers, int webAdminPort) {
         this.resolverType = resolverType;
         this.shutDownPort = shutDownPort;
         this.appName = appName;
         this.vipAddress = vipAddress;
-        this.writeClusterDomainName = writeClusterDomainName;
-        this.writeClusterServers = writeClusterServers;
+        this.dnsWriteClusterServer = dnsWriteClusterServer;
+        this.inlineWriteClusterServers = inlineWriteClusterServers;
         this.webAdminPort = webAdminPort;
         this.codec = codec.name();
         this.dataCenterType = dataCenterType.name();
@@ -94,12 +97,12 @@ public class EurekaBootstrapConfig {
         return vipAddress;
     }
 
-    public String[] getWriteClusterServers() {
-        return writeClusterServers;
+    public WriteServerBootstrap[] getWriteClusterServersInline() {
+        return WriteServerBootstrap.fromList(inlineWriteClusterServers);
     }
 
-    public String getWriteClusterDomainName() {
-        return writeClusterDomainName;
+    public WriteServerBootstrap getWriteClusterServerDns() {
+        return WriteServerBootstrap.from(dnsWriteClusterServer);
     }
 
     public int getWebAdminPort() {
@@ -156,8 +159,8 @@ public class EurekaBootstrapConfig {
             return self();
         }
 
-        public B withWriteClusterAddresses(String[] rest) {
-            this.writeClusterServers = rest;
+        public B withWriteClusterServers(String[] servers) {
+            this.writeClusterServers = servers;
             return self();
         }
 
@@ -176,6 +179,53 @@ public class EurekaBootstrapConfig {
         @SuppressWarnings("unchecked")
         protected B self() {
             return (B) this;
+        }
+    }
+
+    public static class WriteServerBootstrap {
+        private final String hostname;
+        private final Integer registrationPort;
+        private final Integer discoveryPort;
+        private final Integer replicationPort;
+
+        protected static WriteServerBootstrap[] fromList(String... hostnameAndPortsList) {
+            WriteServerBootstrap[] servers = new WriteServerBootstrap[hostnameAndPortsList.length];
+            for (int i = 0; i < hostnameAndPortsList.length; i++) {
+                servers[i] = new WriteServerBootstrap(hostnameAndPortsList[i]);
+            }
+            return servers;
+        }
+
+        protected static WriteServerBootstrap from(String hostnameAndPorts) {
+            return new WriteServerBootstrap(hostnameAndPorts);
+        }
+
+        private WriteServerBootstrap(String hostnameAndPorts) {
+            try {
+                String[] parts = hostnameAndPorts.split(":");
+                hostname = parts[0];
+                registrationPort = Integer.parseInt(parts[1]);
+                discoveryPort = Integer.parseInt(parts[2]);
+                replicationPort = Integer.parseInt(parts[3]);
+            } catch (Exception e) {
+                throw new IllegalArgumentException(e);
+            }
+        }
+
+        public String getHostname() {
+            return hostname;
+        }
+
+        public Integer getRegistrationPort() {
+            return registrationPort;
+        }
+
+        public Integer getDiscoveryPort() {
+            return discoveryPort;
+        }
+
+        public Integer getReplicationPort() {
+            return replicationPort;
         }
     }
 }

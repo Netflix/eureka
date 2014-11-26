@@ -20,7 +20,7 @@ import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolver.Server;
 import com.netflix.eureka2.client.resolver.ServerResolverFilter;
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.server.EurekaServerConfig;
+import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.WriteClusterResolverProvider;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;

@@ -6,9 +6,11 @@ import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
+import com.netflix.eureka2.config.EurekaDashboardConfig;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.server.config.EurekaBootstrapConfig;
 import rx.Observable;
 
 @Singleton
@@ -19,18 +21,19 @@ public class EurekaRegistryDataStream {
     @Inject
     public EurekaRegistryDataStream(EurekaDashboardConfig config) {
         ServerResolver resolver;
-        final int discoveryPort = config.getWriteClusterDiscoveryPort();
-        String[] writeClusterServers = config.getWriteClusterServers();
         switch (config.getResolverType()) {
             case "dns":
-                String writeServerDnsName = writeClusterServers[0];
-                resolver = ServerResolvers.forDnsName(writeServerDnsName, discoveryPort);
+                EurekaBootstrapConfig.WriteServerBootstrap server = config.getWriteClusterServerDns();
+                resolver = ServerResolvers.forDnsName(server.getHostname(), server.getDiscoveryPort());
                 break;
             case "inline":
-                ServerResolver.Server[] servers = new ServerResolver.Server[writeClusterServers.length];
-                for (int i = 0; i < writeClusterServers.length; i++) {
-                    String serverHostName = writeClusterServers[i];
-                    servers[i] = new ServerResolver.Server(serverHostName, discoveryPort);
+                EurekaBootstrapConfig.WriteServerBootstrap[] serverBootstraps = config.getWriteClusterServersInline();
+                ServerResolver.Server[] servers = new ServerResolver.Server[serverBootstraps.length];
+                for (int i = 0; i < servers.length; i++) {
+                    servers[i] = new ServerResolver.Server(
+                            serverBootstraps[i].getHostname(),
+                            serverBootstraps[i].getDiscoveryPort()
+                    );
                 }
                 resolver = ServerResolvers.from(servers);
                 break;

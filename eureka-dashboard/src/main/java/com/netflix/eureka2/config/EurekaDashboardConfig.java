@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2;
+package com.netflix.eureka2.config;
 
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
-import com.netflix.eureka2.server.EurekaBootstrapConfig;
+import com.netflix.eureka2.server.config.EurekaBootstrapConfig;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import com.netflix.governator.annotations.Configuration;
@@ -36,9 +36,6 @@ public class EurekaDashboardConfig extends EurekaBootstrapConfig {
     @Configuration("dashboard.websocket.port")
     private int webSocketPort = DEFAULT_WEBSOCKET_PORT;
 
-    @Configuration("writeCluster.discovery.port")
-    private int writeClusterDiscoveryPort = EurekaTransports.DEFAULT_DISCOVERY_PORT;
-
     // For property injection
     protected EurekaDashboardConfig() {
     }
@@ -46,12 +43,11 @@ public class EurekaDashboardConfig extends EurekaBootstrapConfig {
     public EurekaDashboardConfig(DataCenterType dataCenterType, String resolverType, Codec codec,
                                  int shutDownPort, String appName, String vipAddress, String writeClusterDomainName,
                                  String[] writeClusterServers, int webAdminPort, int dashboardPort,
-                                 int webSocketPort, int writeClusterDiscoveryPort) {
+                                 int webSocketPort) {
         super(dataCenterType, resolverType, codec, shutDownPort, appName, vipAddress, writeClusterDomainName,
                 writeClusterServers, webAdminPort);
         this.dashboardPort = dashboardPort;
         this.webSocketPort = webSocketPort;
-        this.writeClusterDiscoveryPort = writeClusterDiscoveryPort;
     }
 
     public int getDashboardPort() {
@@ -60,10 +56,6 @@ public class EurekaDashboardConfig extends EurekaBootstrapConfig {
 
     public int getWebSocketPort() {
         return webSocketPort;
-    }
-
-    public int getWriteClusterDiscoveryPort() {
-        return writeClusterDiscoveryPort;
     }
 
     public static class EurekaDashboardConfigBuilder extends EurekaBootstrapConfigBuilder<EurekaDashboardConfig, EurekaDashboardConfigBuilder> {
@@ -82,16 +74,10 @@ public class EurekaDashboardConfig extends EurekaBootstrapConfig {
             return this;
         }
 
-        public EurekaDashboardConfigBuilder withWriteClusterDiscoveryPort(int writeClusterDiscoveryPort) {
-            this.writeClusterDiscoveryPort = writeClusterDiscoveryPort;
-            return this;
-        }
-
         @Override
         public EurekaDashboardConfig build() {
             return new EurekaDashboardConfig(dataCenterType, resolverType, codec, shutDownPort, appName, vipAddress,
-                    writeClusterDomainName, writeClusterServers, webAdminPort, dashboardPort, webSocketPort,
-                    writeClusterDiscoveryPort);
+                    writeClusterDomainName, writeClusterServers, webAdminPort, dashboardPort, webSocketPort);
         }
     }
 }

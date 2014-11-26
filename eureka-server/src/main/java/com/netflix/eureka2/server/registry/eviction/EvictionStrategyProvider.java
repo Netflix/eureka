@@ -19,7 +19,7 @@ package com.netflix.eureka2.server.registry.eviction;
 import javax.inject.Inject;
 import javax.inject.Provider;
 
-import com.netflix.eureka2.server.EurekaServerConfig;
+import com.netflix.eureka2.server.config.EurekaServerConfig;
 
 /**
  * @author Tomasz Bak

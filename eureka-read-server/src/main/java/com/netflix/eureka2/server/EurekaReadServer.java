@@ -19,6 +19,7 @@ package com.netflix.eureka2.server;
 import java.util.List;
 
 import com.netflix.eureka2.server.config.ReadCommandLineParser;
+import com.netflix.eureka2.server.config.ReadServerConfig;
 import com.netflix.governator.guice.BootstrapBinder;
 import com.netflix.governator.guice.BootstrapModule;
 import org.slf4j.Logger;

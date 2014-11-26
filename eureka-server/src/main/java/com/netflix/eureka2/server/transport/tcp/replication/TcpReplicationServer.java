@@ -17,7 +17,7 @@
 package com.netflix.eureka2.server.transport.tcp.replication;
 
 import com.google.inject.Singleton;
-import com.netflix.eureka2.server.EurekaServerConfig;
+import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
