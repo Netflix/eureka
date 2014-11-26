@@ -468,4 +468,16 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
         return configInstance.getIntProperty(
                 namespace + "client.cacheRefresh.exponentialBackOffBound", 10).get();
     }
+
+    @Override
+    public String getDollarReplacement() {
+        return configInstance.getStringProperty(
+                namespace + "dollarReplacement", "_-").get();
+    }
+
+    @Override
+    public String getEscapeCharReplacement() {
+        return configInstance.getStringProperty(
+                namespace + "escapeCharReplacement", "__").get();
+    }
 }

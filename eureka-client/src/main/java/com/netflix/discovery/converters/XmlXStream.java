@@ -17,10 +17,13 @@
 package com.netflix.discovery.converters;
 
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.discovery.DiscoveryManager;
+import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.io.xml.DomDriver;
+import com.thoughtworks.xstream.io.xml.XmlFriendlyNameCoder;
 
 /**
  * An <tt>Xstream</tt> specific implementation for serializing and deserializing
@@ -36,10 +39,13 @@ import com.thoughtworks.xstream.io.xml.DomDriver;
 
 public class XmlXStream extends XStream {
 
+    private static final EurekaClientConfig EUREKA_CLIENT_CONFIG = DiscoveryManager
+            .getInstance().getEurekaClientConfig();
+
     private static final XmlXStream s_instance = new XmlXStream();
 
     public XmlXStream() {
-        super(new DomDriver());
+        super(new DomDriver(null, initializeNameCoder()));
 
         registerConverter(new Converters.ApplicationConverter());
         registerConverter(new Converters.ApplicationsConverter());
@@ -54,5 +60,9 @@ public class XmlXStream extends XStream {
 
     public static XmlXStream getInstance() {
         return s_instance;
+    }
+
+    private static XmlFriendlyNameCoder initializeNameCoder(){
+        return new XmlFriendlyNameCoder(EUREKA_CLIENT_CONFIG.getDollarReplacement(),  EUREKA_CLIENT_CONFIG.getEscapeCharReplacement());
     }
 }

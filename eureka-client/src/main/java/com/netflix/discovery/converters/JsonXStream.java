@@ -17,6 +17,8 @@
 package com.netflix.discovery.converters;
 
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.discovery.DiscoveryManager;
+import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.thoughtworks.xstream.XStream;
@@ -37,11 +39,14 @@ import com.thoughtworks.xstream.io.xml.XmlFriendlyNameCoder;
  */
 public class JsonXStream extends XStream {
 
+    private static final EurekaClientConfig EUREKA_CLIENT_CONFIG = DiscoveryManager
+            .getInstance().getEurekaClientConfig();
+
     private static final JsonXStream s_instance = new JsonXStream();
 
     public JsonXStream() {
         super(new JettisonMappedXmlDriver() {
-            private final NameCoder coder = new XmlFriendlyNameCoder();
+            private final NameCoder coder = initializeNameCoder();
 
             protected NameCoder getNameCoder() {
                 return this.coder;
@@ -59,5 +64,9 @@ public class JsonXStream extends XStream {
 
     public static JsonXStream getInstance() {
         return s_instance;
+    }
+
+    private static XmlFriendlyNameCoder initializeNameCoder(){
+        return new XmlFriendlyNameCoder(EUREKA_CLIENT_CONFIG.getDollarReplacement(),  EUREKA_CLIENT_CONFIG.getEscapeCharReplacement());
     }
 }

@@ -475,4 +475,18 @@ public interface EurekaClientConfig {
      * @return maximum multiplier value for retry delay
      */
     int getCacheRefreshExecutorExponentialBackOffBound();
+
+    /**
+     * Get a replacement string for Dollar sign <code>$</code> during serializing/deserializing information in eureka server.
+     *
+     * @return Replacement string for Dollar sign <code>$</code>.
+     */
+    String getDollarReplacement();
+
+    /**
+     * Get a replacement string for underscore sign <code>_</code> during serializing/deserializing information in eureka server.
+     *
+     * @return Replacement string for underscore sign <code>_</code>.
+     */
+    String getEscapeCharReplacement();
 }
