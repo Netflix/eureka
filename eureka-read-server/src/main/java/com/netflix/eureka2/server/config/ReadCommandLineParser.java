@@ -21,7 +21,6 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 
 import static com.netflix.eureka2.transport.EurekaTransports.DEFAULT_DISCOVERY_PORT;
-import static com.netflix.eureka2.transport.EurekaTransports.DEFAULT_REGISTRATION_PORT;
 
 /**
  * @author Tomasz Bak
@@ -35,14 +34,12 @@ public class ReadCommandLineParser extends EurekaCommandLineParser<ReadServerCon
     @Override
     protected void additionalOptions(Options options) {
         options.addOption("q", true, "server resolver type (dns|inline); default inline");
-        options.addOption("rw", true, "write cluster TCP registration server port; default " + DEFAULT_REGISTRATION_PORT);
-        options.addOption("rr", true, "write cluster TCP discovery server port; default " + DEFAULT_DISCOVERY_PORT);
+        options.addOption("r", true, "TCP discovery server port; default " + DEFAULT_DISCOVERY_PORT);
     }
 
     @Override
     protected void process(CommandLine cli) {
         super.process(cli);
-        builder.withWriteClusterRegistrationPort(Integer.parseInt(cli.getOptionValue("rw", "" + DEFAULT_REGISTRATION_PORT)));
-        builder.withWriteClusterDiscoveryPort(Integer.parseInt(cli.getOptionValue("rr", "" + DEFAULT_DISCOVERY_PORT)));
+        builder.withDiscoveryPort(Integer.parseInt(cli.getOptionValue("r", "" + DEFAULT_DISCOVERY_PORT)));
     }
 }

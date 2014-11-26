@@ -105,7 +105,7 @@ public abstract class EurekaServerConfig extends EurekaBootstrapConfig {
         protected EurekaServerConfigBuilder() {
         }
 
-        public B withWriteServerPort(int writeServerPort) {
+        public B withRegistrationPort(int writeServerPort) {
             this.registrationPort = writeServerPort;
             return self();
         }
@@ -115,7 +115,7 @@ public abstract class EurekaServerConfig extends EurekaBootstrapConfig {
             return self();
         }
 
-        public B withReadServerPort(int readServerPort) {
+        public B withDiscoveryPort(int readServerPort) {
             this.discoveryPort = readServerPort;
             return self();
         }

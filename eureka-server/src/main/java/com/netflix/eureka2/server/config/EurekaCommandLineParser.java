@@ -67,12 +67,12 @@ public abstract class EurekaCommandLineParser<C extends EurekaBootstrapConfig, B
                 switch (resolverType) {
                     case "dns":
                         if (cli.getArgList().size() != 1) {
-                            throw new IllegalArgumentException("provide Eureka Write cluster domain name as parameter");
+                            throw new IllegalArgumentException("provide Eureka Write cluster <domain_name:reg:disc:repl> as parameter");
                         }
                         break;
                     case "inline":
                         if (cli.getArgList().size() < 1) {
-                            throw new IllegalArgumentException("provide Eureka Write cluster server addresses as parameter list");
+                            throw new IllegalArgumentException("provide Eureka Write cluster server <addresse:reg:disc:repl>s as parameter list");
                         }
                         break;
                     default:

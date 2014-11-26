@@ -17,65 +17,32 @@
 package com.netflix.eureka2.server.config;
 
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
-import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
-import com.netflix.governator.annotations.Configuration;
 
 /**
+ * TODO: merge the read and write server configs into the base EurekaServerConfig
  * @author Tomasz Bak
  */
 public class ReadServerConfig extends EurekaServerConfig {
-
-    @Configuration("writeCluster.registration.port")
-    private int writeClusterRegistrationPort = EurekaTransports.DEFAULT_REGISTRATION_PORT;
-
-    @Configuration("writeCluster.discovery.port")
-    private int writeClusterDiscoveryPort = EurekaTransports.DEFAULT_DISCOVERY_PORT;
-
     public ReadServerConfig() {
     }
 
     public ReadServerConfig(DataCenterType dataCenterType, String resolverType,
                             int readServerPort, Codec codec, int shutDownPort,
                             String appName, String vipAddress, String writeClusterDomainName,
-                            String[] writeClusterServers, int writeClusterRegistrationPort,
-                            int writeClusterDiscoveryPort, int webAdminPort,
+                            String[] writeClusterServers, int webAdminPort,
                             long registryEvictionTimeout, String evictionStrategyType, String evictionStrategyValue) {
         super(dataCenterType, resolverType, -1, -1, readServerPort, codec, shutDownPort, appName, vipAddress,
                 writeClusterDomainName, writeClusterServers, webAdminPort,
                 registryEvictionTimeout, evictionStrategyType, evictionStrategyValue);
-        this.writeClusterRegistrationPort = writeClusterRegistrationPort;
-        this.writeClusterDiscoveryPort = writeClusterDiscoveryPort;
-    }
-
-    public int getWriteClusterRegistrationPort() {
-        return writeClusterRegistrationPort;
-    }
-
-    public int getWriteClusterDiscoveryPort() {
-        return writeClusterDiscoveryPort;
     }
 
     public static class ReadServerConfigBuilder extends EurekaServerConfigBuilder<ReadServerConfig, ReadServerConfigBuilder> {
 
-        private int writeClusterRegistrationPort;
-        private int writeClusterDiscoveryPort;
-
-        public ReadServerConfigBuilder withWriteClusterRegistrationPort(int writeClusterRegistrationPort) {
-            this.writeClusterRegistrationPort = writeClusterRegistrationPort;
-            return this;
-        }
-
-        public ReadServerConfigBuilder withWriteClusterDiscoveryPort(int writeClusterDiscoveryPort) {
-            this.writeClusterDiscoveryPort = writeClusterDiscoveryPort;
-            return this;
-        }
-
         @Override
         public ReadServerConfig build() {
             return new ReadServerConfig(dataCenterType, resolverType, discoveryPort, codec, shutDownPort, appName, vipAddress,
-                    writeClusterDomainName, writeClusterServers, writeClusterRegistrationPort,
-                    writeClusterDiscoveryPort, webAdminPort,
+                    writeClusterDomainName, writeClusterServers, webAdminPort,
                     evictionTimeout, evictionStrategyType.name(), evictionStrategyValue);
         }
     }

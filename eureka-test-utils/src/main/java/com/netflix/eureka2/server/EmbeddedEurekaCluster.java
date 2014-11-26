@@ -76,8 +76,8 @@ public class EmbeddedEurekaCluster {
                     .withAppName(WRITE_SERVER_NAME)
                     .withVipAddress(WRITE_SERVER_NAME)
                     .withDataCenterType(DataCenterType.Basic)
-                    .withWriteServerPort(registrationPort)
-                    .withReadServerPort(discoveryPort)
+                    .withRegistrationPort(registrationPort)
+                    .withDiscoveryPort(discoveryPort)
                     .withReplicationPort(replicationPort)
                     .withCodec(Codec.Json)
                     .build();
@@ -99,10 +99,8 @@ public class EmbeddedEurekaCluster {
                     .withAppName(READ_SERVER_NAME)
                     .withVipAddress(READ_SERVER_NAME)
                     .withDataCenterType(DataCenterType.Basic)
-                    .withReadServerPort(port)
+                    .withDiscoveryPort(port)
                     .withCodec(Codec.Json)
-                    .withWriteClusterRegistrationPort(WRITE_SERVER_PORTS_FROM)
-                    .withWriteClusterDiscoveryPort(WRITE_SERVER_PORTS_FROM + 1)
                     .build();
             ServerInstance instance = new EurekaReadServerInstance(config, registrationResolver, discoveryResolver);
             readInstances.add(instance);
@@ -115,8 +113,8 @@ public class EmbeddedEurekaCluster {
                     .withAppName(BRIDGE_SERVER_NAME)
                     .withVipAddress(BRIDGE_SERVER_NAME)
                     .withDataCenterType(DataCenterType.Basic)
-                    .withWriteServerPort(port)
-                    .withReadServerPort(port + 1)  // explicitly set it to a different port to verify
+                    .withRegistrationPort(port)
+                    .withDiscoveryPort(port + 1)  // explicitly set it to a different port to verify
                     .withReplicationPort(port + 2)  // explicitly set it to a different port to verify
                     .withCodec(Codec.Json)
                     .withRefreshRateSec(30)
