@@ -18,13 +18,16 @@ package com.netflix.eureka2.server;
 
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
+import com.netflix.eureka2.config.BridgeServerConfig;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
-import com.netflix.eureka2.server.BridgeServerConfig.BridgeServerConfigBuilder;
-import com.netflix.eureka2.server.ReadServerConfig.ReadServerConfigBuilder;
+import com.netflix.eureka2.config.BridgeServerConfig.BridgeServerConfigBuilder;
+import com.netflix.eureka2.server.config.ReadServerConfig;
+import com.netflix.eureka2.server.config.ReadServerConfig.ReadServerConfigBuilder;
 import com.netflix.eureka2.server.ServerInstance.EurekaBridgeServerInstance;
 import com.netflix.eureka2.server.ServerInstance.EurekaReadServerInstance;
 import com.netflix.eureka2.server.ServerInstance.EurekaWriteServerInstance;
-import com.netflix.eureka2.server.WriteServerConfig.WriteServerConfigBuilder;
+import com.netflix.eureka2.server.config.WriteServerConfig;
+import com.netflix.eureka2.server.config.WriteServerConfig.WriteServerConfigBuilder;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,8 +76,8 @@ public class EmbeddedEurekaCluster {
                     .withAppName(WRITE_SERVER_NAME)
                     .withVipAddress(WRITE_SERVER_NAME)
                     .withDataCenterType(DataCenterType.Basic)
-                    .withWriteServerPort(registrationPort)
-                    .withReadServerPort(discoveryPort)
+                    .withRegistrationPort(registrationPort)
+                    .withDiscoveryPort(discoveryPort)
                     .withReplicationPort(replicationPort)
                     .withCodec(Codec.Json)
                     .build();
@@ -96,10 +99,8 @@ public class EmbeddedEurekaCluster {
                     .withAppName(READ_SERVER_NAME)
                     .withVipAddress(READ_SERVER_NAME)
                     .withDataCenterType(DataCenterType.Basic)
-                    .withReadServerPort(port)
+                    .withDiscoveryPort(port)
                     .withCodec(Codec.Json)
-                    .withWriteClusterRegistrationPort(WRITE_SERVER_PORTS_FROM)
-                    .withWriteClusterDiscoveryPort(WRITE_SERVER_PORTS_FROM + 1)
                     .build();
             ServerInstance instance = new EurekaReadServerInstance(config, registrationResolver, discoveryResolver);
             readInstances.add(instance);
@@ -112,8 +113,8 @@ public class EmbeddedEurekaCluster {
                     .withAppName(BRIDGE_SERVER_NAME)
                     .withVipAddress(BRIDGE_SERVER_NAME)
                     .withDataCenterType(DataCenterType.Basic)
-                    .withWriteServerPort(port)
-                    .withReadServerPort(port + 1)  // explicitly set it to a different port to verify
+                    .withRegistrationPort(port)
+                    .withDiscoveryPort(port + 1)  // explicitly set it to a different port to verify
                     .withReplicationPort(port + 2)  // explicitly set it to a different port to verify
                     .withCodec(Codec.Json)
                     .withRefreshRateSec(30)

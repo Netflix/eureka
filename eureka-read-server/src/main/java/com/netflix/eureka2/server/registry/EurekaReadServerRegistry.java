@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server;
+package com.netflix.eureka2.server.registry;
 
 import com.google.inject.Inject;
 import com.netflix.eureka2.client.EurekaClient;

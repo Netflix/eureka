@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.google.inject.Singleton;
+import com.netflix.eureka2.config.DashboardCommandLineParser;
+import com.netflix.eureka2.config.EurekaDashboardConfig;
 import com.netflix.eureka2.server.AbstractEurekaServer;
 import com.netflix.eureka2.server.spi.ExtensionLoader;
 import com.netflix.governator.guice.BootstrapBinder;

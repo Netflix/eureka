@@ -16,9 +16,7 @@
 
 package com.netflix.eureka2.server.config;
 
-import com.netflix.eureka2.server.EurekaServerConfig;
-import com.netflix.eureka2.server.WriteServerConfig;
-import com.netflix.eureka2.server.WriteServerConfig.WriteServerConfigBuilder;
+import com.netflix.eureka2.server.config.WriteServerConfig.WriteServerConfigBuilder;
 import com.netflix.eureka2.server.registry.eviction.EvictionStrategyProvider.StrategyType;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
@@ -46,8 +44,8 @@ public class WriteCommandLineParser extends EurekaCommandLineParser<WriteServerC
     @Override
     protected void process(CommandLine cli) {
         super.process(cli);
-        builder.withReadServerPort(Integer.parseInt(cli.getOptionValue("r", "" + DEFAULT_DISCOVERY_PORT)));
-        builder.withWriteServerPort(Integer.parseInt(cli.getOptionValue("w", "" + DEFAULT_REGISTRATION_PORT)));
+        builder.withDiscoveryPort(Integer.parseInt(cli.getOptionValue("r", "" + DEFAULT_DISCOVERY_PORT)));
+        builder.withRegistrationPort(Integer.parseInt(cli.getOptionValue("w", "" + DEFAULT_REGISTRATION_PORT)));
         builder.withReplicationPort(Integer.parseInt(cli.getOptionValue("p", "" + DEFAULT_REPLICATION_PORT)));
         builder.withEvictionTimeout(Integer.parseInt(cli.getOptionValue("et", "" + EurekaServerConfig.DEFAULT_EVICTION_TIMEOUT)));
         builder.withEvictionStrategyType(StrategyType.valueOf(cli.getOptionValue("es", StrategyType.PercentageDrop.name())));
