@@ -16,18 +16,15 @@
 
 package com.netflix.eureka2.server.config;
 
+import java.util.List;
+
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
-import com.netflix.eureka2.server.EurekaBootstrapConfig;
-import com.netflix.eureka2.server.EurekaBootstrapConfig.EurekaBootstrapConfigBuilder;
+import com.netflix.eureka2.server.config.EurekaBootstrapConfig.EurekaBootstrapConfigBuilder;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
-
-import java.util.List;
-
-import static com.netflix.eureka2.transport.EurekaTransports.DEFAULT_DISCOVERY_PORT;
 
 /**
  * @author Tomasz Bak
@@ -48,12 +45,11 @@ public abstract class EurekaCommandLineParser<C extends EurekaBootstrapConfig, B
         this.args = args;
         this.options = new Options()
                 .addOption("h", false, "print this help information")
+                .addOption("n", true, "server instance name")
                 .addOption("d", true, "datacenter type (AWS|Basic). Default Basic")
                 .addOption("q", true, "server resolver type (dns|inline); default inline")
                 .addOption("s", true, "shutdown port; default 7700")
-                .addOption("a", true, "admin port; default 8077")
-                .addOption("r", true, "TCP discovery server port; default " + DEFAULT_DISCOVERY_PORT)
-                .addOption("n", true, "server instance name");
+                .addOption("a", true, "admin port; default 8077");
     }
 
     protected abstract void additionalOptions(Options options);
@@ -62,6 +58,7 @@ public abstract class EurekaCommandLineParser<C extends EurekaBootstrapConfig, B
     protected void process(CommandLine cli) {
         helpOption = cli.hasOption('h');
         if (!helpOption) {
+            builder.withVipAddress(cli.getOptionValue("n"));
             builder.withDataCenterType(DataCenterType.valueOf(cli.getOptionValue("d", "Basic")));
 
             if (resolverRequired || !cli.getArgList().isEmpty()) {
@@ -70,12 +67,12 @@ public abstract class EurekaCommandLineParser<C extends EurekaBootstrapConfig, B
                 switch (resolverType) {
                     case "dns":
                         if (cli.getArgList().size() != 1) {
-                            throw new IllegalArgumentException("provide Eureka Write cluster domain name as parameter");
+                            throw new IllegalArgumentException("provide Eureka Write cluster <domain_name:reg:disc:repl> as parameter");
                         }
                         break;
                     case "inline":
                         if (cli.getArgList().size() < 1) {
-                            throw new IllegalArgumentException("provide Eureka Write cluster server addresses as parameter list");
+                            throw new IllegalArgumentException("provide Eureka Write cluster server <addresse:reg:disc:repl>s as parameter list");
                         }
                         break;
                     default:
@@ -84,14 +81,12 @@ public abstract class EurekaCommandLineParser<C extends EurekaBootstrapConfig, B
             }
 
             builder.withShutDownPort(Integer.parseInt(cli.getOptionValue("s", "7700")));
-            builder.withReadServerPort(Integer.parseInt(cli.getOptionValue("r", "" + DEFAULT_DISCOVERY_PORT)));
             if (!cli.hasOption("n")) {
                 throw new IllegalArgumentException("missing required server name option ('-n <server_name>')");
             }
             builder.withAppName(cli.getOptionValue("n"));
             builder.withWebAdminPort(Integer.parseInt(cli.getOptionValue("a", "8077")));
-            builder.withVipAddress(cli.getOptionValue("n"));
-            builder.withWriteClusterAddresses(((List<String>) cli.getArgList()).toArray(new String[cli.getArgList().size()]));
+            builder.withWriteClusterServers(((List<String>) cli.getArgList()).toArray(new String[cli.getArgList().size()]));
         }
     }
 

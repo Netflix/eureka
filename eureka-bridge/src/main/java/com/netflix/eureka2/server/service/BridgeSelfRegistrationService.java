@@ -7,7 +7,7 @@ import com.netflix.eureka2.registry.DataCenterInfo;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.registry.ServicePort;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
-import com.netflix.eureka2.server.BridgeServerConfig;
+import com.netflix.eureka2.config.BridgeServerConfig;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

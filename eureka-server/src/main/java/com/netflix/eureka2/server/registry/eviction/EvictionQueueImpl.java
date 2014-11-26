@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.server.EurekaBootstrapConfig;
+import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;
 import com.netflix.eureka2.server.registry.Source;
 import org.slf4j.Logger;
@@ -84,11 +84,11 @@ public class EvictionQueueImpl implements EvictionQueue {
     };
 
     @Inject
-    public EvictionQueueImpl(EurekaBootstrapConfig config, EurekaServerMetricFactory metricFactory) {
+    public EvictionQueueImpl(EurekaServerConfig config, EurekaServerMetricFactory metricFactory) {
         this(config, metricFactory, Schedulers.computation());
     }
 
-    public EvictionQueueImpl(EurekaBootstrapConfig config, EurekaServerMetricFactory metricFactory, Scheduler scheduler) {
+    public EvictionQueueImpl(EurekaServerConfig config, EurekaServerMetricFactory metricFactory, Scheduler scheduler) {
         this.evictionTimeoutMs = config.getEvictionTimeout();
         this.evictionQueueMetrics = metricFactory.getEvictionQueueMetrics();
         this.worker = scheduler.createWorker();

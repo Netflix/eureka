@@ -21,7 +21,10 @@ import com.google.inject.name.Names;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.client.metric.EurekaClientRegistryMetrics;
 import com.netflix.eureka2.client.transport.EurekaClientConnectionMetrics;
+import com.netflix.eureka2.server.config.EurekaServerConfig;
+import com.netflix.eureka2.server.config.ReadServerConfig;
 import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;
+import com.netflix.eureka2.server.registry.EurekaReadServerRegistry;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.server.service.InterestChannelMetrics;
 import com.netflix.eureka2.server.service.ReadSelfRegistrationService;
@@ -57,9 +60,9 @@ public class EurekaReadServerModule extends AbstractModule {
     @Override
     public void configure() {
         if (config == null) {
-            bind(EurekaBootstrapConfig.class).to(ReadServerConfig.class).asEagerSingleton();
+            bind(EurekaServerConfig.class).to(ReadServerConfig.class).asEagerSingleton();
         } else {
-            bind(EurekaBootstrapConfig.class).toInstance(config);
+            bind(EurekaServerConfig.class).toInstance(config);
             bind(ReadServerConfig.class).toInstance(config);
         }
         if (eurekaClient == null) {

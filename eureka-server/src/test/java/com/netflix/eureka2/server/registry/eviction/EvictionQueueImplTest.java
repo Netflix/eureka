@@ -22,8 +22,8 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.registry.SampleInstanceInfo;
-import com.netflix.eureka2.server.WriteServerConfig;
-import com.netflix.eureka2.server.WriteServerConfig.WriteServerConfigBuilder;
+import com.netflix.eureka2.server.config.WriteServerConfig;
+import com.netflix.eureka2.server.config.WriteServerConfig.WriteServerConfigBuilder;
 import com.netflix.eureka2.server.registry.Source;
 import org.junit.Before;
 import org.junit.Test;

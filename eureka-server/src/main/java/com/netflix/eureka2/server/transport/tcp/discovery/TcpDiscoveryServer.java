@@ -16,7 +16,7 @@
 
 package com.netflix.eureka2.server.transport.tcp.discovery;
 
-import com.netflix.eureka2.server.EurekaBootstrapConfig;
+import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.server.transport.tcp.AbstractTcpServer;
@@ -42,7 +42,7 @@ public class TcpDiscoveryServer extends AbstractTcpServer {
     private final EurekaServerMetricFactory metricFactory;
 
     @Inject
-    public TcpDiscoveryServer(EurekaBootstrapConfig config,
+    public TcpDiscoveryServer(EurekaServerConfig config,
                               EurekaServerRegistry eurekaRegistry,
                               @Named("discovery") MetricEventsListenerFactory servoEventsListenerFactory,
                               EurekaServerMetricFactory metricFactory) {

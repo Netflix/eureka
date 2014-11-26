@@ -16,29 +16,6 @@
 
 package com.netflix.eureka2.cmd;
 
-import com.netflix.eureka2.client.Eureka;
-import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.resolver.ServerResolvers;
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.Interest.Operator;
-import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.Delta;
-import com.netflix.eureka2.registry.Delta.Builder;
-import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.registry.InstanceInfoField;
-import com.netflix.eureka2.registry.InstanceInfoField.Name;
-import com.netflix.eureka2.registry.SampleInstanceInfo;
-import com.netflix.eureka2.transport.EurekaTransports.Codec;
-import com.netflix.eureka2.utils.Sets;
-import jline.Terminal;
-import jline.TerminalFactory;
-import jline.console.ConsoleReader;
-import jline.console.history.History;
-import jline.console.history.History.Entry;
-import rx.Subscriber;
-import rx.observers.SafeSubscriber;
-
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -47,9 +24,22 @@ import java.io.LineNumberReader;
 import java.util.Arrays;
 import java.util.ListIterator;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import com.netflix.eureka2.cmd.command.CloseCommand;
+import com.netflix.eureka2.cmd.command.ConnectCommand;
+import com.netflix.eureka2.cmd.command.InterestCommand;
+import com.netflix.eureka2.cmd.command.RegisterCommand;
+import com.netflix.eureka2.cmd.command.StatusCommand;
+import com.netflix.eureka2.cmd.command.UnregisterCommand;
+import com.netflix.eureka2.cmd.command.UpdateCommand;
+import com.netflix.eureka2.transport.EurekaTransports.Codec;
+import jline.Terminal;
+import jline.TerminalFactory;
+import jline.console.ConsoleReader;
+import jline.console.history.History;
+import jline.console.history.History.Entry;
 
 /**
  * Simple command line Eureka client interface.
@@ -67,21 +57,29 @@ public class EurekaCLI {
 
     private static final Pattern ALIAS_DEF_PATTERN = Pattern.compile("\\s*alias\\s+(\\w+)=(.*)");
 
-    private final Codec codec;
+    private final Command[] commands = {
+            new HelpCommand(),
+            new HistoryCommand(),
+            ConnectCommand.toRegister(),
+            ConnectCommand.toSubscribe(),
+            ConnectCommand.toCluster(),
+            new RegisterCommand(),
+            new UpdateCommand(),
+            new UnregisterCommand(),
+            new CloseCommand(),
+            InterestCommand.forFullRegistry(),
+            InterestCommand.forVips(),
+            new StatusCommand()
+    };
 
-    private enum Status {NotStarted, Initiated, Streaming, Complete, Failed}
+    enum CmdResult {Ok, Error, Quit}
 
+    private final Context context;
     private final ConsoleReader consoleReader;
     private final TreeMap<String, String> aliasMap = new TreeMap<>();
 
-    private static final AtomicInteger streamId = new AtomicInteger(0);
-    private volatile InstanceInfo lastInstanceInfo;
-    private EurekaClient eurekaClient;
-    private Status registrationStatus = Status.NotStarted;
-    private Status registryFetchStatus = Status.NotStarted;
-
     public EurekaCLI(Codec codec) throws IOException {
-        this.codec = codec;
+        this.context = new Context(codec);
         Terminal terminal = TerminalFactory.create();
         terminal.setEchoEnabled(false);
         consoleReader = new ConsoleReader(System.in, System.out, terminal);
@@ -90,7 +88,7 @@ public class EurekaCLI {
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
             public void run() {
-                eurekaClient.close();
+                context.close();
             }
         }));
     }
@@ -156,29 +154,30 @@ public class EurekaCLI {
         while (true) {
             String line = consoleReader.readLine("> ");
             if (line != null && !(line = line.trim()).isEmpty()) {
-                if (executeLine(line)) {
+                if (executeLine(line) == CmdResult.Quit) {
                     return;
                 }
             }
         }
     }
 
-    private boolean executeLine(String line) {
+    private CmdResult executeLine(String line) {
         for (String cmdLine : line.split("&&")) {
-            if (!executeCommand(cmdLine)) {
-                return true;
+            CmdResult cmdResult = executeCommand(cmdLine);
+            if (cmdResult != CmdResult.Ok) {
+                return cmdResult;
             }
         }
-        return false;
+        return CmdResult.Ok;
     }
 
-    private boolean executeCommand(String cmdLine) {
+    private CmdResult executeCommand(String cmdLine) {
         if ((cmdLine = cmdLine.trim()).isEmpty()) {
-            return true;
+            return CmdResult.Ok;
         }
 
         if (aliasMap.containsKey(cmdLine)) {
-            executeLine(aliasMap.get(cmdLine));
+            return executeLine(aliasMap.get(cmdLine));
         }
 
         String[] parts = cmdLine.split("\\s+");
@@ -187,345 +186,25 @@ public class EurekaCLI {
         if ("quit".equals(cmd)) {
             saveHistory();
             System.out.println("Terminating...");
-            return false;
+            return CmdResult.Quit;
         }
         try {
-            if ("help".equals(cmd) && expect(cmd, 0, args)) {
-                runHelp();
-            } else if ("history".equals(cmd) && expect(cmd, 0, args)) {
-                runHistory();
-            } else if ("connect".equals(cmd)) {
-                runConnect(args);
-            } else if ("register".equals(cmd) && expect(cmd, 0, args)) {
-                runRegister();
-            } else if ("unregister".equals(cmd) && expect(cmd, 0, args)) {
-                runUnregister();
-            } else if ("update".equals(cmd) && expect(cmd, 2, args)) {
-                runUpdate(args);
-            } else if ("close".equals(cmd) && expect(cmd, 0, args)) {
-                runClose();
-            } else if ("status".equals(cmd) && expect(cmd, 0, args)) {
-                runStatus();
-            } else if ("interestAll".equals(cmd) && expect(cmd, 0, args)) {
-                listenForRegistry(Interests.forFullRegistry());
-            } else if ("interest".equals(cmd) && atLeast(cmd, 1, args)) {
-                listenForInterest(args);
+            boolean matched = false;
+            for (Command c : commands) {
+                if (cmd.equals(c.getName())) {
+                    c.execute(context, args);
+                    matched = true;
+                    break;
+                }
+            }
+            if (!matched) {
+                System.err.println("ERROR: not recognized command " + cmd);
+                return CmdResult.Error;
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return true;
-    }
-
-    private boolean expect(String cmd, int expectedArgs, String[] args) {
-        if (args.length != expectedArgs) {
-            System.err.println(String.format("ERROR: command %s expects %d arguments", cmd, expectedArgs));
-            return false;
-        }
-        return true;
-    }
-
-    private boolean atLeast(String cmd, int atLeastArgs, String[] args) {
-        if (args.length < atLeastArgs) {
-            System.err.println(String.format("ERROR: command %s expects at least %d arguments", cmd, atLeastArgs));
-            return false;
-        }
-        return true;
-    }
-
-    private void runHelp() {
-        System.out.println("Available commands:");
-        System.out.println("  close                                                close all channels        ");
-        System.out.println("  connect <host> <registration_port> <discovery_port>  ports: 12102, 12203       ");
-        System.out.println("  help                                                 print this help           ");
-        System.out.println("  history                                              print previous commands   ");
-        System.out.println("  quit                                                 exit                      ");
-        System.out.println("  register                                             register with server      ");
-        System.out.println("  update <field> <value>                               update own registry entry ");
-        System.out.println("  status                                               print status summary      ");
-        System.out.println("  interestAll                                          start interest subscription for all");
-        System.out.println("  interestNone                                         stop interest subscription for all");
-        System.out.println("  interest <vipName> <vipName> ...                     start interest subscription for given vips");
-
-        if (!aliasMap.isEmpty()) {
-            System.out.println();
-            System.out.println("Aliases");
-            for (String key : aliasMap.keySet()) {
-                System.out.format("  %-52s %s\n", key, aliasMap.get(key));
-            }
-        }
-    }
-
-    private void runHistory() {
-        for (int i = 0; i < consoleReader.getHistory().size(); i++) {
-            System.out.println(String.format("%4d %s", i + 1, consoleReader.getHistory().get(i)));
-        }
-    }
-
-    private void runConnect(String[] args) {
-
-        String host = "localhost";
-        int registrationPort = 12102;
-        int discoveryPort = 12103;
-
-        switch (args.length) {
-            case 0:
-                // defaults are already set
-                break;
-            case 1:
-                host = args[0];
-                break;
-            case 2:
-                host = args[0];
-                registrationPort = Integer.parseInt(args[1]);
-                break;
-            default:
-                host = args[0];
-                registrationPort = Integer.parseInt(args[1]);
-                discoveryPort = Integer.parseInt(args[2]);
-                break;
-        }
-
-        eurekaClient = Eureka.newClientBuilder(ServerResolvers.just(host, discoveryPort),
-                                               ServerResolvers.just(host, registrationPort))
-                             .withCodec(codec)
-                             .build();
-
-        System.out.format("Connected to Eureka server at %s:%d (registry) and %s:%d (discovery)\n", host,
-                registrationPort, host, discoveryPort);
-    }
-
-    private void runRegister() {
-        if (!isConnected() || !expectedRegistrationStatus(Status.NotStarted, Status.Failed)) {
-            return;
-        }
-
-        registrationStatus = Status.Initiated;
-        lastInstanceInfo = SampleInstanceInfo.CliServer.build();
-        eurekaClient.register(lastInstanceInfo)
-                .subscribe(new Subscriber<Void>() {
-                    @Override
-                    public void onCompleted() {
-                        System.out.println("Successfully registered with Eureka server");
-                        registrationStatus = Status.Complete;
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        System.out.println("ERROR: Registration failed.");
-                        e.printStackTrace();
-                        registrationStatus = Status.Failed;
-                    }
-
-                    @Override
-                    public void onNext(Void aVoid) {
-                        // No op
-                    }
-                });
-    }
-
-    private void runUnregister() {
-        if (!isConnected() || !expectedRegistrationStatus(Status.Complete)) {
-            return;
-        }
-
-        eurekaClient.unregister(lastInstanceInfo)
-                .subscribe(new Subscriber<Void>() {
-                    @Override
-                    public void onCompleted() {
-                        System.out.println("Successfuly unregistered with Eureka server");
-                        registrationStatus = Status.NotStarted;
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        System.out.println("ERROR: Unregistration failed.");
-                        e.printStackTrace();
-                        registrationStatus = Status.Failed;
-                    }
-
-                    @Override
-                    public void onNext(Void aVoid) {
-                        // No op
-                    }
-                });
-    }
-
-    private void runUpdate(String[] args) {
-        if (!isConnected() || !expectedRegistrationStatus(Status.Complete)) {
-            return;
-        }
-
-        Name name = Name.valueOf(args[0]);
-        InstanceInfoField<Object> field = InstanceInfoField.forName(name);
-
-        Object value;
-        if (field.getValueType().equals(Integer.class)) {
-            value = Integer.parseInt(args[1]);
-        } else if (field.getValueType().equals(InstanceInfo.Status.class)) {
-            value = InstanceInfo.Status.valueOf(args[1]);
-        } else {
-            value = args[1];
-        }
-
-        Delta<?> delta = new Builder()
-                .withId(lastInstanceInfo.getId())
-                .withVersion(lastInstanceInfo.getVersion())
-                .withDelta(field, value)
-                .build();
-        lastInstanceInfo = lastInstanceInfo.applyDelta(delta);
-
-        eurekaClient.update(lastInstanceInfo).subscribe(new Subscriber<Void>() {
-            @Override
-            public void onCompleted() {
-                System.out.println("Successfully updated registry information.");
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                System.out.println("ERROR: Registration update failed.");
-                e.printStackTrace();
-                registrationStatus = Status.Failed;
-            }
-
-            @Override
-            public void onNext(Void aVoid) {
-                // No op
-            }
-        });
-    }
-
-    private boolean isConnected() {
-        if (eurekaClient == null) {
-            System.out.println("ERROR: connect first to Eureka server");
-            return false;
-        }
-        return true;
-    }
-
-    private boolean expectedRegistrationStatus(Status... statusArray) {
-        if (Sets.asSet(statusArray).contains(registrationStatus)) {
-            return true;
-        }
-        switch (registrationStatus) {
-            case NotStarted:
-                System.out.println("ERROR: Registration not started yet.");
-                break;
-            case Initiated:
-                System.out.println("ERROR: Registration already in progress.");
-                break;
-            case Complete:
-                System.out.println("ERROR: Registration already done.");
-                break;
-            case Failed:
-                System.out.println("ERROR: Previous registration failed.");
-                break;
-        }
-        return false;
-    }
-
-    private void listenForInterest(String[] args) {
-        listenForRegistry(Interests.forVips(Operator.Like, args));
-    }
-
-    private void listenForRegistry(final Interest<InstanceInfo> interest) {
-        if (eurekaClient == null) {
-            System.out.println("Not connected");
-            return;
-        }
-
-        switch (registryFetchStatus) {
-            case NotStarted:
-            case Initiated:
-            case Streaming:
-                break;
-            case Complete:
-                System.out.println("ERROR: Registry fetch already done.");
-                return;
-            case Failed:
-                System.out.println("ERROR: Previous registry fetch failed, so proceeding with this request.");
-                break;
-        }
-
-        registryFetchStatus = Status.Initiated;
-        int id = streamId.getAndIncrement();
-        System.out.println("Stream_" + id + ": Subscribing to Interest: " + interest);
-        eurekaClient.forInterest(interest).subscribe(new InterestSubscriber(interest, id));
-    }
-
-    private void runClose() {
-        if (eurekaClient != null) {
-            System.out.println("Bye!");
-            eurekaClient.close();
-            eurekaClient = null;
-            registrationStatus = Status.NotStarted;
-            registryFetchStatus = Status.NotStarted;
-            streamId.set(0);
-        }
-    }
-
-    private void runStatus() {
-        System.out.println("Status report");
-        System.out.println("=============");
-        if (eurekaClient == null) {
-            System.out.println("Connection status: disconnected");
-        } else {
-            System.out.println("Connection status: connected");
-            switch (registrationStatus) {
-                case NotStarted:
-                    System.out.println("Registration status: unregistered");
-                    break;
-                case Initiated:
-                    System.out.println("Registration status: Initiated but not completed.");
-                    break;
-                case Complete:
-                    System.out.println("Registration status: registered");
-                    break;
-                case Failed:
-                    System.out.println("Registration status: failed");
-                    break;
-            }
-            switch (registryFetchStatus) {
-                case NotStarted:
-                    System.out.println("Registry fetch status: not initiated");
-                    break;
-                case Initiated:
-                    System.out.println("Registry fetch status: Initiated but not completed.");
-                    break;
-                case Streaming:
-                    System.out.println("Registry fetch status: streaming updates from server");
-                    break;
-                case Complete:
-                    System.out.println("Registry fetch status: finished");
-                    break;
-                case Failed:
-                    System.out.println("Registry fetch status: failed");
-                    break;
-            }
-            System.out.println("Registry: " + eurekaClient);
-        }
-    }
-
-    private class InterestSubscriber extends SafeSubscriber<ChangeNotification<InstanceInfo>> {
-        private InterestSubscriber(final Interest<InstanceInfo> interest, final int id) {
-            super(new Subscriber<ChangeNotification<InstanceInfo>>() {
-                @Override
-                public void onCompleted() {
-                    System.out.println("Stream_" + id + ": Interest " + interest + " COMPLETE");
-                }
-
-                @Override
-                public void onError(Throwable e) {
-                    System.out.println("Stream_" + id + ": Interest " + interest + " ERROR: " + e);
-                }
-
-                @Override
-                public void onNext(ChangeNotification<InstanceInfo> notification) {
-                    registryFetchStatus = Status.Streaming;
-                    System.out.println("Stream_" + id + ": Interest " + interest + " NEXT: " + notification);
-                }
-            });
-        }
+        return CmdResult.Ok;
     }
 
     public static void main(String[] args) throws IOException {
@@ -544,5 +223,60 @@ public class EurekaCLI {
                 System.exit(-1);
         }
         new EurekaCLI(codec).readExecutePrintLoop();
+    }
+
+    class HelpCommand extends Command {
+
+        HelpCommand() {
+            super("help");
+        }
+
+        @Override
+        public String getDescription() {
+            return "print this help";
+        }
+
+        @Override
+        protected boolean executeCommand(Context context, String[] args) {
+            System.out.println("Available commands:");
+            int maxLen = -1;
+            for (Command cmd : commands) {
+                maxLen = Math.max(cmd.getInvocationSyntax().length(), maxLen);
+            }
+            maxLen += 2;
+            String lineFormat = "  %-" + maxLen + "s%s\n";
+            for (Command cmd : commands) {
+                System.out.format(lineFormat, cmd.getInvocationSyntax(), cmd.getDescription());
+            }
+
+            if (!aliasMap.isEmpty()) {
+                System.out.println();
+                System.out.println("Aliases");
+                for (String key : aliasMap.keySet()) {
+                    System.out.format(lineFormat, key, aliasMap.get(key));
+                }
+            }
+            return true;
+        }
+    }
+
+    class HistoryCommand extends Command {
+
+        protected HistoryCommand() {
+            super("history");
+        }
+
+        @Override
+        public String getDescription() {
+            return "print command history";
+        }
+
+        @Override
+        protected boolean executeCommand(Context context, String[] args) {
+            for (int i = 0; i < consoleReader.getHistory().size(); i++) {
+                System.out.println(String.format("%4d %s", i + 1, consoleReader.getHistory().get(i)));
+            }
+            return true;
+        }
     }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server;
+package com.netflix.eureka2.server.config;
 
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
@@ -26,7 +26,7 @@ import com.netflix.eureka2.transport.EurekaTransports.Codec;
  *
  * @author Tomasz Bak
  */
-public class WriteServerConfig extends EurekaBootstrapConfig {
+public class WriteServerConfig extends EurekaServerConfig {
 
     public WriteServerConfig() {
     }
@@ -41,7 +41,7 @@ public class WriteServerConfig extends EurekaBootstrapConfig {
                 registryEvictionTimeout, evictionStrategyType, evictionStrategyValue);
     }
 
-    public static class WriteServerConfigBuilder extends EurekaBootstrapConfigBuilder<WriteServerConfig, WriteServerConfigBuilder> {
+    public static class WriteServerConfigBuilder extends EurekaServerConfigBuilder<WriteServerConfig, WriteServerConfigBuilder> {
 
         @Override
         public WriteServerConfig build() {

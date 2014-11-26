@@ -16,9 +16,7 @@
 
 package com.netflix.eureka2.server.config;
 
-import com.netflix.eureka2.server.EurekaBootstrapConfig;
-import com.netflix.eureka2.server.WriteServerConfig;
-import com.netflix.eureka2.server.WriteServerConfig.WriteServerConfigBuilder;
+import com.netflix.eureka2.server.config.WriteServerConfig.WriteServerConfigBuilder;
 import com.netflix.eureka2.server.registry.eviction.EvictionStrategyProvider.StrategyType;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
@@ -35,6 +33,7 @@ public class WriteCommandLineParser extends EurekaCommandLineParser<WriteServerC
 
     @Override
     protected void additionalOptions(Options options) {
+        options.addOption("r", true, "TCP discovery server port; default " + DEFAULT_DISCOVERY_PORT);
         options.addOption("w", true, "TCP registration server port; default " + DEFAULT_REGISTRATION_PORT);
         options.addOption("p", true, "TCP replication server port; default " + DEFAULT_REPLICATION_PORT);
         options.addOption("et", true, "eviction timeout in milliseconds (default 30sec)");
@@ -45,9 +44,10 @@ public class WriteCommandLineParser extends EurekaCommandLineParser<WriteServerC
     @Override
     protected void process(CommandLine cli) {
         super.process(cli);
-        builder.withWriteServerPort(Integer.parseInt(cli.getOptionValue("w", "" + DEFAULT_REGISTRATION_PORT)));
+        builder.withDiscoveryPort(Integer.parseInt(cli.getOptionValue("r", "" + DEFAULT_DISCOVERY_PORT)));
+        builder.withRegistrationPort(Integer.parseInt(cli.getOptionValue("w", "" + DEFAULT_REGISTRATION_PORT)));
         builder.withReplicationPort(Integer.parseInt(cli.getOptionValue("p", "" + DEFAULT_REPLICATION_PORT)));
-        builder.withEvictionTimeout(Integer.parseInt(cli.getOptionValue("et", "" + EurekaBootstrapConfig.DEFAULT_EVICTION_TIMEOUT)));
+        builder.withEvictionTimeout(Integer.parseInt(cli.getOptionValue("et", "" + EurekaServerConfig.DEFAULT_EVICTION_TIMEOUT)));
         builder.withEvictionStrategyType(StrategyType.valueOf(cli.getOptionValue("es", StrategyType.PercentageDrop.name())));
         builder.withEvictionStrategyValue(cli.getOptionValue("ev", "20"));
     }

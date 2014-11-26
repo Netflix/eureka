@@ -20,7 +20,7 @@ import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolver.Server;
 import com.netflix.eureka2.client.resolver.ServerResolverFilter;
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.server.EurekaBootstrapConfig;
+import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.WriteClusterResolverProvider;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
@@ -66,7 +66,7 @@ public class ReplicationService {
     private Subscription resolverSubscription;
 
     @Inject
-    public ReplicationService(EurekaBootstrapConfig config,
+    public ReplicationService(EurekaServerConfig config,
                               EurekaServerRegistry eurekaRegistry,
                               SelfRegistrationService selfRegistrationService,
                               WriteClusterResolverProvider writeClusterResolverProvider,

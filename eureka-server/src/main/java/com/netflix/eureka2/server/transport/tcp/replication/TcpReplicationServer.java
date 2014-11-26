@@ -17,7 +17,7 @@
 package com.netflix.eureka2.server.transport.tcp.replication;
 
 import com.google.inject.Singleton;
-import com.netflix.eureka2.server.EurekaBootstrapConfig;
+import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
@@ -43,7 +43,7 @@ public class TcpReplicationServer extends AbstractTcpServer {
     private final EvictionQueue evictionQueue;
 
     @Inject
-    public TcpReplicationServer(EurekaBootstrapConfig config,
+    public TcpReplicationServer(EurekaServerConfig config,
                                 EurekaServerRegistry eurekaRegistry,
                                 EvictionQueue evictionQueue,
                                 @Named("replication") MetricEventsListenerFactory servoEventsListenerFactory,

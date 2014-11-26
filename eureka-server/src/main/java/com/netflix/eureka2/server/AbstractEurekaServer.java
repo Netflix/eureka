@@ -23,6 +23,7 @@ import java.util.concurrent.CountDownLatch;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
+import com.netflix.eureka2.server.config.EurekaBootstrapConfig;
 import com.netflix.governator.configuration.ArchaiusConfigurationProvider;
 import com.netflix.governator.configuration.ArchaiusConfigurationProvider.Builder;
 import com.netflix.governator.configuration.ConfigurationOwnershipPolicies;
