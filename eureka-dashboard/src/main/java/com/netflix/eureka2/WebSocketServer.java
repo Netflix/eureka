@@ -1,8 +1,5 @@
 package com.netflix.eureka2;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.netflix.eureka2.config.EurekaDashboardConfig;
@@ -16,6 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Func1;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 
 
 @Singleton
@@ -46,14 +46,18 @@ public class WebSocketServer {
                 return connection.getInput().flatMap(new Func1<WebSocketFrame, Observable<Void>>() {
                     @Override
                     public Observable<Void> call(WebSocketFrame wsFrame) {
-                        TextWebSocketFrame textFrame = (TextWebSocketFrame) wsFrame;
-                        System.out.println("Got message: " + textFrame.text());
-                        final String cmd = textFrame.text();
-                        if (cmd.equals("get status")) {
-                            return streamEurekaStatus(connection);
+                        if (wsFrame instanceof TextWebSocketFrame) {
+                            TextWebSocketFrame textFrame = (TextWebSocketFrame) wsFrame;
+                            System.out.println("Got message: " + textFrame.text());
+                            final String cmd = textFrame.text();
+                            if (cmd.equals("get status")) {
+                                return streamEurekaStatus(connection);
+                            } else {
+                                // registry
+                                return streamEurekaRegistryData(connection);
+                            }
                         } else {
-                            // registry
-                            return streamEurekaRegistryData(connection);
+                            return Observable.empty();
                         }
                     }
                 });

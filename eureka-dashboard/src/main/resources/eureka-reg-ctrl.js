@@ -1,8 +1,17 @@
 var eurekaRegistryCtrl = (function () {
     function load() {
-        var ws = new WebSocket('ws://localhost:9000');
+        $.get( "/getconfig", function( data ) {
+            console.log("Going to websocket connect to " + data.wsport);
+            connect(data.wsport);
+        }).fail(function() {
+            console.log("Error getting ws port");
+        });
+    }
+
+    function connect(port) {
+        var ws = new WebSocket('ws://' + document.location.hostname + ':' + port);
         ws.onopen = function () {
-            ws.send("get apps");
+            ws.send("get registry");
         };
         ws.onmessage = function (data, flags) {
             var instNotification = JSON.parse(data.data);
