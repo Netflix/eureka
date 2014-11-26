@@ -1,6 +1,7 @@
 body {
   min-height: 2000px;
   padding-top: 70px;
+  min-width: 1770px;
 }
 
 .container {
