@@ -28,7 +28,7 @@ public class EurekaRegistryHandler {
     }
 
     public Observable<Void> buildWebSocketResponse(final ObservableConnection<WebSocketFrame, WebSocketFrame> webSocketConn) {
-        eurekaRegistryDataStream.getStream().subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
+        eurekaRegistryDataStream.subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
             @Override
             public void onCompleted() {
                 log.info("Eureka DATA Completed");
@@ -36,14 +36,20 @@ public class EurekaRegistryHandler {
 
             @Override
             public void onError(Throwable e) {
-                log.error("Exception received in Eureka data stream");
+                log.error("Exception received in Eureka data stream. Resubscribing...");
+                eurekaRegistryDataStream.subscribe(this);
             }
 
             @Override
             public void onNext(ChangeNotification<InstanceInfo> instanceInfoChangeNotification) {
                 final String jsonStr = gson.toJson(instanceInfoChangeNotification);
                 final ByteBuf respByteBuf = webSocketConn.getAllocator().buffer().writeBytes(jsonStr.getBytes());
-                webSocketConn.writeAndFlush(new TextWebSocketFrame(respByteBuf));
+
+                if (webSocketConn.getChannel().isOpen()) {
+                    webSocketConn.writeAndFlush(new TextWebSocketFrame(respByteBuf));
+                } else {
+                    this.unsubscribe();
+                }
             }
         });
         return Observable.empty();

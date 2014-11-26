@@ -21,7 +21,7 @@ public class EurekaServerStatusHandler {
     }
 
     public Observable<Void> buildWebSocketResponse(final ObservableConnection<WebSocketFrame, WebSocketFrame> webSocketConn) {
-        eurekaRegistryDataStream.getStream().subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
+        eurekaRegistryDataStream.subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
             @Override
             public void onCompleted() {
             }
