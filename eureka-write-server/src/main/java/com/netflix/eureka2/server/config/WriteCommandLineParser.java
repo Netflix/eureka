@@ -16,9 +16,7 @@
 
 package com.netflix.eureka2.server.config;
 
-import com.netflix.eureka2.server.EurekaServerConfig;
-import com.netflix.eureka2.server.WriteServerConfig;
-import com.netflix.eureka2.server.WriteServerConfig.WriteServerConfigBuilder;
+import com.netflix.eureka2.server.config.WriteServerConfig.WriteServerConfigBuilder;
 import com.netflix.eureka2.server.registry.eviction.EvictionStrategyProvider.StrategyType;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;

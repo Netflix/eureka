@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2;
+package com.netflix.eureka2.config;
 
 import com.netflix.eureka2.server.config.EurekaCommandLineParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 
-import static com.netflix.eureka2.EurekaDashboardConfig.*;
+import static com.netflix.eureka2.config.EurekaDashboardConfig.*;
 import static com.netflix.eureka2.transport.EurekaTransports.DEFAULT_DISCOVERY_PORT;
 
 /**
  * @author Tomasz Bak
  */
 public class DashboardCommandLineParser extends EurekaCommandLineParser<EurekaDashboardConfig, EurekaDashboardConfigBuilder> {
-    protected DashboardCommandLineParser(String... args) {
+    public DashboardCommandLineParser(String... args) {
         super(new EurekaDashboardConfigBuilder(), true, args);
     }
 
@@ -41,6 +41,5 @@ public class DashboardCommandLineParser extends EurekaCommandLineParser<EurekaDa
     protected void process(CommandLine cli) {
         super.process(cli);
         builder.withDashboardPort(Integer.parseInt(cli.getOptionValue("b", "" + DEFAULT_DASHBOARD_PORT)));
-        builder.withWriteClusterDiscoveryPort(Integer.parseInt(cli.getOptionValue("rr", "" + DEFAULT_DISCOVERY_PORT)));
     }
 }

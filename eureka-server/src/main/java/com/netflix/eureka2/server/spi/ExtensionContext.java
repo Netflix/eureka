@@ -22,7 +22,7 @@ import java.util.Properties;
 import java.util.ServiceLoader;
 
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.server.EurekaServerConfig;
+import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 
 /**

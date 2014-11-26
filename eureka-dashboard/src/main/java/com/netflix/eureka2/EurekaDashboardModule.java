@@ -17,6 +17,7 @@
 package com.netflix.eureka2;
 
 import com.google.inject.AbstractModule;
+import com.netflix.eureka2.config.EurekaDashboardConfig;
 
 /**
  * @author Tomasz Bak

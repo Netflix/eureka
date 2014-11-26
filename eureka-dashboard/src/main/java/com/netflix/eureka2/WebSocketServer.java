@@ -5,6 +5,7 @@ import javax.annotation.PreDestroy;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.netflix.eureka2.config.EurekaDashboardConfig;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.reactivex.netty.RxNetty;

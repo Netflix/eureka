@@ -23,6 +23,8 @@ import rx.Observable;
  *
  * Out of the box implementations can be created using {@link ServerResolvers}
  *
+ * TODO: possibly move this into core
+ *
  * @author Tomasz Bak
  */
 public interface ServerResolver {

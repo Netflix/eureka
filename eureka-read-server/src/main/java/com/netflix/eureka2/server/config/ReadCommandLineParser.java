@@ -16,8 +16,7 @@
 
 package com.netflix.eureka2.server.config;
 
-import com.netflix.eureka2.server.ReadServerConfig;
-import com.netflix.eureka2.server.ReadServerConfig.ReadServerConfigBuilder;
+import com.netflix.eureka2.server.config.ReadServerConfig.ReadServerConfigBuilder;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 

@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.netflix.eureka2.server.config.WriteCommandLineParser;
+import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.spi.ExtensionLoader;
 import com.netflix.governator.guice.BootstrapBinder;
 import com.netflix.governator.guice.BootstrapModule;

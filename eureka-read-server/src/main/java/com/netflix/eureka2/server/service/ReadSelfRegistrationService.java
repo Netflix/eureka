@@ -25,7 +25,7 @@ import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.registry.InstanceInfo.Builder;
 import com.netflix.eureka2.registry.ServicePort;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
-import com.netflix.eureka2.server.ReadServerConfig;
+import com.netflix.eureka2.server.config.ReadServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Notification;
