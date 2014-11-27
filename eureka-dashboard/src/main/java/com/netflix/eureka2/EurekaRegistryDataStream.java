@@ -12,6 +12,7 @@ import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.server.config.EurekaBootstrapConfig;
 import rx.Observable;
+import rx.Subscriber;
 
 @Singleton
 public class EurekaRegistryDataStream {
@@ -44,7 +45,12 @@ public class EurekaRegistryDataStream {
         eurekaClient = Eureka.newClientBuilder(resolver).build();
     }
 
-    public Observable<ChangeNotification<InstanceInfo>> getStream() {
+    public void subscribe(Subscriber<ChangeNotification<InstanceInfo>> subscriber) {
+        getStream().subscribe(subscriber);
+    }
+
+    private Observable<ChangeNotification<InstanceInfo>> getStream() {
         return eurekaClient.forInterest(Interests.forFullRegistry());
     }
+
 }

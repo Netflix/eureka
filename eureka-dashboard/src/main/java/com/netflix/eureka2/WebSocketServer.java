@@ -16,6 +16,7 @@ import rx.functions.Func1;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.net.SocketAddress;
 
 
 @Singleton
@@ -46,6 +47,8 @@ public class WebSocketServer {
                 return connection.getInput().flatMap(new Func1<WebSocketFrame, Observable<Void>>() {
                     @Override
                     public Observable<Void> call(WebSocketFrame wsFrame) {
+                        final SocketAddress socketAddress = connection.getChannel().remoteAddress();
+
                         if (wsFrame instanceof TextWebSocketFrame) {
                             TextWebSocketFrame textFrame = (TextWebSocketFrame) wsFrame;
                             System.out.println("Got message: " + textFrame.text());
