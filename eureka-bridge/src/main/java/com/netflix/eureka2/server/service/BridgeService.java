@@ -1,9 +1,9 @@
 package com.netflix.eureka2.server.service;
 
 import com.netflix.discovery.DiscoveryClient;
+import com.netflix.eureka2.config.BridgeServerConfig;
 import com.netflix.eureka2.metric.BridgeServerMetricFactory;
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.config.BridgeServerConfig;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

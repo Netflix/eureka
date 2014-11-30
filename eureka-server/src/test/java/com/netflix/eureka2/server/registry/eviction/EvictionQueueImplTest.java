@@ -22,8 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.registry.SampleInstanceInfo;
-import com.netflix.eureka2.server.config.WriteServerConfig;
-import com.netflix.eureka2.server.config.WriteServerConfig.WriteServerConfigBuilder;
+import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.registry.Source;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,7 +45,7 @@ public class EvictionQueueImplTest {
 
     private final TestScheduler testScheduler = Schedulers.test();
 
-    private final WriteServerConfig config = new WriteServerConfigBuilder().withEvictionTimeout(EVICTION_TIMEOUT).build();
+    private final EurekaServerConfig config = EurekaServerConfig.baseBuilder().withEvictionTimeout(EVICTION_TIMEOUT).build();
 
     private final EvictionQueueImpl evictionQueue = new EvictionQueueImpl(config, serverMetrics(), testScheduler);
     private final List<EvictionItem> evictedList = new ArrayList<>();

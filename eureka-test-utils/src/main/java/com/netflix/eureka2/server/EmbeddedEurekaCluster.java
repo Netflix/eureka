@@ -20,14 +20,10 @@ import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.config.BridgeServerConfig;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
-import com.netflix.eureka2.config.BridgeServerConfig.BridgeServerConfigBuilder;
-import com.netflix.eureka2.server.config.ReadServerConfig;
-import com.netflix.eureka2.server.config.ReadServerConfig.ReadServerConfigBuilder;
 import com.netflix.eureka2.server.ServerInstance.EurekaBridgeServerInstance;
 import com.netflix.eureka2.server.ServerInstance.EurekaReadServerInstance;
 import com.netflix.eureka2.server.ServerInstance.EurekaWriteServerInstance;
-import com.netflix.eureka2.server.config.WriteServerConfig;
-import com.netflix.eureka2.server.config.WriteServerConfig.WriteServerConfigBuilder;
+import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +57,7 @@ public class EmbeddedEurekaCluster {
         ServerResolver.Server[] discoveryResolverServersList = new ServerResolver.Server[writeCount];
         ServerResolver.Server[] registrationResolverServersList = new ServerResolver.Server[writeCount];
         ServerResolver.Server[] replicationResolverServersList = new ServerResolver.Server[writeCount];
-        WriteServerConfig[] writeServerConfigs = new WriteServerConfig[writeCount];
+        EurekaServerConfig[] writeServerConfigs = new EurekaServerConfig[writeCount];
 
         // Write cluster
         for (int i = 0; i < writeCount; i++) {
@@ -72,7 +68,7 @@ public class EmbeddedEurekaCluster {
             discoveryResolverServersList[i] = new ServerResolver.Server("127.0.0.1", discoveryPort);
             registrationResolverServersList[i] = new ServerResolver.Server("127.0.0.1", registrationPort);
             replicationResolverServersList[i] = new ServerResolver.Server("127.0.0.1", replicationPort);
-            writeServerConfigs[i] = new WriteServerConfigBuilder()
+            writeServerConfigs[i] = EurekaServerConfig.baseBuilder()
                     .withAppName(WRITE_SERVER_NAME)
                     .withVipAddress(WRITE_SERVER_NAME)
                     .withDataCenterType(DataCenterType.Basic)
@@ -95,7 +91,7 @@ public class EmbeddedEurekaCluster {
         // Read cluster
         for (int i = 0; i < readCount; i++) {
             int port = READ_SERVER_PORTS_FROM + i;
-            ReadServerConfig config = new ReadServerConfigBuilder()
+            EurekaServerConfig config = EurekaServerConfig.baseBuilder()
                     .withAppName(READ_SERVER_NAME)
                     .withVipAddress(READ_SERVER_NAME)
                     .withDataCenterType(DataCenterType.Basic)
@@ -109,7 +105,7 @@ public class EmbeddedEurekaCluster {
         // Bridge cluster
         if (useBridge) {
             int port = BRIDGE_SERVER_PORTS_FROM;
-            BridgeServerConfig config = new BridgeServerConfigBuilder()
+            BridgeServerConfig config = BridgeServerConfig.newBuilder()
                     .withAppName(BRIDGE_SERVER_NAME)
                     .withVipAddress(BRIDGE_SERVER_NAME)
                     .withDataCenterType(DataCenterType.Basic)

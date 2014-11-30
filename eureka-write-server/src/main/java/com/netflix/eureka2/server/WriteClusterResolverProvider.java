@@ -2,7 +2,7 @@ package com.netflix.eureka2.server;
 
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
-import com.netflix.eureka2.server.config.EurekaBootstrapConfig;
+import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 
 import javax.annotation.PostConstruct;
@@ -33,35 +33,39 @@ public class WriteClusterResolverProvider implements Provider<ServerResolver> {
     @PostConstruct
     public void createResolver() {
         if (resolver == null) {
+            EurekaCommonConfig.ResolverType resolverType = config.getServerResolverType();
+            EurekaCommonConfig.ServerBootstrap[] bootstraps = EurekaCommonConfig.ServerBootstrap.from(config.getServerList());
+            ServerResolver[] resolvers = new ServerResolver[bootstraps.length];
 
-            if (config.getResolverType() == null) {
-                throw new IllegalArgumentException("Write cluster resolver type not defined");
+            for (int i = 0; i < resolvers.length; i++) {
+                resolvers[i] = resolveForType(bootstraps[i], resolverType);
             }
 
-            switch (config.getResolverType()) {
-                case "dns":
-                    EurekaBootstrapConfig.WriteServerBootstrap server = config.getWriteClusterServerDns();
-                    resolver = ServerResolvers.forDnsName(server.getHostname(), server.getReplicationPort());
-                    break;
-                case "inline":
-                    EurekaBootstrapConfig.WriteServerBootstrap[] serverBootstraps = config.getWriteClusterServersInline();
-                    ServerResolver.Server[] servers = new ServerResolver.Server[serverBootstraps.length];
-                    for (int i = 0; i < servers.length; i++) {
-                        servers[i] = new ServerResolver.Server(
-                                serverBootstraps[i].getHostname(),
-                                serverBootstraps[i].getReplicationPort()
-                        );
-                    }
-                    resolver = ServerResolvers.from(servers);
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unrecognized write cluster resolver");
-            }
+            resolver = ServerResolvers.from(resolvers);
         }
     }
 
     @Override
     public ServerResolver get() {
+        return resolver;
+    }
+
+    private ServerResolver resolveForType(EurekaCommonConfig.ServerBootstrap bootstrap, EurekaCommonConfig.ResolverType resolverType) {
+        if (resolverType == null) {
+            throw new IllegalArgumentException("Write cluster resolver type not defined");
+        }
+
+        ServerResolver resolver;
+        switch (resolverType) {
+            case dns:
+                resolver = ServerResolvers.forDnsName(bootstrap.getHostname(), bootstrap.getDiscoveryPort());
+                break;
+            case fixed:
+                resolver = ServerResolvers.just(bootstrap.getHostname(), bootstrap.getDiscoveryPort());
+                break;
+            default:
+                throw new IllegalArgumentException("Unrecognized write cluster resolver");
+        }
         return resolver;
     }
 }

@@ -10,7 +10,8 @@ import com.netflix.eureka2.config.EurekaDashboardConfig;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.server.config.EurekaBootstrapConfig;
+import com.netflix.eureka2.server.config.EurekaCommonConfig;
+import com.netflix.eureka2.server.config.EurekaCommonConfig.ServerBootstrap;
 import rx.Observable;
 import rx.Subscriber;
 
@@ -22,31 +23,41 @@ public class EurekaRegistryDataStream {
     @Inject
     public EurekaRegistryDataStream(EurekaDashboardConfig config) {
         ServerResolver resolver;
-        switch (config.getResolverType()) {
-            case "dns":
-                EurekaBootstrapConfig.WriteServerBootstrap server = config.getWriteClusterServerDns();
-                resolver = ServerResolvers.forDnsName(server.getHostname(), server.getDiscoveryPort());
-                break;
-            case "inline":
-                EurekaBootstrapConfig.WriteServerBootstrap[] serverBootstraps = config.getWriteClusterServersInline();
-                ServerResolver.Server[] servers = new ServerResolver.Server[serverBootstraps.length];
-                for (int i = 0; i < servers.length; i++) {
-                    servers[i] = new ServerResolver.Server(
-                            serverBootstraps[i].getHostname(),
-                            serverBootstraps[i].getDiscoveryPort()
-                    );
-                }
-                resolver = ServerResolvers.from(servers);
-                break;
-            default:
-                throw new IllegalArgumentException("Unrecognized write cluster resolver");
+
+        EurekaCommonConfig.ResolverType resolverType = config.getServerResolverType();
+        ServerBootstrap[] bootstraps = ServerBootstrap.from(config.getServerList());
+        ServerResolver[] resolvers = new ServerResolver[bootstraps.length];
+
+        for (int i = 0; i < resolvers.length; i++) {
+            resolvers[i] = resolveForType(bootstraps[i], resolverType);
         }
+
+        resolver = ServerResolvers.from(resolvers);
 
         eurekaClient = Eureka.newClientBuilder(resolver).build();
     }
 
     public void subscribe(Subscriber<ChangeNotification<InstanceInfo>> subscriber) {
         getStream().subscribe(subscriber);
+    }
+
+    private ServerResolver resolveForType(ServerBootstrap bootstrap, EurekaCommonConfig.ResolverType resolverType) {
+        if (resolverType == null) {
+            throw new IllegalArgumentException("Write cluster resolver type not defined");
+        }
+
+        ServerResolver resolver;
+        switch (resolverType) {
+            case dns:
+                resolver = ServerResolvers.forDnsName(bootstrap.getHostname(), bootstrap.getDiscoveryPort());
+                break;
+            case fixed:
+                resolver = ServerResolvers.just(bootstrap.getHostname(), bootstrap.getDiscoveryPort());
+                break;
+            default:
+                throw new IllegalArgumentException("Unrecognized write cluster resolver");
+        }
+        return resolver;
     }
 
     private Observable<ChangeNotification<InstanceInfo>> getStream() {

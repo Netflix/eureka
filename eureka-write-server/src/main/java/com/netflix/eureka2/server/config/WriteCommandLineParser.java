@@ -16,7 +16,8 @@
 
 package com.netflix.eureka2.server.config;
 
-import com.netflix.eureka2.server.config.WriteServerConfig.WriteServerConfigBuilder;
+import com.netflix.eureka2.server.config.EurekaServerConfig.DefaultEurekaServerConfigBuilder;
+import com.netflix.eureka2.server.registry.eviction.EvictionQueueImpl;
 import com.netflix.eureka2.server.registry.eviction.EvictionStrategyProvider.StrategyType;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
@@ -26,9 +27,9 @@ import static com.netflix.eureka2.transport.EurekaTransports.*;
 /**
  * @author Tomasz Bak
  */
-public class WriteCommandLineParser extends EurekaCommandLineParser<WriteServerConfig, WriteServerConfigBuilder> {
+public class WriteCommandLineParser extends EurekaCommandLineParser<EurekaServerConfig, DefaultEurekaServerConfigBuilder> {
     public WriteCommandLineParser(String... args) {
-        super(new WriteServerConfigBuilder(), false, args);
+        super(EurekaServerConfig.baseBuilder(), false, args);
     }
 
     @Override
@@ -47,7 +48,7 @@ public class WriteCommandLineParser extends EurekaCommandLineParser<WriteServerC
         builder.withDiscoveryPort(Integer.parseInt(cli.getOptionValue("r", "" + DEFAULT_DISCOVERY_PORT)));
         builder.withRegistrationPort(Integer.parseInt(cli.getOptionValue("w", "" + DEFAULT_REGISTRATION_PORT)));
         builder.withReplicationPort(Integer.parseInt(cli.getOptionValue("p", "" + DEFAULT_REPLICATION_PORT)));
-        builder.withEvictionTimeout(Integer.parseInt(cli.getOptionValue("et", "" + EurekaServerConfig.DEFAULT_EVICTION_TIMEOUT)));
+        builder.withEvictionTimeout(Integer.parseInt(cli.getOptionValue("et", "" + EvictionQueueImpl.DEFAULT_EVICTION_TIMEOUT)));
         builder.withEvictionStrategyType(StrategyType.valueOf(cli.getOptionValue("es", StrategyType.PercentageDrop.name())));
         builder.withEvictionStrategyValue(cli.getOptionValue("ev", "20"));
     }

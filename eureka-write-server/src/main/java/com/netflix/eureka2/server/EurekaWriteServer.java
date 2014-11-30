@@ -19,8 +19,8 @@ package com.netflix.eureka2.server;
 import java.util.Arrays;
 import java.util.List;
 
+import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.config.WriteCommandLineParser;
-import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.spi.ExtensionLoader;
 import com.netflix.governator.guice.BootstrapBinder;
 import com.netflix.governator.guice.BootstrapModule;
@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Tomasz Bak
  */
-public class EurekaWriteServer extends AbstractEurekaServer<WriteServerConfig> {
+public class EurekaWriteServer extends AbstractEurekaServer<EurekaServerConfig> {
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaWriteServer.class);
 
@@ -38,7 +38,7 @@ public class EurekaWriteServer extends AbstractEurekaServer<WriteServerConfig> {
         super(name);
     }
 
-    public EurekaWriteServer(WriteServerConfig config) {
+    public EurekaWriteServer(EurekaServerConfig config) {
         super(config);
     }
 
@@ -56,7 +56,7 @@ public class EurekaWriteServer extends AbstractEurekaServer<WriteServerConfig> {
     public static void main(String[] args) {
         logger.info("Eureka 2.0 Write Server");
 
-        WriteServerConfig config = null;
+        EurekaServerConfig config = null;
         if (args.length == 0) {
             logger.info("No command line parameters provided; enabling archaius property loader for server bootstrapping");
         } else {
