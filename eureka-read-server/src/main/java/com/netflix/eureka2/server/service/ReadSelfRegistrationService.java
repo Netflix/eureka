@@ -19,13 +19,9 @@ package com.netflix.eureka2.server.service;
 import com.google.inject.Inject;
 import com.netflix.eureka2.Names;
 import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.registry.AddressSelector;
-import com.netflix.eureka2.registry.DataCenterInfo;
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.registry.InstanceInfo.Builder;
 import com.netflix.eureka2.registry.ServicePort;
-import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
-import com.netflix.eureka2.server.config.ReadServerConfig;
+import com.netflix.eureka2.server.config.EurekaServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Notification;
@@ -46,14 +42,14 @@ public class ReadSelfRegistrationService implements SelfRegistrationService {
 
     private static final Logger logger = LoggerFactory.getLogger(ReadSelfRegistrationService.class);
 
-    private final ReadServerConfig config;
+    private final EurekaServerConfig config;
     private final EurekaClient eurekaClient;
 
     private final AtomicBoolean connected = new AtomicBoolean();
     private final ReplaySubject<InstanceInfo> replaySubject = ReplaySubject.create();
 
     @Inject
-    public ReadSelfRegistrationService(ReadServerConfig config, EurekaClient eurekaClient) {
+    public ReadSelfRegistrationService(EurekaServerConfig config, EurekaClient eurekaClient) {
         this.config = config;
         this.eurekaClient = eurekaClient;
     }
@@ -91,46 +87,33 @@ public class ReadSelfRegistrationService implements SelfRegistrationService {
     }
 
     public Observable<InstanceInfo> connect() {
-        return resolveDataCenterInfo().take(1).map(new Func1<DataCenterInfo, InstanceInfo>() {
-            @Override
-            public InstanceInfo call(DataCenterInfo dataCenterInfo) {
-                final String instanceId = config.getAppName() + '#' + System.currentTimeMillis();
+        return config.getMyInstanceInfoConfig()
+                .get()
+                .map(new Func1<InstanceInfo.Builder, InstanceInfo>() {
+                    @Override
+                    public InstanceInfo call(InstanceInfo.Builder builder) {
+                        HashSet<ServicePort> ports = new HashSet<>();
+                        ports.add(new ServicePort(Names.DISCOVERY, config.getDiscoveryPort(), false));
 
-                HashSet<ServicePort> ports = new HashSet<>();
-                ports.add(new ServicePort(Names.DISCOVERY, config.getDiscoveryPort(), false));
+                        return builder.withPorts(ports).build();
+                    }
+                })
+                .doOnEach(new Action1<Notification<? super InstanceInfo>>() {
+                    @Override
+                    public void call(Notification<? super InstanceInfo> notification) {
+                        switch (notification.getKind()) {
+                            case OnNext:
+                                replaySubject.onNext((InstanceInfo) notification.getValue());
+                                replaySubject.onCompleted();
+                                logger.info("Own instance info resolved to {}", notification.getValue());
+                                break;
+                            case OnError:
+                                replaySubject.onError(notification.getThrowable());
+                                logger.error("Could not resolve own instance info", notification.getThrowable());
+                                break;
 
-                String address = AddressSelector.selectBy().publicIp(true).or().any().returnNameOrIp(dataCenterInfo.getAddresses());
-                HashSet<String> healthCheckUrls = new HashSet<String>();
-                healthCheckUrls.add("http://" + address + ':' + config.getWebAdminPort() + "/healthcheck");
-
-                return new Builder()
-                        .withId(instanceId)
-                        .withApp(config.getAppName())
-                        .withVipAddress(config.getVipAddress())
-                        .withPorts(ports)
-                        .withHealthCheckUrls(healthCheckUrls)
-                        .withDataCenterInfo(dataCenterInfo)
-                        .build();
-            }
-        }).doOnEach(new Action1<Notification<? super InstanceInfo>>() {
-            @Override
-            public void call(Notification<? super InstanceInfo> notification) {
-                switch (notification.getKind()) {
-                    case OnNext:
-                        replaySubject.onNext((InstanceInfo) notification.getValue());
-                        replaySubject.onCompleted();
-                        logger.info("Own instance info resolved to {}", notification.getValue());
-                        break;
-                    case OnError:
-                        replaySubject.onError(notification.getThrowable());
-                        logger.error("Could not resolve own instance info", notification.getThrowable());
-                        break;
-                }
-            }
-        });
-    }
-
-    private Observable<? extends DataCenterInfo> resolveDataCenterInfo() {
-        return LocalDataCenterInfo.forDataCenterType(config.getDataCenterType());
+                        }
+                    }
+                });
     }
 }

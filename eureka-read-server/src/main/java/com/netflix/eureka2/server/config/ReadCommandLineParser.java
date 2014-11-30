@@ -16,7 +16,7 @@
 
 package com.netflix.eureka2.server.config;
 
-import com.netflix.eureka2.server.config.ReadServerConfig.ReadServerConfigBuilder;
+import com.netflix.eureka2.server.config.EurekaServerConfig.DefaultEurekaServerConfigBuilder;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 
@@ -25,10 +25,10 @@ import static com.netflix.eureka2.transport.EurekaTransports.DEFAULT_DISCOVERY_P
 /**
  * @author Tomasz Bak
  */
-public class ReadCommandLineParser extends EurekaCommandLineParser<ReadServerConfig, ReadServerConfigBuilder> {
+public class ReadCommandLineParser extends EurekaCommandLineParser<EurekaServerConfig, DefaultEurekaServerConfigBuilder> {
 
     public ReadCommandLineParser(String... args) {
-        super(new ReadServerConfigBuilder(), true, args);
+        super(EurekaServerConfig.baseBuilder(), true, args);
     }
 
     @Override

@@ -47,6 +47,8 @@ public class EvictionQueueImpl implements EvictionQueue {
 
     private static final Logger logger = LoggerFactory.getLogger(EvictionQueueImpl.class);
 
+    public static final long DEFAULT_EVICTION_TIMEOUT = 30000;
+
     private final long evictionTimeoutMs;
     private final EvictionQueueMetrics evictionQueueMetrics;
 
@@ -89,7 +91,7 @@ public class EvictionQueueImpl implements EvictionQueue {
     }
 
     public EvictionQueueImpl(EurekaServerConfig config, EurekaServerMetricFactory metricFactory, Scheduler scheduler) {
-        this.evictionTimeoutMs = config.getEvictionTimeout();
+        this.evictionTimeoutMs = config.getEvictionTimeoutMs();
         this.evictionQueueMetrics = metricFactory.getEvictionQueueMetrics();
         this.worker = scheduler.createWorker();
 

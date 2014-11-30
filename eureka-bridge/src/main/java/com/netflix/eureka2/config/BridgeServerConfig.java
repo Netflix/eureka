@@ -2,7 +2,8 @@ package com.netflix.eureka2.config;
 
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.eureka2.transport.EurekaTransports.Codec;
+import com.netflix.eureka2.server.registry.eviction.EvictionStrategyProvider;
+import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.governator.annotations.Configuration;
 
 /**
@@ -10,41 +11,94 @@ import com.netflix.governator.annotations.Configuration;
  */
 public class BridgeServerConfig extends EurekaServerConfig {
 
-    @Configuration("services.bridge.refreshRateSec")
+    @Configuration("eureka.services.bridge.refreshRateSec")
     private int refreshRateSec = 30;
 
-    public BridgeServerConfig() {
+
+    // For property injection
+    protected BridgeServerConfig() {
     }
 
-    public BridgeServerConfig(LocalDataCenterInfo.DataCenterType dataCenterType, String resolverType,
-                              int writeServerPort, int replicationPort, int readServerPort, Codec codec, int shutDownPort,
-                              String appName, String vipAddress, String writeClusterDomainName,
-                              String[] writeClusterServers, int refreshRateSec, int webAdminPort,
-                              long registryEvictionTimeout, String evictionStrategyType, String evictionStrategyValue) {
-        super(dataCenterType, resolverType, writeServerPort, replicationPort, readServerPort, codec, shutDownPort,
-                appName, vipAddress, writeClusterDomainName, writeClusterServers, webAdminPort,
-                registryEvictionTimeout, evictionStrategyType, evictionStrategyValue);
-        this.refreshRateSec = refreshRateSec;
+    protected BridgeServerConfig(
+            // common server configs
+            ResolverType resolverType,
+            String[] serverList,
+            EurekaTransports.Codec codec,
+            Integer registrationPort,
+            Integer replicationPort,
+            Integer discoveryPort,
+            Integer shutDownPort,
+            String appName,
+            String vipAddress,
+            LocalDataCenterInfo.DataCenterType dataCenterType,
+            Integer webAdminPort,
+            Long evictionTimeoutMs,
+            EvictionStrategyProvider.StrategyType evictionStrategyType,
+            String evictionStrategyValue,
+            // bridge server configs
+            Integer refreshRateSec
+    ) {
+        super(
+                resolverType,
+                serverList,
+                codec,
+                registrationPort,
+                replicationPort,
+                discoveryPort,
+                shutDownPort,
+                appName,
+                vipAddress,
+                dataCenterType,
+                webAdminPort,
+                evictionTimeoutMs,
+                evictionStrategyType,
+                evictionStrategyValue
+        );
+
+        this.refreshRateSec = refreshRateSec == null ? this.refreshRateSec : refreshRateSec;
     }
 
     public int getRefreshRateSec() {
         return refreshRateSec;
     }
 
-    public static class BridgeServerConfigBuilder extends EurekaServerConfigBuilder<BridgeServerConfig, BridgeServerConfigBuilder> {
-        private int refreshRateSec;
+    public static BridgeServerConfigBuilder newBuilder() {
+        return new BridgeServerConfigBuilder();
+    }
+
+
+    // builder
+    public static class BridgeServerConfigBuilder
+            extends EurekaServerConfig.EurekaServerConfigBuilder<BridgeServerConfig, BridgeServerConfigBuilder> {
+
+        protected Integer refreshRateSec;
+
+        protected BridgeServerConfigBuilder() {}
 
         public BridgeServerConfigBuilder withRefreshRateSec(int refreshRateSec) {
             this.refreshRateSec = refreshRateSec;
-            return this;
+            return self();
         }
 
-        @Override
         public BridgeServerConfig build() {
-            return new BridgeServerConfig(dataCenterType, resolverType, registrationPort, replicationPort,
-                    discoveryPort, codec, shutDownPort, appName, vipAddress, writeClusterDomainName, writeClusterServers,
-                    refreshRateSec, webAdminPort, evictionTimeout, evictionStrategyType.name(), evictionStrategyValue);
+            return new BridgeServerConfig(
+                    resolverType,
+                    serverList,
+                    codec,
+                    registrationPort,
+                    replicationPort,
+                    discoveryPort,
+                    shutDownPort,
+                    appName,
+                    vipAddress,
+                    dataCenterType,
+                    webAdminPort,
+                    evictionTimeoutMs,
+                    evictionStrategyType,
+                    evictionStrategyValue,
+                    // bridge server configs
+                    refreshRateSec
+            );
         }
     }
-
 }

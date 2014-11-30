@@ -47,4 +47,8 @@ public final class ServerResolvers {
     public static ServerResolver from(ServerResolver.Server... servers) {
         return new StaticServerResolver(servers);
     }
+
+    public static ServerResolver from(ServerResolver... resolvers) {
+        return new CompositeServerResolver(resolvers);
+    }
 }

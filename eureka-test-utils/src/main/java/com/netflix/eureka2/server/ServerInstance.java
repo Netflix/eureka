@@ -20,8 +20,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.netflix.eureka2.config.BridgeServerConfig;
-import com.netflix.eureka2.server.config.ReadServerConfig;
-import com.netflix.eureka2.server.config.WriteServerConfig;
+import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.governator.guice.LifecycleInjector;
 import com.netflix.governator.guice.LifecycleInjectorBuilder;
 import com.netflix.governator.lifecycle.LifecycleManager;
@@ -62,7 +61,7 @@ public abstract class ServerInstance {
 
     public static class EurekaWriteServerInstance extends ServerInstance {
 
-        public EurekaWriteServerInstance(final WriteServerConfig config, final ServerResolver replicationResolver) {
+        public EurekaWriteServerInstance(final EurekaServerConfig config, final ServerResolver replicationResolver) {
             Module[] modules = {
                     new EurekaWriteServerModule(config),
                     new AbstractModule() {
@@ -79,7 +78,7 @@ public abstract class ServerInstance {
 
     public static class EurekaReadServerInstance extends ServerInstance {
 
-        public EurekaReadServerInstance(ReadServerConfig config, final ServerResolver registrationResolver,
+        public EurekaReadServerInstance(EurekaServerConfig config, final ServerResolver registrationResolver,
                                         ServerResolver discoveryResolver) {
             final EurekaClient eurekaClient = Eureka.newClientBuilder(discoveryResolver, registrationResolver)
                                                     .withCodec(config.getCodec()).build();

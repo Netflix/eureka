@@ -16,38 +16,70 @@
 
 package com.netflix.eureka2.config;
 
-import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
-import com.netflix.eureka2.server.config.EurekaBootstrapConfig;
+import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
+import com.netflix.eureka2.server.config.EurekaServerConfig;
+import com.netflix.eureka2.server.registry.eviction.EvictionStrategyProvider;
 import com.netflix.eureka2.transport.EurekaTransports;
-import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import com.netflix.governator.annotations.Configuration;
 
 /**
  * @author Tomasz Bak
  */
-public class EurekaDashboardConfig extends EurekaBootstrapConfig {
+public class EurekaDashboardConfig extends EurekaServerConfig {
 
     public static final int DEFAULT_DASHBOARD_PORT = 7001;
     public static final int DEFAULT_WEBSOCKET_PORT = 9000;
 
-    @Configuration("dashboard.http.port")
+    @Configuration("eureka.dashboard.http.port")
     protected int dashboardPort = DEFAULT_DASHBOARD_PORT;
 
-    @Configuration("dashboard.websocket.port")
+    @Configuration("eureka.dashboard.websocket.port")
     private int webSocketPort = DEFAULT_WEBSOCKET_PORT;
+
 
     // For property injection
     protected EurekaDashboardConfig() {
     }
 
-    public EurekaDashboardConfig(DataCenterType dataCenterType, String resolverType, Codec codec,
-                                 int shutDownPort, String appName, String vipAddress, String writeClusterDomainName,
-                                 String[] writeClusterServers, int webAdminPort, int dashboardPort,
-                                 int webSocketPort) {
-        super(dataCenterType, resolverType, codec, shutDownPort, appName, vipAddress, writeClusterDomainName,
-                writeClusterServers, webAdminPort);
-        this.dashboardPort = dashboardPort;
-        this.webSocketPort = webSocketPort;
+    protected EurekaDashboardConfig(
+            // common server configs
+            ResolverType resolverType,
+            String[] serverList,
+            EurekaTransports.Codec codec,
+            Integer registrationPort,
+            Integer replicationPort,
+            Integer discoveryPort,
+            Integer shutDownPort,
+            String appName,
+            String vipAddress,
+            LocalDataCenterInfo.DataCenterType dataCenterType,
+            Integer webAdminPort,
+            Long evictionTimeoutMs,
+            EvictionStrategyProvider.StrategyType evictionStrategyType,
+            String evictionStrategyValue,
+            // dashboard server configs
+            Integer dashboardPort,
+            Integer webSocketPort
+    ) {
+        super(
+                resolverType,
+                serverList,
+                codec,
+                registrationPort,
+                replicationPort,
+                discoveryPort,
+                shutDownPort,
+                appName,
+                vipAddress,
+                dataCenterType,
+                webAdminPort,
+                evictionTimeoutMs,
+                evictionStrategyType,
+                evictionStrategyValue
+        );
+
+        this.dashboardPort = dashboardPort == null ? this.dashboardPort : dashboardPort;
+        this.webSocketPort = webSocketPort == null ? this.webSocketPort : webSocketPort;
     }
 
     public int getDashboardPort() {
@@ -58,26 +90,53 @@ public class EurekaDashboardConfig extends EurekaBootstrapConfig {
         return webSocketPort;
     }
 
-    public static class EurekaDashboardConfigBuilder extends EurekaBootstrapConfigBuilder<EurekaDashboardConfig, EurekaDashboardConfigBuilder> {
+    public static EurekaDashboardConfigBuilder newBuilder() {
+        return new EurekaDashboardConfigBuilder();
+    }
 
-        private int dashboardPort = DEFAULT_DASHBOARD_PORT;
-        private int webSocketPort = DEFAULT_WEBSOCKET_PORT;
-        private int writeClusterDiscoveryPort = EurekaTransports.DEFAULT_DISCOVERY_PORT;
 
-        public EurekaDashboardConfigBuilder withDashboardPort(int port) {
-            this.dashboardPort = port;
-            return this;
+    // builder
+    public static class EurekaDashboardConfigBuilder
+            extends EurekaServerConfig.EurekaServerConfigBuilder<EurekaDashboardConfig, EurekaDashboardConfigBuilder> {
+
+        protected Integer dashboardPort;
+        protected Integer webSocketPort;
+
+        protected EurekaDashboardConfigBuilder() {}
+
+        public EurekaDashboardConfigBuilder withDashboardPort(int dashboardPort) {
+            this.dashboardPort = dashboardPort;
+            return self();
         }
 
-        public EurekaDashboardConfigBuilder withWebSocketPort(int port) {
-            this.webSocketPort = port;
-            return this;
+        public EurekaDashboardConfigBuilder withWebSocketPort(int webSocketPort) {
+            this.webSocketPort = webSocketPort;
+            return self();
         }
 
-        @Override
         public EurekaDashboardConfig build() {
-            return new EurekaDashboardConfig(dataCenterType, resolverType, codec, shutDownPort, appName, vipAddress,
-                    writeClusterDomainName, writeClusterServers, webAdminPort, dashboardPort, webSocketPort);
+            return new EurekaDashboardConfig(
+                    resolverType,
+                    serverList,
+                    codec,
+                    registrationPort,
+                    replicationPort,
+                    discoveryPort,
+                    shutDownPort,
+                    appName,
+                    vipAddress,
+                    dataCenterType,
+                    webAdminPort,
+                    evictionTimeoutMs,
+                    evictionStrategyType,
+                    evictionStrategyValue,
+                    // dashboard server configs
+                    dashboardPort,
+                    webSocketPort
+            );
         }
     }
+
+
+
 }

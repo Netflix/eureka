@@ -39,7 +39,7 @@ public class EvictionStrategyProvider implements Provider<EvictionStrategy> {
 
     @Override
     public EvictionStrategy get() {
-        StrategyType type = StrategyType.valueOf(config.getEvictionStrategyType());
+        StrategyType type = config.getEvictionStrategyType();
         switch (type) {
             case PercentageDrop:
                 return new PercentageDropEvictionStrategy(Integer.parseInt(config.getEvictionStrategyValue()));

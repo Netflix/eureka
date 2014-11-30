@@ -21,8 +21,8 @@ import com.google.inject.name.Names;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.client.metric.EurekaClientRegistryMetrics;
 import com.netflix.eureka2.client.transport.EurekaClientConnectionMetrics;
+import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.eureka2.server.config.ReadServerConfig;
 import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;
 import com.netflix.eureka2.server.registry.EurekaReadServerRegistry;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
@@ -41,18 +41,18 @@ import io.reactivex.netty.servo.ServoEventsListenerFactory;
  */
 public class EurekaReadServerModule extends AbstractModule {
 
-    private final ReadServerConfig config;
+    private final EurekaServerConfig config;
     private final EurekaClient eurekaClient;
 
     public EurekaReadServerModule() {
         this(null);
     }
 
-    public EurekaReadServerModule(ReadServerConfig config) {
+    public EurekaReadServerModule(EurekaServerConfig config) {
         this(config, null);
     }
 
-    public EurekaReadServerModule(ReadServerConfig config, EurekaClient eurekaClient) {
+    public EurekaReadServerModule(EurekaServerConfig config, EurekaClient eurekaClient) {
         this.config = config;
         this.eurekaClient = eurekaClient;
     }
@@ -60,16 +60,17 @@ public class EurekaReadServerModule extends AbstractModule {
     @Override
     public void configure() {
         if (config == null) {
-            bind(EurekaServerConfig.class).to(ReadServerConfig.class).asEagerSingleton();
+            bind(EurekaServerConfig.class).asEagerSingleton();
         } else {
+            bind(EurekaCommonConfig.class).toInstance(config);
             bind(EurekaServerConfig.class).toInstance(config);
-            bind(ReadServerConfig.class).toInstance(config);
         }
         if (eurekaClient == null) {
             bind(EurekaClient.class).toProvider(EurekaClientProvider.class);
         } else {
             bind(EurekaClient.class).toInstance(eurekaClient);
         }
+
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new ServoEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
         bind(TcpDiscoveryServer.class).asEagerSingleton();
 

@@ -23,7 +23,7 @@ import java.util.concurrent.CountDownLatch;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
-import com.netflix.eureka2.server.config.EurekaBootstrapConfig;
+import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.governator.configuration.ArchaiusConfigurationProvider;
 import com.netflix.governator.configuration.ArchaiusConfigurationProvider.Builder;
 import com.netflix.governator.configuration.ConfigurationOwnershipPolicies;
@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Tomasz Bak
  */
-public abstract class AbstractEurekaServer<C extends EurekaBootstrapConfig> {
+public abstract class AbstractEurekaServer<C extends EurekaServerConfig> {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractEurekaServer.class);
 

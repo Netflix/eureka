@@ -18,8 +18,8 @@ package com.netflix.eureka2.server;
 
 import java.util.List;
 
+import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.config.ReadCommandLineParser;
-import com.netflix.eureka2.server.config.ReadServerConfig;
 import com.netflix.governator.guice.BootstrapBinder;
 import com.netflix.governator.guice.BootstrapModule;
 import org.slf4j.Logger;
@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Tomasz Bak
  */
-public class EurekaReadServer extends AbstractEurekaServer<ReadServerConfig> {
+public class EurekaReadServer extends AbstractEurekaServer<EurekaServerConfig> {
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaReadServer.class);
 
@@ -36,7 +36,7 @@ public class EurekaReadServer extends AbstractEurekaServer<ReadServerConfig> {
         super(name);
     }
 
-    public EurekaReadServer(ReadServerConfig config) {
+    public EurekaReadServer(EurekaServerConfig config) {
         super(config);
     }
 
@@ -54,7 +54,7 @@ public class EurekaReadServer extends AbstractEurekaServer<ReadServerConfig> {
         logger.info("Eureka 2.0 Read Server");
 
         ReadCommandLineParser commandLineParser = new ReadCommandLineParser(args);
-        ReadServerConfig config = null;
+        EurekaServerConfig config = null;
         if (args.length == 0) {
             logger.info("No command line parameters provided; enabling archaius property loader for server bootstrapping");
         } else {
