@@ -55,11 +55,14 @@ public class EurekaCLI {
     private static final File HISTORY_FILE =
             System.getProperty("user.home") == null ? null : new File(System.getProperty("user.home"), ".eureka_history");
 
-    private static final Pattern ALIAS_DEF_PATTERN = Pattern.compile("\\s*alias\\s+(\\w+)=(.*)");
+    private static final Pattern INCLUDE_PATTERN = Pattern.compile("\\s*include\\s+(.+)\\s*");
+    private static final Pattern ALIAS_DEF_PATTERN = Pattern.compile("\\s*alias\\s+([\\w\\d-_]+)=(.*)");
 
     private final Command[] commands = {
             new HelpCommand(),
+            new AliasCommand(),
             new HistoryCommand(),
+            new ReloadCommand(),
             ConnectCommand.toRegister(),
             ConnectCommand.toSubscribe(),
             ConnectCommand.toCluster(),
@@ -94,19 +97,49 @@ public class EurekaCLI {
     }
 
     private void loadConfiguration() {
+        aliasMap.clear();
+
         if (CONFIGURATION_FILE != null && CONFIGURATION_FILE.exists()) {
             try {
-                try (LineNumberReader reader = new LineNumberReader(new FileReader(CONFIGURATION_FILE))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        Matcher matcher = ALIAS_DEF_PATTERN.matcher(line);
-                        if (matcher.matches()) {
-                            aliasMap.put(matcher.group(1), matcher.group(2));
+                loadConfigurationFrom(CONFIGURATION_FILE);
+            } catch (IOException ignored) {
+                System.err.println("ERROR: could not load configuration file from ~/.eureka_history");
+            }
+        }
+    }
+
+    private void loadConfigurationFrom(File file) throws IOException {
+        System.out.println("Loading configuration from " + file + "...");
+        try (LineNumberReader reader = new LineNumberReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                // Remove comments and empty lines
+                line = line.trim();
+                int cpos = line.indexOf('#');
+                if (cpos != -1) {
+                    line = line.substring(0, cpos);
+                }
+                if (!line.isEmpty()) {
+                    Matcher includeMatcher = INCLUDE_PATTERN.matcher(line);
+                    if (includeMatcher.matches()) {
+                        String fileName = includeMatcher.group(1);
+                        File nestedFile;
+                        if (fileName.startsWith("/")) {
+                            nestedFile = new File(fileName);
+                        } else {
+                            nestedFile = new File(CONFIGURATION_FILE.getParentFile(), fileName);
+                        }
+                        loadConfigurationFrom(nestedFile);
+                    } else {
+                        Matcher aliasMatcher = ALIAS_DEF_PATTERN.matcher(line);
+                        if (aliasMatcher.matches()) {
+                            aliasMap.put(aliasMatcher.group(1), aliasMatcher.group(2));
+                        } else {
+                            System.err.format("WARN: syntax error at %s#%d: %s...\n", file, reader.getLineNumber(),
+                                    line.substring(0, Math.min(32, line.length())));
                         }
                     }
                 }
-            } catch (IOException ignored) {
-                System.err.println("ERROR: could not load configuration file from ~/.eureka_history");
             }
         }
     }
@@ -248,10 +281,32 @@ public class EurekaCLI {
             for (Command cmd : commands) {
                 System.out.format(lineFormat, cmd.getInvocationSyntax(), cmd.getDescription());
             }
+            return true;
+        }
+    }
 
-            if (!aliasMap.isEmpty()) {
-                System.out.println();
-                System.out.println("Aliases");
+    class AliasCommand extends Command {
+        AliasCommand() {
+            super("alias");
+        }
+
+        @Override
+        public String getDescription() {
+            return "print aliases";
+        }
+
+        @Override
+        protected boolean executeCommand(Context context, String[] args) {
+            if (aliasMap.isEmpty()) {
+                System.out.println("No aliases defined");
+            } else {
+                System.out.println("Defined aliases:");
+                int maxLen = -1;
+                for (String key : aliasMap.keySet()) {
+                    maxLen = Math.max(key.length(), maxLen);
+                }
+                maxLen += 2;
+                String lineFormat = "  %-" + maxLen + "s%s\n";
                 for (String key : aliasMap.keySet()) {
                     System.out.format(lineFormat, key, aliasMap.get(key));
                 }
@@ -262,8 +317,8 @@ public class EurekaCLI {
 
     class HistoryCommand extends Command {
 
-        protected HistoryCommand() {
-            super("history");
+        HistoryCommand() {
+            super("history", 0);
         }
 
         @Override
@@ -276,6 +331,24 @@ public class EurekaCLI {
             for (int i = 0; i < consoleReader.getHistory().size(); i++) {
                 System.out.println(String.format("%4d %s", i + 1, consoleReader.getHistory().get(i)));
             }
+            return true;
+        }
+    }
+
+    class ReloadCommand extends Command {
+
+        protected ReloadCommand() {
+            super("reload", 0);
+        }
+
+        @Override
+        public String getDescription() {
+            return "reload " + CONFIGURATION_FILE + " file";
+        }
+
+        @Override
+        protected boolean executeCommand(Context context, String[] args) {
+            loadConfiguration();
             return true;
         }
     }
