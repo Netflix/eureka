@@ -51,7 +51,7 @@ public class WebSocketServer {
 
                         if (wsFrame instanceof TextWebSocketFrame) {
                             TextWebSocketFrame textFrame = (TextWebSocketFrame) wsFrame;
-                            System.out.println("Got message: " + textFrame.text());
+                            logger.info("Got ws-message: " + textFrame.text());
                             final String cmd = textFrame.text();
                             if (cmd.equals("get status")) {
                                 return streamEurekaStatus(connection);

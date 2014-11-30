@@ -1,11 +1,13 @@
 var eurekaRegistryCtrl = (function () {
-    var instances = {};
+    var MaxReconnection = 3;
+    var reconnectAttempt = 0;
+    var GetRegistryCmd = "get registry";
 
     function load() {
-        $.get( "/getconfig", function( data ) {
+        $.get("/getconfig", function (data) {
             console.log("Going to websocket connect to " + data.wsport);
             connect(data.wsport);
-        }).fail(function() {
+        }).fail(function () {
             console.log("Error getting ws port");
         });
     }
@@ -13,36 +15,34 @@ var eurekaRegistryCtrl = (function () {
     function connect(port) {
         var ws = new WebSocket('ws://' + document.location.hostname + ':' + port);
         ws.onopen = function () {
-            ws.send("get registry");
+            ws.send(GetRegistryCmd);
         };
         ws.onmessage = function (data, flags) {
-            var instNotification = JSON.parse(data.data);
-            var sendNotification = false;
-            if (instNotification.kind === 'Add') {
-                if (instNotification.data['id'] in instances) {
-                    console.log("Duplicate ? " + instNotification.data['id']);
-                } else {
-                    instances[instNotification.data['id']] = 1;
-                    sendNotification = true;
-                }
+            if (data.data === 'ERROR') {
+                ws.send(GetRegistryCmd);
+                console.log("Error from eureka-client, resetting view");
+                $(window).trigger('ResetView');
             } else {
-                // remove instance
-                if (instNotification.data['id'] in instances) {
-                    delete instances[instNotification.data['id']];
-                    sendNotification = true;
-                } else {
-                    console.log("Removing instance that don't exist in registry ? " + instNotification.data['id']);
-                }
-            }
-
-            if (sendNotification) {
-                $(window).trigger('InstanceNotificationReceived', {instInfo : instNotification.data, type : instNotification.kind});
+                var instNotification = JSON.parse(data.data);
+                $(window).trigger('InstanceNotificationReceived', {instInfo: instNotification.data, type: instNotification.kind});
             }
         };
+
+        ws.onerror = function (error) {
+            console.log("Error detected in eureka stream " + error);
+        };
+
+        ws.onclose = function() {
+            console.log("Connection closed. Reconnecting #" + reconnectAttempt);
+            if (reconnectAttempt < MaxReconnection) {
+                reconnectAttempt++;
+                connect(port);
+            }
+        }
     }
 
     return {
-        load : load
+        load: load
     }
 
 })();

@@ -18,10 +18,17 @@ var eurekaRegistryView = (function () {
             updateReceived(data);
         });
 
+        $(window).on('ResetView', function (e) {
+            resetReceived();
+        });
+
         window.setInterval(function () {
             refreshView();
         }, 1000);
 
+        window.setInterval(function () {
+            cleanUpLiveStream();
+        }, 5000);
     }
 
     var updatedInstInfo = [];
@@ -53,6 +60,12 @@ var eurekaRegistryView = (function () {
         $('.live-stream').show().prepend($('<li>' + buildLiveStreamEntry(data) + '</li>'));
     }
 
+    function resetReceived() {
+        registry = [];
+        $('.live-stream').show().prepend($('<li>Reconnecting ...</li>'));
+        render();
+    }
+
     function buildLiveStreamEntry(data) {
         var vipAddress = data['instInfo']['vipAddress'] || '';
         var markup = [];
@@ -70,7 +83,6 @@ var eurekaRegistryView = (function () {
     function refreshView() {
         console.log("REfreshing");
         if (updatedInstInfo.length > 0) {
-            console.log("For Real");
             hideMsg();
             render();
         }
@@ -249,6 +261,19 @@ var eurekaRegistryView = (function () {
                     return '';
                 });
 
+    }
+
+    var MAX_LIVE_STREAM_ROWS = 5000;
+    function cleanUpLiveStream() {
+        var liElms = $('.live-stream li');
+        var totalRecords = liElms.length;
+        for (var i = MAX_LIVE_STREAM_ROWS; i < totalRecords; i++) {
+            liElms[i].remove();
+        }
+        var rowsDeleted = totalRecords - MAX_LIVE_STREAM_ROWS;
+        if (rowsDeleted > 0) {
+            console.log("Live stream rows cleaned up : " + rowsDeleted);
+        }
     }
 
     return {

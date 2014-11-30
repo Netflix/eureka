@@ -17,7 +17,7 @@ import rx.Subscriber;
 
 @Singleton
 public class EurekaRegistryHandler {
-    public static final int MAX_SUBSCRIPTION_ATTEMPTS = 3;
+    public static final String RESP_ERROR = "ERROR";
     private static Logger log = LoggerFactory.getLogger(EurekaRegistryHandler.class);
     private final EurekaRegistryDataStream eurekaRegistryDataStream;
     private final Gson gson;
@@ -29,11 +29,11 @@ public class EurekaRegistryHandler {
     }
 
     public Observable<Void> buildWebSocketResponse(final ObservableConnection<WebSocketFrame, WebSocketFrame> webSocketConn) {
-        subscribeToNewStream(webSocketConn, 1);
+        subscribeToNewStream(webSocketConn);
         return Observable.empty();
     }
 
-    private void subscribeToNewStream(final ObservableConnection<WebSocketFrame, WebSocketFrame> webSocketConn, final int subscriptionAttempt) {
+    private void subscribeToNewStream(final ObservableConnection<WebSocketFrame, WebSocketFrame> webSocketConn) {
         eurekaRegistryDataStream.subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
             @Override
             public void onCompleted() {
@@ -42,10 +42,8 @@ public class EurekaRegistryHandler {
 
             @Override
             public void onError(Throwable e) {
-                log.error("Exception received in Eureka data stream. Resubscribing...", e);
-                if (subscriptionAttempt <= MAX_SUBSCRIPTION_ATTEMPTS) {
-                    subscribeToNewStream(webSocketConn, subscriptionAttempt + 1);
-                }
+                log.error("Exception received in Eureka data stream.", e);
+                sendError(webSocketConn);
             }
 
             @Override
@@ -65,4 +63,10 @@ public class EurekaRegistryHandler {
             }
         });
     }
+
+    private void sendError(final ObservableConnection<WebSocketFrame, WebSocketFrame> webSocketConn) {
+        final ByteBuf respByteBuf = webSocketConn.getAllocator().buffer().writeBytes(RESP_ERROR.getBytes());
+        webSocketConn.writeAndFlush(new TextWebSocketFrame(respByteBuf));
+    }
+
 }
