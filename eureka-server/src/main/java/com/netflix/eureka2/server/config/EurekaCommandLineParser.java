@@ -28,7 +28,7 @@ import org.apache.commons.cli.PosixParser;
 /**
  * @author Tomasz Bak
  */
-public abstract class EurekaCommandLineParser<C extends EurekaServerConfig, B extends EurekaServerConfig.EurekaServerConfigBuilder<C, B>> {
+public abstract class EurekaCommandLineParser<C extends EurekaCommonConfig, B extends EurekaCommonConfig.EurekaCommonConfigBuilder<C, B>> {
 
     protected final B builder;
     private final boolean resolverRequired;

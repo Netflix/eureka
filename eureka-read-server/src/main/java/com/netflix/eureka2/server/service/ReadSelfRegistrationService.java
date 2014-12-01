@@ -22,6 +22,7 @@ import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.registry.ServicePort;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
+import com.netflix.eureka2.server.config.InstanceInfoFromConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Notification;
@@ -87,7 +88,7 @@ public class ReadSelfRegistrationService implements SelfRegistrationService {
     }
 
     public Observable<InstanceInfo> connect() {
-        return config.getMyInstanceInfoConfig()
+        return new InstanceInfoFromConfig(config)
                 .get()
                 .map(new Func1<InstanceInfo.Builder, InstanceInfo>() {
                     @Override
