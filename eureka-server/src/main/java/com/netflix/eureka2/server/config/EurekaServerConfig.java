@@ -24,12 +24,6 @@ public class EurekaServerConfig extends EurekaCommonConfig {
     @Configuration("eureka.services.discovery.port")  // all servers support read by default
     protected Integer discoveryPort = EurekaTransports.DEFAULT_DISCOVERY_PORT;
 
-    @Configuration("eureka.services.shutdown.port")
-    protected int shutDownPort = 7700;
-
-    @Configuration("netflix.platform.admin.resources.port")
-    protected int webAdminPort = 8077;
-
     // registry configs
     @Configuration("eureka.registry.evictionTimeoutMs")
     private long evictionTimeoutMs = EvictionQueueImpl.DEFAULT_EVICTION_TIMEOUT;
@@ -49,29 +43,23 @@ public class EurekaServerConfig extends EurekaCommonConfig {
             ResolverType resolverType,
             String[] serverList,
             Codec codec,
-            Integer registrationPort,
-            Integer replicationPort,
-            Integer discoveryPort,
-            Integer shutDownPort,
             String appName,
             String vipAddress,
             DataCenterType dataCenterType,
+            Integer shutDownPort,
             Integer webAdminPort,
+            Integer registrationPort,
+            Integer replicationPort,
+            Integer discoveryPort,
             Long evictionTimeoutMs,
             EvictionStrategyProvider.StrategyType evictionStrategyType,
             String evictionStrategyValue
     ) {
-        this.resolverType = resolverType == null ? this.resolverType : resolverType.name();
-        this.serverList = serverList == null ? this.serverList : serverList;
-        this.codec = codec == null ? this.codec : codec.name();
+        super(resolverType, serverList, codec, appName, vipAddress, dataCenterType, shutDownPort, webAdminPort);
+
         this.registrationPort = registrationPort == null ? this.registrationPort : registrationPort;
         this.replicationPort = replicationPort == null ? this.replicationPort : replicationPort;
         this.discoveryPort = discoveryPort == null ? this.discoveryPort : discoveryPort;
-        this.shutDownPort = shutDownPort == null ? this.shutDownPort : shutDownPort;
-        this.appName = appName == null ? this.appName : appName;
-        this.vipAddress = vipAddress == null ? this.vipAddress : vipAddress;
-        this.dataCenterType = dataCenterType == null ? this.dataCenterType : dataCenterType.name();
-        this.webAdminPort = webAdminPort == null ? this.webAdminPort : webAdminPort;
         this.evictionTimeoutMs = evictionTimeoutMs == null ? this.evictionTimeoutMs : evictionTimeoutMs;
         this.evictionStrategyType = evictionStrategyType == null ? this.evictionStrategyType : evictionStrategyType.name();
         this.evictionStrategyValue = evictionStrategyValue == null ? this.evictionStrategyValue : evictionStrategyValue;
@@ -87,10 +75,6 @@ public class EurekaServerConfig extends EurekaCommonConfig {
 
     public int getDiscoveryPort() {
         return discoveryPort;
-    }
-
-    public int getWebAdminPort() {
-        return webAdminPort;
     }
 
     public long getEvictionTimeoutMs() {
@@ -112,10 +96,6 @@ public class EurekaServerConfig extends EurekaCommonConfig {
         return evictionStrategyValue;
     }
 
-    public InstanceInfoFromConfig getMyInstanceInfoConfig() {
-        return new InstanceInfoFromConfig(this);
-    }
-
     public static DefaultEurekaServerConfigBuilder baseBuilder() {
         return new DefaultEurekaServerConfigBuilder();
     }
@@ -130,14 +110,14 @@ public class EurekaServerConfig extends EurekaCommonConfig {
                     resolverType,
                     serverList,
                     codec,
-                    registrationPort,
-                    replicationPort,
-                    discoveryPort,
-                    shutDownPort,
                     appName,
                     vipAddress,
                     dataCenterType,
+                    shutDownPort,
                     webAdminPort,
+                    registrationPort,
+                    replicationPort,
+                    discoveryPort,
                     evictionTimeoutMs,
                     evictionStrategyType,
                     evictionStrategyValue
@@ -148,17 +128,9 @@ public class EurekaServerConfig extends EurekaCommonConfig {
     // builder
     public abstract static class EurekaServerConfigBuilder<C extends EurekaServerConfig, B extends EurekaServerConfigBuilder<C, B>>
             extends EurekaCommonConfigBuilder<C, B> {
-        protected ResolverType resolverType;
-        protected String[] serverList;
-        protected Codec codec;
         protected Integer registrationPort;
         protected Integer replicationPort;
         protected Integer discoveryPort;
-        protected Integer shutDownPort;
-        protected String appName;
-        protected String vipAddress;
-        protected DataCenterType dataCenterType;
-        protected Integer webAdminPort;
         protected Long evictionTimeoutMs;
         protected EvictionStrategyProvider.StrategyType evictionStrategyType;
         protected String evictionStrategyValue;
@@ -177,16 +149,6 @@ public class EurekaServerConfig extends EurekaCommonConfig {
 
         public B withDiscoveryPort(int discoveryPort) {
             this.discoveryPort = discoveryPort;
-            return self();
-        }
-
-        public B withShutDownPort(int shutDownPort) {
-            this.shutDownPort = shutDownPort;
-            return self();
-        }
-
-        public B withWebAdminPort(int webAdminPort) {
-            this.webAdminPort = webAdminPort;
             return self();
         }
 
