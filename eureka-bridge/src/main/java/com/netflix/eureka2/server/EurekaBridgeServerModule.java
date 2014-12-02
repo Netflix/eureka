@@ -4,6 +4,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.netflix.eureka2.client.transport.EurekaClientConnectionMetrics;
 import com.netflix.eureka2.config.BridgeServerConfig;
+import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.service.BridgeChannelMetrics;
 import com.netflix.eureka2.metric.BridgeServerMetricFactory;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
@@ -46,6 +47,7 @@ public class EurekaBridgeServerModule extends AbstractModule {
         if (config == null) {
             bind(BridgeServerConfig.class).asEagerSingleton();
         } else {
+            bind(EurekaCommonConfig.class).toInstance(config);
             bind(EurekaServerConfig.class).toInstance(config);
             bind(BridgeServerConfig.class).toInstance(config);
         }

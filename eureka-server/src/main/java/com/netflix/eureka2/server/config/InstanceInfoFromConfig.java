@@ -37,7 +37,8 @@ public class InstanceInfoFromConfig {
                                 .withApp(config.getAppName())
                                 .withVipAddress(config.getVipAddress())
                                 .withHealthCheckUrls(healthCheckUrls)
-                                .withDataCenterInfo(dataCenterInfo);
+                                .withDataCenterInfo(dataCenterInfo)
+                                .withStatus(InstanceInfo.Status.UP);  // for now just register with UP
                     }
                 });
     }
