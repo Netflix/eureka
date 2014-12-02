@@ -7,12 +7,10 @@ import com.netflix.eureka2.bridge.InstanceInfoConverter;
 import com.netflix.eureka2.bridge.InstanceInfoConverterImpl;
 import com.netflix.eureka2.bridge.OperatorInstanceInfoFromV1;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.metric.BridgeChannelMetrics;
 import com.netflix.eureka2.registry.Delta;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.server.registry.Source;
-import com.netflix.eureka2.service.ServiceChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -35,8 +33,10 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author David Liu
  */
-public class BridgeChannel implements ServiceChannel {
+public class BridgeChannel extends AbstractChannel<BridgeChannel.STATES> {
     private static final Logger logger = LoggerFactory.getLogger(BridgeChannel.class);
+
+    protected enum STATES {Opened, Closed}
 
     private final EurekaServerRegistry<InstanceInfo> registry;
     private final DiscoveryClient discoveryClient;
@@ -64,6 +64,7 @@ public class BridgeChannel implements ServiceChannel {
                          BridgeChannelMetrics metrics,
                          Scheduler scheduler)
     {
+        super(STATES.Opened, null, registry);
         this.registry = registry;
         this.discoveryClient = discoveryClient;
         this.refreshRateSec = refreshRateSec;
@@ -199,14 +200,9 @@ public class BridgeChannel implements ServiceChannel {
     }
 
     @Override
-    public void close() {
+    protected void _close() {
         discoveryClient.shutdown();
         registry.shutdown();
         lifecycle.onCompleted();
-    }
-
-    @Override
-    public Observable<Void> asLifecycleObservable() {
-        return lifecycle;
     }
 }

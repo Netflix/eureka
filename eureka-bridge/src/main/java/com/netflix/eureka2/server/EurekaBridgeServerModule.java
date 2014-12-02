@@ -4,7 +4,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.netflix.eureka2.client.transport.EurekaClientConnectionMetrics;
 import com.netflix.eureka2.config.BridgeServerConfig;
-import com.netflix.eureka2.metric.BridgeChannelMetrics;
+import com.netflix.eureka2.server.service.BridgeChannelMetrics;
 import com.netflix.eureka2.metric.BridgeServerMetricFactory;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
