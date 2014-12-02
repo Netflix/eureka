@@ -79,8 +79,10 @@ public class AbstractDiscoveryClientTester {
 
     protected void setupDiscoveryClient(int renewalIntervalInSecs) {
         InstanceInfo.Builder builder = newInstanceInfoBuilder(renewalIntervalInSecs);
-        client = new DiscoveryClient(builder.build(), new DefaultEurekaClientConfig());
-
+        DefaultEurekaClientConfig config = new DefaultEurekaClientConfig();
+        // setup config in advance, used in initialize converter
+        DiscoveryManager.getInstance().setEurekaClientConfig(config);
+        client = new DiscoveryClient(builder.build(), config);
         ApplicationInfoManager.getInstance().initComponent(new MyDataCenterInstanceConfig());
     }
 

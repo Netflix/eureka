@@ -10,6 +10,7 @@ import com.netflix.blitz4j.LoggingConfiguration;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.DiscoveryClient;
+import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Pair;
 import com.netflix.eureka.mock.MockRemoteEurekaServer;
@@ -81,7 +82,10 @@ public class AbstractTester {
                                                              "http://localhost:" + mockRemoteEurekaServer.getPort() +
                                                              MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
 
-        client = new DiscoveryClient(builder.build(), new DefaultEurekaClientConfig());
+        DefaultEurekaClientConfig config = new DefaultEurekaClientConfig();
+        // setup config in advance, used in initialize converter
+        DiscoveryManager.getInstance().setEurekaClientConfig(config);
+        client = new DiscoveryClient(builder.build(), config);
         ApplicationInfoManager.getInstance().initComponent(new MyDataCenterInstanceConfig());
         registry = new PeerAwareInstanceRegistry() {
 
