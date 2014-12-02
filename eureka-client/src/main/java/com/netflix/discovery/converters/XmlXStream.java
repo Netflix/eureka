@@ -39,9 +39,6 @@ import com.thoughtworks.xstream.io.xml.XmlFriendlyNameCoder;
 
 public class XmlXStream extends XStream {
 
-    private static final EurekaClientConfig EUREKA_CLIENT_CONFIG = DiscoveryManager
-            .getInstance().getEurekaClientConfig();
-
     private static final XmlXStream s_instance = new XmlXStream();
 
     public XmlXStream() {
@@ -63,6 +60,8 @@ public class XmlXStream extends XStream {
     }
 
     private static XmlFriendlyNameCoder initializeNameCoder(){
-        return new XmlFriendlyNameCoder(EUREKA_CLIENT_CONFIG.getDollarReplacement(),  EUREKA_CLIENT_CONFIG.getEscapeCharReplacement());
+        EurekaClientConfig clientConfig = DiscoveryManager
+                .getInstance().getEurekaClientConfig();
+        return new XmlFriendlyNameCoder(clientConfig.getDollarReplacement(), clientConfig.getEscapeCharReplacement());
     }
 }
