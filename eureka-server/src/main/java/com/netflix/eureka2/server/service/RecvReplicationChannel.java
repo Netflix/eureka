@@ -26,9 +26,9 @@ import java.util.UUID;
  *
  * @author Nitesh Kant
  */
-public class ReplicationChannelImpl extends AbstractChannel<ReplicationChannelImpl.STATES> implements ReplicationChannel {
+public class RecvReplicationChannel extends AbstractChannel<RecvReplicationChannel.STATES> implements ReplicationChannel {
 
-    private static final Logger logger = LoggerFactory.getLogger(ReplicationChannelImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(RecvReplicationChannel.class);
     private final Source replicationSource;
     private final ReplicationChannelMetrics metrics;
     private long currentVersion;
@@ -37,7 +37,7 @@ public class ReplicationChannelImpl extends AbstractChannel<ReplicationChannelIm
 
     private final Map<String, InstanceInfo> instanceInfoById = new HashMap<>();
 
-    public ReplicationChannelImpl(MessageConnection transport,
+    public RecvReplicationChannel(MessageConnection transport,
                                   EurekaServerRegistry<InstanceInfo> registry,
                                   final EvictionQueue evictionQueue,
                                   ReplicationChannelMetrics metrics) {

@@ -54,7 +54,7 @@ public class ReplicationChannelMonitor {
     private final TransportClient transportClient;
     private final long reconnectDelayMs;
 
-    private final AtomicReference<ClientReplicationChannel> replicationChannelRef = new AtomicReference<>();
+    private final AtomicReference<SendReplicationChannel> replicationChannelRef = new AtomicReference<>();
     private final Worker worker;
     private volatile STATE state;
 
@@ -73,7 +73,7 @@ public class ReplicationChannelMonitor {
         logger.info("Setting up replication channel with {}", targetName);
 
         closeChannel();
-        ClientReplicationChannel replicationChannel = new ClientReplicationChannel(
+        SendReplicationChannel replicationChannel = new SendReplicationChannel(
                 eurekaRegistry, transportClient);
         replicationChannelRef.set(replicationChannel);
 
@@ -118,7 +118,7 @@ public class ReplicationChannelMonitor {
     }
 
     protected void closeChannel() {
-        ClientReplicationChannel replicationChannel = replicationChannelRef.getAndSet(null);
+        SendReplicationChannel replicationChannel = replicationChannelRef.getAndSet(null);
         if (replicationChannel != null) {
             replicationChannel.close();
         }

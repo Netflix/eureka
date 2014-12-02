@@ -46,7 +46,7 @@ public class ChannelFactoryImpl implements ServerChannelFactory {
 
     @Override
     public ReplicationChannel newReplicationChannel() {
-        return new ReplicationChannelImpl(connection, registry, evictionQueue, metricFactory.getReplicationChannelMetrics());
+        return new RecvReplicationChannel(connection, registry, evictionQueue, metricFactory.getReplicationChannelMetrics());
     }
 
     @Override
