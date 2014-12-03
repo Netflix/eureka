@@ -75,21 +75,12 @@ public abstract class AbstractEurekaServer<C extends EurekaServerConfig> {
 
     public void start() throws Exception {
         List<BootstrapModule> bootstrapModules = new ArrayList<>();
-        if (config == null) {
-            bootstrapModules.add(new BootstrapModule() {
-                @Override
-                public void configure(BootstrapBinder bootstrapBinder) {
-                    bootstrapBinder.bind(PropertiesLoader.class).toInstance(new DefaultPropertiesLoader(name));
-                    bootstrapBinder.bind(PropertiesInitializer.class).asEagerSingleton();
-                    Builder builder = ArchaiusConfigurationProvider.builder();
-                    builder.withOwnershipPolicy(ConfigurationOwnershipPolicies.ownsAll());
-                    bootstrapBinder.bindConfigurationProvider().toInstance(builder.build());
-                }
-            });
-        }
         bootstrapModules.add(new BootstrapModule() {
             @Override
             public void configure(BootstrapBinder binder) {
+                if (config == null) {
+                    bindConfigurationProvider(binder);
+                }
                 binder.include(KaryonWebAdminModule.class);
                 binder.include(KaryonServoModule.class);
                 binder.include(new AbstractModule() {
@@ -109,6 +100,15 @@ public abstract class AbstractEurekaServer<C extends EurekaServerConfig> {
                 bootstrapModules.toArray(new BootstrapModule[bootstrapModules.size()])
         );
         startLifecycleManager();
+    }
+
+    protected void bindConfigurationProvider(BootstrapBinder bootstrapBinder) {
+        bootstrapBinder.bind(PropertiesLoader.class).toInstance(new DefaultPropertiesLoader(name));
+        bootstrapBinder.bind(PropertiesInitializer.class).asEagerSingleton();
+
+        Builder builder = ArchaiusConfigurationProvider.builder();
+        builder.withOwnershipPolicy(ConfigurationOwnershipPolicies.ownsAll());
+        bootstrapBinder.bindConfigurationProvider().toInstance(builder.build());
     }
 
     protected abstract void additionalModules(List<BootstrapModule> suites);
