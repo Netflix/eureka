@@ -17,7 +17,7 @@
 package com.netflix.eureka2.server.service;
 
 import com.netflix.eureka2.metric.AbstractStateMachineMetrics;
-import com.netflix.eureka2.server.service.ReplicationChannelImpl.STATES;
+import com.netflix.eureka2.server.service.RecvReplicationChannel.STATES;
 
 /**
  * @author Tomasz Bak

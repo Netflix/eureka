@@ -18,13 +18,33 @@ import static org.hamcrest.Matchers.not;
  */
 public class NotifyingInstanceInfoHolderTest {
 
-    NotificationsSubject<InstanceInfo> notificationSubject;
+    private NotificationsSubject<InstanceInfo> notificationSubject;
+    private MultiSourcedDataHolder.HolderStoreAccessor<NotifyingInstanceInfoHolder> storeAccessor;
 
     @Rule
     public final ExternalResource testResource = new ExternalResource() {
         @Override
         protected void before() throws Throwable {
             notificationSubject = NotificationsSubject.create();
+            storeAccessor = new MultiSourcedDataHolder.HolderStoreAccessor<NotifyingInstanceInfoHolder>() {
+                @Override
+                public void add(NotifyingInstanceInfoHolder holder) {
+                }
+
+                @Override
+                public NotifyingInstanceInfoHolder get(String id) {
+                    return null;
+                }
+
+                @Override
+                public void remove(String id) {
+                }
+
+                @Override
+                public boolean contains(String id) {
+                    return false;
+                }
+            };
         }
     };
 
@@ -37,7 +57,7 @@ public class NotifyingInstanceInfoHolderTest {
                 .withStatus(InstanceInfo.Status.STARTING)
                 .build();
 
-        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(notificationSubject, invoker, firstInfo.getId());
+        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, notificationSubject, invoker, firstInfo.getId());
         holder.update(Source.localSource(), firstInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(1));
@@ -61,7 +81,7 @@ public class NotifyingInstanceInfoHolderTest {
                 .withStatus(InstanceInfo.Status.STARTING)
                 .build();
 
-        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(notificationSubject, invoker, firstInfo.getId());
+        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, notificationSubject, invoker, firstInfo.getId());
         holder.update(Source.localSource(), firstInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(1));
@@ -100,7 +120,7 @@ public class NotifyingInstanceInfoHolderTest {
                 .withStatus(InstanceInfo.Status.UP)
                 .build();
 
-        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(notificationSubject, invoker, firstInfo.getId());
+        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, notificationSubject, invoker, firstInfo.getId());
         holder.update(Source.localSource(), firstInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(1));
@@ -120,7 +140,7 @@ public class NotifyingInstanceInfoHolderTest {
                 .withStatus(InstanceInfo.Status.STARTING)
                 .build();
 
-        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(notificationSubject, invoker, localInfo.getId());
+        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, notificationSubject, invoker, localInfo.getId());
         holder.update(Source.localSource(), localInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(1));
@@ -153,7 +173,7 @@ public class NotifyingInstanceInfoHolderTest {
                 .withStatus(InstanceInfo.Status.STARTING)
                 .build();
 
-        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(notificationSubject, invoker, localInfo.getId());
+        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, notificationSubject, invoker, localInfo.getId());
         holder.update(Source.localSource(), localInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(1));
@@ -178,15 +198,5 @@ public class NotifyingInstanceInfoHolderTest {
         assertThat(holder.get(), equalTo(fooInfo));
         assertThat(holder.get(fooSource), equalTo(fooInfo));
         assertThat(holder.get(Source.localSource()), not(equalTo(localInfo)));
-    }
-
-    @Test
-    public void testSendEmptyHolderToExpiryQueue() {
-        // TODO
-    }
-
-    @Test
-    public void testRecoverUpdatedEmptyHolderFromExpiryQueue() {
-        // TODO
     }
 }

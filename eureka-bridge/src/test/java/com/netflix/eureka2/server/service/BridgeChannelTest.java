@@ -17,9 +17,6 @@ import org.junit.rules.ExternalResource;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import rx.Observable;
-import rx.Scheduler;
-import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
@@ -65,7 +62,7 @@ public class BridgeChannelTest {
             registry = spy(new EurekaServerRegistryImpl(EurekaServerMetricFactory.serverMetrics()));
 
             testScheduler = Schedulers.test();
-            bridgeChannel = new TestBridgeChannel(registry, mockV1Client, period, SampleInstanceInfo.DiscoveryServer.build(), new BridgeChannelMetrics(), testScheduler);
+            bridgeChannel = new BridgeChannel(registry, mockV1Client, period, SampleInstanceInfo.DiscoveryServer.build(), new BridgeChannelMetrics(), testScheduler);
             converter = new InstanceInfoConverterImpl();
 
             when(mockV1Client.getApplications()).thenReturn(mockApplications);
@@ -162,34 +159,5 @@ public class BridgeChannelTest {
                 .setMetadata(metadata)
                 .setDataCenterInfo(dataCenterInfo)
                 .build();
-    }
-
-    private static class TestBridgeChannel extends BridgeChannel {
-
-        private final DiscoveryClient testClient;
-
-        public TestBridgeChannel(EurekaServerRegistry<InstanceInfo> registry,
-                                 DiscoveryClient discoveryClient,
-                                 int refreshRateSec,
-                                 InstanceInfo self,
-                                 BridgeChannelMetrics metrics,
-                                 Scheduler scheduler) {
-            super(registry, discoveryClient, refreshRateSec, self, metrics, scheduler);
-            testClient = discoveryClient;
-        }
-
-        @Override
-        protected Observable<com.netflix.appinfo.InstanceInfo> getV1Stream() {
-            Applications applications =
-                    new Applications(testClient.getApplications().getRegisteredApplications());
-
-            return Observable.from(applications.getRegisteredApplications())
-                    .flatMap(new Func1<Application, Observable<com.netflix.appinfo.InstanceInfo>>() {
-                        @Override
-                        public Observable<com.netflix.appinfo.InstanceInfo> call(Application application) {
-                            return Observable.from(application.getInstances());
-                        }
-                    });
-        }
     }
 }

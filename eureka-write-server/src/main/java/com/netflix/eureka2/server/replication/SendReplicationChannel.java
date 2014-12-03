@@ -40,11 +40,11 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * @author Tomasz Bak
  */
-public class ClientReplicationChannel implements ReplicationChannel {
+public class SendReplicationChannel implements ReplicationChannel {
 
     enum STATE {Idle, Connected, Closed}
 
-    private static final Logger logger = LoggerFactory.getLogger(ClientReplicationChannel.class);
+    private static final Logger logger = LoggerFactory.getLogger(SendReplicationChannel.class);
 
     private static final IllegalStateException CHANNEL_CLOSED_EXCEPTION = new IllegalStateException("Channel is already closed.");
 
@@ -67,7 +67,7 @@ public class ClientReplicationChannel implements ReplicationChannel {
     private final ReplaySubject<MessageConnection> singleConnectionSubject = ReplaySubject.create();
     private volatile MessageConnection connectionIfConnected;
 
-    public ClientReplicationChannel(final EurekaServerRegistry<InstanceInfo> registry, TransportClient transportClient) {
+    public SendReplicationChannel(final EurekaServerRegistry<InstanceInfo> registry, TransportClient transportClient) {
         this.registry = registry;
         this.transportClient = transportClient;
         this.state = new AtomicReference<>(STATE.Idle);

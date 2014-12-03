@@ -121,38 +121,13 @@ public class EurekaServerRegistryImplTest {
         registry.register(original);
         testScheduler.triggerActions();
 
-        ConcurrentHashMap<String, MultiSourcedDataHolder<InstanceInfo>> internalStore = registry.getInternalStore();
+        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
         assertThat(internalStore.size(), equalTo(1));
 
         MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
         assertThat(holder.size(), equalTo(1));
         InstanceInfo snapshot1 = holder.get();
         assertThat(snapshot1, equalTo(original));
-    }
-
-    @Test
-    public void testUnregister() {
-        InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
-                .withStatus(InstanceInfo.Status.UP)
-                .build();
-
-        registry.register(original);
-        testScheduler.triggerActions();
-
-        ConcurrentHashMap<String, MultiSourcedDataHolder<InstanceInfo>> internalStore = registry.getInternalStore();
-        assertThat(internalStore.size(), equalTo(1));
-
-        MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
-        assertThat(holder.size(), equalTo(1));
-        InstanceInfo snapshot1 = holder.get();
-        assertThat(snapshot1, equalTo(original));
-
-        registry.unregister(original);
-        testScheduler.triggerActions();
-
-        assertThat(internalStore.size(), equalTo(1));
-        holder = internalStore.values().iterator().next();
-        assertThat(holder.size(), equalTo(0));
     }
 
     @Test
@@ -164,7 +139,7 @@ public class EurekaServerRegistryImplTest {
         registry.register(original);
         testScheduler.triggerActions();
 
-        ConcurrentHashMap<String, MultiSourcedDataHolder<InstanceInfo>> internalStore = registry.getInternalStore();
+        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
         assertThat(internalStore.size(), equalTo(1));
 
         MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
@@ -187,6 +162,106 @@ public class EurekaServerRegistryImplTest {
         assertThat(snapshot2, equalTo(newInstanceInfo));
     }
 
+    @Test
+    public void testUnregisterWithCopiesRemaining() {
+        InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
+                .withId("sameId")
+                .withStatus(InstanceInfo.Status.UP)
+                .build();
+
+        InstanceInfo replicated = SampleInstanceInfo.DiscoveryServer.builder()
+                .withId("sameId")
+                .withStatus(InstanceInfo.Status.OUT_OF_SERVICE)
+                .build();
+
+        registry.register(original);
+        registry.register(replicated, Source.replicationSource("replicationSourceId"));
+        testScheduler.triggerActions();
+
+        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
+        assertThat(internalStore.size(), equalTo(1));
+
+        MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
+        assertThat(holder.size(), equalTo(2));
+        InstanceInfo snapshot1 = holder.get();
+        assertThat(snapshot1, equalTo(original));
+
+        registry.unregister(original);
+        testScheduler.triggerActions();
+
+        assertThat(internalStore.size(), equalTo(1));
+        holder = internalStore.values().iterator().next();
+        assertThat(holder.size(), equalTo(1));
+        assertThat(holder.get(), equalTo(replicated));
+    }
+
+    @Test
+    public void testUnregisterLastCopy() {
+        InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
+                .withId("sameId")
+                .withStatus(InstanceInfo.Status.UP)
+                .build();
+
+        registry.register(original);
+        testScheduler.triggerActions();
+
+        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
+        assertThat(internalStore.size(), equalTo(1));
+
+        MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
+        assertThat(holder.size(), equalTo(1));
+        InstanceInfo snapshot1 = holder.get();
+        assertThat(snapshot1, equalTo(original));
+
+        registry.unregister(original);
+        testScheduler.triggerActions();
+
+        assertThat(internalStore.size(), equalTo(0));
+    }
+
+    @Test
+    public void testUnregisterLastCopyWithNewRegistration() {
+        InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
+                .withId("sameId")
+                .withStatus(InstanceInfo.Status.UP)
+                .build();
+
+        InstanceInfo replicated = SampleInstanceInfo.DiscoveryServer.builder()
+                .withId("sameId")
+                .withStatus(InstanceInfo.Status.DOWN)
+                .build();
+
+        registry.register(original);
+        testScheduler.triggerActions();
+
+        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
+        assertThat(internalStore.size(), equalTo(1));
+
+        MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
+        assertThat(holder.size(), equalTo(1));
+        InstanceInfo snapshot = holder.get();
+        assertThat(snapshot, equalTo(original));
+
+        registry.unregister(original);
+        registry.register(replicated, Source.replicationSource("replicationSourceId"));
+        testScheduler.triggerActions();
+
+        holder = internalStore.values().iterator().next();
+        assertThat(holder.size(), equalTo(1));
+        snapshot = holder.get();
+        assertThat(snapshot, equalTo(replicated));
+
+        // unregister original again, should not affect the registry
+        registry.unregister(original);
+        testScheduler.triggerActions();
+
+        holder = internalStore.values().iterator().next();
+        assertThat(holder.size(), equalTo(1));
+        snapshot = holder.get();
+        assertThat(snapshot, equalTo(replicated));
+    }
+
+
 
     private static class TestEurekaServerRegistry extends EurekaServerRegistryImpl {
 
@@ -194,7 +269,7 @@ public class EurekaServerRegistryImplTest {
             super(serverMetrics(), testScheduler);
         }
 
-        public ConcurrentHashMap<String, MultiSourcedDataHolder<InstanceInfo>> getInternalStore() {
+        public ConcurrentHashMap<String, NotifyingInstanceInfoHolder> getInternalStore() {
             return internalStore;
         }
     }

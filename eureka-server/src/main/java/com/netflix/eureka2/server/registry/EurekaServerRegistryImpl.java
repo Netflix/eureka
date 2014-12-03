@@ -46,8 +46,6 @@ import rx.schedulers.Schedulers;
 import rx.subjects.ReplaySubject;
 
 /**
- * TODO: fix race in adding/removing from store and sending notification to notificationSubject
- * TODO: threadpool for async add/put to internalStore?
  * @author David Liu
  */
 public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceInfo> {
@@ -57,7 +55,8 @@ public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceIn
     /**
      * TODO: define a better contract for base implementation and decorators
      */
-    protected final ConcurrentHashMap<String, MultiSourcedDataHolder<InstanceInfo>> internalStore;
+    protected final ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore;
+    private final MultiSourcedDataHolder.HolderStoreAccessor<NotifyingInstanceInfoHolder> internalStoreAccessor;
     private final NotificationsSubject<InstanceInfo> notificationSubject;  // subject for all changes in the registry
     private final IndexRegistry<InstanceInfo> indexRegistry;
     private final EurekaServerRegistryMetrics metrics;
@@ -76,6 +75,28 @@ public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceIn
         internalStore = new ConcurrentHashMap<>();
         indexRegistry = new IndexRegistryImpl<>();
         notificationSubject = NotificationsSubject.create();
+
+        internalStoreAccessor = new MultiSourcedDataHolder.HolderStoreAccessor<NotifyingInstanceInfoHolder>() {
+            @Override
+            public void add(NotifyingInstanceInfoHolder holder) {
+                internalStore.put(holder.getId(), holder);
+            }
+
+            @Override
+            public NotifyingInstanceInfoHolder get(String id) {
+                return internalStore.get(id);
+            }
+
+            @Override
+            public void remove(String id) {
+                internalStore.remove(id);
+            }
+
+            @Override
+            public boolean contains(String id) {
+                return internalStore.containsKey(id);
+            }
+        };
     }
 
     // -------------------------------------------------
@@ -88,18 +109,19 @@ public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceIn
     }
 
     @Override
-    public Observable<Status> register(InstanceInfo instanceInfo, Source source) {
-        MultiSourcedDataHolder<InstanceInfo> newHolder = new NotifyingInstanceInfoHolder(notificationSubject, invoker, instanceInfo.getId());
-        MultiSourcedDataHolder<InstanceInfo> currentHolder = internalStore.putIfAbsent(instanceInfo.getId(), newHolder);
+    public Observable<Status> register(final InstanceInfo instanceInfo, final Source source) {
+        MultiSourcedDataHolder<InstanceInfo> holder = new NotifyingInstanceInfoHolder(
+                internalStoreAccessor, notificationSubject, invoker, instanceInfo.getId());
 
-        Observable<Status> toReturn;
-        if (currentHolder != null) {
-            toReturn = currentHolder.update(source, instanceInfo);
-        } else {
-            toReturn = newHolder.update(source, instanceInfo);
-            metrics.incrementRegistrationCounter(source.getOrigin());  // this is a true new registration
-        }
-        return subscribeToUpdateResult(toReturn);
+        Observable<Status> result = holder.update(source, instanceInfo).doOnNext(new Action1<Status>() {
+            @Override
+            public void call(Status status) {
+                if (status != Status.AddExpired) {
+                    metrics.incrementRegistrationCounter(source.getOrigin());
+                }
+            }
+        });
+        return subscribeToUpdateResult(result);
     }
 
     @Override
@@ -131,19 +153,19 @@ public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceIn
     }
 
     @Override
-    public Observable<Status> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas, Source source) {
-        MultiSourcedDataHolder<InstanceInfo> newHolder = new NotifyingInstanceInfoHolder(notificationSubject, invoker, updatedInfo.getId());
-        MultiSourcedDataHolder<InstanceInfo> currentHolder = internalStore.putIfAbsent(updatedInfo.getId(), newHolder);
+    public Observable<Status> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas, final Source source) {
+        MultiSourcedDataHolder<InstanceInfo> holder = new NotifyingInstanceInfoHolder(
+                internalStoreAccessor, notificationSubject, invoker, updatedInfo.getId());
 
-        Observable<Status> toReturn;
-        if (currentHolder != null) {
-            toReturn = currentHolder.update(source, updatedInfo);
-        } else { // this is an add
-            toReturn = newHolder.update(source, updatedInfo);
-        }
-
-        metrics.incrementUpdateCounter(source.getOrigin());
-        return subscribeToUpdateResult(toReturn);
+        Observable<Status> result = holder.update(source, updatedInfo).doOnNext(new Action1<Status>() {
+            @Override
+            public void call(Status status) {
+                if (status != Status.AddExpired) {
+                    metrics.incrementUpdateCounter(source.getOrigin());
+                }
+            }
+        });
+        return subscribeToUpdateResult(result);
     }
 
     /**
@@ -165,7 +187,7 @@ public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceIn
 
             @Override
             public void onNext(Status status) {
-                logger.debug("Registray updated completed with status {}", status);
+                logger.debug("Registry updated completed with status {}", status);
                 result.onNext(status);
             }
         });
@@ -256,17 +278,17 @@ public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceIn
     }
 
     private Iterator<ChangeNotification<InstanceInfo>> getSnapshotForInterest(final Interest<InstanceInfo> interest) {
-        final Collection<MultiSourcedDataHolder<InstanceInfo>> eurekaHolders = internalStore.values();
+        final Collection<NotifyingInstanceInfoHolder> eurekaHolders = internalStore.values();
         return new FilteredIterator(interest, eurekaHolders.iterator());
     }
 
     private static class FilteredIterator implements Iterator<ChangeNotification<InstanceInfo>> {
 
         private final Interest<InstanceInfo> interest;
-        private final Iterator<MultiSourcedDataHolder<InstanceInfo>> delegate;
+        private final Iterator<NotifyingInstanceInfoHolder> delegate;
         private ChangeNotification<InstanceInfo> next;
 
-        private FilteredIterator(Interest<InstanceInfo> interest, Iterator<MultiSourcedDataHolder<InstanceInfo>> delegate) {
+        private FilteredIterator(Interest<InstanceInfo> interest, Iterator<NotifyingInstanceInfoHolder> delegate) {
             this.interest = interest;
             this.delegate = delegate;
         }
@@ -312,7 +334,7 @@ public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceIn
 
     private String prettyString() {
         StringBuilder sb = new StringBuilder("EurekaRegistryImpl\n");
-        for (Map.Entry<String, MultiSourcedDataHolder<InstanceInfo>> entry : internalStore.entrySet()) {
+        for (Map.Entry<String, NotifyingInstanceInfoHolder> entry : internalStore.entrySet()) {
             sb.append(entry).append("\n");
         }
         sb.append(indexRegistry.toString());
