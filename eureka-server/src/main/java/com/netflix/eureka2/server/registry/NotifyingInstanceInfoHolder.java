@@ -35,12 +35,19 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
 
     private final NotificationsSubject<InstanceInfo> notificationSubject;  // subject for all changes in the registry
 
+    private final HolderStoreAccessor<InstanceInfo> holderStoreAccessor;
     private final LinkedHashMap<Source, InstanceInfo> dataMap;  // for order
     private final NotificationTaskInvoker invoker;
     private final String id;
     private Snapshot<InstanceInfo> snapshot;
 
-    public NotifyingInstanceInfoHolder(NotificationsSubject<InstanceInfo> notificationSubject, NotificationTaskInvoker invoker, String id) {
+    public NotifyingInstanceInfoHolder(
+            HolderStoreAccessor<InstanceInfo> holderStoreAccessor,
+            NotificationsSubject<InstanceInfo> notificationSubject,
+            NotificationTaskInvoker invoker,
+            String id)
+    {
+        this.holderStoreAccessor = holderStoreAccessor;
         this.notificationSubject = notificationSubject;
         this.invoker = invoker;
         this.id = id;
@@ -96,6 +103,14 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
         return invoker.submitTask(new Callable<Observable<Status>>() {
             @Override
             public Observable<Status> call() throws Exception {
+                // add self to the holder datastore if not already there, else delegate to existing one
+                MultiSourcedDataHolder<InstanceInfo> existing = holderStoreAccessor.get(id);
+                if (existing == null) {
+                    holderStoreAccessor.add(NotifyingInstanceInfoHolder.this);
+                } else if (existing != NotifyingInstanceInfoHolder.this) {
+                    return existing.update(source, data);
+                }
+
                 // Do not overwrite with older version
                 // This should never happen for adds coming from the channel, as they
                 // are always processed in order (unlike remove which has eviction queue).
@@ -176,7 +191,9 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
                         ChangeNotification<InstanceInfo> deleteNotification
                                 = new ChangeNotification<>(ChangeNotification.Kind.Delete, removed);
                         notificationSubject.onNext(deleteNotification);
-                        logger.debug("Removed last copy from holder, adding holder to expiry queue");
+
+                        // remove self from the holder datastore if empty
+                        holderStoreAccessor.remove(id);
                         result = Status.RemovedLast;
                     } else {  // promote the newHead as the snapshot and publish a modify notification
                         Snapshot<InstanceInfo> newSnapshot = new Snapshot<>(newHead.getKey(), newHead.getValue());
