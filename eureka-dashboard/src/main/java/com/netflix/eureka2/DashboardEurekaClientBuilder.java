@@ -7,25 +7,19 @@ import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.config.EurekaDashboardConfig;
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
-import com.netflix.eureka2.server.config.EurekaCommonConfig.ServerBootstrap;
-import rx.Observable;
-import rx.Subscriber;
 
 @Singleton
-public class EurekaRegistryDataStream {
+public class DashboardEurekaClientBuilder {
 
     private final EurekaClient eurekaClient;
 
     @Inject
-    public EurekaRegistryDataStream(EurekaDashboardConfig config) {
+    public DashboardEurekaClientBuilder(EurekaDashboardConfig config) {
         ServerResolver resolver;
 
         EurekaCommonConfig.ResolverType resolverType = config.getServerResolverType();
-        ServerBootstrap[] bootstraps = ServerBootstrap.from(config.getServerList());
+        EurekaCommonConfig.ServerBootstrap[] bootstraps = EurekaCommonConfig.ServerBootstrap.from(config.getServerList());
         ServerResolver[] resolvers = new ServerResolver[bootstraps.length];
 
         for (int i = 0; i < resolvers.length; i++) {
@@ -37,7 +31,11 @@ public class EurekaRegistryDataStream {
         eurekaClient = Eureka.newClientBuilder(resolver).build();
     }
 
-    private ServerResolver resolveForType(ServerBootstrap bootstrap, EurekaCommonConfig.ResolverType resolverType) {
+    public EurekaClient getEurekaClient() {
+        return eurekaClient;
+    }
+
+    private ServerResolver resolveForType(EurekaCommonConfig.ServerBootstrap bootstrap, EurekaCommonConfig.ResolverType resolverType) {
         if (resolverType == null) {
             throw new IllegalArgumentException("Write cluster resolver type not defined");
         }
@@ -55,9 +53,4 @@ public class EurekaRegistryDataStream {
         }
         return resolver;
     }
-
-    public Observable<ChangeNotification<InstanceInfo>> getStream() {
-        return eurekaClient.forInterest(Interests.forFullRegistry());
-    }
-
 }

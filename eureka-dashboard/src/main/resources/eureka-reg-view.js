@@ -8,15 +8,21 @@ var eurekaRegistryView = (function () {
             selectAppAutoCompleteBox;
     var firstViewLoaded = false;
     var svg, bubble, format, color; // visualization
+    var REFRESH_VIEW_INTERVAL = 1000;
+    var CLEAN_UP_LIVE_STREAM_INTERVAL = 5000;
 
     function init(options) {
         options = options || {};
         containerId = options.containerId || 'registry';
         diameter = options.diameter || 800;
 
-        $(window).on('InstanceNotificationReceived', function (e, data) {
-            updateReceived(data);
+        $(window).on('InstanceNotificationsReceived', function (e, data) {
+            console.log("Updates received " + data.notifications.length);
+            data.notifications.forEach(function (notification) {
+                updateReceived(notification);
+            });
         });
+
 
         $(window).on('ResetView', function (e) {
             resetReceived();
@@ -24,19 +30,20 @@ var eurekaRegistryView = (function () {
 
         window.setInterval(function () {
             refreshView();
-        }, 1000);
+        }, REFRESH_VIEW_INTERVAL);
 
         window.setInterval(function () {
             cleanUpLiveStream();
-        }, 5000);
+        }, CLEAN_UP_LIVE_STREAM_INTERVAL);
     }
 
     var updatedInstInfo = [];
-    function updateReceived(data) {
-        var instInfo = data.instInfo;
+    var lastUpdatedInfoIndex = 0;
+    function updateReceived(notification) {
+        var instInfo = notification.data;
         updatedInstInfo.push(instInfo);
 
-        if (data.type === 'Add') {
+        if (notification.kind === 'Add') {
             if (instInfo['app'] in registry) {
                 registry[instInfo['app']].push(instInfo);
             } else {
@@ -52,12 +59,12 @@ var eurekaRegistryView = (function () {
         }
 
         if (firstViewLoaded) {
-            updateLiveStream(data);
+            updateLiveStream(notification);
         }
     }
 
-    function updateLiveStream(data) {
-        $('.live-stream').show().prepend($('<li>' + buildLiveStreamEntry(data) + '</li>'));
+    function updateLiveStream(notification) {
+        $('.live-stream').show().prepend($('<li>' + buildLiveStreamEntry(notification) + '</li>'));
     }
 
     function resetReceived() {
@@ -66,30 +73,36 @@ var eurekaRegistryView = (function () {
         render();
     }
 
-    function buildLiveStreamEntry(data) {
-        var vipAddress = data['instInfo']['vipAddress'] || '';
+    function buildLiveStreamEntry(notification) {
+        var vipAddress = notification['data']['vipAddress'] || '';
         var markup = [];
 
-        markup.push('<span class="entry-type">' + data.type + '</span>');
+        markup.push('<span class="entry-type">' + notification.kind + '</span>');
         markup.push(' => ');
-        markup.push('<span class="app-name">' + data['instInfo']['app'] + '</span>, ' );
+        markup.push('<span class="app-name">' + notification['data']['app'] + '</span>, ' );
         if (vipAddress) {
             markup.push(vipAddress + ", ");
         }
-        markup.push(data['instInfo']['dataCenterInfo']['instanceId']);
+        markup.push(notification['data']['dataCenterInfo']['instanceId']);
         return markup.join('');
     }
 
     function refreshView() {
-        console.log("REfreshing");
-        if (updatedInstInfo.length > 0) {
-            hideMsg();
-            render();
+        if (lastUpdatedInfoIndex == updatedInstInfo.length)  {
+            // no update in refresh interval
+            console.log("REfreshing updates len = " + updatedInstInfo.length);
+            if (updatedInstInfo.length > 0) {
+                hideMsg();
+                render();
+            }
+            updatedInstInfo = [];
+            lastUpdatedInfoIndex = 0;
+        } else {
+            lastUpdatedInfoIndex = updatedInstInfo.length;
         }
         if (!firstViewLoaded) {
             firstViewLoaded = true;
         }
-        updatedInstInfo = [];
     }
 
     function hideMsg() {

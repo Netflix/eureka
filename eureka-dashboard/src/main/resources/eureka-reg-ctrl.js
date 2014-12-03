@@ -23,8 +23,10 @@ var eurekaRegistryCtrl = (function () {
                 console.log("Error from eureka-client, resetting view");
                 $(window).trigger('ResetView');
             } else {
-                var instNotification = JSON.parse(data.data);
-                $(window).trigger('InstanceNotificationReceived', {instInfo: instNotification.data, type: instNotification.kind});
+                var instNotifications = JSON.parse(data.data);
+                if (instNotifications.length > 0) {
+                    $(window).trigger('InstanceNotificationsReceived', {notifications: instNotifications });
+                }
             }
         };
 

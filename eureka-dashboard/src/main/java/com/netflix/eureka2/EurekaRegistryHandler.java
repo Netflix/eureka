@@ -15,9 +15,14 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
 
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 @Singleton
 public class EurekaRegistryHandler {
     public static final String RESP_ERROR = "ERROR";
+    public static final int BUFFER_TIME_SECONDS = 1;
+    public static final int BUFFER_MAX_COUNT = 1000;
     private static Logger log = LoggerFactory.getLogger(EurekaRegistryHandler.class);
     private final EurekaRegistryDataStream eurekaRegistryDataStream;
     private final Gson gson;
@@ -34,7 +39,31 @@ public class EurekaRegistryHandler {
     }
 
     private void subscribeToNewStream(final ObservableConnection<WebSocketFrame, WebSocketFrame> webSocketConn) {
-        eurekaRegistryDataStream.subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
+        //eurekaRegistryDataStream.getStream().buffer(BUFFER_TIME_SECONDS, TimeUnit.SECONDS, BUFFER_MAX_COUNT).subscribe(new Subscriber<List<ChangeNotification<InstanceInfo>>>() {
+        /*
+        eurekaRegistryDataStream.getStream().subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
+            @Override
+            public void onCompleted() {
+
+            }
+
+            @Override
+            public void onError(Throwable e) {
+
+            }
+
+            @Override
+            public void onNext(ChangeNotification<InstanceInfo> instanceInfoChangeNotification) {
+                final String jsonStr = "{ \"id\": \"" + instanceInfoChangeNotification.getData().getId() + "\"}";
+                final ByteBuf respByteBuf = webSocketConn.getAllocator().buffer().writeBytes(jsonStr.getBytes());
+
+                webSocketConn.writeAndFlush(new TextWebSocketFrame(respByteBuf));
+
+            }
+        });
+        */
+
+        eurekaRegistryDataStream.getStream().buffer(BUFFER_TIME_SECONDS, TimeUnit.SECONDS, BUFFER_MAX_COUNT).subscribe(new Subscriber<List<ChangeNotification<InstanceInfo>>>() {
             @Override
             public void onCompleted() {
                 log.info("Eureka DATA Completed");
@@ -47,12 +76,18 @@ public class EurekaRegistryHandler {
             }
 
             @Override
-            public void onNext(ChangeNotification<InstanceInfo> instanceInfoChangeNotification) {
+            public void onNext(List<ChangeNotification<InstanceInfo>> changeNotifications) {
                 try {
-                    final String jsonStr = gson.toJson(instanceInfoChangeNotification);
-                    final ByteBuf respByteBuf = webSocketConn.getAllocator().buffer().writeBytes(jsonStr.getBytes());
+                    if (webSocketConn.getChannel().isOpen() && changeNotifications.size() > 0) {
+                        final long s = System.currentTimeMillis();
+                        final String jsonStr = gson.toJson(changeNotifications);
+                        final ByteBuf respByteBuf = webSocketConn.getAllocator().buffer().writeBytes(jsonStr.getBytes());
+                        final long f = System.currentTimeMillis();
+                        System.out.println(String.format("Total serialization time %d millis ", (f - s)));
 
-                    if (webSocketConn.getChannel().isOpen()) {
+//                        final String jsonStr = "{ \"size\": \"" + changeNotifications.size() + "\"}";
+//                        final ByteBuf respByteBuf = webSocketConn.getAllocator().buffer().writeBytes(jsonStr.getBytes());
+
                         webSocketConn.writeAndFlush(new TextWebSocketFrame(respByteBuf));
                     } else {
                         this.unsubscribe();
@@ -62,6 +97,7 @@ public class EurekaRegistryHandler {
                 }
             }
         });
+
     }
 
     private void sendError(final ObservableConnection<WebSocketFrame, WebSocketFrame> webSocketConn) {
