@@ -32,6 +32,12 @@ public abstract class EurekaCommonConfig {
     @Configuration("eureka.dataCenterInfo.type")
     protected String dataCenterType = LocalDataCenterInfo.DataCenterType.Basic.name();
 
+    @Configuration("eureka.services.shutdown.port")
+    protected int shutDownPort = 7700;
+
+    @Configuration("netflix.platform.admin.resources.port")
+    protected int webAdminPort = 8077;
+
 
     // For property injection
     protected EurekaCommonConfig() {
@@ -43,7 +49,9 @@ public abstract class EurekaCommonConfig {
             Codec codec,
             String appName,
             String vipAddress,
-            LocalDataCenterInfo.DataCenterType dataCenterType
+            LocalDataCenterInfo.DataCenterType dataCenterType,
+            Integer shutDownPort,
+            Integer webAdminPort
     ) {
         this.resolverType = resolverType == null ? this.resolverType : resolverType.name();
         this.serverList = serverList == null ? this.serverList : serverList;
@@ -51,6 +59,8 @@ public abstract class EurekaCommonConfig {
         this.appName = appName == null ? this.appName : appName;
         this.vipAddress = vipAddress == null ? this.vipAddress : vipAddress;
         this.dataCenterType = dataCenterType == null ? this.dataCenterType : dataCenterType.name();
+        this.shutDownPort = shutDownPort == null ? this.shutDownPort : shutDownPort;
+        this.webAdminPort = webAdminPort == null ? this.webAdminPort : webAdminPort;
     }
 
     public String[] getServerList() {
@@ -95,6 +105,14 @@ public abstract class EurekaCommonConfig {
         return result;
     }
 
+    public int getWebAdminPort() {
+        return webAdminPort;
+    }
+
+    public int getShutDownPort() {
+        return shutDownPort;
+    }
+
     // builder
     public abstract static class EurekaCommonConfigBuilder<C extends EurekaCommonConfig, B extends EurekaCommonConfigBuilder<C, B>> {
         protected ResolverType resolverType;
@@ -103,6 +121,8 @@ public abstract class EurekaCommonConfig {
         protected String appName;
         protected String vipAddress;
         protected LocalDataCenterInfo.DataCenterType dataCenterType;
+        protected Integer shutDownPort;
+        protected Integer webAdminPort;
 
         public B withResolverType(ResolverType resolverType) {
             this.resolverType = resolverType;
@@ -136,6 +156,16 @@ public abstract class EurekaCommonConfig {
 
         public B withDataCenterType(LocalDataCenterInfo.DataCenterType dataCenterType) {
             this.dataCenterType = dataCenterType;
+            return self();
+        }
+
+        public B withShutDownPort(int shutDownPort) {
+            this.shutDownPort = shutDownPort;
+            return self();
+        }
+
+        public B withWebAdminPort(int webAdminPort) {
+            this.webAdminPort = webAdminPort;
             return self();
         }
 

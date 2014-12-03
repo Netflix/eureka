@@ -17,15 +17,14 @@
 package com.netflix.eureka2.config;
 
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
-import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.eureka2.server.registry.eviction.EvictionStrategyProvider;
+import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.governator.annotations.Configuration;
 
 /**
  * @author Tomasz Bak
  */
-public class EurekaDashboardConfig extends EurekaServerConfig {
+public class EurekaDashboardConfig extends EurekaCommonConfig {
 
     public static final int DEFAULT_DASHBOARD_PORT = 7001;
     public static final int DEFAULT_WEBSOCKET_PORT = 9000;
@@ -42,21 +41,15 @@ public class EurekaDashboardConfig extends EurekaServerConfig {
     }
 
     protected EurekaDashboardConfig(
-            // common server configs
+            // common configs
             ResolverType resolverType,
             String[] serverList,
             EurekaTransports.Codec codec,
-            Integer registrationPort,
-            Integer replicationPort,
-            Integer discoveryPort,
-            Integer shutDownPort,
             String appName,
             String vipAddress,
             LocalDataCenterInfo.DataCenterType dataCenterType,
+            Integer shutDownPort,
             Integer webAdminPort,
-            Long evictionTimeoutMs,
-            EvictionStrategyProvider.StrategyType evictionStrategyType,
-            String evictionStrategyValue,
             // dashboard server configs
             Integer dashboardPort,
             Integer webSocketPort
@@ -65,17 +58,11 @@ public class EurekaDashboardConfig extends EurekaServerConfig {
                 resolverType,
                 serverList,
                 codec,
-                registrationPort,
-                replicationPort,
-                discoveryPort,
-                shutDownPort,
                 appName,
                 vipAddress,
                 dataCenterType,
-                webAdminPort,
-                evictionTimeoutMs,
-                evictionStrategyType,
-                evictionStrategyValue
+                shutDownPort,
+                webAdminPort
         );
 
         this.dashboardPort = dashboardPort == null ? this.dashboardPort : dashboardPort;
@@ -97,7 +84,7 @@ public class EurekaDashboardConfig extends EurekaServerConfig {
 
     // builder
     public static class EurekaDashboardConfigBuilder
-            extends EurekaServerConfig.EurekaServerConfigBuilder<EurekaDashboardConfig, EurekaDashboardConfigBuilder> {
+            extends EurekaCommonConfigBuilder<EurekaDashboardConfig, EurekaDashboardConfigBuilder> {
 
         protected Integer dashboardPort;
         protected Integer webSocketPort;
@@ -119,17 +106,11 @@ public class EurekaDashboardConfig extends EurekaServerConfig {
                     resolverType,
                     serverList,
                     codec,
-                    registrationPort,
-                    replicationPort,
-                    discoveryPort,
-                    shutDownPort,
                     appName,
                     vipAddress,
                     dataCenterType,
+                    shutDownPort,
                     webAdminPort,
-                    evictionTimeoutMs,
-                    evictionStrategyType,
-                    evictionStrategyValue,
                     // dashboard server configs
                     dashboardPort,
                     webSocketPort

@@ -1,11 +1,13 @@
-package com.netflix.eureka2.metric;
+package com.netflix.eureka2.server.service;
 
+import com.netflix.eureka2.metric.AbstractStateMachineMetrics;
+import com.netflix.eureka2.server.service.BridgeChannel.STATES;
 import com.netflix.servo.monitor.LongGauge;
 
 /**
  * @author David Liu
  */
-public class BridgeChannelMetrics extends EurekaMetrics {
+public class BridgeChannelMetrics extends AbstractStateMachineMetrics<STATES> {
 
     private final LongGauge totalCount;
     private final LongGauge registerCount;
@@ -13,7 +15,7 @@ public class BridgeChannelMetrics extends EurekaMetrics {
     private final LongGauge unregisterCount;
 
     public BridgeChannelMetrics() {
-        super("bridgeChannel");
+        super("bridgeChannel", STATES.class);
         totalCount = newLongGauge("totalCount");
         registerCount = newLongGauge("registerCount");
         updateCount = newLongGauge("updateCount");

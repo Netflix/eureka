@@ -3,6 +3,7 @@ package com.netflix.eureka2.metric;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
 import com.netflix.eureka2.server.registry.EurekaServerRegistryMetrics;
 import com.netflix.eureka2.server.registry.eviction.EvictionQueueMetrics;
+import com.netflix.eureka2.server.service.BridgeChannelMetrics;
 import com.netflix.eureka2.server.service.InterestChannelMetrics;
 import com.netflix.eureka2.server.service.RegistrationChannelMetrics;
 import com.netflix.eureka2.server.service.ReplicationChannelMetrics;

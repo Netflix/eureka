@@ -58,10 +58,10 @@ public class WriteClusterResolverProvider implements Provider<ServerResolver> {
         ServerResolver resolver;
         switch (resolverType) {
             case dns:
-                resolver = ServerResolvers.forDnsName(bootstrap.getHostname(), bootstrap.getDiscoveryPort());
+                resolver = ServerResolvers.forDnsName(bootstrap.getHostname(), bootstrap.getReplicationPort());
                 break;
             case fixed:
-                resolver = ServerResolvers.just(bootstrap.getHostname(), bootstrap.getDiscoveryPort());
+                resolver = ServerResolvers.just(bootstrap.getHostname(), bootstrap.getReplicationPort());
                 break;
             default:
                 throw new IllegalArgumentException("Unrecognized write cluster resolver");

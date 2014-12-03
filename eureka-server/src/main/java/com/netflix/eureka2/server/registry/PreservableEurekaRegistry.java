@@ -131,6 +131,11 @@ public class PreservableEurekaRegistry implements EurekaServerRegistry<InstanceI
     }
 
     @Override
+    public Observable<InstanceInfo> forSnapshot(Interest<InstanceInfo> interest, Source source) {
+        return eurekaRegistry.forSnapshot(interest, source);
+    }
+
+    @Override
     public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest) {
         return eurekaRegistry.forInterest(interest);
     }

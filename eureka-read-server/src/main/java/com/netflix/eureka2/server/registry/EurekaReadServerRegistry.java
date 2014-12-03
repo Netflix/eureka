@@ -99,6 +99,11 @@ public class EurekaReadServerRegistry implements EurekaServerRegistry<InstanceIn
     }
 
     @Override
+    public Observable<InstanceInfo> forSnapshot(Interest<InstanceInfo> interest, Source source) {
+        throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
+    }
+
+    @Override
     public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest) {
         return eurekaClient.forInterest(interest);
     }

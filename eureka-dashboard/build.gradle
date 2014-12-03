@@ -30,3 +30,17 @@ jar {
         instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
     }
 }
+
+
+task runDashboardServer (dependsOn: [classes], type: JavaExec) {
+    group = "Run tasks"
+    description = "Run Eureka 2.0 dashboard server"
+
+    main = "com.netflix.eureka2.EurekaDashboardServer"
+    classpath = sourceSets.main.runtimeClasspath
+
+    systemProperty 'java.awt.headless', 'true'
+    systemProperty 'archaius.deployment.environment', 'dev'
+    systemProperty 'org.slf4j.simpleLogger.log.com.netflix.eureka2', 'debug'
+    systemProperty 'org.slf4j.simpleLogger.log.io.netty.handler.logging.LoggingHandler', 'debug'
+}

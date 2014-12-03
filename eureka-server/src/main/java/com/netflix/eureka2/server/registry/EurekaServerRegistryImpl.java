@@ -204,6 +204,17 @@ public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceIn
                 });
     }
 
+    @Override
+    public Observable<InstanceInfo> forSnapshot(final Interest<InstanceInfo> interest, final Source source) {
+        return forSnapshot(interest).filter(new Func1<InstanceInfo, Boolean>() {
+            @Override
+            public Boolean call(InstanceInfo instanceInfo) {
+                MultiSourcedDataHolder<InstanceInfo> holder = internalStore.get(instanceInfo.getId());
+                return holder != null && source.equals(holder.getSource());
+            }
+        });
+    }
+
     /**
      * Return an observable of all matching InstanceInfo for the current registry snapshot,
      * as {@link ChangeNotification}s
