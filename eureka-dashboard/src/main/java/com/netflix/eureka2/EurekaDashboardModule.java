@@ -18,6 +18,7 @@ package com.netflix.eureka2;
 
 import com.google.inject.AbstractModule;
 import com.netflix.eureka2.config.EurekaDashboardConfig;
+import com.netflix.eureka2.server.config.EurekaCommonConfig;
 
 /**
  * @author Tomasz Bak
@@ -39,6 +40,7 @@ public class EurekaDashboardModule extends AbstractModule {
         if (config == null) {
             bind(EurekaDashboardConfig.class).asEagerSingleton();
         } else {
+            bind(EurekaCommonConfig.class).toInstance(config);
             bind(EurekaDashboardConfig.class).toInstance(config);
         }
 
