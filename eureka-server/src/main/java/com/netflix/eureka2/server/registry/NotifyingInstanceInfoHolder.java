@@ -25,7 +25,6 @@ import rx.functions.Action1;
  * the next copy in line is promoted as the new view.
  *
  * This holder serializes actions between update and remove by queuing (via SerializedTaskInvoker)
- * TODO think about a more efficient way of dealing with the concurrency here without needing to lock
  *
  * @author David Liu
  */
@@ -35,14 +34,14 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
 
     private final NotificationsSubject<InstanceInfo> notificationSubject;  // subject for all changes in the registry
 
-    private final HolderStoreAccessor<InstanceInfo> holderStoreAccessor;
+    private final HolderStoreAccessor<NotifyingInstanceInfoHolder> holderStoreAccessor;
     private final LinkedHashMap<Source, InstanceInfo> dataMap;  // for order
     private final NotificationTaskInvoker invoker;
     private final String id;
     private Snapshot<InstanceInfo> snapshot;
 
     public NotifyingInstanceInfoHolder(
-            HolderStoreAccessor<InstanceInfo> holderStoreAccessor,
+            HolderStoreAccessor<NotifyingInstanceInfoHolder> holderStoreAccessor,
             NotificationsSubject<InstanceInfo> notificationSubject,
             NotificationTaskInvoker invoker,
             String id)
@@ -103,53 +102,7 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
         return invoker.submitTask(new Callable<Observable<Status>>() {
             @Override
             public Observable<Status> call() throws Exception {
-                // add self to the holder datastore if not already there, else delegate to existing one
-                MultiSourcedDataHolder<InstanceInfo> existing = holderStoreAccessor.get(id);
-                if (existing == null) {
-                    holderStoreAccessor.add(NotifyingInstanceInfoHolder.this);
-                } else if (existing != NotifyingInstanceInfoHolder.this) {
-                    return existing.update(source, data);
-                }
-
-                // Do not overwrite with older version
-                // This should never happen for adds coming from the channel, as they
-                // are always processed in order (unlike remove which has eviction queue).
-                InstanceInfo prev = dataMap.get(source);
-                if (prev != null && prev.getVersion() > data.getVersion()) {
-                    return Observable.just(Status.AddExpired);
-                }
-
-                dataMap.put(source, data);
-
-                Snapshot<InstanceInfo> currSnapshot = snapshot;
-                Snapshot<InstanceInfo> newSnapshot = new Snapshot<>(source, data);
-                Status result = Status.AddedChange;
-
-                if (currSnapshot == null) {  // real add to the head
-                    snapshot = newSnapshot;
-                    notificationSubject.onNext(newSnapshot.notification);
-                    result = Status.AddedFirst;
-                } else {
-                    if (currSnapshot.source.equals(newSnapshot.source)) {  // modify to current snapshot
-                        snapshot = newSnapshot;
-
-                        Set<Delta<?>> delta = newSnapshot.data.diffOlder(currSnapshot.data);
-                        if (!delta.isEmpty()) {
-                            ChangeNotification<InstanceInfo> modifyNotification
-                                    = new ModifyNotification<>(newSnapshot.data, delta);
-                            notificationSubject.onNext(modifyNotification);
-                        } else {
-                            logger.debug("No-change update for {}#{}", currSnapshot.source, currSnapshot.data.getId());
-                        }
-                    } else {  // different source, no-op
-                        logger.debug(
-                                "Different source from current snapshot, not updating (head={}, received={})",
-                                currSnapshot.source, newSnapshot.source
-                        );
-                    }
-                }
-
-                return Observable.just(result);
+                return doUpdate(source, data);
             }
         }).doOnError(new Action1<Throwable>() {
             @Override
@@ -157,6 +110,56 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
                 logger.error("Error updating instance copy");
             }
         });
+    }
+
+    protected Observable<Status> doUpdate(final Source source, final InstanceInfo data) {
+        // add self to the holder datastore if not already there, else delegate to existing one
+        NotifyingInstanceInfoHolder existing = holderStoreAccessor.get(id);
+        if (existing == null) {
+            holderStoreAccessor.add(NotifyingInstanceInfoHolder.this);
+        } else if (existing != NotifyingInstanceInfoHolder.this) {
+            return existing.doUpdate(source, data);  // execute inline instead of reschedule as task
+        }
+
+        // Do not overwrite with older version
+        // This should never happen for adds coming from the channel, as they
+        // are always processed in order (unlike remove which has eviction queue).
+        InstanceInfo prev = dataMap.get(source);
+        if (prev != null && prev.getVersion() > data.getVersion()) {
+            return Observable.just(Status.AddExpired);
+        }
+
+        dataMap.put(source, data);
+
+        Snapshot<InstanceInfo> currSnapshot = snapshot;
+        Snapshot<InstanceInfo> newSnapshot = new Snapshot<>(source, data);
+        Status result = Status.AddedChange;
+
+        if (currSnapshot == null) {  // real add to the head
+            snapshot = newSnapshot;
+            notificationSubject.onNext(newSnapshot.notification);
+            result = Status.AddedFirst;
+        } else {
+            if (currSnapshot.source.equals(newSnapshot.source)) {  // modify to current snapshot
+                snapshot = newSnapshot;
+
+                Set<Delta<?>> delta = newSnapshot.data.diffOlder(currSnapshot.data);
+                if (!delta.isEmpty()) {
+                    ChangeNotification<InstanceInfo> modifyNotification
+                            = new ModifyNotification<>(newSnapshot.data, delta);
+                    notificationSubject.onNext(modifyNotification);
+                } else {
+                    logger.debug("No-change update for {}#{}", currSnapshot.source, currSnapshot.data.getId());
+                }
+            } else {  // different source, no-op
+                logger.debug(
+                        "Different source from current snapshot, not updating (head={}, received={})",
+                        currSnapshot.source, newSnapshot.source
+                );
+            }
+        }
+
+        return Observable.just(result);
     }
 
     /**

@@ -19,20 +19,20 @@ import static org.hamcrest.Matchers.not;
 public class NotifyingInstanceInfoHolderTest {
 
     private NotificationsSubject<InstanceInfo> notificationSubject;
-    private MultiSourcedDataHolder.HolderStoreAccessor<InstanceInfo> storeAccessor;
+    private MultiSourcedDataHolder.HolderStoreAccessor<NotifyingInstanceInfoHolder> storeAccessor;
 
     @Rule
     public final ExternalResource testResource = new ExternalResource() {
         @Override
         protected void before() throws Throwable {
             notificationSubject = NotificationsSubject.create();
-            storeAccessor = new MultiSourcedDataHolder.HolderStoreAccessor<InstanceInfo>() {
+            storeAccessor = new MultiSourcedDataHolder.HolderStoreAccessor<NotifyingInstanceInfoHolder>() {
                 @Override
-                public void add(MultiSourcedDataHolder<InstanceInfo> holder) {
+                public void add(NotifyingInstanceInfoHolder holder) {
                 }
 
                 @Override
-                public MultiSourcedDataHolder<InstanceInfo> get(String id) {
+                public NotifyingInstanceInfoHolder get(String id) {
                     return null;
                 }
 

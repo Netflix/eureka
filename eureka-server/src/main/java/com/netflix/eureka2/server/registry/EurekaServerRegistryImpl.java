@@ -55,8 +55,8 @@ public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceIn
     /**
      * TODO: define a better contract for base implementation and decorators
      */
-    protected final ConcurrentHashMap<String, MultiSourcedDataHolder<InstanceInfo>> internalStore;
-    private final MultiSourcedDataHolder.HolderStoreAccessor<InstanceInfo> internalStoreAccessor;
+    protected final ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore;
+    private final MultiSourcedDataHolder.HolderStoreAccessor<NotifyingInstanceInfoHolder> internalStoreAccessor;
     private final NotificationsSubject<InstanceInfo> notificationSubject;  // subject for all changes in the registry
     private final IndexRegistry<InstanceInfo> indexRegistry;
     private final EurekaServerRegistryMetrics metrics;
@@ -76,14 +76,14 @@ public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceIn
         indexRegistry = new IndexRegistryImpl<>();
         notificationSubject = NotificationsSubject.create();
 
-        internalStoreAccessor = new MultiSourcedDataHolder.HolderStoreAccessor<InstanceInfo>() {
+        internalStoreAccessor = new MultiSourcedDataHolder.HolderStoreAccessor<NotifyingInstanceInfoHolder>() {
             @Override
-            public void add(MultiSourcedDataHolder<InstanceInfo> holder) {
+            public void add(NotifyingInstanceInfoHolder holder) {
                 internalStore.put(holder.getId(), holder);
             }
 
             @Override
-            public MultiSourcedDataHolder<InstanceInfo> get(String id) {
+            public NotifyingInstanceInfoHolder get(String id) {
                 return internalStore.get(id);
             }
 
@@ -160,7 +160,9 @@ public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceIn
         Observable<Status> result = holder.update(source, updatedInfo).doOnNext(new Action1<Status>() {
             @Override
             public void call(Status status) {
-                metrics.incrementUpdateCounter(source.getOrigin());
+                if (status != Status.AddExpired) {
+                    metrics.incrementUpdateCounter(source.getOrigin());
+                }
             }
         });
         return subscribeToUpdateResult(result);
@@ -276,17 +278,17 @@ public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceIn
     }
 
     private Iterator<ChangeNotification<InstanceInfo>> getSnapshotForInterest(final Interest<InstanceInfo> interest) {
-        final Collection<MultiSourcedDataHolder<InstanceInfo>> eurekaHolders = internalStore.values();
+        final Collection<NotifyingInstanceInfoHolder> eurekaHolders = internalStore.values();
         return new FilteredIterator(interest, eurekaHolders.iterator());
     }
 
     private static class FilteredIterator implements Iterator<ChangeNotification<InstanceInfo>> {
 
         private final Interest<InstanceInfo> interest;
-        private final Iterator<MultiSourcedDataHolder<InstanceInfo>> delegate;
+        private final Iterator<NotifyingInstanceInfoHolder> delegate;
         private ChangeNotification<InstanceInfo> next;
 
-        private FilteredIterator(Interest<InstanceInfo> interest, Iterator<MultiSourcedDataHolder<InstanceInfo>> delegate) {
+        private FilteredIterator(Interest<InstanceInfo> interest, Iterator<NotifyingInstanceInfoHolder> delegate) {
             this.interest = interest;
             this.delegate = delegate;
         }
@@ -332,7 +334,7 @@ public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceIn
 
     private String prettyString() {
         StringBuilder sb = new StringBuilder("EurekaRegistryImpl\n");
-        for (Map.Entry<String, MultiSourcedDataHolder<InstanceInfo>> entry : internalStore.entrySet()) {
+        for (Map.Entry<String, NotifyingInstanceInfoHolder> entry : internalStore.entrySet()) {
             sb.append(entry).append("\n");
         }
         sb.append(indexRegistry.toString());

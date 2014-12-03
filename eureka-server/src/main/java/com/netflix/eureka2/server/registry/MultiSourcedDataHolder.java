@@ -73,11 +73,11 @@ public interface MultiSourcedDataHolder<V> {
 
 
     /**
-     * An interface for an accessor to the data store that holds the multiSourcedDataHolder
+     * An interface for an accessor to the data store that holds th
      */
-    interface HolderStoreAccessor<V> {
-        void add(MultiSourcedDataHolder<V> holder);
-        MultiSourcedDataHolder<V> get(String id);
+    interface HolderStoreAccessor<E extends MultiSourcedDataHolder> {
+        void add(E holder);
+        E get(String id);
         void remove(String id);
         boolean contains(String id);
     }

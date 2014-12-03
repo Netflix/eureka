@@ -121,7 +121,7 @@ public class EurekaServerRegistryImplTest {
         registry.register(original);
         testScheduler.triggerActions();
 
-        ConcurrentHashMap<String, MultiSourcedDataHolder<InstanceInfo>> internalStore = registry.getInternalStore();
+        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
         assertThat(internalStore.size(), equalTo(1));
 
         MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
@@ -139,7 +139,7 @@ public class EurekaServerRegistryImplTest {
         registry.register(original);
         testScheduler.triggerActions();
 
-        ConcurrentHashMap<String, MultiSourcedDataHolder<InstanceInfo>> internalStore = registry.getInternalStore();
+        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
         assertThat(internalStore.size(), equalTo(1));
 
         MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
@@ -178,7 +178,7 @@ public class EurekaServerRegistryImplTest {
         registry.register(replicated, Source.replicationSource("replicationSourceId"));
         testScheduler.triggerActions();
 
-        ConcurrentHashMap<String, MultiSourcedDataHolder<InstanceInfo>> internalStore = registry.getInternalStore();
+        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
         assertThat(internalStore.size(), equalTo(1));
 
         MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
@@ -205,7 +205,7 @@ public class EurekaServerRegistryImplTest {
         registry.register(original);
         testScheduler.triggerActions();
 
-        ConcurrentHashMap<String, MultiSourcedDataHolder<InstanceInfo>> internalStore = registry.getInternalStore();
+        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
         assertThat(internalStore.size(), equalTo(1));
 
         MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
@@ -234,7 +234,7 @@ public class EurekaServerRegistryImplTest {
         registry.register(original);
         testScheduler.triggerActions();
 
-        ConcurrentHashMap<String, MultiSourcedDataHolder<InstanceInfo>> internalStore = registry.getInternalStore();
+        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
         assertThat(internalStore.size(), equalTo(1));
 
         MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
@@ -269,7 +269,7 @@ public class EurekaServerRegistryImplTest {
             super(serverMetrics(), testScheduler);
         }
 
-        public ConcurrentHashMap<String, MultiSourcedDataHolder<InstanceInfo>> getInternalStore() {
+        public ConcurrentHashMap<String, NotifyingInstanceInfoHolder> getInternalStore() {
             return internalStore;
         }
     }
