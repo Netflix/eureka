@@ -65,7 +65,9 @@ public class RegistryCache {
     }
 
     private String extractInstanceId(InstanceInfo instanceInfo) {
-        if (AwsDataCenterInfo.class.isAssignableFrom(instanceInfo.getDataCenterInfo().getClass())) {
+        if (instanceInfo != null &&
+                instanceInfo.getDataCenterInfo() != null &&
+                AwsDataCenterInfo.class.isAssignableFrom(instanceInfo.getDataCenterInfo().getClass())) {
             final AwsDataCenterInfo dataCenterInfo = (AwsDataCenterInfo) instanceInfo.getDataCenterInfo();
             return dataCenterInfo.getInstanceId();
         }

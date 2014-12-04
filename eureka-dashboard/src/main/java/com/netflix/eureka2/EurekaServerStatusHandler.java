@@ -1,47 +1,47 @@
 package com.netflix.eureka2;
 
+import com.google.gson.Gson;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.registry.InstanceInfo;
-import io.netty.buffer.ByteBuf;
-import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+import com.netflix.eureka2.RegistryStream.RegistryItem;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.reactivex.netty.channel.ObservableConnection;
 import rx.Observable;
-import rx.Subscriber;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Singleton
 public class EurekaServerStatusHandler {
-    private final EurekaRegistryDataStream eurekaRegistryDataStream;
+
+    private RegistryStream registryStream;
+    private final Gson gson;
 
     @Inject
-    public EurekaServerStatusHandler(EurekaRegistryDataStream eurekaRegistryDataStream) {
-        this.eurekaRegistryDataStream = eurekaRegistryDataStream;
+    public EurekaServerStatusHandler(RegistryStream registryStream) {
+        this.registryStream = registryStream;
+        gson = new Gson();
     }
 
     public Observable<Void> buildWebSocketResponse(final ObservableConnection<WebSocketFrame, WebSocketFrame> webSocketConn) {
-        eurekaRegistryDataStream.getStream().subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
+        registryStream.subscribe(new RegistryStream.RegistryStreamCallback() {
             @Override
-            public void onCompleted() {
-            }
-
-            @Override
-            public void onError(Throwable e) {
-            }
-
-            @Override
-            public void onNext(ChangeNotification<InstanceInfo> instanceInfoChangeNotification) {
-                final InstanceInfo instanceInfo = instanceInfoChangeNotification.getData();
-                final String appId = instanceInfo.getApp();
-                if (appId != null && appId.toLowerCase().startsWith("eureka")) {
-                    final String respStr = "Instance - " + instanceInfo.getApp() + " :: " + instanceInfo.getHealthCheckUrls();
-                    final ByteBuf respByteBuf = webSocketConn.getAllocator().buffer().writeBytes(respStr.getBytes());
-                    webSocketConn.writeAndFlush(new TextWebSocketFrame(respByteBuf));
-                }
+            public boolean streamReceived(List<RegistryStream.RegistryItem> registryItems) {
+                final List<RegistryItem> eurekaItems = filterEurekaItems(registryItems);
+                return RegistryStreamUtil.sendRegistryOverWebsocket(webSocketConn, eurekaItems, gson);
             }
         });
+
         return Observable.empty();
     }
 
+    private List<RegistryItem> filterEurekaItems(List<RegistryItem> registryItems) {
+        List<RegistryItem> eurekaItems = new ArrayList<>();
+        for (RegistryItem registryItem : registryItems) {
+            if (registryItem.app.toLowerCase().startsWith("eureka")) {
+                eurekaItems.add(registryItem);
+            }
+        }
+        return eurekaItems;
+    }
 }

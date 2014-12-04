@@ -20,6 +20,7 @@ dependencies {
     compile project(':eureka-client')
     compile project(':eureka-server')
     compile ('com.google.code.gson:gson:2.1')
+    testCompile project(':eureka-test-utils')
 }
 
 jar {

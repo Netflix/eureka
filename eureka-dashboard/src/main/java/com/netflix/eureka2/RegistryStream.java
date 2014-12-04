@@ -1,13 +1,8 @@
 package com.netflix.eureka2;
 
-import com.google.gson.Gson;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.netflix.eureka2.registry.InstanceInfo;
-import io.netty.buffer.ByteBuf;
-import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
-import io.netty.handler.codec.http.websocketx.WebSocketFrame;
-import io.reactivex.netty.channel.ObservableConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -25,7 +20,6 @@ import java.util.concurrent.atomic.AtomicReference;
 public class RegistryStream {
     private static Logger log = LoggerFactory.getLogger(RegistryStream.class);
     private final RegistryCache registryCache;
-    private final Gson gson;
     private AtomicReference<List<RegistryItem>> registryItemsRef = new AtomicReference<>();
     private BehaviorSubject<List<RegistryItem>> registryBehaviorSubject;
 
@@ -43,16 +37,18 @@ public class RegistryStream {
         }
     }
 
+    public static interface RegistryStreamCallback {
+        boolean streamReceived(List<RegistryItem> registryItems);
+    }
 
     @Inject
     public RegistryStream(RegistryCache registryCache) {
         this.registryCache = registryCache;
         registryBehaviorSubject = BehaviorSubject.create();
-        gson = new Gson();
         startStream();
     }
 
-    public void subscribe(final ObservableConnection<WebSocketFrame, WebSocketFrame> webSocketConn) {
+    public void subscribe(final RegistryStreamCallback registryStreamCallback) {
         registryBehaviorSubject.subscribe(new Subscriber<List<RegistryItem>>() {
             @Override
             public void onCompleted() {
@@ -68,29 +64,32 @@ public class RegistryStream {
             @Override
             public void onNext(List<RegistryItem> registryItems) {
                 try {
-                    if (webSocketConn.getChannel().isOpen() && registryItems.size() > 0) {
-                        final String jsonStr = gson.toJson(registryItems);
-                        final ByteBuf respByteBuf = webSocketConn.getAllocator().buffer().writeBytes(jsonStr.getBytes());
-                        webSocketConn.writeAndFlush(new TextWebSocketFrame(respByteBuf));
-                    } else {
+                    if (!registryStreamCallback.streamReceived(registryItems)) {
                         this.unsubscribe();
                     }
                 } catch (Exception ex) {
                     log.error("Exception in onNext handler - ", ex.getMessage());
                 }
-
             }
         });
     }
 
     private void startStream() {
+        publishRegistryItems();
+
         Observable.interval(1, TimeUnit.MINUTES).subscribe(new Action1<Long>() {
             @Override
             public void call(Long aLong) {
-                refresh();
-                registryBehaviorSubject.onNext(registryItemsRef.get());
+                publishRegistryItems();
             }
         });
+    }
+
+    private void publishRegistryItems() {
+        refresh();
+        if (registryItemsRef.get().size() > 0) {
+            registryBehaviorSubject.onNext(registryItemsRef.get());
+        }
     }
 
     private void refresh() {
