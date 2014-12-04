@@ -2,6 +2,7 @@ var eurekaRegistryCtrl = (function () {
     var MaxReconnection = 3;
     var reconnectAttempt = 0;
     var GetRegistryCmd = "get registry";
+    var isPageUnloading = false;
 
     function load() {
         $.get("/getconfig", function (data) {
@@ -10,6 +11,10 @@ var eurekaRegistryCtrl = (function () {
         }).fail(function () {
             console.log("Error getting ws port");
         });
+
+        window.onbeforeunload = function () {
+            isPageUnloading = true;
+        };
     }
 
     function connect(port) {
@@ -18,15 +23,9 @@ var eurekaRegistryCtrl = (function () {
             ws.send(GetRegistryCmd);
         };
         ws.onmessage = function (data, flags) {
-            if (data.data === 'ERROR') {
-                ws.send(GetRegistryCmd);
-                console.log("Error from eureka-client, resetting view");
-                $(window).trigger('ResetView');
-            } else {
-                var instNotifications = JSON.parse(data.data);
-                if (instNotifications.length > 0) {
-                    $(window).trigger('InstanceNotificationsReceived', {notifications: instNotifications });
-                }
+            var currentRegistry = JSON.parse(data.data);
+            if (currentRegistry.length > 0) {
+                $(window).trigger('RegistryDataReceived', {data: currentRegistry });
             }
         };
 
@@ -34,9 +33,9 @@ var eurekaRegistryCtrl = (function () {
             console.log("Error detected in eureka stream " + error);
         };
 
-        ws.onclose = function() {
+        ws.onclose = function () {
             console.log("Connection closed. Reconnecting #" + reconnectAttempt);
-            if (reconnectAttempt < MaxReconnection) {
+            if (! isPageUnloading && reconnectAttempt < MaxReconnection) {
                 reconnectAttempt++;
                 connect(port);
             }

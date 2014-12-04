@@ -1,15 +1,14 @@
 package com.netflix.eureka2;
-import com.google.inject.Singleton;
+
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.DataCenterInfo;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.registry.datacenter.AwsDataCenterInfo;
-import com.netflix.eureka2.registry.datacenter.BasicDataCenterInfo;
 import rx.Observable;
-import rx.Subscriber;
+import rx.functions.Action1;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,19 +33,14 @@ public class RegistryCache {
     }
 
     private void subscribeToEurekaStream() {
-        buildEurekaFullRegistryObservable().subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
+        buildEurekaFullRegistryObservable().retry().doOnError(new Action1<Throwable>() {
             @Override
-            public void onCompleted() {
-
+            public void call(Throwable throwable) {
+                clearCache();
             }
-
+        }).subscribe(new Action1<ChangeNotification<InstanceInfo>>() {
             @Override
-            public void onError(Throwable e) {
-
-            }
-
-            @Override
-            public void onNext(ChangeNotification<InstanceInfo> instanceInfoChangeNotification) {
+            public void call(ChangeNotification<InstanceInfo> instanceInfoChangeNotification) {
                 if (instanceInfoChangeNotification.getKind() == ChangeNotification.Kind.Delete) {
                     deleteEntry(instanceInfoChangeNotification.getData());
                 } else {
@@ -58,14 +52,14 @@ public class RegistryCache {
 
     private void addOrModify(InstanceInfo instanceInfo) {
         final String instanceId = extractInstanceId(instanceInfo);
-        if (! instanceId.isEmpty()) {
+        if (!instanceId.isEmpty()) {
             cache.put(instanceId, instanceInfo);
         }
     }
 
     private void deleteEntry(InstanceInfo instanceInfo) {
         final String instanceId = extractInstanceId(instanceInfo);
-        if (! instanceId.isEmpty()) {
+        if (!instanceId.isEmpty()) {
             cache.remove(instanceId);
         }
     }
@@ -81,5 +75,4 @@ public class RegistryCache {
     private void clearCache() {
         cache.clear();
     }
-
 }

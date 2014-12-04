@@ -2,107 +2,129 @@ var eurekaRegistryView = (function () {
     var containerId;
     var diameter;
     var registry = [];
+    var instances = {};
     var totalInstCount = 0;
     var sortedAppList = [];
     var instancesTblView, // ref to SimpleTreeView for instance list
             selectAppAutoCompleteBox;
-    var firstViewLoaded = false;
     var svg, bubble, format, color; // visualization
-    var REFRESH_VIEW_INTERVAL = 1000;
+
+    var REFRESH_LIVE_STREAM_INTERVAL = 1000;
     var CLEAN_UP_LIVE_STREAM_INTERVAL = 5000;
+    var MAX_LIVE_STREAM_ROWS = 5000;
+    var logLines = [];
 
     function init(options) {
         options = options || {};
         containerId = options.containerId || 'registry';
         diameter = options.diameter || 800;
 
-        $(window).on('InstanceNotificationsReceived', function (e, data) {
-            console.log("Updates received " + data.notifications.length);
-            data.notifications.forEach(function (notification) {
-                updateReceived(notification);
-            });
+        $(window).on('RegistryDataReceived', function (e, regData) {
+            updateRegistry(regData.data);
+            hideMsg();
+            render();
         });
 
-
-        $(window).on('ResetView', function (e) {
-            resetReceived();
-        });
-
-        window.setInterval(function () {
-            refreshView();
-        }, REFRESH_VIEW_INTERVAL);
+         window.setInterval(function () {
+             streamLogLines();
+         }, REFRESH_LIVE_STREAM_INTERVAL);
 
         window.setInterval(function () {
             cleanUpLiveStream();
         }, CLEAN_UP_LIVE_STREAM_INTERVAL);
+
+
     }
 
-    var updatedInstInfo = [];
-    var lastUpdatedInfoIndex = 0;
-    function updateReceived(notification) {
-        var instInfo = notification.data;
-        updatedInstInfo.push(instInfo);
-
-        if (notification.kind === 'Add') {
-            if (instInfo['app'] in registry) {
-                registry[instInfo['app']].push(instInfo);
+    function updateRegistry(instInfoList) {
+        var newInstIdList = {};
+        instInfoList.forEach(function (instInfo) {
+            var instId = instInfo['instanceId'];
+            if (!(instId in instances)) {
+                addItemToRegistry(instInfo);
+                logLines.push({type: 'Add', instId: instId, appId: instInfo['app'], vip: instInfo['vipAddress']});
             } else {
-                registry[instInfo['app']] = [instInfo];
+                if (updateRegItemIfNeeded(instInfo)) {
+                    logLines.push({type: 'Modify', instId: instId, appId: instInfo['app'], vip: instInfo['vipAddress']});
+                }
             }
+            newInstIdList[instId] = true;
+        });
+
+        // existing keys - find remove ?
+        Object.keys(instances).forEach(function (oldInstId) {
+            if (!(oldInstId in newInstIdList)) {
+                var oldInstInfo = instances[oldInstId];
+                removeItemFromRegistry(instances[oldInstId]);
+                logLines.push({type: 'Add', instId: oldInstId, appId: oldInstInfo['app'], vip: oldInstInfo['vipAddress']});
+            }
+        });
+    }
+
+    function removeItemFromRegistry(instInfo) {
+        if (instInfo['app'] in registry) {
+            registry[instInfo['app']] = registry[instInfo['app']].filter(function (elm) {
+                return elm['instanceId'] !== instInfo['instanceId'];
+            });
+        }
+        delete instances[instInfo['instanceId']];
+    }
+
+    function addItemToRegistry(instInfo) {
+        instances[instInfo['instanceId']] = instInfo;
+        if (instInfo['app'] in registry) {
+            registry[instInfo['app']].push(instInfo);
         } else {
-            // remove
-            if (instInfo['app'] in registry) {
-                registry[instInfo['app']] = registry[instInfo['app']].filter(function (elm) {
-                    return elm['id'] !== instInfo['id'];
-                });
+            registry[instInfo['app']] = [instInfo];
+        }
+    }
+
+    function updateRegItemIfNeeded(instInfo) {
+        var instId = instInfo['instanceId'];
+        var isUpdated = false;
+
+        // update VIP address
+        if ((instId in instances) && (instInfo['vipAddress'] !== instances[instId]['vipAddress'])) {
+            instances[instId]['vipAddress'] = instInfo['vipAddress'];
+            isUpdated = true;
+        }
+
+        // update app - should not usually happen
+        if ((instId in instances) && (instInfo['app'] !== instances[instId]['app'])) {
+            var oldInstInfo = instances[instId];
+            removeItemFromRegistry(oldInstInfo);
+            addItemToRegistry(instInfo);
+            isUpdated = true;
+        }
+        return isUpdated;
+    }
+
+    function streamLogLines() {
+        // stream batch of log lines
+        if (logLines.length > 5000) {
+            logLines.splice(5000);
+        }
+
+        for (var i = 0; i < 5000 && logLines.length > 0; i++) {
+            var logLine = logLines.pop();
+            if (logLine) {
+                $('.live-stream').show().prepend($('<li>' + buildLiveStreamEntry(logLine) + '</li>'));
             }
         }
-
-        if (firstViewLoaded) {
-            updateLiveStream(notification);
-        }
     }
 
-    function updateLiveStream(notification) {
-        $('.live-stream').show().prepend($('<li>' + buildLiveStreamEntry(notification) + '</li>'));
-    }
-
-    function resetReceived() {
-        registry = [];
-        $('.live-stream').show().prepend($('<li>Reconnecting ...</li>'));
-        render();
-    }
-
-    function buildLiveStreamEntry(notification) {
-        var vipAddress = notification['data']['vipAddress'] || '';
+    function buildLiveStreamEntry(logLine) {
+        var vipAddress = logLine['vip'] || '';
         var markup = [];
 
-        markup.push('<span class="entry-type">' + notification.kind + '</span>');
+        markup.push('<span class="entry-type">' + logLine['type'] + '</span>');
         markup.push(' => ');
-        markup.push('<span class="app-name">' + notification['data']['app'] + '</span>, ' );
+        markup.push('<span class="app-name">' + logLine['appId'] + '</span>, ');
         if (vipAddress) {
             markup.push(vipAddress + ", ");
         }
-        markup.push(notification['data']['dataCenterInfo']['instanceId']);
+        markup.push(logLine['instId']);
         return markup.join('');
-    }
-
-    function refreshView() {
-        if (lastUpdatedInfoIndex == updatedInstInfo.length)  {
-            // no update in refresh interval
-            console.log("REfreshing updates len = " + updatedInstInfo.length);
-            if (updatedInstInfo.length > 0) {
-                hideMsg();
-                render();
-            }
-            updatedInstInfo = [];
-            lastUpdatedInfoIndex = 0;
-        } else {
-            lastUpdatedInfoIndex = updatedInstInfo.length;
-        }
-        if (!firstViewLoaded) {
-            firstViewLoaded = true;
-        }
     }
 
     function hideMsg() {
@@ -144,7 +166,7 @@ var eurekaRegistryView = (function () {
     function buildInstancesMapByStatus(instances) {
         var instStatusMap = {};
         instances.forEach(function (inst) {
-            var nacLink = Utils.buildNACLinkForInstance(inst['dataCenterInfo']['instanceId']);
+            var nacLink = Utils.buildNACLinkForInstance(inst['instanceId']);
             if (inst['status'] in instStatusMap) {
                 instStatusMap[inst['status']].push(nacLink);
             } else {
@@ -182,7 +204,6 @@ var eurekaRegistryView = (function () {
         showSearchBox();
         wireSearchBox();
     }
-
 
     function renderBubbleChart(data) {
         format = d3.format(",d");
@@ -276,7 +297,6 @@ var eurekaRegistryView = (function () {
 
     }
 
-    var MAX_LIVE_STREAM_ROWS = 5000;
     function cleanUpLiveStream() {
         var liElms = $('.live-stream li');
         var totalRecords = liElms.length;
@@ -290,7 +310,7 @@ var eurekaRegistryView = (function () {
     }
 
     return {
-        init  : init
+        init: init
     }
 })
 
