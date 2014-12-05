@@ -15,6 +15,15 @@ public class SerializedTaskInvokerMetrics extends EurekaMetrics {
 
     private final LongGauge queueSize;
 
+    private SerializedTaskInvokerMetrics() {
+        super(null);
+        inputSuccess = null;
+        inputFailure = null;
+        outputSuccess = null;
+        outputFailure = null;
+        queueSize = null;
+    }
+
     public SerializedTaskInvokerMetrics(String name) {
         super(name);
 
@@ -47,15 +56,17 @@ public class SerializedTaskInvokerMetrics extends EurekaMetrics {
         queueSize.set(n);
     }
 
+
+    // make a dummy metric available for other use cases of the SerializedTaskInvoker that does not
+    // need to register metrics. This is to avoid registering too may metrics if large numbers of invokers
+    // are created.
     public static SerializedTaskInvokerMetrics dummyMetrics() {
         return new DevNullMetrics();
     }
 
-
-
     static class DevNullMetrics extends SerializedTaskInvokerMetrics {
         public DevNullMetrics() {
-            super("/dev/null");
+            super();
         }
         public void incrementInputSuccess() {}
         public void incrementInputFailure() {}
