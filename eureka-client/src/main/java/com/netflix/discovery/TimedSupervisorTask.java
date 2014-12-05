@@ -1,16 +1,18 @@
 package com.netflix.discovery;
 
+import java.util.TimerTask;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
+
 import com.netflix.servo.monitor.Counter;
 import com.netflix.servo.monitor.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.TimerTask;
-import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * A supervisor task that schedules subtasks while enforce a timeout.
@@ -23,38 +25,59 @@ public class TimedSupervisorTask extends TimerTask {
     private static final Logger logger = LoggerFactory.getLogger(TimedSupervisorTask.class);
 
     private static final String PREFIX = "TimedSupervisorTask_";
-    private final Counter TIMEOUT_COUNTER = Monitors.newCounter(PREFIX + "Timeouts");
-    private final Counter REJECTED_COUNTER = Monitors.newCounter(PREFIX + "RejectedExecutions");
-    private final Counter THROWABLE_COUNTER = Monitors.newCounter(PREFIX + "Throwables");
+    private final Counter timeoutCounter;
+    private final Counter rejectedCounter;
+    private final Counter throwableCounter;
 
+    private final ScheduledExecutorService scheduler;
     private final ThreadPoolExecutor executor;
-    private final int timeoutSecs;
+    private final long timeoutMillis;
     private final Runnable task;
 
-    public TimedSupervisorTask(ThreadPoolExecutor executor, int timeoutSecs, Runnable task) {
+    private final AtomicLong delay;
+    private final long maxDelay;
+
+    public TimedSupervisorTask(String name, ScheduledExecutorService scheduler, ThreadPoolExecutor executor,
+                               int timeout, TimeUnit timeUnit, int expBackOffBound, Runnable task) {
+        this.scheduler = scheduler;
         this.executor = executor;
-        this.timeoutSecs = timeoutSecs;
+        this.timeoutMillis = timeUnit.toMillis(timeout);
         this.task = task;
+        this.delay = new AtomicLong(timeoutMillis);
+        this.maxDelay = timeoutMillis * expBackOffBound;
+
+        // Initialize the counters and register.
+        timeoutCounter = Monitors.newCounter(PREFIX + '_' + name + "_timeouts");
+        rejectedCounter = Monitors.newCounter(PREFIX + '_' + name + "_rejectedExecutions");
+        throwableCounter = Monitors.newCounter(PREFIX + '_' + name + "_throwables");
+        Monitors.registerObject(this);
     }
 
     public void run() {
         Future future = null;
         try {
             future = executor.submit(task);
-            future.get(timeoutSecs, TimeUnit.SECONDS);  // block until done or timeout
+            future.get(timeoutMillis, TimeUnit.MILLISECONDS);  // block until done or timeout
+            delay.set(timeoutMillis);
         } catch (TimeoutException e) {
             logger.error("task supervisor timed out", e);
-            TIMEOUT_COUNTER.increment();
+            timeoutCounter.increment();
+
+            long currentDelay = delay.get();
+            long newDelay = Math.min(maxDelay, currentDelay * 2);
+            delay.compareAndSet(currentDelay, newDelay);
+
         } catch (RejectedExecutionException e) {
             logger.error("task supervisor rejected the task", e);
-            REJECTED_COUNTER.increment();
+            rejectedCounter.increment();
         } catch (Throwable e) {
             logger.error("task supervisor threw an exception", e);
-            THROWABLE_COUNTER.increment();
+            throwableCounter.increment();
         } finally {
             if (future != null) {
                 future.cancel(true);
             }
+            scheduler.schedule(this, delay.get(), TimeUnit.MILLISECONDS);
         }
     }
 }

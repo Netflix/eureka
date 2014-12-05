@@ -104,6 +104,20 @@ public interface EurekaClientConfig {
     String getProxyPort();
 
     /**
+     * Gets the proxy user name if any.
+     *
+     * @return the proxy user name.
+     */
+    String getProxyUserName();
+
+    /**
+     * Gets the proxy password if any.
+     *
+     * @return the proxy password.
+     */
+    String getProxyPassword();
+
+    /**
      * Indicates whether the content fetched from eureka server has to be
      * compressed whenever it is supported by the server. The registry
      * information from the eureka server is compressed for optimum network
@@ -438,9 +452,41 @@ public interface EurekaClientConfig {
     int getHeartbeatExecutorThreadPoolSize();
 
     /**
+     * Heartbeat executor exponential back off related property.
+     * It is a maximum multiplier value for retry delay, in case where a sequence of timeouts
+     * occurred.
+     *
+     * @return maximum multiplier value for retry delay
+     */
+    int getHeartbeatExecutorExponentialBackOffBound();
+
+    /**
      * The thread pool size for the cacheRefreshExecutor to initialise with
      *
      * @return the cacheRefreshExecutor thread pool size
      */
     int getCacheRefreshExecutorThreadPoolSize();
+
+    /**
+     * Cache refresh executor exponential back off related property.
+     * It is a maximum multiplier value for retry delay, in case where a sequence of timeouts
+     * occurred.
+     *
+     * @return maximum multiplier value for retry delay
+     */
+    int getCacheRefreshExecutorExponentialBackOffBound();
+
+    /**
+     * Get a replacement string for Dollar sign <code>$</code> during serializing/deserializing information in eureka server.
+     *
+     * @return Replacement string for Dollar sign <code>$</code>.
+     */
+    String getDollarReplacement();
+
+    /**
+     * Get a replacement string for underscore sign <code>_</code> during serializing/deserializing information in eureka server.
+     *
+     * @return Replacement string for underscore sign <code>_</code>.
+     */
+    String getEscapeCharReplacement();
 }

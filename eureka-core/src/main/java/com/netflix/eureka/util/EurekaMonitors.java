@@ -55,6 +55,7 @@ public enum EurekaMonitors {
     GET_ALL("getAllCounter", "Number of total registry queries seen since startup"),
     GET_ALL_WITH_REMOTE_REGIONS("getAllWithRemoteRegionCounter",
             "Number of total registry queries with remote regions, seen since startup"),
+    GET_APPLICATION("getApplicationCounter", "Number of total application queries seen since startup"),
     REGISTER("registerCounter", "Number of total registers seen since startup"),
     EXPIRED("expiredCounter", "Number of total expired leases since startup"),
     STATUS_UPDATE("statusUpdateCounter", "Number of total admin status updates since startup"),
@@ -63,7 +64,9 @@ public enum EurekaMonitors {
     REJECTED_REPLICATIONS("numOfRejectedReplications", "Number of replications rejected because of full queue"),
     FAILED_REPLICATIONS("numOfFailedReplications", "Number of failed replications - likely from timeouts"),
     RATE_LIMITED("numOfRateLimitedRequests", "Number of requests discarded by the rate limiter"),
-    RATE_LIMITED_CANDIDATES("numOfRateLimitedRequestCandidates", "Number of requests that would be discarded if the rate limiter's throttling is activated");
+    RATE_LIMITED_CANDIDATES("numOfRateLimitedRequestCandidates", "Number of requests that would be discarded if the rate limiter's throttling is activated"),
+    RATE_LIMITED_FULL_FETCH("numOfRateLimitedFullFetchRequests", "Number of full registry fetch requests discarded by the rate limiter"),
+    RATE_LIMITED_FULL_FETCH_CANDIDATES("numOfRateLimitedFullFetchRequestCandidates", "Number of full registry fetch requests that would be discarded if the rate limiter's throttling is activated");
 
     private final String name;
 

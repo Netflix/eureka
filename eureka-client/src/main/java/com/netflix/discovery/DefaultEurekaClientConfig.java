@@ -164,6 +164,18 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 namespace + "eurekaServer.proxyPort", null).get();
     }
 
+    @Override
+    public String getProxyUserName() {
+        return configInstance.getStringProperty(
+                namespace + "eurekaServer.proxyUserName", null).get();
+    }
+
+    @Override
+    public String getProxyPassword() {
+        return configInstance.getStringProperty(
+                namespace + "eurekaServer.proxyPassword", null).get();
+    }
+
     /*
      * (non-Javadoc)
      *
@@ -434,6 +446,12 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 namespace + "client.heartbeat.threadPoolSize", 2).get();
     }
 
+    @Override
+    public int getHeartbeatExecutorExponentialBackOffBound() {
+        return configInstance.getIntProperty(
+                namespace + "client.heartbeat.exponentialBackOffBound", 10).get();
+    }
+
     /**
      * (non-Javadoc)
      *
@@ -443,5 +461,23 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     public int getCacheRefreshExecutorThreadPoolSize() {
         return configInstance.getIntProperty(
                 namespace + "client.cacheRefresh.threadPoolSize", 2).get();
+    }
+
+    @Override
+    public int getCacheRefreshExecutorExponentialBackOffBound() {
+        return configInstance.getIntProperty(
+                namespace + "client.cacheRefresh.exponentialBackOffBound", 10).get();
+    }
+
+    @Override
+    public String getDollarReplacement() {
+        return configInstance.getStringProperty(
+                namespace + "dollarReplacement", "_-").get();
+    }
+
+    @Override
+    public String getEscapeCharReplacement() {
+        return configInstance.getStringProperty(
+                namespace + "escapeCharReplacement", "__").get();
     }
 }

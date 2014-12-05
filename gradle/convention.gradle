@@ -68,7 +68,7 @@ apply plugin: 'github-pages' // Used to create publishGhPages task
 
 def docTasks = [:]
 [Javadoc,ScalaDoc,Groovydoc].each{ Class docClass ->
-    def allSources = allprojects.tasks*.withType(docClass).flatten()*.source 
+    def allSources = allprojects.tasks*.withType(docClass).flatten()*.source
     if (allSources) {
         def shortName = docClass.simpleName.toLowerCase()
         def docTask = task "aggregate${shortName.capitalize()}"(type: docClass, description: "Aggregate subproject ${shortName}s") {

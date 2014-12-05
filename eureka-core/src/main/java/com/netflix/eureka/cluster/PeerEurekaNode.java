@@ -111,12 +111,22 @@ public class PeerEurekaNode {
                         hostname = serviceUrl;
                     }
                     String jerseyClientName = "Discovery-PeerNodeClient-" + hostname;
-                    jerseyClient = EurekaJerseyClient.createJerseyClient(jerseyClientName,
-                            config.getPeerNodeConnectTimeoutMs(),
-                            config.getPeerNodeReadTimeoutMs(),
-                            config.getPeerNodeTotalConnections(),
-                            config.getPeerNodeTotalConnectionsPerHost(),
-                            config.getPeerNodeConnectionIdleTimeoutSeconds());
+                    if (serviceUrl.startsWith("https://") && 
+                    		"true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
+	                    jerseyClient = EurekaJerseyClient.createSystemSSLJerseyClient(jerseyClientName,
+	                            config.getPeerNodeConnectTimeoutMs(),
+	                            config.getPeerNodeReadTimeoutMs(),
+	                            config.getPeerNodeTotalConnections(),
+	                            config.getPeerNodeTotalConnectionsPerHost(),
+	                            config.getPeerNodeConnectionIdleTimeoutSeconds());
+                    }else{
+	                    jerseyClient = EurekaJerseyClient.createJerseyClient(jerseyClientName,
+	                            config.getPeerNodeConnectTimeoutMs(),
+	                            config.getPeerNodeReadTimeoutMs(),
+	                            config.getPeerNodeTotalConnections(),
+	                            config.getPeerNodeTotalConnectionsPerHost(),
+	                            config.getPeerNodeConnectionIdleTimeoutSeconds());
+                    }
                     jerseyApacheClient = jerseyClient.getClient();
                 } catch (Throwable e) {
                     throw new RuntimeException(

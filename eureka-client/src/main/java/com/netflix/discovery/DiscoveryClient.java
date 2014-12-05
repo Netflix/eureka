@@ -46,10 +46,8 @@ import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
-import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -179,11 +177,11 @@ public class DiscoveryClient implements LookupService {
     private final ThreadPoolExecutor cacheRefreshExecutor;
 
     private final EventBus eventBus;
-    
+
     public static class DiscoveryClientOptionalArgs {
         @Inject(optional = true)
         private EventBus eventBus;
-        
+
         @Inject(optional = true)
         private Provider<HealthCheckCallback> healthCheckCallbackProvider;
 
@@ -235,7 +233,7 @@ public class DiscoveryClient implements LookupService {
         this.backupRegistryProvider = backupRegistryProvider;
 
         try {
-            scheduler = Executors.newScheduledThreadPool(4, 
+            scheduler = Executors.newScheduledThreadPool(4,
                     new ThreadFactoryBuilder()
                         .setNameFormat("DiscoveryClient-%d")
                         .setDaemon(true)
@@ -264,17 +262,32 @@ public class DiscoveryClient implements LookupService {
                                     + instanceInfo.getId();
             }
 
-            String proxyHost = clientConfig.getProxyHost();
-            String proxyPort = clientConfig.getProxyPort();
-            discoveryJerseyClient = EurekaJerseyClient.createJerseyClient(
-                    "DiscoveryClient-HTTPClient",
-                    clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000,
-                    clientConfig.getEurekaServerReadTimeoutSeconds() * 1000,
-                    clientConfig.getEurekaServerTotalConnectionsPerHost(),
-                    clientConfig.getEurekaServerTotalConnections(),
-                    clientConfig.getEurekaConnectionIdleTimeoutSeconds());
+            if (eurekaServiceUrls.get().get(0).startsWith("https://") &&
+                    "true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
+                discoveryJerseyClient = EurekaJerseyClient.createSystemSSLJerseyClient("DiscoveryClient-HTTPClient-System",
+                        clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000,
+                        clientConfig.getEurekaServerReadTimeoutSeconds() * 1000,
+                        clientConfig.getEurekaServerTotalConnectionsPerHost(), 
+                        clientConfig.getEurekaServerTotalConnections(),
+                        clientConfig.getEurekaConnectionIdleTimeoutSeconds());
+            } else if (clientConfig.getProxyHost() != null && clientConfig.getProxyPort() != null) {
+                discoveryJerseyClient = EurekaJerseyClient.createProxyJerseyClient("Proxy-DiscoveryClient-HTTPClient",
+                        clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000,
+                        clientConfig.getEurekaServerReadTimeoutSeconds() * 1000,
+                        clientConfig.getEurekaServerTotalConnectionsPerHost(), 
+                        clientConfig.getEurekaServerTotalConnections(),
+                        clientConfig.getEurekaConnectionIdleTimeoutSeconds(),
+                        clientConfig.getProxyHost(), clientConfig.getProxyPort(),
+                        clientConfig.getProxyUserName(), clientConfig.getProxyPassword());
+            } else {
+                discoveryJerseyClient = EurekaJerseyClient.createJerseyClient("DiscoveryClient-HTTPClient",
+                        clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000,
+                        clientConfig.getEurekaServerReadTimeoutSeconds() * 1000,
+                        clientConfig.getEurekaServerTotalConnectionsPerHost(),
+                        clientConfig.getEurekaServerTotalConnections(),
+                        clientConfig.getEurekaConnectionIdleTimeoutSeconds());
+            }
             discoveryApacheClient = discoveryJerseyClient.getClient();
-            ClientConfig cc = discoveryJerseyClient.getClientconfig();
             remoteRegionsToFetch = new AtomicReference<String>(clientConfig.fetchRegistryForRemoteRegions());
             AzToRegionMapper azToRegionMapper;
             if (clientConfig.shouldUseDnsForFetchingServiceUrls()) {
@@ -300,12 +313,6 @@ public class DiscoveryClient implements LookupService {
             String ip = instanceInfo == null ? null : instanceInfo.getIPAddr();
             EurekaClientIdentity identity = new EurekaClientIdentity(ip);
             discoveryApacheClient.addFilter(new EurekaIdentityHeaderFilter(identity));
-
-            if (proxyHost != null && proxyPort != null) {
-                cc.getProperties().put(
-                        DefaultApacheHttpClient4Config.PROPERTY_PROXY_URI,
-                        "http://" + proxyHost + ":" + proxyPort);
-            }
 
         } catch (Throwable e) {
             throw new RuntimeException("Failed to initialize DiscoveryClient!", e);
@@ -1195,22 +1202,36 @@ public class DiscoveryClient implements LookupService {
         if (clientConfig.shouldFetchRegistry()) {
             // registry cache refresh timer
             int registryFetchIntervalSeconds = clientConfig.getRegistryFetchIntervalSeconds();
-            scheduler.scheduleWithFixedDelay(
+            int expBackOffBound = clientConfig.getCacheRefreshExecutorExponentialBackOffBound();
+            scheduler.schedule(
                     new TimedSupervisorTask(
-                            cacheRefreshExecutor, registryFetchIntervalSeconds, new CacheRefreshThread()),
-                    registryFetchIntervalSeconds,
+                            "cacheRefresh",
+                            scheduler,
+                            cacheRefreshExecutor,
+                            registryFetchIntervalSeconds,
+                            TimeUnit.SECONDS,
+                            expBackOffBound,
+                            new CacheRefreshThread()
+                    ),
                     registryFetchIntervalSeconds, TimeUnit.SECONDS);
         }
 
         if (shouldRegister(instanceInfo)) {
             int renewalIntervalInSecs = instanceInfo.getLeaseInfo().getRenewalIntervalInSecs();
+            int expBackOffBound = clientConfig.getHeartbeatExecutorExponentialBackOffBound();
             logger.info("Starting heartbeat executor: " + "renew interval is: " + renewalIntervalInSecs);
 
             // Heartbeat timer
-            scheduler.scheduleWithFixedDelay(
+            scheduler.schedule(
                     new TimedSupervisorTask(
-                            heartbeatExecutor, renewalIntervalInSecs, new HeartbeatThread()),
-                    renewalIntervalInSecs,
+                            "heartbeat",
+                            scheduler,
+                            heartbeatExecutor,
+                            renewalIntervalInSecs,
+                            TimeUnit.SECONDS,
+                            expBackOffBound,
+                            new HeartbeatThread()
+                    ),
                     renewalIntervalInSecs, TimeUnit.SECONDS);
 
             // InstanceInfo replication timer
