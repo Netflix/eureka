@@ -32,11 +32,12 @@ public class BridgeServerMetricFactory extends WriteServerMetricFactory {
             InterestChannelMetrics interestChannelMetrics,
             EurekaServerRegistryMetrics eurekaServerRegistryMetrics,
             EvictionQueueMetrics evictionQueueMetrics,
+            SerializedTaskInvokerMetrics registryTaskInvokerMetrics,
             BridgeChannelMetrics bridgeChannelMetrics) {
         super(registrationConnectionMetrics, replicationConnectionMetrics, discoveryConnectionMetrics,
                 registrationServerConnectionMetrics, discoveryServerConnectionMetrics, replicationServerConnectionMetrics,
                 registrationChannelMetrics, replicationChannelMetrics, interestChannelMetrics,
-                eurekaServerRegistryMetrics, evictionQueueMetrics);
+                eurekaServerRegistryMetrics, evictionQueueMetrics, registryTaskInvokerMetrics);
         this.bridgeChannelMetrics = bridgeChannelMetrics;
     }
 

@@ -8,6 +8,7 @@ import java.util.concurrent.Callable;
 import com.netflix.eureka2.datastore.NotificationsSubject;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ModifyNotification;
+import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.registry.Delta;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry.Status;
@@ -236,8 +237,8 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
 
     static class NotificationTaskInvoker extends SerializedTaskInvoker {
 
-        NotificationTaskInvoker(Scheduler scheduler) {
-            super(scheduler);
+        NotificationTaskInvoker(SerializedTaskInvokerMetrics metrics, Scheduler scheduler) {
+            super(metrics, scheduler);
         }
 
         Observable<Status> submitTask(Callable<Observable<Status>> task) {

@@ -4,6 +4,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.netflix.eureka2.client.transport.EurekaClientConnectionMetrics;
 import com.netflix.eureka2.config.BridgeServerConfig;
+import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.service.BridgeChannelMetrics;
 import com.netflix.eureka2.metric.BridgeServerMetricFactory;
@@ -53,6 +54,8 @@ public class EurekaBridgeServerModule extends AbstractModule {
         }
         bind(SelfRegistrationService.class).to(BridgeSelfRegistrationService.class).asEagerSingleton();
 
+        bind(SerializedTaskInvokerMetrics.class).toInstance(new SerializedTaskInvokerMetrics("registry"));
+        
         bind(EurekaServerRegistry.class).to(EurekaBridgeRegistry.class);
         bind(EvictionQueue.class).to(EvictionQueueImpl.class).asEagerSingleton();
         bind(EvictionStrategy.class).toProvider(EvictionStrategyProvider.class);
