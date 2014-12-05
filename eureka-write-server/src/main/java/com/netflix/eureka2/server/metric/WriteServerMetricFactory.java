@@ -19,6 +19,7 @@ package com.netflix.eureka2.server.metric;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.server.registry.EurekaServerRegistryMetrics;
 import com.netflix.eureka2.server.registry.eviction.EvictionQueueMetrics;
 import com.netflix.eureka2.server.service.InterestChannelMetrics;
@@ -47,10 +48,11 @@ public class WriteServerMetricFactory extends EurekaServerMetricFactory {
             ReplicationChannelMetrics replicationChannelMetrics,
             InterestChannelMetrics interestChannelMetrics,
             EurekaServerRegistryMetrics eurekaServerRegistryMetrics,
-            EvictionQueueMetrics evictionQueueMetrics) {
+            EvictionQueueMetrics evictionQueueMetrics,
+            SerializedTaskInvokerMetrics registryTaskInvokerMetrics) {
         super(registrationConnectionMetrics, replicationConnectionMetrics, discoveryConnectionMetrics,
                 registrationChannelMetrics, replicationChannelMetrics, interestChannelMetrics,
-                eurekaServerRegistryMetrics, evictionQueueMetrics);
+                eurekaServerRegistryMetrics, evictionQueueMetrics, registryTaskInvokerMetrics);
         this.registrationServerConnectionMetrics = registrationServerConnectionMetrics;
         this.discoveryServerConnectionMetrics = discoveryServerConnectionMetrics;
         this.replicationServerConnectionMetrics = replicationServerConnectionMetrics;
@@ -92,7 +94,8 @@ public class WriteServerMetricFactory extends EurekaServerMetricFactory {
                         serverMetrics().getReplicationChannelMetrics(),
                         serverMetrics().getInterestChannelMetrics(),
                         serverMetrics().getEurekaServerRegistryMetrics(),
-                        serverMetrics().getEvictionQueueMetrics()
+                        serverMetrics().getEvictionQueueMetrics(),
+                        serverMetrics().getRegistryTaskInvokerMetrics()
                 );
             }
         }

@@ -4,7 +4,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
+import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -27,6 +29,9 @@ public abstract class SerializedTaskInvoker {
 
     private static final Exception TASK_CANCELLED = new CancellationException("Task cancelled");
 
+    private final AtomicLong queueSize;
+
+    private final SerializedTaskInvokerMetrics metrics;
     private final Worker worker;
     private final ConcurrentLinkedDeque<InvokerTask<?, ?>> taskQueue = new ConcurrentLinkedDeque<>();
 
@@ -39,20 +44,30 @@ public abstract class SerializedTaskInvoker {
                 InvokerTask<?, ?> task = taskQueue.poll();
                 try {
                     task.execute();
+                    metrics.incrementOutputSuccess();
                 } catch (Exception e) {
                     logger.error("Task execution failure", e);
                     task.cancel();
+                    metrics.incrementOutputFailure();
+                } finally {
+                    metrics.setQueueSize(queueSize.getAndDecrement());
                 }
             }
         }
     };
 
     protected SerializedTaskInvoker() {
-        this(Schedulers.computation());
+        this(SerializedTaskInvokerMetrics.dummyMetrics(), Schedulers.computation());
     }
 
-    protected SerializedTaskInvoker(Scheduler scheduler) {
+    protected SerializedTaskInvoker(SerializedTaskInvokerMetrics metrics) {
+        this(metrics, Schedulers.computation());
+    }
+
+    protected SerializedTaskInvoker(SerializedTaskInvokerMetrics metrics, Scheduler scheduler) {
         this.worker = scheduler.createWorker();
+        this.queueSize = new AtomicLong(0);
+        this.metrics = metrics;
     }
 
     protected Observable<Void> submitForAck(final Callable<Observable<Void>> task) {
@@ -79,7 +94,14 @@ public abstract class SerializedTaskInvoker {
     }
 
     private void addAndSchedule(InvokerTask<?, ?> invokerTask) {
-        taskQueue.add(invokerTask);
+        boolean success = taskQueue.add(invokerTask);
+        if (success) {
+            queueSize.incrementAndGet();
+            metrics.incrementInputSuccess();
+        } else {
+            metrics.incrementInputFailure();
+        }
+
         if (executorScheduled.compareAndSet(false, true)) {
             worker.schedule(executeAction);
         }
@@ -90,6 +112,7 @@ public abstract class SerializedTaskInvoker {
         while (!taskQueue.isEmpty()) {
             taskQueue.poll().cancel();
         }
+        metrics.unbindMetrics();
     }
 
     private abstract static class InvokerTask<T, R> {

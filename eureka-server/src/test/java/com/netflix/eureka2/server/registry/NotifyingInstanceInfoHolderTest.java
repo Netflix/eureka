@@ -1,6 +1,7 @@
 package com.netflix.eureka2.server.registry;
 
 import com.netflix.eureka2.datastore.NotificationsSubject;
+import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.registry.SampleInstanceInfo;
 import com.netflix.eureka2.server.registry.NotifyingInstanceInfoHolder.NotificationTaskInvoker;
@@ -20,6 +21,7 @@ public class NotifyingInstanceInfoHolderTest {
 
     private NotificationsSubject<InstanceInfo> notificationSubject;
     private MultiSourcedDataHolder.HolderStoreAccessor<NotifyingInstanceInfoHolder> storeAccessor;
+    private NotificationTaskInvoker invoker;
 
     @Rule
     public final ExternalResource testResource = new ExternalResource() {
@@ -45,10 +47,9 @@ public class NotifyingInstanceInfoHolderTest {
                     return false;
                 }
             };
+            invoker = new NotificationTaskInvoker(SerializedTaskInvokerMetrics.dummyMetrics(), Schedulers.computation());
         }
     };
-
-    private final NotificationTaskInvoker invoker = new NotificationTaskInvoker(Schedulers.computation());
 
     @Test
     public void testUpdateSameSource() throws Exception {
