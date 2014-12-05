@@ -16,8 +16,8 @@
 
 package com.netflix.eureka2.client.channel;
 
-        import com.netflix.eureka2.client.channel.InterestChannelImpl.STATES;
-        import com.netflix.eureka2.metric.AbstractStateMachineMetrics;
+import com.netflix.eureka2.client.channel.InterestChannelImpl.STATES;
+import com.netflix.eureka2.metric.AbstractStateMachineMetrics;
 
 /**
  * @author Tomasz Bak
