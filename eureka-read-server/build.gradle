@@ -15,6 +15,7 @@
  */
 
 apply plugin: 'osgi'
+apply plugin:'application'
 
 configurations {
     avroTool
@@ -35,20 +36,12 @@ jar {
     }
 }
 
-task runReadServer (dependsOn: [classes], type: JavaExec) {
-    group = "Run tasks"
-    description = "Run Eureka 2.0 read server"
-
-    main = "com.netflix.eureka2.server.EurekaReadServer"
-    classpath = sourceSets.main.runtimeClasspath
-
-    systemProperty 'java.awt.headless', 'true'
-    systemProperty 'archaius.deployment.environment', 'dev'
-    systemProperty 'org.slf4j.simpleLogger.log.com.netflix.eureka2', 'debug'
-    systemProperty 'org.slf4j.simpleLogger.log.io.netty.handler.logging.LoggingHandler', 'debug'
-
-//    args "-n", "eurekaRead",  // Server name
-//         "-r", "7300",        // Discovery port number of this instance
-//         "-s", "7701",        // Shutdown port number of this instance
-//         "localhost"          // List of write server host names
-}
+mainClassName = "com.netflix.eureka2.server.EurekaReadServer"
+applicationDefaultJvmArgs = ["-Xms2g",
+                             "-Xmx4g",
+//                             "-Dcom.sun.management.jmxremote",
+//                             "-XX:+UnlockCommercialFeatures",
+//                             "-XX:+FlightRecorder",
+//                             "-Dorg.slf4j.simpleLogger.log.io.netty.handler.logging.LoggingHandler=debug",
+//                             "-Dorg.slf4j.simpleLogger.defaultLogLevel=error"
+]

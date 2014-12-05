@@ -145,6 +145,22 @@ public class RetryableChannelConsumerTest {
         reestablishOnNextRetry(2 * INITIAL_DELAY, STATE_OK);
     }
 
+    @Test
+    public void testShutdownCleansUpResources() throws Exception {
+        long originalRetryCounter = consumer.retryCounter;
+
+        // Shutdown retryable channel (need to explicitly complete channel lifecycle).
+        consumer.shutdownRetryableConsumer();
+        lifecyclePublisher.onCompleted();
+
+        verify(channel, times(1)).close();
+
+        // Advance time and verify that there are no more interactions
+        scheduler.advanceTimeBy(INITIAL_DELAY, TimeUnit.MILLISECONDS);
+
+        assertThat(consumer.retryCounter, is(equalTo(originalRetryCounter)));
+    }
+
     protected void withNewLifecyclePublisher() {
         lifecyclePublisher = ReplaySubject.create();
         when(channel.asLifecycleObservable()).thenReturn(lifecyclePublisher);

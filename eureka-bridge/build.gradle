@@ -15,6 +15,7 @@
  */
 
 apply plugin: 'osgi'
+apply plugin:'application'
 
 configurations {
     avroTool
@@ -35,15 +36,12 @@ jar {
     }
 }
 
-task runBridgeServer (dependsOn: [classes], type: JavaExec) {
-    group = "Run tasks"
-    description = "Run Eureka 2.0 bridge server"
-
-    main = "com.netflix.eureka2.server.EurekaBridgeServer"
-    classpath = sourceSets.main.runtimeClasspath
-
-    systemProperty 'java.awt.headless', 'true'
-    systemProperty 'archaius.deployment.environment', 'dev'
-    systemProperty 'org.slf4j.simpleLogger.log.com.netflix.rx.eureka', 'debug'
-    systemProperty 'org.slf4j.simpleLogger.log.io.netty.handler.logging.LoggingHandler', 'debug'
-}
+mainClassName = "com.netflix.eureka2.server.EurekaBridgeServer"
+applicationDefaultJvmArgs = ["-Xms2g",
+                             "-Xmx4g",
+//                             "-Dcom.sun.management.jmxremote",
+//                             "-XX:+UnlockCommercialFeatures",
+//                             "-XX:+FlightRecorder",
+//                             "-Dorg.slf4j.simpleLogger.log.io.netty.handler.logging.LoggingHandler=debug",
+//                             "-Dorg.slf4j.simpleLogger.defaultLogLevel=error"
+]

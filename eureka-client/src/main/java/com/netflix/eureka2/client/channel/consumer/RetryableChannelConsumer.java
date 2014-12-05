@@ -71,6 +71,7 @@ public abstract class RetryableChannelConsumer<C extends ServiceChannel, S> {
     private final long maxRetryDelayMs;
     private final Worker worker;
     private final AtomicReference<StateWithChannel> currentStateWithChannel = new AtomicReference<>();
+    private volatile boolean shutdown;
 
     private long lastConnectTime;
     private long retryDelay;
@@ -87,9 +88,12 @@ public abstract class RetryableChannelConsumer<C extends ServiceChannel, S> {
     }
 
     public void shutdownRetryableConsumer() {
-        worker.unsubscribe();
-        if (currentStateWithChannel.get() != null && currentStateWithChannel.get().channel != null) {
-            currentStateWithChannel.get().channel.close();
+        if (!shutdown) {
+            shutdown = true;
+            worker.unsubscribe();
+            if (currentStateWithChannel.get() != null && currentStateWithChannel.get().channel != null) {
+                currentStateWithChannel.get().channel.close();
+            }
         }
     }
 
@@ -109,6 +113,10 @@ public abstract class RetryableChannelConsumer<C extends ServiceChannel, S> {
     }
 
     private void retry() {
+        if (shutdown) {
+            return;
+        }
+
         logger.info("Reconnecting channel {}", name);
 
         final StateWithChannel newStateWithChannel = reestablish();
@@ -120,6 +128,9 @@ public abstract class RetryableChannelConsumer<C extends ServiceChannel, S> {
                 StateWithChannel oldState = currentStateWithChannel.getAndSet(newStateWithChannel);
                 subscribeToChannelLifecycle();
                 release(oldState);
+                if (oldState.channel != null) {
+                    oldState.channel.close();
+                }
 
                 logger.info("Channel {} successfully reconnected and the state has been restored", name);
             }
@@ -151,18 +162,22 @@ public abstract class RetryableChannelConsumer<C extends ServiceChannel, S> {
         lifecycleObservable.subscribe(new Subscriber<Void>() {
             @Override
             public void onCompleted() {
-                logger.info("Channel closed gracefully and must be reconnected");
-                long closedAfter = worker.now() - lastConnectTime;
-                if (closedAfter >= maxRetryDelayMs) {
-                    retryDelay = retryInitialDelayMs;
+                if (!shutdown) {
+                    logger.info("Channel closed gracefully and must be reconnected");
+                    long closedAfter = worker.now() - lastConnectTime;
+                    if (closedAfter >= maxRetryDelayMs) {
+                        retryDelay = retryInitialDelayMs;
+                    }
+                    scheduleRetry();
                 }
-                scheduleRetry();
             }
 
             @Override
             public void onError(Throwable e) {
-                logger.info("Channel failure; scheduling the reconnection in " + retryDelay + "ms", e);
-                scheduleRetry();
+                if (!shutdown) {
+                    logger.info("Channel failure; scheduling the reconnection in " + retryDelay + "ms", e);
+                    scheduleRetry();
+                }
             }
 
             @Override

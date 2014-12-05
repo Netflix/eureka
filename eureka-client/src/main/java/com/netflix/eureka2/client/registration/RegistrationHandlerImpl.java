@@ -12,6 +12,7 @@ import com.netflix.eureka2.service.RegistrationChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.functions.Action0;
 
 /**
  * @author Nitesh Kant
@@ -58,7 +59,13 @@ public class RegistrationHandlerImpl implements RegistrationHandler {
             logger.info("Instance: %s is not registered. Ignoring unregister", instanceInfo);
             return Observable.empty(); // Be more acceptable to errors from user as unregister for non-existent instance is a no-op.
         }
-        return registrationChannel.unregister();
+        return registrationChannel.unregister().doOnTerminate(new Action0() {
+            @Override
+            public void call() {
+                // Since we do not reuse the channel, we must shut it down with the underlying connection.
+                registrationChannel.close();
+            }
+        });
     }
 
     @Override
@@ -80,11 +87,15 @@ public class RegistrationHandlerImpl implements RegistrationHandler {
         shutdown = true;
         channelFactory.shutdown();
         Set<Map.Entry<String, RegistrationChannel>> entries = instanceIdVsChannel.entrySet();
-        for (Map.Entry<String, RegistrationChannel> entry : entries) {
+        for (final Map.Entry<String, RegistrationChannel> entry : entries) {
             String instanceId = entry.getKey();
             logger.info("Shutting down registration handler. Unregister instance Id: " + instanceId);
-            entry.getValue().unregister();
-            entry.getValue().close();
+            entry.getValue().unregister().doOnTerminate(new Action0() {
+                @Override
+                public void call() {
+                    entry.getValue().close();
+                }
+            }).subscribe();
         }
     }
 }

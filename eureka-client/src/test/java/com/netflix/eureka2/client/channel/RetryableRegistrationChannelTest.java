@@ -105,6 +105,21 @@ public class RetryableRegistrationChannelTest {
         verify(delegateChannel2, times(1)).unregister();
     }
 
+    @Test
+    public void testClosesInternalChannels() throws Exception {
+        // First channel registration
+        channel.register(INSTANCE_INFO);
+
+        // Break the channel and reconnect
+        channelLifecycle1.onError(new Exception("channel error"));
+        scheduler.advanceTimeBy(INITIAL_DELAY, TimeUnit.MILLISECONDS);
+
+        // Close the channel and verify that both delegates are closed.
+        channel.close();
+        verify(delegateChannel1, times(1)).close();
+        verify(delegateChannel2, times(1)).close();
+    }
+
     protected void withChannelMocks(RegistrationChannel channel, Observable<Void> channelLifecycle) {
         when(channel.register(any(InstanceInfo.class))).thenReturn(Observable.<Void>empty());
         when(channel.update(any(InstanceInfo.class))).thenReturn(Observable.<Void>empty());
