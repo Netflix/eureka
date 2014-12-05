@@ -4,7 +4,7 @@ ext {
     jerseyVersion="1.11"
     governatorVersion="1.2.10"
     archaiusVersion="0.6.0"
-    ribbonVersion="0.3.12"
+    ribbonVersion="2.0-RC9"
     blitzVersion="1.34"
 }
 
