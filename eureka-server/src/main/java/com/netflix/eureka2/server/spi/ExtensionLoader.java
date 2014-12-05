@@ -52,7 +52,7 @@ public class ExtensionLoader {
             @Override
             public void configure(BootstrapBinder binder) {
                 for (Module m : enableExtensions()) {
-                    binder.install(m);
+                    binder.include(m);
                 }
             }
         };
