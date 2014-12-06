@@ -9,7 +9,7 @@ var eurekaRegistryView = (function () {
             selectAppAutoCompleteBox;
     var svg, bubble, format, color; // visualization
 
-    var REFRESH_LIVE_STREAM_INTERVAL = 1000;
+    var REFRESH_LIVE_STREAM_INTERVAL = 100;
     var CLEAN_UP_LIVE_STREAM_INTERVAL = 5000;
     var MAX_LIVE_STREAM_ROWS = 5000;
     var logLines = [];
@@ -32,8 +32,6 @@ var eurekaRegistryView = (function () {
         window.setInterval(function () {
             cleanUpLiveStream();
         }, CLEAN_UP_LIVE_STREAM_INTERVAL);
-
-
     }
 
     function updateRegistry(instInfoList) {
@@ -105,7 +103,7 @@ var eurekaRegistryView = (function () {
             logLines.splice(5000);
         }
 
-        for (var i = 0; i < 5000 && logLines.length > 0; i++) {
+        for (var i = 0; i < 500 && logLines.length > 0; i++) {
             var logLine = logLines.pop();
             if (logLine) {
                 $('.live-stream').show().prepend($('<li>' + buildLiveStreamEntry(logLine) + '</li>'));
