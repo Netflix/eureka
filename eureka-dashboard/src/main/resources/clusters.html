@@ -8,7 +8,41 @@
 
   <script src="lib/jquery.min.js"></script>
   <script src="lib/bootstrap.min.js"></script>
+  <script src="lib/d3.v3.js"></script>
   <script src="page-nav-ctrl.js"></script>
+  <script src="websocket-handler.js"></script>
+  <script src="clusters-status-ctrl.js"></script>
+  <script src="clusters-view.js"></script>
+
+  <script type="text/javascript">
+    $(function () {
+      clustersStatusCtrl.load();
+    });
+  </script>
+
+  <style>
+    .arc path {
+      stroke: #fff;
+    }
+
+    .left-col {
+      float: left;
+    }
+
+    .right-col {
+      float: right;
+      margin-left: 35px;
+    }
+
+    .left-col, .right-col {
+      text-align: center;
+    }
+
+    .left-col h4, .right-col h4 {
+      font-weight: bold;
+      text-decoration: underline;
+    }
+  </style>
 </head>
 <body>
 
@@ -16,9 +50,18 @@
 </div>
 
 <div class="container">
-  <div class="jumbotron">
-    <h4>TBD</h4>
+  <div class="left-col">
+    <h4>Eureka Write Cluster</h4>
+
+    <div id="write-cluster"></div>
   </div>
+
+  <div class="right-col">
+    <h4>Eureka Read Cluster</h4>
+
+    <div id="read-cluster"></div>
+  </div>
+
 </div>
 
 </body>

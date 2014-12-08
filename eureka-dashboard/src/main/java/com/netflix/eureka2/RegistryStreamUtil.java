@@ -11,7 +11,7 @@ import java.util.List;
 public class RegistryStreamUtil {
 
     public static boolean sendRegistryOverWebsocket(final ObservableConnection<WebSocketFrame, WebSocketFrame> webSocketConn,
-                                                    List<RegistryStream.RegistryItem> registryItems,
+                                                    List<?> registryItems,
                                                     Gson gson) {
         if (webSocketConn.getChannel().isOpen() && registryItems.size() > 0) {
             final String jsonStr = gson.toJson(registryItems);
