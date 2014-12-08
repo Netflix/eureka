@@ -6,7 +6,7 @@ import com.netflix.eureka2.transport.TransportCompatibilityTestSuite.DiscoveryPr
 import com.netflix.eureka2.transport.TransportCompatibilityTestSuite.RegistrationProtocolTest;
 import com.netflix.eureka2.transport.TransportCompatibilityTestSuite.ReplicationProtocolTest;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
-import com.netflix.eureka2.transport.base.MessageConnectionMetrics;
+import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ConnectionHandler;
 import io.reactivex.netty.channel.ObservableConnection;

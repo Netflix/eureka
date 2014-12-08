@@ -1,5 +1,6 @@
 package com.netflix.eureka2.transport.base;
 
+import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.rx.RxBlocking;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.codec.avro.AvroPipelineConfigurator;

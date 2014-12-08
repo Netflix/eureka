@@ -28,16 +28,16 @@ import javax.annotation.PreDestroy;
 /**
  * @author Tomasz Bak
  */
-public class AbstractTcpServer {
+public class AbstractTcpServer<C extends EurekaServerConfig, M extends EurekaServerMetricFactory> {
 
-    protected final EurekaServerConfig config;
+    protected final C config;
     protected final EurekaServerRegistry<InstanceInfo> eurekaRegistry;
     protected final MetricEventsListenerFactory servoEventsListenerFactory;
-    protected final EurekaServerMetricFactory metricFactory;
+    protected final M metricFactory;
     protected RxServer<Object, Object> server;
 
     public AbstractTcpServer(EurekaServerRegistry eurekaRegistry, MetricEventsListenerFactory servoEventsListenerFactory,
-                             EurekaServerConfig config, EurekaServerMetricFactory metricFactory) {
+                             C config, M metricFactory) {
         this.eurekaRegistry = eurekaRegistry;
         this.servoEventsListenerFactory = servoEventsListenerFactory;
         this.config = config;

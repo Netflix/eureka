@@ -16,16 +16,16 @@
 
 package com.netflix.eureka2.server.config;
 
-import com.netflix.eureka2.server.config.EurekaServerConfig.DefaultEurekaServerConfigBuilder;
+import com.netflix.eureka2.server.config.EurekaServerConfig.EurekaServerConfigBuilder;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 
-import static com.netflix.eureka2.transport.EurekaTransports.DEFAULT_DISCOVERY_PORT;
+import static com.netflix.eureka2.transport.EurekaTransports.*;
 
 /**
  * @author Tomasz Bak
  */
-public class ReadCommandLineParser extends EurekaCommandLineParser<EurekaServerConfig, DefaultEurekaServerConfigBuilder> {
+public class ReadCommandLineParser extends EurekaCommandLineParser<EurekaServerConfig, EurekaServerConfigBuilder> {
 
     public ReadCommandLineParser(String... args) {
         super(EurekaServerConfig.baseBuilder(), true, args);

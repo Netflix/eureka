@@ -16,6 +16,8 @@
 
 package com.netflix.eureka2.server.service;
 
+import com.netflix.eureka2.server.channel.ReplicationChannel;
+import com.netflix.eureka2.server.channel.ServerChannelFactory;
 import com.netflix.eureka2.service.InterestChannel;
 import com.netflix.eureka2.service.RegistrationChannel;
 
@@ -23,7 +25,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- * Stub implementation of {@link ServerChannelFactory} and related channels for
+ * Stub implementation of {@link com.netflix.eureka2.server.channel.ServerChannelFactory} and related channels for
  * testing purposes.
  *
  * @author Tomasz Bak

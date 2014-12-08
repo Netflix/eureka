@@ -1,5 +1,6 @@
 package com.netflix.eureka2.client.channel;
 
+import com.netflix.eureka2.client.metric.InterestChannelMetrics;
 import com.netflix.eureka2.client.registry.EurekaClientRegistry;
 import com.netflix.eureka2.client.transport.TransportClient;
 import com.netflix.eureka2.interests.ChangeNotification;
@@ -36,7 +37,7 @@ import java.util.Map;
  *
  * @author Nitesh Kant
  */
-/*pkg-private: Used by EurekaClientService only*/class InterestChannelImpl
+public class InterestChannelImpl
         extends AbstractChannel<InterestChannelImpl.STATES> implements ClientInterestChannel {
 
     private static final Logger logger = LoggerFactory.getLogger(InterestChannelImpl.class);
@@ -52,7 +53,7 @@ import java.util.Map;
 
     protected Subscriber<ChangeNotification<InstanceInfo>> channelInterestSubscriber;
 
-    protected enum STATES {Idle, Open, Closed}
+    public enum STATES {Idle, Open, Closed}
 
     private final InterestChannelMetrics metrics;
 

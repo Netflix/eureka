@@ -19,12 +19,7 @@ package com.netflix.eureka2.server.metric;
 import javax.inject.Inject;
 import javax.inject.Named;
 
-import com.netflix.eureka2.server.registry.EurekaServerRegistryMetrics;
-import com.netflix.eureka2.server.registry.eviction.EvictionQueueMetrics;
-import com.netflix.eureka2.server.service.InterestChannelMetrics;
-import com.netflix.eureka2.server.service.RegistrationChannelMetrics;
-import com.netflix.eureka2.server.service.ReplicationChannelMetrics;
-import com.netflix.eureka2.transport.base.MessageConnectionMetrics;
+import com.netflix.eureka2.metric.MessageConnectionMetrics;
 
 /**
  * @author Tomasz Bak
@@ -34,6 +29,12 @@ public class WriteServerMetricFactory extends EurekaServerMetricFactory {
     private final MessageConnectionMetrics registrationServerConnectionMetrics;
     private final MessageConnectionMetrics discoveryServerConnectionMetrics;
     private final MessageConnectionMetrics replicationServerConnectionMetrics;
+
+    private final RegistrationChannelMetrics registrationChannelMetrics;
+    private final ReplicationChannelMetrics replicationChannelMetrics;
+
+    private final EurekaServerRegistryMetrics eurekaServerRegistryMetrics;
+    private final EvictionQueueMetrics evictionQueueMetrics;
 
     @Inject
     public WriteServerMetricFactory(
@@ -49,11 +50,15 @@ public class WriteServerMetricFactory extends EurekaServerMetricFactory {
             EurekaServerRegistryMetrics eurekaServerRegistryMetrics,
             EvictionQueueMetrics evictionQueueMetrics) {
         super(registrationConnectionMetrics, replicationConnectionMetrics, discoveryConnectionMetrics,
-                registrationChannelMetrics, replicationChannelMetrics, interestChannelMetrics,
-                eurekaServerRegistryMetrics, evictionQueueMetrics);
+                interestChannelMetrics
+        );
         this.registrationServerConnectionMetrics = registrationServerConnectionMetrics;
         this.discoveryServerConnectionMetrics = discoveryServerConnectionMetrics;
         this.replicationServerConnectionMetrics = replicationServerConnectionMetrics;
+        this.registrationChannelMetrics = registrationChannelMetrics;
+        this.replicationChannelMetrics = replicationChannelMetrics;
+        this.eurekaServerRegistryMetrics = eurekaServerRegistryMetrics;
+        this.evictionQueueMetrics = evictionQueueMetrics;
     }
 
     public MessageConnectionMetrics getReplicationServerConnectionMetrics() {
@@ -66,6 +71,22 @@ public class WriteServerMetricFactory extends EurekaServerMetricFactory {
 
     public MessageConnectionMetrics getDiscoveryServerConnectionMetrics() {
         return discoveryServerConnectionMetrics;
+    }
+
+    public RegistrationChannelMetrics getRegistrationChannelMetrics() {
+        return registrationChannelMetrics;
+    }
+
+    public ReplicationChannelMetrics getReplicationChannelMetrics() {
+        return replicationChannelMetrics;
+    }
+
+    public EurekaServerRegistryMetrics getEurekaServerRegistryMetrics() {
+        return eurekaServerRegistryMetrics;
+    }
+
+    public EvictionQueueMetrics getEvictionQueueMetrics() {
+        return evictionQueueMetrics;
     }
 
     public static WriteServerMetricFactory writeServerMetrics() {
@@ -81,6 +102,18 @@ public class WriteServerMetricFactory extends EurekaServerMetricFactory {
                 MessageConnectionMetrics clientReplication = new MessageConnectionMetrics("clientReplication");
                 clientReplication.bindMetrics();
 
+                RegistrationChannelMetrics registrationChannelMetrics = new RegistrationChannelMetrics();
+                registrationChannelMetrics.bindMetrics();
+
+                ReplicationChannelMetrics replicationChannelMetrics = new ReplicationChannelMetrics();
+                replicationChannelMetrics.bindMetrics();
+
+                EurekaServerRegistryMetrics eurekaServerRegistryMetrics = new EurekaServerRegistryMetrics();
+                eurekaServerRegistryMetrics.bindMetrics();
+
+                EvictionQueueMetrics evictionQueueMetrics = new EvictionQueueMetrics();
+                evictionQueueMetrics.bindMetrics();
+
                 INSTANCE = new WriteServerMetricFactory(
                         serverMetrics().getRegistrationConnectionMetrics(),
                         serverMetrics().getReplicationConnectionMetrics(),
@@ -88,11 +121,11 @@ public class WriteServerMetricFactory extends EurekaServerMetricFactory {
                         clientRegistration,
                         clientDiscovery,
                         clientReplication,
-                        serverMetrics().getRegistrationChannelMetrics(),
-                        serverMetrics().getReplicationChannelMetrics(),
+                        registrationChannelMetrics,
+                        replicationChannelMetrics,
                         serverMetrics().getInterestChannelMetrics(),
-                        serverMetrics().getEurekaServerRegistryMetrics(),
-                        serverMetrics().getEvictionQueueMetrics()
+                        eurekaServerRegistryMetrics,
+                        evictionQueueMetrics
                 );
             }
         }

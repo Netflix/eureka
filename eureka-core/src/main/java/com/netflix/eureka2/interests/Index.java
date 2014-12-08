@@ -1,6 +1,5 @@
 package com.netflix.eureka2.interests;
 
-import com.netflix.eureka2.datastore.NotificationsSubject;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Func1;

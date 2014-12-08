@@ -1,5 +1,6 @@
 package com.netflix.eureka2.client.channel;
 
+import com.netflix.eureka2.client.metric.RegistrationChannelMetrics;
 import com.netflix.eureka2.client.transport.TransportClient;
 import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.protocol.registration.Unregister;
@@ -19,7 +20,7 @@ import rx.functions.Func1;
  *
  * @author Nitesh Kant
  */
-/*pkg-private: Used by EurekaClientService only*/class RegistrationChannelImpl
+public class RegistrationChannelImpl
         extends AbstractChannel<RegistrationChannelImpl.STATES> implements RegistrationChannel {
 
     private static final IllegalStateException INSTANCE_ALREADY_REGISTERED_EXCEPTION =
@@ -28,7 +29,7 @@ import rx.functions.Func1;
     private static final IllegalStateException INSTANCE_NOT_REGISTERED_EXCEPTION =
             new IllegalStateException("Instance is not registered yet.");
 
-    protected enum STATES {Idle, Registered, Closed}
+    public enum STATES {Idle, Registered, Closed}
 
     private final RegistrationChannelMetrics metrics;
 

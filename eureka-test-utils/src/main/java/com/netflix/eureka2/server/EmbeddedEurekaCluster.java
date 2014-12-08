@@ -18,12 +18,13 @@ package com.netflix.eureka2.server;
 
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
-import com.netflix.eureka2.config.BridgeServerConfig;
+import com.netflix.eureka2.server.config.BridgeServerConfig;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.server.ServerInstance.EurekaBridgeServerInstance;
 import com.netflix.eureka2.server.ServerInstance.EurekaReadServerInstance;
 import com.netflix.eureka2.server.ServerInstance.EurekaWriteServerInstance;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
+import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +69,7 @@ public class EmbeddedEurekaCluster {
             discoveryResolverServersList[i] = new ServerResolver.Server("127.0.0.1", discoveryPort);
             registrationResolverServersList[i] = new ServerResolver.Server("127.0.0.1", registrationPort);
             replicationResolverServersList[i] = new ServerResolver.Server("127.0.0.1", replicationPort);
-            writeServerConfigs[i] = EurekaServerConfig.baseBuilder()
+            writeServerConfigs[i] = WriteServerConfig.writeBuilder()
                     .withAppName(WRITE_SERVER_NAME)
                     .withVipAddress(WRITE_SERVER_NAME)
                     .withDataCenterType(DataCenterType.Basic)
