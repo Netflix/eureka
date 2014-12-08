@@ -122,7 +122,7 @@ public class Session {
         return true;
     }
 
-    public void register(InstanceInfo instanceInfo) {
+    public void register(final InstanceInfo instanceInfo) {
         if(mode == Mode.Read) {
             System.err.println("ERROR: subscription-only session");
             return;
@@ -134,6 +134,7 @@ public class Session {
                     @Override
                     public void onCompleted() {
                         System.out.println("Successfully registered with Eureka server");
+                        lastInstanceInfo = instanceInfo;
                         registrationStatus = Status.Complete;
                     }
 
