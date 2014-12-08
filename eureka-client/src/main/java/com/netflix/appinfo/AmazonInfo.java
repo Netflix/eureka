@@ -17,11 +17,16 @@
 package com.netflix.appinfo;
 
 import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,14 +54,53 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
     private static DynamicIntProperty awsMetaDataConnectTimeout;
     private static DynamicIntProperty awsMetaDataRetries;
 
-    public enum MetaDataKey {
-        amiId("ami-id"), instanceId("instance-id"), instanceType(
-        "instance-type"), localIpv4("local-ipv4"), availabilityZone(
-                "availability-zone", "placement/"), publicHostname(
-                "public-hostname"), publicIpv4("public-ipv4");
+    private static final String AWS_API_VERSION = "latest";
+    private static final String AWS_METADATA_URL = "http://169.254.169.254/"
+            + AWS_API_VERSION + "/meta-data/";
 
-        private String name;
-        private String path;
+    public enum MetaDataKey {
+        amiId("ami-id"),
+        instanceId("instance-id"),
+        instanceType("instance-type"),
+        localIpv4("local-ipv4"),
+        availabilityZone("availability-zone", "placement/"),
+        publicHostname("public-hostname"),
+        publicIpv4("public-ipv4"),
+        mac("mac"),  // mac is declared above vpcId so will be found before vpcId (where it is needed)
+        vpcId("vpc-id", "network/interfaces/macs/") {
+            @Override
+            public URL getURL(String prepend, String mac) throws MalformedURLException {
+                return new URL(AWS_METADATA_URL + this.path + mac + "/" + this.name);
+            }
+        },
+        accountId("accountId") {
+            private Pattern pattern = Pattern.compile("\"accountId\"\\s?:\\s?\\\"([A-Za-z0-9]*)\\\"");
+            @Override
+            public URL getURL(String prepend, String append) throws MalformedURLException {
+                return new URL("http://169.254.169.254/" + AWS_API_VERSION + "/dynamic/instance-identity/document");
+            }
+
+            // no need to use a json deserializer, do a custom regex parse
+            @Override
+            protected String read(InputStream inputStream) throws IOException {
+                BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
+                try {
+                    String inputLine;
+                    while ((inputLine = br.readLine()) != null) {
+                        Matcher matcher = pattern.matcher(inputLine);
+                        if (matcher.find()) {
+                            return matcher.group(1);
+                        }
+                    }
+                } finally {
+                    br.close();
+                }
+                return null;
+            }
+        };
+
+        protected String name;
+        protected String path;
 
         MetaDataKey(String name) {
             this(name, "");
@@ -71,18 +115,26 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
             return name;
         }
 
-        public String getPath() {
-            return path;
+        // override to apply prepend and append
+        public URL getURL(String prepend, String append) throws MalformedURLException {
+            return new URL(AWS_METADATA_URL + path + name);
+        }
+
+        protected String read(InputStream inputStream) throws IOException {
+            BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
+            try {
+                return br.readLine();
+            } finally {
+                br.close();
+            }
         }
     }
+
 
     public static final class Builder {
         private static final Logger logger = LoggerFactory
         .getLogger(Builder.class);
         private static final int SLEEP_TIME_MS = 100;
-        private static final String AWS_API_VERSION = "latest";
-        private static final String AWS_METADATA_URL = "http://169.254.169.254/"
-            + AWS_API_VERSION + "/meta-data/";
 
         @XStreamOmitField
         private AmazonInfo result;
@@ -121,25 +173,23 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
                 int numOfRetries = awsMetaDataRetries.get();
                 while (numOfRetries-- > 0) {
                     try {
-                        URL url = new URL(AWS_METADATA_URL + key.getPath()
-                                + key.getName());
-                        HttpURLConnection uc = (HttpURLConnection) url
-                        .openConnection();
+                        String mac = null;
+                        if (key == MetaDataKey.vpcId) {
+                            mac = result.metadata.get(MetaDataKey.mac.name());  // mac should be read before vpcId due to declaration order
+                        }
+                        URL url = key.getURL(null, mac);
+                        HttpURLConnection uc = (HttpURLConnection) url.openConnection();
                         uc.setConnectTimeout(awsMetaDataConnectTimeout.get());
                         uc.setReadTimeout(awsMetaDataReadTimeout.get());
 
-                        BufferedReader br = new BufferedReader(
-                                new InputStreamReader(uc.getInputStream()));
-                        String value = br.readLine();
+                        String value = key.read(uc.getInputStream());
                         if (value != null) {
                             result.metadata.put(key.getName(), value);
                         }
                         break;
                     } catch (Throwable e) {
                         if (shouldLogAWSMetadataError.get()) {
-                            logger.warn(
-                                    "Cannot get the value for the metadata key :"
-                                    + key + " Reason :", e);
+                            logger.warn("Cannot get the value for the metadata key :" + key + " Reason :", e);
                         }
                         if (numOfRetries >= 0) {
                             try {

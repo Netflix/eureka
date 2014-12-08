@@ -62,6 +62,9 @@ public class XmlXStream extends XStream {
     private static XmlFriendlyNameCoder initializeNameCoder(){
         EurekaClientConfig clientConfig = DiscoveryManager
                 .getInstance().getEurekaClientConfig();
+        if (clientConfig == null) {
+            return new XmlFriendlyNameCoder();
+        }
         return new XmlFriendlyNameCoder(clientConfig.getDollarReplacement(), clientConfig.getEscapeCharReplacement());
     }
 }
