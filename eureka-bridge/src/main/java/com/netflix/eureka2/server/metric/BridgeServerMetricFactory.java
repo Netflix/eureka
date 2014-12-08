@@ -1,9 +1,10 @@
 package com.netflix.eureka2.server.metric;
 
-import com.netflix.eureka2.metric.MessageConnectionMetrics;
-
 import javax.inject.Inject;
 import javax.inject.Named;
+
+import com.netflix.eureka2.metric.MessageConnectionMetrics;
+import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 
 /**
  * @author David Liu
@@ -25,11 +26,12 @@ public class BridgeServerMetricFactory extends WriteServerMetricFactory {
             InterestChannelMetrics interestChannelMetrics,
             EurekaServerRegistryMetrics eurekaServerRegistryMetrics,
             EvictionQueueMetrics evictionQueueMetrics,
+            SerializedTaskInvokerMetrics registryTaskInvokerMetrics,
             BridgeChannelMetrics bridgeChannelMetrics) {
         super(registrationConnectionMetrics, replicationConnectionMetrics, discoveryConnectionMetrics,
                 registrationServerConnectionMetrics, discoveryServerConnectionMetrics, replicationServerConnectionMetrics,
                 registrationChannelMetrics, replicationChannelMetrics, interestChannelMetrics,
-                eurekaServerRegistryMetrics, evictionQueueMetrics);
+                eurekaServerRegistryMetrics, evictionQueueMetrics, registryTaskInvokerMetrics);
         this.bridgeChannelMetrics = bridgeChannelMetrics;
     }
 

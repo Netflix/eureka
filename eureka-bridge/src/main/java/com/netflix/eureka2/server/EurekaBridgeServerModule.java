@@ -3,28 +3,29 @@ package com.netflix.eureka2.server;
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.netflix.eureka2.client.metric.EurekaClientConnectionMetrics;
+import com.netflix.eureka2.metric.MessageConnectionMetrics;
+import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
+import com.netflix.eureka2.server.channel.ReplicationService;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
-import com.netflix.eureka2.server.metric.InterestChannelMetrics;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
-import com.netflix.eureka2.server.registry.EurekaBridgeRegistry;
+import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.metric.BridgeChannelMetrics;
 import com.netflix.eureka2.server.metric.BridgeServerMetricFactory;
-import com.netflix.eureka2.server.config.EurekaServerConfig;
+import com.netflix.eureka2.server.metric.InterestChannelMetrics;
+import com.netflix.eureka2.server.metric.RegistrationChannelMetrics;
+import com.netflix.eureka2.server.metric.ReplicationChannelMetrics;
+import com.netflix.eureka2.server.registry.EurekaBridgeRegistry;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.registry.eviction.EvictionQueueImpl;
 import com.netflix.eureka2.server.registry.eviction.EvictionStrategy;
 import com.netflix.eureka2.server.registry.eviction.EvictionStrategyProvider;
-import com.netflix.eureka2.server.channel.ReplicationService;
 import com.netflix.eureka2.server.service.BridgeSelfRegistrationService;
 import com.netflix.eureka2.server.service.BridgeService;
-import com.netflix.eureka2.server.metric.RegistrationChannelMetrics;
-import com.netflix.eureka2.server.metric.ReplicationChannelMetrics;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.server.spi.ExtensionContext;
 import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
-import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 import io.reactivex.netty.servo.ServoEventsListenerFactory;
 
@@ -53,6 +54,8 @@ public class EurekaBridgeServerModule extends AbstractModule {
             bind(BridgeServerConfig.class).toInstance(config);
         }
         bind(SelfRegistrationService.class).to(BridgeSelfRegistrationService.class).asEagerSingleton();
+
+        bind(SerializedTaskInvokerMetrics.class).toInstance(new SerializedTaskInvokerMetrics("registry"));
 
         bind(EurekaServerRegistry.class).to(EurekaBridgeRegistry.class);
         bind(EvictionQueue.class).to(EvictionQueueImpl.class).asEagerSingleton();

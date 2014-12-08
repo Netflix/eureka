@@ -21,10 +21,7 @@ public class BridgeChannelMetrics extends AbstractStateMachineMetrics<STATES> {
         updateCount = newLongGauge("updateCount");
         unregisterCount = newLongGauge("unregisterCount");
 
-        register(totalCount);
-        register(updateCount);
-        register(registerCount);
-        register(unregisterCount);
+        register(totalCount, updateCount, registerCount, unregisterCount);
     }
 
     public void setTotalCount(long n) {

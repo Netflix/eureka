@@ -72,7 +72,10 @@ public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceIn
         this.metrics = metricsFactory.getEurekaServerRegistryMetrics();
         this.metrics.setRegistrySizeMonitor(this);
 
-        invoker = new NotificationTaskInvoker(scheduler);
+        invoker = new NotificationTaskInvoker(
+                metricsFactory.getRegistryTaskInvokerMetrics(),
+                scheduler);
+
         internalStore = new ConcurrentHashMap<>();
         indexRegistry = new IndexRegistryImpl<>();
         notificationSubject = NotificationsSubject.create();

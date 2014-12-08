@@ -19,18 +19,19 @@ package com.netflix.eureka2.server;
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.metric.EurekaClientRegistryMetrics;
 import com.netflix.eureka2.client.metric.EurekaClientConnectionMetrics;
-import com.netflix.eureka2.server.metric.InterestChannelMetrics;
+import com.netflix.eureka2.client.metric.EurekaClientRegistryMetrics;
+import com.netflix.eureka2.metric.MessageConnectionMetrics;
+import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;
+import com.netflix.eureka2.server.metric.InterestChannelMetrics;
 import com.netflix.eureka2.server.registry.EurekaReadServerRegistry;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.server.service.ReadSelfRegistrationService;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
-import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 import io.reactivex.netty.servo.ServoEventsListenerFactory;
 
@@ -74,6 +75,7 @@ public class EurekaReadServerModule extends AbstractModule {
 
         bind(SelfRegistrationService.class).to(ReadSelfRegistrationService.class).asEagerSingleton();
 
+        bind(SerializedTaskInvokerMetrics.class).toInstance(new SerializedTaskInvokerMetrics("registry"));
         bind(EurekaServerRegistry.class).to(EurekaReadServerRegistry.class);
 
         // Metrics

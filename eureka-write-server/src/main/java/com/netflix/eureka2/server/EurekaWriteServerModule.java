@@ -18,6 +18,7 @@ package com.netflix.eureka2.server;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
+import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.server.audit.AuditServiceController;
 import com.netflix.eureka2.server.metric.InterestChannelMetrics;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
@@ -67,6 +68,8 @@ public class EurekaWriteServerModule extends AbstractModule {
             bind(EurekaServerConfig.class).toInstance(config);
         }
         bind(SelfRegistrationService.class).to(WriteSelfRegistrationService.class).asEagerSingleton();
+
+        bind(SerializedTaskInvokerMetrics.class).toInstance(new SerializedTaskInvokerMetrics("registry"));
 
         bind(EurekaServerRegistry.class).annotatedWith(Names.named("delegate")).to(EurekaServerRegistryImpl.class).asEagerSingleton();
         bind(EurekaServerRegistry.class).to(PreservableEurekaRegistry.class).asEagerSingleton();
