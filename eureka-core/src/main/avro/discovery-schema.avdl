@@ -25,28 +25,28 @@ protocol DiscoveryProtocol {
         string id;
         long version;
         string fieldName;
-        string value;
+        union { null, string } value;
     }
     @namespace("com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$")
     record EnumDeltaDTO {
         string id;
         long version;
         string fieldName;
-        com.netflix.eureka2.registry.InstanceInfo$.Status value;
+        union { null, com.netflix.eureka2.registry.InstanceInfo$.Status } value;
     }
     @namespace("com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$")
     record SetServicePortDeltaDTO {
         string id;
         long version;
         string fieldName;
-        @java-class("java.util.HashSet") array<com.netflix.eureka2.registry.ServicePort> value;
+        union { null, @java-class("java.util.HashSet") array<com.netflix.eureka2.registry.ServicePort> } value;
     }
     @namespace("com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$")
     record SetStringDeltaDTO {
         string id;
         long version;
         string fieldName;
-        @java-class("java.util.HashSet") array<string> value;
+        union { null, @java-class("java.util.HashSet") array<string> } value;
     }
 
     record UpdateInstanceInfo {
