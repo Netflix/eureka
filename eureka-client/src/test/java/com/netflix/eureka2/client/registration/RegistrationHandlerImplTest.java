@@ -19,7 +19,7 @@ package com.netflix.eureka2.client.registration;
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.registry.SampleInstanceInfo;
-import com.netflix.eureka2.service.RegistrationChannel;
+import com.netflix.eureka2.channel.RegistrationChannel;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;

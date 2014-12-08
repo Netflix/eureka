@@ -4,8 +4,8 @@ import com.netflix.eureka2.client.metric.EurekaClientMetricFactory;
 import com.netflix.eureka2.client.registry.EurekaClientRegistry;
 import com.netflix.eureka2.client.transport.TransportClient;
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.service.InterestChannel;
-import com.netflix.eureka2.service.RegistrationChannel;
+import com.netflix.eureka2.channel.InterestChannel;
+import com.netflix.eureka2.channel.RegistrationChannel;
 import rx.functions.Func0;
 import rx.schedulers.Schedulers;
 

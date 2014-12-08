@@ -2,7 +2,7 @@ package com.netflix.eureka2.client.channel;
 
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.service.InterestChannel;
+import com.netflix.eureka2.channel.InterestChannel;
 import rx.Observable;
 
 /**

@@ -22,6 +22,7 @@ import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.registry.ServicePort;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.config.InstanceInfoFromConfig;
+import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,14 +45,14 @@ public class WriteSelfRegistrationService implements SelfRegistrationService {
 
     private static final Logger logger = LoggerFactory.getLogger(WriteSelfRegistrationService.class);
 
-    private final EurekaServerConfig config;
+    private final WriteServerConfig config;
     private final EurekaServerRegistry<InstanceInfo> eurekaRegistry;
 
     private final AtomicBoolean connected = new AtomicBoolean();
     private final ReplaySubject<InstanceInfo> replaySubject = ReplaySubject.create();
 
     @Inject
-    public WriteSelfRegistrationService(EurekaServerConfig config, EurekaServerRegistry eurekaRegistry) {
+    public WriteSelfRegistrationService(WriteServerConfig config, EurekaServerRegistry eurekaRegistry) {
         this.config = config;
         this.eurekaRegistry = eurekaRegistry;
     }

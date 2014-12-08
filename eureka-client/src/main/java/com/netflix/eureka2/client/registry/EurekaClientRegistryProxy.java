@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.client.channel.ClientInterestChannel;
-import com.netflix.eureka2.client.channel.consumer.RetryableChannelConsumer;
+import com.netflix.eureka2.channel.RetryableServiceChannel;
 import com.netflix.eureka2.client.metric.EurekaClientMetricFactory;
 import com.netflix.eureka2.client.registry.EurekaClientRegistryProxy.RegistryTracker;
 import com.netflix.eureka2.client.registry.swap.RegistrySwapOperator;
@@ -20,7 +20,7 @@ import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.registry.Delta;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.service.InterestChannel;
+import com.netflix.eureka2.channel.InterestChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -52,7 +52,7 @@ import rx.schedulers.Schedulers;
  */
 @Singleton
 public class EurekaClientRegistryProxy
-        extends RetryableChannelConsumer<ClientInterestChannel, RegistryTracker>
+        extends RetryableServiceChannel<ClientInterestChannel, RegistryTracker>
         implements EurekaClientRegistry<InstanceInfo> {
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaClientRegistryProxy.class);

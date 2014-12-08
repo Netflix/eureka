@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.registry.SampleInstanceInfo;
-import com.netflix.eureka2.service.RegistrationChannel;
+import com.netflix.eureka2.channel.RegistrationChannel;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

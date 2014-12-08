@@ -10,7 +10,7 @@ import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.interests.SampleChangeNotification;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.registry.SampleInstanceInfo;
-import com.netflix.eureka2.service.InterestChannel;
+import com.netflix.eureka2.channel.InterestChannel;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;

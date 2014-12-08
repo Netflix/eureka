@@ -23,10 +23,8 @@ import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.registry.Delta;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.server.registry.Source;
-import com.netflix.eureka2.service.InterestChannel;
-import com.netflix.eureka2.service.ServiceChannel;
+import com.netflix.eureka2.channel.InterestChannel;
+import com.netflix.eureka2.channel.ServiceChannel;
 import rx.Observable;
 
 import java.util.Set;

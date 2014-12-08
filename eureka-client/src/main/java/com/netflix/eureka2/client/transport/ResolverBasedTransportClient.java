@@ -4,7 +4,7 @@ import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
-import com.netflix.eureka2.transport.base.MessageConnectionMetrics;
+import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ObservableConnection;
 import io.reactivex.netty.client.RxClient;

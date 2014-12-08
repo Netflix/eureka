@@ -24,7 +24,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.eureka2.client.metric.EurekaClientRegistryMetrics;
-import com.netflix.eureka2.datastore.NotificationsSubject;
+import com.netflix.eureka2.interests.NotificationsSubject;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.IndexRegistry;
 import com.netflix.eureka2.interests.IndexRegistryImpl;

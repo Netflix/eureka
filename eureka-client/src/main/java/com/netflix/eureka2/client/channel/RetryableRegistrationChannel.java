@@ -16,9 +16,9 @@
 
 package com.netflix.eureka2.client.channel;
 
-import com.netflix.eureka2.client.channel.consumer.RetryableChannelConsumer;
+import com.netflix.eureka2.channel.RetryableServiceChannel;
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.service.RegistrationChannel;
+import com.netflix.eureka2.channel.RegistrationChannel;
 import rx.Observable;
 import rx.Scheduler;
 import rx.functions.Func0;
@@ -38,7 +38,7 @@ import rx.functions.Func0;
  * @author Tomasz Bak
  */
 public class RetryableRegistrationChannel
-        extends RetryableChannelConsumer<RegistrationChannel, Void>
+        extends RetryableServiceChannel<RegistrationChannel, Void>
         implements RegistrationChannel {
 
     private final Func0<RegistrationChannel> channelFactory;

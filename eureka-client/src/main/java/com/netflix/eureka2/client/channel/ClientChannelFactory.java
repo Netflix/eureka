@@ -18,7 +18,7 @@ package com.netflix.eureka2.client.channel;
 
 import com.netflix.eureka2.client.registry.EurekaClientRegistry;
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.service.RegistrationChannel;
+import com.netflix.eureka2.channel.RegistrationChannel;
 
 /**
  * Channels factory for Eureka client.
@@ -30,16 +30,16 @@ public interface ClientChannelFactory {
     enum Mode {Read, Write, ReadWrite}
 
     /**
-     * Returns a new {@link com.netflix.eureka2.service.InterestChannel}.
+     * Returns a new {@link com.netflix.eureka2.channel.InterestChannel}.
      *
-     * @return A new {@link com.netflix.eureka2.service.InterestChannel}.
+     * @return A new {@link com.netflix.eureka2.channel.InterestChannel}.
      */
     ClientInterestChannel newInterestChannel(EurekaClientRegistry<InstanceInfo> clientRegistry);
 
     /**
-     * Returns a new {@link com.netflix.eureka2.service.RegistrationChannel}.
+     * Returns a new {@link com.netflix.eureka2.channel.RegistrationChannel}.
      *
-     * @return A new {@link com.netflix.eureka2.service.RegistrationChannel}.
+     * @return A new {@link com.netflix.eureka2.channel.RegistrationChannel}.
      */
     RegistrationChannel newRegistrationChannel();
 

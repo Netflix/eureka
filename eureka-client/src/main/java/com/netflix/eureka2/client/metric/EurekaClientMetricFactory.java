@@ -16,9 +16,7 @@
 
 package com.netflix.eureka2.client.metric;
 
-import com.netflix.eureka2.client.channel.InterestChannelMetrics;
-import com.netflix.eureka2.client.channel.RegistrationChannelMetrics;
-import com.netflix.eureka2.transport.base.MessageConnectionMetrics;
+import com.netflix.eureka2.metric.MessageConnectionMetrics;
 
 import javax.inject.Inject;
 import javax.inject.Named;

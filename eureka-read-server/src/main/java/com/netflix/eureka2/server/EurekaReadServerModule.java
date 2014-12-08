@@ -19,21 +19,19 @@ package com.netflix.eureka2.server;
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.netflix.eureka2.client.EurekaClient;
+import com.netflix.eureka2.client.metric.EurekaClientConnectionMetrics;
 import com.netflix.eureka2.client.metric.EurekaClientRegistryMetrics;
-import com.netflix.eureka2.client.transport.EurekaClientConnectionMetrics;
+import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;
+import com.netflix.eureka2.server.metric.InterestChannelMetrics;
 import com.netflix.eureka2.server.registry.EurekaReadServerRegistry;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.server.service.InterestChannelMetrics;
 import com.netflix.eureka2.server.service.ReadSelfRegistrationService;
-import com.netflix.eureka2.server.service.RegistrationChannelMetrics;
-import com.netflix.eureka2.server.service.ReplicationChannelMetrics;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
-import com.netflix.eureka2.transport.base.MessageConnectionMetrics;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 import io.reactivex.netty.servo.ServoEventsListenerFactory;
 
@@ -89,8 +87,6 @@ public class EurekaReadServerModule extends AbstractModule {
         bind(EurekaClientConnectionMetrics.class).annotatedWith(Names.named("discovery")).toInstance(new EurekaClientConnectionMetrics("discovery"));
         bind(EurekaClientConnectionMetrics.class).annotatedWith(Names.named("replication")).toInstance(new EurekaClientConnectionMetrics("replication"));
 
-        bind(RegistrationChannelMetrics.class).toInstance(new RegistrationChannelMetrics());
-        bind(ReplicationChannelMetrics.class).toInstance(new ReplicationChannelMetrics());
         bind(InterestChannelMetrics.class).toInstance(new InterestChannelMetrics());
 
         bind(EurekaClientRegistryMetrics.class).toInstance(new EurekaClientRegistryMetrics("readServer"));

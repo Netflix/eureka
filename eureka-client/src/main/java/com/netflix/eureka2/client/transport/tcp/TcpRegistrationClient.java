@@ -21,7 +21,7 @@ import com.netflix.eureka2.client.transport.ResolverBasedTransportClient;
 import com.netflix.eureka2.client.transport.TransportClient;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
-import com.netflix.eureka2.transport.base.MessageConnectionMetrics;
+import com.netflix.eureka2.metric.MessageConnectionMetrics;
 
 /**
  * A {@link TransportClient} implementation for TCP based connections.

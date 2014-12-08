@@ -2,7 +2,7 @@ package com.netflix.eureka2.server;
 
 import java.util.List;
 
-import com.netflix.eureka2.config.BridgeServerConfig;
+import com.netflix.eureka2.server.config.BridgeServerConfig;
 import com.netflix.eureka2.server.spi.ExtensionLoader;
 import com.netflix.governator.guice.BootstrapBinder;
 import com.netflix.governator.guice.BootstrapModule;

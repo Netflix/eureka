@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.transport.base;
 
+import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.transport.Acknowledgement;
 import com.netflix.eureka2.transport.MessageConnection;
 import io.reactivex.netty.channel.ObservableConnection;

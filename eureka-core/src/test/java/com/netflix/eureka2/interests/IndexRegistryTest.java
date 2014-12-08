@@ -1,6 +1,5 @@
 package com.netflix.eureka2.interests;
 
-import com.netflix.eureka2.datastore.NotificationsSubject;
 import com.netflix.eureka2.registry.InstanceInfo;
 import org.junit.Assert;
 import org.junit.Rule;

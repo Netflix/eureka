@@ -26,6 +26,7 @@ import com.netflix.eureka2.registry.Delta;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.registry.SampleDelta;
 import com.netflix.eureka2.registry.SampleInstanceInfo;
+import com.netflix.eureka2.server.channel.InterestNotificationMultiplexer;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import org.junit.After;
 import org.junit.Before;
