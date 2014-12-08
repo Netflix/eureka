@@ -6,7 +6,7 @@ import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.protocol.registration.Unregister;
 import com.netflix.eureka2.protocol.registration.Update;
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.service.RegistrationChannel;
+import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.transport.MessageConnection;
 import rx.Observable;
 import rx.functions.Func1;

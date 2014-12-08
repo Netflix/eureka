@@ -14,7 +14,7 @@ import com.netflix.eureka2.protocol.discovery.InterestSetNotification;
 import com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka2.registry.Delta;
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.service.InterestChannel;
+import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

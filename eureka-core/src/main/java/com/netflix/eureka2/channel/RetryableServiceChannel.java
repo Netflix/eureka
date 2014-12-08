@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.client.channel.consumer;
+package com.netflix.eureka2.channel;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.netflix.eureka2.service.ServiceChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -40,9 +39,9 @@ import rx.functions.Action0;
  *
  * @author Tomasz Bak
  */
-public abstract class RetryableChannelConsumer<C extends ServiceChannel, S> {
+public abstract class RetryableServiceChannel<C extends ServiceChannel, S> {
 
-    private static final Logger logger = LoggerFactory.getLogger(RetryableChannelConsumer.class);
+    private static final Logger logger = LoggerFactory.getLogger(RetryableServiceChannel.class);
 
     public static final int MAX_EXP_BACK_OFF_MULTIPLIER = 10;
 
@@ -76,7 +75,7 @@ public abstract class RetryableChannelConsumer<C extends ServiceChannel, S> {
     private long lastConnectTime;
     private long retryDelay;
 
-    protected RetryableChannelConsumer(long retryInitialDelayMs, Scheduler scheduler) {
+    protected RetryableServiceChannel(long retryInitialDelayMs, Scheduler scheduler) {
         this.retryInitialDelayMs = retryInitialDelayMs;
         this.maxRetryDelayMs = retryInitialDelayMs * MAX_EXP_BACK_OFF_MULTIPLIER;
         this.worker = scheduler.createWorker();

@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.client.channel.consumer;
+package com.netflix.eureka2.channel;
 
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.service.ServiceChannel;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,7 +27,7 @@ import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 import rx.subjects.ReplaySubject;
 
-import static com.netflix.eureka2.client.channel.consumer.RetryableChannelConsumer.*;
+import static com.netflix.eureka2.channel.RetryableServiceChannel.*;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -36,7 +35,7 @@ import static org.mockito.Mockito.*;
 /**
  * @author Tomasz Bak
  */
-public class RetryableChannelConsumerTest {
+public class RetryableServiceChannelTest {
 
     private static final long INITIAL_DELAY = 1000;
     private static final long MAX_DELAY = MAX_EXP_BACK_OFF_MULTIPLIER * INITIAL_DELAY;
@@ -194,7 +193,7 @@ public class RetryableChannelConsumerTest {
         assertThat(consumer.retryCounter, is(equalTo(expectedNumberOfRetries)));
     }
 
-    class SampleRetryableChannelConsumer extends RetryableChannelConsumer<ServiceChannel, Integer> {
+    class SampleRetryableChannelConsumer extends RetryableServiceChannel<ServiceChannel, Integer> {
 
         private int stateValue;
         private Observable<Void> repopulateReply;

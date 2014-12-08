@@ -1,8 +1,8 @@
 package com.netflix.eureka2.client.channel;
 
 import com.netflix.eureka2.client.transport.TransportClient;
-import com.netflix.eureka2.service.AbstractServiceChannel;
-import com.netflix.eureka2.service.ServiceChannel;
+import com.netflix.eureka2.channel.AbstractServiceChannel;
+import com.netflix.eureka2.channel.ServiceChannel;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

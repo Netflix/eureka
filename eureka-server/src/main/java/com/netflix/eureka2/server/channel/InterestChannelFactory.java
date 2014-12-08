@@ -16,7 +16,7 @@
 
 package com.netflix.eureka2.server.channel;
 
-import com.netflix.eureka2.service.InterestChannel;
+import com.netflix.eureka2.channel.InterestChannel;
 
 /**
  * Server side interest channel factory.
@@ -28,9 +28,9 @@ import com.netflix.eureka2.service.InterestChannel;
  */
 public interface InterestChannelFactory {
     /**
-     * Returns a new {@link com.netflix.eureka2.service.InterestChannel}.
+     * Returns a new {@link com.netflix.eureka2.channel.InterestChannel}.
      *
-     * @return A new {@link com.netflix.eureka2.service.InterestChannel}.
+     * @return A new {@link com.netflix.eureka2.channel.InterestChannel}.
      */
     InterestChannel newInterestChannel();
 }

@@ -1,4 +1,4 @@
-package com.netflix.eureka2.service;
+package com.netflix.eureka2.channel;
 
 import com.netflix.eureka2.registry.InstanceInfo;
 import rx.Observable;

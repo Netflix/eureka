@@ -2,11 +2,11 @@ package com.netflix.eureka2.server.channel;
 
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.server.registry.Source;
-import com.netflix.eureka2.service.ServiceChannel;
+import com.netflix.eureka2.channel.ServiceChannel;
 import rx.Observable;
 
 /**
- * A {@link com.netflix.eureka2.service.ServiceChannel} implementation representing a replication stream
+ * A {@link com.netflix.eureka2.channel.ServiceChannel} implementation representing a replication stream
  * between two Eureka write servers.
  *
  * The client side of the channel is a source of data, that comes from its own registry, and is limited

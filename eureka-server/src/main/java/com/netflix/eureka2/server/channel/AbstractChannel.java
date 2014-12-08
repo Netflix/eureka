@@ -3,7 +3,7 @@ package com.netflix.eureka2.server.channel;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.service.AbstractServiceChannel;
+import com.netflix.eureka2.channel.AbstractServiceChannel;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +12,7 @@ import rx.Subscriber;
 import rx.functions.Action1;
 
 /**
- * An abstract {@link com.netflix.eureka2.service.ServiceChannel} implementation for common methods.
+ * An abstract {@link com.netflix.eureka2.channel.ServiceChannel} implementation for common methods.
  *
  * @author Nitesh Kant
  */

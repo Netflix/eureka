@@ -18,8 +18,8 @@ package com.netflix.eureka2.server.service;
 
 import com.netflix.eureka2.server.channel.ReplicationChannel;
 import com.netflix.eureka2.server.channel.ServerChannelFactory;
-import com.netflix.eureka2.service.InterestChannel;
-import com.netflix.eureka2.service.RegistrationChannel;
+import com.netflix.eureka2.channel.InterestChannel;
+import com.netflix.eureka2.channel.RegistrationChannel;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;

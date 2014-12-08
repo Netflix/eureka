@@ -1,7 +1,7 @@
 package com.netflix.eureka2.client.channel;
 
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.service.RegistrationChannel;
+import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.utils.SerializedTaskInvoker;
 import rx.Observable;
 

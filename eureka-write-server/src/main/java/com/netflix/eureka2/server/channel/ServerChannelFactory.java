@@ -1,6 +1,6 @@
 package com.netflix.eureka2.server.channel;
 
-import com.netflix.eureka2.service.RegistrationChannel;
+import com.netflix.eureka2.channel.RegistrationChannel;
 
 /**
  * Server channels factory.
@@ -13,9 +13,9 @@ import com.netflix.eureka2.service.RegistrationChannel;
 public interface ServerChannelFactory extends InterestChannelFactory {
 
     /**
-     * Returns a new {@link com.netflix.eureka2.service.RegistrationChannel}.
+     * Returns a new {@link com.netflix.eureka2.channel.RegistrationChannel}.
      *
-     * @return A new {@link com.netflix.eureka2.service.RegistrationChannel}.
+     * @return A new {@link com.netflix.eureka2.channel.RegistrationChannel}.
      */
     RegistrationChannel newRegistrationChannel();
 

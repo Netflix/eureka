@@ -16,7 +16,7 @@ import com.netflix.eureka2.server.channel.InterestChannelImpl.STATES;
 import com.netflix.eureka2.server.metric.InterestChannelMetrics;
 import com.netflix.eureka2.server.metric.InterestChannelMetrics.ChannelSubscriptionMonitor;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.service.InterestChannel;
+import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.transport.MessageConnection;
 import rx.Observable;
 import rx.Subscriber;
