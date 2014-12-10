@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.client.registry.EurekaClientRegistry;
 import com.netflix.eureka2.client.registry.EurekaClientRegistryImpl;
-import com.netflix.eureka2.client.transport.TransportClient;
+import com.netflix.eureka2.transport.TransportClient;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.interests.MultipleInterests;

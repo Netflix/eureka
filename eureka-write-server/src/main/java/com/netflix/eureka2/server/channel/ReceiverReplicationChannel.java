@@ -1,7 +1,13 @@
 package com.netflix.eureka2.server.channel;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
 import com.netflix.eureka2.protocol.EurekaProtocolError;
 import com.netflix.eureka2.protocol.replication.RegisterCopy;
+import com.netflix.eureka2.protocol.replication.ReplicationHello;
+import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.protocol.replication.UnregisterCopy;
 import com.netflix.eureka2.protocol.replication.UpdateCopy;
 import com.netflix.eureka2.registry.Delta;
@@ -9,20 +15,17 @@ import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.server.channel.ReceiverReplicationChannel.STATES;
 import com.netflix.eureka2.server.metric.ReplicationChannelMetrics;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry.Status;
-import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.registry.Source;
+import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
+import com.netflix.eureka2.server.service.WriteSelfRegistrationService;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
+import rx.functions.Action0;
 import rx.functions.Action1;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import rx.functions.Func1;
 
 /**
  *
@@ -31,39 +34,39 @@ import java.util.UUID;
 public class ReceiverReplicationChannel extends AbstractChannel<STATES> implements ReplicationChannel {
 
     private static final Logger logger = LoggerFactory.getLogger(ReceiverReplicationChannel.class);
-    private final Source replicationSource;
+
+    static final Exception IDLE_STATE_EXCEPTION = new Exception("Replication channel in idle state");
+    static final Exception HANDSHAKE_FINISHED_EXCEPTION = new Exception("Handshake already done");
+    static final Exception REPLICATION_LOOP_EXCEPTION = new Exception("Self replicating to itself");
+
+    private final WriteSelfRegistrationService selfRegistrationService;
     private final ReplicationChannelMetrics metrics;
+    private Source replicationSource;
     private long currentVersion;
 
-    public enum STATES {Opened, Closed}
+    // A loop is detected by comparing hello message source id with local instance id.
+    private boolean replicationLoop;
+
+    public enum STATES {Idle, Opened, Closed}
 
     private final Map<String, InstanceInfo> instanceInfoById = new HashMap<>();
 
     public ReceiverReplicationChannel(MessageConnection transport,
+                                      WriteSelfRegistrationService selfRegistrationService,
                                       EurekaServerRegistry<InstanceInfo> registry,
                                       final EvictionQueue evictionQueue,
                                       ReplicationChannelMetrics metrics) {
-        super(STATES.Opened, transport, registry);
-        this.replicationSource = Source.replicationSource(UUID.randomUUID().toString());  // FIXME use the sent over replication source id
+        super(STATES.Idle, transport, registry);
+        this.selfRegistrationService = selfRegistrationService;
         this.metrics = metrics;
-        this.metrics.incrementStateCounter(STATES.Opened);
+        this.metrics.incrementStateCounter(STATES.Idle);
 
         currentVersion = System.currentTimeMillis();
 
         subscribeToTransportInput(new Action1<Object>() {
             @Override
             public void call(Object message) {
-                if (message instanceof RegisterCopy) {
-                    InstanceInfo instanceInfo = ((RegisterCopy) message).getInstanceInfo();
-                    register(instanceInfo);// No need to subscribe, the register() call does the subscription.
-                } else if (message instanceof UnregisterCopy) {
-                    unregister(((UnregisterCopy) message).getInstanceId());// No need to subscribe, the unregister() call does the subscription.
-                } else if (message instanceof UpdateCopy) {
-                    InstanceInfo instanceInfo = ((UpdateCopy) message).getInstanceInfo();
-                    update(instanceInfo);// No need to subscribe, the update() call does the subscription.
-                } else {
-                    sendErrorOnTransport(new EurekaProtocolError("Unexpected message " + message));
-                }
+                dispatchMessageFromClient(message);
             }
         });
 
@@ -84,38 +87,38 @@ public class ReceiverReplicationChannel extends AbstractChannel<STATES> implemen
             }
 
             private void evict() {
-                logger.info("Replication channel disconnected; putting all registrations from the channel in the eviction queue");
-                for (InstanceInfo instanceInfo : instanceInfoById.values()) {
-                    logger.info("Replication channel disconnected; adding instance {} to the eviction queue", instanceInfo.getId());
-                    evictionQueue.add(instanceInfo, replicationSource);
+                if (!replicationLoop) {
+                    logger.info("Replication channel disconnected; putting all registrations from the channel in the eviction queue");
+                    for (InstanceInfo instanceInfo : instanceInfoById.values()) {
+                        logger.info("Replication channel disconnected; adding instance {} to the eviction queue", instanceInfo.getId());
+                        evictionQueue.add(instanceInfo, replicationSource);
+                    }
                 }
             }
         });
     }
 
-    @Override
-    public Observable<Void> register(final InstanceInfo instanceInfo) {
-        logger.debug("Replicated registry entry: {}", instanceInfo);
-
-        if (STATES.Closed == state.get()) {
-            /**
-             * Since channel is already closed and hence the transport, we don't need to send an error on transport.
-             */
-            return Observable.error(CHANNEL_CLOSED_EXCEPTION);
+    protected void dispatchMessageFromClient(final Object message) {
+        Observable<?> reply;
+        if (message instanceof ReplicationHello) {
+            reply = hello((ReplicationHello) message);
+        } else if (message instanceof RegisterCopy) {
+            InstanceInfo instanceInfo = ((RegisterCopy) message).getInstanceInfo();
+            reply = register(instanceInfo);// No need to subscribe, the register() call does the subscription.
+        } else if (message instanceof UnregisterCopy) {
+            reply = unregister(((UnregisterCopy) message).getInstanceId());// No need to subscribe, the unregister() call does the subscription.
+        } else if (message instanceof UpdateCopy) {
+            InstanceInfo instanceInfo = ((UpdateCopy) message).getInstanceInfo();
+            reply = update(instanceInfo);// No need to subscribe, the update() call does the subscription.
+        } else {
+            reply = Observable.error(new EurekaProtocolError("Unexpected message " + message));
         }
-        if (instanceInfoById.containsKey(instanceInfo.getId())) {
-            logger.info("Overwriting existing registration entry for instance {}", instanceInfo.getId());
-        }
-
-        InstanceInfo tempNewInfo = new InstanceInfo.Builder()
-                .withInstanceInfo(instanceInfo).withVersion(currentVersion++).build();
-
-        Observable<Status> registerResult = registry.register(tempNewInfo, replicationSource);
-        registerResult.subscribe(new Subscriber<Status>() {
+        reply.ignoreElements().cast(Void.class).subscribe(new Subscriber<Void>() {
             @Override
             public void onCompleted() {
-                instanceInfoById.put(instanceInfo.getId(), instanceInfo);
-                sendAckOnTransport();
+                if (!(message instanceof ReplicationHello)) {
+                    sendAckOnTransport();
+                }
             }
 
             @Override
@@ -124,22 +127,71 @@ public class ReceiverReplicationChannel extends AbstractChannel<STATES> implemen
             }
 
             @Override
-            public void onNext(Status status) {
-                // No op
+            public void onNext(Void aVoid) {
+                // No-op
             }
-        }); // Callers aren't required to subscribe, so it is eagerly subscribed.
-        return registerResult.ignoreElements().cast(Void.class);
+        });
+    }
+
+    @Override
+    public Observable<ReplicationHelloReply> hello(final ReplicationHello hello) {
+        logger.debug("Replication hello message: {}", hello);
+
+        if (!state.compareAndSet(STATES.Idle, STATES.Opened)) {
+            return Observable.error(state.get() == STATES.Closed ? CHANNEL_CLOSED_EXCEPTION : HANDSHAKE_FINISHED_EXCEPTION);
+        }
+        metrics.stateTransition(STATES.Idle, STATES.Opened);
+
+        replicationSource = Source.replicationSource(hello.getSourceId());
+
+        return selfRegistrationService.resolve().flatMap(new Func1<InstanceInfo, Observable<ReplicationHelloReply>>() {
+            @Override
+            public Observable<ReplicationHelloReply> call(InstanceInfo instanceInfo) {
+                replicationLoop = instanceInfo.getId().equals(hello.getSourceId());
+                ReplicationHelloReply reply = new ReplicationHelloReply(instanceInfo.getId(), false);
+                sendOnTransport(reply);
+                return Observable.just(reply);
+            }
+        });
+    }
+
+    @Override
+    public Observable<Void> register(final InstanceInfo instanceInfo) {
+        logger.debug("Replicated registry entry: {}", instanceInfo);
+
+        if (STATES.Opened != state.get()) {
+            return Observable.error(state.get() == STATES.Closed ? CHANNEL_CLOSED_EXCEPTION : IDLE_STATE_EXCEPTION);
+        }
+        if (replicationLoop) {
+            return Observable.error(REPLICATION_LOOP_EXCEPTION);
+        }
+        if (instanceInfoById.containsKey(instanceInfo.getId())) {
+            logger.info("Overwriting existing registration entry for instance {}", instanceInfo.getId());
+        }
+
+        InstanceInfo tempNewInfo = new InstanceInfo.Builder()
+                .withInstanceInfo(instanceInfo).withVersion(currentVersion++).build();
+
+        return registry.register(tempNewInfo, replicationSource)
+                .ignoreElements()
+                .cast(Void.class)
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        instanceInfoById.put(instanceInfo.getId(), instanceInfo);
+                    }
+                });
     }
 
     @Override
     public Observable<Void> update(final InstanceInfo newInfo) {
         logger.debug("Updating existing registry entry. New info= {}", newInfo);
 
-        if (STATES.Closed == state.get()) {
-            /**
-             * Since channel is already closed and hence the transport, we don't need to send an error on transport.
-             */
-            return Observable.error(CHANNEL_CLOSED_EXCEPTION);
+        if (STATES.Opened != state.get()) {
+            return Observable.error(state.get() == STATES.Closed ? CHANNEL_CLOSED_EXCEPTION : IDLE_STATE_EXCEPTION);
+        }
+        if (replicationLoop) {
+            return Observable.error(REPLICATION_LOOP_EXCEPTION);
         }
         InstanceInfo currentInfo = instanceInfoById.get(newInfo.getId());
         if (currentInfo == null) {
@@ -152,67 +204,43 @@ public class ReceiverReplicationChannel extends AbstractChannel<STATES> implemen
         Set<Delta<?>> deltas = tempNewInfo.diffOlder(currentInfo);
         logger.debug("Set of InstanceInfo modified fields: {}", deltas);
 
-        // TODO: shall we chain ack observable with update?
-        // TODO: we must handle conflicts somehow like maintaining multiple versions of instanceInfo (per source)
-        Observable<Status> updateResult = registry.update(tempNewInfo, deltas, replicationSource);
-        updateResult.subscribe(new Subscriber<Status>() {
-            @Override
-            public void onCompleted() {
-                instanceInfoById.put(newInfo.getId(), newInfo);
-                sendAckOnTransport();
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                sendErrorOnTransport(e);
-            }
-
-            @Override
-            public void onNext(Status status) {
-                // No op
-            }
-        });
-        return updateResult.ignoreElements().cast(Void.class);
+        return registry.update(tempNewInfo, deltas, replicationSource)
+                .ignoreElements()
+                .cast(Void.class)
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        instanceInfoById.put(newInfo.getId(), newInfo);
+                    }
+                });
     }
 
     @Override
     public Observable<Void> unregister(final String instanceId) {
         logger.debug("Removing registration entry for instanceId {}", instanceId);
 
-        if (STATES.Closed == state.get()) {
-            /**
-             * Since channel is already closed and hence the transport, we don't need to send an error on transport.
-             */
-            return Observable.error(CHANNEL_CLOSED_EXCEPTION);
+        if (STATES.Opened != state.get()) {
+            return Observable.error(state.get() == STATES.Closed ? CHANNEL_CLOSED_EXCEPTION : IDLE_STATE_EXCEPTION);
+        }
+        if (replicationLoop) {
+            return Observable.error(REPLICATION_LOOP_EXCEPTION);
         }
 
         InstanceInfo toUnregister = instanceInfoById.get(instanceId);
         if (toUnregister == null) {
             logger.info("Replicated unregister request for unknown instance {}", instanceId);
-            sendAckOnTransport();
             return Observable.empty();
         }
 
-        // TODO: we must handle conflicts somehow like maintaining multiple versions of instanceInfo (per source)
-        Observable<Status> updateResult = registry.unregister(toUnregister, replicationSource);
-        updateResult.subscribe(new Subscriber<Status>() {
-            @Override
-            public void onCompleted() {
-                instanceInfoById.remove(instanceId);
-                sendAckOnTransport();
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                sendErrorOnTransport(e);
-            }
-
-            @Override
-            public void onNext(Status status) {
-                // No op
-            }
-        });
-        return updateResult.ignoreElements().cast(Void.class);
+        return registry.unregister(toUnregister, replicationSource)
+                .ignoreElements()
+                .cast(Void.class)
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        instanceInfoById.remove(instanceId);
+                    }
+                });
     }
 
     @Override

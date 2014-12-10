@@ -1,5 +1,7 @@
 package com.netflix.eureka2.server.channel;
 
+import com.netflix.eureka2.protocol.replication.ReplicationHello;
+import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.server.registry.Source;
 import com.netflix.eureka2.channel.ServiceChannel;
@@ -23,6 +25,15 @@ import rx.Observable;
  * @author Nitesh Kant
  */
 public interface ReplicationChannel extends ServiceChannel {
+
+    /**
+     * Handshake message exchange. A client sends first {@link ReplicationHello} message, which
+     * is followed by the {@link ReplicationHelloReply} from the server.
+     *
+     * @param hello initial message from the client
+     * @return reply message from the server
+     */
+    Observable<ReplicationHelloReply> hello(ReplicationHello hello);
 
     /**
      * Registers the passed instance with eureka.

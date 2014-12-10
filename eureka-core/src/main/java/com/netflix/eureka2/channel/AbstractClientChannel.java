@@ -1,8 +1,6 @@
-package com.netflix.eureka2.client.channel;
+package com.netflix.eureka2.channel;
 
-import com.netflix.eureka2.client.transport.TransportClient;
-import com.netflix.eureka2.channel.AbstractServiceChannel;
-import com.netflix.eureka2.channel.ServiceChannel;
+import com.netflix.eureka2.transport.TransportClient;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,9 +17,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author Nitesh Kant
  */
-public abstract class AbstractChannel<STATE extends Enum> extends AbstractServiceChannel<STATE> {
+public abstract class AbstractClientChannel<STATE extends Enum> extends AbstractServiceChannel<STATE> {
 
-    private static final Logger logger = LoggerFactory.getLogger(AbstractChannel.class);
+    private static final Logger logger = LoggerFactory.getLogger(AbstractClientChannel.class);
 
     protected final TransportClient client;
 
@@ -40,7 +38,7 @@ public abstract class AbstractChannel<STATE extends Enum> extends AbstractServic
     private volatile MessageConnection connectionIfConnected; // External callers should use "singleConnectionSubject"
     private final AtomicBoolean connectionRequestedOnce = new AtomicBoolean();
 
-    protected AbstractChannel(final STATE initState, final TransportClient client) {
+    protected AbstractClientChannel(final STATE initState, final TransportClient client) {
         super(initState);
         this.client = client;
         singleConnectionSubject = ReplaySubject.create();

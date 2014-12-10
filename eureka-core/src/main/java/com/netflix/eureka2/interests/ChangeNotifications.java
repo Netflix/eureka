@@ -14,25 +14,27 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.client.transport;
+package com.netflix.eureka2.interests;
 
-import com.netflix.eureka2.transport.MessageConnection;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import rx.Observable;
 
 /**
  * @author Tomasz Bak
  */
-public interface TransportClient {
+public class ChangeNotifications {
 
-    /**
-     * Returns a {@link MessageConnection} to communicate to a eureka server.
-     *
-     * @return A {@link MessageConnection}.
-     */
-    Observable<MessageConnection> connect();
-
-    /**
-     * Shutdown this client.
-     */
-    void shutdown();
+    public <T> Observable<ChangeNotification<T>> from(T... values) {
+        if (values == null || values.length == 0) {
+            return Observable.empty();
+        }
+        List<ChangeNotification<T>> notifications = new ArrayList<>(values.length);
+        for (T value : values) {
+            notifications.add(new ChangeNotification<T>(Kind.Add, value));
+        }
+        return Observable.from(notifications);
+    }
 }

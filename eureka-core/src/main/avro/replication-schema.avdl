@@ -11,6 +11,16 @@ protocol ReplicationProtocol {
     record Heartbeat {
     }
 
+    record ReplicationHello {
+        string sourceId;
+        int registrySize;
+    }
+
+    record ReplicationHelloReply {
+        string sourceId;
+        boolean sendSnapshot;
+    }
+
     record RegisterCopy {
         com.netflix.eureka2.registry.InstanceInfo instanceInfo;
     }
@@ -25,6 +35,8 @@ protocol ReplicationProtocol {
 
     record ReplicationMessages {
         union {
+            ReplicationHello,
+            ReplicationHelloReply,
             RegisterCopy,
             UnregisterCopy,
             UpdateCopy,

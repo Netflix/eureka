@@ -5,6 +5,7 @@ import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.channel.RegistrationChannel;
+import com.netflix.eureka2.server.service.WriteSelfRegistrationService;
 import com.netflix.eureka2.transport.MessageConnection;
 
 /**
@@ -18,14 +19,17 @@ import com.netflix.eureka2.transport.MessageConnection;
  */
 public class ServerChannelFactoryImpl extends InterestChannelFactoryImpl implements ServerChannelFactory {
 
+    private final WriteSelfRegistrationService selfRegistrationService;
     private final EvictionQueue evictionQueue;
     private final WriteServerMetricFactory metricFactory;
 
     public ServerChannelFactoryImpl(EurekaServerRegistry<InstanceInfo> registry,
+                                    WriteSelfRegistrationService selfRegistrationService,
                                     EvictionQueue evictionQueue,
                                     MessageConnection connection,
                                     WriteServerMetricFactory metricFactory) {
         super(registry, connection, metricFactory);
+        this.selfRegistrationService = selfRegistrationService;
         this.evictionQueue = evictionQueue;
         this.metricFactory = metricFactory;
     }
@@ -37,7 +41,7 @@ public class ServerChannelFactoryImpl extends InterestChannelFactoryImpl impleme
 
     @Override
     public ReplicationChannel newReplicationChannel() {
-        return new ReceiverReplicationChannel(connection, registry, evictionQueue, metricFactory.getReplicationChannelMetrics());
+        return new ReceiverReplicationChannel(connection, selfRegistrationService, registry, evictionQueue, metricFactory.getReplicationChannelMetrics());
     }
 
     @Override

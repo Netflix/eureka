@@ -14,21 +14,16 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.client.registry;
+package com.netflix.eureka2.interests;
 
-import com.netflix.eureka2.registry.EurekaRegistry;
 import rx.Observable;
 
 /**
  * @author Tomasz Bak
  */
-public interface EurekaClientRegistry<T> extends EurekaRegistry<T, Void> {
+public interface ChangeNotificationSource<T> {
 
-    /**
-     * Shuts down the registry. All the interest client subscriptions are terminated
-     * with an error, where the error value is the provided parameter.
-     *
-     * @param cause error to propagate to subscription clients
-     */
-    Observable<Void> shutdown(Throwable cause);
+    Observable<T> forSnapshot(Interest<T> interest);
+
+    Observable<ChangeNotification<T>> forInterest(Interest<T> interest);
 }

@@ -16,7 +16,7 @@
 
 package com.netflix.eureka2.client.channel;
 
-import com.netflix.eureka2.channel.RetryableServiceChannel;
+import com.netflix.eureka2.channel.RetryableStatefullServiceChannel;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.channel.RegistrationChannel;
 import rx.Observable;
@@ -38,7 +38,7 @@ import rx.functions.Func0;
  * @author Tomasz Bak
  */
 public class RetryableRegistrationChannel
-        extends RetryableServiceChannel<RegistrationChannel, Void>
+        extends RetryableStatefullServiceChannel<RegistrationChannel, Void>
         implements RegistrationChannel {
 
     private final Func0<RegistrationChannel> channelFactory;
@@ -47,7 +47,7 @@ public class RetryableRegistrationChannel
     public RetryableRegistrationChannel(Func0<RegistrationChannel> channelFactory, long retryInitialDelayMs, Scheduler scheduler) {
         super(retryInitialDelayMs, scheduler);
         this.channelFactory = channelFactory;
-        initializeRetryableConsumer();
+        initializeRetryableChannel();
     }
 
     @Override
@@ -66,11 +66,6 @@ public class RetryableRegistrationChannel
     public Observable<Void> unregister() {
         instanceInfo = null;
         return getStateWithChannel().getChannel().unregister();
-    }
-
-    @Override
-    public void close() {
-        shutdownRetryableConsumer();
     }
 
     @Override

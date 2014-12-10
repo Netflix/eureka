@@ -16,9 +16,12 @@
 
 package com.netflix.eureka2.server;
 
+import java.net.InetSocketAddress;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.governator.guice.LifecycleInjector;
@@ -28,6 +31,7 @@ import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.server.spi.ExtensionLoader;
+import rx.Observable;
 
 /**
  * @author Tomasz Bak
@@ -61,13 +65,13 @@ public abstract class ServerInstance {
 
     public static class EurekaWriteServerInstance extends ServerInstance {
 
-        public EurekaWriteServerInstance(final EurekaServerConfig config, final ServerResolver replicationResolver) {
+        public EurekaWriteServerInstance(final EurekaServerConfig config, final Observable<ChangeNotification<InetSocketAddress>> replicationPeers) {
             Module[] modules = {
                     new EurekaWriteServerModule(config),
                     new AbstractModule() {
                         @Override
                         protected void configure() {
-                            bind(WriteClusterResolverProvider.class).toInstance(new WriteClusterResolverProvider(replicationResolver));
+                            bind(ReplicationPeerAddressesProvider.class).toInstance(new ReplicationPeerAddressesProvider(replicationPeers));
                         }
                     }
             };
@@ -92,13 +96,13 @@ public abstract class ServerInstance {
 
     public static class EurekaBridgeServerInstance extends ServerInstance {
 
-        public EurekaBridgeServerInstance(final BridgeServerConfig config,  final ServerResolver writeClusterResolver) {
+        public EurekaBridgeServerInstance(final BridgeServerConfig config,  final Observable<ChangeNotification<InetSocketAddress>> replicationPeers) {
             Module[] modules = {
                     new EurekaBridgeServerModule(config),
                     new AbstractModule() {
                         @Override
                         protected void configure() {
-                            bind(WriteClusterResolverProvider.class).toInstance(new WriteClusterResolverProvider(writeClusterResolver));
+                            bind(ReplicationPeerAddressesProvider.class).toInstance(new ReplicationPeerAddressesProvider(replicationPeers));
                         }
                     }
             };

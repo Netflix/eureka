@@ -11,6 +11,8 @@ import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.protocol.registration.Unregister;
 import com.netflix.eureka2.protocol.registration.Update;
 import com.netflix.eureka2.protocol.replication.RegisterCopy;
+import com.netflix.eureka2.protocol.replication.ReplicationHello;
+import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.protocol.replication.UnregisterCopy;
 import com.netflix.eureka2.protocol.replication.UpdateCopy;
 import com.netflix.eureka2.registry.Delta.Builder;
@@ -115,11 +117,17 @@ public abstract class TransportCompatibilityTestSuite {
         }
 
         public void runTestSuite() {
+            handshakeTest();
             registrationTest();
             registrationWithNullsTest();
             unregisterTest();
             updateTest();
             hearbeatTest();
+        }
+
+        private void handshakeTest() {
+            runClientToServerWithAck(new ReplicationHello("testId", 1));
+            runClientToServerWithAck(new ReplicationHelloReply("testId", true));
         }
 
         private void registrationTest() {

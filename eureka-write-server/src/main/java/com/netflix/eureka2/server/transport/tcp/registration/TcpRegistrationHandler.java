@@ -60,7 +60,7 @@ public class TcpRegistrationHandler implements ConnectionHandler<Object, Object>
                 HEARTBEAT_INTERVAL_MILLIS, 3,
                 Schedulers.computation()
         );
-        final ServerChannelFactory service = new ServerChannelFactoryImpl(registry, evictionQueue, broker, metricFactory);
+        final ServerChannelFactory service = new ServerChannelFactoryImpl(registry, null, evictionQueue, broker, metricFactory);
         return service.newRegistrationChannel()
                 .asLifecycleObservable(); // Since this is a discovery handler which only handles interest subscriptions,
         // the channel is created on connection accept.

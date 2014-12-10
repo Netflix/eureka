@@ -18,7 +18,7 @@ package com.netflix.eureka2.client.transport.tcp;
 
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.transport.ResolverBasedTransportClient;
-import com.netflix.eureka2.client.transport.TransportClient;
+import com.netflix.eureka2.transport.TransportClient;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
 import com.netflix.eureka2.metric.MessageConnectionMetrics;

@@ -1,9 +1,9 @@
 package com.netflix.eureka2.server.channel;
 
+import com.netflix.eureka2.channel.AbstractServiceChannel;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.channel.AbstractServiceChannel;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +37,13 @@ public abstract class AbstractChannel<STATE extends Enum> extends AbstractServic
 
     protected void subscribeToTransportInput(final Action1<Object> onNext) {
         connectInputToLifecycle(transport.incoming(), onNext);
+    }
+
+    protected <T> void sendOnTransport(T message) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Sending message on the transport: {}", message);
+        }
+        subscribeToTransportSend(transport.submit(message), message.getClass().getSimpleName());
     }
 
     protected void sendNotificationOnTransport(ChangeNotification<InstanceInfo> notification) {

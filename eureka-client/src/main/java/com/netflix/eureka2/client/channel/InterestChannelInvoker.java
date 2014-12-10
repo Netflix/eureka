@@ -1,12 +1,15 @@
 package com.netflix.eureka2.client.channel;
 
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.registry.InstanceInfo;
+import java.util.concurrent.Callable;
+
 import com.netflix.eureka2.channel.InterestChannel;
+import com.netflix.eureka2.client.registry.EurekaClientRegistry;
+import com.netflix.eureka2.interests.Interest;
+import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
+import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.utils.SerializedTaskInvoker;
 import rx.Observable;
-
-import java.util.concurrent.Callable;
+import rx.Scheduler;
 
 /**
  * A decorator of {@link InterestChannel} which delegates to an actual {@link InterestChannel} making sure that all
@@ -14,12 +17,14 @@ import java.util.concurrent.Callable;
  *
  * @author Nitesh Kant
  */
-/*pkg-private: Used by EurekaClientService only*/class InterestChannelInvoker extends SerializedTaskInvoker
+public class InterestChannelInvoker extends SerializedTaskInvoker
         implements ClientInterestChannel {
 
     private final ClientInterestChannel delegate;
 
-    InterestChannelInvoker(ClientInterestChannel delegate) {
+    public InterestChannelInvoker(ClientInterestChannel delegate, Scheduler scheduler) {
+        // TODO: add invoker metrics to the client
+        super(SerializedTaskInvokerMetrics.dummyMetrics(), scheduler);
         this.delegate = delegate;
     }
 
@@ -45,6 +50,11 @@ import java.util.concurrent.Callable;
     @Override
     public Observable<Void> asLifecycleObservable() {
         return delegate.asLifecycleObservable();
+    }
+
+    @Override
+    public EurekaClientRegistry<InstanceInfo> associatedRegistry() {
+        return delegate.associatedRegistry();
     }
 
     @Override

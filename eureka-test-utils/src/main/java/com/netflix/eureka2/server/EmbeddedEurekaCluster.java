@@ -18,6 +18,8 @@ package com.netflix.eureka2.server;
 
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
+import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.server.ServerInstance.EurekaBridgeServerInstance;
@@ -28,7 +30,9 @@ import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rx.Observable;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -57,7 +61,7 @@ public class EmbeddedEurekaCluster {
 
         ServerResolver.Server[] discoveryResolverServersList = new ServerResolver.Server[writeCount];
         ServerResolver.Server[] registrationResolverServersList = new ServerResolver.Server[writeCount];
-        ServerResolver.Server[] replicationResolverServersList = new ServerResolver.Server[writeCount];
+        List<ChangeNotification<InetSocketAddress>> replicationPeerList = new ArrayList<>();
         EurekaServerConfig[] writeServerConfigs = new EurekaServerConfig[writeCount];
 
         // Write cluster
@@ -68,7 +72,9 @@ public class EmbeddedEurekaCluster {
 
             discoveryResolverServersList[i] = new ServerResolver.Server("127.0.0.1", discoveryPort);
             registrationResolverServersList[i] = new ServerResolver.Server("127.0.0.1", registrationPort);
-            replicationResolverServersList[i] = new ServerResolver.Server("127.0.0.1", replicationPort);
+            replicationPeerList.add(
+                    new ChangeNotification<InetSocketAddress>(Kind.Add, new InetSocketAddress("127.0.0.1", replicationPort))
+            );
             writeServerConfigs[i] = WriteServerConfig.writeBuilder()
                     .withAppName(WRITE_SERVER_NAME)
                     .withVipAddress(WRITE_SERVER_NAME)
@@ -82,10 +88,10 @@ public class EmbeddedEurekaCluster {
 
         ServerResolver discoveryResolver = ServerResolvers.from(discoveryResolverServersList);
         ServerResolver registrationResolver = ServerResolvers.from(registrationResolverServersList);
-        ServerResolver replicationResolver = ServerResolvers.from(replicationResolverServersList);
+        Observable<ChangeNotification<InetSocketAddress>> replicationPeers = Observable.from(replicationPeerList);
 
         for (int i = 0; i < writeCount; i++) {
-            ServerInstance instance = new EurekaWriteServerInstance(writeServerConfigs[i], replicationResolver);
+            ServerInstance instance = new EurekaWriteServerInstance(writeServerConfigs[i], replicationPeers);
             writeInstances.add(instance);
         }
 
@@ -116,7 +122,7 @@ public class EmbeddedEurekaCluster {
                     .withCodec(Codec.Json)
                     .withRefreshRateSec(30)
                     .build();
-            ServerInstance instance = new EurekaBridgeServerInstance(config, replicationResolver);
+            ServerInstance instance = new EurekaBridgeServerInstance(config, replicationPeers);
             bridgeInstances.add(instance);
         }
     }

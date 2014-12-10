@@ -29,7 +29,7 @@ public class BridgeServerMetricFactory extends WriteServerMetricFactory {
             SerializedTaskInvokerMetrics registryTaskInvokerMetrics,
             BridgeChannelMetrics bridgeChannelMetrics) {
         super(registrationConnectionMetrics, replicationConnectionMetrics, discoveryConnectionMetrics,
-                registrationServerConnectionMetrics, discoveryServerConnectionMetrics, replicationServerConnectionMetrics,
+                replicationServerConnectionMetrics,
                 registrationChannelMetrics, replicationChannelMetrics, interestChannelMetrics,
                 eurekaServerRegistryMetrics, evictionQueueMetrics, registryTaskInvokerMetrics);
         this.bridgeChannelMetrics = bridgeChannelMetrics;

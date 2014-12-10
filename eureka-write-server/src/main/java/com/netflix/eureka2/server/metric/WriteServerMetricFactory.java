@@ -43,8 +43,6 @@ public class WriteServerMetricFactory extends EurekaServerMetricFactory {
             @Named("registration") MessageConnectionMetrics registrationConnectionMetrics,
             @Named("replication") MessageConnectionMetrics replicationConnectionMetrics,
             @Named("discovery") MessageConnectionMetrics discoveryConnectionMetrics,
-            @Named("clientRegistration") MessageConnectionMetrics registrationServerConnectionMetrics,
-            @Named("clientDiscovery") MessageConnectionMetrics discoveryServerConnectionMetrics,
             @Named("clientReplication") MessageConnectionMetrics replicationServerConnectionMetrics,
             RegistrationChannelMetrics registrationChannelMetrics,
             ReplicationChannelMetrics replicationChannelMetrics,
@@ -54,8 +52,8 @@ public class WriteServerMetricFactory extends EurekaServerMetricFactory {
             SerializedTaskInvokerMetrics registryTaskInvokerMetrics) {
         super(registrationConnectionMetrics, replicationConnectionMetrics, discoveryConnectionMetrics,
                 interestChannelMetrics);
-        this.registrationServerConnectionMetrics = registrationServerConnectionMetrics;
-        this.discoveryServerConnectionMetrics = discoveryServerConnectionMetrics;
+        this.registrationServerConnectionMetrics = null;
+        this.discoveryServerConnectionMetrics = null;
         this.replicationServerConnectionMetrics = replicationServerConnectionMetrics;
         this.registrationChannelMetrics = registrationChannelMetrics;
         this.replicationChannelMetrics = replicationChannelMetrics;
@@ -128,8 +126,8 @@ public class WriteServerMetricFactory extends EurekaServerMetricFactory {
                         serverMetrics().getRegistrationConnectionMetrics(),
                         serverMetrics().getReplicationConnectionMetrics(),
                         serverMetrics().getDiscoveryConnectionMetrics(),
-                        clientRegistration,
-                        clientDiscovery,
+//                        clientRegistration,
+//                        clientDiscovery,
                         clientReplication,
                         registrationChannelMetrics,
                         replicationChannelMetrics,

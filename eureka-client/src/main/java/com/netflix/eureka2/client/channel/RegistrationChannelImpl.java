@@ -1,7 +1,9 @@
 package com.netflix.eureka2.client.channel;
 
+import com.netflix.eureka2.channel.AbstractClientChannel;
+import com.netflix.eureka2.client.channel.RegistrationChannelImpl.STATES;
 import com.netflix.eureka2.client.metric.RegistrationChannelMetrics;
-import com.netflix.eureka2.client.transport.TransportClient;
+import com.netflix.eureka2.transport.TransportClient;
 import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.protocol.registration.Unregister;
 import com.netflix.eureka2.protocol.registration.Update;
@@ -21,7 +23,7 @@ import rx.functions.Func1;
  * @author Nitesh Kant
  */
 public class RegistrationChannelImpl
-        extends AbstractChannel<RegistrationChannelImpl.STATES> implements RegistrationChannel {
+        extends AbstractClientChannel<STATES> implements RegistrationChannel {
 
     private static final IllegalStateException INSTANCE_ALREADY_REGISTERED_EXCEPTION =
             new IllegalStateException("An instance is already registered. You must update instance instead.");

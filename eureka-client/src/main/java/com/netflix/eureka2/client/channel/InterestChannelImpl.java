@@ -1,8 +1,10 @@
 package com.netflix.eureka2.client.channel;
 
+import com.netflix.eureka2.channel.AbstractClientChannel;
+import com.netflix.eureka2.client.channel.InterestChannelImpl.STATES;
 import com.netflix.eureka2.client.metric.InterestChannelMetrics;
 import com.netflix.eureka2.client.registry.EurekaClientRegistry;
-import com.netflix.eureka2.client.transport.TransportClient;
+import com.netflix.eureka2.transport.TransportClient;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.ModifyNotification;
@@ -38,7 +40,7 @@ import java.util.Map;
  * @author Nitesh Kant
  */
 public class InterestChannelImpl
-        extends AbstractChannel<InterestChannelImpl.STATES> implements ClientInterestChannel {
+        extends AbstractClientChannel<STATES> implements ClientInterestChannel {
 
     private static final Logger logger = LoggerFactory.getLogger(InterestChannelImpl.class);
 
@@ -85,6 +87,11 @@ public class InterestChannelImpl
         channelInterest = new MultipleInterests<>();  // blank channelInterest to start with
         channelInterestSubscriber = new ChannelInterestSubscriber(registry);
         channelInterestStream = createInterestStream();
+    }
+
+    @Override
+    public EurekaClientRegistry<InstanceInfo> associatedRegistry() {
+        return registry;
     }
 
     // channel contract means this will be invoked in serial.
