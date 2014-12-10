@@ -1,6 +1,7 @@
 package com.netflix.eureka2.server.registry;
 
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.server.interests.SourcedChangeNotification;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry.Status;
 import rx.Observable;
 
@@ -45,7 +46,7 @@ public interface MultiSourcedDataHolder<V> {
     /**
      * @return the view copy of the data as a change notification, if exists
      */
-    ChangeNotification<V> getChangeNotification();
+    SourcedChangeNotification<V> getChangeNotification();
 
     /**
      * @param source the source to update
@@ -60,14 +61,22 @@ public interface MultiSourcedDataHolder<V> {
 
 
     final class Snapshot<V> {
-        protected final Source source;
-        protected final V data;
-        protected final ChangeNotification<V> notification;
+        private final SourcedChangeNotification<V> notification;
 
         protected Snapshot(Source source, V data) {
-            this.source = source;
-            this.data = data;
-            this.notification = new ChangeNotification<>(ChangeNotification.Kind.Add, data);
+            this.notification = new SourcedChangeNotification<>(ChangeNotification.Kind.Add, data, source);
+        }
+
+        Source getSource() {
+            return notification.getSource();
+        }
+
+        V getData() {
+            return notification.getData();
+        }
+
+        SourcedChangeNotification<V> getNotification() {
+            return notification;
         }
     }
 

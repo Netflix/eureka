@@ -24,15 +24,16 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.netflix.eureka2.interests.NotificationsSubject;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.IndexRegistry;
 import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.interests.InstanceInfoInitStateHolder;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.MultipleInterests;
+import com.netflix.eureka2.interests.NotificationsSubject;
 import com.netflix.eureka2.registry.Delta;
 import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.server.interests.SourcedChangeNotification;
 import com.netflix.eureka2.server.metric.EurekaServerRegistryMetrics;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
 import com.netflix.eureka2.server.registry.NotifyingInstanceInfoHolder.NotificationTaskInvoker;
@@ -270,8 +271,13 @@ public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceIn
         return forInterest(interest).filter(new Func1<ChangeNotification<InstanceInfo>, Boolean>() {
             @Override
             public Boolean call(ChangeNotification<InstanceInfo> changeNotification) {
-                MultiSourcedDataHolder<InstanceInfo> holder = internalStore.get(changeNotification.getData().getId());
-                return holder != null && source.equals(holder.getSource());
+                if (changeNotification instanceof Sourced) {
+                    Source notificationSource = ((Sourced) changeNotification).getSource();
+                    return source.equals(notificationSource);
+                } else {
+                    logger.warn("Received notification without a source, {}", changeNotification);
+                    return false;
+                }
             }
         });
     }

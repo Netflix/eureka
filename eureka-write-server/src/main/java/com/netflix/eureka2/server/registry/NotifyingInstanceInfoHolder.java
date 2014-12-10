@@ -5,12 +5,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
-import com.netflix.eureka2.interests.NotificationsSubject;
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.ModifyNotification;
+import com.netflix.eureka2.interests.NotificationsSubject;
 import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.registry.Delta;
 import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.server.interests.SourcedChangeNotification;
+import com.netflix.eureka2.server.interests.SourcedModifyNotification;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry.Status;
 import com.netflix.eureka2.utils.SerializedTaskInvoker;
 import org.slf4j.Logger;
@@ -67,7 +68,7 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
     @Override
     public InstanceInfo get() {
         if (snapshot != null) {
-            return snapshot.data;
+            return snapshot.getData();
         }
         return null;
     }
@@ -80,15 +81,15 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
     @Override
     public Source getSource() {
         if (snapshot != null) {
-            return snapshot.source;
+            return snapshot.getSource();
         }
         return null;
     }
 
     @Override
-    public ChangeNotification<InstanceInfo> getChangeNotification() {
+    public SourcedChangeNotification<InstanceInfo> getChangeNotification() {
         if (snapshot != null) {
-            return snapshot.notification;
+            return snapshot.getNotification();
         }
         return null;
     }
@@ -138,24 +139,24 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
 
         if (currSnapshot == null) {  // real add to the head
             snapshot = newSnapshot;
-            notificationSubject.onNext(newSnapshot.notification);
+            notificationSubject.onNext(newSnapshot.getNotification());
             result = Status.AddedFirst;
         } else {
-            if (currSnapshot.source.equals(newSnapshot.source)) {  // modify to current snapshot
+            if (currSnapshot.getSource().equals(newSnapshot.getSource())) {  // modify to current snapshot
                 snapshot = newSnapshot;
 
-                Set<Delta<?>> delta = newSnapshot.data.diffOlder(currSnapshot.data);
+                Set<Delta<?>> delta = newSnapshot.getData().diffOlder(currSnapshot.getData());
                 if (!delta.isEmpty()) {
                     ChangeNotification<InstanceInfo> modifyNotification
-                            = new ModifyNotification<>(newSnapshot.data, delta);
+                            = new SourcedModifyNotification<>(newSnapshot.getData(), delta, newSnapshot.getSource());
                     notificationSubject.onNext(modifyNotification);
                 } else {
-                    logger.debug("No-change update for {}#{}", currSnapshot.source, currSnapshot.data.getId());
+                    logger.debug("No-change update for {}#{}", currSnapshot.getSource(), currSnapshot.getData().getId());
                 }
             } else {  // different source, no-op
                 logger.debug(
                         "Different source from current snapshot, not updating (head={}, received={})",
-                        currSnapshot.source, newSnapshot.source
+                        currSnapshot.getSource(), newSnapshot.getSource()
                 );
             }
         }
@@ -188,12 +189,12 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
                 if (removed == null) {  // nothing removed, no-op
                     logger.debug("source:data does not exist, no-op");
                     result = Status.RemoveExpired;
-                } else if (source.equals(currSnapshot.source)) {  // remove of current snapshot
+                } else if (source.equals(currSnapshot.getSource())) {  // remove of current snapshot
                     Map.Entry<Source, InstanceInfo> newHead = dataMap.isEmpty() ? null : dataMap.entrySet().iterator().next();
                     if (newHead == null) {  // removed last copy
                         snapshot = null;
                         ChangeNotification<InstanceInfo> deleteNotification
-                                = new ChangeNotification<>(ChangeNotification.Kind.Delete, removed);
+                                = new SourcedChangeNotification<>(ChangeNotification.Kind.Delete, removed, source);
                         notificationSubject.onNext(deleteNotification);
 
                         // remove self from the holder datastore if empty
@@ -203,17 +204,17 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
                         Snapshot<InstanceInfo> newSnapshot = new Snapshot<>(newHead.getKey(), newHead.getValue());
                         snapshot = newSnapshot;
 
-                        Set<Delta<?>> delta = newSnapshot.data.diffOlder(currSnapshot.data);
+                        Set<Delta<?>> delta = newSnapshot.getData().diffOlder(currSnapshot.getData());
                         if (!delta.isEmpty()) {
                             ChangeNotification<InstanceInfo> modifyNotification
-                                    = new ModifyNotification<>(newSnapshot.data, delta);
+                                    = new SourcedModifyNotification<>(newSnapshot.getData(), delta, newSnapshot.getSource());
                             notificationSubject.onNext(modifyNotification);
                         } else {
-                            logger.debug("No-change update for {}#{}", currSnapshot.source, currSnapshot.data.getId());
+                            logger.debug("No-change update for {}#{}", currSnapshot.getSource(), currSnapshot.getData().getId());
                         }
                     }
                 } else {  // remove of copy that's not the source of the snapshot, no-op
-                    logger.debug("removed non-head (head={}, received={})", currSnapshot.source, source);
+                    logger.debug("removed non-head (head={}, received={})", currSnapshot.getSource(), source);
                 }
                 return Observable.just(result);
             }
