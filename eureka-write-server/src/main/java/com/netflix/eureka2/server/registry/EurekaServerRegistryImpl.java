@@ -33,7 +33,6 @@ import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.interests.NotificationsSubject;
 import com.netflix.eureka2.registry.Delta;
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.server.interests.SourcedChangeNotification;
 import com.netflix.eureka2.server.metric.EurekaServerRegistryMetrics;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
 import com.netflix.eureka2.server.registry.NotifyingInstanceInfoHolder.NotificationTaskInvoker;
