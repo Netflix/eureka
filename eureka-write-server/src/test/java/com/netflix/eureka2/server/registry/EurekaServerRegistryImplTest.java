@@ -9,11 +9,13 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.registry.SampleInstanceInfo;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import rx.Observable;
 import rx.Scheduler;
+import rx.Subscriber;
 import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
@@ -259,6 +261,54 @@ public class EurekaServerRegistryImplTest {
         assertThat(holder.size(), equalTo(1));
         snapshot = holder.get();
         assertThat(snapshot, equalTo(replicated));
+    }
+
+    @Test
+    public void testForInterestWithSourceOnLastCopyDelete() {
+        InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
+                .withId("sameId")
+                .withStatus(InstanceInfo.Status.UP)
+                .build();
+
+        registry.register(original);
+        testScheduler.triggerActions();
+
+        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
+        assertThat(internalStore.size(), equalTo(1));
+
+        MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
+        assertThat(holder.size(), equalTo(1));
+        InstanceInfo snapshot1 = holder.get();
+        assertThat(snapshot1, equalTo(original));
+
+        registry.unregister(original);
+        final List<ChangeNotification<InstanceInfo>> notifications = new ArrayList<>();
+        registry.forInterest(Interests.forFullRegistry(), Source.localSource())
+                .subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
+                               @Override
+                               public void onCompleted() {
+                                   Assert.fail("should never onComplete");
+                               }
+
+                               @Override
+                               public void onError(Throwable e) {
+                                   Assert.fail("should never onError");
+                               }
+
+                               @Override
+                               public void onNext(ChangeNotification<InstanceInfo> notification) {
+                                   notifications.add(notification);
+                               }
+                           });
+
+        testScheduler.triggerActions();
+
+        assertThat(internalStore.size(), equalTo(0));
+        assertThat(notifications.size(), equalTo(2));  // the initial Add plus the later Delete
+        assertThat(notifications.get(0).getKind(), equalTo(ChangeNotification.Kind.Add));
+        assertThat(notifications.get(0).getData(), equalTo(original));
+        assertThat(notifications.get(1).getKind(), equalTo(ChangeNotification.Kind.Delete));
+        assertThat(notifications.get(1).getData(), equalTo(original));
     }
 
 
