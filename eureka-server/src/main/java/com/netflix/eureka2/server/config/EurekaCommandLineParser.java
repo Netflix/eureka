@@ -46,7 +46,7 @@ public abstract class EurekaCommandLineParser<C extends EurekaCommonConfig, B ex
                 .addOption("h", false, "print this help information")
                 .addOption("n", true, "server instance name")
                 .addOption("d", true, "datacenter type (AWS|Basic). Default Basic")
-                .addOption("q", true, "server resolver type (dns|inline); default inline")
+                .addOption("q", true, "server resolver type (dns|fixed); default inline")
                 .addOption("s", true, "shutdown port; default 7700")
                 .addOption("a", true, "admin port; default 8077");
     }
@@ -61,7 +61,7 @@ public abstract class EurekaCommandLineParser<C extends EurekaCommonConfig, B ex
             builder.withDataCenterType(DataCenterType.valueOf(cli.getOptionValue("d", "Basic")));
 
             if (resolverRequired || !cli.getArgList().isEmpty()) {
-                String resolverType = cli.getOptionValue("q", "inline");
+                String resolverType = cli.getOptionValue("q", "fixed");
                 builder.withResolverType(resolverType);
                 switch (resolverType) {
                     case "dns":
@@ -69,13 +69,13 @@ public abstract class EurekaCommandLineParser<C extends EurekaCommonConfig, B ex
                             throw new IllegalArgumentException("provide Eureka Write cluster <domain_name:reg:disc:repl> as parameter");
                         }
                         break;
-                    case "inline":
+                    case "fixed":
                         if (cli.getArgList().size() < 1) {
                             throw new IllegalArgumentException("provide Eureka Write cluster server <addresse:reg:disc:repl>s as parameter list");
                         }
                         break;
                     default:
-                        throw new IllegalArgumentException("resolver type not defined ('-r dns|inline')");
+                        throw new IllegalArgumentException("resolver type not defined ('-q dns|fixed')");
                 }
             }
 

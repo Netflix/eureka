@@ -64,9 +64,7 @@ public class RegistryReplicatorTest {
         replicator.close();
     }
 
-    // TODO: uncomment once registry delete notification works fine
     @Test
-    @Ignore
     public void testReplicatesRegistryContent() throws Exception {
         ReplicationHelloReply helloReply = new ReplicationHelloReply(INSTANCE_INFO.getId(), false);
 
