@@ -43,11 +43,11 @@ public class EmbeddedEurekaCluster {
     private static final Logger logger = LoggerFactory.getLogger(EmbeddedEurekaCluster.class);
 
     private static final String WRITE_SERVER_NAME = "WriteServer";
-    private static final int WRITE_SERVER_PORTS_FROM = 12100;
+    private static final int WRITE_SERVER_PORTS_FROM = 13100;
     private static final String READ_SERVER_NAME = "ReadServer";
-    private static final int READ_SERVER_PORTS_FROM = 12200;
+    private static final int READ_SERVER_PORTS_FROM = 13200;
     private static final String BRIDGE_SERVER_NAME = "BridgeServer";
-    private static final int BRIDGE_SERVER_PORTS_FROM = 12900;
+    private static final int BRIDGE_SERVER_PORTS_FROM = 13900;
 
     private final List<ServerInstance> writeInstances = new ArrayList<>();
     private final List<ServerInstance> readInstances = new ArrayList<>();
@@ -58,13 +58,15 @@ public class EmbeddedEurekaCluster {
         ServerResolver.Server[] discoveryResolverServersList = new ServerResolver.Server[writeCount];
         ServerResolver.Server[] registrationResolverServersList = new ServerResolver.Server[writeCount];
         ServerResolver.Server[] replicationResolverServersList = new ServerResolver.Server[writeCount];
-        EurekaServerConfig[] writeServerConfigs = new EurekaServerConfig[writeCount];
+        WriteServerConfig[] writeServerConfigs = new WriteServerConfig[writeCount];
 
         // Write cluster
         for (int i = 0; i < writeCount; i++) {
             int registrationPort = WRITE_SERVER_PORTS_FROM + 10 * i;
             int discoveryPort = registrationPort + 1;
             int replicationPort = registrationPort + 2;
+            int shutdownPort = registrationPort + 3;
+            int webAdminPort = registrationPort + 4;
 
             discoveryResolverServersList[i] = new ServerResolver.Server("127.0.0.1", discoveryPort);
             registrationResolverServersList[i] = new ServerResolver.Server("127.0.0.1", registrationPort);
@@ -76,7 +78,9 @@ public class EmbeddedEurekaCluster {
                     .withRegistrationPort(registrationPort)
                     .withDiscoveryPort(discoveryPort)
                     .withReplicationPort(replicationPort)
-                    .withCodec(Codec.Json)
+                    .withCodec(Codec.Avro)
+                    .withShutDownPort(shutdownPort)
+                    .withWebAdminPort(webAdminPort)
                     .build();
         }
 
@@ -97,7 +101,7 @@ public class EmbeddedEurekaCluster {
                     .withVipAddress(READ_SERVER_NAME)
                     .withDataCenterType(DataCenterType.Basic)
                     .withDiscoveryPort(port)
-                    .withCodec(Codec.Json)
+                    .withCodec(Codec.Avro)
                     .build();
             ServerInstance instance = new EurekaReadServerInstance(config, registrationResolver, discoveryResolver);
             readInstances.add(instance);
@@ -113,8 +117,10 @@ public class EmbeddedEurekaCluster {
                     .withRegistrationPort(port)
                     .withDiscoveryPort(port + 1)  // explicitly set it to a different port to verify
                     .withReplicationPort(port + 2)  // explicitly set it to a different port to verify
-                    .withCodec(Codec.Json)
+                    .withCodec(Codec.Avro)
                     .withRefreshRateSec(30)
+                    .withShutDownPort(port + 3)
+                    .withWebAdminPort(port + 4)
                     .build();
             ServerInstance instance = new EurekaBridgeServerInstance(config, replicationResolver);
             bridgeInstances.add(instance);
