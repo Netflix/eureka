@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
+import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
 
@@ -59,42 +60,50 @@ class RegistryReplicator implements ChannelHandler<ReplicationChannel> {
         if (subscription != null) {
             subscription.unsubscribe();
         }
-        subscription = channel.hello(new ReplicationHello(ownInstanceId, registry.size())).flatMap(new Func1<ReplicationHelloReply, Observable<ChangeNotification<InstanceInfo>>>() {
-            @Override
-            public Observable<ChangeNotification<InstanceInfo>> call(ReplicationHelloReply replicationHelloReply) {
-                if (replicationHelloReply.getSourceId().equals(ownInstanceId)) {
-                    logger.info("Taking out replication connection to itself");
-                    return Observable.empty();
-                }
-                return registry.forInterest(Interests.forFullRegistry(), Source.localSource());
-            }
-        }).subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
-            @Override
-            public void onCompleted() {
-                channel.close();
-            }
+        subscription = channel.hello(new ReplicationHello(ownInstanceId, registry.size()))
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        logger.info("Replication channel disconnected");
+                    }
+                })
+                .flatMap(new Func1<ReplicationHelloReply, Observable<ChangeNotification<InstanceInfo>>>() {
+                    @Override
+                    public Observable<ChangeNotification<InstanceInfo>> call(ReplicationHelloReply replicationHelloReply) {
+                        if (replicationHelloReply.getSourceId().equals(ownInstanceId)) {
+                            logger.info("Taking out replication connection to itself");
+                            return Observable.empty();
+                        }
+                        return registry.forInterest(Interests.forFullRegistry(), Source.localSource());
+                    }
+                }).subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
+                    @Override
+                    public void onCompleted() {
+                        logger.info("Replication change notification stream closed");
+                        channel.close();
+                    }
 
-            @Override
-            public void onError(Throwable e) {
-                logger.error("Registry interest stream terminated with an error", e);
-                channel.close();
-            }
+                    @Override
+                    public void onError(Throwable e) {
+                        logger.error("Registry interest stream terminated with an error", e);
+                        channel.close();
+                    }
 
-            @Override
-            public void onNext(ChangeNotification<InstanceInfo> changeNotification) {
-                switch (changeNotification.getKind()) {
-                    case Add:
-                        subscribeToTransportSend(channel.register(changeNotification.getData()), "register request");
-                        break;
-                    case Modify:
-                        subscribeToTransportSend(channel.update(changeNotification.getData()), "update request");
-                        break;
-                    case Delete:
-                        subscribeToTransportSend(channel.unregister(changeNotification.getData().getId()), "delete request");
-                        break;
-                }
-            }
-        });
+                    @Override
+                    public void onNext(ChangeNotification<InstanceInfo> changeNotification) {
+                        switch (changeNotification.getKind()) {
+                            case Add:
+                                subscribeToTransportSend(channel.register(changeNotification.getData()), "register request");
+                                break;
+                            case Modify:
+                                subscribeToTransportSend(channel.update(changeNotification.getData()), "update request");
+                                break;
+                            case Delete:
+                                subscribeToTransportSend(channel.unregister(changeNotification.getData().getId()), "delete request");
+                                break;
+                        }
+                    }
+                });
     }
 
     @Override
