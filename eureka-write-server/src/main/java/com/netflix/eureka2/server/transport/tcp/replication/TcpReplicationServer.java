@@ -16,21 +16,22 @@
 
 package com.netflix.eureka2.server.transport.tcp.replication;
 
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Named;
+
 import com.google.inject.Singleton;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
+import com.netflix.eureka2.server.service.WriteSelfRegistrationService;
 import com.netflix.eureka2.server.transport.tcp.AbstractTcpServer;
 import com.netflix.eureka2.transport.EurekaTransports;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.inject.Named;
 
 /**
  * @author Tomasz Bak
@@ -40,15 +41,18 @@ public class TcpReplicationServer extends AbstractTcpServer<WriteServerConfig, W
 
     private static final Logger logger = LoggerFactory.getLogger(TcpReplicationServer.class);
 
+    private final WriteSelfRegistrationService selfRegistrationService;
     private final EvictionQueue evictionQueue;
 
     @Inject
     public TcpReplicationServer(WriteServerConfig config,
                                 EurekaServerRegistry eurekaRegistry,
+                                WriteSelfRegistrationService selfRegistrationService,
                                 EvictionQueue evictionQueue,
                                 @Named("replication") MetricEventsListenerFactory servoEventsListenerFactory,
                                 WriteServerMetricFactory metricFactory) {
         super(eurekaRegistry, servoEventsListenerFactory, config, metricFactory);
+        this.selfRegistrationService = selfRegistrationService;
         this.evictionQueue = evictionQueue;
     }
 
@@ -56,7 +60,7 @@ public class TcpReplicationServer extends AbstractTcpServer<WriteServerConfig, W
     public void start() {
         server = RxNetty.newTcpServerBuilder(
                 config.getReplicationPort(),
-                new TcpReplicationHandler(eurekaRegistry, evictionQueue, metricFactory))
+                new TcpReplicationHandler(selfRegistrationService, eurekaRegistry, evictionQueue, metricFactory))
                 .pipelineConfigurator(EurekaTransports.replicationPipeline(config.getCodec()))
                 .withMetricEventsListenerFactory(servoEventsListenerFactory)
                 .build()

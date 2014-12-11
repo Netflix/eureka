@@ -16,35 +16,25 @@
 
 package com.netflix.eureka2.client.registry;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
-import com.netflix.eureka2.client.channel.ClientChannelFactory;
-import com.netflix.eureka2.client.channel.ClientInterestChannel;
-import com.netflix.eureka2.client.registry.swap.RegistrySwapStrategyFactory;
-import com.netflix.eureka2.client.registry.swap.ThresholdStrategy;
+import com.netflix.eureka2.client.channel.RetryableInterestChannel;
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.registry.SampleInstanceInfo;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 import rx.Observable;
-import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
-import rx.subjects.ReplaySubject;
 
 import static com.netflix.eureka2.client.metric.EurekaClientMetricFactory.*;
-import static com.netflix.eureka2.client.registry.EurekaClientRegistryProxy.*;
 import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 
 /**
@@ -52,129 +42,50 @@ import static org.mockito.Mockito.*;
  */
 public class EurekaClientRegistryProxyTest {
 
-    private final TestScheduler scheduler = Schedulers.test();
+    private final TestScheduler testScheduler = Schedulers.test();
 
-    private final ClientChannelFactory channelFactory = mock(ClientChannelFactory.class);
-    private final ClientInterestChannel interestChannel = mock(ClientInterestChannel.class);
-    private ReplaySubject<Void> channelLifecycle;
+    private static final InstanceInfo INFO = SampleInstanceInfo.DiscoveryServer.build();
+    private static final Interest<InstanceInfo> INTEREST = Interests.forFullRegistry();
 
-    private final RegistrySwapStrategyFactory swapStrategyFactory = ThresholdStrategy.factoryFor(scheduler);
+    private final RetryableInterestChannel retryableInterestChannel = mock(RetryableInterestChannel.class);
+    private final EurekaClientRegistry<InstanceInfo> internalRegistry = new EurekaClientRegistryImpl(clientMetrics().getRegistryMetrics());
 
-    private EurekaClientRegistryProxy proxyRegistry;
-    private EurekaClientRegistry<InstanceInfo> internalRegistry;
+    private final EurekaClientRegistryProxy registryProxy = new EurekaClientRegistryProxy(retryableInterestChannel, testScheduler);
 
     @Before
     public void setUp() throws Exception {
-        when(channelFactory.newInterestChannel(any(EurekaClientRegistry.class))).thenReturn(interestChannel);
-        withNewChannelLifecycle();
-
-        proxyRegistry = new EurekaClientRegistryProxy(
-                channelFactory, swapStrategyFactory, DEFAULT_INITIAL_DELAY, clientMetrics(), scheduler);
-
-        captureInternalRegistryFromChannel();
+        internalRegistry.register(INFO).subscribe();
+        when(retryableInterestChannel.associatedRegistry()).thenReturn(internalRegistry);
     }
 
     @Test
-    public void testProxiesAccessToInternalRegistry() throws Exception {
-        addDataToRegistry();
+    public void testDelegatesForInterestToInternalRegistry() throws Exception {
+        when(retryableInterestChannel.appendInterest(INTEREST)).thenReturn(Observable.<Void>empty());
 
-        List<ChangeNotification<InstanceInfo>> notifications = collectForInterest(Interests.forFullRegistry());
-        assertThat(notifications.size(), is(equalTo(1)));
+        // forInterest
+        ChangeNotification<InstanceInfo> notification =
+                registryProxy.forInterest(INTEREST).take(1).timeout(1, TimeUnit.SECONDS).toBlocking().first();
 
-        List<InstanceInfo> snapshot = collectSnapshotForInterest(Interests.forFullRegistry());
-        assertThat(snapshot.size(), is(equalTo(1)));
+        // Ensure InterestChannelInvoker runs the scheduled task
+        testScheduler.triggerActions();
+
+        verify(retryableInterestChannel, times(1)).appendInterest(INTEREST);
+        assertThat(notification.getKind(), is(equalTo(Kind.Add)));
+        assertThat(notification.getData(), is(equalTo(INFO)));
     }
 
     @Test
-    public void testCleansUpResources() throws Exception {
-        proxyRegistry.shutdown().subscribe();
-        verify(channelFactory, times(1)).shutdown();
+    public void testDelegatesForSnapshotToInternalRegistry() throws Exception {
+        // forSnapshot
+        InstanceInfo instanceInfo =
+                registryProxy.forSnapshot(INTEREST).take(1).timeout(1, TimeUnit.SECONDS).toBlocking().first();
+
+        assertThat(instanceInfo, is(equalTo(INFO)));
     }
 
     @Test
-    public void testSwapsRegistriesAfterChannelFailure() throws Exception {
-        // First channel connection
-        addDataToRegistry();
-        List<ChangeNotification<InstanceInfo>> notifications = collectForInterest(Interests.forFullRegistry());
-        assertThat(notifications.size(), is(equalTo(1)));
-
-        // Channel failure
-        when(interestChannel.change(any(Interest.class))).thenReturn(Observable.<Void>empty());
-        channelLifecycle.onError(new Exception("channel error"));
-
-        // Move in time till retry point
-        scheduler.advanceTimeBy(DEFAULT_INITIAL_DELAY, TimeUnit.MILLISECONDS);
-
-        // Check automatic interest subscription for the last interest set
-        verify(interestChannel).change(new MultipleInterests<InstanceInfo>(Interests.forFullRegistry()));
-
-        // We have new internal registry.
-        captureInternalRegistryFromChannel();
-
-        // Verify that we still provide old registry content.
-        notifications = collectForInterest(Interests.forFullRegistry());
-        assertThat(notifications.size(), is(equalTo(1)));
-
-        // Push new content, which should result in:
-        // 1. pending subscriptions termination
-        // 2. replacing pre-filled registry with a new one
-        final AtomicReference<Throwable> errorRef = new AtomicReference<>();
-        proxyRegistry.forInterest(Interests.forFullRegistry()).doOnError(new Action1<Throwable>() {
-            @Override
-            public void call(Throwable throwable) {
-                errorRef.set(throwable);
-            }
-        }).subscribe();
-        addDataToRegistry();
-
-        assertThat(errorRef.get(), is(instanceOf(Exception.class)));
-
-        notifications = collectForInterest(Interests.forFullRegistry());
-        assertThat(notifications.size(), is(equalTo(1)));
-    }
-
-    protected void withNewChannelLifecycle() {
-        channelLifecycle = ReplaySubject.create();
-        when(interestChannel.asLifecycleObservable()).thenReturn(channelLifecycle);
-    }
-
-    protected void captureInternalRegistryFromChannel() {
-        ArgumentCaptor<EurekaClientRegistry> argCaptor = ArgumentCaptor.forClass(EurekaClientRegistry.class);
-        verify(channelFactory, atLeastOnce()).newInterestChannel(argCaptor.capture());
-
-        internalRegistry = argCaptor.getValue();
-    }
-
-    private void addDataToRegistry() {
-        InstanceInfo info = SampleInstanceInfo.DiscoveryServer.build();
-        internalRegistry.register(info);
-    }
-
-    private List<ChangeNotification<InstanceInfo>> collectForInterest(Interest<InstanceInfo> interest) {
-        when(interestChannel.appendInterest(interest)).thenReturn(Observable.<Void>empty());
-
-        final List<ChangeNotification<InstanceInfo>> items = new ArrayList<>();
-        proxyRegistry.forInterest(interest).subscribe(new Action1<ChangeNotification<InstanceInfo>>() {
-            @Override
-            public void call(ChangeNotification<InstanceInfo> notification) {
-                items.add(notification);
-            }
-        });
-
-        verify(interestChannel, atLeastOnce()).appendInterest(interest);
-
-        return items;
-    }
-
-    private List<InstanceInfo> collectSnapshotForInterest(Interest<InstanceInfo> interest) {
-        final List<InstanceInfo> items = new ArrayList<>();
-        proxyRegistry.forSnapshot(interest).subscribe(new Action1<InstanceInfo>() {
-            @Override
-            public void call(InstanceInfo instanceInfo) {
-                items.add(instanceInfo);
-            }
-        });
-
-        return items;
+    public void testShutdownClosesChannel() throws Exception {
+        registryProxy.shutdown();
+        verify(retryableInterestChannel, times(1)).close();
     }
 }

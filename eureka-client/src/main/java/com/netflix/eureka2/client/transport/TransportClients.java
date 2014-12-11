@@ -6,11 +6,12 @@ import com.netflix.eureka2.client.transport.tcp.TcpDiscoveryClient;
 import com.netflix.eureka2.client.transport.tcp.TcpRegistrationClient;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
+import com.netflix.eureka2.transport.TransportClient;
 
 import static com.netflix.eureka2.client.metric.EurekaClientMetricFactory.clientMetrics;
 
 /**
- * A factory to create {@link TransportClient} instances.
+ * A factory to create {@link com.netflix.eureka2.transport.TransportClient} instances.
  *
  * @author Nitesh Kant
  */

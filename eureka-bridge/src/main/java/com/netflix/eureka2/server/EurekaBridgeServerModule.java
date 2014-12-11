@@ -2,10 +2,9 @@ package com.netflix.eureka2.server;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
-import com.netflix.eureka2.client.metric.EurekaClientConnectionMetrics;
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
-import com.netflix.eureka2.server.channel.ReplicationService;
+import com.netflix.eureka2.server.service.replication.ReplicationService;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
@@ -81,10 +80,6 @@ public class EurekaBridgeServerModule extends AbstractModule {
         bind(MessageConnectionMetrics.class).annotatedWith(Names.named("clientRegistration")).toInstance(new MessageConnectionMetrics("clientRegistration"));
         bind(MessageConnectionMetrics.class).annotatedWith(Names.named("clientDiscovery")).toInstance(new MessageConnectionMetrics("clientDiscovery"));
         bind(MessageConnectionMetrics.class).annotatedWith(Names.named("clientReplication")).toInstance(new MessageConnectionMetrics("clientReplication"));
-
-        bind(EurekaClientConnectionMetrics.class).annotatedWith(Names.named("registration")).toInstance(new EurekaClientConnectionMetrics("registration"));
-        bind(EurekaClientConnectionMetrics.class).annotatedWith(Names.named("discovery")).toInstance(new EurekaClientConnectionMetrics("discovery"));
-        bind(EurekaClientConnectionMetrics.class).annotatedWith(Names.named("replication")).toInstance(new EurekaClientConnectionMetrics("replication"));
 
         bind(BridgeChannelMetrics.class).annotatedWith(Names.named("bridge")).toInstance(new BridgeChannelMetrics());
 

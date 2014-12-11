@@ -22,7 +22,6 @@ configurations {
 }
 
 dependencies {
-    compile project(':eureka-client')
     compile project(':eureka-server')
     testCompile project(':eureka-test-utils')
 }

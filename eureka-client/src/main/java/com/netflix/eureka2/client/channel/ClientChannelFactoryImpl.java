@@ -1,11 +1,11 @@
 package com.netflix.eureka2.client.channel;
 
-import com.netflix.eureka2.client.metric.EurekaClientMetricFactory;
-import com.netflix.eureka2.client.registry.EurekaClientRegistry;
-import com.netflix.eureka2.client.transport.TransportClient;
-import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.channel.RegistrationChannel;
+import com.netflix.eureka2.client.metric.EurekaClientMetricFactory;
+import com.netflix.eureka2.client.registry.EurekaClientRegistry;
+import com.netflix.eureka2.transport.TransportClient;
+import com.netflix.eureka2.registry.InstanceInfo;
 import rx.functions.Func0;
 import rx.schedulers.Schedulers;
 
@@ -43,8 +43,8 @@ public class ClientChannelFactoryImpl implements ClientChannelFactory {
      * @return An {@link InterestChannel} which is not yet connected to any eureka servers.
      */
     @Override
-    public ClientInterestChannel newInterestChannel(EurekaClientRegistry<InstanceInfo> clientRegistry) {
-        return new InterestChannelInvoker(new InterestChannelImpl(clientRegistry, readServerClient, metricFactory.getInterestChannelMetrics()));
+    public ClientInterestChannel newInterestChannel(final EurekaClientRegistry<InstanceInfo> clientRegistry) {
+        return new InterestChannelImpl(clientRegistry, readServerClient, metricFactory.getInterestChannelMetrics());
     }
 
 

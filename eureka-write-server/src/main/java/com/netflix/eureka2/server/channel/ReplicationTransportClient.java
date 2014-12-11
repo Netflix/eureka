@@ -16,7 +16,7 @@
 
 package com.netflix.eureka2.server.channel;
 
-import com.netflix.eureka2.client.transport.TransportClient;
+import com.netflix.eureka2.transport.TransportClient;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import com.netflix.eureka2.transport.MessageConnection;

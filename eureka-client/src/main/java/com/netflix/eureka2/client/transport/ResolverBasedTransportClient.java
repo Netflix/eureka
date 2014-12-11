@@ -2,6 +2,7 @@ package com.netflix.eureka2.client.transport;
 
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.transport.TransportClient;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
@@ -16,7 +17,7 @@ import rx.schedulers.Schedulers;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Convenience base implementation for {@link TransportClient} that reads the server list from a {@link ServerResolver}
+ * Convenience base implementation for {@link com.netflix.eureka2.transport.TransportClient} that reads the server list from a {@link ServerResolver}
  *
  * @author Nitesh Kant
  */

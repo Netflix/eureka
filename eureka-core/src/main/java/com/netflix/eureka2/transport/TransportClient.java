@@ -14,21 +14,24 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.client.registry;
+package com.netflix.eureka2.transport;
 
-import com.netflix.eureka2.registry.EurekaRegistry;
 import rx.Observable;
 
 /**
  * @author Tomasz Bak
  */
-public interface EurekaClientRegistry<T> extends EurekaRegistry<T, Void> {
+public interface TransportClient {
 
     /**
-     * Shuts down the registry. All the interest client subscriptions are terminated
-     * with an error, where the error value is the provided parameter.
+     * Returns a {@link MessageConnection} to communicate to a eureka server.
      *
-     * @param cause error to propagate to subscription clients
+     * @return A {@link MessageConnection}.
      */
-    Observable<Void> shutdown(Throwable cause);
+    Observable<MessageConnection> connect();
+
+    /**
+     * Shutdown this client.
+     */
+    void shutdown();
 }

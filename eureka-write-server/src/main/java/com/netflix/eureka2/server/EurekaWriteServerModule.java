@@ -34,7 +34,7 @@ import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.registry.eviction.EvictionQueueImpl;
 import com.netflix.eureka2.server.registry.eviction.EvictionStrategy;
 import com.netflix.eureka2.server.registry.eviction.EvictionStrategyProvider;
-import com.netflix.eureka2.server.channel.ReplicationService;
+import com.netflix.eureka2.server.service.replication.ReplicationService;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.server.service.WriteSelfRegistrationService;
 import com.netflix.eureka2.server.spi.ExtensionContext;
@@ -95,8 +95,8 @@ public class EurekaWriteServerModule extends AbstractModule {
         bind(MessageConnectionMetrics.class).annotatedWith(Names.named("replication")).toInstance(new MessageConnectionMetrics("replication"));
         bind(MessageConnectionMetrics.class).annotatedWith(Names.named("discovery")).toInstance(new MessageConnectionMetrics("discovery"));
 
-        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("clientRegistration")).toInstance(new MessageConnectionMetrics("clientRegistration"));
-        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("clientDiscovery")).toInstance(new MessageConnectionMetrics("clientDiscovery"));
+//        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("clientRegistration")).toInstance(new MessageConnectionMetrics("clientRegistration"));
+//        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("clientDiscovery")).toInstance(new MessageConnectionMetrics("clientDiscovery"));
         bind(MessageConnectionMetrics.class).annotatedWith(Names.named("clientReplication")).toInstance(new MessageConnectionMetrics("clientReplication"));
 
         bind(RegistrationChannelMetrics.class).toInstance(new RegistrationChannelMetrics());

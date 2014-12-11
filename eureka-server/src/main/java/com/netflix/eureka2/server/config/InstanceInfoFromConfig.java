@@ -1,13 +1,13 @@
 package com.netflix.eureka2.server.config;
 
+import java.util.HashSet;
+
 import com.netflix.eureka2.registry.AddressSelector;
 import com.netflix.eureka2.registry.DataCenterInfo;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
 import rx.Observable;
 import rx.functions.Func1;
-
-import java.util.HashSet;
 
 /**
  * @author David Liu

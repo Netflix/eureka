@@ -27,7 +27,7 @@ import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 import rx.subjects.ReplaySubject;
 
-import static com.netflix.eureka2.channel.RetryableServiceChannel.*;
+import static com.netflix.eureka2.channel.RetryableStatefullServiceChannel.*;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -35,7 +35,7 @@ import static org.mockito.Mockito.*;
 /**
  * @author Tomasz Bak
  */
-public class RetryableServiceChannelTest {
+public class RetryableStatefullServiceChannelTest {
 
     private static final long INITIAL_DELAY = 1000;
     private static final long MAX_DELAY = MAX_EXP_BACK_OFF_MULTIPLIER * INITIAL_DELAY;
@@ -59,7 +59,7 @@ public class RetryableServiceChannelTest {
 
     @After
     public void tearDown() throws Exception {
-        consumer.shutdownRetryableConsumer();
+        consumer.close();
     }
 
     @Test
@@ -149,7 +149,7 @@ public class RetryableServiceChannelTest {
         long originalRetryCounter = consumer.retryCounter;
 
         // Shutdown retryable channel (need to explicitly complete channel lifecycle).
-        consumer.shutdownRetryableConsumer();
+        consumer.close();
         lifecyclePublisher.onCompleted();
 
         verify(channel, times(1)).close();
@@ -193,7 +193,7 @@ public class RetryableServiceChannelTest {
         assertThat(consumer.retryCounter, is(equalTo(expectedNumberOfRetries)));
     }
 
-    class SampleRetryableChannelConsumer extends RetryableServiceChannel<ServiceChannel, Integer> {
+    class SampleRetryableChannelConsumer extends RetryableStatefullServiceChannel<ServiceChannel, Integer> {
 
         private int stateValue;
         private Observable<Void> repopulateReply;
@@ -201,7 +201,7 @@ public class RetryableServiceChannelTest {
 
         protected SampleRetryableChannelConsumer(long retryInitialDelayMs, Scheduler scheduler) {
             super(retryInitialDelayMs, scheduler);
-            initializeRetryableConsumer();
+            initializeRetryableChannel();
         }
 
         @Override
@@ -225,6 +225,11 @@ public class RetryableServiceChannelTest {
 
         public void withRepopulate(Observable<Void> repopulateReply) {
             this.repopulateReply = repopulateReply;
+        }
+
+        @Override
+        public Observable<Void> asLifecycleObservable() {
+            return null;
         }
     }
 }
