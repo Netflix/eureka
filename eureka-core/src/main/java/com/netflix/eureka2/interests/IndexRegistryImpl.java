@@ -16,7 +16,7 @@ public class IndexRegistryImpl<T> implements IndexRegistry<T> {
     final ConcurrentHashMap<Interest<T>, Index<T>> interestVsIndex;
 
     public IndexRegistryImpl() {
-        this.interestVsIndex = new ConcurrentHashMap<Interest<T>, Index<T>>();
+        this.interestVsIndex = new ConcurrentHashMap<>();
     }
 
     @Override

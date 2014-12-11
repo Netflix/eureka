@@ -76,7 +76,7 @@ public class EurekaClientRegistryImpl implements EurekaClientRegistry<InstanceIn
     public Observable<Void> unregister(InstanceInfo instanceInfo) {
         InstanceInfo removed = internalStore.remove(instanceInfo.getId());
         if (removed != null) {
-            notificationSubject.onNext(new ChangeNotification<InstanceInfo>(Kind.Delete, instanceInfo));
+            notificationSubject.onNext(new ChangeNotification<>(Kind.Delete, instanceInfo));
         }
         return Observable.empty();
     }
@@ -87,7 +87,7 @@ public class EurekaClientRegistryImpl implements EurekaClientRegistry<InstanceIn
         if (previous == null) {
             notificationSubject.onNext(new ChangeNotification<>(Kind.Add, updatedInfo));
         } else {
-            notificationSubject.onNext(new ModifyNotification<InstanceInfo>(updatedInfo, deltas));
+            notificationSubject.onNext(new ModifyNotification<>(updatedInfo, deltas));
         }
         return Observable.empty();
     }

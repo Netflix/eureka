@@ -55,6 +55,28 @@ public enum SampleChangeNotification {
         public ChangeNotification<InstanceInfo> newNotification(InstanceInfo seed) {
             return new ChangeNotification<>(ChangeNotification.Kind.Delete, seed);
         }
+    },
+    CliAdd() {
+        @Override
+        public ChangeNotification<InstanceInfo> newNotification() {
+            return newNotification(SampleInstanceInfo.CliServer.build());
+        }
+
+        @Override
+        public ChangeNotification<InstanceInfo> newNotification(InstanceInfo seed) {
+            return new ChangeNotification<>(ChangeNotification.Kind.Add, seed);
+        }
+    },
+    CliDelete() {
+        @Override
+        public ChangeNotification<InstanceInfo> newNotification() {
+            return newNotification(SampleInstanceInfo.CliServer.build());
+        }
+
+        @Override
+        public ChangeNotification<InstanceInfo> newNotification(InstanceInfo seed) {
+            return new ChangeNotification<>(ChangeNotification.Kind.Delete, seed);
+        }
     };
 
     public abstract ChangeNotification<InstanceInfo> newNotification();
