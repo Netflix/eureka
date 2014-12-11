@@ -21,6 +21,7 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
+import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.governator.guice.LifecycleInjector;
 import com.netflix.governator.guice.LifecycleInjectorBuilder;
 import com.netflix.governator.lifecycle.LifecycleManager;
@@ -61,7 +62,7 @@ public abstract class ServerInstance {
 
     public static class EurekaWriteServerInstance extends ServerInstance {
 
-        public EurekaWriteServerInstance(final EurekaServerConfig config, final ServerResolver replicationResolver) {
+        public EurekaWriteServerInstance(final WriteServerConfig config, final ServerResolver replicationResolver) {
             Module[] modules = {
                     new EurekaWriteServerModule(config),
                     new AbstractModule() {
