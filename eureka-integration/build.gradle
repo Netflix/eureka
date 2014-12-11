@@ -14,26 +14,18 @@
  * limitations under the License.
  */
 
-sourceSets {
-    integTest {
-        java.srcDir file('src/integTest/java')
-    }
-}
-
 task integTest(type: Test) {
-    testClassesDir = sourceSets.integTest.output.classesDir
-    classpath = sourceSets.integTest.runtimeClasspath
+    testClassesDir = sourceSets.main.output.classesDir
+    classpath = sourceSets.main.runtimeClasspath
 }
-
-check.dependsOn integTest
 
 dependencies {
-    integTestCompile project(':eureka-read-server')
-    integTestCompile project(':eureka-write-server')
-    integTestCompile project(':eureka-bridge')
-    integTestCompile project(':eureka-test-utils')
-    integTestCompile "org.hamcrest:hamcrest-library:${hamcrest_version}"
-    integTestCompile "org.mockito:mockito-core:${mockito_version}"
-    integTestCompile "jline:jline:${jline_version}"
-    integTestCompile "junit:junit:${junit_version}"
+    compile project(':eureka-read-server')
+    compile project(':eureka-write-server')
+    compile project(':eureka-bridge')
+    compile project(':eureka-test-utils')
+    compile "org.hamcrest:hamcrest-library:${hamcrest_version}"
+    compile "org.mockito:mockito-core:${mockito_version}"
+    compile "jline:jline:${jline_version}"
+    compile "junit:junit:${junit_version}"
 }
