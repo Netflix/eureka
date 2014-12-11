@@ -75,7 +75,7 @@ public class EmbeddedEurekaCluster {
             discoveryResolverServersList[i] = new ServerResolver.Server("127.0.0.1", discoveryPort);
             registrationResolverServersList[i] = new ServerResolver.Server("127.0.0.1", registrationPort);
             replicationPeerList.add(
-                    new ChangeNotification<InetSocketAddress>(Kind.Add, new InetSocketAddress("127.0.0.1", replicationPort))
+                    new ChangeNotification<>(Kind.Add, new InetSocketAddress("127.0.0.1", replicationPort))
             );
             writeServerConfigs[i] = WriteServerConfig.writeBuilder()
                     .withAppName(WRITE_SERVER_NAME)
@@ -107,6 +107,8 @@ public class EmbeddedEurekaCluster {
                     .withVipAddress(READ_SERVER_NAME)
                     .withDataCenterType(DataCenterType.Basic)
                     .withDiscoveryPort(port)
+                    .withShutDownPort(port + 3)
+                    .withWebAdminPort(port + 4)
                     .withCodec(Codec.Avro)
                     .build();
             ServerInstance instance = new EurekaReadServerInstance(config, registrationResolver, discoveryResolver);

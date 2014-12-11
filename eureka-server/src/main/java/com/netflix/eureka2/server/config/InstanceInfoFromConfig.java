@@ -9,6 +9,9 @@ import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
 import rx.Observable;
 import rx.functions.Func1;
 
+import java.util.HashSet;
+import java.util.UUID;
+
 /**
  * @author David Liu
  */
@@ -26,7 +29,7 @@ public class InstanceInfoFromConfig {
                 .map(new Func1<DataCenterInfo, InstanceInfo.Builder>() {
                     @Override
                     public InstanceInfo.Builder call(DataCenterInfo dataCenterInfo) {
-                        final String instanceId = config.getAppName() + '#' + dataCenterInfo.getName();
+                        final String instanceId = config.getAppName() + '#' + UUID.randomUUID().toString();
 
                         String address = AddressSelector.selectBy().publicIp(true).or().any().returnNameOrIp(dataCenterInfo.getAddresses());
                         HashSet<String> healthCheckUrls = new HashSet<String>();

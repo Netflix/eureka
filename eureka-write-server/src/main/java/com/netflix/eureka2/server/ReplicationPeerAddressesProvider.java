@@ -41,12 +41,12 @@ public class ReplicationPeerAddressesProvider implements Provider<Observable<Cha
 
     @PostConstruct
     public void createResolver() {
-        EurekaCommonConfig.ResolverType resolverType = config.getServerResolverType();
-        if (resolverType == null) {
-            throw new IllegalArgumentException("Write cluster resolver type not defined");
-        }
+        if (config != null) {  // always postConstruct resolve if config exist
+            EurekaCommonConfig.ResolverType resolverType = config.getServerResolverType();
+            if (resolverType == null) {
+                throw new IllegalArgumentException("Write cluster resolver type not defined");
+            }
 
-        if (addressStream == null) {
             EurekaCommonConfig.ServerBootstrap[] bootstraps = EurekaCommonConfig.ServerBootstrap.from(config.getServerList());
             switch (resolverType) {
                 case dns:
@@ -71,7 +71,7 @@ public class ReplicationPeerAddressesProvider implements Provider<Observable<Cha
                     .map(new Func1<ChangeNotification<String>, ChangeNotification<InetSocketAddress>>() {
                         @Override
                         public ChangeNotification<InetSocketAddress> call(ChangeNotification<String> notification) {
-                            return new ChangeNotification<InetSocketAddress>(
+                            return new ChangeNotification<>(
                                     notification.getKind(),
                                     new InetSocketAddress(notification.getData(), sb.getReplicationPort())
                             );
@@ -85,7 +85,7 @@ public class ReplicationPeerAddressesProvider implements Provider<Observable<Cha
     private static Observable<ChangeNotification<InetSocketAddress>> fromList(ServerBootstrap[] bootstraps) {
         List<ChangeNotification<InetSocketAddress>> addresses = new ArrayList<>(bootstraps.length);
         for (ServerBootstrap sb : bootstraps) {
-            addresses.add(new ChangeNotification<InetSocketAddress>(
+            addresses.add(new ChangeNotification<>(
                             Kind.Add,
                             new InetSocketAddress(sb.getHostname(), sb.getReplicationPort()))
             );
