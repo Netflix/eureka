@@ -54,7 +54,7 @@ var eurekaRegistryView = (function () {
             if (!(oldInstId in newInstIdList)) {
                 var oldInstInfo = instances[oldInstId];
                 removeItemFromRegistry(instances[oldInstId]);
-                logLines.push({type: 'Add', instId: oldInstId, appId: oldInstInfo['app'], vip: oldInstInfo['vipAddress']});
+                logLines.push({type: 'Remove', instId: oldInstId, appId: oldInstInfo['app'], vip: oldInstInfo['vipAddress']});
             }
         });
     }
@@ -81,11 +81,13 @@ var eurekaRegistryView = (function () {
         var instId = instInfo['instanceId'];
         var isUpdated = false;
 
-        // update VIP address
-        if ((instId in instances) && (instInfo['vipAddress'] !== instances[instId]['vipAddress'])) {
-            instances[instId]['vipAddress'] = instInfo['vipAddress'];
-            isUpdated = true;
-        }
+        // update instanceInfo fields
+        ['status', 'vipAddress'].forEach(function(instInfoField) {
+            if ((instId in instances) && (instInfo[instInfoField] !== instances[instId][instInfoField])) {
+                instances[instId][instInfoField] = instInfo[instInfoField];
+                isUpdated = true;
+            }
+        });
 
         // update app - should not usually happen
         if ((instId in instances) && (instInfo['app'] !== instances[instId]['app'])) {
@@ -135,8 +137,10 @@ var eurekaRegistryView = (function () {
         sortedAppList = [];
         for (var appId in registry) {
             instanceCount = registry[appId].length;
-            sortedAppList.push({name: appId, value: instanceCount});
-            totalInstCount += instanceCount;
+            if (instanceCount > 0) {
+                sortedAppList.push({name: appId, value: instanceCount});
+                totalInstCount += instanceCount;
+            }
         }
 
         sortedAppList.sort(function (a, b) {

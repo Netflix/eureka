@@ -77,7 +77,7 @@ public class RegistryStream {
     private void startStream() {
         publishRegistryItems();
 
-        Observable.interval(1, TimeUnit.MINUTES).subscribe(new Action1<Long>() {
+        Observable.interval(30, TimeUnit.SECONDS).subscribe(new Action1<Long>() {
             @Override
             public void call(Long aLong) {
                 publishRegistryItems();
