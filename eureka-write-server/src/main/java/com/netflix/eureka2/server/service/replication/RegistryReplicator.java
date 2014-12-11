@@ -61,12 +61,6 @@ class RegistryReplicator implements ChannelHandler<ReplicationChannel> {
             subscription.unsubscribe();
         }
         subscription = channel.hello(new ReplicationHello(ownInstanceId, registry.size()))
-                .doOnCompleted(new Action0() {
-                    @Override
-                    public void call() {
-                        logger.info("Replication channel disconnected");
-                    }
-                })
                 .flatMap(new Func1<ReplicationHelloReply, Observable<ChangeNotification<InstanceInfo>>>() {
                     @Override
                     public Observable<ChangeNotification<InstanceInfo>> call(ReplicationHelloReply replicationHelloReply) {

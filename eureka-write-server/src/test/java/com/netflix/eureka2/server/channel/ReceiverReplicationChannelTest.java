@@ -25,7 +25,6 @@ import com.netflix.eureka2.protocol.replication.UnregisterCopy;
 import com.netflix.eureka2.protocol.replication.UpdateCopy;
 import com.netflix.eureka2.registry.Delta;
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.registry.SampleInstanceInfo;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry.Status;
 import com.netflix.eureka2.server.registry.Source;
@@ -39,7 +38,6 @@ import org.mockito.ArgumentCaptor;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
-import static com.netflix.eureka2.registry.SampleInstanceInfo.DiscoveryServer;
 import static com.netflix.eureka2.server.metric.WriteServerMetricFactory.writeServerMetrics;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -54,16 +52,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Tomasz Bak
  */
-public class ReceiverReplicationChannelTest {
-
-    private static final String SENDER_ID = "senderId";
-    private static final String RECEIVER_ID = "receiverId";
-    private static final InstanceInfo RECEIVER_INFO = DiscoveryServer.builder().withId(RECEIVER_ID).build();
-
-    private static final ReplicationHello HELLO = new ReplicationHello(SENDER_ID, 0);
-    private static final ReplicationHelloReply HELLO_REPLY = new ReplicationHelloReply(RECEIVER_ID, false);
-
-    private static final InstanceInfo APP_INFO = SampleInstanceInfo.ZuulServer.build();
+public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTest {
 
     private final MessageConnection transport = mock(MessageConnection.class);
     private final PublishSubject<Void> transportLifeCycle = PublishSubject.create();
@@ -115,8 +104,6 @@ public class ReceiverReplicationChannelTest {
         // Capture registration on the registry and verify the arguments
         verify(registry, times(1)).register(infoCaptor.capture(), sourceCaptor.capture());
         verifyInstanceAndSourceCaptures(APP_INFO, SENDER_ID);
-
-        verify(transport, times(1)).acknowledge();
     }
 
     @Test
@@ -140,8 +127,6 @@ public class ReceiverReplicationChannelTest {
         verifyInstanceAndSourceCaptures(APP_INFO, SENDER_ID);
         assertThat(capturedDelta.size(), is(equalTo(1)));
         assertThat((String) capturedDelta.iterator().next().getValue(), is(equalTo("myNewName")));
-
-        verify(transport, times(2)).acknowledge();
     }
 
     @Test
@@ -155,8 +140,6 @@ public class ReceiverReplicationChannelTest {
         // Capture remove on the registry and verify the arguments
         verify(registry, times(1)).unregister(infoCaptor.capture(), sourceCaptor.capture());
         verifyInstanceAndSourceCaptures(APP_INFO, SENDER_ID);
-
-        verify(transport, times(2)).acknowledge();
     }
 
     @Test

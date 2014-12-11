@@ -17,7 +17,6 @@
 package com.netflix.eureka2.server.channel;
 
 import com.netflix.eureka2.channel.AbstractClientChannel;
-import com.netflix.eureka2.transport.TransportClient;
 import com.netflix.eureka2.protocol.replication.RegisterCopy;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
@@ -26,6 +25,7 @@ import com.netflix.eureka2.protocol.replication.UpdateCopy;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.server.channel.SenderReplicationChannel.STATE;
 import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.transport.TransportClient;
 import rx.Observable;
 import rx.functions.Func1;
 
@@ -53,20 +53,19 @@ public class SenderReplicationChannel extends AbstractClientChannel<STATE> imple
         return connect().switchMap(new Func1<MessageConnection, Observable<ReplicationHelloReply>>() {
             @Override
             public Observable<ReplicationHelloReply> call(final MessageConnection connection) {
-                return connection.submit(hello).flatMap(new Func1<Void, Observable<ReplicationHelloReply>>() {
-                    @Override
-                    public Observable<ReplicationHelloReply> call(Void aVoid) {
-                        return connection.incoming().flatMap(new Func1<Object, Observable<ReplicationHelloReply>>() {
-                            @Override
-                            public Observable<ReplicationHelloReply> call(Object o) {
-                                if (o instanceof ReplicationHelloReply) {
-                                    return Observable.just((ReplicationHelloReply) o);
-                                }
-                                return Observable.error(new Exception("Unexpected message of type " + o.getClass() + " received"));
-                            }
-                        });
-                    }
-                });
+                return connection.submit(hello)
+                        .cast(ReplicationHelloReply.class)
+                        .concatWith(
+                                connection.incoming().flatMap(new Func1<Object, Observable<ReplicationHelloReply>>() {
+                                    @Override
+                                    public Observable<ReplicationHelloReply> call(Object o) {
+                                        if (o instanceof ReplicationHelloReply) {
+                                            return Observable.just((ReplicationHelloReply) o);
+                                        }
+                                        return Observable.error(new Exception("Unexpected message of type " + o.getClass() + " received"));
+                                    }
+                                })
+                        );
             }
         });
     }

@@ -116,9 +116,7 @@ public class ReceiverReplicationChannel extends AbstractChannel<STATES> implemen
         reply.ignoreElements().cast(Void.class).subscribe(new Subscriber<Void>() {
             @Override
             public void onCompleted() {
-                if (!(message instanceof ReplicationHello)) {
-                    sendAckOnTransport();
-                }
+                // No-op
             }
 
             @Override

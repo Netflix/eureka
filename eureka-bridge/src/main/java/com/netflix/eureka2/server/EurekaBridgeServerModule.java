@@ -8,6 +8,7 @@ import com.netflix.eureka2.server.service.replication.ReplicationService;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
+import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.metric.BridgeChannelMetrics;
 import com.netflix.eureka2.server.metric.BridgeServerMetricFactory;
 import com.netflix.eureka2.server.metric.InterestChannelMetrics;
@@ -50,6 +51,7 @@ public class EurekaBridgeServerModule extends AbstractModule {
         } else {
             bind(EurekaCommonConfig.class).toInstance(config);
             bind(EurekaServerConfig.class).toInstance(config);
+            bind(WriteServerConfig.class).toInstance(config);
             bind(BridgeServerConfig.class).toInstance(config);
         }
         bind(SelfRegistrationService.class).to(BridgeSelfRegistrationService.class).asEagerSingleton();

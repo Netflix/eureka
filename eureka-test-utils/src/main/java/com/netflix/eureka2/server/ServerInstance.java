@@ -21,16 +21,17 @@ import java.net.InetSocketAddress;
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.google.inject.Module;
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.server.config.BridgeServerConfig;
-import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.governator.guice.LifecycleInjector;
-import com.netflix.governator.guice.LifecycleInjectorBuilder;
-import com.netflix.governator.lifecycle.LifecycleManager;
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.client.resolver.ServerResolver;
+import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.server.config.BridgeServerConfig;
+import com.netflix.eureka2.server.config.EurekaServerConfig;
+import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.spi.ExtensionLoader;
+import com.netflix.governator.guice.LifecycleInjector;
+import com.netflix.governator.guice.LifecycleInjectorBuilder;
+import com.netflix.governator.lifecycle.LifecycleManager;
 import rx.Observable;
 
 /**
@@ -65,7 +66,7 @@ public abstract class ServerInstance {
 
     public static class EurekaWriteServerInstance extends ServerInstance {
 
-        public EurekaWriteServerInstance(final EurekaServerConfig config, final Observable<ChangeNotification<InetSocketAddress>> replicationPeers) {
+        public EurekaWriteServerInstance(final WriteServerConfig config, final Observable<ChangeNotification<InetSocketAddress>> replicationPeers) {
             Module[] modules = {
                     new EurekaWriteServerModule(config),
                     new AbstractModule() {
@@ -85,7 +86,7 @@ public abstract class ServerInstance {
         public EurekaReadServerInstance(EurekaServerConfig config, final ServerResolver registrationResolver,
                                         ServerResolver discoveryResolver) {
             final EurekaClient eurekaClient = Eureka.newClientBuilder(discoveryResolver, registrationResolver)
-                                                    .withCodec(config.getCodec()).build();
+                    .withCodec(config.getCodec()).build();
             Module[] modules = {
                     new EurekaReadServerModule(config, eurekaClient),
             };
@@ -96,7 +97,7 @@ public abstract class ServerInstance {
 
     public static class EurekaBridgeServerInstance extends ServerInstance {
 
-        public EurekaBridgeServerInstance(final BridgeServerConfig config,  final Observable<ChangeNotification<InetSocketAddress>> replicationPeers) {
+        public EurekaBridgeServerInstance(final BridgeServerConfig config, final Observable<ChangeNotification<InetSocketAddress>> replicationPeers) {
             Module[] modules = {
                     new EurekaBridgeServerModule(config),
                     new AbstractModule() {

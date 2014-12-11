@@ -20,6 +20,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.server.audit.AuditServiceController;
+import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.metric.InterestChannelMetrics;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
@@ -49,13 +50,13 @@ import io.reactivex.netty.servo.ServoEventsListenerFactory;
  */
 public class EurekaWriteServerModule extends AbstractModule {
 
-    private final EurekaServerConfig config;
+    private final WriteServerConfig config;
 
     public EurekaWriteServerModule() {
         this(null);
     }
 
-    public EurekaWriteServerModule(EurekaServerConfig config) {
+    public EurekaWriteServerModule(WriteServerConfig config) {
         this.config = config;
     }
 
@@ -66,6 +67,7 @@ public class EurekaWriteServerModule extends AbstractModule {
         } else {
             bind(EurekaCommonConfig.class).toInstance(config);
             bind(EurekaServerConfig.class).toInstance(config);
+            bind(WriteServerConfig.class).toInstance(config);
         }
         bind(SelfRegistrationService.class).to(WriteSelfRegistrationService.class).asEagerSingleton();
 
