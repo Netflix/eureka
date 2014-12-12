@@ -8,5 +8,5 @@ include 'eureka-client',\
         'eureka-bridge',\
         'eureka-test-utils',\
         'eureka-integration',\
-        'eureka-extensions:eureka-kafka',\
+        'eureka-contrib:eureka-kafka',\
         'eureka-examples'
