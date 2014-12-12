@@ -16,15 +16,6 @@
 
 package com.netflix.eureka2.client.resolver;
 
-import com.netflix.eureka2.client.resolver.ServerResolver.Server;
-import com.netflix.eureka2.rx.RxBlocking;
-import com.netflix.eureka2.utils.Sets;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import rx.schedulers.Schedulers;
-import rx.schedulers.TestScheduler;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -32,12 +23,24 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertTrue;
+import com.netflix.eureka2.client.resolver.FileServerResolver.FileServerResolverBuilder;
+import com.netflix.eureka2.client.resolver.ServerResolver.Server;
+import com.netflix.eureka2.rx.RxBlocking;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import rx.schedulers.Schedulers;
+import rx.schedulers.TestScheduler;
+
+import static com.netflix.eureka2.utils.Sets.asSet;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  * @author Tomasz Bak
  */
-public class FileServerResolverTest {
+public class FileServerResolverTest extends AbstractResolverTest {
 
     private File configurationFile;
     private FileServerResolver resolver;
@@ -46,15 +49,22 @@ public class FileServerResolverTest {
     @Before
     public void setUp() throws Exception {
         configurationFile = File.createTempFile("eureka-resolver-test", ".conf");
-        updateFile("serverA", "serverB");
+        updateFile("serverA;port=555", "serverB");
 
         // We need to force reload, as file last update time resolution is 1sec. Too long to wait.
         testScheduler = Schedulers.test();
-        resolver = new FileServerResolver(configurationFile, 10, 100, TimeUnit.MILLISECONDS, true, testScheduler);
+        resolver = new FileServerResolverBuilder()
+                .withTextFile(configurationFile)
+                .withReloadInterval(10, TimeUnit.MILLISECONDS)
+                .withIdleTimeout(100, TimeUnit.MILLISECONDS)
+                .withAlwaysReload(true)
+                .withScheduler(testScheduler)
+                .build();
     }
 
     @After
     public void tearDown() throws Exception {
+        resolver.close();
         if (configurationFile != null && configurationFile.exists()) {
             configurationFile.delete();
         }
@@ -62,24 +72,20 @@ public class FileServerResolverTest {
 
     @Test
     public void testReadingServersFromFile() throws Exception {
-        Iterator<Server> serverEntryIterator = RxBlocking.iteratorFrom(30, TimeUnit.SECONDS, resolver.resolve());
+        Set<Server> expected = asSet(new Server("serverA", 555),
+                new Server("serverB", 0));
+        Set<Server> actual = asSet(takeNext(resolver), takeNext(resolver));
 
-        Set<ServerResolver.Server> expected = Sets.asSet(new ServerResolver.Server("serverA", 0),
-                                                         new Server("serverB", 0));
-
-        assertTrue(expected.contains(serverEntryIterator.next()));
-        assertTrue(expected.contains(serverEntryIterator.next()));
+        assertThat(expected, is(equalTo(actual)));
 
         // Now update the file, and change one server address
         updateFile("serverA", "serverC");
-
         testScheduler.advanceTimeBy(10, TimeUnit.MILLISECONDS);
 
-        expected = Sets.asSet(new ServerResolver.Server("serverA", 0), new Server("serverC", 0));
+        expected = asSet(new Server("serverA", 0), new Server("serverC", 0));
+        actual = asSet(takeNext(resolver), takeNext(resolver));
 
-        serverEntryIterator = RxBlocking.iteratorFrom(30, TimeUnit.SECONDS, resolver.resolve());
-        assertTrue(expected.contains(serverEntryIterator.next()));
-        assertTrue(expected.contains(serverEntryIterator.next()));
+        assertThat(expected, is(equalTo(actual)));
     }
 
     private void updateFile(String... servers) throws IOException {

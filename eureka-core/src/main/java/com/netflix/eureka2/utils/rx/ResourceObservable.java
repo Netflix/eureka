@@ -71,6 +71,7 @@ public class ResourceObservable<T> {
                 try {
                     if (executor == null) {
                         executor = new ResourceLoaderExecutor();
+                        // TODO: this is synchronous resource load that should be run on separate thread.
                         executor.call();
                     }
                     subscriptionCounter.incrementAndGet();

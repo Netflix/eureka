@@ -16,6 +16,12 @@
 
 package com.netflix.eureka2.client.resolver;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.ChangeNotification.Kind;
+import netflix.ocelli.LoadBalancerBuilder;
 import rx.Observable;
 
 /**
@@ -26,16 +32,21 @@ import rx.Observable;
  *
  * @author Tomasz Bak
  */
-public class StaticServerResolver implements ServerResolver {
+public class StaticServerResolver extends AbstractServerResolver {
 
-    private Observable<Server> stream;
+    private final Observable<ChangeNotification<Server>> updateStream;
 
-    public StaticServerResolver(Server... serverList) {
-        stream = Observable.from(serverList);
+    public StaticServerResolver(LoadBalancerBuilder<Server> loadBalancerBuilder, Server... serverList) {
+        super(loadBalancerBuilder);
+        List<ChangeNotification<Server>> updates = new ArrayList<>(serverList.length);
+        for (Server server : serverList) {
+            updates.add(new ChangeNotification<Server>(Kind.Add, server));
+        }
+        updateStream = Observable.from(updates);
     }
 
     @Override
-    public Observable<Server> resolve() {
-        return stream;
+    protected Observable<ChangeNotification<Server>> serverUpdates() {
+        return updateStream;
     }
 }

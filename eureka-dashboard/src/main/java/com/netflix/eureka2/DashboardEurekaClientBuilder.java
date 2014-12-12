@@ -5,9 +5,12 @@ import com.google.inject.Singleton;
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.client.resolver.ServerResolver;
+import com.netflix.eureka2.client.resolver.ServerResolver.Server;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.config.EurekaDashboardConfig;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
+import com.netflix.eureka2.server.config.EurekaCommonConfig.ResolverType;
+import com.netflix.eureka2.server.config.EurekaCommonConfig.ServerBootstrap;
 
 @Singleton
 public class DashboardEurekaClientBuilder {
@@ -20,14 +23,12 @@ public class DashboardEurekaClientBuilder {
 
         EurekaCommonConfig.ResolverType resolverType = config.getServerResolverType();
         EurekaCommonConfig.ServerBootstrap[] bootstraps = EurekaCommonConfig.ServerBootstrap.from(config.getServerList());
-        ServerResolver[] resolvers = new ServerResolver[bootstraps.length];
 
-        for (int i = 0; i < resolvers.length; i++) {
-            resolvers[i] = resolveForType(bootstraps[i], resolverType);
+        if (resolverType == ResolverType.dns) {
+            resolver = forDNS(bootstraps);
+        } else {
+            resolver = forFixed(bootstraps);
         }
-
-        resolver = ServerResolvers.from(resolvers);
-
         eurekaClient = Eureka.newClientBuilder(resolver).build();
     }
 
@@ -35,22 +36,18 @@ public class DashboardEurekaClientBuilder {
         return eurekaClient;
     }
 
-    private ServerResolver resolveForType(EurekaCommonConfig.ServerBootstrap bootstrap, EurekaCommonConfig.ResolverType resolverType) {
-        if (resolverType == null) {
-            throw new IllegalArgumentException("Write cluster resolver type not defined");
+    private static ServerResolver forDNS(ServerBootstrap[] bootstraps) {
+        if (bootstraps.length != 1) {
+            throw new IllegalArgumentException("Expected one DNS name for server resolver, while got " + bootstraps.length);
         }
+        return ServerResolvers.forDnsName(bootstraps[0].getHostname(), bootstraps[0].getDiscoveryPort());
+    }
 
-        ServerResolver resolver;
-        switch (resolverType) {
-            case dns:
-                resolver = ServerResolvers.forDnsName(bootstrap.getHostname(), bootstrap.getDiscoveryPort());
-                break;
-            case fixed:
-                resolver = ServerResolvers.just(bootstrap.getHostname(), bootstrap.getDiscoveryPort());
-                break;
-            default:
-                throw new IllegalArgumentException("Unrecognized write cluster resolver");
+    private static ServerResolver forFixed(ServerBootstrap[] bootstraps) {
+        Server[] servers = new Server[bootstraps.length];
+        for (int i = 0; i < bootstraps.length; i++) {
+            servers[i] = new Server(bootstraps[i].getHostname(), bootstraps[i].getDiscoveryPort());
         }
-        return resolver;
+        return ServerResolvers.from(servers);
     }
 }

@@ -19,28 +19,36 @@ package com.netflix.eureka2.client.resolver;
 import rx.Observable;
 
 /**
- * A mechanism to discovery eureka servers.
- *
+ * A mechanism to discovery eureka servers. Each call to {@link #resolve()} returns an
+ * observable with no more than one element the is the best contender for the next
+ * connection.
+ * <p>
  * Out of the box implementations can be created using {@link ServerResolvers}
- *
- * TODO: possibly move this into core
+ * <h1>Thread safety</h1>
+ * Calls to {@link #resolve} method are not thread safe, as given its embedded load balancing
+ * semantic sharing single resolver by multiple clients has little sense.
  *
  * @author Tomasz Bak
  */
 public interface ServerResolver {
 
     /**
-     * Returns an {@link Observable} of {@link ServerResolver.Server} instances. This can be used in two ways:
-     *
-     * <ul>
-     <li>Resolve to next best server: The returned list has the first element as the best contender for the next
-     connection. So, by using {@link Observable#take(int)} with 1 element, it will return the next server to use.</li>
-     <li>List all servers: Returns a finite stream of servers known to this resolver.</li>
-     </ul>
+     * Returns a single element {@link Observable} of {@link ServerResolver.Server} instances, which
+     * completes immediately after the element is provided. Properly behaving implementations should
+     * never complete before issuing the value. In case of a problem, a subscription should terminate
+     * with an error.
+     * <h1>Error handling</h1>
+     * This interface does not define any specific error handling protocol, like distinguishing between
+     * recoverable and non-recoverable errors.
      *
      * @return An {@link Observable} of {@link ServerResolver.Server} instances.
      */
     Observable<Server> resolve();
+
+    /**
+     * Cleanup resources.
+     */
+    void close();
 
     class Server {
 
@@ -80,6 +88,14 @@ public interface ServerResolver {
             int result = host != null ? host.hashCode() : 0;
             result = 31 * result + port;
             return result;
+        }
+
+        @Override
+        public String toString() {
+            return "Server{" +
+                    "host='" + host + '\'' +
+                    ", port=" + port +
+                    '}';
         }
     }
 }

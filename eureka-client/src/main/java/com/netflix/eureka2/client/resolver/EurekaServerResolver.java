@@ -16,23 +16,26 @@
 
 package com.netflix.eureka2.client.resolver;
 
+import java.net.InetSocketAddress;
+
 import com.netflix.eureka2.Names;
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.InstanceInfo.Status;
 import com.netflix.eureka2.registry.ServiceSelector;
+import netflix.ocelli.LoadBalancer;
+import netflix.ocelli.LoadBalancerBuilder;
+import netflix.ocelli.MembershipEvent;
+import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
-import rx.Subscriber;
 import rx.functions.Func1;
-import rx.subjects.BehaviorSubject;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
+import static netflix.ocelli.MembershipEvent.EventType.ADD;
+import static netflix.ocelli.MembershipEvent.EventType.REMOVE;
 
 /**
  * A resolver fetching server list from the Eureka cluster. Eureka client uses
@@ -43,121 +46,134 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class EurekaServerResolver implements ServerResolver {
 
-    private final ServiceSelector addressQuery;
-    private final BehaviorSubject<ServerList> serverListSubject;
-    private final AtomicReference<ServerList> currentServerList = new AtomicReference<>(new ServerList());
+    private static final Logger logger = LoggerFactory.getLogger(EurekaServerResolver.class);
+
+    private final String readServerVip;
+    private final ServiceSelector serviceSelector;
+    private final LoadBalancerBuilder<Server> loadBalancerBuilder;
+    private LoadBalancer<Server> loadBalancer;
     private final EurekaClient eurekaClient;
 
-    protected EurekaServerResolver(ServerResolver bootstrapResolver, String readServerVip) {
-        this(bootstrapResolver, readServerVip, ServiceSelector.selectBy().serviceLabel(Names.DISCOVERY).publicIp(true)
-                                                              .or()
-                                                              .serviceLabel(Names.DISCOVERY));
-    }
-
-    protected EurekaServerResolver(ServerResolver bootstrapResolver, String readServerVip, ServiceSelector serviceSelector) {
-        this.addressQuery = serviceSelector;
-        serverListSubject = BehaviorSubject.create();
+    public EurekaServerResolver(ServerResolver bootstrapResolver,
+                                String readServerVip,
+                                ServiceSelector serviceSelector,
+                                LoadBalancerBuilder<Server> loadBalancerBuilder) {
+        this.readServerVip = readServerVip;
+        this.serviceSelector = serviceSelector;
+        this.loadBalancerBuilder = loadBalancerBuilder;
         eurekaClient = Eureka.newClient(bootstrapResolver);
-        eurekaClient.forInterest(Interests.forVips(readServerVip))
-                    .subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
-                        @Override
-                        public void onCompleted() {
-                            eurekaClient.close();
-                        }
-
-                        @Override
-                        public void onError(Throwable e) {
-                            // TODO: Re-subscribe
-                        }
-
-                        @Override
-                        public void onNext(ChangeNotification<InstanceInfo> changeNotification) {
-                            InstanceInfo instanceInfo = changeNotification.getData();
-                            InstanceInfo.ServiceEndpoint endpoint = addressQuery.returnServiceEndpoint(instanceInfo);
-                            final Server server = new Server(endpoint.getAddress().getIpAddress(),
-                                                             endpoint.getServicePort().getPort());
-                            final ServerList serverList = currentServerList.get();
-
-                            // This should always be a single threaded invocation, so we do not need CAS
-                            switch (changeNotification.getKind()) {
-                                case Add:
-                                    overwriteServerList(serverList.add(instanceInfo.getId(), server));
-                                case Delete:
-                                    overwriteServerList(serverList.remove(instanceInfo.getId()));
-                                case Modify:
-                                    overwriteServerList(serverList.update(instanceInfo.getId(), server));
-                            }
-                        }
-                    });
     }
 
-    private void overwriteServerList(final ServerList serverList) {
-        currentServerList.set(serverList);
-        serverListSubject.onNext(serverList);
+    public EurekaServerResolver(
+            EurekaClient eurekaClient, String readServerVip,
+            ServiceSelector serviceSelector,
+            LoadBalancerBuilder<Server> loadBalancerBuilder) {
+        this.readServerVip = readServerVip;
+        this.serviceSelector = serviceSelector;
+        this.loadBalancerBuilder = loadBalancerBuilder;
+        this.eurekaClient = eurekaClient;
     }
 
     @Override
     public Observable<Server> resolve() {
-        return serverListSubject
-                .filter(new Func1<ServerList, Boolean>() {
-                    @Override
-                    public Boolean call(ServerList serverList) {
-                        return !serverList.servers.isEmpty();
-                    }
-                })
-                .take(1)
-                .flatMap(new Func1<ServerList, Observable<Server>>() {
-                    @Override
-                    public Observable<Server> call(ServerList serverList) {
-                        return Observable.from(serverList.servers);
-                    }
-                });
+        if (loadBalancer == null) {
+            loadBalancer = loadBalancerBuilder.withMembershipSource(serverUpdates()).build();
+        }
+        return loadBalancer.choose();
     }
 
-    protected class ServerList {
-
-        private final Map<String, Server> idVsServers;
-        private final ArrayList<Server> servers;
-        private final int size;
-        private final AtomicInteger currentIndex = new AtomicInteger();
-
-        public ServerList(Map<String, Server> servers) {
-            this.idVsServers = servers;
-            this.servers = new ArrayList<>(this.idVsServers.values());
-            this.size = this.servers.size();
+    @Override
+    public void close() {
+        eurekaClient.close();
+        if (loadBalancer != null) {
+            loadBalancer.shutdown();
+            loadBalancer = null;
         }
+    }
 
-        public ServerList() {
-            this(new HashMap<String, Server>());
-        }
-
-        public Server getNextServer() {
-            final int nextIndex = Math.abs(currentIndex.incrementAndGet()) % size;
-            return servers.get(nextIndex);
-        }
-
-        public ServerList add(String id, Server server) {
-            final HashMap<String, Server> idVsServers = new HashMap<>(this.idVsServers); // Copy existing
-            return idVsServers.put(id, server) == null ? this : new ServerList(idVsServers);
-        }
-
-        public ServerList remove(String id) {
-            if (!idVsServers.containsKey(id)) {
-                return this;
+    protected Observable<MembershipEvent<Server>> serverUpdates() {
+        return eurekaClient.forVips(readServerVip).map(new Func1<ChangeNotification<InstanceInfo>, MembershipEvent<Server>>() {
+            @Override
+            public MembershipEvent<Server> call(ChangeNotification<InstanceInfo> notification) {
+                InstanceInfo info = notification.getData();
+                InetSocketAddress address = serviceSelector.returnServiceAddress(info);
+                if (address == null) {
+                    logger.warn("Unable to determine Eureka read server address/port from provided instance info: {}", info);
+                    return null;
+                }
+                Server server = new Server(address.getHostString(), address.getPort());
+                switch (notification.getKind()) {
+                    case Add:
+                        if (info.getStatus() == Status.UP) {
+                            return new MembershipEvent<Server>(ADD, server);
+                        }
+                        break;
+                    case Modify:
+                        if (info.getStatus() == Status.UP) {
+                            return new MembershipEvent<Server>(ADD, server);
+                        }
+                        return new MembershipEvent<Server>(REMOVE, server);
+                    case Delete:
+                        return new MembershipEvent<Server>(REMOVE, server);
+                }
+                return null;
             }
-            final HashMap<String, Server> idVsServers = new HashMap<>(this.idVsServers); // Copy existing
-            idVsServers.remove(id);
-            return new ServerList(idVsServers);
+        });
+    }
+
+    public static class EurekaServerResolverBuilder {
+
+        private ServerResolver bootstrapResolver;
+        private EurekaClient eurekaClient;
+        private String readServerVip;
+        private LoadBalancerBuilder<Server> loadBalancerBuilder;
+        private ServiceSelector serviceSelector;
+
+        public EurekaServerResolverBuilder withBootstrapResolver(ServerResolver bootstrapResolver) {
+            this.bootstrapResolver = bootstrapResolver;
+            return this;
         }
 
-        public ServerList update(String id, Server server) {
-            if (!idVsServers.containsKey(id)) {
-                return this;
-            }
+        public EurekaServerResolverBuilder withEurekaClient(EurekaClient eurekaClient) {
+            this.eurekaClient = eurekaClient;
+            return this;
+        }
 
-            final HashMap<String, Server> idVsServers = new HashMap<>(this.idVsServers); // Copy existing
-            idVsServers.put(id, server);
-            return new ServerList(idVsServers);
+        public EurekaServerResolverBuilder withReadServerVip(String readServerVip) {
+            this.readServerVip = readServerVip;
+            return this;
+        }
+
+        public EurekaServerResolverBuilder withServiceSelector(ServiceSelector serviceSelector) {
+            this.serviceSelector = serviceSelector;
+            return this;
+        }
+
+        public EurekaServerResolverBuilder withLoadBalancerBuilder(LoadBalancerBuilder<Server> loadBalancerBuilder) {
+            this.loadBalancerBuilder = loadBalancerBuilder;
+            return this;
+        }
+
+        public EurekaServerResolver build() {
+            if (serviceSelector == null) {
+                serviceSelector = ServiceSelector.selectBy()
+                        .serviceLabel(Names.DISCOVERY).publicIp(true)
+                        .or()
+                        .serviceLabel(Names.DISCOVERY);
+            }
+            if (loadBalancerBuilder == null) {
+                loadBalancerBuilder = new DefaultLoadBalancerBuilder<>(null);
+            }
+            if (eurekaClient != null && bootstrapResolver != null) {
+                throw new IllegalArgumentException("Both EurekaClient and bootstrap ServerResolver provided, while only one of the two expected");
+            }
+            if (eurekaClient != null) {
+                return new EurekaServerResolver(eurekaClient, readServerVip, serviceSelector, loadBalancerBuilder);
+            }
+            if (bootstrapResolver != null) {
+                return new EurekaServerResolver(bootstrapResolver, readServerVip, serviceSelector, loadBalancerBuilder);
+            }
+            return null;
         }
     }
 }

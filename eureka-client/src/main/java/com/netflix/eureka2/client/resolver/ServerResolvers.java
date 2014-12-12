@@ -18,6 +18,12 @@ package com.netflix.eureka2.client.resolver;
 
 import java.io.File;
 
+import com.netflix.eureka2.client.resolver.EurekaServerResolver.EurekaServerResolverBuilder;
+import com.netflix.eureka2.client.resolver.FileServerResolver.FileServerResolverBuilder;
+import com.netflix.eureka2.client.resolver.ServerResolver.Server;
+import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
+import rx.Observable;
+
 /**
  * A convenience factory for creating various flavors of {@link ServerResolver}
  *
@@ -33,22 +39,36 @@ public final class ServerResolvers {
     }
 
     public static ServerResolver fromWriteServer(ServerResolver writeServerResolver, String readClusterVip) {
-        return new EurekaServerResolver(writeServerResolver, readClusterVip);
+        return new EurekaServerResolverBuilder()
+                .withBootstrapResolver(writeServerResolver)
+                .withReadServerVip(readClusterVip)
+                .build();
     }
 
     public static ServerResolver fromFile(File textFile) {
-        return new FileServerResolver(textFile);
+        return new FileServerResolverBuilder().withTextFile(textFile).build();
     }
 
     public static ServerResolver just(String hostName, int port) {
-        return new StaticServerResolver(new ServerResolver.Server(hostName, port));
+        final Observable<Server> serverObservable = Observable.just(new Server(hostName, port));
+        return new ServerResolver() {
+            @Override
+            public Observable<Server> resolve() {
+                return serverObservable;
+            }
+
+            @Override
+            public void close() {
+                // Np-op
+            }
+        };
     }
 
     public static ServerResolver from(ServerResolver.Server... servers) {
-        return new StaticServerResolver(servers);
+        return new StaticServerResolver(new DefaultLoadBalancerBuilder<Server>(null), servers);
     }
 
-    public static ServerResolver from(ServerResolver... resolvers) {
-        return new CompositeServerResolver(resolvers);
+    public static ServerResolver failoverChainFrom(ServerResolver... resolvers) {
+        return new ServerResolverFailoverChain(resolvers);
     }
 }
