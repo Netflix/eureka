@@ -212,6 +212,20 @@ public class AwsDataCenterInfo extends DataCenterInfo {
         private String publicIP;
         private String publicHostName;
 
+        public Builder withAwsDataCenter(AwsDataCenterInfo dataCenter) {
+            this.region = dataCenter.getRegion();
+            this.zone = dataCenter.getZone();
+            this.placementGroup = dataCenter.getPlacementGroup();
+            this.amiId = dataCenter.getAmiId();
+            this.instanceId = dataCenter.getInstanceId();
+            this.instanceType = dataCenter.getInstanceType();
+            this.privateIP = dataCenter.getPrivateAddress().getIpAddress();
+            this.privateHostName = dataCenter.getPrivateAddress().getHostName();
+            this.publicIP = dataCenter.getPublicAddress().getIpAddress();
+            this.publicHostName = dataCenter.getPublicAddress().getHostName();
+            return this;
+        }
+
         public Builder withRegion(String region) {
             this.region = region;
             return this;

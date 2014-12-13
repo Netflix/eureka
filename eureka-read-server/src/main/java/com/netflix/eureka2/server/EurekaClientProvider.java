@@ -16,19 +16,21 @@
 
 package com.netflix.eureka2.server;
 
+import javax.inject.Provider;
+import javax.inject.Singleton;
+
 import com.google.inject.Inject;
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.client.metric.EurekaClientMetricFactory;
 import com.netflix.eureka2.client.resolver.ServerResolver;
+import com.netflix.eureka2.client.resolver.ServerResolver.Server;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
+import com.netflix.eureka2.server.config.EurekaCommonConfig.ResolverType;
 import com.netflix.eureka2.server.config.EurekaCommonConfig.ServerBootstrap;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import rx.functions.Func1;
-
-import javax.inject.Provider;
-import javax.inject.Singleton;
 
 /**
  * @author Tomasz Bak
@@ -63,44 +65,42 @@ public class EurekaClientProvider implements Provider<EurekaClient> {
                 }
         );
         return Eureka.newClientBuilder(discoveryResolver, registrationResolver)
-                     .withCodec(config.getCodec())
-                     .withMetricFactory(metricFactory)
-                     .build();
+                .withCodec(config.getCodec())
+                .withMetricFactory(metricFactory)
+                .build();
     }
 
     // TODO: move to a more general place
     private ServerResolver createWriteServerResolver(Func1<ServerBootstrap, Integer> getPortFunc) {
         EurekaCommonConfig.ResolverType resolverType = config.getServerResolverType();
-        ServerBootstrap[] bootstraps = ServerBootstrap.from(config.getServerList());
-        ServerResolver[] resolvers = new ServerResolver[bootstraps.length];
-
-        for (int i = 0; i < resolvers.length; i++) {
-            resolvers[i] = resolveForType(bootstraps[i], resolverType, getPortFunc);
-        }
-
-        return ServerResolvers.from(resolvers);
-    }
-
-    private ServerResolver resolveForType(
-            ServerBootstrap bootstrap,
-            EurekaCommonConfig.ResolverType resolverType,
-            Func1<ServerBootstrap, Integer> getPortFunc
-    ) {
         if (resolverType == null) {
             throw new IllegalArgumentException("Write cluster resolver type not defined");
         }
 
         ServerResolver resolver;
-        switch (resolverType) {
-            case dns:
-                resolver = ServerResolvers.forDnsName(bootstrap.getHostname(), getPortFunc.call(bootstrap));
-                break;
-            case fixed:
-                resolver = ServerResolvers.just(bootstrap.getHostname(), getPortFunc.call(bootstrap));
-                break;
-            default:
-                throw new IllegalArgumentException("Unrecognized write cluster resolver");
+
+        ServerBootstrap[] bootstraps = ServerBootstrap.from(config.getServerList());
+
+        if (resolverType == ResolverType.dns) {
+            resolver = forDNS(bootstraps, getPortFunc);
+        } else {
+            resolver = forFixed(bootstraps, getPortFunc);
         }
         return resolver;
+    }
+
+    private static ServerResolver forDNS(ServerBootstrap[] bootstraps, Func1<ServerBootstrap, Integer> getPortFunc) {
+        if (bootstraps.length != 1) {
+            throw new IllegalArgumentException("Expected one DNS name for server resolver, while got " + bootstraps.length);
+        }
+        return ServerResolvers.forDnsName(bootstraps[0].getHostname(), getPortFunc.call(bootstraps[0]));
+    }
+
+    private static ServerResolver forFixed(ServerBootstrap[] bootstraps, Func1<ServerBootstrap, Integer> getPortFunc) {
+        Server[] servers = new Server[bootstraps.length];
+        for (int i = 0; i < bootstraps.length; i++) {
+            servers[i] = new Server(bootstraps[i].getHostname(), getPortFunc.call(bootstraps[i]));
+        }
+        return ServerResolvers.from(servers);
     }
 }

@@ -50,4 +50,8 @@ public class ServerResolverFailoverChain implements ServerResolver {
     public Observable<Server> resolve() {
         return servers;
     }
+
+    @Override
+    public void close() {
+    }
 }

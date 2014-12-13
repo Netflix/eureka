@@ -56,7 +56,7 @@ public class InstanceInfoConverterImpl implements InstanceInfoConverter {
                     .withPublicIPv4(v1Info.get(AmazonInfo.MetaDataKey.publicIpv4))
                     .withPublicHostName(v1Info.get(AmazonInfo.MetaDataKey.publicHostname));
         } else {
-            builder = new BasicDataCenterInfo.Builder()
+            builder = new BasicDataCenterInfo.BasicDataCenterInfoBuilder()
                     .withName(v1DataCenterInfo.getName().name());
         }
         return builder.build();

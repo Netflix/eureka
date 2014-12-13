@@ -36,7 +36,7 @@ public enum SampleAwsDataCenterInfo {
                     .withPrivateHostName("us-east-1a-vm.internal")
                     .withPrivateIPv4("192.168.0.1")
                     .withPublicHostName("us-east-1a-vm.public")
-                    .withPublicIPv4("10.10.0.1");
+                    .withPublicIPv4("11.11.0.1");
         }
     },
     UsEast1c() {

@@ -16,14 +16,6 @@
 
 package com.netflix.eureka2.client.resolver;
 
-import com.netflix.eureka2.utils.rx.ResourceObservable;
-import com.netflix.eureka2.utils.rx.ResourceObservable.ResourceLoader;
-import com.netflix.eureka2.utils.rx.ResourceObservable.ResourceLoaderException;
-import com.netflix.eureka2.utils.rx.ResourceObservable.ResourceUpdate;
-import rx.Observable;
-import rx.Scheduler;
-import rx.schedulers.Schedulers;
-
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -32,6 +24,18 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
+import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.ChangeNotification.Kind;
+import com.netflix.eureka2.utils.rx.ResourceObservable;
+import com.netflix.eureka2.utils.rx.ResourceObservable.ResourceLoader;
+import com.netflix.eureka2.utils.rx.ResourceObservable.ResourceLoaderException;
+import com.netflix.eureka2.utils.rx.ResourceObservable.ResourceUpdate;
+import netflix.ocelli.LoadBalancerBuilder;
+import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
+import rx.Observable;
+import rx.Scheduler;
+import rx.schedulers.Schedulers;
 
 /**
  * A list of server addresses read from a local configuration file. The file can be
@@ -42,51 +46,109 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Tomasz Bak
  */
-public class FileServerResolver implements ServerResolver {
+public class FileServerResolver extends AbstractServerResolver {
 
     private final File textFile;
+    private final TimeUnit timeUnit;
     private final boolean alwaysReload;
-    private final Observable<Server> resolverObservable;
+    private final Scheduler scheduler;
+    private final long reloadInterval;
+    private final long idleTimeout;
 
-    public FileServerResolver(File textFile) {
-        this(textFile, -1, TimeUnit.MINUTES);
-    }
-
-    public FileServerResolver(File textFile, long reloadInterval, TimeUnit timeUnit) {
-        this(textFile, reloadInterval, -1, timeUnit, Schedulers.io());
-    }
-
-    public FileServerResolver(File textFile, long reloadInterval, long idleTimeout, TimeUnit reloadUnit, Scheduler scheduler) {
-        this(textFile, reloadInterval, idleTimeout, reloadUnit, false, scheduler);
-    }
-
-    public FileServerResolver(File textFile, long reloadInterval, long idleTimeout, TimeUnit reloadUnit, boolean alwaysReload, Scheduler scheduler) {
+    public FileServerResolver(File textFile, long reloadInterval, long idleTimeout, TimeUnit timeUnit,
+                              boolean alwaysReload, LoadBalancerBuilder<Server> loadBalancerBuilder,
+                              Scheduler scheduler) {
+        super(loadBalancerBuilder);
         this.textFile = textFile;
+        this.reloadInterval = reloadInterval;
+        this.idleTimeout = idleTimeout;
+        this.timeUnit = timeUnit;
         this.alwaysReload = alwaysReload;
-        this.resolverObservable = ResourceObservable.fromResource(new FileResolveTask(), reloadInterval, idleTimeout, reloadUnit, scheduler);
+        this.scheduler = scheduler;
     }
 
     @Override
-    public Observable<Server> resolve() {
-        return resolverObservable;
+    protected Observable<ChangeNotification<Server>> serverUpdates() {
+        return ResourceObservable.fromResource(new FileResolveTask(), reloadInterval, idleTimeout, timeUnit, scheduler);
     }
 
-    class FileResolveTask implements ResourceLoader<Server> {
+    public static class FileServerResolverBuilder {
+
+        private File textFile;
+
+        private long idleTimeoutMs = -1;
+
+        private long reloadIntervalMs = -1;
+
+        private boolean alwaysReload;
+
+        private LoadBalancerBuilder<Server> loadBalancerBuilder;
+
+        private Scheduler scheduler = Schedulers.io();
+
+        public FileServerResolverBuilder withTextFile(File textFile) {
+            this.textFile = textFile;
+            return this;
+        }
+
+        public FileServerResolverBuilder withIdleTimeout(long timeout, TimeUnit timeUnit) {
+            this.idleTimeoutMs = timeUnit.toMillis(timeout);
+            return this;
+        }
+
+        public FileServerResolverBuilder withReloadInterval(long interval, TimeUnit timeUnit) {
+            this.reloadIntervalMs = timeUnit.toMillis(interval);
+            return this;
+        }
+
+        public FileServerResolverBuilder withAlwaysReload(boolean alwaysReload) {
+            this.alwaysReload = alwaysReload;
+            return this;
+        }
+
+        public FileServerResolverBuilder withLoadBalancerBuilder(LoadBalancerBuilder<Server> loadBalancerBuilder) {
+            this.loadBalancerBuilder = loadBalancerBuilder;
+            return this;
+        }
+
+        public FileServerResolverBuilder withScheduler(Scheduler scheduler) {
+            this.scheduler = scheduler;
+            return this;
+        }
+
+        public FileServerResolver build() {
+            if (loadBalancerBuilder == null) {
+                loadBalancerBuilder = new DefaultLoadBalancerBuilder<>(null);
+            }
+            return new FileServerResolver(
+                    textFile,
+                    reloadIntervalMs,
+                    idleTimeoutMs,
+                    TimeUnit.MILLISECONDS,
+                    alwaysReload,
+                    loadBalancerBuilder,
+                    scheduler
+            );
+        }
+    }
+
+    class FileResolveTask implements ResourceLoader<ChangeNotification<Server>> {
 
         private long lastModified = -1;
 
         @Override
-        public ResourceUpdate<Server> reload(Set<Server> currentSnapshot) {
+        public ResourceUpdate<ChangeNotification<Server>> reload(Set<ChangeNotification<Server>> currentSnapshot) {
             if (!isUpdated()) {
-                return new ResourceUpdate<>(currentSnapshot, Collections.<Server>emptySet());
+                return new ResourceUpdate<>(currentSnapshot, Collections.<ChangeNotification<Server>>emptySet());
             }
             try {
                 try (LineNumberReader reader = new LineNumberReader(new FileReader(textFile))) {
-                    Set<Server> newAddresses = new HashSet<>();
+                    Set<ChangeNotification<Server>> newAddresses = new HashSet<>();
                     String line;
                     while ((line = reader.readLine()) != null) {
                         if (!(line = line.trim()).isEmpty()) {
-                            newAddresses.add(parseLine(reader.getLineNumber(), line));
+                            Server server = parseLine(reader.getLineNumber(), line);
+                            newAddresses.add(new ChangeNotification<Server>(Kind.Add, server));
                         }
                     }
                     return new ResourceUpdate<>(newAddresses, cancellationSet(currentSnapshot, newAddresses));
@@ -99,11 +161,11 @@ public class FileServerResolver implements ServerResolver {
             }
         }
 
-        private Set<Server> cancellationSet(Set<Server> currentSnapshot, Set<Server> newAddresses) {
-            Set<Server> cancelled = new HashSet<>();
-            for (Server entry : currentSnapshot) {
+        private Set<ChangeNotification<Server>> cancellationSet(Set<ChangeNotification<Server>> currentSnapshot, Set<ChangeNotification<Server>> newAddresses) {
+            Set<ChangeNotification<Server>> cancelled = new HashSet<>();
+            for (ChangeNotification<Server> entry : currentSnapshot) {
                 if (!newAddresses.contains(entry)) {
-                    cancelled.add(entry);
+                    cancelled.add(new ChangeNotification<Server>(Kind.Delete, entry.getData()));
                 }
             }
             return cancelled;
@@ -137,6 +199,7 @@ public class FileServerResolver implements ServerResolver {
                 } else {
                     throw new IllegalArgumentException("Syntax error at line " + lineNumber + " - unrecognized property");
                 }
+                pos = ampIdx + 1;
             }
             if (port == null) {
                 throw new IllegalArgumentException("Syntax error at line " + lineNumber + " - port number must be defined");

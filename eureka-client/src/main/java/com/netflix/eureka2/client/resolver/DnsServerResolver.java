@@ -74,6 +74,11 @@ public class DnsServerResolver implements ServerResolver {
         return resolverObservable;
     }
 
+    @Override
+    public void close() {
+        // No-op
+    }
+
     class DnsResolverTask implements ResourceLoader<Server> {
 
         private final int port;

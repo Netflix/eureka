@@ -16,9 +16,11 @@
 
 package com.netflix.eureka2.registry;
 
-import com.netflix.eureka2.utils.Sets;
-
 import java.util.HashSet;
+
+import com.netflix.eureka2.Names;
+import com.netflix.eureka2.transport.EurekaTransports;
+import com.netflix.eureka2.utils.Sets;
 
 /**
  * @author Tomasz Bak
@@ -35,6 +37,24 @@ public enum SampleServicePort {
         @Override
         public ServicePort build() {
             return new ServicePort("WebServer", 443, true);
+        }
+    },
+    EurekaRegistrationPort() {
+        @Override
+        public ServicePort build() {
+            return new ServicePort(Names.REGISTRATION, EurekaTransports.DEFAULT_REGISTRATION_PORT, false);
+        }
+    },
+    EurekaDiscoveryPort() {
+        @Override
+        public ServicePort build() {
+            return new ServicePort(Names.DISCOVERY, EurekaTransports.DEFAULT_DISCOVERY_PORT, false);
+        }
+    },
+    EurekaReplicationPort() {
+        @Override
+        public ServicePort build() {
+            return new ServicePort(Names.REPLICATION, EurekaTransports.DEFAULT_REPLICATION_PORT, false);
         }
     };
 

@@ -86,6 +86,10 @@ public class ResolverBasedTransportClientTest {
             public Observable<Server> resolve() {
                 return Observable.just(expectedServer.get());
             }
+
+            @Override
+            public void close() {
+            }
         };
 
         ResolverBasedTransportClient transportClient =

@@ -140,7 +140,10 @@ public class BasicDataCenterInfo extends DataCenterInfo {
         return builder.build();
     }
 
-    public static class Builder<T extends BasicDataCenterInfo> extends DataCenterInfoBuilder<T> {
+    public static class BasicDataCenterInfoBuilder extends Builder<BasicDataCenterInfo> {
+    }
+
+    protected static class Builder<T extends BasicDataCenterInfo> extends DataCenterInfoBuilder<T> {
 
         private String name;
         private final List<NetworkAddress> addresses = new ArrayList<>();
