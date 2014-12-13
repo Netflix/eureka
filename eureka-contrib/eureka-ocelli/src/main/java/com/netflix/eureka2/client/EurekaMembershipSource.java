@@ -7,14 +7,13 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.InstanceInfo.Status;
 import com.netflix.eureka2.registry.ServicePort;
 import netflix.ocelli.Host;
 import netflix.ocelli.MembershipEvent;
+import netflix.ocelli.MembershipEvent.EventType;
 import rx.Observable;
 import rx.functions.Func1;
-
-import static netflix.ocelli.MembershipEvent.EventType.ADD;
-import static netflix.ocelli.MembershipEvent.EventType.REMOVE;
 
 /**
  * @author Nitesh Kant
@@ -49,15 +48,17 @@ public class EurekaMembershipSource {
                         Host host = instanceInfoToHost.call(notification.getData());
                         switch (notification.getKind()) {
                             case Add:
-                                return Observable.just(new MembershipEvent<Host>(ADD, host));
+                                return Observable.just(new MembershipEvent<Host>(EventType.ADD, host));
                             case Delete:
-                                return Observable.just(new MembershipEvent<Host>(REMOVE, host));
+                                return Observable.just(new MembershipEvent<Host>(EventType.REMOVE, host));
                             case Modify:
-                                return Observable.just(new MembershipEvent<Host>(REMOVE, host),
-                                        new MembershipEvent<Host>(ADD, host));
-                            default:
-                                return Observable.empty();
+                                if (notification.getData().getStatus() == Status.UP) {
+                                    return Observable.just(new MembershipEvent<Host>(EventType.ADD, host));
+                                } else {
+                                    return Observable.just(new MembershipEvent<Host>(EventType.REMOVE, host));
+                                }
                         }
+                        return Observable.empty();
                     }
                 });
     }
