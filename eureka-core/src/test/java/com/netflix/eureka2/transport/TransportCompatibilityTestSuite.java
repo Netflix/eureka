@@ -1,6 +1,9 @@
 package com.netflix.eureka2.transport;
 
-import com.netflix.eureka2.interests.SampleInterest;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
+
 import com.netflix.eureka2.protocol.Heartbeat;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.DeleteInstance;
@@ -18,20 +21,17 @@ import com.netflix.eureka2.protocol.replication.UpdateCopy;
 import com.netflix.eureka2.registry.Delta.Builder;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.registry.InstanceInfoField;
-import com.netflix.eureka2.registry.SampleDelta;
-import com.netflix.eureka2.registry.SampleServicePort;
 import com.netflix.eureka2.registry.ServicePort;
 import com.netflix.eureka2.rx.RxBlocking;
+import com.netflix.eureka2.testkit.data.builder.SampleDelta;
+import com.netflix.eureka2.testkit.data.builder.SampleInterest;
+import com.netflix.eureka2.testkit.data.builder.SampleServicePort;
 import com.netflix.eureka2.utils.Sets;
 import rx.Notification;
 import rx.Observable;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.concurrent.TimeUnit;
-
-import static com.netflix.eureka2.registry.SampleInstanceInfo.DiscoveryServer;
 import static com.netflix.eureka2.rx.RxSniffer.sniff;
+import static com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo.DiscoveryServer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

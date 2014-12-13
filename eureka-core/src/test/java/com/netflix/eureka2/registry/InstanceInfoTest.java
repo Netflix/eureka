@@ -1,8 +1,11 @@
 package com.netflix.eureka2.registry;
 
-import org.junit.Test;
-
 import java.util.Set;
+
+import com.netflix.eureka2.testkit.data.builder.SampleAwsDataCenterInfo;
+import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
+import com.netflix.eureka2.testkit.data.builder.SampleServicePort;
+import org.junit.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;

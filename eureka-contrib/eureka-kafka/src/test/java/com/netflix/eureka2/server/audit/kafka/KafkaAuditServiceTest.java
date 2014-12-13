@@ -20,7 +20,7 @@ import java.util.ServiceLoader;
 
 import com.google.inject.Module;
 import com.netflix.eureka2.server.audit.AuditRecord;
-import com.netflix.eureka2.server.audit.SampleAuditRecord;
+import com.netflix.eureka2.testkit.data.builder.SampleAuditRecord;
 import com.netflix.eureka2.server.spi.ExtAbstractModule;
 import com.netflix.eureka2.server.spi.ExtensionContext;
 import com.netflix.eureka2.server.spi.ExtensionContext.ExtensionContextBuilder;

@@ -18,37 +18,5 @@ dependencies {
     compile project(':eureka-read-server')
     compile project(':eureka-write-server')
     compile project(':eureka-bridge')
-    compile "jline:jline:${jline_version}"
-    testCompile "junit:junit:${junit_version}"
-}
-
-task runCluster (dependsOn: [classes], type: JavaExec) {
-    group = "Examples"
-    description = "Run Eureka cluster (default -Pwrite=1 -Pread=2)"
-
-    main = "com.netflix.eureka2.server.EmbeddedEurekaCluster"
-    classpath = sourceSets.main.runtimeClasspath
-
-    args = [
-            project.hasProperty("write") ? write : 1,
-            project.hasProperty("read") ? read : 2
-    ]
-}
-
-// Why not gradle task? Because of issue https://issues.gradle.org/browse/GRADLE-1147
-build << {
-    buildDir.mkdirs()
-    File script = new File(buildDir, 'cli.sh')
-
-    script.withPrintWriter {
-        it.println '#!/bin/sh'
-        it.println "java -cp ${getRuntimeClasspath()} com.netflix.eureka2.cmd.EurekaCLI \"\$@\""
-    }
-
-    // make it executable
-    ant.chmod(file: script.absolutePath, perm: 'u+x')
-}
-
-String getRuntimeClasspath() {
-    sourceSets.main.runtimeClasspath.collect { it.absolutePath }.join(':')
+    compile project(':eureka-testkit')
 }

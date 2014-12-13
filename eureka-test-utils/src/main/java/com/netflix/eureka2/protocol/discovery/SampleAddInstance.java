@@ -1,11 +1,11 @@
 package com.netflix.eureka2.protocol.discovery;
 
-import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.registry.SampleInstanceInfo;
-import rx.Observable;
-
 import java.util.ArrayList;
 import java.util.Collection;
+
+import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
+import rx.Observable;
 
 /**
  * @author David Liu
@@ -26,6 +26,7 @@ public enum SampleAddInstance {
     };
 
     public abstract AddInstance newMessage();
+
     public AddInstance newMessage(InstanceInfo seed) {
         return new AddInstance(seed);
     }

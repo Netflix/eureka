@@ -1,5 +1,8 @@
 package com.netflix.eureka2.integration;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
@@ -7,7 +10,7 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.registry.datacenter.BasicDataCenterInfo;
-import com.netflix.eureka2.server.EmbeddedEurekaCluster;
+import com.netflix.eureka2.testkit.embedded.EmbeddedEurekaCluster;
 import com.netflix.eureka2.transport.EurekaTransports;
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -17,13 +20,8 @@ import rx.Subscriber;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
 
 /**
  * TODO: use testSchedulers instead of using Thread.sleep()
@@ -46,18 +44,18 @@ public class ReadWriteClusterIntegrationTest {
             testScheduler = Schedulers.test();
             eurekaCluster = new EmbeddedEurekaCluster(3, 6, false);  // 3 write, 6 read, no bridge
             eurekaClient = Eureka.newClientBuilder(
-                                ServerResolvers.just("localhost", 13200),
-                                ServerResolvers.just("localhost", 13100))
-                            .withCodec(EurekaTransports.Codec.Avro)
-                            .build();
+                    ServerResolvers.just("localhost", 13200),
+                    ServerResolvers.just("localhost", 13100))
+                    .withCodec(EurekaTransports.Codec.Avro)
+                    .build();
             registeringInstanceInfo = new InstanceInfo.Builder()
-                            .withId("id#testClient")
-                            .withApp("app#testClient")
-                            .withAppGroup("appGroup#testClient")
-                            .withVipAddress("vip#testClient")
-                            .withStatus(InstanceInfo.Status.UP)
-                            .withDataCenterInfo(BasicDataCenterInfo.fromSystemData())
-                            .build();
+                    .withId("id#testClient")
+                    .withApp("app#testClient")
+                    .withAppGroup("appGroup#testClient")
+                    .withVipAddress("vip#testClient")
+                    .withStatus(InstanceInfo.Status.UP)
+                    .withDataCenterInfo(BasicDataCenterInfo.fromSystemData())
+                    .build();
         }
 
         @Override
