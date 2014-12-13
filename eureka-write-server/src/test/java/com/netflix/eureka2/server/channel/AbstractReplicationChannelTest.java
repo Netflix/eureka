@@ -3,9 +3,9 @@ package com.netflix.eureka2.server.channel;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.registry.SampleInstanceInfo;
 
-import static com.netflix.eureka2.registry.SampleInstanceInfo.DiscoveryServer;
+import static com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo.DiscoveryServer;
+import static com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo.ZuulServer;
 
 /**
  * @author Tomasz Bak
@@ -19,5 +19,5 @@ public abstract class AbstractReplicationChannelTest {
     protected static final ReplicationHello HELLO = new ReplicationHello(SENDER_ID, 0);
     protected static final ReplicationHelloReply HELLO_REPLY = new ReplicationHelloReply(RECEIVER_ID, false);
 
-    protected static final InstanceInfo APP_INFO = SampleInstanceInfo.ZuulServer.build();
+    protected static final InstanceInfo APP_INFO = ZuulServer.build();
 }

@@ -1,11 +1,13 @@
 package com.netflix.eureka2.registry;
 
+import java.util.HashSet;
+
+import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
+import com.netflix.eureka2.testkit.data.builder.SampleServicePort;
 import com.netflix.eureka2.utils.Sets;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
-
-import java.util.HashSet;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;

@@ -21,11 +21,9 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.registry.SampleInstanceInfo;
-import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.config.WriteServerConfig;
-import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
 import com.netflix.eureka2.server.registry.Source;
+import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Notification;
@@ -34,7 +32,6 @@ import rx.Subscriber;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
-import static com.netflix.eureka2.server.metric.EurekaServerMetricFactory.*;
 import static com.netflix.eureka2.server.metric.WriteServerMetricFactory.writeServerMetrics;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;

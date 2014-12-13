@@ -8,7 +8,7 @@ import com.netflix.eureka2.interests.ModifyNotification;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.registry.InstanceInfo.Builder;
 import com.netflix.eureka2.registry.InstanceInfo.Status;
-import com.netflix.eureka2.registry.SampleInstanceInfo;
+import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import netflix.ocelli.Host;
 import netflix.ocelli.MembershipEvent;
 import netflix.ocelli.MembershipEvent.EventType;

@@ -5,7 +5,7 @@ import com.netflix.eureka2.client.registry.EurekaClientRegistryImpl;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.registry.SampleInstanceInfo;
+import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;

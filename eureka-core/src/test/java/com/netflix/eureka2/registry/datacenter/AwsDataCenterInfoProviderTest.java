@@ -16,7 +16,7 @@
 
 package com.netflix.eureka2.registry.datacenter;
 
-import com.netflix.eureka2.registry.SampleAwsDataCenterInfo;
+import com.netflix.eureka2.testkit.data.builder.SampleAwsDataCenterInfo;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.netty.RxNetty;
