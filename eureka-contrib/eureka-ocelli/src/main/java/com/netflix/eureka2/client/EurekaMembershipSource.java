@@ -24,7 +24,7 @@ public class EurekaMembershipSource {
     private static final DefaultMapper defaultMapper = new DefaultMapper();
 
     public EurekaMembershipSource(ServerResolver eurekaResolver) {
-        this.client = Eureka.newClient(eurekaResolver);
+        this.client = Eureka.newClientBuilder(eurekaResolver).build();
     }
 
     public EurekaMembershipSource(EurekaClient client) {

@@ -17,11 +17,13 @@
 package com.netflix.eureka2.client.resolver;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.Names;
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.registry.InstanceInfo.Status;
 import com.netflix.eureka2.registry.ServiceSelector;
@@ -32,6 +34,7 @@ import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.functions.Action0;
 import rx.functions.Func1;
 
 import static netflix.ocelli.MembershipEvent.EventType.ADD;
@@ -54,24 +57,23 @@ public class EurekaServerResolver implements ServerResolver {
     private LoadBalancer<Server> loadBalancer;
     private final EurekaClient eurekaClient;
 
-    public EurekaServerResolver(ServerResolver bootstrapResolver,
-                                String readServerVip,
-                                ServiceSelector serviceSelector,
-                                LoadBalancerBuilder<Server> loadBalancerBuilder) {
-        this.readServerVip = readServerVip;
-        this.serviceSelector = serviceSelector;
-        this.loadBalancerBuilder = loadBalancerBuilder;
-        eurekaClient = Eureka.newClient(bootstrapResolver);
+    public EurekaServerResolver(
+            ServerResolver bootstrapResolver,
+            String readServerVip,
+            ServiceSelector serviceSelector,
+            LoadBalancerBuilder<Server> loadBalancerBuilder) {
+        this(Eureka.newClientBuilder(bootstrapResolver).build(), readServerVip, serviceSelector, loadBalancerBuilder);
     }
 
     public EurekaServerResolver(
-            EurekaClient eurekaClient, String readServerVip,
+            EurekaClient eurekaClient,
+            String readServerVip,
             ServiceSelector serviceSelector,
             LoadBalancerBuilder<Server> loadBalancerBuilder) {
+        this.eurekaClient = eurekaClient;
         this.readServerVip = readServerVip;
         this.serviceSelector = serviceSelector;
         this.loadBalancerBuilder = loadBalancerBuilder;
-        this.eurekaClient = eurekaClient;
     }
 
     @Override
@@ -79,6 +81,7 @@ public class EurekaServerResolver implements ServerResolver {
         if (loadBalancer == null) {
             loadBalancer = loadBalancerBuilder.withMembershipSource(serverUpdates()).build();
         }
+
         return loadBalancer.choose();
     }
 
@@ -91,34 +94,44 @@ public class EurekaServerResolver implements ServerResolver {
         }
     }
 
+    // FIXME: simulate stream completion with a timeout. Remove once we have the bootstrap API
     protected Observable<MembershipEvent<Server>> serverUpdates() {
-        return eurekaClient.forVips(readServerVip).map(new Func1<ChangeNotification<InstanceInfo>, MembershipEvent<Server>>() {
-            @Override
-            public MembershipEvent<Server> call(ChangeNotification<InstanceInfo> notification) {
-                InstanceInfo info = notification.getData();
-                InetSocketAddress address = serviceSelector.returnServiceAddress(info);
-                if (address == null) {
-                    logger.warn("Unable to determine Eureka read server address/port from provided instance info: {}", info);
-                    return null;
-                }
-                Server server = new Server(address.getHostString(), address.getPort());
-                switch (notification.getKind()) {
-                    case Add:
-                        if (info.getStatus() == Status.UP) {
-                            return new MembershipEvent<Server>(ADD, server);
+        return eurekaClient.forVips(readServerVip)
+                .timeout(5000, TimeUnit.MILLISECONDS, Observable.<ChangeNotification<InstanceInfo>>empty())
+                .map(new Func1<ChangeNotification<InstanceInfo>, MembershipEvent<Server>>() {
+                    @Override
+                    public MembershipEvent<Server> call(ChangeNotification<InstanceInfo> notification) {
+                        InstanceInfo info = notification.getData();
+                        InetSocketAddress address = serviceSelector.returnServiceAddress(info);
+                        if (address == null) {
+                            logger.warn("Unable to determine Eureka read server address/port from provided instance info: {}", info);
+                            return null;
                         }
-                        break;
-                    case Modify:
-                        if (info.getStatus() == Status.UP) {
-                            return new MembershipEvent<Server>(ADD, server);
+                        Server server = new Server(address.getHostString(), address.getPort());
+                        switch (notification.getKind()) {
+                            case Add:
+                                if (info.getStatus() == Status.UP) {
+                                    return new MembershipEvent<>(ADD, server);
+                                }
+                                break;
+                            case Modify:
+                                if (info.getStatus() == Status.UP) {
+                                    return new MembershipEvent<>(ADD, server);
+                                }
+                                return new MembershipEvent<>(REMOVE, server);
+                            case Delete:
+                                return new MembershipEvent<>(REMOVE, server);
                         }
-                        return new MembershipEvent<Server>(REMOVE, server);
-                    case Delete:
-                        return new MembershipEvent<Server>(REMOVE, server);
-                }
-                return null;
-            }
-        });
+                        return null;
+                    }
+                })
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        eurekaClient.forInterest(Interests.forNone()).subscribe();  // close the interest on ReadServers
+                        logger.info("Stream to resolve read servers completed");
+                    }
+                });
     }
 
     public static class EurekaServerResolverBuilder {
