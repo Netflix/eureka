@@ -5,6 +5,7 @@ protocol EurekaInterestModel {
     enum Operator {
         Equals, Like
     }
+
     record ApplicationInterest {
         string applicationName;
         union {
@@ -14,6 +15,9 @@ protocol EurekaInterestModel {
     }
 
     record FullRegistryInterest {
+    }
+
+    record EmptyRegistryInterest {
     }
 
     record VipInterest {
@@ -33,6 +37,6 @@ protocol EurekaInterestModel {
     }
 
     record MultipleInterests {
-        array< union {ApplicationInterest, FullRegistryInterest, VipInterest, InstanceInterest} > interests;
+        array< union {ApplicationInterest, FullRegistryInterest, EmptyRegistryInterest, VipInterest, InstanceInterest} > interests;
     }
 }

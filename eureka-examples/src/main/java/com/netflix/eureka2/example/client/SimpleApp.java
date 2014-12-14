@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.example.simple;
+package com.netflix.eureka2.example.client;
 
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.resolver.ServerResolvers;
-import com.netflix.eureka2.client.transport.TransportClients;
+import com.netflix.eureka2.client.resolver.WriteServerResolverSet;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.registry.InstanceInfo.Builder;
 import com.netflix.eureka2.registry.InstanceInfo.Status;
 import com.netflix.eureka2.registry.datacenter.BasicDataCenterInfo;
-import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import rx.Subscriber;
 
 /**
@@ -48,14 +46,12 @@ public final class SimpleApp {
     public static void main(String[] args) throws InterruptedException {
         System.out.println("Local service info: " + SERVICE_A);
 
-        // TODO: servers now use by default JSON codec. Remove it, once they are switch to Avro.
-        TransportClients.setDefaultCodec(Codec.Json);
+        WriteServerResolverSet writeServerResolverSet = WriteServerResolverSet.just("localhost", 13100, 13101);
+        String readServerVip = "ReadServer";
 
-        EurekaClient client = Eureka.newClientBuilder(ServerResolvers.just("127.0.0.1", 7001),
-                                                     ServerResolvers.just("127.0.0.1", 7002))
-                                   .withCodec(Codec.Json).build();
+        EurekaClient client = Eureka.newClientBuilder(writeServerResolverSet, readServerVip).build();
 
-        client.forInterest(Interests.forFullRegistry()).subscribe(
+        client.forInterest(Interests.forApplications("WriteServer", "ReadServer", "ServiceA")).subscribe(
                 new Subscriber<ChangeNotification<InstanceInfo>>() {
                     @Override
                     public void onCompleted() {
@@ -88,6 +84,8 @@ public final class SimpleApp {
         System.out.println("Unregistering SERVICE_A from Eureka...");
         client.unregister(updatedInfo).toBlocking().singleOrDefault(null);
         Thread.sleep(1000);
+
+        Thread.sleep(5000);
 
         // Terminate both clients.
         System.out.println("Shutting down clients");
