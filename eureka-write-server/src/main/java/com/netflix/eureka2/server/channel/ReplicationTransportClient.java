@@ -26,10 +26,14 @@ import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ObservableConnection;
 import io.reactivex.netty.client.RxClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 /**
@@ -39,10 +43,14 @@ import java.net.InetSocketAddress;
  */
 public class ReplicationTransportClient implements TransportClient {
 
+    private static final Logger logger = LoggerFactory.getLogger(ReplicationTransportClient.class);
+
+    private final InetSocketAddress address;
     private final RxClient<Object, Object> rxClient;
     private final MessageConnectionMetrics metrics;
 
     public ReplicationTransportClient(InetSocketAddress address, Codec codec, MessageConnectionMetrics metrics) {
+        this.address = address;
         this.metrics = metrics;
         this.rxClient = RxNetty.newTcpClientBuilder(address.getHostName(), address.getPort())
                 .pipelineConfigurator(EurekaTransports.replicationPipeline(codec))
@@ -57,6 +65,12 @@ public class ReplicationTransportClient implements TransportClient {
                     @Override
                     public MessageConnection call(ObservableConnection<Object, Object> connection) {
                         return new HeartBeatConnection(new BaseMessageConnection("replicationClient", connection, metrics), 30000, 3, Schedulers.computation());
+                    }
+                })
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        logger.info("Connected to replication peer #{}", address);
                     }
                 });
     }

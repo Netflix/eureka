@@ -20,6 +20,7 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
+import com.netflix.eureka2.server.service.SelfRegistrationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Subscriber;
@@ -38,15 +39,23 @@ public class AuditServiceController {
 
     private final EurekaServerRegistry<InstanceInfo> registry;
     private final AuditService auditService;
+    private final SelfRegistrationService serverIdentity;
 
     @Inject
-    public AuditServiceController(EurekaServerRegistry registry, AuditService auditService) {
+    public AuditServiceController(
+            EurekaServerRegistry registry,
+            AuditService auditService,
+            SelfRegistrationService serverIdentity) {
         this.registry = registry;
         this.auditService = auditService;
+        this.serverIdentity = serverIdentity;
     }
 
     @PostConstruct
     public void startRegistryAuditing() {
+        InstanceInfo auditServer = serverIdentity.resolve().toBlocking().firstOrDefault(null);
+        final String auditServerId = auditServer == null ? null : auditServer.getId();
+
         // TODO: this should be only Origin.Local, but since bridge works on replication channel we would not audit eureka 1.0 entries.
         registry.forInterest(Interests.forFullRegistry()).subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
             @Override
@@ -61,7 +70,7 @@ public class AuditServiceController {
 
             @Override
             public void onNext(ChangeNotification<InstanceInfo> notification) {
-                AuditRecord record = AuditRecords.forChangeNotification(System.currentTimeMillis(), false, notification);
+                AuditRecord record = AuditRecords.forChangeNotification(auditServerId, System.currentTimeMillis(), false, notification);
                 auditService.write(record);
             }
         });

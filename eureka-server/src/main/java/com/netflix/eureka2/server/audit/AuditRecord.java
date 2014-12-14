@@ -31,6 +31,11 @@ import java.util.Set;
 public class AuditRecord {
 
     /**
+     * id of logging audit server
+     */
+    private final String auditServerId;
+
+    /**
      * Time of applying the change to a registry.
      */
     private final long time;
@@ -49,8 +54,9 @@ public class AuditRecord {
 
     private final Set<Delta<?>> deltas;
 
-    protected AuditRecord(long time, boolean userTriggered, Kind modificationType,
+    protected AuditRecord(String auditServerId, long time, boolean userTriggered, Kind modificationType,
                           InstanceInfo instanceInfo, Set<Delta<?>> deltas) {
+        this.auditServerId = auditServerId;
         this.time = time;
         this.userTriggered = userTriggered;
         this.modificationType = modificationType;
@@ -76,51 +82,47 @@ public class AuditRecord {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
+        if (this == o) return true;
+        if (!(o instanceof AuditRecord)) return false;
 
         AuditRecord that = (AuditRecord) o;
 
-        if (time != that.time) {
+        if (time != that.time) return false;
+        if (userTriggered != that.userTriggered) return false;
+        if (auditServerId != null ? !auditServerId.equals(that.auditServerId) : that.auditServerId != null)
             return false;
-        }
-        if (userTriggered != that.userTriggered) {
-            return false;
-        }
-        if (instanceInfo != null ? !instanceInfo.equals(that.instanceInfo) : that.instanceInfo != null) {
-            return false;
-        }
-        if (modificationType != that.modificationType) {
-            return false;
-        }
+        if (deltas != null ? !deltas.equals(that.deltas) : that.deltas != null) return false;
+        if (instanceInfo != null ? !instanceInfo.equals(that.instanceInfo) : that.instanceInfo != null) return false;
+        if (modificationType != that.modificationType) return false;
 
         return true;
     }
 
     @Override
     public int hashCode() {
-        int result = (int) (time ^ (time >>> 32));
+        int result = auditServerId != null ? auditServerId.hashCode() : 0;
+        result = 31 * result + (int) (time ^ (time >>> 32));
         result = 31 * result + (userTriggered ? 1 : 0);
         result = 31 * result + (modificationType != null ? modificationType.hashCode() : 0);
         result = 31 * result + (instanceInfo != null ? instanceInfo.hashCode() : 0);
+        result = 31 * result + (deltas != null ? deltas.hashCode() : 0);
         return result;
     }
 
     @Override
     public String toString() {
         return "AuditRecord{" +
-                "time=" + time +
+                "auditServerId='" + auditServerId + '\'' +
+                ", time=" + time +
                 ", userTriggered=" + userTriggered +
                 ", modificationType=" + modificationType +
                 ", instanceInfo=" + instanceInfo +
+                ", deltas=" + deltas +
                 '}';
     }
 
     public static class AuditRecordBuilder {
+        private String auditServerId;
         private long time;
         private boolean userTriggered;
         private Kind modificationType;
@@ -129,6 +131,11 @@ public class AuditRecord {
 
         public static AuditRecordBuilder anAuditRecord() {
             return new AuditRecordBuilder();
+        }
+
+        public AuditRecordBuilder withAuditServerId(String auditServerId) {
+            this.auditServerId = auditServerId;
+            return this;
         }
 
         public AuditRecordBuilder withTime(long time) {
@@ -157,7 +164,7 @@ public class AuditRecord {
         }
 
         public AuditRecord build() {
-            return new AuditRecord(time, userTriggered, modificationType, instanceInfo, deltas);
+            return new AuditRecord(auditServerId, time, userTriggered, modificationType, instanceInfo, deltas);
         }
     }
 }

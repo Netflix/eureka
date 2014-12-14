@@ -41,45 +41,51 @@ class RegistryReplicator implements ChannelHandler<ReplicationChannel> {
 
     private static final Logger logger = LoggerFactory.getLogger(RegistryReplicator.class);
 
-    private final ReplicationChannel channel;
     private final String ownInstanceId;
     private final EurekaServerRegistry<InstanceInfo> registry;
 
+    private ReplicationChannel channel;
     private Subscription subscription;
 
-    RegistryReplicator(ReplicationChannel channel,
-                       String ownInstanceId,
+    RegistryReplicator(String ownInstanceId,
                        EurekaServerRegistry<InstanceInfo> registry) {
-        this.channel = channel;
         this.ownInstanceId = ownInstanceId;
         this.registry = registry;
     }
 
     @Override
-    public void reconnect() {
+    public void reconnect(final ReplicationChannel delegateChannel) {
         if (subscription != null) {
             subscription.unsubscribe();
         }
+
+        if (channel != null) {
+            channel.close();
+        }
+
+        channel = delegateChannel;
+
         subscription = channel.hello(new ReplicationHello(ownInstanceId, registry.size()))
                 .flatMap(new Func1<ReplicationHelloReply, Observable<ChangeNotification<InstanceInfo>>>() {
                     @Override
                     public Observable<ChangeNotification<InstanceInfo>> call(ReplicationHelloReply replicationHelloReply) {
                         if (replicationHelloReply.getSourceId().equals(ownInstanceId)) {
-                            logger.info("Taking out replication connection to itself");
+                            logger.info("#{}: Taking out replication connection to itself", ownInstanceId);
                             return Observable.empty();
                         }
+                        logger.info("#{} received hello back from #{}", ownInstanceId, replicationHelloReply.getSourceId());
                         return registry.forInterest(Interests.forFullRegistry(), Source.localSource());
                     }
                 }).subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
                     @Override
                     public void onCompleted() {
-                        logger.info("Replication change notification stream closed");
+                        logger.info("#{}: Replication change notification stream closed", ownInstanceId);
                         channel.close();
                     }
 
                     @Override
                     public void onError(Throwable e) {
-                        logger.error("Registry interest stream terminated with an error", e);
+                        logger.error("#{}: Registry interest stream terminated with an error", ownInstanceId, e);
                         channel.close();
                     }
 
@@ -116,7 +122,7 @@ class RegistryReplicator implements ChannelHandler<ReplicationChannel> {
         }, new Action1<Throwable>() {
             @Override
             public void call(Throwable throwable) {
-                logger.warn("Failed to send " + what + " request to the server. Closing the channel.");
+                logger.warn("#{}: Failed to send " + what + " request to the server. Closing the channel.", ownInstanceId);
                 channel.close();
             }
         });

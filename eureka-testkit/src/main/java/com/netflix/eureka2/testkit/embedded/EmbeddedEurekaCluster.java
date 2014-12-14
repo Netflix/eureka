@@ -87,6 +87,7 @@ public class EmbeddedEurekaCluster {
                     .withCodec(Codec.Avro)
                     .withShutDownPort(shutdownPort)
                     .withWebAdminPort(webAdminPort)
+                    .withReplicationRetryMillis(1000)
                     .build();
         }
 

@@ -33,33 +33,34 @@ public final class AuditRecords {
     private AuditRecords() {
     }
 
-    public static AuditRecord forInstanceAdd(long timestamp, boolean userTriggered, InstanceInfo newInstanceInfo) {
-        return withValues(timestamp, userTriggered, newInstanceInfo).withModificationType(Kind.Add).build();
+    public static AuditRecord forInstanceAdd(String auditServerId, long timestamp, boolean userTriggered, InstanceInfo newInstanceInfo) {
+        return withValues(auditServerId, timestamp, userTriggered, newInstanceInfo).withModificationType(Kind.Add).build();
     }
 
-    public static AuditRecord forInstanceUpdate(long timestamp, boolean userTriggered, InstanceInfo newInstanceInfo, Set<Delta<?>> delta) {
-        return withValues(timestamp, userTriggered, newInstanceInfo).withModificationType(Kind.Modify).withDeltas(delta).build();
+    public static AuditRecord forInstanceUpdate(String auditServerId, long timestamp, boolean userTriggered, InstanceInfo newInstanceInfo, Set<Delta<?>> delta) {
+        return withValues(auditServerId, timestamp, userTriggered, newInstanceInfo).withModificationType(Kind.Modify).withDeltas(delta).build();
     }
 
-    public static AuditRecord forInstanceDelete(long timestamp, boolean userTriggered, InstanceInfo toRemove) {
-        return withValues(timestamp, userTriggered, toRemove).withModificationType(Kind.Delete).build();
+    public static AuditRecord forInstanceDelete(String auditServerId, long timestamp, boolean userTriggered, InstanceInfo toRemove) {
+        return withValues(auditServerId, timestamp, userTriggered, toRemove).withModificationType(Kind.Delete).build();
     }
 
-    public static AuditRecord forChangeNotification(long timestamp, boolean userTriggered, ChangeNotification<InstanceInfo> changeNotification) {
+    public static AuditRecord forChangeNotification(String auditServerId, long timestamp, boolean userTriggered, ChangeNotification<InstanceInfo> changeNotification) {
         switch (changeNotification.getKind()) {
             case Add:
-                return forInstanceAdd(timestamp, userTriggered, changeNotification.getData());
+                return forInstanceAdd(auditServerId, timestamp, userTriggered, changeNotification.getData());
             case Modify:
                 ModifyNotification<InstanceInfo> modifyNotification = (ModifyNotification<InstanceInfo>) changeNotification;
-                return forInstanceUpdate(timestamp, userTriggered, modifyNotification.getData(), modifyNotification.getDelta());
+                return forInstanceUpdate(auditServerId, timestamp, userTriggered, modifyNotification.getData(), modifyNotification.getDelta());
             case Delete:
-                return forInstanceDelete(timestamp, userTriggered, changeNotification.getData());
+                return forInstanceDelete(auditServerId, timestamp, userTriggered, changeNotification.getData());
         }
         throw new IllegalStateException("unhadled enum value " + changeNotification.getKind());
     }
 
-    private static AuditRecordBuilder withValues(long timestamp, boolean userTriggered, InstanceInfo newInstanceInfo) {
+    private static AuditRecordBuilder withValues(String auditServerId, long timestamp, boolean userTriggered, InstanceInfo newInstanceInfo) {
         return new AuditRecordBuilder()
+                .withAuditServerId(auditServerId)
                 .withTime(timestamp)
                 .withUserTriggered(userTriggered)
                 .withInstanceInfo(newInstanceInfo);
