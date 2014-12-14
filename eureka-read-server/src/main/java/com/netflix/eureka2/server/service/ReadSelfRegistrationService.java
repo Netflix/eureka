@@ -17,6 +17,7 @@
 package com.netflix.eureka2.server.service;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.netflix.eureka2.Names;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.registry.InstanceInfo;
@@ -39,6 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * @author Tomasz Bak
  */
+@Singleton
 public class ReadSelfRegistrationService implements SelfRegistrationService {
 
     private static final Logger logger = LoggerFactory.getLogger(ReadSelfRegistrationService.class);

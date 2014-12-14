@@ -16,6 +16,8 @@
 
 package com.netflix.eureka2.channel;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Scheduler;
 
 /**
@@ -27,9 +29,11 @@ import rx.Scheduler;
  */
 public abstract class RetryableStatelessServiceChannel<C extends ServiceChannel> extends RetryableServiceChannel<C> {
 
+    private static final Logger logger = LoggerFactory.getLogger(RetryableStatelessServiceChannel.class);
+
     public interface ChannelHandler<C extends ServiceChannel> {
 
-        void reconnect();
+        void reconnect(C newChannel);
 
         void close();
     }
@@ -62,8 +66,10 @@ public abstract class RetryableStatelessServiceChannel<C extends ServiceChannel>
 
     @Override
     protected void retry() {
+        logger.info("Retrying ...");
+
         currentChannel = newChannel();
         subscribeToChannelLifecycle(currentChannel);
-        getChannelHandler().reconnect();
+        getChannelHandler().reconnect(currentChannel);
     }
 }

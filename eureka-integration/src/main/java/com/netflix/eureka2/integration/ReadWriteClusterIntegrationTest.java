@@ -2,6 +2,8 @@ package com.netflix.eureka2.integration;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
@@ -38,8 +40,7 @@ public class ReadWriteClusterIntegrationTest {
 
         @Override
         protected void before() throws Throwable {
-            // FIXME: bump write server numbers back to 3 after look into replication
-            eurekaCluster = new EmbeddedEurekaCluster(1, 6, false);  // 3 write, 6 read, no bridge
+            eurekaCluster = new EmbeddedEurekaCluster(3, 6, false);  // 3 write, 6 read, no bridge
             Thread.sleep(1000);  // give the cluster some init time
         }
 
@@ -78,6 +79,7 @@ public class ReadWriteClusterIntegrationTest {
     public void ReadWriteClusterRegistrationTest() throws Exception {
         final List<ChangeNotification<InstanceInfo>> notifications = new ArrayList<>();
 
+        final CountDownLatch completionLatch = new CountDownLatch(1);
         eurekaClient.forInterest(Interests.forApplications("app#testClient"))
                 .subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
                     @Override
@@ -93,6 +95,7 @@ public class ReadWriteClusterIntegrationTest {
                     @Override
                     public void onNext(ChangeNotification<InstanceInfo> notification) {
                         System.out.println(notification);
+                        completionLatch.countDown();
                         notifications.add(notification);
                     }
                 });
@@ -100,7 +103,7 @@ public class ReadWriteClusterIntegrationTest {
         eurekaClient.register(registeringInstanceInfo).subscribe();
 //        eurekaClient.unregister(registeringInstanceInfo).subscribe();
 
-        Thread.sleep(2 * 1000);
+        completionLatch.await(5, TimeUnit.SECONDS);
 
         assertThat(notifications.size(), equalTo(1));
 

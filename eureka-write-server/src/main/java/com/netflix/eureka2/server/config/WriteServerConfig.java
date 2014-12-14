@@ -29,12 +29,17 @@ import com.netflix.governator.annotations.Configuration;
 public class WriteServerConfig extends EurekaServerConfig {
 
     public static final long DEFAULT_EVICTION_TIMEOUT = 30000;
+    public static final long DEFAULT_REPLICATION_RECONNECT_DELAY_MILLIS = 30000;
 
     @Configuration("eureka.services.registration.port")
     protected int registrationPort = EurekaTransports.DEFAULT_REGISTRATION_PORT;
 
     @Configuration("eureka.services.replication.port")
     protected int replicationPort = EurekaTransports.DEFAULT_REPLICATION_PORT;
+
+    // replication configs
+    @Configuration("eureka.services.replication.reconnectDelayMillis")
+    protected long replicationReconnectDelayMillis = DEFAULT_REPLICATION_RECONNECT_DELAY_MILLIS;
 
     // registry configs
     @Configuration("eureka.registry.evictionTimeoutMs")
@@ -46,6 +51,7 @@ public class WriteServerConfig extends EurekaServerConfig {
     @Configuration("eureka.registry.evictionStrategy.value")
     protected String evictionStrategyValue = "20";
 
+
     // For property injection
     protected WriteServerConfig() {
     }
@@ -53,13 +59,14 @@ public class WriteServerConfig extends EurekaServerConfig {
     public WriteServerConfig(ResolverType resolverType, String[] serverList, Codec codec, String appName,
                              String vipAddress, DataCenterType dataCenterType, Integer shutDownPort,
                              Integer webAdminPort, Integer registrationPort, Integer replicationPort,
-                             Integer discoveryPort, Long evictionTimeoutMs, StrategyType evictionStrategyType,
-                             String evictionStrategyValue) {
+                             Integer discoveryPort, Long replicationReconnectDelayMillis, Long evictionTimeoutMs,
+                             StrategyType evictionStrategyType, String evictionStrategyValue) {
         super(resolverType, serverList, codec, appName, vipAddress, dataCenterType, shutDownPort, webAdminPort, discoveryPort);
 
         this.registrationPort = registrationPort == null ? this.registrationPort : registrationPort;
         this.replicationPort = replicationPort == null ? this.replicationPort : replicationPort;
 
+        this.replicationReconnectDelayMillis = replicationReconnectDelayMillis == null ? this.replicationReconnectDelayMillis : replicationReconnectDelayMillis;
         this.evictionTimeoutMs = evictionTimeoutMs == null ? this.evictionTimeoutMs : evictionTimeoutMs;
         this.evictionStrategyType = evictionStrategyType == null ? this.evictionStrategyType : evictionStrategyType.name();
         this.evictionStrategyValue = evictionStrategyValue == null ? this.evictionStrategyValue : evictionStrategyValue;
@@ -71,6 +78,10 @@ public class WriteServerConfig extends EurekaServerConfig {
 
     public int getReplicationPort() {
         return replicationPort;
+    }
+
+    public long getReplicationReconnectDelayMillis() {
+        return replicationReconnectDelayMillis;
     }
 
     public long getEvictionTimeoutMs() {
@@ -114,6 +125,7 @@ public class WriteServerConfig extends EurekaServerConfig {
                     registrationPort,
                     replicationPort,
                     discoveryPort,
+                    replicationReconnectDelayMillis,
                     evictionTimeoutMs,
                     evictionStrategyType,
                     evictionStrategyValue
@@ -126,6 +138,7 @@ public class WriteServerConfig extends EurekaServerConfig {
             extends AbstractEurekaServerConfigBuilder<C, B> {
         protected Integer registrationPort;
         protected Integer replicationPort;
+        protected Long replicationReconnectDelayMillis;
         protected Long evictionTimeoutMs;
         protected EvictionStrategyProvider.StrategyType evictionStrategyType;
         protected String evictionStrategyValue;
@@ -140,6 +153,11 @@ public class WriteServerConfig extends EurekaServerConfig {
 
         public B withReplicationPort(int replicationPort) {
             this.replicationPort = replicationPort;
+            return self();
+        }
+
+        public B withReplicationRetryMillis(long replicationReconnectDelayMillis) {
+            this.replicationReconnectDelayMillis = replicationReconnectDelayMillis;
             return self();
         }
 

@@ -31,6 +31,7 @@ public class BridgeServerConfig extends WriteServerConfig {
             Integer registrationPort,
             Integer replicationPort,
             Integer discoveryPort,
+            Long replicationReconnectDelayMillis,
             Long evictionTimeoutMs,
             EvictionStrategyProvider.StrategyType evictionStrategyType,
             String evictionStrategyValue,
@@ -49,6 +50,7 @@ public class BridgeServerConfig extends WriteServerConfig {
                 registrationPort,
                 replicationPort,
                 discoveryPort,
+                replicationReconnectDelayMillis,
                 evictionTimeoutMs,
                 evictionStrategyType,
                 evictionStrategyValue
@@ -92,6 +94,7 @@ public class BridgeServerConfig extends WriteServerConfig {
                     registrationPort,
                     replicationPort,
                     discoveryPort,
+                    replicationReconnectDelayMillis,
                     evictionTimeoutMs,
                     evictionStrategyType,
                     evictionStrategyValue,
