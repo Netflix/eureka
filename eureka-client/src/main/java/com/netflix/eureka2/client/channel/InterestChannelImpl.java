@@ -113,10 +113,10 @@ public class InterestChannelImpl
                 if (STATES.Closed == state.get()) {
                     subscriber.onError(CHANNEL_CLOSED_EXCEPTION);
                 } else if (moveToState(STATES.Idle, STATES.Open)) {
-                    logger.debug("First time registration");
+                    logger.debug("First time registration: {}", newInterest);
                     channelInterestStream.subscribe(channelInterestSubscriber);
                 } else {
-                    logger.debug("Channel changes");
+                    logger.debug("Channel changes: {}", newInterest);
                 }
                 subscriber.onCompleted();
             }

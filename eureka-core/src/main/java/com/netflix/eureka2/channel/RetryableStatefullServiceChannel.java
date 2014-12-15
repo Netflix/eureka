@@ -86,18 +86,20 @@ public abstract class RetryableStatefullServiceChannel<C extends ServiceChannel,
 
     protected void initializeRetryableChannel() {
         currentStateWithChannel.set(reestablish());
-        subscribeToChannelLifecycle();
+        subscribeToDelegateChannelLifecycle();
     }
 
     @Override
     protected void retry() {
+        logger.info("Reconnecting channel {}", currentStateWithChannel.get().getChannel());
+
         final StateWithChannel newStateWithChannel = reestablish();
 
         repopulate(newStateWithChannel).subscribe(new Subscriber<Void>() {
             @Override
             public void onCompleted() {
                 StateWithChannel oldState = currentStateWithChannel.getAndSet(newStateWithChannel);
-                subscribeToChannelLifecycle();
+                subscribeToDelegateChannelLifecycle();
                 release(oldState);
                 if (oldState.channel != null) {
                     oldState.channel.close();
@@ -119,7 +121,7 @@ public abstract class RetryableStatefullServiceChannel<C extends ServiceChannel,
         });
     }
 
-    private void subscribeToChannelLifecycle() {
+    private void subscribeToDelegateChannelLifecycle() {
         subscribeToChannelLifecycle(getStateWithChannel().getChannel());
     }
 }
