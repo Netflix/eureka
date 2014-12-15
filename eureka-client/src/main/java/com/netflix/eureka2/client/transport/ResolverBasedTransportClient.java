@@ -62,7 +62,7 @@ public abstract class ResolverBasedTransportClient implements TransportClient {
                             clients.put(server, client);
                         }
 
-                        logger.info("Connecting to server #{}", server);
+                        logger.info("Connecting to server {}", server);
                         return client;
                     }
                 })

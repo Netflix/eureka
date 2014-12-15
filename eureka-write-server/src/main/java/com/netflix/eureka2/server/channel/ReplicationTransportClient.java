@@ -70,7 +70,7 @@ public class ReplicationTransportClient implements TransportClient {
                 .doOnCompleted(new Action0() {
                     @Override
                     public void call() {
-                        logger.info("Connected to replication peer #{}", address);
+                        logger.info("Connected to replication peer {}", address);
                     }
                 });
     }

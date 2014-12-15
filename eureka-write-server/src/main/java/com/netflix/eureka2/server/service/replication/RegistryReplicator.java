@@ -70,22 +70,22 @@ class RegistryReplicator implements ChannelHandler<ReplicationChannel> {
                     @Override
                     public Observable<ChangeNotification<InstanceInfo>> call(ReplicationHelloReply replicationHelloReply) {
                         if (replicationHelloReply.getSourceId().equals(ownInstanceId)) {
-                            logger.info("#{}: Taking out replication connection to itself", ownInstanceId);
+                            logger.info("{}: Taking out replication connection to itself", ownInstanceId);
                             return Observable.empty();
                         }
-                        logger.info("#{} received hello back from #{}", ownInstanceId, replicationHelloReply.getSourceId());
+                        logger.info("{} received hello back from {}", ownInstanceId, replicationHelloReply.getSourceId());
                         return registry.forInterest(Interests.forFullRegistry(), Source.localSource());
                     }
                 }).subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
                     @Override
                     public void onCompleted() {
-                        logger.info("#{}: Replication change notification stream closed", ownInstanceId);
+                        logger.info("{}: Replication change notification stream closed", ownInstanceId);
                         channel.close();
                     }
 
                     @Override
                     public void onError(Throwable e) {
-                        logger.error("#{}: Registry interest stream terminated with an error", ownInstanceId, e);
+                        logger.error("{}: Registry interest stream terminated with an error", ownInstanceId, e);
                         channel.close();
                     }
 
@@ -122,7 +122,7 @@ class RegistryReplicator implements ChannelHandler<ReplicationChannel> {
         }, new Action1<Throwable>() {
             @Override
             public void call(Throwable throwable) {
-                logger.warn("#{}: Failed to send " + what + " request to the server. Closing the channel.", ownInstanceId);
+                logger.warn("{}: Failed to send " + what + " request to the server. Closing the channel.", ownInstanceId);
                 channel.close();
             }
         });

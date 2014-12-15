@@ -48,10 +48,12 @@ public class BaseMessageConnection implements MessageConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(BaseMessageConnection.class);
 
+    private static final long DEFAULT_LIFECYCLE_DURATION_SECONDS = 30 * 60;  // TODO: property-fy
     private static final Pattern NETTY_CHANNEL_NAME_RE = Pattern.compile("\\[.*=>\\s*(.*)\\]");
 
     private final String name;
     private final ObservableConnection<Object, Object> connection;
+    private final long lifecycleDurationSeconds;
     private final MessageConnectionMetrics metrics;
     private final Worker schedulerWorker;
     private final long startTime;
@@ -83,12 +85,37 @@ public class BaseMessageConnection implements MessageConnection {
         }
     };
 
-    public BaseMessageConnection(String name, ObservableConnection<Object, Object> connection, MessageConnectionMetrics metrics) {
-        this(name, connection, metrics, Schedulers.computation());
+    private final Action0 selfTerminateTask = new Action0() {
+        @Override
+        public void call() {
+            logger.info("Shutting down the connection after {} seconds", lifecycleDurationSeconds);
+            BaseMessageConnection.this.shutdown();
+        }
+    };
+
+    public BaseMessageConnection(
+            String name,
+            ObservableConnection<Object, Object> connection,
+            MessageConnectionMetrics metrics) {
+        this(name, connection, DEFAULT_LIFECYCLE_DURATION_SECONDS, metrics);
     }
 
-    public BaseMessageConnection(String name, ObservableConnection<Object, Object> connection, MessageConnectionMetrics metrics, Scheduler expiryScheduler) {
+    public BaseMessageConnection(
+            String name,
+            ObservableConnection<Object, Object> connection,
+            long lifecycleDurationSeconds,
+            MessageConnectionMetrics metrics) {
+        this(name, connection, lifecycleDurationSeconds, metrics, Schedulers.computation());
+    }
+
+    public BaseMessageConnection(
+            String name,
+            ObservableConnection<Object, Object> connection,
+            long lifecycleDurationSeconds,
+            MessageConnectionMetrics metrics,
+            Scheduler expiryScheduler) {
         this.connection = connection;
+        this.lifecycleDurationSeconds = lifecycleDurationSeconds;
         this.metrics = metrics;
         this.name = descriptiveName(name);
         schedulerWorker = expiryScheduler.createWorker();
@@ -124,6 +151,10 @@ public class BaseMessageConnection implements MessageConnection {
         });
 
         schedulerWorker.schedule(cleanupTask, 1, TimeUnit.SECONDS);
+
+        if (lifecycleDurationSeconds > 0) {
+            schedulerWorker.schedule(selfTerminateTask, lifecycleDurationSeconds, TimeUnit.SECONDS);
+        }
     }
 
     @Override
