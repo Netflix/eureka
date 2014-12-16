@@ -77,11 +77,6 @@ public class RetryableInterestChannelTest {
 
     @Test
     public void testDelegatesCallsToInternalChannel() throws Exception {
-        // Change operation
-        when(interestChannel.change(INTEREST)).thenReturn(Observable.<Void>empty());
-        retryableInterestChannel.change(INTEREST).subscribe();
-        verify(interestChannel, times(1)).change(INTEREST);
-
         // Append operation
         when(interestChannel.appendInterest(INTEREST)).thenReturn(Observable.<Void>empty());
         retryableInterestChannel.appendInterest(INTEREST).subscribe();

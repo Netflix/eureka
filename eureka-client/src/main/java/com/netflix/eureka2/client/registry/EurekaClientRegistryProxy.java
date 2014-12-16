@@ -3,7 +3,9 @@ package com.netflix.eureka2.client.registry;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
+import com.netflix.eureka2.channel.RetryableEurekaChannelException;
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.client.channel.ClientInterestChannel;
 import com.netflix.eureka2.client.channel.InterestChannelInvoker;
@@ -21,6 +23,8 @@ import rx.Observable;
 import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Action0;
+import rx.functions.Func1;
+import rx.functions.Func2;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 

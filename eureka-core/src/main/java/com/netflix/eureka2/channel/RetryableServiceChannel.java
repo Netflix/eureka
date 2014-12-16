@@ -91,6 +91,7 @@ public abstract class RetryableServiceChannel<C extends ServiceChannel> implemen
 
     protected void subscribeToChannelLifecycle(C channelDelegate) {
         final Observable<Void> lifecycleObservable = channelDelegate.asLifecycleObservable();
+
         lifecycleObservable.subscribe(new Subscriber<Void>() {
             @Override
             public void onCompleted() {
@@ -135,8 +136,6 @@ public abstract class RetryableServiceChannel<C extends ServiceChannel> implemen
             if (shutdown) {
                 return;
             }
-            logger.info("Reconnecting channel {}", name);
-
             lastConnectTime = worker.now();
             retry();
         }

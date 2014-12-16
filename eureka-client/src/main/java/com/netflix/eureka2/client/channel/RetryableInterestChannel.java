@@ -19,6 +19,7 @@ package com.netflix.eureka2.client.channel;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.netflix.eureka2.channel.RetryableEurekaChannelException;
 import com.netflix.eureka2.channel.RetryableStatefullServiceChannel;
 import com.netflix.eureka2.client.channel.RetryableInterestChannel.RegistryTracker;
 import com.netflix.eureka2.client.metric.EurekaClientMetricFactory;
@@ -29,6 +30,8 @@ import com.netflix.eureka2.client.registry.swap.RegistrySwapStrategyFactory;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.registry.InstanceInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Observable.OnSubscribe;
 import rx.Scheduler;
@@ -53,9 +56,11 @@ import rx.observers.Subscribers;
  */
 public class RetryableInterestChannel extends RetryableStatefullServiceChannel<ClientInterestChannel, RegistryTracker> implements ClientInterestChannel {
 
+    private static final Logger logger = LoggerFactory.getLogger(RetryableInterestChannel.class);
+
     public static final long DEFAULT_INITIAL_DELAY = 80;
 
-    private static final Throwable CHANNEL_FAILURE = new Exception(
+    private static final Throwable CHANNEL_FAILURE = new RetryableEurekaChannelException(
             "There was a communication failure, and connection has been reestablished; a new subscription is required");
 
     private final ClientChannelFactory channelFactory;
@@ -82,11 +87,7 @@ public class RetryableInterestChannel extends RetryableStatefullServiceChannel<C
 
     @Override
     public Observable<Void> change(Interest<InstanceInfo> interest) {
-        StateWithChannel current = getStateWithChannel();
-        ClientInterestChannel currentChannel = current.getChannel();
-        RegistryTracker currentState = current.getState();
-
-        return currentChannel.change(interest).doOnCompleted(currentState.createResetAction(interest));
+        return Observable.error(new UnsupportedOperationException("unsupported for " + this.getClass().getSimpleName()));
     }
 
     @Override
