@@ -18,7 +18,7 @@ public class SelfClosingConnection implements MessageConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(SelfClosingConnection.class);
 
-    private static final long DEFAULT_LIFECYCLE_DURATION_SECONDS = 15;//30 * 60;  // TODO: property-fy
+    private static final long DEFAULT_LIFECYCLE_DURATION_SECONDS = 30 * 60;  // TODO: property-fy
 
     private final Action0 selfTerminateTask = new Action0() {
         @Override
