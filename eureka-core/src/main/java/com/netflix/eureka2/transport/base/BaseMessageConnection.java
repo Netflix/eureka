@@ -83,11 +83,18 @@ public class BaseMessageConnection implements MessageConnection {
         }
     };
 
-    public BaseMessageConnection(String name, ObservableConnection<Object, Object> connection, MessageConnectionMetrics metrics) {
+    public BaseMessageConnection(
+            String name,
+            ObservableConnection<Object, Object> connection,
+            MessageConnectionMetrics metrics) {
         this(name, connection, metrics, Schedulers.computation());
     }
 
-    public BaseMessageConnection(String name, ObservableConnection<Object, Object> connection, MessageConnectionMetrics metrics, Scheduler expiryScheduler) {
+    public BaseMessageConnection(
+            String name,
+            ObservableConnection<Object, Object> connection,
+            MessageConnectionMetrics metrics,
+            Scheduler expiryScheduler) {
         this.connection = connection;
         this.metrics = metrics;
         this.name = descriptiveName(name);

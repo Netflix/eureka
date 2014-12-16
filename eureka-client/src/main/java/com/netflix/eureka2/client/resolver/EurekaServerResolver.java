@@ -128,7 +128,6 @@ public class EurekaServerResolver implements ServerResolver {
                 .doOnCompleted(new Action0() {
                     @Override
                     public void call() {
-                        eurekaClient.forInterest(Interests.forNone()).subscribe();  // close the interest on ReadServers
                         logger.info("Stream to resolve read servers completed");
                     }
                 });

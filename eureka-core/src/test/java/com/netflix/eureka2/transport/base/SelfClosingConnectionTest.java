@@ -1,7 +1,6 @@
 package com.netflix.eureka2.transport.base;
 
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
-import com.netflix.eureka2.rx.RxBlocking;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.codec.avro.AvroPipelineConfigurator;
 import io.netty.handler.logging.LogLevel;
@@ -9,30 +8,25 @@ import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ConnectionHandler;
 import io.reactivex.netty.channel.ObservableConnection;
 import io.reactivex.netty.server.RxServer;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import rx.Notification;
 import rx.Observable;
 import rx.Subscriber;
-import rx.functions.Action0;
 import rx.functions.Func1;
 
 import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
-import static com.netflix.eureka2.rx.RxSniffer.sniff;
 import static com.netflix.eureka2.transport.base.SampleObject.CONTENT;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
 
 /**
- * @author Tomasz Bak
+ * @author David Liu
  */
-public class BaseMessageConnectionTest {
-
+public class SelfClosingConnectionTest {
     private AvroPipelineConfigurator codecPipeline;
 
     private RxServer<Object, Object> server;
@@ -46,10 +40,10 @@ public class BaseMessageConnectionTest {
     @Before
     public void setUp() throws Exception {
         codecPipeline = new AvroPipelineConfigurator(SampleObject.SAMPLE_OBJECT_MODEL_SET, SampleObject.rootSchema());
-        setupServerAndClient();
+        setupServerAndClient(2);  // setup a client with a selfClosingConnection with lifecycle duration of 2s
     }
 
-    private void setupServerAndClient() throws Exception {
+    private void setupServerAndClient(final long clientLifecycleDuration) throws Exception {
         final LinkedBlockingQueue<MessageConnection> queue = new LinkedBlockingQueue<>();
         server = RxNetty.newTcpServerBuilder(0, new ConnectionHandler<Object, Object>() {
             @Override
@@ -69,7 +63,10 @@ public class BaseMessageConnectionTest {
                 .map(new Func1<ObservableConnection<Object, Object>, MessageConnection>() {
                     @Override
                     public MessageConnection call(ObservableConnection<Object, Object> connection) {
-                        return new BaseMessageConnection("testClient", connection, clientMetrics);
+                        return new SelfClosingConnection(
+                                new BaseMessageConnection("testClient", connection, clientMetrics),
+                                clientLifecycleDuration
+                        );
                     }
                 });
         clientBroker = clientObservable.toBlocking().single();
@@ -77,57 +74,37 @@ public class BaseMessageConnectionTest {
         assertNotNull(serverBroker);
     }
 
-    @After
-    public void tearDown() throws Exception {
-        if (clientBroker != null) {
-            clientBroker.shutdown();
-        }
-        if (serverBroker != null) {
-            serverBroker.shutdown();
-        }
-        if (server != null) {
-            server.shutdown();
-        }
-    }
+    @Test(timeout = 100000)
+    public void testSelfTermination() throws Exception {
+        final CountDownLatch completionLatch = new CountDownLatch(1);
+        clientBroker.lifecycleObservable().subscribe(new Subscriber<Void>() {
+            @Override
+            public void onCompleted() {
+                completionLatch.countDown();
+            }
 
-    @Test(timeout = 1000)
-    public void testSubmitUserContent() throws Exception {
+            @Override
+            public void onError(Throwable e) {
+                fail();
+            }
+
+            @Override
+            public void onNext(Void aVoid) {
+                fail();
+            }
+        });
+
         Iterator incomingMessages = serverBroker.incoming().toBlocking().getIterator();
 
         Observable<Void> submitObservable = clientBroker.submit(CONTENT);
         assertTrue("Submit operation failed", submitObservable.materialize().toBlocking().first().isOnCompleted());
-
         assertTrue("No message received", incomingMessages.hasNext());
         assertNotNull("expected message on server side", incomingMessages.next());
-    }
 
-    @Test(timeout = 1000)
-    public void testSubmitUserContentWithAck() throws Exception {
-        Iterator serverIncoming = serverBroker.incoming().toBlocking().getIterator();
+        assertTrue(completionLatch.await(3, TimeUnit.SECONDS));  // assert clientBroker completes due to selfTermination
 
-        Observable<Void> ackObservable = sniff("ack", clientBroker.submitWithAck(CONTENT));
-
-        assertTrue("No message received", serverIncoming.hasNext());
-        SampleObject receivedMessage = (SampleObject) serverIncoming.next();
-        assertNotNull("expected message on server side", receivedMessage);
-
-        assertTrue("Ack not sent", RxBlocking.isCompleted(1, TimeUnit.SECONDS, serverBroker.acknowledge()));
-        assertTrue("Expected completed ack observable", RxBlocking.isCompleted(1, TimeUnit.SECONDS, ackObservable));
-    }
-
-    @Test(timeout = 10000)
-    public void testAckTimeout() throws Exception {
-        Iterator<Object> serverIncoming = RxBlocking.iteratorFrom(1, TimeUnit.SECONDS, serverBroker.incoming());
-
-        Observable<Void> ackObservable = clientBroker.submitWithAck(CONTENT, 1);
-        Iterator<Notification<Void>> ackIterator = ackObservable.materialize().toBlocking().getIterator();
-
-        assertTrue("No message received", serverIncoming.hasNext());
-        SampleObject receivedMessage = (SampleObject) serverIncoming.next();
-        assertNotNull("expected message on server side", receivedMessage);
-
-        // Client side timeout
-        assertTrue("Ack not received", ackIterator.hasNext());
-        assertTrue("Expected Acknowledgement instance", ackIterator.next().getThrowable() instanceof TimeoutException);
+        submitObservable = clientBroker.submit(CONTENT);
+        assertFalse("Submit operation failed", submitObservable.materialize().toBlocking().first().isOnCompleted());
+        assertFalse("No message received", incomingMessages.hasNext());
     }
 }

@@ -30,14 +30,14 @@ public class RegistrySwapOperator implements Operator<Void, ChangeNotification<I
 
     private static final IllegalStateException UNEXPECTED_END_OF_STREAM = new IllegalStateException("Unexpected end of interest subscription stream");
 
-    private final EurekaClientRegistry<InstanceInfo> originalRegisry;
+    private final EurekaClientRegistry<InstanceInfo> originalRegistry;
     private final EurekaClientRegistry<InstanceInfo> newRegistry;
     private final RegistrySwapStrategyFactory strategyFactory;
 
-    public RegistrySwapOperator(EurekaClientRegistry<InstanceInfo> originalRegisry,
+    public RegistrySwapOperator(EurekaClientRegistry<InstanceInfo> originalRegistry,
                                 EurekaClientRegistry<InstanceInfo> newRegistry,
                                 RegistrySwapStrategyFactory strategyFactory) {
-        this.originalRegisry = originalRegisry;
+        this.originalRegistry = originalRegistry;
         this.newRegistry = newRegistry;
         this.strategyFactory = strategyFactory;
     }
@@ -46,7 +46,7 @@ public class RegistrySwapOperator implements Operator<Void, ChangeNotification<I
     public Subscriber<? super ChangeNotification<InstanceInfo>> call(final Subscriber<? super Void> subscriber) {
         final RegistrySwapStrategy swapStrategy = strategyFactory.newInstance();
 
-        if (swapStrategy.isReadyToSwap(originalRegisry, newRegistry)) {
+        if (swapStrategy.isReadyToSwap(originalRegistry, newRegistry)) {
             subscriber.onCompleted();
             return Subscribers.empty();
         }
@@ -65,7 +65,7 @@ public class RegistrySwapOperator implements Operator<Void, ChangeNotification<I
 
             @Override
             public void onNext(ChangeNotification<InstanceInfo> instanceInfoChangeNotification) {
-                if (swapStrategy.isReadyToSwap(originalRegisry, newRegistry)) {
+                if (swapStrategy.isReadyToSwap(originalRegistry, newRegistry)) {
                     subscriber.onCompleted();
                 }
             }
