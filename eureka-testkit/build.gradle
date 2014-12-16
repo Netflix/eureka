@@ -18,20 +18,26 @@ dependencies {
     compile project(':eureka-read-server')
     compile project(':eureka-write-server')
     compile project(':eureka-bridge')
+    compile project(':eureka-dashboard')
     compile "jline:jline:${jline_version}"
-    testCompile "junit:junit:${junit_version}"
+    compile "junit:junit:${junit_version}"
 }
 
 task runCluster (dependsOn: [classes], type: JavaExec) {
     group = "Examples"
     description = "Run Eureka cluster (default -Pwrite=1 -Pread=2)"
 
-    main = "com.netflix.eureka2.testkit.embedded.EmbeddedEurekaCluster"
+    main = "com.netflix.eureka2.testkit.embedded.EmbeddedRunner"
     classpath = sourceSets.main.runtimeClasspath
 
     args = [
             project.hasProperty("write") ? write : 1,
-            project.hasProperty("read") ? read : 2
+            project.hasProperty("read") ? read : 2,
+            false, // bridge
+            true,  // dashboard
+            true,  // deployment view
+            false, // extensions
+            true   // admin UI
     ]
 }
 

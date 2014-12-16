@@ -12,7 +12,7 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.registry.datacenter.BasicDataCenterInfo;
-import com.netflix.eureka2.testkit.embedded.EmbeddedEurekaCluster;
+import com.netflix.eureka2.testkit.embedded.EmbeddedRunner;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -30,7 +30,7 @@ import static org.hamcrest.Matchers.equalTo;
  */
 public class ReadWriteClusterIntegrationTest {
 
-    private static EmbeddedEurekaCluster eurekaCluster;
+    private static EmbeddedRunner eurekaCluster;
 
     private EurekaClient eurekaClient;
     private InstanceInfo registeringInstanceInfo;
@@ -40,7 +40,7 @@ public class ReadWriteClusterIntegrationTest {
 
         @Override
         protected void before() throws Throwable {
-            eurekaCluster = new EmbeddedEurekaCluster(3, 6, false);  // 3 write, 6 read, no bridge
+            eurekaCluster = new EmbeddedRunner(3, 6);  // 3 write, 6 read, no bridge
             Thread.sleep(1000);  // give the cluster some init time
         }
 
