@@ -6,7 +6,7 @@ import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.testkit.embedded.EmbeddedEurekaCluster;
+import com.netflix.eureka2.testkit.embedded.EmbeddedRunner;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -30,7 +30,7 @@ public class WriteClusterIntegrationTest {
 
     private static AtomicLong uniqueId = new AtomicLong(0);
 
-    private static EmbeddedEurekaCluster eurekaCluster;
+    private static EmbeddedRunner eurekaCluster;
 
     private EurekaClient eurekaClient;
 
@@ -39,7 +39,7 @@ public class WriteClusterIntegrationTest {
 
         @Override
         protected void before() throws Throwable {
-            eurekaCluster = new EmbeddedEurekaCluster(2, 0, false);  // 2 writes
+            eurekaCluster = new EmbeddedRunner(2, 0);  // 2 writes
             Thread.sleep(1000);  // give the cluster some init time
         }
 

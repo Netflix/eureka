@@ -75,7 +75,7 @@ public class RegistryCache {
             final AwsDataCenterInfo dataCenterInfo = (AwsDataCenterInfo) instanceInfo.getDataCenterInfo();
             return dataCenterInfo.getInstanceId();
         }
-        return "";
+        return instanceInfo.getId();
     }
 
     private void clearCache() {

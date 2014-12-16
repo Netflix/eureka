@@ -18,8 +18,9 @@ dependencies {
     compile project(':eureka-read-server')
     compile project(':eureka-write-server')
     compile project(':eureka-bridge')
+    compile project(':eureka-dashboard')
     compile "jline:jline:${jline_version}"
-    testCompile "junit:junit:${junit_version}"
+    compile "junit:junit:${junit_version}"
 }
 
 task runCluster (dependsOn: [classes], type: JavaExec) {

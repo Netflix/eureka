@@ -32,6 +32,10 @@ public class DashboardEurekaClientBuilder {
         eurekaClient = Eureka.newClientBuilder(resolver).build();
     }
 
+    public DashboardEurekaClientBuilder(EurekaClient eurekaClient) {
+        this.eurekaClient = eurekaClient;
+    }
+
     public EurekaClient getEurekaClient() {
         return eurekaClient;
     }
