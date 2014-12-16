@@ -19,12 +19,21 @@ public class EmbeddedDashboardServer extends EmbeddedEurekaServer<EurekaDashboar
     private static final String DASHBOARD_SERVER_NAME = "eureka2-dashboard";
     private static final int DASHBOARD_SERVER_PORTS_FROM = 16000;
 
+    private final ServerResolver registrationServerResolver;
+    private final ServerResolver discoveryServerResolver;
+
     public EmbeddedDashboardServer(EurekaDashboardConfig config,
                                    ServerResolver registrationServerResolver,
                                    ServerResolver discoveryServerResolver,
                                    boolean withExt,
                                    boolean withDashboard) {
         super(config, withExt, withDashboard);
+        this.registrationServerResolver = registrationServerResolver;
+        this.discoveryServerResolver = discoveryServerResolver;
+    }
+
+    @Override
+    public void start() {
         final EurekaClient eurekaClient = new EurekaClientBuilder(discoveryServerResolver, registrationServerResolver).build();
         Module[] modules = {
                 new EurekaDashboardModule(config) {

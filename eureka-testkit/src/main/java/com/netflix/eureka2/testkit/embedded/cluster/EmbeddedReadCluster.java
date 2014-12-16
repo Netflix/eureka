@@ -22,19 +22,19 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
     private final ServerResolver registrationResolver;
     private final ServerResolver discoveryResolver;
     private final boolean withExt;
-    private final boolean withDashboard;
+    private final boolean withAdminUI;
 
     private int nextAvailablePort = READ_SERVER_PORTS_FROM;
 
     public EmbeddedReadCluster(ServerResolver registrationResolver,
                                ServerResolver discoveryResolver,
                                boolean withExt,
-                               boolean withDashboard) {
+                               boolean withAdminUI) {
         super(READ_SERVER_NAME);
         this.registrationResolver = registrationResolver;
         this.discoveryResolver = discoveryResolver;
         this.withExt = withExt;
-        this.withDashboard = withDashboard;
+        this.withAdminUI = withAdminUI;
     }
 
     @Override
@@ -48,12 +48,18 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
                 .withWebAdminPort(nextAvailablePort + 2)
                 .withCodec(Codec.Avro)
                 .build();
-        EmbeddedReadServer newServer = new EmbeddedReadServer(config, registrationResolver, discoveryResolver, withExt, withDashboard);
+        EmbeddedReadServer newServer = newServer(config);
+        newServer.start();
+
         servers.add(newServer);
 
         nextAvailablePort += 10;
 
         return servers.size() - 1;
+    }
+
+    protected EmbeddedReadServer newServer(EurekaServerConfig config) {
+        return new EmbeddedReadServer(config, registrationResolver, discoveryResolver, withExt, withAdminUI);
     }
 
     @Override

@@ -2,11 +2,7 @@ package com.netflix.eureka2.testkit.embedded;
 
 import java.util.concurrent.CountDownLatch;
 
-import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedReadCluster;
-import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster;
-import com.netflix.eureka2.testkit.embedded.server.EmbeddedBridgeServer;
-import com.netflix.eureka2.testkit.embedded.server.EmbeddedDashboardServer;
-import com.netflix.eureka2.testkit.embedded.view.ClusterViewHttpServer;
+import com.netflix.eureka2.testkit.embedded.EurekaDeployment.EurekaDeploymentBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,7 +14,6 @@ public class EmbeddedRunner {
     private static final Logger logger = LoggerFactory.getLogger(EmbeddedRunner.class);
 
     private final EurekaDeployment deployment;
-    private final ClusterViewHttpServer deploymentView;
 
     public EmbeddedRunner(int writeSize, int readSize) {
         this(writeSize, readSize, false, false, false, false, false);
@@ -31,37 +26,15 @@ public class EmbeddedRunner {
                           boolean withExt,
                           boolean withAdminUI,
                           boolean withDeploymentView) {
-        EmbeddedWriteCluster writeCluster = new EmbeddedWriteCluster(withExt, withAdminUI);
-        writeCluster.scaleUpBy(writeSize);
-
-        EmbeddedReadCluster readCluster = new EmbeddedReadCluster(writeCluster.registrationResolver(),
-                writeCluster.discoveryResolver(), withExt, withAdminUI);
-        readCluster.scaleUpBy(readSize);
-
-        EmbeddedBridgeServer bridgeServer = null;
-        if (withBridge) {
-            bridgeServer = EmbeddedBridgeServer.newBridge(writeCluster.replicationPeers(), withExt, withAdminUI);
-        }
-        EmbeddedDashboardServer dashboardServer = null;
-        if (withDashboard) {
-            // TODO: read from the read cluster, not the write one
-            dashboardServer = EmbeddedDashboardServer.newDashboard(
-                    writeCluster.registrationResolver(),
-                    writeCluster.discoveryResolver(),
-//                    ServerResolvers.fromWriteServer(writeCluster.registrationResolver(), writeCluster.getVip()),
-                    withExt,
-                    withAdminUI
-            );
-        }
-        this.deployment = new EurekaDeployment(writeCluster, readCluster, bridgeServer, dashboardServer);
-
-        if (withDeploymentView) {
-            deploymentView = new ClusterViewHttpServer(deployment);
-            deploymentView.start();
-        } else {
-            deploymentView = null;
-        }
-
+        deployment = new EurekaDeploymentBuilder()
+                .withWriteClusterSize(writeSize)
+                .withReadClusterSize(readSize)
+                .withBridge(withBridge)
+                .withDashboard(withDashboard)
+                .withExtensions(withExt)
+                .withAdminUI(withAdminUI)
+                .withDeploymentView(withDeploymentView)
+                .build();
         logger.info("Eureka clusters are up");
     }
 
@@ -89,9 +62,6 @@ public class EmbeddedRunner {
     }
 
     public void shutdown() {
-        if (deploymentView != null) {
-            deploymentView.shutdown();
-        }
         deployment.shutdown();
     }
 

@@ -45,6 +45,7 @@ public class EmbeddedReadServerResource extends ExternalResource {
         ServerResolver registrationResolver = ServerResolvers.just("localhost", writeServerResource.getRegistrationPort());
         ServerResolver discoveryResolver = ServerResolvers.just("localhost", writeServerResource.getDiscoveryPort());
         server = new EmbeddedReadServer(config, registrationResolver, discoveryResolver, false, false);
+        server.start();
 
         // Find ephemeral port numbers
         discoveryPort = server.getInjector().getInstance(TcpDiscoveryServer.class).serverPort();

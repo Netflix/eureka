@@ -60,18 +60,24 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
                 .withWebAdminPort(nextAvailablePort + 4)
                 .withReplicationRetryMillis(1000)
                 .build();
-        EmbeddedWriteServer newServer = new EmbeddedWriteServer(
-                config,
-                replicationPeers(),
-                withExt,
-                withAdminUI
-        );
+        EmbeddedWriteServer newServer = newServer(config);
+        newServer.start();
+
         servers.add(newServer);
         addReplicationPeer(writeServerAddress);
 
         nextAvailablePort += 10;
 
         return servers.size() - 1;
+    }
+
+    protected EmbeddedWriteServer newServer(WriteServerConfig config) {
+        return new EmbeddedWriteServer(
+                config,
+                replicationPeers(),
+                withExt,
+                withAdminUI
+        );
     }
 
     @Override

@@ -16,11 +16,18 @@ import rx.Observable;
  */
 public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig, WriteServerReport> {
 
+    private final Observable<ChangeNotification<InetSocketAddress>> replicationPeers;
+
     public EmbeddedWriteServer(final WriteServerConfig config,
                                final Observable<ChangeNotification<InetSocketAddress>> replicationPeers,
                                boolean withExt,
                                boolean withDashboards) {
         super(config, withExt, withDashboards);
+        this.replicationPeers = replicationPeers;
+    }
+
+    @Override
+    public void start() {
         Module[] modules = {
                 new EurekaWriteServerModule(config),
                 new AbstractModule() {

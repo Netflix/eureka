@@ -22,12 +22,19 @@ public class EmbeddedBridgeServer extends EmbeddedEurekaServer<BridgeServerConfi
 
     private static final String BRIDGE_SERVER_NAME = "eureka2-bridge";
     private static final int BRIDGE_SERVER_PORTS_FROM = 15000;
+    
+    private final Observable<ChangeNotification<InetSocketAddress>> replicationPeers;
 
     public EmbeddedBridgeServer(BridgeServerConfig config,
                                 final Observable<ChangeNotification<InetSocketAddress>> replicationPeers,
                                 boolean withExt,
                                 boolean withDashboard) {
         super(config, withExt, withDashboard);
+        this.replicationPeers = replicationPeers;
+    }
+
+    @Override
+    public void start() {
         Module[] modules = {
                 new EurekaBridgeServerModule(config),
                 new AbstractModule() {

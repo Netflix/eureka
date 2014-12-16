@@ -12,12 +12,21 @@ import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer.ReadServer
  * @author Tomasz Bak
  */
 public class EmbeddedReadServer extends EmbeddedEurekaServer<EurekaServerConfig, ReadServerReport> {
+    private final ServerResolver registrationResolver;
+    private final ServerResolver discoveryResolver;
+
     public EmbeddedReadServer(EurekaServerConfig config,
                               final ServerResolver registrationResolver,
                               ServerResolver discoveryResolver,
                               boolean withExt,
                               boolean withDashboard) {
         super(config, withExt, withDashboard);
+        this.registrationResolver = registrationResolver;
+        this.discoveryResolver = discoveryResolver;
+    }
+
+    @Override
+    public void start() {
         final EurekaClient eurekaClient = Eureka.newClientBuilder(discoveryResolver, registrationResolver)
                 .withCodec(config.getCodec()).build();
         Module[] modules = {

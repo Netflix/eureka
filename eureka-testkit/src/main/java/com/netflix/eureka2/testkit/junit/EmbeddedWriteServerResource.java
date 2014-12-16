@@ -49,6 +49,7 @@ public class EmbeddedWriteServerResource extends ExternalResource {
                 .build();
 
         server = new EmbeddedWriteServer(config, Observable.<ChangeNotification<InetSocketAddress>>never(), false, false);
+        server.start();
 
         // Find ephemeral port numbers
         registrationPort = server.getInjector().getInstance(TcpRegistrationServer.class).serverPort();

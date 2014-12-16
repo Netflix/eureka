@@ -45,8 +45,7 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
         this.withAdminUI = withAdminUI;
     }
 
-    public void start() {
-    }
+    public abstract void start();
 
     public void shutdown() {
         lifecycleManager.close();
