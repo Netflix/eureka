@@ -15,6 +15,6 @@ public class EurekaPage extends AbstractAdminPageInfo {
 
     @Override
     public String getPageTemplate() {
-        return "/eureka-registry..ftl";
+        return "/eureka-registry.ftl";
     }
 }
