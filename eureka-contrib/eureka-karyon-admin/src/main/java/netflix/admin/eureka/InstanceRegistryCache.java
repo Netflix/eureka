@@ -24,7 +24,7 @@ public class InstanceRegistryCache {
 
     @Inject
     public InstanceRegistryCache() {
-        ServerResolver serverResolver = ServerResolvers.just("ec2-107-20-175-144.compute-1.amazonaws.com", 12103);
+        ServerResolver serverResolver = ServerResolvers.just("localhost", 12103);
         eurekaClient = Eureka.newClient(serverResolver);
         registryCache = new ConcurrentHashMap<>();
         start();

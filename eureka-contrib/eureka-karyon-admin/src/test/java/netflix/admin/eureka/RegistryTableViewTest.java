@@ -80,4 +80,20 @@ public class RegistryTableViewTest {
         firstAppId = regData.get(0).getAsJsonObject().get("appId").getAsString();
         assertEquals("App_1", firstAppId);
     }
+
+    @Test
+    public void checkFilteredSize() {
+        final Map<String, InstanceInfo> registryMap = registryCache.get();
+        assertTrue(registryMap != null);
+        assertEquals(5, registryMap.size());
+
+        RegistryTableView registryView = new RegistryTableView(registryCache);
+        registryView.setAllColumnsSearchTerm("APP_1");
+        final JsonArray regData = registryView.getData();
+        assertTrue(regData != null);
+        assertEquals(2, regData.size());
+
+        assertEquals(2, registryView.getFilteredNumOfRecords());
+        assertEquals(5, registryView.getTotalNumOfRecords());
+    }
 }

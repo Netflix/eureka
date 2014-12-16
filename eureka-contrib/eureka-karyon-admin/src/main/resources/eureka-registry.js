@@ -1,45 +1,40 @@
 $(document).ready(function () {
+    "use strict"
     var statusErrorElm = $('#status-error');
     statusErrorElm.html("");
 
-    var oTable = $('#discovery-table').dataTable({
-        "aoColumns"     : [
-            {"sTitle": "Application", "mDataProp": "appId", sDefaultContent : '-'},
-            {"sTitle": "Instance Id", "mDataProp": "instId", sDefaultContent: '-'},
+    console.log("Making ajax call - IV");
+    $('#discovery-table-2').dataTable({
+        "aoColumns"      : [
+            {"sTitle": "Application", "mDataProp": "appId", sDefaultContent: '-'},
+            {"sTitle": "Instance Id", "mDataProp": "instId", sDefaultContent: '-', bSortable: false},
             {"sTitle": "Status", "mDataProp": "status", sDefaultContent: '-'},
-            {"sTitle": "IP Address", "mDataProp": "ip", sDefaultContent: '-'},
+            {"sTitle": "IP Address", "mDataProp": "ip", sDefaultContent: '-', bSortable: false},
+            {"sTitle": "VIP", "mDataProp": "vip", sDefaultContent: '-'},
             {"sTitle": "Hostname", "mDataProp": "hostname", sDefaultContent: '-'}
         ],
-        "sAjaxSource"   : "/webadmin/eureka2",
-        "fnServerData"  : function (sSource, aoData, fnCallback) {
-            $.getJSON(sSource)
-                    .success(function (data) {
-                        if (data) {
-                            statusErrorElm.html("");
-                            $("#status-lastupdate").html(new Date().format());
-                            $("#status-error").removeClass("status-error");
-                            fnCallback({"aaData": data});
-                        }
-                    })
-                    .error(function (jqXHR, textStatus, errorThrown) {
-                        statusErrorElm.html(textStatus + ": " + errorThrown);
-                        statusErrorElm.addClass("status-error");
-                    });
+        "sAjaxSource"    : '/webadmin/eureka2',
+        "fnServerData"   : function (sSource, aoData, fnCallback) {
+            $.getJSON(sSource, aoData, function (json) {
+                $("#status-lastupdate").html(new Date().format());
+                if (json.iTotalDisplayRecords) {
+                    $("#status-visible").html(json.iTotalDisplayRecords);
+                }
+                if (json.iTotalRecords) {
+                    $("#status-total").html(json.iTotalRecords);
+                }
+                fnCallback(json);
+            });
         },
-
-        'bSort'          : true,
-        'bLengthChange'  : true,
-        'sPaginationType': 'bootstrap',
-        'bDestroy'       : true,
-        'bFilter'        : true,
-        'bStateSave'     : false,
-        "iDisplayLength" : 25,
-        "fnInfoCallback": function (oSettings, iStart, iEnd, iMax, iTotal, sPre) {
-            $("#status-visible").html(iTotal);
-            $("#status-total").html(iMax);
-            return "";
-        },
-        'sDom'            : "H<'row'<'span3'l><f>r>t<'row'<'span6'i><p>>" // needed to show header buttons
+        "bServerSide"    : true,
+        "bProcessing"    : true,
+        "sPaginationType": "bootstrap",
+        "iDisplayLength" : 100,
+        "bLengthChange"  : true,
+        "bDestroy"       : true,
+        "bFilter"        : true,
+        'bStateSave'     : true,
+        'sDom'           : "H<'row'<'span3'l><f>r>t<'row'<'span6'i><p>>" // needed to show header buttons
     });
 
 
@@ -47,10 +42,9 @@ $(document).ready(function () {
     var bseFilterElm = $('.bse-filter');
     bseFilterElm.val("");
     bseFilterElm.die("keyup").live("keyup", function () {
-        $('#discovery-table').dataTable().fnFilter($(".bse-filter").val(), null, false, true);
+        $('#discovery-table-2').dataTable().fnFilter($(".bse-filter").val(), null, false, true);
     });
     bseFilterElm.die("click").live("click", function () {
-        $('#discovery-table').dataTable().fnReloadAjax();
+        $('#discovery-table-2').dataTable().fnReloadAjax();
     });
-
 });

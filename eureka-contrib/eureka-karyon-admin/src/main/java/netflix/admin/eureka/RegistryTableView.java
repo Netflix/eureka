@@ -26,6 +26,7 @@ public class RegistryTableView implements TableViewResource {
         InstanceId,
         Status,
         IpAddress,
+        VipAddress,
         Hostname;
 
         public static List<String> getAllColumnNames() {
@@ -93,9 +94,10 @@ public class RegistryTableView implements TableViewResource {
         final Map<String, InstanceInfo> registryMap = registryCache.get();
         if (registryMap != null) {
             Collection<InstanceInfo> instanceInfoList = registryMap.values();
+            totalRecords = instanceInfoList.size();
             instanceInfoList = applyFiltering(instanceInfoList);
-            instanceInfoList = applyPagination(instanceInfoList);
             instanceInfoList = applySorting(instanceInfoList);
+            instanceInfoList = applyPagination(instanceInfoList);
 
             final JsonElement jsonElement = gson.toJsonTree(instanceInfoList);
             if (JsonArray.class.isAssignableFrom(jsonElement.getClass())) {
@@ -152,7 +154,6 @@ public class RegistryTableView implements TableViewResource {
     private Collection<InstanceInfo> applyFiltering(Collection<InstanceInfo> instanceInfoList) {
         if (searchTerm != null && !searchTerm.isEmpty()) {
             List<InstanceInfo> result = new ArrayList<>();
-
             for (InstanceInfo instanceInfo : instanceInfoList) {
                 final String app = instanceInfo.getApp();
                 if (containsIn(instanceInfo.getApp()) ||
@@ -161,20 +162,22 @@ public class RegistryTableView implements TableViewResource {
                     result.add(instanceInfo);
                 }
             }
+            numFilteredRecords = result.size();
             return result;
         } else {
+            numFilteredRecords = instanceInfoList.size();
             return instanceInfoList;
         }
     }
 
     @Override
     public int getTotalNumOfRecords() {
-        return 0;
+        return totalRecords;
     }
 
     @Override
     public int getFilteredNumOfRecords() {
-        return 0;
+        return numFilteredRecords;
     }
 
     @Override

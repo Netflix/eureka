@@ -14,8 +14,14 @@ public class RegistryTableComparatorFactory {
         columnComparatorAscMap.put(RegistryTableView.Column.Application, new Comparator<InstanceInfo>() {
             @Override
             public int compare(InstanceInfo o1, InstanceInfo o2) {
-                if (o1.getApp() != null && o2.getApp() != null) {
-                    return o1.getApp().compareTo(o2.getApp());
+                if (o1 != null && o2 != null && o1.getApp() != null && o2.getApp() != null) {
+                    return o1.getApp().compareToIgnoreCase(o2.getApp());
+                }
+                if (o1 != null && o1.getApp() != null) {
+                    return 1;
+                }
+                if (o2 != null && o2.getApp() != null) {
+                    return -1;
                 }
                 return 0;
             }
@@ -29,6 +35,12 @@ public class RegistryTableComparatorFactory {
                 if (!hostName1.isEmpty() && !hostName2.isEmpty()) {
                     return hostName1.compareTo(hostName2);
                 }
+                if (!hostName1.isEmpty()) {
+                    return 1;
+                }
+                if (!hostName2.isEmpty()) {
+                    return -1;
+                }
                 return 0;
             }
         });
@@ -36,24 +48,52 @@ public class RegistryTableComparatorFactory {
         columnComparatorAscMap.put(RegistryTableView.Column.Status, new Comparator<InstanceInfo>() {
             @Override
             public int compare(InstanceInfo o1, InstanceInfo o2) {
-                if (o1.getStatus() != null && o2.getStatus() != null) {
+                if (o1 != null && o2 != null && o1.getStatus() != null && o2.getStatus() != null) {
                     return o1.getStatus().name().compareTo(o2.getStatus().name());
+                }
+                if (o1 != null && o1.getStatus() != null) {
+                    return 1;
+                }
+                if (o2 != null && o2.getStatus() != null) {
+                    return -1;
                 }
                 return 0;
             }
         });
 
+        columnComparatorAscMap.put(RegistryTableView.Column.VipAddress, new Comparator<InstanceInfo>() {
+            @Override
+            public int compare(InstanceInfo o1, InstanceInfo o2) {
+                if (o1 != null && o2 != null && o1.getVipAddress() != null && o2.getVipAddress() != null) {
+                    return o1.getVipAddress().compareTo(o2.getVipAddress());
+                }
+                if (o1 != null && o1.getVipAddress() != null) {
+                    return 1;
+                }
+                if (o2 != null && o2.getVipAddress() != null) {
+                    return -1;
+                }
+                return 0;
+            }
+        });
 
         //  descending comparators
         columnComparatorDescMap.put(RegistryTableView.Column.Application, new Comparator<InstanceInfo>() {
             @Override
             public int compare(InstanceInfo o1, InstanceInfo o2) {
-                if (o1.getApp() != null && o2.getApp() != null) {
-                    return o2.getApp().compareTo(o1.getApp());
+                if (o1 != null && o2 != null && o1.getApp() != null && o2.getApp() != null) {
+                    return o2.getApp().compareToIgnoreCase(o1.getApp());
+                }
+                if (o1 != null && o1.getApp() != null) {
+                    return -1;
+                }
+                if (o2 != null && o2.getApp() != null) {
+                    return 1;
                 }
                 return 0;
             }
         });
+
         columnComparatorDescMap.put(RegistryTableView.Column.Hostname, new Comparator<InstanceInfo>() {
             @Override
             public int compare(InstanceInfo o1, InstanceInfo o2) {
@@ -62,15 +102,43 @@ public class RegistryTableComparatorFactory {
                 if (!hostName1.isEmpty() && !hostName2.isEmpty()) {
                     return hostName2.compareTo(hostName1);
                 }
+                if (!hostName1.isEmpty()) {
+                    return -1;
+                }
+                if (!hostName2.isEmpty()) {
+                    return 1;
+                }
                 return 0;
             }
         });
 
-        columnComparatorAscMap.put(RegistryTableView.Column.Status, new Comparator<InstanceInfo>() {
+        columnComparatorDescMap.put(RegistryTableView.Column.Status, new Comparator<InstanceInfo>() {
             @Override
             public int compare(InstanceInfo o1, InstanceInfo o2) {
-                if (o1.getStatus() != null && o2.getStatus() != null) {
+                if (o1 != null && o2 != null && o1.getStatus() != null && o2.getStatus() != null) {
                     return o2.getStatus().name().compareTo(o1.getStatus().name());
+                }
+                if (o1 != null && o1.getStatus() != null) {
+                    return -1;
+                }
+                if (o2 != null && o2.getStatus() != null) {
+                    return 1;
+                }
+                return 0;
+            }
+        });
+
+        columnComparatorDescMap.put(RegistryTableView.Column.VipAddress, new Comparator<InstanceInfo>() {
+            @Override
+            public int compare(InstanceInfo o1, InstanceInfo o2) {
+                if (o1 != null && o2 != null && o1.getVipAddress() != null && o2.getVipAddress() != null) {
+                    return o2.getVipAddress().compareTo(o1.getVipAddress());
+                }
+                if (o1 != null && o1.getVipAddress() != null) {
+                    return -1;
+                }
+                if (o2 != null && o2.getVipAddress() != null) {
+                    return 1;
                 }
                 return 0;
             }
