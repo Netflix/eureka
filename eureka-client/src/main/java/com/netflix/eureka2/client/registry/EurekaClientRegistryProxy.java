@@ -3,9 +3,7 @@ package com.netflix.eureka2.client.registry;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.channel.RetryableEurekaChannelException;
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.client.channel.ClientInterestChannel;
 import com.netflix.eureka2.client.channel.InterestChannelInvoker;
@@ -23,10 +21,7 @@ import rx.Observable;
 import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Action0;
-import rx.functions.Func1;
-import rx.functions.Func2;
 import rx.schedulers.Schedulers;
-import rx.schedulers.TestScheduler;
 
 /**
  * An implementation of {@link EurekaRegistry} to be used by the eureka client.
@@ -56,8 +51,8 @@ public class EurekaClientRegistryProxy implements EurekaClientRegistry<InstanceI
                                      long retryInitialDelayMs,
                                      EurekaClientMetricFactory metricFactory,
                                      Scheduler scheduler) {
-        RetryableInterestChannel retryableInterestChannel =
-                new RetryableInterestChannel(channelFactory, swapStrategyFactory, metricFactory, retryInitialDelayMs, scheduler);
+        ClientInterestChannel retryableInterestChannel = new RetryableInterestChannel(
+                channelFactory, swapStrategyFactory, metricFactory, retryInitialDelayMs, scheduler);
         this.interestChannel = new InterestChannelInvoker(retryableInterestChannel, scheduler);
     }
 

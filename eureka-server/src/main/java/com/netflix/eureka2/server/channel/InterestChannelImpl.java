@@ -30,7 +30,7 @@ import rx.functions.Action1;
  *
  * @author Nitesh Kant
  */
-public class InterestChannelImpl extends AbstractChannel<STATES> implements InterestChannel {
+public class InterestChannelImpl extends AbstractHandlerChannel<STATES> implements InterestChannel {
 
     public enum STATES {Idle, Open, Closed}
 

@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author David Liu
  */
-public class BridgeChannel extends AbstractChannel<STATES> {
+public class BridgeChannel extends AbstractHandlerChannel<STATES> {
     private static final Logger logger = LoggerFactory.getLogger(BridgeChannel.class);
 
     public enum STATES {Opened, Closed}

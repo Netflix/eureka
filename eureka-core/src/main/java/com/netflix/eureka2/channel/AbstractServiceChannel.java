@@ -15,11 +15,14 @@ public abstract class AbstractServiceChannel<STATE extends Enum> implements Serv
 
     protected static final IllegalStateException CHANNEL_CLOSED_EXCEPTION = new IllegalStateException("Channel is already closed.");
 
+    // Channel descriptive name to be used in the log file - that should come from channel API
+    protected final String name = getClass().getSimpleName();
+
     protected final Subject<Void, Void> lifecycle;
     protected final AtomicReference<STATE> state;
 
     public AbstractServiceChannel(STATE initState) {
-        state = new AtomicReference<STATE>(initState);
+        state = new AtomicReference<>(initState);
         lifecycle = ReplaySubject.create(); // Since its of type void there isn't any caching of data.
         // Its just the terminal state that is cached.
     }

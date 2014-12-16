@@ -16,7 +16,6 @@
 
 package com.netflix.eureka2.server.service.replication;
 
-import com.netflix.eureka2.channel.RetryableStatelessServiceChannel.ChannelHandler;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
@@ -30,14 +29,13 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
-import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
 
 /**
  * @author Tomasz Bak
  */
-class RegistryReplicator implements ChannelHandler<ReplicationChannel> {
+public class RegistryReplicator {
 
     private static final Logger logger = LoggerFactory.getLogger(RegistryReplicator.class);
 
@@ -53,7 +51,6 @@ class RegistryReplicator implements ChannelHandler<ReplicationChannel> {
         this.registry = registry;
     }
 
-    @Override
     public void reconnect(final ReplicationChannel delegateChannel) {
         if (subscription != null) {
             subscription.unsubscribe();
@@ -106,7 +103,6 @@ class RegistryReplicator implements ChannelHandler<ReplicationChannel> {
                 });
     }
 
-    @Override
     public void close() {
         if (subscription != null) {
             subscription.unsubscribe();
