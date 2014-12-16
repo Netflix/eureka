@@ -25,7 +25,7 @@ import java.util.Set;
 /**
  * @author Nitesh Kant
  */
-public class RegistrationChannelImpl extends AbstractChannel<STATES> implements RegistrationChannel {
+public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> implements RegistrationChannel {
 
     private static final Logger logger = LoggerFactory.getLogger(RegistrationChannelImpl.class);
 

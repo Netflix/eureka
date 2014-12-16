@@ -17,6 +17,7 @@
 package com.netflix.eureka2.channel;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,23 +26,20 @@ import rx.Scheduler;
 import rx.Scheduler.Worker;
 import rx.Subscriber;
 import rx.functions.Action0;
-import rx.subjects.ReplaySubject;
 
 /**
- * An abstract service channel with reconnect capabilities. It implements exponential back off
- * to avoid retry storm. It is used as a base by higher level {@link RetryableStatelessServiceChannel} and
- * {@link RetryableStatefullServiceChannel} implementations.
+ * An abstract service channel decorator with reconnect capabilities. It implements exponential back off
+ * to avoid retry storm.
  *
  * @author Tomasz Bak
  */
-public abstract class RetryableServiceChannel<C extends ServiceChannel> implements ServiceChannel {
+public abstract class RetryableServiceChannel<C extends ServiceChannel> extends AbstractServiceChannel<Enum> {
 
     private static final Logger logger = LoggerFactory.getLogger(RetryableServiceChannel.class);
 
     public static final int MAX_EXP_BACK_OFF_MULTIPLIER = 10;
 
-    // Channel descriptive name to be used in the log file - that should come from channel API
-    protected final String name = getClass().getSimpleName();
+    private final AtomicReference<C> currentChannelRef;  // store current active channel
 
     private final long retryInitialDelayMs;
     private final long maxRetryDelayMs;
@@ -50,35 +48,65 @@ public abstract class RetryableServiceChannel<C extends ServiceChannel> implemen
     private long lastConnectTime;
     private long retryDelay;
 
-    protected volatile boolean shutdown;
+    protected RetryableServiceChannel(C initialDelegate, long retryInitialDelayMs, Scheduler scheduler) {
+        super(null);
 
-    private final ReplaySubject<Void> lifecycleSubject = ReplaySubject.create();
+        this.currentChannelRef = new AtomicReference<>(initialDelegate);
 
-    protected RetryableServiceChannel(long retryInitialDelayMs, Scheduler scheduler) {
         this.retryInitialDelayMs = retryInitialDelayMs;
         this.maxRetryDelayMs = retryInitialDelayMs * MAX_EXP_BACK_OFF_MULTIPLIER;
         this.worker = scheduler.createWorker();
         this.retryDelay = retryInitialDelayMs;
+
+        subscribeToDelegateChannelLifecycle(initialDelegate);
     }
 
+    /**
+     * Note that calling close() on the retryableChannelDecorator will stop all further retries
+     */
     @Override
-    public void close() {
-        if (!shutdown) {
-            shutdown = true;
-            worker.unsubscribe();
+    protected void _close() {
+        worker.unsubscribe();
+        C delegateChannel = currentChannelRef.get();
+        if (delegateChannel != null) {
+            delegateChannel.close();
         }
     }
 
-    @Override
-    public Observable<Void> asLifecycleObservable() {
-        return lifecycleSubject;
+    protected C currentDelegateChannel() {
+        return currentChannelRef.get();
     }
 
-    protected Worker getWorker() {
-        return worker;
-    }
+    /**
+     * Implement to return a new delegate channel for retry purposes. This new channel should be
+     * "warmed up" before emit if necessary.
+     * @return an observable that emits a new, "warmed up" delegate channel, then completes
+     */
+    protected abstract Observable<C> reestablish();
 
-    protected abstract void retry();
+    protected void retry() {
+        logger.info("Retrying ...");
+        reestablish().single().subscribe(new Subscriber<C>() {
+            @Override
+            public void onCompleted() {
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                scheduleRetry();
+            }
+
+            @Override
+            public void onNext(C newDelegateChannel) {
+                C oldDelegateChannel = currentChannelRef.get();
+                if (oldDelegateChannel != null) {
+                    oldDelegateChannel.close();
+                }
+                currentChannelRef.set(newDelegateChannel);
+                subscribeToDelegateChannelLifecycle(newDelegateChannel);
+            }
+        });
+    }
 
     protected boolean recoverableError(Throwable error) {
         return true;
@@ -89,33 +117,29 @@ public abstract class RetryableServiceChannel<C extends ServiceChannel> implemen
         bumpUpRetryDelay();
     }
 
-    protected void subscribeToChannelLifecycle(C channelDelegate) {
-        final Observable<Void> lifecycleObservable = channelDelegate.asLifecycleObservable();
+    protected void subscribeToDelegateChannelLifecycle(C newDelegateChannel) {
+        final Observable<Void> lifecycleObservable = newDelegateChannel.asLifecycleObservable();
 
         lifecycleObservable.subscribe(new Subscriber<Void>() {
             @Override
             public void onCompleted() {
-                if (!shutdown) {
-                    logger.info("Channel closed gracefully and must be reconnected");
-                    long closedAfter = worker.now() - lastConnectTime;
-                    if (closedAfter >= maxRetryDelayMs) {
-                        retryDelay = retryInitialDelayMs;
-                    }
-                    scheduleRetry();
+                logger.info("Channel closed gracefully and must be reconnected");
+                long closedAfter = worker.now() - lastConnectTime;
+                if (closedAfter >= maxRetryDelayMs) {
+                    retryDelay = retryInitialDelayMs;
                 }
+                scheduleRetry();
             }
 
             @Override
             public void onError(Throwable e) {
-                if (!shutdown) {
-                    if (recoverableError(e)) {
-                        logger.info("Channel failure; scheduling the reconnection in " + retryDelay + "ms", e);
-                        scheduleRetry();
-                    } else {
-                        logger.error("Unrecoverable error; closing the retryable channel");
-                        lifecycleSubject.onError(e);
-                        close();
-                    }
+                if (recoverableError(e)) {
+                    logger.info("Channel failure; scheduling the reconnection in " + retryDelay + "ms", e);
+                    scheduleRetry();
+                } else {
+                    logger.error("Unrecoverable error; closing the retryable channel");
+                    lifecycle.onError(e);
+                    close();
                 }
             }
 
@@ -133,11 +157,9 @@ public abstract class RetryableServiceChannel<C extends ServiceChannel> implemen
     private final Action0 retryAction = new Action0() {
         @Override
         public void call() {
-            if (shutdown) {
-                return;
-            }
             lastConnectTime = worker.now();
             retry();
         }
     };
+
 }

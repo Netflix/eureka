@@ -155,28 +155,18 @@ public class ReplicationService {
     }
 
     /* Visible for testing */ ReplicationChannel createRetryableSenderReplicationChannel(final InetSocketAddress address) {
-        Func0<ReplicationChannel> channelFactory = new Func0<ReplicationChannel>() {
-            @Override
-            public ReplicationChannel call() {
-                return new SenderReplicationChannel(
-                        new ReplicationTransportClient(address, codec, metricFactory.getReplicationServerConnectionMetrics())
-                );
-            }
-        };
-
-        return new RetryableSenderReplicationChannel(channelFactory, reconnectDelayMillis) {
-
-            private RegistryReplicator registryReplicator;
-
-            @Override
-            protected ChannelHandler<ReplicationChannel> getChannelHandler() {
-                if (registryReplicator == null) {
-                    registryReplicator = new RegistryReplicator(ownInstanceInfo.getId(), eurekaRegistry);
-                }
-
-                return registryReplicator;
-            }
-        };
+        return new RetryableSenderReplicationChannel(
+                new Func0<ReplicationChannel>() {
+                    @Override
+                    public ReplicationChannel call() {
+                        return new SenderReplicationChannel(
+                                new ReplicationTransportClient(address, codec, metricFactory.getReplicationServerConnectionMetrics())
+                        );
+                    }
+                },
+                new RegistryReplicator(ownInstanceInfo.getId(), eurekaRegistry),
+                reconnectDelayMillis
+        );
     }
 
 }

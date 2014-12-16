@@ -77,10 +77,10 @@ public class RetryableRegistrationChannelTest {
 
     @Test
     public void testForwardsRequestsToDelegate() throws Exception {
-        channel.register(INSTANCE_INFO);
+        channel.register(INSTANCE_INFO).subscribe();
         verify(delegateChannel1, timeout(1)).register(INSTANCE_INFO);
 
-        channel.update(INSTANCE_INFO);
+        channel.update(INSTANCE_INFO).subscribe();
         verify(delegateChannel1, timeout(1)).update(INSTANCE_INFO);
 
         channel.unregister();
@@ -90,7 +90,7 @@ public class RetryableRegistrationChannelTest {
     @Test
     public void testReconnectsWhenChannelFailure() throws Exception {
         // First channel registration
-        channel.register(INSTANCE_INFO);
+        channel.register(INSTANCE_INFO).subscribe();
         verify(delegateChannel1, timeout(1)).register(INSTANCE_INFO);
 
         // Break the channel
@@ -101,14 +101,14 @@ public class RetryableRegistrationChannelTest {
         verify(delegateChannel2, times(1)).register(INSTANCE_INFO);
 
         // Verify that new requests relayed to the new channel
-        channel.unregister();
+        channel.unregister().subscribe();
         verify(delegateChannel2, times(1)).unregister();
     }
 
     @Test
     public void testClosesInternalChannels() throws Exception {
         // First channel registration
-        channel.register(INSTANCE_INFO);
+        channel.register(INSTANCE_INFO).subscribe();
 
         // Break the channel and reconnect
         channelLifecycle1.onError(new Exception("channel error"));
