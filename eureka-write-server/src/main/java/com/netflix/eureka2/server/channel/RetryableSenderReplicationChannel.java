@@ -36,6 +36,7 @@ public class RetryableSenderReplicationChannel
         super(channelFactory.call(), retryInitialDelayMs, scheduler);
         this.registryReplicator = registryReplicator;
         this.channelFactory = channelFactory;
+        registryReplicator.reconnect(currentDelegateChannel());
     }
 
     @Override

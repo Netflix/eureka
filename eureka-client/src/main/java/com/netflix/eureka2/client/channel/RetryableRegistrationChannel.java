@@ -3,6 +3,8 @@ package com.netflix.eureka2.client.channel;
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.channel.RetryableServiceChannel;
 import com.netflix.eureka2.registry.InstanceInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
 import rx.Subscriber;
@@ -17,6 +19,8 @@ import java.util.concurrent.atomic.AtomicReference;
 public class RetryableRegistrationChannel
         extends RetryableServiceChannel<RegistrationChannel>
         implements RegistrationChannel {
+
+    private static final Logger logger = LoggerFactory.getLogger(RetryableRegistrationChannel.class);
 
     private final AtomicReference<InstanceInfo> instanceInfoRef;
     private final Func0<RegistrationChannel> channelFactory;
@@ -62,15 +66,32 @@ public class RetryableRegistrationChannel
     protected Observable<RegistrationChannel> reestablish() {
         return Observable.create(new Observable.OnSubscribe<RegistrationChannel>() {
             @Override
-            public void call(Subscriber<? super RegistrationChannel> subscriber) {
+            public void call(final Subscriber<? super RegistrationChannel> subscriber) {
                 try {
-                    RegistrationChannel newDelegateChannel = channelFactory.call();
+                    final RegistrationChannel newDelegateChannel = channelFactory.call();
                     InstanceInfo instanceInfo = instanceInfoRef.get();
+
                     if (instanceInfo != null) {
-                        newDelegateChannel.register(instanceInfo);
+                        newDelegateChannel.register(instanceInfo).subscribe(new Subscriber<Void>() {
+                            @Override
+                            public void onCompleted() {
+                                logger.info("Retry re-registration completed");
+                                subscriber.onNext(newDelegateChannel);
+                                subscriber.onCompleted();
+                            }
+
+                            @Override
+                            public void onError(Throwable e) {
+                                logger.info("Retry re-registration failed");
+                                subscriber.onError(e);
+                            }
+
+                            @Override
+                            public void onNext(Void aVoid) {
+                                // no op
+                            }
+                        });
                     }
-                    subscriber.onNext(newDelegateChannel);
-                    subscriber.onCompleted();
                 } catch (Exception e) {
                     subscriber.onError(e);
                 }

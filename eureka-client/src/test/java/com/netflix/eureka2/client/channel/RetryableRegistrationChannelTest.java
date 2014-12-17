@@ -67,7 +67,7 @@ public class RetryableRegistrationChannelTest {
     public void setUp() throws Exception {
         withChannelMocks(delegateChannel1, channelLifecycle1);
         withChannelMocks(delegateChannel2, channelLifecycle2);
-        channel = new RetryableRegistrationChannel(channelFactory, INITIAL_DELAY, scheduler);
+        channel = spy(new RetryableRegistrationChannel(channelFactory, INITIAL_DELAY, scheduler));
     }
 
     @After
@@ -99,6 +99,7 @@ public class RetryableRegistrationChannelTest {
         // Verify that reconnected
         scheduler.advanceTimeBy(INITIAL_DELAY, TimeUnit.MILLISECONDS);
         verify(delegateChannel2, times(1)).register(INSTANCE_INFO);
+        verify(delegateChannel1, times(1)).register(INSTANCE_INFO);  // make sure delegate1 is not called again
 
         // Verify that new requests relayed to the new channel
         channel.unregister().subscribe();
@@ -113,11 +114,10 @@ public class RetryableRegistrationChannelTest {
         // Break the channel and reconnect
         channelLifecycle1.onError(new Exception("channel error"));
         scheduler.advanceTimeBy(INITIAL_DELAY, TimeUnit.MILLISECONDS);
+        verify(delegateChannel1, times(1)).close();  // verify first channel is closed
 
-        // Close the channel and verify that both delegates are closed.
         channel.close();
-        verify(delegateChannel1, times(1)).close();
-        verify(delegateChannel2, times(1)).close();
+        verify(delegateChannel2, times(1)).close();  // verify second channel is closed
     }
 
     protected void withChannelMocks(RegistrationChannel channel, Observable<Void> channelLifecycle) {
