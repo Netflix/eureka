@@ -10,6 +10,8 @@ import rx.schedulers.Schedulers;
 
 import java.util.concurrent.TimeUnit;
 
+import static rx.Scheduler.Worker;
+
 /**
  * A decorator for MessageConnection that self closes after a specified period of time
  * @author David Liu
@@ -23,30 +25,30 @@ public class SelfClosingConnection implements MessageConnection {
     private final Action0 selfTerminateTask = new Action0() {
         @Override
         public void call() {
-            logger.info("Shutting down the connection after {} seconds", lifecycleDurationSeconds);
+            logger.info("Shutting down the connection after {} seconds", lifecycleDurationMs);
             SelfClosingConnection.this.shutdown();
         }
     };
 
     private final MessageConnection delegate;
-//    private final Scheduler.Worker terminationWorker;
-    private final long lifecycleDurationSeconds;
+    private final Worker terminationWorker;
+    private final long lifecycleDurationMs;
 
     public SelfClosingConnection(MessageConnection delegate) {
         this(delegate, DEFAULT_LIFECYCLE_DURATION_SECONDS, Schedulers.computation());
     }
 
-    public SelfClosingConnection(MessageConnection delegate, long lifecycleDurationSeconds) {
-        this(delegate, lifecycleDurationSeconds, Schedulers.computation());
+    public SelfClosingConnection(MessageConnection delegate, long lifecycleDurationMs) {
+        this(delegate, lifecycleDurationMs, Schedulers.computation());
     }
 
-    public SelfClosingConnection(MessageConnection delegate, long lifecycleDurationSeconds, Scheduler terminationScheduler) {
+    public SelfClosingConnection(MessageConnection delegate, long lifecycleDurationMs, Scheduler terminationScheduler) {
         this.delegate = delegate;
-        this.lifecycleDurationSeconds = lifecycleDurationSeconds;
+        this.lifecycleDurationMs = lifecycleDurationMs;
 
-        Scheduler.Worker terminationWorker = terminationScheduler.createWorker();
-        if (lifecycleDurationSeconds > 0) {
-            terminationWorker.schedule(selfTerminateTask, lifecycleDurationSeconds, TimeUnit.SECONDS);
+        terminationWorker = terminationScheduler.createWorker();
+        if (lifecycleDurationMs > 0) {
+            terminationWorker.schedule(selfTerminateTask, lifecycleDurationMs, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -92,6 +94,7 @@ public class SelfClosingConnection implements MessageConnection {
 
     @Override
     public void shutdown() {
+        terminationWorker.unsubscribe();
         delegate.shutdown();
     }
 

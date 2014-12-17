@@ -1,4 +1,4 @@
-package com.netflix.eureka2.testkit.junit;
+package com.netflix.eureka2.testkit.junit.resources;
 
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
@@ -12,21 +12,21 @@ import org.junit.rules.ExternalResource;
 /**
  * @author Tomasz Bak
  */
-public class EmbeddedReadServerResource extends ExternalResource {
+public class ReadServerResource extends ExternalResource {
 
     public static final String DEFAULT_READ_CLUSTER_NAME = "read-test";
 
     private final String name;
-    private final EmbeddedWriteServerResource writeServerResource;
+    private final WriteServerResource writeServerResource;
 
     private EmbeddedReadServer server;
     private int discoveryPort;
 
-    public EmbeddedReadServerResource(EmbeddedWriteServerResource writeServerResource) {
+    public ReadServerResource(WriteServerResource writeServerResource) {
         this(DEFAULT_READ_CLUSTER_NAME, writeServerResource);
     }
 
-    public EmbeddedReadServerResource(String name, EmbeddedWriteServerResource writeServerResource) {
+    public ReadServerResource(String name, WriteServerResource writeServerResource) {
         this.name = name;
         this.writeServerResource = writeServerResource;
     }
@@ -64,5 +64,9 @@ public class EmbeddedReadServerResource extends ExternalResource {
 
     public int getDiscoveryPort() {
         return discoveryPort;
+    }
+
+    public ServerResolver getDiscoveryResolver() {
+        return ServerResolvers.just("localhost", discoveryPort);
     }
 }
