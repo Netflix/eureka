@@ -54,39 +54,6 @@ public class RetryableInterestChannel
 
 
     @Override
-    protected Observable<ClientInterestChannel> reestablish() {
-        final EurekaClientRegistry<InstanceInfo> prevRegistry = currentDelegateChannel().associatedRegistry();
-        final EurekaClientRegistry<InstanceInfo> newRegistry = new EurekaClientRegistryImpl(metricFactory.getRegistryMetrics());
-        final ClientInterestChannel newChannel = channelFactory.newInterestChannel(newRegistry);
-
-        return Observable.create(new Observable.OnSubscribe<ClientInterestChannel>() {
-            @Override
-            public void call(final Subscriber<? super ClientInterestChannel> subscriber) {
-                try {
-                    // Resubscribe
-                    Interest<InstanceInfo> activeInterests = new MultipleInterests<InstanceInfo>(interestTracker.interests.keySet());
-                    newChannel.appendInterest(activeInterests).subscribe();
-
-                    // Wait until registry fills up to the expected level.
-                    newRegistry.forInterest(activeInterests)
-                            .lift(new RegistrySwapOperator(prevRegistry, newRegistry, swapStrategyFactory))
-                            .doOnCompleted(new Action0() {
-                                @Override
-                                public void call() {
-                                    prevRegistry.shutdown();
-                                    subscriber.onNext(newChannel);
-                                    subscriber.onCompleted();
-                                }
-                            })
-                            .subscribe();
-                } catch (Exception e) {
-                    subscriber.onError(e);
-                }
-            }
-        });
-    }
-
-    @Override
     public Observable<Void> change(Interest<InstanceInfo> newInterest) {
         return Observable.error(new UnsupportedOperationException("Not supported for ClientInterestChannel"));
     }
@@ -106,6 +73,41 @@ public class RetryableInterestChannel
     public Observable<Void> removeInterest(Interest<InstanceInfo> toRemove) {
         return currentDelegateChannel().removeInterest(toRemove)
                 .doOnCompleted(interestTracker.createRemoveInterestAction(toRemove));
+    }
+
+    @Override
+    protected Observable<ClientInterestChannel> reestablish() {
+        final EurekaClientRegistry<InstanceInfo> prevRegistry = currentDelegateChannel().associatedRegistry();
+        final EurekaClientRegistry<InstanceInfo> newRegistry = new EurekaClientRegistryImpl(metricFactory.getRegistryMetrics());
+        final ClientInterestChannel newChannel = channelFactory.newInterestChannel(newRegistry);
+
+        return Observable.create(new Observable.OnSubscribe<ClientInterestChannel>() {
+            @Override
+            public void call(final Subscriber<? super ClientInterestChannel> subscriber) {
+                try {
+                    // Resubscribe
+                    Interest<InstanceInfo> activeInterests = new MultipleInterests<InstanceInfo>(interestTracker.interests.keySet());
+                    newChannel.appendInterest(activeInterests).subscribe();
+
+                    // Wait until registry fills up to the expected level.
+                    newRegistry.forInterest(activeInterests)
+                            .lift(new RegistrySwapOperator(prevRegistry, newRegistry, swapStrategyFactory))
+                            .doOnCompleted(new Action0() {
+                                @Override
+                                public void call() {
+                                    subscriber.onNext(newChannel);
+
+                                    prevRegistry.shutdown();  // shutdown the prevRegistry
+
+                                    subscriber.onCompleted();
+                                }
+                            })
+                            .subscribe();
+                } catch (Exception e) {
+                    subscriber.onError(e);
+                }
+            }
+        });
     }
 
     @Override

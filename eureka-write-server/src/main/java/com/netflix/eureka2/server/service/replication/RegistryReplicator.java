@@ -45,7 +45,7 @@ public class RegistryReplicator {
     private ReplicationChannel channel;
     private Subscription subscription;
 
-    RegistryReplicator(String ownInstanceId,
+    public RegistryReplicator(String ownInstanceId,
                        EurekaServerRegistry<InstanceInfo> registry) {
         this.ownInstanceId = ownInstanceId;
         this.registry = registry;

@@ -29,7 +29,8 @@ import rx.functions.Action0;
 
 /**
  * An abstract service channel decorator with reconnect capabilities. It implements exponential back off
- * to avoid retry storm.
+ * to avoid retry storm. Note that the RetryableServiceChannel's lifecycle is independent of the delegate
+ * channel lifecycles.
  *
  * @author Tomasz Bak
  */

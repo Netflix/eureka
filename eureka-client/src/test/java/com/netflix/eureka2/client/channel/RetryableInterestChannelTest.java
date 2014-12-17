@@ -56,11 +56,14 @@ public class RetryableInterestChannelTest {
     private static final InstanceInfo INFO2 = SampleInstanceInfo.DiscoveryServer.builder().withApp("testApp2").build();
 
     private final ClientChannelFactory channelFactory = mock(ClientChannelFactory.class);
-    private final ClientInterestChannel interestChannel = mock(ClientInterestChannel.class);
+    private final ClientInterestChannel interestChannel1 = mock(ClientInterestChannel.class);
     private final ClientInterestChannel interestChannel2 = mock(ClientInterestChannel.class);  // separate channel obj for the retry test
-    private ReplaySubject<Void> channelLifecycle;
 
-    // set swap to 40%
+    // lifecycles for channel 1 and channel2
+    private final ReplaySubject<Void> channelLifecycle1 = ReplaySubject.create();
+    private final ReplaySubject<Void> channelLifecycle2 = ReplaySubject.create();
+
+    // set swap to 40% so tests run
     private final RegistrySwapStrategyFactory swapStrategyFactory = ThresholdStrategy.factoryFor(40, ThresholdStrategy.DEFAULT_RELAX_INTERVAL, scheduler);
 
     private EurekaClientRegistry<InstanceInfo> firstInternalRegistry;
@@ -70,28 +73,30 @@ public class RetryableInterestChannelTest {
     @Before
     public void setUp() throws Exception {
         when(channelFactory.newInterestChannel(any(EurekaClientRegistry.class)))
-                .thenReturn(interestChannel)
+                .thenReturn(interestChannel1)
                 .thenReturn(interestChannel2);
-        withNewChannelLifecycle();
+
+        when(interestChannel1.asLifecycleObservable()).thenReturn(channelLifecycle1);
+        when(interestChannel2.asLifecycleObservable()).thenReturn(channelLifecycle2);
 
         retryableInterestChannel = new RetryableInterestChannel(
                 channelFactory, swapStrategyFactory, clientMetrics(), RetryableInterestChannel.DEFAULT_INITIAL_DELAY, scheduler);
 
         firstInternalRegistry = captureInternalRegistryFromChannel();
-        when(interestChannel.associatedRegistry()).thenReturn(firstInternalRegistry);
+        when(interestChannel1.associatedRegistry()).thenReturn(firstInternalRegistry);
     }
 
     @Test
-    public void testDelegatesCallsToInternalChannel() throws Exception {
+    public void testForwardsRequestsToDelegate() throws Exception {
         // Append operation
-        when(interestChannel.appendInterest(INTEREST)).thenReturn(Observable.<Void>empty());
+        when(interestChannel1.appendInterest(INTEREST)).thenReturn(Observable.<Void>empty());
         retryableInterestChannel.appendInterest(INTEREST).subscribe();
-        verify(interestChannel, times(1)).appendInterest(INTEREST);
+        verify(interestChannel1, times(1)).appendInterest(INTEREST);
 
         // Append operation
-        when(interestChannel.removeInterest(INTEREST)).thenReturn(Observable.<Void>empty());
+        when(interestChannel1.removeInterest(INTEREST)).thenReturn(Observable.<Void>empty());
         retryableInterestChannel.removeInterest(INTEREST).subscribe();
-        verify(interestChannel, times(1)).removeInterest(INTEREST);
+        verify(interestChannel1, times(1)).removeInterest(INTEREST);
     }
 
     @Test
@@ -101,13 +106,16 @@ public class RetryableInterestChannelTest {
     }
 
     @Test
-    public void testSwapsRegistriesAfterChannelFailure() throws Exception {
+    public void testReconnectWithSwappedRegistriesAfterChannelFailure() throws Exception {
         // Make a subscription, and add some data to active registry
-        when(interestChannel.appendInterest(INTEREST)).thenReturn(Observable.<Void>empty());
+        when(interestChannel1.appendInterest(INTEREST)).thenReturn(Observable.<Void>empty());
         retryableInterestChannel.appendInterest(INTEREST).subscribe();
 
-        when(interestChannel.appendInterest(INTEREST2)).thenReturn(Observable.<Void>empty());
+        when(interestChannel1.appendInterest(INTEREST2)).thenReturn(Observable.<Void>empty());
         retryableInterestChannel.appendInterest(INTEREST2).subscribe();
+
+        verify(interestChannel1, timeout(1)).appendInterest(INTEREST);
+        verify(interestChannel1, timeout(1)).appendInterest(INTEREST2);
 
         firstInternalRegistry.register(INFO).subscribe();
         assertThat(retryableInterestChannel.associatedRegistry().size(), is(equalTo(1)));
@@ -117,14 +125,13 @@ public class RetryableInterestChannelTest {
 
         // Channel failure; match any interest for channel2 as there will be immediate automatic resubscription
         when(interestChannel2.appendInterest(any(MultipleInterests.class))).thenReturn(Observable.<Void>empty());
-        channelLifecycle.onError(new Exception("channel error"));
+        channelLifecycle1.onError(new Exception("channel error"));  // break the channel
 
         // Move in time till retry point
-        withNewChannelLifecycle();
         scheduler.advanceTimeBy(RetryableInterestChannel.DEFAULT_INITIAL_DELAY, TimeUnit.MILLISECONDS);
 
         // Check automatic interest subscription for the last interest set
-        verify(interestChannel2).appendInterest(new MultipleInterests<InstanceInfo>(INTEREST, INTEREST2));
+        verify(interestChannel2).appendInterest(new MultipleInterests<>(INTEREST, INTEREST2));
 
         // We have new internal registry.
         EurekaClientRegistry<InstanceInfo> secondInternalRegistry = captureInternalRegistryFromChannel();
@@ -154,15 +161,13 @@ public class RetryableInterestChannelTest {
                 // Ignore
             }
         });
+        // push new content on the second registry to simulate server side new notification
+        // this should trigger the 40% swap threshold and flip the two registries
         secondInternalRegistry.register(INFO).subscribe();
+        verify(interestChannel1, times(1)).close();
 
         assertThat(completed.get(), is(true));
         assertThat(retryableInterestChannel.associatedRegistry().size(), is(equalTo(1)));
-    }
-
-    protected void withNewChannelLifecycle() {
-        channelLifecycle = ReplaySubject.create();
-        when(interestChannel.asLifecycleObservable()).thenReturn(channelLifecycle);
     }
 
     protected EurekaClientRegistry<InstanceInfo> captureInternalRegistryFromChannel() {
