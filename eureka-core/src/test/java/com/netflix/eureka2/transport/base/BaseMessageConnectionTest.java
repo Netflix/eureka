@@ -1,5 +1,10 @@
 package com.netflix.eureka2.transport.base;
 
+import java.util.Iterator;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.rx.RxBlocking;
 import com.netflix.eureka2.transport.MessageConnection;
@@ -14,19 +19,12 @@ import org.junit.Before;
 import org.junit.Test;
 import rx.Notification;
 import rx.Observable;
-import rx.Subscriber;
-import rx.functions.Action0;
 import rx.functions.Func1;
-
-import java.util.Iterator;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import static com.netflix.eureka2.rx.RxSniffer.sniff;
 import static com.netflix.eureka2.transport.base.SampleObject.CONTENT;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Tomasz Bak
@@ -54,8 +52,7 @@ public class BaseMessageConnectionTest {
         server = RxNetty.newTcpServerBuilder(0, new ConnectionHandler<Object, Object>() {
             @Override
             public Observable<Void> handle(ObservableConnection<Object, Object> connection) {
-                MessageConnection messageBroker = new SelfClosingConnection(
-                        new BaseMessageConnection("testServer", connection, serverMetrics));
+                MessageConnection messageBroker = new BaseMessageConnection("testServer", connection, serverMetrics);
                 queue.add(messageBroker);
                 return messageBroker.lifecycleObservable();
             }
