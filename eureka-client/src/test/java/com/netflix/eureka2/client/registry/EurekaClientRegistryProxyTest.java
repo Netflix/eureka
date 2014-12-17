@@ -64,11 +64,10 @@ public class EurekaClientRegistryProxyTest {
         ReplaySubject<Void> channelLifecycle = ReplaySubject.create();
         when(mockInterestChannel.asLifecycleObservable()).thenReturn(channelLifecycle);
 
-        when(mockClientChannelFactory.newInterestChannel(org.mockito.Matchers.any(EurekaClientRegistryImpl.class))).thenReturn(mockInterestChannel);
+        when(mockClientChannelFactory.newInterestChannel()).thenReturn(mockInterestChannel);
         retryableInterestChannel = spy(new RetryableInterestChannel
                 (mockClientChannelFactory, ThresholdStrategy.factoryFor(testScheduler), clientMetrics(), 10, testScheduler));
 
-        EurekaClientRegistry<InstanceInfo> internalRegistry = captureInternalRegistryFromChannel();
         when(mockInterestChannel.associatedRegistry()).thenReturn(internalRegistry);
 
         registryProxy = new EurekaClientRegistryProxy(retryableInterestChannel, testScheduler);
@@ -104,12 +103,5 @@ public class EurekaClientRegistryProxyTest {
     public void testShutdownClosesChannel() throws Exception {
         registryProxy.shutdown();
         verify(retryableInterestChannel, times(1)).close();
-    }
-
-    protected EurekaClientRegistry<InstanceInfo> captureInternalRegistryFromChannel() {
-        ArgumentCaptor<EurekaClientRegistry> argCaptor = ArgumentCaptor.forClass(EurekaClientRegistry.class);
-        verify(mockClientChannelFactory, atLeastOnce()).newInterestChannel(argCaptor.capture());
-
-        return argCaptor.getValue();
     }
 }

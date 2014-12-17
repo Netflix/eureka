@@ -37,11 +37,9 @@ public class RetryableSenderReplicationChannelTest {
 
     private final TestScheduler scheduler = Schedulers.test();
 
-    private final TransportClient mockClient1 = mock(TransportClient.class);
-    private final SenderReplicationChannel delegateChannel1 = spy(new SenderReplicationChannel(mockClient1));
-
-    private final TransportClient mockClient2 = mock(TransportClient.class);
-    private final SenderReplicationChannel delegateChannel2 = spy(new SenderReplicationChannel(mockClient2));
+    private final TransportClient mockClient = mock(TransportClient.class);
+    private final SenderReplicationChannel delegateChannel1 = spy(new SenderReplicationChannel(mockClient));
+    private final SenderReplicationChannel delegateChannel2 = spy(new SenderReplicationChannel(mockClient));
 
     private final ReplicationHello replicationHello = new ReplicationHello("111", 2);
 
@@ -66,8 +64,7 @@ public class RetryableSenderReplicationChannelTest {
 
     @Before
     public void setUp() throws Exception {
-        when(mockClient1.connect()).thenReturn(Observable.<MessageConnection>empty());
-        when(mockClient2.connect()).thenReturn(Observable.<MessageConnection>empty());
+        when(mockClient.connect()).thenReturn(Observable.<MessageConnection>empty());
 
         // mock their methods so we don't actually execute them (and hence won't need to mock inside)
         mockDelegateChannelMethods(delegateChannel1);
@@ -90,7 +87,6 @@ public class RetryableSenderReplicationChannelTest {
 
     @After
     public void tearDown() throws Exception {
-        replicator.close();
         channel.close();
     }
 

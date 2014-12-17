@@ -4,7 +4,6 @@ import com.netflix.eureka2.channel.RetryableEurekaChannelException;
 import com.netflix.eureka2.channel.RetryableServiceChannel;
 import com.netflix.eureka2.client.metric.EurekaClientMetricFactory;
 import com.netflix.eureka2.client.registry.EurekaClientRegistry;
-import com.netflix.eureka2.client.registry.EurekaClientRegistryImpl;
 import com.netflix.eureka2.client.registry.swap.RegistrySwapOperator;
 import com.netflix.eureka2.client.registry.swap.RegistrySwapStrategyFactory;
 import com.netflix.eureka2.interests.Interest;
@@ -45,7 +44,7 @@ public class RetryableInterestChannel
             EurekaClientMetricFactory metricFactory,
             long retryInitialDelayMs,
             Scheduler scheduler) {
-        super(channelFactory.newInterestChannel(new EurekaClientRegistryImpl(metricFactory.getRegistryMetrics())), retryInitialDelayMs, scheduler);
+        super(channelFactory.newInterestChannel(), retryInitialDelayMs, scheduler);
         this.interestTracker = new InterestTracker();
         this.channelFactory = channelFactory;
         this.metricFactory = metricFactory;
@@ -77,9 +76,10 @@ public class RetryableInterestChannel
 
     @Override
     protected Observable<ClientInterestChannel> reestablish() {
+        final ClientInterestChannel newChannel = channelFactory.newInterestChannel();
+
         final EurekaClientRegistry<InstanceInfo> prevRegistry = currentDelegateChannel().associatedRegistry();
-        final EurekaClientRegistry<InstanceInfo> newRegistry = new EurekaClientRegistryImpl(metricFactory.getRegistryMetrics());
-        final ClientInterestChannel newChannel = channelFactory.newInterestChannel(newRegistry);
+        final EurekaClientRegistry<InstanceInfo> newRegistry = newChannel.associatedRegistry();
 
         return Observable.create(new Observable.OnSubscribe<ClientInterestChannel>() {
             @Override
@@ -95,10 +95,7 @@ public class RetryableInterestChannel
                             .doOnCompleted(new Action0() {
                                 @Override
                                 public void call() {
-                                    subscriber.onNext(newChannel);
-
-                                    prevRegistry.shutdown();  // shutdown the prevRegistry
-
+                                    subscriber.onNext(newChannel);  // onNext triggers shutdown of old delegate channel, which will shutdown old registry
                                     subscriber.onCompleted();
                                 }
                             })

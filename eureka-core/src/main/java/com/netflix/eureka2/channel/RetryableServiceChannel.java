@@ -99,12 +99,13 @@ public abstract class RetryableServiceChannel<C extends ServiceChannel> extends 
 
             @Override
             public void onNext(C newDelegateChannel) {
-                C oldDelegateChannel = currentChannelRef.get();
+                // first switch to the new delegate, then close the old delegate
+                C oldDelegateChannel = currentChannelRef.getAndSet(newDelegateChannel);
+                subscribeToDelegateChannelLifecycle(newDelegateChannel);
+
                 if (oldDelegateChannel != null) {
                     oldDelegateChannel.close();
                 }
-                currentChannelRef.set(newDelegateChannel);
-                subscribeToDelegateChannelLifecycle(newDelegateChannel);
             }
         });
     }
