@@ -11,6 +11,7 @@ import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster.WriteClusterReport;
+import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster.WriteServerAddress;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer.WriteServerReport;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
@@ -20,12 +21,11 @@ import netflix.ocelli.MembershipEvent.EventType;
 import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
 import rx.Observable;
 import rx.functions.Func1;
-import rx.subjects.PublishSubject;
 
 /**
  * @author Tomasz Bak
  */
-public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteServer, WriteClusterReport> {
+public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteServer, WriteServerAddress, WriteClusterReport> {
 
     public static final String WRITE_SERVER_NAME = "eureka2-write";
     public static final int WRITE_SERVER_PORTS_FROM = 13000;
@@ -34,9 +34,6 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
     private final boolean withAdminUI;
 
     private int nextAvailablePort = WRITE_SERVER_PORTS_FROM;
-
-    private final List<ChangeNotification<WriteServerAddress>> clusterAddresses = new ArrayList<>();
-    private final PublishSubject<ChangeNotification<WriteServerAddress>> clusterAddressUpdates = PublishSubject.create();
 
     public EmbeddedWriteCluster(boolean withExt, boolean withAdminUI) {
         super(WRITE_SERVER_NAME);
@@ -63,12 +60,9 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
         EmbeddedWriteServer newServer = newServer(config);
         newServer.start();
 
-        servers.add(newServer);
-        addReplicationPeer(writeServerAddress);
-
         nextAvailablePort += 10;
 
-        return servers.size() - 1;
+        return scaleUpByOne(newServer, writeServerAddress);
     }
 
     protected EmbeddedWriteServer newServer(WriteServerConfig config) {
@@ -83,7 +77,6 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
     @Override
     public void scaleDownByOne(int idx) {
         super.scaleDownByOne(idx);
-        removeReplicationPeer(idx);
     }
 
     @Override
@@ -114,7 +107,7 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
     }
 
     public Observable<ChangeNotification<InetSocketAddress>> replicationPeers() {
-        return Observable.from(clusterAddresses).concatWith(clusterAddressUpdates).map(
+        return clusterChangeObservable().map(
                 new Func1<ChangeNotification<WriteServerAddress>, ChangeNotification<InetSocketAddress>>() {
                     @Override
                     public ChangeNotification<InetSocketAddress> call(ChangeNotification<WriteServerAddress> notification) {
@@ -134,7 +127,7 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
     }
 
     private ServerResolver getServerResolver(final Func1<WriteServerAddress, Integer> portFunc) {
-        Observable<MembershipEvent<Server>> events = Observable.from(clusterAddresses).concatWith(clusterAddressUpdates)
+        Observable<MembershipEvent<Server>> events = clusterChangeObservable()
                 .map(new Func1<ChangeNotification<WriteServerAddress>, MembershipEvent<Server>>() {
                     @Override
                     public MembershipEvent<Server> call(ChangeNotification<WriteServerAddress> notification) {
@@ -165,17 +158,7 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
         };
     }
 
-    private void addReplicationPeer(WriteServerAddress address) {
-        clusterAddresses.add(new ChangeNotification<WriteServerAddress>(Kind.Add, address));
-        clusterAddressUpdates.onNext(new ChangeNotification<WriteServerAddress>(Kind.Add, address));
-    }
-
-    private void removeReplicationPeer(int idx) {
-        ChangeNotification<WriteServerAddress> addChange = clusterAddresses.remove(idx);
-        clusterAddressUpdates.onNext(new ChangeNotification<WriteServerAddress>(Kind.Delete, addChange.getData()));
-    }
-
-    static class WriteServerAddress {
+    public static class WriteServerAddress {
 
         private final String hostName;
         private final int registrationPort;

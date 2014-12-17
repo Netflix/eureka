@@ -4,10 +4,14 @@ import java.net.InetSocketAddress;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.netflix.eureka2.client.resolver.ServerResolver;
+import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.server.EurekaWriteServerModule;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.config.WriteServerConfig;
+import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
+import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer.WriteServerReport;
 import rx.Observable;
 
@@ -39,6 +43,24 @@ public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig,
         };
 
         setup(modules);
+    }
+
+    public int getRegistrationPort() {
+        // Since server might be started on the ephemeral port, we need to get it directly from RxNetty server
+        return injector.getInstance(TcpRegistrationServer.class).serverPort();
+    }
+
+    public int getDiscoveryPort() {
+        // Since server might be started on the ephemeral port, we need to get it directly from RxNetty server
+        return injector.getInstance(TcpDiscoveryServer.class).serverPort();
+    }
+
+    public ServerResolver getRegistrationResolver() {
+        return ServerResolvers.just("localhost", getRegistrationPort());
+    }
+
+    public ServerResolver getDiscoveryResolver() {
+        return ServerResolvers.just("localhost", getDiscoveryPort());
     }
 
     @Override
