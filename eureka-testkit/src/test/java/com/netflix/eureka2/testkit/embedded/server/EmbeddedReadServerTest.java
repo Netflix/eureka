@@ -9,8 +9,8 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
-import com.netflix.eureka2.testkit.junit.EmbeddedReadServerResource;
-import com.netflix.eureka2.testkit.junit.EmbeddedWriteServerResource;
+import com.netflix.eureka2.testkit.junit.resources.ReadServerResource;
+import com.netflix.eureka2.testkit.junit.resources.WriteServerResource;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -24,9 +24,9 @@ import static org.junit.Assert.*;
  */
 public class EmbeddedReadServerTest {
 
-    public final EmbeddedWriteServerResource writeServerResource = new EmbeddedWriteServerResource();
+    public final WriteServerResource writeServerResource = new WriteServerResource();
 
-    public final EmbeddedReadServerResource readServerResource = new EmbeddedReadServerResource(writeServerResource);
+    public final ReadServerResource readServerResource = new ReadServerResource(writeServerResource);
 
     @Rule
     public TestRule ruleChain = RuleChain.outerRule(writeServerResource).around(readServerResource);

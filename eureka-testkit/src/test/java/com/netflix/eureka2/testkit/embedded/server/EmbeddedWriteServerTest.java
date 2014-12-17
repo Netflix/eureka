@@ -9,7 +9,7 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
-import com.netflix.eureka2.testkit.junit.EmbeddedWriteServerResource;
+import com.netflix.eureka2.testkit.junit.resources.WriteServerResource;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -22,7 +22,7 @@ import static org.junit.Assert.*;
 public class EmbeddedWriteServerTest {
 
     @Rule
-    public final EmbeddedWriteServerResource writeServerResource = new EmbeddedWriteServerResource();
+    public final WriteServerResource writeServerResource = new WriteServerResource();
 
     @Test(timeout = 10000)
     public void testRegistrationAndDiscoveryServices() throws Exception {
