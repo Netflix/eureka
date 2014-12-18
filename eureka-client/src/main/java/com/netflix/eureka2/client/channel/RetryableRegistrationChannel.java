@@ -10,6 +10,7 @@ import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Func0;
+import rx.functions.Func1;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -34,30 +35,45 @@ public class RetryableRegistrationChannel
 
     @Override
     public Observable<Void> register(final InstanceInfo instanceInfo) {
-        return currentDelegateChannel().register(instanceInfo).doOnCompleted(new Action0() {
+        return currentDelegateChannelObservable().switchMap(new Func1<RegistrationChannel, Observable<? extends Void>>() {
             @Override
-            public void call() {
-                instanceInfoRef.set(instanceInfo);
+            public Observable<? extends Void> call(RegistrationChannel registrationChannel) {
+                return registrationChannel.register(instanceInfo).doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        instanceInfoRef.set(instanceInfo);
+                    }
+                });
             }
         });
     }
 
     @Override
     public Observable<Void> update(final InstanceInfo newInfo) {
-        return currentDelegateChannel().update(newInfo).doOnCompleted(new Action0() {
+        return currentDelegateChannelObservable().switchMap(new Func1<RegistrationChannel, Observable<? extends Void>>() {
             @Override
-            public void call() {
-                instanceInfoRef.set(newInfo);
+            public Observable<? extends Void> call(RegistrationChannel registrationChannel) {
+                return registrationChannel.update(newInfo).doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        instanceInfoRef.set(newInfo);
+                    }
+                });
             }
         });
     }
 
     @Override
     public Observable<Void> unregister() {
-        return currentDelegateChannel().unregister().doOnCompleted(new Action0() {
+        return currentDelegateChannelObservable().switchMap(new Func1<RegistrationChannel, Observable<? extends Void>>() {
             @Override
-            public void call() {
-                instanceInfoRef.set(null);
+            public Observable<? extends Void> call(RegistrationChannel registrationChannel) {
+                return registrationChannel.unregister().doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        instanceInfoRef.set(null);
+                    }
+                });
             }
         });
     }

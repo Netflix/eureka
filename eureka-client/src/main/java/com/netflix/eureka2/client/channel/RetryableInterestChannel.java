@@ -15,6 +15,7 @@ import rx.Observable;
 import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Action0;
+import rx.functions.Func1;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -63,15 +64,25 @@ public class RetryableInterestChannel
     }
 
     @Override
-    public Observable<Void> appendInterest(Interest<InstanceInfo> toAppend) {
-        return currentDelegateChannel().appendInterest(toAppend)
-                .doOnCompleted(interestTracker.createAppendInterestAction(toAppend));
+    public Observable<Void> appendInterest(final Interest<InstanceInfo> toAppend) {
+        return currentDelegateChannelObservable().switchMap(new Func1<ClientInterestChannel, Observable<? extends Void>>() {
+            @Override
+            public Observable<? extends Void> call(ClientInterestChannel clientInterestChannel) {
+                return clientInterestChannel.appendInterest(toAppend)
+                        .doOnCompleted(interestTracker.createAppendInterestAction(toAppend));
+            }
+        });
     }
 
     @Override
-    public Observable<Void> removeInterest(Interest<InstanceInfo> toRemove) {
-        return currentDelegateChannel().removeInterest(toRemove)
-                .doOnCompleted(interestTracker.createRemoveInterestAction(toRemove));
+    public Observable<Void> removeInterest(final Interest<InstanceInfo> toRemove) {
+        return currentDelegateChannelObservable().switchMap(new Func1<ClientInterestChannel, Observable<? extends Void>>() {
+            @Override
+            public Observable<? extends Void> call(ClientInterestChannel clientInterestChannel) {
+                return clientInterestChannel.removeInterest(toRemove)
+                        .doOnCompleted(interestTracker.createRemoveInterestAction(toRemove));
+            }
+        });
     }
 
     @Override

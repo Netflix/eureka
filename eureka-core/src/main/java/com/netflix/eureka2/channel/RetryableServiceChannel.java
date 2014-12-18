@@ -87,6 +87,20 @@ public abstract class RetryableServiceChannel<C extends ServiceChannel> extends 
         return currentChannelRef.get();
     }
 
+    protected Observable<C> currentDelegateChannelObservable() {
+        return Observable.create(new Observable.OnSubscribe<C>() {
+            @Override
+            public void call(Subscriber<? super C> subscriber) {
+                try {
+                    subscriber.onNext(currentChannelRef.get());
+                    subscriber.onCompleted();
+                } catch (Exception e) {
+                    subscriber.onError(e);
+                }
+            }
+        });
+    }
+
     /**
      * Implement to return a new delegate channel for retry purposes. This new channel should be
      * "warmed up" before emit if necessary.

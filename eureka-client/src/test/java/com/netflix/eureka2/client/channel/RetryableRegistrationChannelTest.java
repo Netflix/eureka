@@ -83,7 +83,7 @@ public class RetryableRegistrationChannelTest {
         channel.update(INSTANCE_INFO).subscribe();
         verify(delegateChannel1, timeout(1)).update(INSTANCE_INFO);
 
-        channel.unregister();
+        channel.unregister().subscribe();
         verify(delegateChannel1, timeout(1)).unregister();
     }
 

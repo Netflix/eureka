@@ -9,6 +9,7 @@ import rx.Observable;
 import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Func0;
+import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
 /**
@@ -40,23 +41,43 @@ public class RetryableSenderReplicationChannel
     }
 
     @Override
-    public Observable<ReplicationHelloReply> hello(ReplicationHello hello) {
-        return currentDelegateChannel().hello(hello);
+    public Observable<ReplicationHelloReply> hello(final ReplicationHello hello) {
+        return currentDelegateChannelObservable().switchMap(new Func1<ReplicationChannel, Observable<? extends ReplicationHelloReply>>() {
+            @Override
+            public Observable<? extends ReplicationHelloReply> call(ReplicationChannel replicationChannel) {
+                return replicationChannel.hello(hello);
+            }
+        });
     }
 
     @Override
-    public Observable<Void> register(InstanceInfo instanceInfo) {
-        return currentDelegateChannel().register(instanceInfo);
+    public Observable<Void> register(final InstanceInfo instanceInfo) {
+        return currentDelegateChannelObservable().switchMap(new Func1<ReplicationChannel, Observable<? extends Void>>() {
+            @Override
+            public Observable<? extends Void> call(ReplicationChannel replicationChannel) {
+                return replicationChannel.register(instanceInfo);
+            }
+        });
     }
 
     @Override
-    public Observable<Void> update(InstanceInfo newInfo) {
-        return currentDelegateChannel().update(newInfo);
+    public Observable<Void> update(final InstanceInfo newInfo) {
+        return currentDelegateChannelObservable().switchMap(new Func1<ReplicationChannel, Observable<? extends Void>>() {
+            @Override
+            public Observable<? extends Void> call(ReplicationChannel replicationChannel) {
+                return replicationChannel.update(newInfo);
+            }
+        });
     }
 
     @Override
-    public Observable<Void> unregister(String instanceId) {
-        return currentDelegateChannel().unregister(instanceId);
+    public Observable<Void> unregister(final String instanceId) {
+        return currentDelegateChannelObservable().switchMap(new Func1<ReplicationChannel, Observable<? extends Void>>() {
+            @Override
+            public Observable<? extends Void> call(ReplicationChannel replicationChannel) {
+                return replicationChannel.unregister(instanceId);
+            }
+        });
     }
 
     @Override
