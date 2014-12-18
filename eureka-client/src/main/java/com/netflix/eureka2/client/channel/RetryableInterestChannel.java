@@ -1,30 +1,9 @@
-/*
- * Copyright 2014 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.netflix.eureka2.client.channel;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import com.netflix.eureka2.channel.RetryableEurekaChannelException;
-import com.netflix.eureka2.channel.RetryableStatefullServiceChannel;
-import com.netflix.eureka2.client.channel.RetryableInterestChannel.RegistryTracker;
+import com.netflix.eureka2.channel.RetryableServiceChannel;
 import com.netflix.eureka2.client.metric.EurekaClientMetricFactory;
 import com.netflix.eureka2.client.registry.EurekaClientRegistry;
-import com.netflix.eureka2.client.registry.EurekaClientRegistryImpl;
 import com.netflix.eureka2.client.registry.swap.RegistrySwapOperator;
 import com.netflix.eureka2.client.registry.swap.RegistrySwapStrategyFactory;
 import com.netflix.eureka2.interests.Interest;
@@ -33,28 +12,20 @@ import com.netflix.eureka2.registry.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
-import rx.Observable.OnSubscribe;
 import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Action0;
-import rx.observers.Subscribers;
+import rx.functions.Func1;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * {@link RetryableInterestChannel} creates a new channel connection in case of failure and
- * re-populates a new registry instance according to the latest interest set.
- *
- * <h1>Assumptions</h1>
- * Client requests are serialized, prior to forwarding to this class.
- *
- * <h1>Failover mode</h1>
- * When there is a channel failure, a new channel/registry is automatically created, and all the current
- * interest subscriptions are automatically subscribed on it. All clients keep using the original registry
- * until, the new registry is restored to the state approved by the associated
- * {@link com.netflix.eureka2.client.registry.swap.RegistrySwapStrategy}.
- *
  * @author Tomasz Bak
  */
-public class RetryableInterestChannel extends RetryableStatefullServiceChannel<ClientInterestChannel, RegistryTracker> implements ClientInterestChannel {
+public class RetryableInterestChannel
+        extends RetryableServiceChannel<ClientInterestChannel>
+        implements ClientInterestChannel {
 
     private static final Logger logger = LoggerFactory.getLogger(RetryableInterestChannel.class);
 
@@ -63,6 +34,7 @@ public class RetryableInterestChannel extends RetryableStatefullServiceChannel<C
     private static final Throwable CHANNEL_FAILURE = new RetryableEurekaChannelException(
             "There was a communication failure, and connection has been reestablished; a new subscription is required");
 
+    private final InterestTracker interestTracker;
     private final ClientChannelFactory channelFactory;
     private final RegistrySwapStrategyFactory swapStrategyFactory;
     private final EurekaClientMetricFactory metricFactory;
@@ -73,96 +45,91 @@ public class RetryableInterestChannel extends RetryableStatefullServiceChannel<C
             EurekaClientMetricFactory metricFactory,
             long retryInitialDelayMs,
             Scheduler scheduler) {
-        super(retryInitialDelayMs, scheduler);
+        super(channelFactory.newInterestChannel(), retryInitialDelayMs, scheduler);
+        this.interestTracker = new InterestTracker();
         this.channelFactory = channelFactory;
         this.metricFactory = metricFactory;
         this.swapStrategyFactory = swapStrategyFactory;
-        initializeRetryableChannel();
+    }
+
+
+    @Override
+    public Observable<Void> change(Interest<InstanceInfo> newInterest) {
+        return Observable.error(new UnsupportedOperationException("Not supported for ClientInterestChannel"));
     }
 
     @Override
     public EurekaClientRegistry<InstanceInfo> associatedRegistry() {
-        return getStateWithChannel().getState().registry;
+        return currentDelegateChannel().associatedRegistry();
     }
 
     @Override
-    public Observable<Void> change(Interest<InstanceInfo> interest) {
-        return Observable.error(new UnsupportedOperationException("unsupported for " + this.getClass().getSimpleName()));
-    }
-
-    @Override
-    public Observable<Void> appendInterest(Interest<InstanceInfo> toAppend) {
-        StateWithChannel current = getStateWithChannel();
-        ClientInterestChannel currentChannel = current.getChannel();
-        RegistryTracker currentState = current.getState();
-
-        return currentChannel.appendInterest(toAppend)
-                .doOnCompleted(currentState.createAppendInterestAction(toAppend));
-    }
-
-    @Override
-    public Observable<Void> removeInterest(Interest<InstanceInfo> toRemove) {
-        StateWithChannel current = getStateWithChannel();
-        ClientInterestChannel currentChannel = current.getChannel();
-        RegistryTracker currentState = current.getState();
-
-        return currentChannel.removeInterest(toRemove)
-                .doOnCompleted(currentState.createRemoveInterestAction(toRemove));
-    }
-
-    @Override
-    public void close() {
-        if (!shutdown) {
-            super.close();
-            channelFactory.shutdown();
-        }
-    }
-
-    @Override
-    public Observable<Void> asLifecycleObservable() {
-        return Observable.empty();
-    }
-
-    @Override
-    protected StateWithChannel reestablish() {
-        final RegistryTracker newState = new RegistryTracker();
-        final ClientInterestChannel newChannel = channelFactory.newInterestChannel(newState.registry);
-        return new StateWithChannel(newChannel, newState);
-    }
-
-    @Override
-    protected Observable<Void> repopulate(StateWithChannel newStateWithChannel) {
-        final RegistryTracker previousState = getStateWithChannel().getState();
-        final RegistryTracker newState = newStateWithChannel.getState();
-        final ClientInterestChannel newChannel = newStateWithChannel.getChannel();
-
-        return Observable.create(new OnSubscribe<Void>() {
+    public Observable<Void> appendInterest(final Interest<InstanceInfo> toAppend) {
+        return currentDelegateChannelObservable().switchMap(new Func1<ClientInterestChannel, Observable<? extends Void>>() {
             @Override
-            public void call(final Subscriber<? super Void> subscriber) {
-                // Resubscribe
-                Interest<InstanceInfo> activeInterests = new MultipleInterests<InstanceInfo>(previousState.interests.keySet());
-                newChannel.appendInterest(activeInterests).subscribe();
-
-                // Wait until registry fills up to the expected level.
-                newState.registry.forInterest(activeInterests).lift(
-                        new RegistrySwapOperator(previousState.registry, newState.registry, swapStrategyFactory)
-                ).subscribe(Subscribers.from(subscriber));
+            public Observable<? extends Void> call(ClientInterestChannel clientInterestChannel) {
+                return clientInterestChannel.appendInterest(toAppend)
+                        .doOnCompleted(interestTracker.createAppendInterestAction(toAppend));
             }
         });
     }
 
     @Override
-    protected void release(StateWithChannel oldState) {
-        oldState.getState().registry.shutdown(CHANNEL_FAILURE);
+    public Observable<Void> removeInterest(final Interest<InstanceInfo> toRemove) {
+        return currentDelegateChannelObservable().switchMap(new Func1<ClientInterestChannel, Observable<? extends Void>>() {
+            @Override
+            public Observable<? extends Void> call(ClientInterestChannel clientInterestChannel) {
+                return clientInterestChannel.removeInterest(toRemove)
+                        .doOnCompleted(interestTracker.createRemoveInterestAction(toRemove));
+            }
+        });
+    }
+
+    @Override
+    protected Observable<ClientInterestChannel> reestablish() {
+        final ClientInterestChannel newChannel = channelFactory.newInterestChannel();
+
+        final EurekaClientRegistry<InstanceInfo> prevRegistry = currentDelegateChannel().associatedRegistry();
+        final EurekaClientRegistry<InstanceInfo> newRegistry = newChannel.associatedRegistry();
+
+        return Observable.create(new Observable.OnSubscribe<ClientInterestChannel>() {
+            @Override
+            public void call(final Subscriber<? super ClientInterestChannel> subscriber) {
+                try {
+                    // Resubscribe
+                    Interest<InstanceInfo> activeInterests = new MultipleInterests<InstanceInfo>(interestTracker.interests.keySet());
+                    newChannel.appendInterest(activeInterests).subscribe();
+
+                    // Wait until registry fills up to the expected level.
+                    newRegistry.forInterest(activeInterests)
+                            .lift(new RegistrySwapOperator(prevRegistry, newRegistry, swapStrategyFactory))
+                            .doOnCompleted(new Action0() {
+                                @Override
+                                public void call() {
+                                    subscriber.onNext(newChannel);  // onNext triggers shutdown of old delegate channel, which will shutdown old registry
+                                    subscriber.onCompleted();
+                                }
+                            })
+                            .subscribe();
+                } catch (Exception e) {
+                    subscriber.onError(e);
+                }
+            }
+        });
+    }
+
+    @Override
+    protected void _close() {
+        super._close();
+        channelFactory.shutdown();
+        interestTracker.close();
     }
 
     /**
-     * {@link RegistryTracker} keeps a reference counted collection of interests, so in case of channel failure
+     * {@link InterestTracker} keeps a reference counted collection of interests, so in case of channel failure
      * we can silently reconnect and re-subscribe.
      */
-    class RegistryTracker {
-
-        final EurekaClientRegistry<InstanceInfo> registry = new EurekaClientRegistryImpl(metricFactory.getRegistryMetrics());
+    class InterestTracker {
 
         // We use concurrent map here as this map is modified when request acknowledgement completes by a
         // different thread that the one doing the reconnect. Updates are however serialized, as come from the
@@ -205,6 +172,10 @@ public class RetryableInterestChannel extends RetryableStatefullServiceChannel<C
                     }
                 }
             };
+        }
+
+        void close() {
+            interests.clear();
         }
     }
 }

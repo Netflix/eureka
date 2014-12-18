@@ -31,7 +31,7 @@ import rx.functions.Func1;
  *
  * @author Nitesh Kant
  */
-public class ReceiverReplicationChannel extends AbstractChannel<STATES> implements ReplicationChannel {
+public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATES> implements ReplicationChannel {
 
     private static final Logger logger = LoggerFactory.getLogger(ReceiverReplicationChannel.class);
 

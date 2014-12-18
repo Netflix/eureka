@@ -16,14 +16,14 @@ import rx.functions.Action1;
  *
  * @author Nitesh Kant
  */
-public abstract class AbstractChannel<STATE extends Enum> extends AbstractServiceChannel<STATE> {
+public abstract class AbstractHandlerChannel<STATE extends Enum> extends AbstractServiceChannel<STATE> {
 
-    protected static final Logger logger = LoggerFactory.getLogger(AbstractChannel.class);
+    protected static final Logger logger = LoggerFactory.getLogger(AbstractHandlerChannel.class);
 
     protected final MessageConnection transport;
     protected final EurekaServerRegistry<InstanceInfo> registry;
 
-    protected AbstractChannel(STATE initState, MessageConnection transport, final EurekaServerRegistry<InstanceInfo> registry) {
+    protected AbstractHandlerChannel(STATE initState, MessageConnection transport, final EurekaServerRegistry<InstanceInfo> registry) {
         super(initState);
         this.transport = transport;
         this.registry = registry;

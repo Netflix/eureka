@@ -18,7 +18,10 @@ package com.netflix.eureka2.client.registry;
 
 import java.util.concurrent.TimeUnit;
 
+import com.netflix.eureka2.client.channel.ClientChannelFactory;
+import com.netflix.eureka2.client.channel.ClientInterestChannel;
 import com.netflix.eureka2.client.channel.RetryableInterestChannel;
+import com.netflix.eureka2.client.registry.swap.ThresholdStrategy;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interest;
@@ -27,9 +30,11 @@ import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import rx.Observable;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
+import rx.subjects.ReplaySubject;
 
 import static com.netflix.eureka2.client.metric.EurekaClientMetricFactory.*;
 import static org.hamcrest.CoreMatchers.*;
@@ -47,20 +52,31 @@ public class EurekaClientRegistryProxyTest {
     private static final InstanceInfo INFO = SampleInstanceInfo.DiscoveryServer.build();
     private static final Interest<InstanceInfo> INTEREST = Interests.forFullRegistry();
 
-    private final RetryableInterestChannel retryableInterestChannel = mock(RetryableInterestChannel.class);
+    private final ClientInterestChannel mockInterestChannel = mock(ClientInterestChannel.class);
+    private final ClientChannelFactory mockClientChannelFactory = mock(ClientChannelFactory.class);
     private final EurekaClientRegistry<InstanceInfo> internalRegistry = new EurekaClientRegistryImpl(clientMetrics().getRegistryMetrics());
 
-    private final EurekaClientRegistryProxy registryProxy = new EurekaClientRegistryProxy(retryableInterestChannel, testScheduler);
+    private RetryableInterestChannel retryableInterestChannel;
+    private EurekaClientRegistryProxy registryProxy;
 
     @Before
     public void setUp() throws Exception {
+        ReplaySubject<Void> channelLifecycle = ReplaySubject.create();
+        when(mockInterestChannel.asLifecycleObservable()).thenReturn(channelLifecycle);
+
+        when(mockClientChannelFactory.newInterestChannel()).thenReturn(mockInterestChannel);
+        retryableInterestChannel = spy(new RetryableInterestChannel
+                (mockClientChannelFactory, ThresholdStrategy.factoryFor(testScheduler), clientMetrics(), 10, testScheduler));
+
+        when(mockInterestChannel.associatedRegistry()).thenReturn(internalRegistry);
+
+        registryProxy = new EurekaClientRegistryProxy(retryableInterestChannel, testScheduler);
         internalRegistry.register(INFO).subscribe();
-        when(retryableInterestChannel.associatedRegistry()).thenReturn(internalRegistry);
     }
 
     @Test
     public void testDelegatesForInterestToInternalRegistry() throws Exception {
-        when(retryableInterestChannel.appendInterest(INTEREST)).thenReturn(Observable.<Void>empty());
+        when(mockInterestChannel.appendInterest(INTEREST)).thenReturn(Observable.<Void>empty());
 
         // forInterest
         ChangeNotification<InstanceInfo> notification =

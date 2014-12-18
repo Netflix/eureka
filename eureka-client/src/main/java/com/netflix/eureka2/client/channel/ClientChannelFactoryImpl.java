@@ -43,8 +43,8 @@ public class ClientChannelFactoryImpl implements ClientChannelFactory {
      * @return An {@link InterestChannel} which is not yet connected to any eureka servers.
      */
     @Override
-    public ClientInterestChannel newInterestChannel(final EurekaClientRegistry<InstanceInfo> clientRegistry) {
-        return new InterestChannelImpl(clientRegistry, readServerClient, metricFactory.getInterestChannelMetrics());
+    public ClientInterestChannel newInterestChannel() {
+        return new InterestChannelImpl(readServerClient, metricFactory);
     }
 
 

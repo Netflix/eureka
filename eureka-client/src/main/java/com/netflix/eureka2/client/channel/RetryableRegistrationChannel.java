@@ -1,99 +1,127 @@
-/*
- * Copyright 2014 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.netflix.eureka2.client.channel;
 
-import com.netflix.eureka2.channel.RetryableStatefullServiceChannel;
-import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.channel.RegistrationChannel;
+import com.netflix.eureka2.channel.RetryableServiceChannel;
+import com.netflix.eureka2.registry.InstanceInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
+import rx.Subscriber;
+import rx.functions.Action0;
 import rx.functions.Func0;
+import rx.functions.Func1;
+
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * {@link RetryableRegistrationChannel} creates a new channel connection in case of failure and
- * re-registers a client.
- * <h1>Assumptions</h1>
- * Client requests are serialized, prior to forwarding to this class.
- * <h1>Failover mode</h1>
- * When there is a channel failure, a new channel is automatically recreated, and a client is
- * registered with the latest observed instanceInfo.
- * If there are concurrent registration updates during the reconnect, they will be connected
- * to the original (broken) channel, until the new channel registration succeeds. The former requests
- * will complete with error. It is up to the upper layer to deal with these failures.
- *
- * @author Tomasz Bak
+ * @author David Liu
  */
 public class RetryableRegistrationChannel
-        extends RetryableStatefullServiceChannel<RegistrationChannel, Void>
+        extends RetryableServiceChannel<RegistrationChannel>
         implements RegistrationChannel {
 
+    private static final Logger logger = LoggerFactory.getLogger(RetryableRegistrationChannel.class);
+
+    private final AtomicReference<InstanceInfo> instanceInfoRef;
     private final Func0<RegistrationChannel> channelFactory;
-    private InstanceInfo instanceInfo;
 
     public RetryableRegistrationChannel(Func0<RegistrationChannel> channelFactory, long retryInitialDelayMs, Scheduler scheduler) {
-        super(retryInitialDelayMs, scheduler);
+        super(channelFactory.call(), retryInitialDelayMs, scheduler);
+        this.instanceInfoRef = new AtomicReference<>(null);
         this.channelFactory = channelFactory;
-        initializeRetryableChannel();
     }
 
+
     @Override
-    public Observable<Void> register(final InstanceInfo newInfo) {
-        this.instanceInfo = newInfo;
-        return getStateWithChannel().getChannel().register(instanceInfo);
+    public Observable<Void> register(final InstanceInfo instanceInfo) {
+        return currentDelegateChannelObservable().switchMap(new Func1<RegistrationChannel, Observable<? extends Void>>() {
+            @Override
+            public Observable<? extends Void> call(RegistrationChannel registrationChannel) {
+                return registrationChannel.register(instanceInfo).doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        instanceInfoRef.set(instanceInfo);
+                    }
+                });
+            }
+        });
     }
 
     @Override
     public Observable<Void> update(final InstanceInfo newInfo) {
-        this.instanceInfo = newInfo;
-        return getStateWithChannel().getChannel().update(newInfo);
+        return currentDelegateChannelObservable().switchMap(new Func1<RegistrationChannel, Observable<? extends Void>>() {
+            @Override
+            public Observable<? extends Void> call(RegistrationChannel registrationChannel) {
+                return registrationChannel.update(newInfo).doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        instanceInfoRef.set(newInfo);
+                    }
+                });
+            }
+        });
     }
 
     @Override
     public Observable<Void> unregister() {
-        instanceInfo = null;
-        return getStateWithChannel().getChannel().unregister();
+        return currentDelegateChannelObservable().switchMap(new Func1<RegistrationChannel, Observable<? extends Void>>() {
+            @Override
+            public Observable<? extends Void> call(RegistrationChannel registrationChannel) {
+                return registrationChannel.unregister().doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        instanceInfoRef.set(null);
+                    }
+                });
+            }
+        });
     }
 
     @Override
-    public Observable<Void> asLifecycleObservable() {
-        // TODO: We mask failures, but we might want let them resurface during prolonged reconnect issue
-        return Observable.empty();
+    protected Observable<RegistrationChannel> reestablish() {
+        return Observable.create(new Observable.OnSubscribe<RegistrationChannel>() {
+            @Override
+            public void call(final Subscriber<? super RegistrationChannel> subscriber) {
+                try {
+                    final RegistrationChannel newDelegateChannel = channelFactory.call();
+                    InstanceInfo instanceInfo = instanceInfoRef.get();
+
+                    if (instanceInfo != null) {
+                        newDelegateChannel.register(instanceInfo).subscribe(new Subscriber<Void>() {
+                            @Override
+                            public void onCompleted() {
+                                logger.info("Retry re-registration completed");
+                                subscriber.onNext(newDelegateChannel);
+                                subscriber.onCompleted();
+                            }
+
+                            @Override
+                            public void onError(Throwable e) {
+                                logger.info("Retry re-registration failed");
+                                subscriber.onError(e);
+                            }
+
+                            @Override
+                            public void onNext(Void aVoid) {
+                                // no op
+                            }
+                        });
+                    } else {
+                        logger.info("InstanceInfo is null, no need to re-register");
+                        subscriber.onNext(newDelegateChannel);
+                        subscriber.onCompleted();
+                    }
+                } catch (Exception e) {
+                    subscriber.onError(e);
+                }
+            }
+        });
     }
 
-    /*
-     * RetryableChannelConsumer template methods.
-     */
-
     @Override
-    protected StateWithChannel reestablish() {
-        RegistrationChannel newChannel = channelFactory.call();
-        return new StateWithChannel(newChannel, null);
-    }
-
-    @Override
-    protected Observable<Void> repopulate(StateWithChannel newState) {
-        if (instanceInfo != null) {
-            return newState.getChannel().register(instanceInfo);
-        }
-        return Observable.empty();
-    }
-
-    @Override
-    protected void release(StateWithChannel oldState) {
-        // No-op
+    protected void _close() {
+        super._close();
+        instanceInfoRef.set(null);
     }
 }
