@@ -25,6 +25,7 @@ import rx.Observable;
 import rx.Scheduler;
 import rx.Scheduler.Worker;
 import rx.Subscriber;
+import rx.Subscription;
 import rx.functions.Action0;
 
 /**
@@ -41,6 +42,7 @@ public abstract class RetryableServiceChannel<C extends ServiceChannel> extends 
     public static final int MAX_EXP_BACK_OFF_MULTIPLIER = 10;
 
     private final AtomicReference<C> currentChannelRef;  // store current active channel
+    private AtomicReference<Subscription> delegateLifecycleSubscription;
 
     private final long retryInitialDelayMs;
     private final long maxRetryDelayMs;
@@ -53,6 +55,7 @@ public abstract class RetryableServiceChannel<C extends ServiceChannel> extends 
         super(null);
 
         this.currentChannelRef = new AtomicReference<>(initialDelegate);
+        this.delegateLifecycleSubscription = new AtomicReference<>(null);
 
         this.retryInitialDelayMs = retryInitialDelayMs;
         this.maxRetryDelayMs = retryInitialDelayMs * MAX_EXP_BACK_OFF_MULTIPLIER;
@@ -68,6 +71,12 @@ public abstract class RetryableServiceChannel<C extends ServiceChannel> extends 
     @Override
     protected void _close() {
         worker.unsubscribe();
+
+        Subscription currentSubscription = delegateLifecycleSubscription.get();
+        if (currentSubscription != null && !currentSubscription.isUnsubscribed()) {
+            currentSubscription.unsubscribe();
+        }
+
         C delegateChannel = currentChannelRef.get();
         if (delegateChannel != null) {
             delegateChannel.close();
@@ -111,10 +120,15 @@ public abstract class RetryableServiceChannel<C extends ServiceChannel> extends 
     }
 
     protected boolean recoverableError(Throwable error) {
-        return true;
+        return true;  // FIXME
     }
 
     protected void scheduleRetry() {
+        long closedAfter = worker.now() - lastConnectTime;
+        if (closedAfter >= maxRetryDelayMs) {
+            retryDelay = retryInitialDelayMs;
+        }
+
         worker.schedule(retryAction, retryDelay, TimeUnit.MILLISECONDS);
         bumpUpRetryDelay();
     }
@@ -122,34 +136,36 @@ public abstract class RetryableServiceChannel<C extends ServiceChannel> extends 
     protected void subscribeToDelegateChannelLifecycle(C newDelegateChannel) {
         final Observable<Void> lifecycleObservable = newDelegateChannel.asLifecycleObservable();
 
-        lifecycleObservable.subscribe(new Subscriber<Void>() {
-            @Override
-            public void onCompleted() {
-                logger.info("Channel closed gracefully and must be reconnected");
-                long closedAfter = worker.now() - lastConnectTime;
-                if (closedAfter >= maxRetryDelayMs) {
-                    retryDelay = retryInitialDelayMs;
-                }
-                scheduleRetry();
-            }
+        Subscription oldSubscription = delegateLifecycleSubscription.getAndSet(
+                lifecycleObservable.subscribe(new Subscriber<Void>() {
+                    @Override
+                    public void onCompleted() {
+                        logger.info("Channel closed gracefully and must be reconnected");
+                        scheduleRetry();
+                    }
 
-            @Override
-            public void onError(Throwable e) {
-                if (recoverableError(e)) {
-                    logger.info("Channel failure; scheduling the reconnection in " + retryDelay + "ms", e);
-                    scheduleRetry();
-                } else {
-                    logger.error("Unrecoverable error; closing the retryable channel");
-                    lifecycle.onError(e);
-                    close();
-                }
-            }
+                    @Override
+                    public void onError(Throwable e) {
+                        if (recoverableError(e)) {
+                            logger.info("Channel failure; scheduling the reconnection in " + retryDelay + "ms", e);
+                            scheduleRetry();
+                        } else {
+                            logger.error("Unrecoverable error; closing the retryable channel");
+                            lifecycle.onError(e);
+                            close();
+                        }
+                    }
 
-            @Override
-            public void onNext(Void aVoid) {
-                // No-op
-            }
-        });
+                    @Override
+                    public void onNext(Void aVoid) {
+                        // No-op
+                    }
+                })
+        );
+
+        if (oldSubscription != null && !oldSubscription.isUnsubscribed()) {
+            oldSubscription.unsubscribe();
+        }
     }
 
     private void bumpUpRetryDelay() {
