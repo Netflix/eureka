@@ -107,6 +107,10 @@ public class RetryableRegistrationChannel
                                 // no op
                             }
                         });
+                    } else {
+                        logger.info("InstanceInfo is null, no need to re-register");
+                        subscriber.onNext(newDelegateChannel);
+                        subscriber.onCompleted();
                     }
                 } catch (Exception e) {
                     subscriber.onError(e);

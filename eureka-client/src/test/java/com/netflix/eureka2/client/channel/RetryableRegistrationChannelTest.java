@@ -107,6 +107,28 @@ public class RetryableRegistrationChannelTest {
     }
 
     @Test
+    public void testReconnectAfterUnregisterDoesNotActivelyReregister() throws Exception {
+        // First channel registration
+        channel.register(INSTANCE_INFO).subscribe();
+        verify(delegateChannel1, timeout(1)).register(INSTANCE_INFO);
+
+        channel.unregister().subscribe();
+        verify(delegateChannel1, timeout(1)).unregister();
+
+        // Break the channel
+        channelLifecycle1.onError(new Exception("channel error"));
+
+        // Verify that reconnected
+        scheduler.advanceTimeBy(INITIAL_DELAY, TimeUnit.MILLISECONDS);
+
+        verify(delegateChannel2, times(0)).register(INSTANCE_INFO);
+
+        // Verify that new requests relayed to the new channel
+        channel.register(INSTANCE_INFO).subscribe();
+        verify(delegateChannel2, timeout(1)).register(INSTANCE_INFO);
+    }
+
+    @Test
     public void testClosesInternalChannels() throws Exception {
         // First channel registration
         channel.register(INSTANCE_INFO).subscribe();
