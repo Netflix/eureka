@@ -90,12 +90,14 @@ function ClusterStatusChart(options) {
                 .enter().append("g")
                 .attr("class", "arc");
 
+
         g.append("path")
                 .each(function(d) {d.outerRadius = outerRadius - 20})
                 .attr("d", arc)
                 .style("fill", function (d) {
                     return color(d.data.status);
                 })
+                .on('click', onClick)
                 .on('mouseover', onMouseOver(outerRadius, 0))
                 .on('mouseout', onMouseOut(outerRadius - 20, 150));
 
@@ -132,11 +134,31 @@ function ClusterStatusChart(options) {
             };
         }
 
+        function onClick(d) {
+            var hostName;
+            if ('dataCenterInfo' in d.data &&
+                    'publicAddress' in d.data['dataCenterInfo'] &&
+                    'hostName' in d.data['dataCenterInfo']['publicAddress']) {
+                hostName = d.data['dataCenterInfo']['publicAddress']['hostName'];
+                window.open(buildEurekaDashboardLinkForHost(hostName));
+            }
+        }
+
         function showServerDetails(d) {
+            var hostName = "--", instanceId = '--';
             nodeStatus.attr('opacity', 1).text("Status : " + d.data['status']);
             nodeVip.attr('opacity', 1).text("VIP : " + d.data['vipAddress']);
-            nodeId.attr('opacity', 1).text("InstanceId : " + d.data['dataCenterInfo']['instanceId']);
-            nodeHostName.attr('opacity', 1).text("Host : " + d.data['dataCenterInfo']['publicAddress']['hostName']);
+            if ('instanceId' in d.data['dataCenterInfo']) {
+                instanceId = d.data['dataCenterInfo']['instanceId'];
+            }
+            nodeId.attr('opacity', 1).text("InstanceId : " + instanceId);
+
+            if ('publicAddress' in d.data['dataCenterInfo'] &&
+                    'hostName' in d.data['dataCenterInfo']['publicAddress']) {
+                hostName = d.data['dataCenterInfo']['publicAddress']['hostName'];
+            }
+
+            nodeHostName.attr('opacity', 1).text("Host : " + hostName);
 
             var portsList = "";
             d.data['ports'].forEach(function(portObj, i) {
@@ -151,7 +173,7 @@ function ClusterStatusChart(options) {
             if (portsList) {
                 ports.attr('opacity', 1).text("Ports : " + portsList);
             }
-        };
+        }
 
         function hideServerDetails(d) {
             nodeStatus.attr('opacity', 0);
@@ -159,6 +181,10 @@ function ClusterStatusChart(options) {
             nodeId.attr('opacity', 0);
             nodeHostName.attr('opacity', 0);
             ports.attr('opacity', 0);
+        }
+
+        function buildEurekaDashboardLinkForHost(hostname) {
+            return "http://" + hostname + ":8077/admin#view=eureka2&";
         }
 
     }
