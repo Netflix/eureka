@@ -1,5 +1,7 @@
 package com.netflix.eureka2.testkit.embedded;
 
+import com.netflix.eureka2.client.resolver.ServerResolver;
+import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedReadCluster;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedBridgeServer;
@@ -126,11 +128,20 @@ public class EurekaDeployment {
             }
             EmbeddedDashboardServer dashboardServer = null;
             if (dashboardEnabled) {
-                // TODO: read from the read cluster, not the write one
+                int discoveryPort;
+                ServerResolver readClusterResolver;
+                if (readClusterSize > 0) {
+                    discoveryPort = readCluster.getServer(0).getDiscoveryPort();
+                    readClusterResolver = ServerResolvers.fromWriteServer(writeCluster.discoveryResolver(), readCluster.getVip());
+                } else {
+                    discoveryPort = writeCluster.getServer(0).getDiscoveryPort();
+                    readClusterResolver = writeCluster.discoveryResolver();
+                }
+
                 dashboardServer = EmbeddedDashboardServer.newDashboard(
                         writeCluster.registrationResolver(),
-                        writeCluster.discoveryResolver(),
-//                    ServerResolvers.fromWriteServer(writeCluster.registrationResolver(), writeCluster.getVip()),
+                        readClusterResolver,
+                        discoveryPort,
                         extensionsEnabled,
                         adminUIEnabled
                 );

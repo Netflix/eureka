@@ -1,5 +1,7 @@
 package com.netflix.eureka2.testkit.embedded.server;
 
+import java.util.Properties;
+
 import com.google.inject.Module;
 import com.netflix.eureka2.DashboardEurekaClientBuilder;
 import com.netflix.eureka2.EurekaDashboardModule;
@@ -19,15 +21,18 @@ public class EmbeddedDashboardServer extends EmbeddedEurekaServer<EurekaDashboar
     private static final String DASHBOARD_SERVER_NAME = "eureka2-dashboard";
     private static final int DASHBOARD_SERVER_PORTS_FROM = 16000;
 
+    private final int discoveryPort;
     private final ServerResolver registrationServerResolver;
     private final ServerResolver discoveryServerResolver;
 
     public EmbeddedDashboardServer(EurekaDashboardConfig config,
+                                   int discoveryPort, // TODO: remove this property once eureka2 UI tab is refactored
                                    ServerResolver registrationServerResolver,
                                    ServerResolver discoveryServerResolver,
                                    boolean withExt,
                                    boolean withDashboard) {
         super(config, withExt, withDashboard);
+        this.discoveryPort = discoveryPort;
         this.registrationServerResolver = registrationServerResolver;
         this.discoveryServerResolver = discoveryServerResolver;
     }
@@ -49,6 +54,12 @@ public class EmbeddedDashboardServer extends EmbeddedEurekaServer<EurekaDashboar
     }
 
     @Override
+    protected void loadInstanceProperties(Properties props) {
+        super.loadInstanceProperties(props);
+        props.setProperty("eureka.client.discovery-endpoint.port", Integer.toString(discoveryPort));
+    }
+
+    @Override
     public DashboardServerReport serverReport() {
         String dashboardURI = "http://localhost:" + config.getDashboardPort() + "/dashboard.html";
         return new DashboardServerReport(
@@ -59,6 +70,7 @@ public class EmbeddedDashboardServer extends EmbeddedEurekaServer<EurekaDashboar
 
     public static EmbeddedDashboardServer newDashboard(ServerResolver registrationServerResolver,
                                                        ServerResolver discoveryServerResolver,
+                                                       int discoveryPort,
                                                        boolean withExt,
                                                        boolean withAdminUI) {
         EurekaDashboardConfig config = EurekaDashboardConfig.newBuilder()
@@ -69,7 +81,7 @@ public class EmbeddedDashboardServer extends EmbeddedEurekaServer<EurekaDashboar
                 .withShutDownPort(DASHBOARD_SERVER_PORTS_FROM + 3)
                 .withWebAdminPort(DASHBOARD_SERVER_PORTS_FROM + 4)
                 .build();
-        return new EmbeddedDashboardServer(config, registrationServerResolver, discoveryServerResolver, withExt, withAdminUI);
+        return new EmbeddedDashboardServer(config, discoveryPort, registrationServerResolver, discoveryServerResolver, withExt, withAdminUI);
     }
 
     public static class DashboardServerReport {

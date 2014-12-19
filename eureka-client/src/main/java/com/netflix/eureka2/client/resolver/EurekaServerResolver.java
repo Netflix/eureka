@@ -23,9 +23,9 @@ import com.netflix.eureka2.Names;
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.registry.InstanceInfo.Status;
+import com.netflix.eureka2.registry.NetworkAddress.ProtocolType;
 import com.netflix.eureka2.registry.ServiceSelector;
 import netflix.ocelli.LoadBalancer;
 import netflix.ocelli.LoadBalancerBuilder;
@@ -168,10 +168,7 @@ public class EurekaServerResolver implements ServerResolver {
 
         public EurekaServerResolver build() {
             if (serviceSelector == null) {
-                serviceSelector = ServiceSelector.selectBy()
-                        .serviceLabel(Names.DISCOVERY).publicIp(true)
-                        .or()
-                        .serviceLabel(Names.DISCOVERY);
+                serviceSelector = ServiceSelector.selectBy().serviceLabel(Names.DISCOVERY).protocolType(ProtocolType.IPv4);
             }
             if (loadBalancerBuilder == null) {
                 loadBalancerBuilder = new DefaultLoadBalancerBuilder<>(null);

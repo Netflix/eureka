@@ -1,5 +1,7 @@
 package com.netflix.eureka2.testkit.embedded.server;
 
+import java.util.Properties;
+
 import com.google.inject.Module;
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
@@ -36,6 +38,12 @@ public class EmbeddedReadServer extends EmbeddedEurekaServer<EurekaServerConfig,
         };
 
         setup(modules);
+    }
+
+    @Override
+    protected void loadInstanceProperties(Properties props) {
+        super.loadInstanceProperties(props);
+        props.setProperty("eureka.client.discovery-endpoint.port", Integer.toString(config.getDiscoveryPort()));
     }
 
     public int getDiscoveryPort() {
