@@ -19,6 +19,7 @@ dependencies {
     compile project(':eureka-write-server')
     compile project(':eureka-bridge')
     compile project(':eureka-dashboard')
+    compile project(':eureka-contrib:eureka-karyon-admin')
     compile "jline:jline:${jline_version}"
     compile "junit:junit:${junit_version}"
 }
