@@ -1,7 +1,7 @@
 package netflix.admin.eureka;
 
-/**
- * Created by ajoshi on 12/18/14.
- */
+import com.netflix.eureka2.client.EurekaClient;
+
 public interface EurekaClientProvider {
+    EurekaClient get();
 }

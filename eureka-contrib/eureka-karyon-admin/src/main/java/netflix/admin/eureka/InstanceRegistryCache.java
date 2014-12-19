@@ -23,9 +23,8 @@ public class InstanceRegistryCache {
     private final EurekaClient eurekaClient;
 
     @Inject
-    public InstanceRegistryCache() {
-        ServerResolver serverResolver = ServerResolvers.just("localhost", 12103);
-        eurekaClient = Eureka.newClient(serverResolver);
+    public InstanceRegistryCache(EurekaClientProvider eurekaClientProvider) {
+        eurekaClient = eurekaClientProvider.get();
         registryCache = new ConcurrentHashMap<>();
         start();
     }
