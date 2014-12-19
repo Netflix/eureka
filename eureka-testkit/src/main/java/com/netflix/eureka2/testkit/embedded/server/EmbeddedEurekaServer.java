@@ -19,6 +19,7 @@ import com.netflix.governator.guice.BootstrapModule;
 import com.netflix.governator.guice.LifecycleInjector;
 import com.netflix.governator.guice.LifecycleInjectorBuilder;
 import com.netflix.governator.lifecycle.LifecycleManager;
+import io.reactivex.netty.RxNetty;
 import netflix.adminresources.AdminResourcesContainer;
 import netflix.adminresources.resources.KaryonWebAdminModule;
 import netflix.karyon.archaius.PropertiesLoader;
@@ -79,6 +80,13 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
         lifecycleManager = injector.getInstance(LifecycleManager.class);
         try {
             lifecycleManager.start();
+
+            // This is hack to force warming up adminUI singletons, that read Archaius parameters,
+            // which itself is singleton, and changes values for each subsequently created new server.
+            if (withAdminUI) {
+                RxNetty.createHttpGet("http://localhost:" + config.getWebAdminPort() + "/webadmin/eureka2")
+                        .materialize().toBlocking().lastOrDefault(null);
+            }
         } catch (Exception e) {
             throw new RuntimeException("Container setup failure", e);
         }
@@ -102,8 +110,7 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
 
     protected void bindConfigurationProvider(LifecycleInjectorBuilder bootstrapBinder) {
         final Properties props = new Properties();
-        props.setProperty(AdminResourcesContainer.CONTAINER_LISTEN_PORT, Integer.toString(config.getWebAdminPort()));
-        props.setProperty("netflix.platform.admin.pages.packages", "netflix");
+        loadInstanceProperties(props);
 
         bootstrapBinder.withAdditionalBootstrapModules(new BootstrapModule() {
             @Override
@@ -121,6 +128,11 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
                 binder.bindConfigurationProvider().toInstance(builder.build());
             }
         });
+    }
+
+    protected void loadInstanceProperties(Properties props) {
+        props.setProperty(AdminResourcesContainer.CONTAINER_LISTEN_PORT, Integer.toString(config.getWebAdminPort()));
+        props.setProperty("netflix.platform.admin.pages.packages", "netflix");
     }
 
     private static class PropertiesInitializer {

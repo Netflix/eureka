@@ -94,7 +94,7 @@ public class EmbeddedRunner {
             witAdminUI = Boolean.valueOf(args[6]);
         }
 
-        new EmbeddedRunner(writeCount, readCount, withBridge, withDashboard, withDeploymentView, withExt, witAdminUI).waitTillShutdown();
+        new EmbeddedRunner(writeCount, readCount, withBridge, withDashboard, withExt, witAdminUI, withDeploymentView).waitTillShutdown();
     }
 
 }

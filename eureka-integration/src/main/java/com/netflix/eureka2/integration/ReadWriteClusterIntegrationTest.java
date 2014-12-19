@@ -47,7 +47,7 @@ public class ReadWriteClusterIntegrationTest {
     }
 
     @Test(timeout = 10000)
-    public void testReadWriteClusterRegistration() throws Exception {
+    public void testReadServerFetchesDataFromWriteServerRegistry() throws Exception {
         // Listen to interest stream updates
         Iterator<ChangeNotification<InstanceInfo>> notificationIterator =
                 RxBlocking.iteratorFrom(5, TimeUnit.SECONDS, eurekaClient.forInterest(Interests.forApplications(clientInfo.getApp())));

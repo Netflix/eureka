@@ -1,6 +1,7 @@
 package com.netflix.eureka2.testkit.embedded.server;
 
 import java.net.InetSocketAddress;
+import java.util.Properties;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
@@ -22,7 +23,7 @@ public class EmbeddedBridgeServer extends EmbeddedEurekaServer<BridgeServerConfi
 
     private static final String BRIDGE_SERVER_NAME = "eureka2-bridge";
     private static final int BRIDGE_SERVER_PORTS_FROM = 15000;
-    
+
     private final Observable<ChangeNotification<InetSocketAddress>> replicationPeers;
 
     public EmbeddedBridgeServer(BridgeServerConfig config,
@@ -46,6 +47,12 @@ public class EmbeddedBridgeServer extends EmbeddedEurekaServer<BridgeServerConfi
         };
 
         setup(modules);
+    }
+
+    @Override
+    protected void loadInstanceProperties(Properties props) {
+        super.loadInstanceProperties(props);
+        props.setProperty("eureka.client.discovery-endpoint.port", Integer.toString(config.getDiscoveryPort()));
     }
 
     @Override
