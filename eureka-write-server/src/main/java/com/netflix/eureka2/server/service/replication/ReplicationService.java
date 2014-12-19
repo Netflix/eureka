@@ -32,7 +32,7 @@ import com.netflix.eureka2.server.channel.ReplicationChannel;
 import com.netflix.eureka2.server.channel.ReplicationTransportClient;
 import com.netflix.eureka2.server.channel.RetryableSenderReplicationChannel;
 import com.netflix.eureka2.server.channel.SenderReplicationChannel;
-import com.netflix.eureka2.server.config.EurekaServerConfig;
+import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
@@ -55,8 +55,7 @@ public class ReplicationService {
 
     private static final Logger logger = LoggerFactory.getLogger(ReplicationService.class);
 
-    // TODO: make this dynamic properties
-    private static final long reconnectDelay = 30000;
+    private final long reconnectDelayMillis;
 
     private final AtomicReference<STATE> state = new AtomicReference<>(STATE.Idle);
     private final EurekaServerRegistry<InstanceInfo> eurekaRegistry;
@@ -71,7 +70,7 @@ public class ReplicationService {
     private Subscription resolverSubscription;
 
     @Inject
-    public ReplicationService(EurekaServerConfig config,
+    public ReplicationService(WriteServerConfig config,
                               EurekaServerRegistry eurekaRegistry,
                               SelfRegistrationService selfRegistrationService,
                               ReplicationPeerAddressesProvider peerAddressesProvider,
@@ -81,6 +80,7 @@ public class ReplicationService {
         this.peerAddressesProvider = peerAddressesProvider;
         this.metricFactory = metricFactory;
         this.codec = config.getCodec();
+        this.reconnectDelayMillis = config.getReplicationReconnectDelayMillis();
     }
 
     @PostConstruct
@@ -155,27 +155,18 @@ public class ReplicationService {
     }
 
     /* Visible for testing */ ReplicationChannel createRetryableSenderReplicationChannel(final InetSocketAddress address) {
-        Func0<ReplicationChannel> channelFactory = new Func0<ReplicationChannel>() {
-            @Override
-            public ReplicationChannel call() {
-                return new SenderReplicationChannel(
-                        new ReplicationTransportClient(address, codec, metricFactory.getReplicationServerConnectionMetrics())
-                );
-            }
-        };
-
-        return new RetryableSenderReplicationChannel(channelFactory, reconnectDelay) {
-
-            private RegistryReplicator registryReplicator;
-
-            @Override
-            protected ChannelHandler<ReplicationChannel> getChannelHandler() {
-                if (registryReplicator == null) {
-                    registryReplicator = new RegistryReplicator(this, ownInstanceInfo.getId(), eurekaRegistry);
-                }
-                return registryReplicator;
-            }
-        };
+        return new RetryableSenderReplicationChannel(
+                new Func0<ReplicationChannel>() {
+                    @Override
+                    public ReplicationChannel call() {
+                        return new SenderReplicationChannel(
+                                new ReplicationTransportClient(address, codec, metricFactory.getReplicationServerConnectionMetrics())
+                        );
+                    }
+                },
+                new RegistryReplicator(ownInstanceInfo.getId(), eurekaRegistry),
+                reconnectDelayMillis
+        );
     }
 
 }

@@ -2,8 +2,10 @@ package com.netflix.eureka2.client.channel;
 
 import com.netflix.eureka2.channel.AbstractClientChannel;
 import com.netflix.eureka2.client.channel.InterestChannelImpl.STATES;
+import com.netflix.eureka2.client.metric.EurekaClientMetricFactory;
 import com.netflix.eureka2.client.metric.InterestChannelMetrics;
 import com.netflix.eureka2.client.registry.EurekaClientRegistry;
+import com.netflix.eureka2.client.registry.EurekaClientRegistryImpl;
 import com.netflix.eureka2.transport.TransportClient;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
@@ -58,7 +60,6 @@ public class InterestChannelImpl
     public enum STATES {Idle, Open, Closed}
 
     private final InterestChannelMetrics metrics;
-
     protected EurekaClientRegistry<InstanceInfo> registry;
 
     /**
@@ -79,6 +80,11 @@ public class InterestChannelImpl
      */
     private final Map<String, InstanceInfo> idVsInstance = new HashMap<>();
 
+    protected InterestChannelImpl(TransportClient client, EurekaClientMetricFactory metricFactory) {
+        this(new EurekaClientRegistryImpl(metricFactory.getRegistryMetrics()), client, metricFactory.getInterestChannelMetrics());
+    }
+
+    // package private for testing
     InterestChannelImpl(final EurekaClientRegistry<InstanceInfo> registry, TransportClient client, InterestChannelMetrics metrics) {
         super(STATES.Idle, client);
         this.registry = registry;
@@ -113,10 +119,10 @@ public class InterestChannelImpl
                 if (STATES.Closed == state.get()) {
                     subscriber.onError(CHANNEL_CLOSED_EXCEPTION);
                 } else if (moveToState(STATES.Idle, STATES.Open)) {
-                    logger.debug("First time registration");
+                    logger.debug("First time registration: {}", newInterest);
                     channelInterestStream.subscribe(channelInterestSubscriber);
                 } else {
-                    logger.debug("Channel changes");
+                    logger.debug("Channel changes: {}", newInterest);
                 }
                 subscriber.onCompleted();
             }
@@ -144,6 +150,7 @@ public class InterestChannelImpl
         if (state.get() != STATES.Closed) {
             moveToState(state.get(), STATES.Closed);
             idVsInstance.clear();
+            registry.shutdown();
             super._close();
         }
     }

@@ -16,7 +16,6 @@
 
 package com.netflix.eureka2.server.service.replication;
 
-import com.netflix.eureka2.channel.RetryableStatelessServiceChannel.ChannelHandler;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
@@ -30,56 +29,60 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
-import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
 
 /**
  * @author Tomasz Bak
  */
-class RegistryReplicator implements ChannelHandler<ReplicationChannel> {
+public class RegistryReplicator {
 
     private static final Logger logger = LoggerFactory.getLogger(RegistryReplicator.class);
 
-    private final ReplicationChannel channel;
     private final String ownInstanceId;
     private final EurekaServerRegistry<InstanceInfo> registry;
 
+    private ReplicationChannel channel;
     private Subscription subscription;
 
-    RegistryReplicator(ReplicationChannel channel,
-                       String ownInstanceId,
+    public RegistryReplicator(String ownInstanceId,
                        EurekaServerRegistry<InstanceInfo> registry) {
-        this.channel = channel;
         this.ownInstanceId = ownInstanceId;
         this.registry = registry;
     }
 
-    @Override
-    public void reconnect() {
+    public void reconnect(final ReplicationChannel delegateChannel) {
         if (subscription != null) {
             subscription.unsubscribe();
         }
+
+        if (channel != null) {
+            channel.close();
+        }
+
+        channel = delegateChannel;
+
         subscription = channel.hello(new ReplicationHello(ownInstanceId, registry.size()))
                 .flatMap(new Func1<ReplicationHelloReply, Observable<ChangeNotification<InstanceInfo>>>() {
                     @Override
                     public Observable<ChangeNotification<InstanceInfo>> call(ReplicationHelloReply replicationHelloReply) {
                         if (replicationHelloReply.getSourceId().equals(ownInstanceId)) {
-                            logger.info("Taking out replication connection to itself");
+                            logger.info("{}: Taking out replication connection to itself", ownInstanceId);
                             return Observable.empty();
                         }
+                        logger.info("{} received hello back from {}", ownInstanceId, replicationHelloReply.getSourceId());
                         return registry.forInterest(Interests.forFullRegistry(), Source.localSource());
                     }
                 }).subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
                     @Override
                     public void onCompleted() {
-                        logger.info("Replication change notification stream closed");
+                        logger.info("{}: Replication change notification stream closed", ownInstanceId);
                         channel.close();
                     }
 
                     @Override
                     public void onError(Throwable e) {
-                        logger.error("Registry interest stream terminated with an error", e);
+                        logger.error("{}: Registry interest stream terminated with an error", ownInstanceId, e);
                         channel.close();
                     }
 
@@ -100,7 +103,6 @@ class RegistryReplicator implements ChannelHandler<ReplicationChannel> {
                 });
     }
 
-    @Override
     public void close() {
         if (subscription != null) {
             subscription.unsubscribe();
@@ -116,7 +118,7 @@ class RegistryReplicator implements ChannelHandler<ReplicationChannel> {
         }, new Action1<Throwable>() {
             @Override
             public void call(Throwable throwable) {
-                logger.warn("Failed to send " + what + " request to the server. Closing the channel.");
+                logger.warn("{}: Failed to send " + what + " request to the server. Closing the channel.", ownInstanceId);
                 channel.close();
             }
         });

@@ -1,6 +1,7 @@
 package com.netflix.eureka2.server.service;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.netflix.eureka2.Names;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
 import com.netflix.eureka2.registry.InstanceInfo;
@@ -23,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Self registration service for Eureka Bridge servers
  * @author David Liu
  */
+@Singleton
 public class BridgeSelfRegistrationService implements SelfRegistrationService {
 
     private static final Logger logger = LoggerFactory.getLogger(BridgeSelfRegistrationService.class);

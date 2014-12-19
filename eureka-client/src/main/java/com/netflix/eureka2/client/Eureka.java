@@ -16,7 +16,10 @@
 
 package com.netflix.eureka2.client;
 
+import com.netflix.eureka2.client.resolver.RetryableServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolver;
+import com.netflix.eureka2.client.resolver.ServerResolvers;
+import com.netflix.eureka2.client.resolver.WriteServerResolverSet;
 
 /**
  * An entry point for creating instances of {@link EurekaClient}. A {@link EurekaClient} can be created using the
@@ -37,20 +40,7 @@ import com.netflix.eureka2.client.resolver.ServerResolver;
  */
 public final class Eureka {
 
-    private Eureka() {
-    }
-
-    /**
-     * Creates a new {@link EurekaClientBuilder} using the passed resolver instance for both read and write eureka
-     * servers.
-     *
-     * @param universalResolver A {@link ServerResolver} that is used both for resolving read and write eureka servers.
-     *
-     * @return A new {@link EurekaClientBuilder}.
-     */
-    public static EurekaClientBuilder newClientBuilder(final ServerResolver universalResolver) {
-        return new EurekaClientBuilder(universalResolver, universalResolver);
-    }
+    private Eureka() {}
 
     /**
      * Creates a new {@link EurekaClientBuilder} using the passed read and write server resolver instances.
@@ -65,30 +55,31 @@ public final class Eureka {
         return new EurekaClientBuilder(readResolver, writeResolver);
     }
 
-
     /**
-     * Creates a new {@link EurekaClient} with the passed {@link ServerResolver} for both read and write servers. <p/>
-     *
-     * <i> The created client, does not eagerly connect to the write or read servers and hence can be used also in case
-     * where only one of the read or write server interactions are required.</i>
+     * Creates a new {@link EurekaClientBuilder} using the passed resolver instance for both read and write eureka
+     * servers.
      *
      * @param universalResolver A {@link ServerResolver} that is used both for resolving read and write eureka servers.
      *
-     * @return A new {@link EurekaClient}.
+     * @return A new {@link EurekaClientBuilder}.
      */
-    public static EurekaClient newClient(final ServerResolver universalResolver) {
-        return newClientBuilder(universalResolver).build();
+    public static EurekaClientBuilder newClientBuilder(final ServerResolver universalResolver) {
+        return newClientBuilder(universalResolver, universalResolver);
     }
 
     /**
-     * Creates a new {@link EurekaClient} using the passed read and write server resolver instances.
+     * Creates a new {@link EurekaClientBuilder} using the passed resolver instance for write, and construct
+     * the read resolver from reading write server data.
      *
-     * @param readResolver {@link ServerResolver} for the read servers.
-     * @param writeResolver {@link ServerResolver} for the write servers.
+     * @param writeResolverSet {@link WriteServerResolverSet} for the write servers.
+     * @param readServerVip the vip address for the read cluster
      *
-     * @return A new {@link EurekaClient}.
+     * @return A new {@link EurekaClientBuilder}.
      */
-    public static EurekaClient newClient(final ServerResolver readResolver, final ServerResolver writeResolver) {
-        return newClientBuilder(readResolver, writeResolver).build();
+    public static EurekaClientBuilder newClientBuilder(WriteServerResolverSet writeResolverSet, String readServerVip) {
+        ServerResolver readResolver = ServerResolvers.fromWriteServer(writeResolverSet.forDiscovery(), readServerVip);
+
+        return newClientBuilder(readResolver, writeResolverSet.forRegistration());
     }
+
 }

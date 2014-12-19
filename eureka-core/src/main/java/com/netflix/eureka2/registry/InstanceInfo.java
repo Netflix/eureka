@@ -159,7 +159,7 @@ public class InstanceInfo {
     }
 
     public Iterator<ServiceEndpoint> serviceEndpoints() {
-        return ServiceEndpoint.iteratorFom(this);
+        return ServiceEndpoint.iteratorFrom(this);
     }
 
     // ------------------------------------------
@@ -450,6 +450,15 @@ public class InstanceInfo {
             return this;
         }
 
+        public Builder withPorts(ServicePort... ports) {
+            if(ports == null || ports.length == 0) {
+                this.ports = null;
+            }
+            this.ports = new HashSet<>();
+            Collections.addAll(this.ports, ports);
+            return this;
+        }
+
         public Builder withStatus(Status status) {
             this.status = status;
             return this;
@@ -537,7 +546,7 @@ public class InstanceInfo {
             return servicePort;
         }
 
-        public static Iterator<ServiceEndpoint> iteratorFom(final InstanceInfo instanceInfo) {
+        public static Iterator<ServiceEndpoint> iteratorFrom(final InstanceInfo instanceInfo) {
             final List<NetworkAddress> addresses = instanceInfo.getDataCenterInfo().getAddresses();
             final HashSet<ServicePort> ports = instanceInfo.getPorts();
             if (ports == null || ports.isEmpty() || addresses == null || addresses.isEmpty()) {

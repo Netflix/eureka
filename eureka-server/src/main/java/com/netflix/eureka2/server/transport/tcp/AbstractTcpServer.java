@@ -50,4 +50,8 @@ public class AbstractTcpServer<C extends EurekaServerConfig, M extends EurekaSer
             server.shutdown();
         }
     }
+
+    public int serverPort() {
+        return server.getServerPort();
+    }
 }

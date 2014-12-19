@@ -23,10 +23,14 @@ import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
+import com.netflix.eureka2.transport.base.SelfClosingConnection;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ObservableConnection;
 import io.reactivex.netty.client.RxClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
@@ -39,10 +43,14 @@ import java.net.InetSocketAddress;
  */
 public class ReplicationTransportClient implements TransportClient {
 
+    private static final Logger logger = LoggerFactory.getLogger(ReplicationTransportClient.class);
+
+    private final InetSocketAddress address;
     private final RxClient<Object, Object> rxClient;
     private final MessageConnectionMetrics metrics;
 
     public ReplicationTransportClient(InetSocketAddress address, Codec codec, MessageConnectionMetrics metrics) {
+        this.address = address;
         this.metrics = metrics;
         this.rxClient = RxNetty.newTcpClientBuilder(address.getHostName(), address.getPort())
                 .pipelineConfigurator(EurekaTransports.replicationPipeline(codec))
@@ -56,7 +64,18 @@ public class ReplicationTransportClient implements TransportClient {
                 .map(new Func1<ObservableConnection<Object, Object>, MessageConnection>() {
                     @Override
                     public MessageConnection call(ObservableConnection<Object, Object> connection) {
-                        return new HeartBeatConnection(new BaseMessageConnection("replicationClient", connection, metrics), 30000, 3, Schedulers.computation());
+                        return new SelfClosingConnection(
+                            new HeartBeatConnection(
+                                    new BaseMessageConnection("replicationClient", connection, metrics), 30000, 3, Schedulers.computation()
+                            ),
+                            -1  // TODO: configure to not self terminate for now, re-evaluate later
+                        );
+                    }
+                })
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        logger.info("Connected to replication peer {}", address);
                     }
                 });
     }

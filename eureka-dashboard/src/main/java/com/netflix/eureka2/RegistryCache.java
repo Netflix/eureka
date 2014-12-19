@@ -75,7 +75,7 @@ public class RegistryCache {
             final AwsDataCenterInfo dataCenterInfo = (AwsDataCenterInfo) instanceInfo.getDataCenterInfo();
             return dataCenterInfo.getInstanceId();
         }
-        return "";
+        return instanceInfo.getId();
     }
 
     private void clearCache() {
@@ -85,8 +85,7 @@ public class RegistryCache {
     public static void main(String[] args) {
 
         ServerResolver serverResolver = ServerResolvers.just("localhost", 13101);
-        //ServerResolver serverResolver = ServerResolvers.just("ec2-107-20-175-144.compute-1.amazonaws.com", 12103);
-        final EurekaClient eurekaClient = Eureka.newClient(serverResolver);
+        final EurekaClient eurekaClient = Eureka.newClientBuilder(serverResolver).build();
         final Observable<ChangeNotification<InstanceInfo>> notificationsObservable = eurekaClient.forInterest(Interests.forFullRegistry());
 
         final AtomicInteger addCount = new AtomicInteger(0);

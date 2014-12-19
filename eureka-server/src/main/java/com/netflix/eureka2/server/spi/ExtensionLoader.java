@@ -16,19 +16,19 @@
 
 package com.netflix.eureka2.server.spi;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Module;
-import com.netflix.governator.guice.BootstrapBinder;
-import com.netflix.governator.guice.BootstrapModule;
-import com.netflix.eureka2.server.audit.AuditService;
-import com.netflix.eureka2.server.audit.SimpleAuditService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.ServiceLoader;
+
+import com.google.inject.AbstractModule;
+import com.google.inject.Module;
+import com.netflix.eureka2.server.audit.AuditService;
+import com.netflix.eureka2.server.audit.SimpleAuditService;
+import com.netflix.governator.guice.BootstrapBinder;
+import com.netflix.governator.guice.BootstrapModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Loads Eureka extensions using {@link java.util.ServiceLoader}. Eureka extension
@@ -40,6 +40,16 @@ import java.util.ServiceLoader;
 public class ExtensionLoader {
 
     private static final Logger logger = LoggerFactory.getLogger(ExtensionLoader.class);
+
+    private final boolean stdExtOnly;
+
+    public ExtensionLoader() {
+        this.stdExtOnly = false;
+    }
+
+    public ExtensionLoader(boolean stdExtOnly) {
+        this.stdExtOnly = stdExtOnly;
+    }
 
     public Module[] asModuleArray() {
         List<Module> moduleList = enableExtensions();
@@ -62,13 +72,18 @@ public class ExtensionLoader {
         List<Module> moduleList = new ArrayList<>();
 
         // Discover and load whats available
-        final EnumSet<StandardExtension> loadedStdExts = EnumSet.noneOf(StandardExtension.class);
-        for (ExtAbstractModule m : ServiceLoader.load(ExtAbstractModule.class)) {
-            logger.info("Loading module {}", m.getClass().getName());
-            moduleList.add(m);
-            if (m.standardExtension() != StandardExtension.Undefined) {
-                loadedStdExts.add(m.standardExtension());
+        final EnumSet<StandardExtension> loadedStdExts;
+        if (!stdExtOnly) {
+            loadedStdExts = EnumSet.noneOf(StandardExtension.class);
+            for (ExtAbstractModule m : ServiceLoader.load(ExtAbstractModule.class)) {
+                logger.info("Loading module {}", m.getClass().getName());
+                moduleList.add(m);
+                if (m.standardExtension() != StandardExtension.Undefined) {
+                    loadedStdExts.add(m.standardExtension());
+                }
             }
+        } else {
+            loadedStdExts = EnumSet.noneOf(StandardExtension.class);
         }
 
         // Use defaults for standard extensions

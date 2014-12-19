@@ -23,7 +23,7 @@ import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.channel.ReplicationChannel;
-import com.netflix.eureka2.server.config.EurekaServerConfig;
+import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
@@ -45,7 +45,7 @@ public class ReplicationServiceTest {
 
     private static final InetSocketAddress ADDRESS = new InetSocketAddress("host1", 123);
 
-    private final EurekaServerConfig config = EurekaServerConfig.baseBuilder().build();
+    private final WriteServerConfig config = WriteServerConfig.writeBuilder().build();
     private final EurekaServerRegistry<InstanceInfo> eurekaRegistry = mock(EurekaServerRegistry.class);
     private final SelfRegistrationService selfRegistrationService = mock(SelfRegistrationService.class);
 

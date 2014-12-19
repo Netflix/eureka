@@ -22,7 +22,6 @@ import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Action0;
 import rx.schedulers.Schedulers;
-import rx.schedulers.TestScheduler;
 
 /**
  * An implementation of {@link EurekaRegistry} to be used by the eureka client.
@@ -52,8 +51,8 @@ public class EurekaClientRegistryProxy implements EurekaClientRegistry<InstanceI
                                      long retryInitialDelayMs,
                                      EurekaClientMetricFactory metricFactory,
                                      Scheduler scheduler) {
-        RetryableInterestChannel retryableInterestChannel =
-                new RetryableInterestChannel(channelFactory, swapStrategyFactory, metricFactory, retryInitialDelayMs, scheduler);
+        ClientInterestChannel retryableInterestChannel = new RetryableInterestChannel(
+                channelFactory, swapStrategyFactory, metricFactory, retryInitialDelayMs, scheduler);
         this.interestChannel = new InterestChannelInvoker(retryableInterestChannel, scheduler);
     }
 

@@ -1,5 +1,10 @@
 package com.netflix.eureka2.transport.base;
 
+import java.util.Iterator;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.rx.RxBlocking;
 import com.netflix.eureka2.transport.MessageConnection;
@@ -16,11 +21,6 @@ import rx.Notification;
 import rx.Observable;
 import rx.functions.Func1;
 
-import java.util.Iterator;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import static com.netflix.eureka2.rx.RxSniffer.sniff;
 import static com.netflix.eureka2.transport.base.SampleObject.CONTENT;
 import static org.junit.Assert.assertNotNull;
@@ -30,6 +30,8 @@ import static org.junit.Assert.assertTrue;
  * @author Tomasz Bak
  */
 public class BaseMessageConnectionTest {
+
+    private AvroPipelineConfigurator codecPipeline;
 
     private RxServer<Object, Object> server;
 
@@ -41,14 +43,16 @@ public class BaseMessageConnectionTest {
 
     @Before
     public void setUp() throws Exception {
-        AvroPipelineConfigurator codecPipeline =
-                new AvroPipelineConfigurator(SampleObject.SAMPLE_OBJECT_MODEL_SET, SampleObject.rootSchema());
+        codecPipeline = new AvroPipelineConfigurator(SampleObject.SAMPLE_OBJECT_MODEL_SET, SampleObject.rootSchema());
+        setupServerAndClient();
+    }
 
+    private void setupServerAndClient() throws Exception {
         final LinkedBlockingQueue<MessageConnection> queue = new LinkedBlockingQueue<>();
         server = RxNetty.newTcpServerBuilder(0, new ConnectionHandler<Object, Object>() {
             @Override
             public Observable<Void> handle(ObservableConnection<Object, Object> connection) {
-                BaseMessageConnection messageBroker = new BaseMessageConnection("test", connection, serverMetrics);
+                MessageConnection messageBroker = new BaseMessageConnection("testServer", connection, serverMetrics);
                 queue.add(messageBroker);
                 return messageBroker.lifecycleObservable();
             }
@@ -62,7 +66,7 @@ public class BaseMessageConnectionTest {
                 .map(new Func1<ObservableConnection<Object, Object>, MessageConnection>() {
                     @Override
                     public MessageConnection call(ObservableConnection<Object, Object> connection) {
-                        return new BaseMessageConnection("test", connection, clientMetrics);
+                        return new BaseMessageConnection("testClient", connection, clientMetrics);
                     }
                 });
         clientBroker = clientObservable.toBlocking().single();

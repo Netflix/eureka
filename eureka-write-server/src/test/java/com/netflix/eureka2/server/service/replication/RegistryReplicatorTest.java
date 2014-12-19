@@ -52,7 +52,7 @@ public class RegistryReplicatorTest {
 
     @Before
     public void setUp() throws Exception {
-        replicator = new RegistryReplicator(channel, SELF_INFO.getId(), registry);
+        replicator = new RegistryReplicator(SELF_INFO.getId(), registry);
 
         registry.register(INSTANCE_INFO).subscribe();
         testScheduler.triggerActions();
@@ -70,7 +70,7 @@ public class RegistryReplicatorTest {
         when(channel.hello(HELLO)).thenReturn(Observable.just(helloReply));
         when(channel.register(any(InstanceInfo.class))).thenReturn(Observable.<Void>empty());
 
-        replicator.reconnect();
+        replicator.reconnect(channel);
         verify(channel, times(1)).hello(HELLO);
         verify(channel, times(1)).register(INSTANCE_INFO);
 
@@ -99,7 +99,7 @@ public class RegistryReplicatorTest {
 
         when(channel.hello(HELLO)).thenReturn(Observable.just(helloReply));
 
-        replicator.reconnect();
+        replicator.reconnect(channel);
         verify(channel, times(1)).close();
     }
 }
