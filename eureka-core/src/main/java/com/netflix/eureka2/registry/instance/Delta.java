@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.registry;
+package com.netflix.eureka2.registry.instance;
 
 /**
  * A matching pair of field:value that denotes a delta change to an InstanceInfo

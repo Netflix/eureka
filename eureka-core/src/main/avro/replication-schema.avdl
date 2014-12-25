@@ -22,7 +22,7 @@ protocol ReplicationProtocol {
     }
 
     record RegisterCopy {
-        com.netflix.eureka2.registry.InstanceInfo instanceInfo;
+        com.netflix.eureka2.registry.instance.InstanceInfo instanceInfo;
     }
 
     record UnregisterCopy {
@@ -30,7 +30,7 @@ protocol ReplicationProtocol {
     }
 
     record UpdateCopy {
-        com.netflix.eureka2.registry.InstanceInfo instanceInfo;
+        com.netflix.eureka2.registry.instance.InstanceInfo instanceInfo;
     }
 
     record ReplicationMessages {

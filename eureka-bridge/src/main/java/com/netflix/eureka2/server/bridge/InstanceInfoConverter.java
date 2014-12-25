@@ -1,7 +1,7 @@
 package com.netflix.eureka2.server.bridge;
 
-import com.netflix.eureka2.registry.DataCenterInfo;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 
 /**
  * Convert instance info objects from eureka 1.0 format to eureka 2.0 format

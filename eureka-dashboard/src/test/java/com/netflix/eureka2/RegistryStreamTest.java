@@ -1,11 +1,7 @@
 package com.netflix.eureka2;
 
-import com.netflix.eureka2.registry.InstanceInfo;
-import io.netty.handler.codec.http.websocketx.WebSocketFrame;
-import io.reactivex.netty.channel.ObservableConnection;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.List;

@@ -2,9 +2,9 @@ package com.netflix.eureka2.testkit.junit.resources;
 
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.client.EurekaClientBuilder;
-import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.registry.InstanceInfo.Builder;
-import com.netflix.eureka2.registry.InstanceInfo.Status;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo.Builder;
+import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import com.netflix.eureka2.testkit.data.builder.SampleAwsDataCenterInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleServicePort;
 import org.junit.rules.ExternalResource;

@@ -1,7 +1,7 @@
 package com.netflix.eureka2.testkit.junit.matchers;
 
-import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.registry.InstanceInfo.Builder;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo.Builder;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 

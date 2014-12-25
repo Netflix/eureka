@@ -1,6 +1,6 @@
 package netflix.admin.eureka;
 
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 
 import java.util.Comparator;
 import java.util.HashMap;

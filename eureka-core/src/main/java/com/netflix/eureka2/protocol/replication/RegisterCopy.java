@@ -16,7 +16,7 @@
 
 package com.netflix.eureka2.protocol.replication;
 
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 
 /**
  * Registration request of replication protocol.

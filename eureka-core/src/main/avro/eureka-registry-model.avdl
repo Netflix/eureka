@@ -1,18 +1,18 @@
-@namespace("com.netflix.eureka2.registry")
+@namespace("com.netflix.eureka2.registry.instance")
 protocol EurekaRegistryModel {
 
-    @namespace("com.netflix.eureka2.registry.InstanceInfo$")
+    @namespace("com.netflix.eureka2.registry.instance.InstanceInfo$")
     enum Status {
         UP, DOWN, STARTING, OUT_OF_SERVICE, UNKNOWN
     }
 
-    @namespace("com.netflix.eureka2.registry.NetworkAddress$")
+    @namespace("com.netflix.eureka2.registry.instance.NetworkAddress$")
     enum ProtocolType {
         IPv4, IPv6
     }
 
     record NetworkAddress {
-        com.netflix.eureka2.registry.NetworkAddress$.ProtocolType protocolType;
+        com.netflix.eureka2.registry.instance.NetworkAddress$.ProtocolType protocolType;
         union { null, string } label;
         union { null, string } ipAddress;
         union { null, string } hostName;
@@ -23,7 +23,7 @@ protocol EurekaRegistryModel {
         union { null, string } name;
         union {
             null,
-            @java-class("java.util.ArrayList") array<com.netflix.eureka2.registry.NetworkAddress>
+            @java-class("java.util.ArrayList") array<com.netflix.eureka2.registry.instance.NetworkAddress>
         } addresses;
     }
 
@@ -36,8 +36,8 @@ protocol EurekaRegistryModel {
         union { null, string } amiId;
         union { null, string } instanceId;
         union { null, string } instanceType;
-        union { null, com.netflix.eureka2.registry.NetworkAddress } publicAddress;
-        union { null, com.netflix.eureka2.registry.NetworkAddress } privateAddress;
+        union { null, com.netflix.eureka2.registry.instance.NetworkAddress } publicAddress;
+        union { null, com.netflix.eureka2.registry.instance.NetworkAddress } privateAddress;
     }
 
     record ServicePort {
@@ -63,7 +63,7 @@ protocol EurekaRegistryModel {
         } ports;
         union {
             null,
-            com.netflix.eureka2.registry.InstanceInfo$.Status
+            com.netflix.eureka2.registry.instance.InstanceInfo$.Status
         } status;
         union { null, string } homePageUrl;
         union { null, string } statusPageUrl;

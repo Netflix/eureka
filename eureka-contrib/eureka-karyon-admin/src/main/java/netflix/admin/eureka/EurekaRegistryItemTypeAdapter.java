@@ -1,7 +1,7 @@
 package netflix.admin.eureka;
 
 import com.google.gson.*;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.datacenter.AwsDataCenterInfo;
 
 import java.lang.reflect.Type;

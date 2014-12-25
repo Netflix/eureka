@@ -16,7 +16,7 @@
 
 package com.netflix.eureka2.server.registry.eviction;
 
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.registry.Source;
 import rx.Observable;
 
@@ -32,7 +32,7 @@ public interface EvictionQueue {
 
     /**
      * @param instanceInfo item to be added to the eviction queue
-     * @param source source from which the given instance info comes from
+     * @param source source from which the given instanceinfo comes from
      */
     void add(InstanceInfo instanceInfo, Source source);
 

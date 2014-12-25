@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.registry;
+package com.netflix.eureka2.registry.instance;
+
+import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -264,7 +266,7 @@ public class InstanceInfo {
     }
 
     /**
-     * Apply the delta info to the current InstanceInfo
+     * Apply the delta instance to the current InstanceInfo
      *
      * @param delta the delta changes to applyTo
      * @return a new InstanceInfo with the deltas applied

@@ -16,7 +16,6 @@
 
 package com.netflix.eureka2.registry.datacenter;
 
-import com.netflix.eureka2.registry.DataCenterInfo;
 import rx.Observable;
 
 /**

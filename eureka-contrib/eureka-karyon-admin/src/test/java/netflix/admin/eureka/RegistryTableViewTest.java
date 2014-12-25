@@ -1,7 +1,7 @@
 package netflix.admin.eureka;
 
 import com.google.gson.JsonArray;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;

@@ -16,8 +16,10 @@
 
 package com.netflix.eureka2.registry;
 
-import com.netflix.eureka2.registry.InstanceInfo.ServiceEndpoint;
-import com.netflix.eureka2.registry.NetworkAddress.ProtocolType;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo.ServiceEndpoint;
+import com.netflix.eureka2.registry.instance.NetworkAddress;
+import com.netflix.eureka2.registry.instance.NetworkAddress.ProtocolType;
 import com.netflix.eureka2.utils.SystemUtil;
 
 import java.net.InetSocketAddress;
