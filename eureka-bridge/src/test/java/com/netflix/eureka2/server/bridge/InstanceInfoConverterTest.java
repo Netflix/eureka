@@ -1,9 +1,9 @@
 package com.netflix.eureka2.server.bridge;
 
 import com.netflix.appinfo.AmazonInfo;
-import com.netflix.eureka2.registry.DataCenterInfo;
-import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.registry.ServicePort;
+import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.instance.ServicePort;
 import com.netflix.eureka2.registry.datacenter.AwsDataCenterInfo;
 import org.junit.Rule;
 import org.junit.Test;

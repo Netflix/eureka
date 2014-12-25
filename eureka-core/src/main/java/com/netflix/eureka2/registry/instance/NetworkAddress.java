@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.registry;
+package com.netflix.eureka2.registry.instance;
 
 
 /**

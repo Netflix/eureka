@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.registry;
+package com.netflix.eureka2.registry.instance;
+
+import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;

@@ -2,13 +2,10 @@ package netflix.admin.eureka;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.resolver.ServerResolver;
-import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.functions.Action1;

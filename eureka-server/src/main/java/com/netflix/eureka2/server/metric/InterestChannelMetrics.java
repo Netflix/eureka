@@ -23,7 +23,7 @@ import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.interests.VipInterest;
 import com.netflix.eureka2.metric.AbstractStateMachineMetrics;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.InterestChannelImpl.STATES;
 import com.netflix.eureka2.utils.ServoUtils;
 import com.netflix.servo.monitor.BasicCounter;

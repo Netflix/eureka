@@ -18,7 +18,7 @@ package com.netflix.eureka2.server.transport.tcp.discovery;
 
 import javax.inject.Inject;
 
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.InterestChannelFactory;
 import com.netflix.eureka2.server.channel.InterestChannelFactoryImpl;
 import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;

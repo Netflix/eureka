@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Assert;
 import org.junit.Rule;

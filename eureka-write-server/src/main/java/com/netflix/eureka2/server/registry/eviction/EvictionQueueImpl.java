@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.metric.EvictionQueueMetrics;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;

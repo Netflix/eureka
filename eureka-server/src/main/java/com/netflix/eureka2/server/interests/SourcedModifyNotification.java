@@ -1,7 +1,7 @@
 package com.netflix.eureka2.server.interests;
 
 import com.netflix.eureka2.interests.ModifyNotification;
-import com.netflix.eureka2.registry.Delta;
+import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.server.registry.Source;
 import com.netflix.eureka2.server.registry.Sourced;
 

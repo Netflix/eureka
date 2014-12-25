@@ -2,7 +2,7 @@ package com.netflix.eureka2.client.channel;
 
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.channel.RetryableServiceChannel;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;

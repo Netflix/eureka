@@ -3,7 +3,7 @@ package com.netflix.eureka2;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.datacenter.AwsDataCenterInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
 import org.junit.Before;

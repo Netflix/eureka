@@ -12,7 +12,7 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka2.server.bridge.InstanceInfoConverter;
 import com.netflix.eureka2.server.bridge.InstanceInfoConverterImpl;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.metric.BridgeChannelMetrics;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.server.registry.EurekaServerRegistryImpl;

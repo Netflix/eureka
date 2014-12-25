@@ -17,7 +17,7 @@
 package com.netflix.eureka2.client.registration;
 
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Before;

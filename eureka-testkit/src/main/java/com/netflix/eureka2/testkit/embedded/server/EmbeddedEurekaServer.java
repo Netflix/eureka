@@ -7,7 +7,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.netflix.config.ConfigurationManager;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.server.spi.ExtensionLoader;

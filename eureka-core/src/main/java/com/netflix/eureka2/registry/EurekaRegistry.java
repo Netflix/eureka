@@ -18,6 +18,7 @@ package com.netflix.eureka2.registry;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
+import com.netflix.eureka2.registry.instance.Delta;
 import rx.Observable;
 
 import java.util.Set;

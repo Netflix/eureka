@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.netflix.eureka2.client.registry.EurekaClientRegistry;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Test;
 import rx.functions.Action0;

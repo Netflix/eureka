@@ -1,4 +1,6 @@
-package com.netflix.eureka2.registry;
+package com.netflix.eureka2.registry.datacenter;
+
+import com.netflix.eureka2.registry.instance.NetworkAddress;
 
 import java.util.List;
 

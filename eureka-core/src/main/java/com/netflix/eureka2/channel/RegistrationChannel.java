@@ -1,6 +1,6 @@
 package com.netflix.eureka2.channel;
 
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
 
 /**
