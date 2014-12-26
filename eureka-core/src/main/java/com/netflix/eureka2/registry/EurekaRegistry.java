@@ -24,6 +24,8 @@ import rx.Observable;
 import java.util.Set;
 
 /**
+ * Base interface for Eureka Registries
+ *
  * @author Nitesh Kant
  */
 public interface EurekaRegistry<T, R> {

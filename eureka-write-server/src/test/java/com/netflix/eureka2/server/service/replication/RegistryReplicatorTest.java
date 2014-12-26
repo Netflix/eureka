@@ -16,12 +16,13 @@
 
 package com.netflix.eureka2.server.service.replication;
 
+import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.ReplicationChannel;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.server.registry.EurekaServerRegistryImpl;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.After;
 import org.junit.Before;
@@ -30,7 +31,6 @@ import rx.Observable;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
-import static com.netflix.eureka2.server.metric.WriteServerMetricFactory.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -47,7 +47,7 @@ public class RegistryReplicatorTest {
 
     private final ReplicationChannel channel = mock(ReplicationChannel.class);
 
-    private final EurekaServerRegistry<InstanceInfo> registry = new EurekaServerRegistryImpl(writeServerMetrics(), testScheduler);
+    private final SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics(), testScheduler);
     private RegistryReplicator replicator;
 
     @Before

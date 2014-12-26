@@ -19,11 +19,11 @@ package com.netflix.eureka2.server.service;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.netflix.eureka2.Names;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.ServicePort;
 import com.netflix.eureka2.server.config.InstanceInfoFromConfig;
 import com.netflix.eureka2.server.config.WriteServerConfig;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Notification;
@@ -47,13 +47,13 @@ public class WriteSelfRegistrationService implements SelfRegistrationService {
     private static final Logger logger = LoggerFactory.getLogger(WriteSelfRegistrationService.class);
 
     private final WriteServerConfig config;
-    private final EurekaServerRegistry<InstanceInfo> eurekaRegistry;
+    private final SourcedEurekaRegistry<InstanceInfo> eurekaRegistry;
 
     private final AtomicBoolean connected = new AtomicBoolean();
     private final ReplaySubject<InstanceInfo> replaySubject = ReplaySubject.create();
 
     @Inject
-    public WriteSelfRegistrationService(WriteServerConfig config, EurekaServerRegistry eurekaRegistry) {
+    public WriteSelfRegistrationService(WriteServerConfig config, SourcedEurekaRegistry eurekaRegistry) {
         this.config = config;
         this.eurekaRegistry = eurekaRegistry;
     }

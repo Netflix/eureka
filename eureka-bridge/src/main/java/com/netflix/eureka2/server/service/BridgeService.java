@@ -1,11 +1,11 @@
 package com.netflix.eureka2.server.service;
 
 import com.netflix.discovery.DiscoveryClient;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
 import com.netflix.eureka2.server.metric.BridgeServerMetricFactory;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.BridgeChannel;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Subscriber;
@@ -26,7 +26,7 @@ public class BridgeService {
     private final BridgeServerConfig config;
     private final SelfRegistrationService selfRegistrationService;
     private final BridgeServerMetricFactory metricFactory;
-    private final EurekaServerRegistry<InstanceInfo> registry;
+    private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final DiscoveryClient discoveryClient;
 
     private final AtomicReference<BridgeChannel> channelRef;
@@ -35,7 +35,7 @@ public class BridgeService {
     public BridgeService(BridgeServerConfig config,
                          SelfRegistrationService selfRegistrationService,
                          BridgeServerMetricFactory metricFactory,
-                         EurekaServerRegistry registry,
+                         SourcedEurekaRegistry registry,
                          DiscoveryClient discoveryClient) {
 
         this.config = config;

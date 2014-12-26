@@ -1,4 +1,4 @@
-package com.netflix.eureka2.server.registry;
+package com.netflix.eureka2.registry;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -10,9 +10,9 @@ import com.netflix.eureka2.interests.NotificationsSubject;
 import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.interests.SourcedChangeNotification;
-import com.netflix.eureka2.server.interests.SourcedModifyNotification;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry.Status;
+import com.netflix.eureka2.interests.SourcedChangeNotification;
+import com.netflix.eureka2.interests.SourcedModifyNotification;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry.Status;
 import com.netflix.eureka2.utils.SerializedTaskInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

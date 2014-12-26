@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server.registry;
+package com.netflix.eureka2.registry;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -23,26 +23,26 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
+import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
-import com.netflix.eureka2.server.registry.eviction.EvictionItem;
-import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
-import com.netflix.eureka2.server.registry.eviction.EvictionStrategy;
+import com.netflix.eureka2.registry.eviction.EvictionItem;
+import com.netflix.eureka2.registry.eviction.EvictionQueue;
+import com.netflix.eureka2.registry.eviction.EvictionStrategy;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
 import rx.functions.Action1;
 
 /**
- * {@link EurekaServerRegistry} implementation that cooperates with eviction queue
+ * {@link com.netflix.eureka2.registry.SourcedEurekaRegistry} implementation that cooperates with eviction queue
  * to control expiry of abruptly disconnected client/replication channels.
  *
  * @author Tomasz Bak
  */
-public class PreservableEurekaRegistry implements EurekaServerRegistry<InstanceInfo> {
+public class PreservableEurekaRegistry implements SourcedEurekaRegistry<InstanceInfo> {
 
-    private final EurekaServerRegistry<InstanceInfo> eurekaRegistry;
+    private final SourcedEurekaRegistry<InstanceInfo> eurekaRegistry;
     private final EvictionStrategy evictionStrategy;
     private final Subscription evictionSubscription;
     private final EvictionSubscriber evictionSubscriber;
@@ -70,10 +70,10 @@ public class PreservableEurekaRegistry implements EurekaServerRegistry<InstanceI
     };
 
     @Inject
-    public PreservableEurekaRegistry(@Named("delegate") EurekaServerRegistry eurekaRegistry,
+    public PreservableEurekaRegistry(@Named("delegate") SourcedEurekaRegistry eurekaRegistry,
                                      EvictionQueue evictionQueue,
                                      EvictionStrategy evictionStrategy,
-                                     WriteServerMetricFactory metricFactory) {
+                                     EurekaRegistryMetricFactory metricFactory) {
         this.eurekaRegistry = eurekaRegistry;
         this.evictionStrategy = evictionStrategy;
         this.evictionSubscriber = new EvictionSubscriber();

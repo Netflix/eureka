@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server.registry.eviction;
+package com.netflix.eureka2.registry.eviction;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
 
-import com.netflix.eureka2.server.config.WriteServerConfig;
+import com.netflix.eureka2.config.EurekaRegistryConfig;
 
 /**
  * @author Tomasz Bak
@@ -30,10 +30,10 @@ public class EvictionStrategyProvider implements Provider<EvictionStrategy> {
         PercentageDrop
     }
 
-    private final WriteServerConfig config;
+    private final EurekaRegistryConfig config;
 
     @Inject
-    public EvictionStrategyProvider(WriteServerConfig config) {
+    public EvictionStrategyProvider(EurekaRegistryConfig config) {
         this.config = config;
     }
 

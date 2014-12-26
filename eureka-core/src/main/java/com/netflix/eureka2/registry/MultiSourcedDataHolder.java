@@ -1,8 +1,8 @@
-package com.netflix.eureka2.server.registry;
+package com.netflix.eureka2.registry;
 
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.server.interests.SourcedChangeNotification;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry.Status;
+import com.netflix.eureka2.interests.SourcedChangeNotification;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry.Status;
 import rx.Observable;
 
 /**

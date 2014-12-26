@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server.registry;
+package com.netflix.eureka2.registry;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.registry.instance.Delta;
-import com.netflix.eureka2.registry.EurekaRegistry;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry.Status;
 import rx.Observable;
 
 import java.util.Set;
 
 /**
+ * Interface for eureka registries that contain a notion of data source
+ *
  * @author Tomasz Bak
  */
-public interface EurekaServerRegistry<T> extends EurekaRegistry<T, Status> {
+public interface SourcedEurekaRegistry<T> extends EurekaRegistry<T, SourcedEurekaRegistry.Status> {
 
     enum Status {
         AddedFirst,

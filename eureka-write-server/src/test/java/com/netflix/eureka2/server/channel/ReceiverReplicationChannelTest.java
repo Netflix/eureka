@@ -23,12 +23,12 @@ import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.protocol.replication.UnregisterCopy;
 import com.netflix.eureka2.protocol.replication.UpdateCopy;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry.Status;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry.Status;
-import com.netflix.eureka2.server.registry.Source;
-import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
+import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.service.WriteSelfRegistrationService;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.junit.After;
@@ -58,7 +58,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
     private final PublishSubject<Void> transportLifeCycle = PublishSubject.create();
 
     private final WriteSelfRegistrationService selfRegistrationService = mock(WriteSelfRegistrationService.class);
-    private final EurekaServerRegistry<InstanceInfo> registry = mock(EurekaServerRegistry.class);
+    private final SourcedEurekaRegistry<InstanceInfo> registry = mock(SourcedEurekaRegistry.class);
     private final EvictionQueue evictionQueue = mock(EvictionQueue.class);
 
     private ReceiverReplicationChannel replicationChannel;

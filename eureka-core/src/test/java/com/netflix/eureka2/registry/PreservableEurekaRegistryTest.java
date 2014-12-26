@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server.registry;
+package com.netflix.eureka2.registry;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -24,12 +24,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry.Status;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry.Status;
-import com.netflix.eureka2.server.registry.eviction.EvictionItem;
-import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
-import com.netflix.eureka2.server.registry.eviction.EvictionStrategy;
+import com.netflix.eureka2.registry.eviction.EvictionItem;
+import com.netflix.eureka2.registry.eviction.EvictionQueue;
+import com.netflix.eureka2.registry.eviction.EvictionStrategy;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,7 +42,6 @@ import rx.Producer;
 import rx.Subscriber;
 import rx.subjects.PublishSubject;
 
-import static com.netflix.eureka2.server.metric.WriteServerMetricFactory.writeServerMetrics;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -52,7 +52,7 @@ import static org.mockito.Mockito.*;
 @RunWith(MockitoJUnitRunner.class)
 public class PreservableEurekaRegistryTest {
 
-    private final EurekaServerRegistry<InstanceInfo> baseRegistry = mock(EurekaServerRegistry.class);
+    private final SourcedEurekaRegistry<InstanceInfo> baseRegistry = mock(SourcedEurekaRegistry.class);
 
     private static final InstanceInfo DISCOVERY = SampleInstanceInfo.DiscoveryServer.build();
     private static final Set<Delta<?>> DISCOVERY_DELTAS = new HashSet<>();
@@ -81,7 +81,7 @@ public class PreservableEurekaRegistryTest {
     @Before
     public void setUp() throws Exception {
         when(evictionQueue.pendingEvictions()).thenReturn(evictionItemObservable);
-        preservableRegistry = new PreservableEurekaRegistry(baseRegistry, evictionQueue, evictionStrategy, writeServerMetrics());
+        preservableRegistry = new PreservableEurekaRegistry(baseRegistry, evictionQueue, evictionStrategy, EurekaRegistryMetricFactory.registryMetrics());
     }
 
     @Test

@@ -4,14 +4,14 @@ import com.netflix.eureka2.protocol.EurekaProtocolError;
 import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.protocol.registration.Unregister;
 import com.netflix.eureka2.protocol.registration.Update;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry.Status;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.RegistrationChannelImpl.STATES;
 import com.netflix.eureka2.server.metric.RegistrationChannelMetrics;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry.Status;
-import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
-import com.netflix.eureka2.server.registry.Source;
+import com.netflix.eureka2.registry.eviction.EvictionQueue;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.slf4j.Logger;
@@ -42,7 +42,7 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
 
     public enum STATES {Idle, Registered, Closed}
 
-    public RegistrationChannelImpl(EurekaServerRegistry registry,
+    public RegistrationChannelImpl(SourcedEurekaRegistry registry,
                                    final EvictionQueue evictionQueue,
                                    MessageConnection transport,
                                    RegistrationChannelMetrics metrics) {

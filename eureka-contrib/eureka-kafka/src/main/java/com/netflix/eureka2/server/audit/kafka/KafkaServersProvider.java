@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
 
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.registry.ServiceSelector;
+import com.netflix.eureka2.registry.dsl.ServiceSelector;
 import com.netflix.eureka2.server.spi.ExtensionContext;
 import com.netflix.eureka2.utils.StreamedDataCollector;
 import rx.functions.Func1;

@@ -17,10 +17,10 @@
 package com.netflix.eureka2.server.transport.tcp.registration;
 
 import com.google.inject.Inject;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
+import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.channel.ServerChannelFactory;
 import com.netflix.eureka2.server.channel.ServerChannelFactoryImpl;
 import com.netflix.eureka2.transport.MessageConnection;
@@ -42,12 +42,12 @@ public class TcpRegistrationHandler implements ConnectionHandler<Object, Object>
             HeartBeatConnection.DEFAULT_HEARTBEAT_INTERVAL_MILLIS
     );
 
-    private final EurekaServerRegistry<InstanceInfo> registry;
+    private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final EvictionQueue evictionQueue;
     private final WriteServerMetricFactory metricFactory;
 
     @Inject
-    public TcpRegistrationHandler(EurekaServerRegistry registry, EvictionQueue evictionQueue, WriteServerMetricFactory metricFactory) {
+    public TcpRegistrationHandler(SourcedEurekaRegistry registry, EvictionQueue evictionQueue, WriteServerMetricFactory metricFactory) {
         this.registry = registry;
         this.evictionQueue = evictionQueue;
         this.metricFactory = metricFactory;

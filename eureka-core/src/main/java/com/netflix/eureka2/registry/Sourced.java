@@ -1,4 +1,4 @@
-package com.netflix.eureka2.server.registry;
+package com.netflix.eureka2.registry;
 
 /**
  * Implement this interface for any data classes that need to express a data source.

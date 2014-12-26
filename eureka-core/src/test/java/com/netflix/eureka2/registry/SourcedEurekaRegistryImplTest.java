@@ -1,4 +1,4 @@
-package com.netflix.eureka2.server.registry;
+package com.netflix.eureka2.registry;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -20,7 +20,7 @@ import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
-import static com.netflix.eureka2.server.metric.WriteServerMetricFactory.*;
+import static com.netflix.eureka2.metric.EurekaRegistryMetricFactory.*;
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 
@@ -28,7 +28,7 @@ import static org.hamcrest.Matchers.*;
 /**
  * @author David Liu
  */
-public class EurekaServerRegistryImplTest {
+public class SourcedEurekaRegistryImplTest {
 
     private final TestScheduler testScheduler = Schedulers.test();
     private TestEurekaServerRegistry registry;
@@ -312,10 +312,10 @@ public class EurekaServerRegistryImplTest {
     }
 
 
-    private static class TestEurekaServerRegistry extends EurekaServerRegistryImpl {
+    private static class TestEurekaServerRegistry extends SourcedEurekaRegistryImpl {
 
         TestEurekaServerRegistry(Scheduler testScheduler) {
-            super(writeServerMetrics(), testScheduler);
+            super(registryMetrics(), testScheduler);
         }
 
         public ConcurrentHashMap<String, NotifyingInstanceInfoHolder> getInternalStore() {
