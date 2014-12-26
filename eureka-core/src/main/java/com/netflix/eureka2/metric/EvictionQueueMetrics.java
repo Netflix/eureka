@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server.metric;
+package com.netflix.eureka2.metric;
 
 import java.util.concurrent.Callable;
 
-import com.netflix.eureka2.metric.EurekaMetrics;
-import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
+import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.servo.monitor.BasicGauge;
 import com.netflix.servo.monitor.Counter;
 

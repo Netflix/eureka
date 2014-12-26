@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server.registry.eviction;
+package com.netflix.eureka2.registry.eviction;
 
 /**
  * @author Tomasz Bak

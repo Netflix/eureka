@@ -1,20 +1,16 @@
-package com.netflix.eureka2.server.interests;
+package com.netflix.eureka2.interests;
 
-import com.netflix.eureka2.interests.ModifyNotification;
-import com.netflix.eureka2.registry.instance.Delta;
-import com.netflix.eureka2.server.registry.Source;
-import com.netflix.eureka2.server.registry.Sourced;
-
-import java.util.Set;
+import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.registry.Sourced;
 
 /**
  * @author David Liu
  */
-public class SourcedModifyNotification<T> extends ModifyNotification<T> implements Sourced {
+public class SourcedChangeNotification<T> extends ChangeNotification<T> implements Sourced {
     private final Source source;
 
-    public SourcedModifyNotification(T data, Set<Delta<?>> delta, Source source) {
-        super(data, delta);
+    public SourcedChangeNotification(Kind kind, T data, Source source) {
+        super(kind, data);
         this.source = source;
     }
 
@@ -25,7 +21,7 @@ public class SourcedModifyNotification<T> extends ModifyNotification<T> implemen
 
     @Override
     public String toString() {
-        return "SourcedModifyNotification{" +
+        return "SourcedChangeNotification{" +
                 "source=" + source +
                 "} " + super.toString();
     }
@@ -33,10 +29,10 @@ public class SourcedModifyNotification<T> extends ModifyNotification<T> implemen
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof SourcedModifyNotification)) return false;
+        if (!(o instanceof SourcedChangeNotification)) return false;
         if (!super.equals(o)) return false;
 
-        SourcedModifyNotification that = (SourcedModifyNotification) o;
+        SourcedChangeNotification that = (SourcedChangeNotification) o;
 
         if (source != null ? !source.equals(that.source) : that.source != null) return false;
 

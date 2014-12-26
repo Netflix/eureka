@@ -20,6 +20,8 @@ import com.google.inject.Inject;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
+import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -47,7 +49,7 @@ import java.util.Set;
  *
  * @author Tomasz Bak
  */
-public class EurekaReadServerRegistry implements EurekaServerRegistry<InstanceInfo> {
+public class EurekaReadServerRegistry implements SourcedEurekaRegistry<InstanceInfo> {
 
     private final EurekaClient eurekaClient;
 

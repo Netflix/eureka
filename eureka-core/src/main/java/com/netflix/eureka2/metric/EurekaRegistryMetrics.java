@@ -14,22 +14,21 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server.metric;
+package com.netflix.eureka2.metric;
 
 import java.util.concurrent.Callable;
 
-import com.netflix.eureka2.metric.EurekaMetrics;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.server.registry.PreservableEurekaRegistry;
-import com.netflix.eureka2.server.registry.Source.Origin;
+import com.netflix.eureka2.registry.PreservableEurekaRegistry;
+import com.netflix.eureka2.registry.Source.Origin;
 import com.netflix.servo.monitor.BasicGauge;
 import com.netflix.servo.monitor.Counter;
 
 /**
  * @author Tomasz Bak
  */
-public class EurekaServerRegistryMetrics extends EurekaMetrics {
+public class EurekaRegistryMetrics extends EurekaMetrics {
 
     private final Counter registrationsLocal;
     private final Counter registrationsReplicated;
@@ -43,7 +42,7 @@ public class EurekaServerRegistryMetrics extends EurekaMetrics {
     private final Counter unregistrationsReplicated;
     private final Counter unregistrationsTotal;
 
-    public EurekaServerRegistryMetrics() {
+    public EurekaRegistryMetrics() {
         super("eurekaServerRegistry");
         registrationsLocal = newCounter("registrationsLocal");
         registrationsReplicated = newCounter("registrationsReplicated");
@@ -94,7 +93,7 @@ public class EurekaServerRegistryMetrics extends EurekaMetrics {
         updatesTotal.increment();
     }
 
-    public void setRegistrySizeMonitor(final EurekaServerRegistry<InstanceInfo> registry) {
+    public void setRegistrySizeMonitor(final SourcedEurekaRegistry<InstanceInfo> registry) {
         Callable<Integer> registrySizeCallable = new Callable<Integer>() {
             @Override
             public Integer call() throws Exception {

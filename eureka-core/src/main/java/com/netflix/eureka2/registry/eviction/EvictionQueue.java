@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server.registry.eviction;
+package com.netflix.eureka2.registry.eviction;
 
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.registry.Source;
+import com.netflix.eureka2.registry.Source;
 import rx.Observable;
 
 /**

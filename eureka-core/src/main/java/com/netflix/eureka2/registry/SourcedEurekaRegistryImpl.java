@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server.registry;
+package com.netflix.eureka2.registry;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -31,11 +31,10 @@ import com.netflix.eureka2.interests.InstanceInfoInitStateHolder;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.interests.NotificationsSubject;
+import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
+import com.netflix.eureka2.metric.EurekaRegistryMetrics;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.metric.EurekaServerRegistryMetrics;
-import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
-import com.netflix.eureka2.server.registry.NotifyingInstanceInfoHolder.NotificationTaskInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -49,9 +48,9 @@ import rx.subjects.ReplaySubject;
 /**
  * @author David Liu
  */
-public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceInfo> {
+public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<InstanceInfo> {
 
-    private static final Logger logger = LoggerFactory.getLogger(EurekaServerRegistryImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(SourcedEurekaRegistryImpl.class);
 
     /**
      * TODO: define a better contract for base implementation and decorators
@@ -60,19 +59,19 @@ public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceIn
     private final MultiSourcedDataHolder.HolderStoreAccessor<NotifyingInstanceInfoHolder> internalStoreAccessor;
     private final NotificationsSubject<InstanceInfo> notificationSubject;  // subject for all changes in the registry
     private final IndexRegistry<InstanceInfo> indexRegistry;
-    private final EurekaServerRegistryMetrics metrics;
-    private final NotificationTaskInvoker invoker;
+    private final EurekaRegistryMetrics metrics;
+    private final NotifyingInstanceInfoHolder.NotificationTaskInvoker invoker;
 
     @Inject
-    public EurekaServerRegistryImpl(WriteServerMetricFactory metricsFactory) {
+    public SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory metricsFactory) {
         this(metricsFactory, Schedulers.computation());
     }
 
-    public EurekaServerRegistryImpl(WriteServerMetricFactory metricsFactory, Scheduler scheduler) {
+    public SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory metricsFactory, Scheduler scheduler) {
         this.metrics = metricsFactory.getEurekaServerRegistryMetrics();
         this.metrics.setRegistrySizeMonitor(this);
 
-        invoker = new NotificationTaskInvoker(
+        invoker = new NotifyingInstanceInfoHolder.NotificationTaskInvoker(
                 metricsFactory.getRegistryTaskInvokerMetrics(),
                 scheduler);
 

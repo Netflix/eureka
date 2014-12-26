@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server.registry.eviction;
+package com.netflix.eureka2.registry.eviction;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.config.WriteServerConfig;
-import com.netflix.eureka2.server.registry.Source;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,7 +32,6 @@ import rx.Subscriber;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
-import static com.netflix.eureka2.server.metric.WriteServerMetricFactory.writeServerMetrics;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
@@ -45,9 +44,7 @@ public class EvictionQueueImplTest {
 
     private final TestScheduler testScheduler = Schedulers.test();
 
-    private final WriteServerConfig config = WriteServerConfig.writeBuilder().withEvictionTimeout(EVICTION_TIMEOUT).build();
-
-    private final EvictionQueueImpl evictionQueue = new EvictionQueueImpl(config, writeServerMetrics(), testScheduler);
+    private final EvictionQueueImpl evictionQueue = new EvictionQueueImpl(EVICTION_TIMEOUT, EurekaRegistryMetricFactory.registryMetrics(), testScheduler);
     private final List<EvictionItem> evictedList = new ArrayList<>();
     private final EvictionQueueSubscriber evictionQueueSubscriber = new EvictionQueueSubscriber();
 

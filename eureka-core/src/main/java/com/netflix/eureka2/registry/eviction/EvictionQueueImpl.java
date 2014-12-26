@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server.registry.eviction;
+package com.netflix.eureka2.registry.eviction;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -24,11 +24,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.netflix.eureka2.config.EurekaRegistryConfig;
+import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.config.WriteServerConfig;
-import com.netflix.eureka2.server.metric.EvictionQueueMetrics;
-import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
-import com.netflix.eureka2.server.registry.Source;
+import com.netflix.eureka2.metric.EvictionQueueMetrics;
+import com.netflix.eureka2.registry.Source;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -85,12 +85,12 @@ public class EvictionQueueImpl implements EvictionQueue {
     };
 
     @Inject
-    public EvictionQueueImpl(WriteServerConfig config, WriteServerMetricFactory metricFactory) {
-        this(config, metricFactory, Schedulers.computation());
+    public EvictionQueueImpl(EurekaRegistryConfig config, EurekaRegistryMetricFactory metricFactory) {
+        this(config.getEvictionTimeoutMs(), metricFactory, Schedulers.computation());
     }
 
-    public EvictionQueueImpl(WriteServerConfig config, WriteServerMetricFactory metricFactory, Scheduler scheduler) {
-        this.evictionTimeoutMs = config.getEvictionTimeoutMs();
+    public EvictionQueueImpl(long evictionTimeoutMs, EurekaRegistryMetricFactory metricFactory, Scheduler scheduler) {
+        this.evictionTimeoutMs = evictionTimeoutMs;
         this.evictionQueueMetrics = metricFactory.getEvictionQueueMetrics();
         this.worker = scheduler.createWorker();
 

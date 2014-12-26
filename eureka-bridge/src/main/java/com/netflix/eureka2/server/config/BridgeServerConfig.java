@@ -1,7 +1,7 @@
 package com.netflix.eureka2.server.config;
 
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
-import com.netflix.eureka2.server.registry.eviction.EvictionStrategyProvider;
+import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.governator.annotations.Configuration;
 

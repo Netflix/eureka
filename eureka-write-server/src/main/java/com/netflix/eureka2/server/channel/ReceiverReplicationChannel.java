@@ -10,13 +10,13 @@ import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.protocol.replication.UnregisterCopy;
 import com.netflix.eureka2.protocol.replication.UpdateCopy;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.ReceiverReplicationChannel.STATES;
 import com.netflix.eureka2.server.metric.ReplicationChannelMetrics;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.server.registry.Source;
-import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
+import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.service.WriteSelfRegistrationService;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.slf4j.Logger;
@@ -53,7 +53,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATES> i
 
     public ReceiverReplicationChannel(MessageConnection transport,
                                       WriteSelfRegistrationService selfRegistrationService,
-                                      EurekaServerRegistry<InstanceInfo> registry,
+                                      SourcedEurekaRegistry<InstanceInfo> registry,
                                       final EvictionQueue evictionQueue,
                                       ReplicationChannelMetrics metrics) {
         super(STATES.Idle, transport, registry);

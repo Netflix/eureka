@@ -3,7 +3,7 @@ package com.netflix.eureka2.server.channel;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.registry.Source;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.channel.ServiceChannel;
 import rx.Observable;
 

@@ -5,8 +5,8 @@ import java.util.List;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedEurekaServer;
 import rx.Observable;
 import rx.subjects.PublishSubject;
@@ -86,7 +86,7 @@ public abstract class EmbeddedEurekaCluster<S extends EmbeddedEurekaServer, A, R
         return servers.get(idx);
     }
 
-    public EurekaServerRegistry<InstanceInfo> getEurekaServerRegistry(int idx) {
+    public SourcedEurekaRegistry<InstanceInfo> getEurekaServerRegistry(int idx) {
         return servers.get(idx).getEurekaServerRegistry();
     }
 

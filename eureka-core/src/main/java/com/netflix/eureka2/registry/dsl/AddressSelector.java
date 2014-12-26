@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.registry;
+package com.netflix.eureka2.registry.dsl;
 
 import com.netflix.eureka2.registry.instance.NetworkAddress;
 import com.netflix.eureka2.utils.SystemUtil;
