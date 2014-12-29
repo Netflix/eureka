@@ -5,7 +5,7 @@ import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.protocol.registration.Unregister;
 import com.netflix.eureka2.protocol.registration.Update;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry.Status;
+import com.netflix.eureka2.registry.MultiSourcedDataHolder.Status;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.RegistrationChannelImpl.STATES;

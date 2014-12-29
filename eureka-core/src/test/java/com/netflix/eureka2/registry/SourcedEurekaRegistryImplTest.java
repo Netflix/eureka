@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
@@ -16,6 +18,8 @@ import org.junit.rules.ExternalResource;
 import rx.Observable;
 import rx.Scheduler;
 import rx.Subscriber;
+import rx.Subscription;
+import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
@@ -309,6 +313,83 @@ public class SourcedEurekaRegistryImplTest {
         assertThat(notifications.get(0).getData(), equalTo(original));
         assertThat(notifications.get(1).getKind(), equalTo(ChangeNotification.Kind.Delete));
         assertThat(notifications.get(1).getData(), equalTo(original));
+    }
+
+    @Test
+    public void testRegistryShutdownOnCompleteAllInterestStreams() throws Exception {
+        InstanceInfo discovery1 = SampleInstanceInfo.DiscoveryServer.build();
+        InstanceInfo discovery2 = SampleInstanceInfo.DiscoveryServer.build();
+        InstanceInfo discovery3 = SampleInstanceInfo.DiscoveryServer.build();
+        InstanceInfo zuul1 = SampleInstanceInfo.ZuulServer.build();
+
+        registry.register(discovery1);
+        registry.register(discovery2);
+        registry.register(discovery3);
+        registry.register(zuul1);
+
+        testScheduler.triggerActions();
+
+        final List<String> returnedIdsDiscovery = new ArrayList<>();
+        final List<String> returnedIdsAll = new ArrayList<>();
+
+        Observable<ChangeNotification<InstanceInfo>> interestStreamDiscovery =
+                registry.forInterest(Interests.forApplications(discovery1.getApp()));
+
+        Observable<ChangeNotification<InstanceInfo>> interestStreamAll =
+                registry.forInterest(Interests.forFullRegistry());
+
+        final CountDownLatch discoveryStreamCompletionLatch = new CountDownLatch(1);
+        Subscription discoveryStreamSubscription = interestStreamDiscovery
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        discoveryStreamCompletionLatch.countDown();
+                    }
+                })
+                .subscribe(new Action1<ChangeNotification<InstanceInfo>>() {
+                    @Override
+                    public void call(ChangeNotification<InstanceInfo> notification) {
+                        returnedIdsDiscovery.add(notification.getData().getId());
+                    }
+                });
+
+        final CountDownLatch allStreamCompletionLatch = new CountDownLatch(1);
+        Subscription allStreamSubscription = interestStreamAll
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        allStreamCompletionLatch.countDown();
+                    }
+                })
+                .subscribe(new Action1<ChangeNotification<InstanceInfo>>() {
+                    @Override
+                    public void call(ChangeNotification<InstanceInfo> notification) {
+                        returnedIdsAll.add(notification.getData().getId());
+                    }
+                });
+
+        assertThat(returnedIdsDiscovery.size(), is(greaterThanOrEqualTo(3)));
+        assertThat(new HashSet<>(returnedIdsDiscovery), containsInAnyOrder(discovery1.getId(), discovery2.getId(), discovery3.getId()));
+
+        assertThat(returnedIdsAll.size(), is(greaterThanOrEqualTo(4)));
+        assertThat(new HashSet<>(returnedIdsAll), containsInAnyOrder(discovery1.getId(), discovery2.getId(), discovery3.getId(), zuul1.getId()));
+
+        assertThat(discoveryStreamSubscription.isUnsubscribed(), equalTo(false));
+        assertThat(allStreamSubscription.isUnsubscribed(), equalTo(false));
+
+        registry.shutdown();
+
+        testScheduler.triggerActions();
+
+        assertThat(discoveryStreamSubscription.isUnsubscribed(), equalTo(true));
+        Assert.assertTrue(discoveryStreamCompletionLatch.await(30, TimeUnit.SECONDS));
+
+        assertThat(allStreamSubscription.isUnsubscribed(), equalTo(true));
+        Assert.assertTrue(allStreamCompletionLatch.await(30, TimeUnit.SECONDS));
+
+        // shutdown again to test for idempotency and no exceptions
+        registry.shutdown();
+        testScheduler.triggerActions();
     }
 
 

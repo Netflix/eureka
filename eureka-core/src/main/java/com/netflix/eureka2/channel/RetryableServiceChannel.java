@@ -16,6 +16,8 @@
 
 package com.netflix.eureka2.channel;
 
+import com.netflix.eureka2.channel.RetryableServiceChannel.STATES;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -35,11 +37,13 @@ import rx.functions.Action0;
  *
  * @author Tomasz Bak
  */
-public abstract class RetryableServiceChannel<C extends ServiceChannel> extends AbstractServiceChannel<Enum> {
+public abstract class RetryableServiceChannel<C extends ServiceChannel> extends AbstractServiceChannel<STATES> {
 
     private static final Logger logger = LoggerFactory.getLogger(RetryableServiceChannel.class);
 
     public static final int MAX_EXP_BACK_OFF_MULTIPLIER = 10;
+
+    public enum STATES {Open, Closed}
 
     private final AtomicReference<C> currentChannelRef;  // store current active channel
     private AtomicReference<Subscription> delegateLifecycleSubscription;
@@ -52,7 +56,7 @@ public abstract class RetryableServiceChannel<C extends ServiceChannel> extends 
     private long retryDelay;
 
     protected RetryableServiceChannel(C initialDelegate, long retryInitialDelayMs, Scheduler scheduler) {
-        super(null);
+        super(STATES.Open);
 
         this.currentChannelRef = new AtomicReference<>(initialDelegate);
         this.delegateLifecycleSubscription = new AtomicReference<>(null);
@@ -70,16 +74,20 @@ public abstract class RetryableServiceChannel<C extends ServiceChannel> extends 
      */
     @Override
     protected void _close() {
-        worker.unsubscribe();
+        if (state.get() != STATES.Closed) {
+            worker.unsubscribe();
 
-        Subscription currentSubscription = delegateLifecycleSubscription.get();
-        if (currentSubscription != null && !currentSubscription.isUnsubscribed()) {
-            currentSubscription.unsubscribe();
-        }
+            Subscription currentSubscription = delegateLifecycleSubscription.get();
+            if (currentSubscription != null && !currentSubscription.isUnsubscribed()) {
+                currentSubscription.unsubscribe();
+            }
 
-        C delegateChannel = currentChannelRef.get();
-        if (delegateChannel != null) {
-            delegateChannel.close();
+            C delegateChannel = currentChannelRef.get();
+            if (delegateChannel != null) {
+                delegateChannel.close();
+            }
+
+            state.compareAndSet(STATES.Open, STATES.Closed);
         }
     }
 

@@ -17,6 +17,10 @@ public class SourcedModifyNotification<T> extends ModifyNotification<T> implemen
         this.source = source;
     }
 
+    public ModifyNotification<T> toBaseNotification() {
+        return new ModifyNotification<>(getData(), getDelta());
+    }
+
     @Override
     public Source getSource() {
         return source;

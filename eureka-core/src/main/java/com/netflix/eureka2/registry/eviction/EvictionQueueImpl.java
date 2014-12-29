@@ -67,7 +67,7 @@ public class EvictionQueueImpl implements EvictionQueue {
 
                 evictionQueueMetrics.decrementEvictionQueueCounter();
 
-                logger.info("Evicting registry entry {}/{}", item.getSource(), item.getInstanceInfo().getId());
+                logger.debug("Attempting to evict registry entry {}/{}", item.getSource(), item.getInstanceInfo().getId());
                 evictionSubscriber.get().onNext(item);
             }
             long scheduleDelay = evictionTimeoutMs;
@@ -87,6 +87,10 @@ public class EvictionQueueImpl implements EvictionQueue {
     @Inject
     public EvictionQueueImpl(EurekaRegistryConfig config, EurekaRegistryMetricFactory metricFactory) {
         this(config.getEvictionTimeoutMs(), metricFactory, Schedulers.computation());
+    }
+
+    public EvictionQueueImpl(long evictionTimeoutMs, EurekaRegistryMetricFactory metricFactory) {
+        this(evictionTimeoutMs, metricFactory, Schedulers.computation());
     }
 
     public EvictionQueueImpl(long evictionTimeoutMs, EurekaRegistryMetricFactory metricFactory, Scheduler scheduler) {
@@ -125,5 +129,12 @@ public class EvictionQueueImpl implements EvictionQueue {
     @Override
     public int size() {
         return queue.size();
+    }
+
+    @Override
+    public void shutdown() {
+        worker.unsubscribe();
+        queue.clear();
+        evictionQueueMetrics.unbindMetrics();
     }
 }

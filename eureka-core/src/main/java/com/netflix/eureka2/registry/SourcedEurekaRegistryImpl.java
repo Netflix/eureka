@@ -17,8 +17,10 @@
 package com.netflix.eureka2.registry;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -40,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
 import rx.Subscriber;
+import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
@@ -107,19 +110,19 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     // -------------------------------------------------
 
     @Override
-    public Observable<Status> register(final InstanceInfo instanceInfo) {
+    public Observable<MultiSourcedDataHolder.Status> register(final InstanceInfo instanceInfo) {
         return register(instanceInfo, Source.localSource());
     }
 
     @Override
-    public Observable<Status> register(final InstanceInfo instanceInfo, final Source source) {
+    public Observable<MultiSourcedDataHolder.Status> register(final InstanceInfo instanceInfo, final Source source) {
         MultiSourcedDataHolder<InstanceInfo> holder = new NotifyingInstanceInfoHolder(
                 internalStoreAccessor, notificationSubject, invoker, instanceInfo.getId());
 
-        Observable<Status> result = holder.update(source, instanceInfo).doOnNext(new Action1<Status>() {
+        Observable<MultiSourcedDataHolder.Status> result = holder.update(source, instanceInfo).doOnNext(new Action1<MultiSourcedDataHolder.Status>() {
             @Override
-            public void call(Status status) {
-                if (status != Status.AddExpired) {
+            public void call(MultiSourcedDataHolder.Status status) {
+                if (status != MultiSourcedDataHolder.Status.AddExpired) {
                     metrics.incrementRegistrationCounter(source.getOrigin());
                 }
             }
@@ -128,21 +131,21 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     }
 
     @Override
-    public Observable<Status> unregister(final InstanceInfo instanceInfo) {
+    public Observable<MultiSourcedDataHolder.Status> unregister(final InstanceInfo instanceInfo) {
         return unregister(instanceInfo, Source.localSource());
     }
 
     @Override
-    public Observable<Status> unregister(final InstanceInfo instanceInfo, final Source source) {
+    public Observable<MultiSourcedDataHolder.Status> unregister(final InstanceInfo instanceInfo, final Source source) {
         final MultiSourcedDataHolder<InstanceInfo> currentHolder = internalStore.get(instanceInfo.getId());
         if (currentHolder == null) {
-            return Observable.just(Status.RemoveExpired);
+            return Observable.just(MultiSourcedDataHolder.Status.RemoveExpired);
         }
 
-        Observable<Status> result = currentHolder.remove(source, instanceInfo).doOnNext(new Action1<Status>() {
+        Observable<MultiSourcedDataHolder.Status> result = currentHolder.remove(source, instanceInfo).doOnNext(new Action1<MultiSourcedDataHolder.Status>() {
             @Override
-            public void call(Status status) {
-                if (status != Status.RemoveExpired) {
+            public void call(MultiSourcedDataHolder.Status status) {
+                if (status != MultiSourcedDataHolder.Status.RemoveExpired) {
                     metrics.incrementUnregistrationCounter(source.getOrigin());
                 }
             }
@@ -151,19 +154,19 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     }
 
     @Override
-    public Observable<Status> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
+    public Observable<MultiSourcedDataHolder.Status> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
         return update(updatedInfo, deltas, Source.localSource());
     }
 
     @Override
-    public Observable<Status> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas, final Source source) {
+    public Observable<MultiSourcedDataHolder.Status> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas, final Source source) {
         MultiSourcedDataHolder<InstanceInfo> holder = new NotifyingInstanceInfoHolder(
                 internalStoreAccessor, notificationSubject, invoker, updatedInfo.getId());
 
-        Observable<Status> result = holder.update(source, updatedInfo).doOnNext(new Action1<Status>() {
+        Observable<MultiSourcedDataHolder.Status> result = holder.update(source, updatedInfo).doOnNext(new Action1<MultiSourcedDataHolder.Status>() {
             @Override
-            public void call(Status status) {
-                if (status != Status.AddExpired) {
+            public void call(MultiSourcedDataHolder.Status status) {
+                if (status != MultiSourcedDataHolder.Status.AddExpired) {
                     metrics.incrementUpdateCounter(source.getOrigin());
                 }
             }
@@ -174,9 +177,9 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     /**
      * TODO: do we have to eagerly subscribe? This code is inefficient.
      */
-    private static Observable<Status> subscribeToUpdateResult(Observable<Status> status) {
-        final ReplaySubject<Status> result = ReplaySubject.create();
-        status.subscribe(new Subscriber<Status>() {
+    private static Observable<MultiSourcedDataHolder.Status> subscribeToUpdateResult(Observable<MultiSourcedDataHolder.Status> status) {
+        final ReplaySubject<MultiSourcedDataHolder.Status> result = ReplaySubject.create();
+        status.subscribe(new Subscriber<MultiSourcedDataHolder.Status>() {
             @Override
             public void onCompleted() {
                 result.onCompleted();
@@ -186,10 +189,11 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
             public void onError(Throwable e) {
                 logger.error("Registry update failure", e);
                 result.onError(e);
+                e.printStackTrace();
             }
 
             @Override
-            public void onNext(Status status) {
+            public void onNext(MultiSourcedDataHolder.Status status) {
                 logger.debug("Registry updated completed with status {}", status);
                 result.onNext(status);
             }
@@ -281,8 +285,75 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     }
 
     @Override
+    public Observable<Long> evictAll() {
+        return getHolders()
+                .switchMap(new Func1<MultiSourcedDataHolder<InstanceInfo>, Observable<MultiSourcedDataHolder.Status>>() {
+                    @Override
+                    public Observable<MultiSourcedDataHolder.Status> call(MultiSourcedDataHolder<InstanceInfo> holder) {
+                        for (Source source : holder.getAllSources()) {
+                            holder.remove(source);
+                        }
+                        return null;
+                    }
+                })
+                .countLong()
+                .doOnError(new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        logger.error("Error evicting registry", throwable);
+                    }
+                })
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        logger.info("Completed evicting registry");
+                    }
+                });
+    }
+
+    @Override
+    public Observable<Long> evictAll(final Source source) {
+        return getHolders()
+                .switchMap(new Func1<MultiSourcedDataHolder<InstanceInfo>, Observable<MultiSourcedDataHolder.Status>>() {
+                    @Override
+                    public Observable<MultiSourcedDataHolder.Status> call(MultiSourcedDataHolder<InstanceInfo> holder) {
+                        return holder.remove(source);
+                    }
+                })
+                .countLong()
+                .doOnError(new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        logger.error("Error evicting registry for source {}", source, throwable);
+                    }
+                })
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        logger.info("Completed evicting registry for source {}", source);
+                    }
+                });
+    }
+    @Override
+    public Observable<? extends MultiSourcedDataHolder<InstanceInfo>> getHolders() {
+        return Observable.from(internalStore.values());
+    }
+
+    @Override
     public Observable<Void> shutdown() {
+        invoker.shutdown();
+        notificationSubject.onCompleted();
+        metrics.unbindMetrics();
+        internalStore.clear();
         return indexRegistry.shutdown();
+    }
+
+    @Override
+    public Observable<Void> shutdown(Throwable cause) {
+        invoker.shutdown();
+        notificationSubject.onCompleted();
+        metrics.unbindMetrics();
+        return indexRegistry.shutdown(cause);
     }
 
     private Iterator<ChangeNotification<InstanceInfo>> getSnapshotForInterest(final Interest<InstanceInfo> interest) {

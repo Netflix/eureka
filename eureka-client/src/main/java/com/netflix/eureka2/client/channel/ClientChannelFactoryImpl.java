@@ -3,8 +3,12 @@ package com.netflix.eureka2.client.channel;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.client.metric.EurekaClientMetricFactory;
+import com.netflix.eureka2.registry.PreservableEurekaRegistry;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.transport.TransportClient;
 import rx.functions.Func0;
+import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
 /**
@@ -14,12 +18,14 @@ public class ClientChannelFactoryImpl implements ClientChannelFactory {
 
     private final TransportClient readServerClient; /*Null for write server only service*/
     private final TransportClient writeServerClient; /*Null for read server only service*/
+    private final PreservableEurekaRegistry eurekaRegistry;
     private final EurekaClientMetricFactory metricFactory;
     private final Mode channelMode;
     private final long retryInitialDelayMs;
 
     public ClientChannelFactoryImpl(TransportClient writeServerClient,
                                     TransportClient readServerClient,
+                                    PreservableEurekaRegistry eurekaRegistry,
                                     long retryInitialDelayMs,
                                     EurekaClientMetricFactory metricFactory) {
         this.retryInitialDelayMs = retryInitialDelayMs;
@@ -28,6 +34,7 @@ public class ClientChannelFactoryImpl implements ClientChannelFactory {
         }
         this.writeServerClient = writeServerClient;
         this.readServerClient = readServerClient;
+        this.eurekaRegistry = eurekaRegistry;
         this.metricFactory = metricFactory;
         this.channelMode = writeServerClient == null ? Mode.Read : readServerClient == null ? Mode.Write : Mode.ReadWrite;
     }
@@ -42,7 +49,14 @@ public class ClientChannelFactoryImpl implements ClientChannelFactory {
      */
     @Override
     public ClientInterestChannel newInterestChannel() {
-        return new InterestChannelImpl(readServerClient, metricFactory);
+        return new InterestChannelInvoker(
+                new RetryableInterestChannel(new Func1<SourcedEurekaRegistry<InstanceInfo>, ClientInterestChannel>() {
+                    @Override
+                    public ClientInterestChannel call(SourcedEurekaRegistry<InstanceInfo> registry) {
+                        return new InterestChannelImpl(registry, readServerClient, metricFactory.getInterestChannelMetrics());
+                    }
+                }, eurekaRegistry, retryInitialDelayMs, Schedulers.computation())
+        );
     }
 
 
@@ -64,11 +78,6 @@ public class ClientChannelFactoryImpl implements ClientChannelFactory {
                     }
                 }, retryInitialDelayMs, Schedulers.computation())
         );
-    }
-
-    @Override
-    public Mode mode() {
-        return channelMode;
     }
 
     @Override

@@ -20,7 +20,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import com.netflix.eureka2.client.registration.RegistrationHandler;
-import com.netflix.eureka2.client.registry.EurekaClientRegistry;
+import com.netflix.eureka2.client.registry.InterestHandler;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
@@ -33,12 +33,12 @@ import rx.Observable;
 @Singleton
 public class EurekaClientImpl extends EurekaClient {
 
-    private final EurekaClientRegistry<InstanceInfo> clientRegistry;
+    private final InterestHandler interestHandler;
     private final RegistrationHandler registrationHandler;
 
     @Inject
-    public EurekaClientImpl(EurekaClientRegistry clientRegistry, RegistrationHandler registrationHandler) {
-        this.clientRegistry = clientRegistry;
+    public EurekaClientImpl(InterestHandler interestHandler, RegistrationHandler registrationHandler) {
+        this.interestHandler = interestHandler;
         this.registrationHandler = registrationHandler;
     }
 
@@ -59,7 +59,7 @@ public class EurekaClientImpl extends EurekaClient {
 
     @Override
     public Observable<ChangeNotification<InstanceInfo>> forInterest(final Interest<InstanceInfo> interest) {
-        return clientRegistry.forInterest(interest);
+        return interestHandler.forInterest(interest);
     }
 
     @Override
@@ -74,7 +74,7 @@ public class EurekaClientImpl extends EurekaClient {
 
     @Override
     public void close() {
-        clientRegistry.shutdown();
+        interestHandler.shutdown();
         if (null != registrationHandler) {
             registrationHandler.shutdown();
         }
@@ -82,6 +82,6 @@ public class EurekaClientImpl extends EurekaClient {
 
     @Override
     public String toString() {
-        return clientRegistry.toString();
+        return interestHandler.toString();
     }
 }

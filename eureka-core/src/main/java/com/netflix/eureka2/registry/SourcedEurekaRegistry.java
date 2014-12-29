@@ -28,24 +28,29 @@ import java.util.Set;
  *
  * @author Tomasz Bak
  */
-public interface SourcedEurekaRegistry<T> extends EurekaRegistry<T, SourcedEurekaRegistry.Status> {
+public interface SourcedEurekaRegistry<T> extends EurekaRegistry<T, MultiSourcedDataHolder.Status> {
 
-    enum Status {
-        AddedFirst,
-        AddedChange,
-        AddExpired,
-        RemovedFragment,
-        RemovedLast,
-        RemoveExpired
-    }
+    Observable<MultiSourcedDataHolder.Status> register(T instanceInfo, Source source);
 
-    Observable<Status> register(T instanceInfo, Source source);
+    Observable<MultiSourcedDataHolder.Status> unregister(T instanceInfo, Source source);
 
-    Observable<Status> unregister(T instanceInfo, Source source);
-
-    Observable<Status> update(T updatedInfo, Set<Delta<?>> deltas, Source source);
+    Observable<MultiSourcedDataHolder.Status> update(T updatedInfo, Set<Delta<?>> deltas, Source source);
 
     Observable<T> forSnapshot(Interest<T> interest, Source source);
 
     Observable<ChangeNotification<T>> forInterest(Interest<T> interest, Source source);
+
+    /**
+     * Evict all registry info for the given source
+     * @return an observable of long denoting the number of holder items touched for the eviction
+     */
+    Observable<Long> evictAll(Source source);
+
+    /**
+     * Evict all registry info for all sources
+     * @return an observable of long denoting the number of holder items touched for the eviction
+     */
+    Observable<Long> evictAll();
+
+    Observable<? extends MultiSourcedDataHolder<T>> getHolders();
 }

@@ -16,13 +16,12 @@
 
 package com.netflix.eureka2.client.registry.swap;
 
-import com.netflix.eureka2.client.registry.EurekaClientRegistry;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.EurekaRegistry;
 
 /**
  * @author Tomasz Bak
  */
 public interface RegistrySwapStrategy {
 
-    boolean isReadyToSwap(EurekaClientRegistry<InstanceInfo> originalRegistry, EurekaClientRegistry<InstanceInfo> newRegistry);
+    boolean isReadyToSwap(EurekaRegistry originalRegistry, EurekaRegistry newRegistry);
 }
