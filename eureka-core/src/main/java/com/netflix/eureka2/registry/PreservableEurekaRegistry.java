@@ -21,18 +21,26 @@ import javax.inject.Named;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
-import com.netflix.eureka2.registry.instance.Delta;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
+import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
 import com.netflix.eureka2.registry.eviction.EvictionItem;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.eviction.EvictionStrategy;
+import com.netflix.eureka2.registry.instance.Delta;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.MultiSourcedDataHolder.Status;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
+import rx.functions.Action0;
 import rx.functions.Action1;
+import rx.functions.Func1;
 
 /**
  * {@link com.netflix.eureka2.registry.SourcedEurekaRegistry} implementation that cooperates with eviction queue
@@ -42,7 +50,10 @@ import rx.functions.Action1;
  */
 public class PreservableEurekaRegistry implements SourcedEurekaRegistry<InstanceInfo> {
 
+    private static final Logger logger = LoggerFactory.getLogger(PreservableEurekaRegistry.class);
+
     private final SourcedEurekaRegistry<InstanceInfo> eurekaRegistry;
+    private final EvictionQueue evictionQueue;
     private final EvictionStrategy evictionStrategy;
     private final Subscription evictionSubscription;
     private final EvictionSubscriber evictionSubscriber;
@@ -69,12 +80,25 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
         }
     };
 
+    public PreservableEurekaRegistry(
+            SourcedEurekaRegistry eurekaRegistry,
+            EurekaRegistryConfig registryConfig,
+            EurekaRegistryMetricFactory metricFactory) {
+        this(
+                eurekaRegistry,
+                new EvictionQueueImpl(registryConfig, metricFactory),
+                new EvictionStrategyProvider(registryConfig).get(),
+                metricFactory
+        );
+    }
+
     @Inject
     public PreservableEurekaRegistry(@Named("delegate") SourcedEurekaRegistry eurekaRegistry,
                                      EvictionQueue evictionQueue,
                                      EvictionStrategy evictionStrategy,
                                      EurekaRegistryMetricFactory metricFactory) {
         this.eurekaRegistry = eurekaRegistry;
+        this.evictionQueue = evictionQueue;
         this.evictionStrategy = evictionStrategy;
         this.evictionSubscriber = new EvictionSubscriber();
         this.evictionSubscription = evictionQueue.pendingEvictions().subscribe(evictionSubscriber);
@@ -145,14 +169,87 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
         return eurekaRegistry.forInterest(interest, source);
     }
 
+    @Override
+    public Observable<? extends MultiSourcedDataHolder<InstanceInfo>> getHolders() {
+        return Observable.error(new UnsupportedOperationException("getHolders is not supported for PreservableEurekaRegistry"));
+    }
+
     public boolean isInSelfPreservation() {
         return selfPreservation.get();
+    }
+
+    /**
+     * Evict by sending to the evictionQueue instead of directly.
+     */
+    @Override
+    public Observable<Long> evictAll(final Source source) {
+        return eurekaRegistry.getHolders()
+                .map(new Func1<MultiSourcedDataHolder<InstanceInfo>, Void>() {
+                    @Override
+                    public Void call(MultiSourcedDataHolder<InstanceInfo> holder) {
+                        evictionQueue.add(holder.get(source), source);
+                        return null;
+                    }
+                })
+                .doOnError(new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        logger.error("Error evicting registry for source {}", source, throwable);
+                    }
+                })
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        logger.info("Completed evicting registry for source {}", source);
+                    }
+                })
+                .countLong();
+
+    }
+
+    /**
+     * Evict by sending to the evictionQueue instead of directly.
+     */
+    @Override
+    public Observable<Long> evictAll() {
+        return eurekaRegistry.getHolders()
+                .map(new Func1<MultiSourcedDataHolder<InstanceInfo>, Void>() {
+                    @Override
+                    public Void call(MultiSourcedDataHolder<InstanceInfo> holder) {
+                        for (Source source : holder.getAllSources()) {
+                            evictionQueue.add(holder.get(source), source);
+                        }
+                        return null;
+                    }
+                })
+                .doOnError(new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        logger.error("Error evicting registry", throwable);
+                    }
+                })
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        logger.info("Completed evicting registry");
+                    }
+                })
+                .countLong();
+
     }
 
     @Override
     public Observable<Void> shutdown() {
         evictionSubscription.unsubscribe();
+        evictionQueue.shutdown();
         return eurekaRegistry.shutdown();
+    }
+
+    @Override
+    public Observable<Void> shutdown(Throwable cause) {
+        evictionSubscription.unsubscribe();
+        evictionQueue.shutdown();
+        return eurekaRegistry.shutdown(cause);
     }
 
     private boolean allowedToEvict() {
@@ -160,8 +257,11 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
     }
 
     private void resumeEviction() {
-        if (allowedToEvict() && selfPreservation.compareAndSet(true, false)) {
-            evictionSubscriber.resume();
+        if (selfPreservation.compareAndSet(true, false)) {
+            logger.info("Coming out of self preservation mode");
+            if (allowedToEvict()) {
+                evictionSubscriber.resume();
+            }
         }
     }
 
@@ -182,11 +282,24 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
 
         @Override
         public void onNext(final EvictionItem evictionItem) {
-            eurekaRegistry.unregister(evictionItem.getInstanceInfo(), evictionItem.getSource());
             if (allowedToEvict()) {
-                resume();
+                eurekaRegistry.unregister(evictionItem.getInstanceInfo(), evictionItem.getSource())
+                        .doOnCompleted(new Action0() {
+                            @Override
+                            public void call() {
+                                logger.info("Successfully evicted registry entry {}/{}",
+                                        evictionItem.getSource(), evictionItem.getInstanceInfo().getId());
+                                resume();
+                            }
+                        })
+                        .retry(2)
+                        .subscribe();
             } else {
+                evictionQueue.add(evictionItem.getInstanceInfo(), evictionItem.getSource());  // add back to the eviction queue
+                logger.info("Not evicting registry entry, adding back to the queue {}/{}",
+                        evictionItem.getSource(), evictionItem.getInstanceInfo().getId());
                 selfPreservation.set(true);
+                logger.info("Entering self preservation mode");
             }
         }
 

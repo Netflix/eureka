@@ -25,13 +25,14 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry.Status;
+import com.netflix.eureka2.registry.MultiSourcedDataHolder.Status;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.eviction.EvictionItem;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.eviction.EvictionStrategy;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -84,11 +85,17 @@ public class PreservableEurekaRegistryTest {
         preservableRegistry = new PreservableEurekaRegistry(baseRegistry, evictionQueue, evictionStrategy, EurekaRegistryMetricFactory.registryMetrics());
     }
 
+    @After
+    public void tearDown() throws Exception {
+        preservableRegistry.shutdown();
+    }
+
     @Test
     public void testRemovesEvictedItemsWhenNotInSelfPreservationMode() throws Exception {
-        when(baseRegistry.register(DISCOVERY)).thenReturn(Observable.just(Status.AddedFirst));
+        when(baseRegistry.register(DISCOVERY)).thenReturn(Observable.just(MultiSourcedDataHolder.Status.AddedFirst));
         preservableRegistry.register(DISCOVERY);
 
+        when(baseRegistry.unregister(DISCOVERY, REMOTE_SOURCE)).thenReturn(Observable.just(Status.RemovedLast));
         // Now evict item, and check that PreservableEurekaRegistry asks for more
         evict(DISCOVERY, REMOTE_SOURCE, 1);
         verify(baseRegistry, times(1)).unregister(DISCOVERY, REMOTE_SOURCE);
@@ -98,12 +105,13 @@ public class PreservableEurekaRegistryTest {
 
     @Test
     public void testDoesNotRemoveEvictedItemsWhenInSelfPreservationMode() throws Exception {
-        when(baseRegistry.register(DISCOVERY)).thenReturn(Observable.just(Status.AddedFirst));
+        when(baseRegistry.register(DISCOVERY)).thenReturn(Observable.just(MultiSourcedDataHolder.Status.AddedFirst));
         preservableRegistry.register(DISCOVERY);
 
+        when(baseRegistry.unregister(DISCOVERY, REMOTE_SOURCE)).thenReturn(Observable.just(Status.RemovedLast));
         // Now evict item, and check that nothing is requested
         evict(DISCOVERY, REMOTE_SOURCE, 0);
-        verify(baseRegistry, times(1)).unregister(DISCOVERY, REMOTE_SOURCE);
+        verify(baseRegistry, times(0)).unregister(DISCOVERY, REMOTE_SOURCE);
 
         assertThat(requestedEvictedItems.get(), is(equalTo(0L)));
 
@@ -123,44 +131,44 @@ public class PreservableEurekaRegistryTest {
     @Test
     public void testBehavesAsRegularRegistryForNonEvictedItems() throws Exception {
         // Register
-        when(baseRegistry.register(DISCOVERY)).thenReturn(Observable.just(Status.AddedFirst));
+        when(baseRegistry.register(DISCOVERY)).thenReturn(Observable.just(MultiSourcedDataHolder.Status.AddedFirst));
         when(baseRegistry.size()).thenReturn(1);
         Observable<Status> status = preservableRegistry.register(DISCOVERY);
-        assertStatus(status, Status.AddedFirst);
+        assertStatus(status, MultiSourcedDataHolder.Status.AddedFirst);
 
         assertThat(preservableRegistry.size(), is(equalTo(1)));
         assertThat(preservableRegistry.expectedRegistrySize, is(equalTo(1)));
 
-        when(baseRegistry.register(DISCOVERY, REMOTE_SOURCE)).thenReturn(Observable.just(Status.AddedChange));
+        when(baseRegistry.register(DISCOVERY, REMOTE_SOURCE)).thenReturn(Observable.just(MultiSourcedDataHolder.Status.AddedChange));
         status = preservableRegistry.register(DISCOVERY, REMOTE_SOURCE);
-        assertStatus(status, Status.AddedChange);
+        assertStatus(status, MultiSourcedDataHolder.Status.AddedChange);
 
         assertThat(preservableRegistry.expectedRegistrySize, is(equalTo(1)));
 
         // Update
-        when(baseRegistry.update(DISCOVERY, DISCOVERY_DELTAS)).thenReturn(Observable.just(Status.AddedChange));
+        when(baseRegistry.update(DISCOVERY, DISCOVERY_DELTAS)).thenReturn(Observable.just(MultiSourcedDataHolder.Status.AddedChange));
         status = preservableRegistry.update(DISCOVERY, DISCOVERY_DELTAS);
-        assertStatus(status, Status.AddedChange);
+        assertStatus(status, MultiSourcedDataHolder.Status.AddedChange);
 
         assertThat(preservableRegistry.expectedRegistrySize, is(equalTo(1)));
 
-        when(baseRegistry.update(DISCOVERY, DISCOVERY_DELTAS, REMOTE_SOURCE)).thenReturn(Observable.just(Status.AddedChange));
+        when(baseRegistry.update(DISCOVERY, DISCOVERY_DELTAS, REMOTE_SOURCE)).thenReturn(Observable.just(MultiSourcedDataHolder.Status.AddedChange));
         status = preservableRegistry.update(DISCOVERY, DISCOVERY_DELTAS, REMOTE_SOURCE);
-        assertStatus(status, Status.AddedChange);
+        assertStatus(status, MultiSourcedDataHolder.Status.AddedChange);
 
         assertThat(preservableRegistry.expectedRegistrySize, is(equalTo(1)));
 
         // Unregister
-        when(baseRegistry.unregister(DISCOVERY)).thenReturn(Observable.just(Status.RemovedFragment));
+        when(baseRegistry.unregister(DISCOVERY)).thenReturn(Observable.just(MultiSourcedDataHolder.Status.RemovedFragment));
         status = preservableRegistry.unregister(DISCOVERY);
-        assertStatus(status, Status.RemovedFragment);
+        assertStatus(status, MultiSourcedDataHolder.Status.RemovedFragment);
 
         assertThat(preservableRegistry.expectedRegistrySize, is(equalTo(1)));
 
-        when(baseRegistry.unregister(DISCOVERY, REMOTE_SOURCE)).thenReturn(Observable.just(Status.RemovedLast));
+        when(baseRegistry.unregister(DISCOVERY, REMOTE_SOURCE)).thenReturn(Observable.just(MultiSourcedDataHolder.Status.RemovedLast));
         when(baseRegistry.size()).thenReturn(0);
         status = preservableRegistry.unregister(DISCOVERY, REMOTE_SOURCE);
-        assertStatus(status, Status.RemovedLast);
+        assertStatus(status, MultiSourcedDataHolder.Status.RemovedLast);
 
         assertThat(preservableRegistry.expectedRegistrySize, is(equalTo(0)));
     }

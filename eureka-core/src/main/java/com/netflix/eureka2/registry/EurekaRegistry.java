@@ -43,4 +43,12 @@ public interface EurekaRegistry<T, R> {
     Observable<ChangeNotification<T>> forInterest(Interest<T> interest);
 
     Observable<Void> shutdown();
+
+    /**
+     * Shuts down the registry. All the interest client subscriptions are terminated
+     * with an error, where the error value is the provided parameter.
+     *
+     * @param cause error to propagate to subscription clients
+     */
+    Observable<Void> shutdown(Throwable cause);
 }

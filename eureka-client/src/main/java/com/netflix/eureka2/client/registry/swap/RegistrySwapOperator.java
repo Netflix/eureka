@@ -16,9 +16,8 @@
 
 package com.netflix.eureka2.client.registry.swap;
 
-import com.netflix.eureka2.client.registry.EurekaClientRegistry;
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import rx.Observable.Operator;
 import rx.Subscriber;
 import rx.observers.Subscribers;
@@ -26,16 +25,16 @@ import rx.observers.Subscribers;
 /**
  * @author Tomasz Bak
  */
-public class RegistrySwapOperator implements Operator<Void, ChangeNotification<InstanceInfo>> {
+public class RegistrySwapOperator implements Operator<Void, ChangeNotification<?>> {
 
     private static final IllegalStateException UNEXPECTED_END_OF_STREAM = new IllegalStateException("Unexpected end of interest subscription stream");
 
-    private final EurekaClientRegistry<InstanceInfo> originalRegistry;
-    private final EurekaClientRegistry<InstanceInfo> newRegistry;
+    private final EurekaRegistry originalRegistry;
+    private final EurekaRegistry newRegistry;
     private final RegistrySwapStrategyFactory strategyFactory;
 
-    public RegistrySwapOperator(EurekaClientRegistry<InstanceInfo> originalRegistry,
-                                EurekaClientRegistry<InstanceInfo> newRegistry,
+    public RegistrySwapOperator(EurekaRegistry originalRegistry,
+                                EurekaRegistry newRegistry,
                                 RegistrySwapStrategyFactory strategyFactory) {
         this.originalRegistry = originalRegistry;
         this.newRegistry = newRegistry;
@@ -43,7 +42,7 @@ public class RegistrySwapOperator implements Operator<Void, ChangeNotification<I
     }
 
     @Override
-    public Subscriber<? super ChangeNotification<InstanceInfo>> call(final Subscriber<? super Void> subscriber) {
+    public Subscriber<? super ChangeNotification<?>> call(final Subscriber<? super Void> subscriber) {
         final RegistrySwapStrategy swapStrategy = strategyFactory.newInstance();
 
         if (swapStrategy.isReadyToSwap(originalRegistry, newRegistry)) {
@@ -51,7 +50,7 @@ public class RegistrySwapOperator implements Operator<Void, ChangeNotification<I
             return Subscribers.empty();
         }
 
-        return new Subscriber<ChangeNotification<InstanceInfo>>() {
+        return new Subscriber<ChangeNotification<?>>() {
             @Override
             public void onCompleted() {
                 // Interest subscription never completes under normal circumstances.
@@ -64,7 +63,7 @@ public class RegistrySwapOperator implements Operator<Void, ChangeNotification<I
             }
 
             @Override
-            public void onNext(ChangeNotification<InstanceInfo> instanceInfoChangeNotification) {
+            public void onNext(ChangeNotification<?> instanceInfoChangeNotification) {
                 if (swapStrategy.isReadyToSwap(originalRegistry, newRegistry)) {
                     subscriber.onCompleted();
                 }

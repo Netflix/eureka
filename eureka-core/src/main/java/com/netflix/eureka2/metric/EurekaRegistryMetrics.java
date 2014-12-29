@@ -49,7 +49,7 @@ public class EurekaRegistryMetrics extends EurekaMetrics {
         registrationsTotal = newCounter("registrationsTotal");
 
         updatesLocal = newCounter("updatesLocal");
-        updatesReplicated = newCounter("updatesLocal");
+        updatesReplicated = newCounter("updatesReplicated");
         updatesTotal = newCounter("updatesTotal");
 
         unregistrationsLocal = newCounter("unregistrationsLocal");

@@ -3,13 +3,15 @@ package com.netflix.eureka2.client.channel;
 import java.util.concurrent.Callable;
 
 import com.netflix.eureka2.channel.InterestChannel;
-import com.netflix.eureka2.client.registry.EurekaClientRegistry;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
+import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.utils.SerializedTaskInvoker;
 import rx.Observable;
 import rx.Scheduler;
+import rx.schedulers.Schedulers;
 
 /**
  * A decorator of {@link InterestChannel} which delegates to an actual {@link InterestChannel} making sure that all
@@ -21,6 +23,10 @@ public class InterestChannelInvoker extends SerializedTaskInvoker
         implements ClientInterestChannel {
 
     private final ClientInterestChannel delegate;
+
+    public InterestChannelInvoker(ClientInterestChannel delegate) {
+        this(delegate, Schedulers.computation());
+    }
 
     public InterestChannelInvoker(ClientInterestChannel delegate, Scheduler scheduler) {
         // TODO: add invoker metrics to the client
@@ -53,7 +59,7 @@ public class InterestChannelInvoker extends SerializedTaskInvoker
     }
 
     @Override
-    public EurekaClientRegistry<InstanceInfo> associatedRegistry() {
+    public SourcedEurekaRegistry<InstanceInfo> associatedRegistry() {
         return delegate.associatedRegistry();
     }
 
@@ -63,6 +69,11 @@ public class InterestChannelInvoker extends SerializedTaskInvoker
             @Override
             public Observable<Void> call() throws Exception {
                 return delegate.appendInterest(toAppend);
+            }
+
+            @Override
+            public String toString() {
+                return "appendInterest: " + toAppend;
             }
         });
     }
@@ -74,6 +85,17 @@ public class InterestChannelInvoker extends SerializedTaskInvoker
             public Observable<Void> call() throws Exception {
                 return delegate.removeInterest(toRemove);
             }
+
+            @Override
+            public String toString() {
+                return "removeInterest: " + toRemove;
+            }
+
         });
+    }
+
+    @Override
+    public Source getSource() {
+        return delegate.getSource();
     }
 }

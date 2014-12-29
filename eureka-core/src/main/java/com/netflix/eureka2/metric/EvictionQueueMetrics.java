@@ -34,6 +34,8 @@ public class EvictionQueueMetrics extends EurekaMetrics {
         super("evictionQueue");
         evictionQueueAddCounter = newCounter("addedEvictions");
         evictionQueueRemoveCounter = newCounter("removedEvictions");
+        register(evictionQueueAddCounter);
+        register(evictionQueueRemoveCounter);
     }
 
     public void incrementEvictionQueueAddCounter() {

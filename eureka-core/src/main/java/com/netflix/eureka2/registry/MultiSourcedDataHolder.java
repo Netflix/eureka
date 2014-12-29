@@ -2,8 +2,9 @@ package com.netflix.eureka2.registry;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.SourcedChangeNotification;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry.Status;
 import rx.Observable;
+
+import java.util.Collection;
 
 /**
  * A holder object that maintains copies of the same data (as defined by some metric, such as id) that are
@@ -44,6 +45,11 @@ public interface MultiSourcedDataHolder<V> {
     Source getSource();
 
     /**
+     * @return a collection of all the sources that have copies in this holder
+     */
+    Collection<Source> getAllSources();
+
+    /**
      * @return the view copy of the data as a change notification, if exists
      */
     SourcedChangeNotification<V> getChangeNotification();
@@ -56,9 +62,23 @@ public interface MultiSourcedDataHolder<V> {
 
     /**
      * @param source the source to delete
+     * @param data the specific data copy for the given source to delete subject to versioning
      */
     Observable<Status> remove(Source source, V data);
 
+    /**
+     * @param source the source to delete
+     */
+    Observable<Status> remove(Source source);
+
+    public enum Status {
+        AddedFirst,      // Add result of the first add operation to a new (empty) holder
+        AddedChange,     // Add result that modifies an existing copy in the holder
+        AddExpired,      // Add result of a lower version copy. This is a no-op
+        RemovedFragment, // Remove result that removes a copy in the holder
+        RemovedLast,     // Remove result of the operation that removes the last copy in the holder
+        RemoveExpired    // Remove result of a lower versioned or non-existent copy. This is a no-op
+    }
 
     final class Snapshot<V> {
         private final SourcedChangeNotification<V> notification;

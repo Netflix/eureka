@@ -50,5 +50,7 @@ public interface EvictionQueue {
      * @return eviction queue size
      */
     int size();
+
+    void shutdown();
 }
 

@@ -16,8 +16,7 @@
 
 package com.netflix.eureka2.client.registry.swap;
 
-import com.netflix.eureka2.client.registry.EurekaClientRegistry;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
 
@@ -46,7 +45,7 @@ public class ThresholdStrategy implements RegistrySwapStrategy {
     }
 
     @Override
-    public boolean isReadyToSwap(EurekaClientRegistry<InstanceInfo> originalRegistry, EurekaClientRegistry<InstanceInfo> newRegistry) {
+    public boolean isReadyToSwap(EurekaRegistry originalRegistry, EurekaRegistry newRegistry) {
         if (originalRegistry.size() == 0) {
             return true;
         }

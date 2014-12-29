@@ -2,12 +2,10 @@ package com.netflix.eureka2.client.channel;
 
 import com.netflix.eureka2.channel.RetryableEurekaChannelException;
 import com.netflix.eureka2.channel.RetryableServiceChannel;
-import com.netflix.eureka2.client.metric.EurekaClientMetricFactory;
-import com.netflix.eureka2.client.registry.EurekaClientRegistry;
-import com.netflix.eureka2.client.registry.swap.RegistrySwapOperator;
-import com.netflix.eureka2.client.registry.swap.RegistrySwapStrategyFactory;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.MultipleInterests;
+import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,24 +32,20 @@ public class RetryableInterestChannel
     private static final Throwable CHANNEL_FAILURE = new RetryableEurekaChannelException(
             "There was a communication failure, and connection has been reestablished; a new subscription is required");
 
+    private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final InterestTracker interestTracker;
-    private final ClientChannelFactory channelFactory;
-    private final RegistrySwapStrategyFactory swapStrategyFactory;
-    private final EurekaClientMetricFactory metricFactory;
+    private final Func1<SourcedEurekaRegistry<InstanceInfo>, ClientInterestChannel> channelFactory;
 
     public RetryableInterestChannel(
-            ClientChannelFactory channelFactory,
-            RegistrySwapStrategyFactory swapStrategyFactory,
-            EurekaClientMetricFactory metricFactory,
+            Func1<SourcedEurekaRegistry<InstanceInfo>, ClientInterestChannel> channelFactory,
+            final SourcedEurekaRegistry<InstanceInfo> registry,
             long retryInitialDelayMs,
             Scheduler scheduler) {
-        super(channelFactory.newInterestChannel(), retryInitialDelayMs, scheduler);
+        super(channelFactory.call(registry), retryInitialDelayMs, scheduler);
+        this.registry = registry;
         this.interestTracker = new InterestTracker();
         this.channelFactory = channelFactory;
-        this.metricFactory = metricFactory;
-        this.swapStrategyFactory = swapStrategyFactory;
     }
-
 
     @Override
     public Observable<Void> change(Interest<InstanceInfo> newInterest) {
@@ -59,7 +53,7 @@ public class RetryableInterestChannel
     }
 
     @Override
-    public EurekaClientRegistry<InstanceInfo> associatedRegistry() {
+    public SourcedEurekaRegistry<InstanceInfo> associatedRegistry() {
         return currentDelegateChannel().associatedRegistry();
     }
 
@@ -87,42 +81,30 @@ public class RetryableInterestChannel
 
     @Override
     protected Observable<ClientInterestChannel> reestablish() {
-        final ClientInterestChannel newChannel = channelFactory.newInterestChannel();
+        return registry.evictAll()  // evict everything in the registry (just in case there are stale copies)
+                .switchMap(new Func1<Long, Observable<ClientInterestChannel>>() {
+                    @Override
+                    public Observable<ClientInterestChannel> call(Long count) {
+                        logger.info("Evicted copies from {} registry entries", count);
 
-        final EurekaClientRegistry<InstanceInfo> prevRegistry = currentDelegateChannel().associatedRegistry();
-        final EurekaClientRegistry<InstanceInfo> newRegistry = newChannel.associatedRegistry();
+                        Interest<InstanceInfo> activeInterests = new MultipleInterests<>(interestTracker.interests.keySet());
 
-        return Observable.create(new Observable.OnSubscribe<ClientInterestChannel>() {
-            @Override
-            public void call(final Subscriber<? super ClientInterestChannel> subscriber) {
-                try {
-                    // Resubscribe
-                    Interest<InstanceInfo> activeInterests = new MultipleInterests<InstanceInfo>(interestTracker.interests.keySet());
-                    newChannel.appendInterest(activeInterests).subscribe();
-
-                    // Wait until registry fills up to the expected level.
-                    newRegistry.forInterest(activeInterests)
-                            .lift(new RegistrySwapOperator(prevRegistry, newRegistry, swapStrategyFactory))
-                            .doOnCompleted(new Action0() {
-                                @Override
-                                public void call() {
-                                    subscriber.onNext(newChannel);  // onNext triggers shutdown of old delegate channel, which will shutdown old registry
-                                    subscriber.onCompleted();
-                                }
-                            })
-                            .subscribe();
-                } catch (Exception e) {
-                    subscriber.onError(e);
-                }
-            }
-        });
+                        final ClientInterestChannel newChannel = channelFactory.call(registry);
+                        newChannel.appendInterest(activeInterests).subscribe();
+                        return Observable.just(newChannel);
+                    }
+                });
     }
 
     @Override
     protected void _close() {
-        super._close();
-        channelFactory.shutdown();
         interestTracker.close();
+        super._close();
+    }
+
+    @Override
+    public Source getSource() {
+        return currentDelegateChannel().getSource();
     }
 
     /**

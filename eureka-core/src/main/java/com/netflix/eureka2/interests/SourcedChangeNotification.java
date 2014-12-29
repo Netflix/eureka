@@ -14,6 +14,10 @@ public class SourcedChangeNotification<T> extends ChangeNotification<T> implemen
         this.source = source;
     }
 
+    public ChangeNotification<T> toBaseNotification() {
+        return new ChangeNotification<>(getKind(), getData());
+    }
+
     @Override
     public Source getSource() {
         return source;

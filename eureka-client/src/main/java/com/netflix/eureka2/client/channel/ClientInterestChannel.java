@@ -1,7 +1,8 @@
 package com.netflix.eureka2.client.channel;
 
-import com.netflix.eureka2.client.registry.EurekaClientRegistry;
 import com.netflix.eureka2.interests.Interest;
+import com.netflix.eureka2.registry.Sourced;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.channel.InterestChannel;
 import rx.Observable;
@@ -20,12 +21,12 @@ import rx.Observable;
  *
  * @author Nitesh Kant
  */
-public interface ClientInterestChannel extends InterestChannel {
+public interface ClientInterestChannel extends InterestChannel, Sourced {
 
     /**
      * Return a registry instance associated with this channel.
      */
-    EurekaClientRegistry<InstanceInfo> associatedRegistry();
+    SourcedEurekaRegistry<InstanceInfo> associatedRegistry();
 
     /**
      * Appends the passed interest to the existing {@link Interest}.
