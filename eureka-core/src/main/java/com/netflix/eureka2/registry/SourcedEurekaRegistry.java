@@ -28,13 +28,22 @@ import java.util.Set;
  *
  * @author Tomasz Bak
  */
-public interface SourcedEurekaRegistry<T> extends EurekaRegistry<T, MultiSourcedDataHolder.Status> {
+public interface SourcedEurekaRegistry<T> extends EurekaRegistry<T> {
 
-    Observable<MultiSourcedDataHolder.Status> register(T instanceInfo, Source source);
+    /**
+     * @return a boolean to denote whether the register added a new entry
+     */
+    Observable<Boolean> register(T instanceInfo, Source source);
 
-    Observable<MultiSourcedDataHolder.Status> unregister(T instanceInfo, Source source);
+    /**
+     * @return a boolean to denote whether the update added a new entry
+     */
+    Observable<Boolean> unregister(T instanceInfo, Source source);
 
-    Observable<MultiSourcedDataHolder.Status> update(T updatedInfo, Set<Delta<?>> deltas, Source source);
+    /**
+     * @return a boolean to denote whether the unregister removed an existing entry
+     */
+    Observable<Boolean> update(T updatedInfo, Set<Delta<?>> deltas, Source source);
 
     Observable<T> forSnapshot(Interest<T> interest, Source source);
 

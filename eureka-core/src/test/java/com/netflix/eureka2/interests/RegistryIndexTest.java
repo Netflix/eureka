@@ -40,7 +40,7 @@ public class RegistryIndexTest {
     private InstanceInfo zuulServer;
     private InstanceInfo cliServer;
 
-    private EurekaRegistry<InstanceInfo, ?> registry;
+    private EurekaRegistry<InstanceInfo> registry;
 
     @Rule
     public final ExternalResource registryResource = new ExternalResource() {

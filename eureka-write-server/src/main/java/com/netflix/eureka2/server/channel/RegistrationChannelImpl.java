@@ -114,8 +114,8 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
         final InstanceInfo tempNewInfo = new InstanceInfo.Builder()
                 .withInstanceInfo(instanceInfo).withVersion(tempNewVersion).build();
 
-        Observable<Status> registerResult = registry.register(tempNewInfo);
-        registerResult.subscribe(new Subscriber<Status>() {
+        Observable<Boolean> registerResult = registry.register(tempNewInfo);
+        registerResult.subscribe(new Subscriber<Boolean>() {
             @Override
             public void onCompleted() {
                 currentVersion = tempNewVersion;
@@ -131,7 +131,7 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
             }
 
             @Override
-            public void onNext(Status status) {
+            public void onNext(Boolean status) {
                 // No op
             }
         }); // Callers aren't required to subscribe, so it is eagerly subscribed.
@@ -155,8 +155,8 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
                 logger.debug("Set of InstanceInfo modified fields: {}", deltas);
 
                 // TODO: shall we chain ack observable with update?
-                Observable<Status> updateResult = registry.update(tempNewInfo, deltas);
-                updateResult.subscribe(new Subscriber<Status>() {
+                Observable<Boolean> updateResult = registry.update(tempNewInfo, deltas);
+                updateResult.subscribe(new Subscriber<Boolean>() {
                     @Override
                     public void onCompleted() {
                         currentVersion = tempNewVersion;
@@ -170,7 +170,7 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
                     }
 
                     @Override
-                    public void onNext(Status status) {
+                    public void onNext(Boolean status) {
                         // No op
                     }
                 });
@@ -195,8 +195,8 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
             return Observable.error(new IllegalStateException("Unrecognized channel state: " + currentState));
         }
 
-        Observable<Status> updateResult = registry.unregister(currentInfo);
-        updateResult.subscribe(new Subscriber<Status>() {
+        Observable<Boolean> updateResult = registry.unregister(currentInfo);
+        updateResult.subscribe(new Subscriber<Boolean>() {
             @Override
             public void onCompleted() {
                 currentInfo = null;
@@ -209,7 +209,7 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
             }
 
             @Override
-            public void onNext(Status status) {
+            public void onNext(Boolean status) {
                 // No op
             }
         });

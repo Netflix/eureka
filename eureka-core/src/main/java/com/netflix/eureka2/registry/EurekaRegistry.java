@@ -28,13 +28,22 @@ import java.util.Set;
  *
  * @author Nitesh Kant
  */
-public interface EurekaRegistry<T, R> {
+public interface EurekaRegistry<T> {
 
-    Observable<R> register(T instanceInfo);
+    /**
+     * @return a boolean to denote whether the register action successfully added a new entry
+     */
+    Observable<Boolean> register(T instanceInfo);
 
-    Observable<R> unregister(T instanceInfo);
+    /**
+     * @return a boolean to denote whether the update action successfully added a new entry
+     */
+    Observable<Boolean> unregister(T instanceInfo);
 
-    Observable<R> update(T updatedInfo, Set<Delta<?>> deltas);
+    /**
+     * @return a boolean to denote whether the unregister action successfully removed an existing entry
+     */
+    Observable<Boolean> update(T updatedInfo, Set<Delta<?>> deltas);
 
     int size();
 

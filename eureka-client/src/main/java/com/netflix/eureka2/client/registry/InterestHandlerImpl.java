@@ -14,7 +14,10 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action0;
+import rx.functions.Action1;
 import rx.functions.Func1;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author David Liu
@@ -23,12 +26,14 @@ public class InterestHandlerImpl implements InterestHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(InterestChannelImpl.class);
 
-    private SourcedEurekaRegistry<InstanceInfo> registry;
+    private final AtomicBoolean isShutdown;
+    private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final ClientInterestChannel interestChannel;
 
     public InterestHandlerImpl(SourcedEurekaRegistry<InstanceInfo> registry, ClientChannelFactory channelFactory) {
         this.registry = registry;
         this.interestChannel = channelFactory.newInterestChannel();
+        this.isShutdown = new AtomicBoolean(false);
     }
 
     /**
@@ -54,9 +59,19 @@ public class InterestHandlerImpl implements InterestHandler {
 
     @Override
     public Observable<ChangeNotification<InstanceInfo>> forInterest(final Interest<InstanceInfo> interest) {
-        Observable reply = interestChannel.appendInterest(interest)
+        final Observable reply = interestChannel.appendInterest(interest)
                 .cast(ChangeNotification.class)
                 .mergeWith(forInterestFromRegistry(interest))
+                .onErrorResumeNext(new Func1<Throwable, Observable<? extends ChangeNotification>>() {
+                    @Override
+                    public Observable<? extends ChangeNotification> call(Throwable throwable) {
+                        if (isShutdown.get()) {
+                            return Observable.empty();
+                        } else {
+                            return Observable.error(throwable);
+                        }
+                    }
+                })
                 .doOnUnsubscribe(new Action0() {
                     @Override
                     public void call() {
@@ -82,6 +97,7 @@ public class InterestHandlerImpl implements InterestHandler {
 
     @Override
     public void shutdown() {
+        isShutdown.set(true);
         interestChannel.close();
         registry.shutdown();
     }

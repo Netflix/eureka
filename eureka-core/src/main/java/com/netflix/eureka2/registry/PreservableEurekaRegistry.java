@@ -61,19 +61,19 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
     /* Visible for testing */ volatile int expectedRegistrySize;
     /* Visible for testing */ final AtomicBoolean selfPreservation = new AtomicBoolean();
 
-    private final Action1<Status> increaseExpectedSize = new Action1<Status>() {
+    private final Action1<Boolean> increaseExpectedSize = new Action1<Boolean>() {
         @Override
-        public void call(Status status) {
-            if (status == Status.AddedFirst) {
+        public void call(Boolean status) {
+            if (status) {
                 expectedRegistrySize = Math.max(expectedRegistrySize, eurekaRegistry.size());
                 resumeEviction();
             }
         }
     };
-    private final Action1<Status> decreaseExpectedSize = new Action1<Status>() {
+    private final Action1<Boolean> decreaseExpectedSize = new Action1<Boolean>() {
         @Override
-        public void call(Status status) {
-            if (status == Status.RemovedLast) {
+        public void call(Boolean status) {
+            if (status) {
                 expectedRegistrySize = Math.max(0, expectedRegistrySize - 1);
                 resumeEviction();
             }
@@ -107,40 +107,40 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
     }
 
     @Override
-    public Observable<Status> register(final InstanceInfo instanceInfo) {
-        Observable<Status> result = eurekaRegistry.register(instanceInfo);
+    public Observable<Boolean> register(final InstanceInfo instanceInfo) {
+        Observable<Boolean> result = eurekaRegistry.register(instanceInfo);
         result.subscribe(increaseExpectedSize);
         return result;
     }
 
     @Override
-    public Observable<Status> register(final InstanceInfo instanceInfo, final Source source) {
-        Observable<Status> result = eurekaRegistry.register(instanceInfo, source);
+    public Observable<Boolean> register(final InstanceInfo instanceInfo, final Source source) {
+        Observable<Boolean> result = eurekaRegistry.register(instanceInfo, source);
         result.subscribe(increaseExpectedSize);
         return result;
     }
 
     @Override
-    public Observable<Status> unregister(InstanceInfo instanceInfo) {
-        Observable<Status> result = eurekaRegistry.unregister(instanceInfo);
+    public Observable<Boolean> unregister(InstanceInfo instanceInfo) {
+        Observable<Boolean> result = eurekaRegistry.unregister(instanceInfo);
         result.subscribe(decreaseExpectedSize);
         return result;
     }
 
     @Override
-    public Observable<Status> unregister(InstanceInfo instanceInfo, Source source) {
-        Observable<Status> result = eurekaRegistry.unregister(instanceInfo, source);
+    public Observable<Boolean> unregister(InstanceInfo instanceInfo, Source source) {
+        Observable<Boolean> result = eurekaRegistry.unregister(instanceInfo, source);
         result.subscribe(decreaseExpectedSize);
         return result;
     }
 
     @Override
-    public Observable<Status> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
+    public Observable<Boolean> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
         return eurekaRegistry.update(updatedInfo, deltas);
     }
 
     @Override
-    public Observable<Status> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas, Source source) {
+    public Observable<Boolean> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas, Source source) {
         return eurekaRegistry.update(updatedInfo, deltas, source);
     }
 

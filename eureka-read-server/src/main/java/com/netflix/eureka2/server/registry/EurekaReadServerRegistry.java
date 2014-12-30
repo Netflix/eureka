@@ -60,32 +60,32 @@ public class EurekaReadServerRegistry implements SourcedEurekaRegistry<InstanceI
     }
 
     @Override
-    public Observable<MultiSourcedDataHolder.Status> register(InstanceInfo instanceInfo) {
+    public Observable<Boolean> register(InstanceInfo instanceInfo) {
         throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
     }
 
     @Override
-    public Observable<MultiSourcedDataHolder.Status> register(InstanceInfo instanceInfo, Source source) {
+    public Observable<Boolean> register(InstanceInfo instanceInfo, Source source) {
         throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
     }
 
     @Override
-    public Observable<MultiSourcedDataHolder.Status> unregister(InstanceInfo instanceInfo) {
+    public Observable<Boolean> unregister(InstanceInfo instanceInfo) {
         throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
     }
 
     @Override
-    public Observable<MultiSourcedDataHolder.Status> unregister(InstanceInfo instanceInfo, Source source) {
+    public Observable<Boolean> unregister(InstanceInfo instanceInfo, Source source) {
         throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
     }
 
     @Override
-    public Observable<MultiSourcedDataHolder.Status> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
+    public Observable<Boolean> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
         throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
     }
 
     @Override
-    public Observable<MultiSourcedDataHolder.Status> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas, Source source) {
+    public Observable<Boolean> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas, Source source) {
         throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
     }
 

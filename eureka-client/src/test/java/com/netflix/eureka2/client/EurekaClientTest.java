@@ -19,6 +19,7 @@ import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.TransportClient;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
@@ -40,6 +41,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 /**
@@ -81,10 +83,10 @@ public class EurekaClientTest {
             allRegistry = new ArrayList<>(discoveryRegistry);
             allRegistry.addAll(zuulRegistry);
 
-            registry = new PreservableEurekaRegistry(
+            registry = spy(new PreservableEurekaRegistry(
                     new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics()),
                     new BasicEurekaRegistryConfig(),
-                    EurekaRegistryMetricFactory.registryMetrics());
+                    EurekaRegistryMetricFactory.registryMetrics()));
             for (ChangeNotification<InstanceInfo> notification : allRegistry) {
                 registry.register(notification.getData()).toBlocking().firstOrDefault(null);
             }
@@ -109,17 +111,6 @@ public class EurekaClientTest {
 
         @Override
         protected void after() {
-
-            // Sleep for a bit before closing the client. We need to do this as the appendInterest on the channel is
-            // async to the forInterest from the registry, so it's possible that we arrive here (i.e. with all 4 change
-            // notifications expected) before the appendInterest is called on the InterestChannelImpl. If we close the
-            // client too early then the stream will onError instead as we will be calling appendInterest on a closed
-            // channel. We don't want this for the test as we want to be more deterministic, but in real usage this
-            // is acceptable.
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {}
-
             client.close();
         }
     };
@@ -161,16 +152,48 @@ public class EurekaClientTest {
 
         assertThat(onNextLatch.await(1, TimeUnit.MINUTES), equalTo(true));
 
-        // Sleep for a bit before closing the client. We need to do this as the appendInterest on the channel is
-        // async to the forInterest from the registry, so it's possible that we arrive here (i.e. with all 4 change
-        // notifications expected) before the appendInterest is called on the InterestChannelImpl. If we close the
-        // client too early then the stream will onError instead as we will be calling appendInterest on a closed
-        // channel. We don't want this for the test as we want to be more deterministic, but in real usage this
-        // is acceptable.
-        Thread.sleep(500);
-
         client.close();
         assertThat(onCompletedLatch.await(1, TimeUnit.MINUTES), equalTo(true));
+        assertThat(interestSubscription.isUnsubscribed(), equalTo(true));
+        assertThat(output, containsInAnyOrder(allRegistry.toArray()));
+    }
+
+    @Ignore  // FIXME
+    @Test
+    public void testForInterestHandleRetryProperly() throws Exception {
+        final List<ChangeNotification<InstanceInfo>> output = new ArrayList<>();
+
+        when(registry.forInterest(interestAll))
+                .thenReturn(Observable.<ChangeNotification<InstanceInfo>>error(new Exception("error msg")))
+                .thenReturn(registry.forInterest(interestAll));
+
+        final CountDownLatch onNextLatch = new CountDownLatch(4);
+        final CountDownLatch onCompletedLatch = new CountDownLatch(1);
+        final CountDownLatch onErrorLatch = new CountDownLatch(1);
+        Subscription interestSubscription = client.forInterest(interestAll)
+                .retry(1)
+                .subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
+                    @Override
+                    public void onCompleted() {
+                        onCompletedLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        onErrorLatch.countDown();
+                    }
+
+                    @Override
+                    public void onNext(ChangeNotification<InstanceInfo> notification) {
+                        output.add(notification);
+                        onNextLatch.countDown();
+                    }
+                });
+
+        assertThat(onNextLatch.await(1, TimeUnit.MINUTES), equalTo(true));
+        assertThat(onCompletedLatch.await(1, TimeUnit.MINUTES), equalTo(true));
+        assertThat(onErrorLatch.await(1, TimeUnit.MINUTES), equalTo(true));
+
         assertThat(interestSubscription.isUnsubscribed(), equalTo(true));
         assertThat(output, containsInAnyOrder(allRegistry.toArray()));
     }

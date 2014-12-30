@@ -113,7 +113,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         // Now update the record
         InstanceInfo infoUpdate = new InstanceInfo.Builder().withInstanceInfo(APP_INFO).withApp("myNewName").build();
 
-        when(registry.update(any(InstanceInfo.class), any(Set.class), any(Source.class))).thenReturn(Observable.just(MultiSourcedDataHolder.Status.AddedChange));
+        when(registry.update(any(InstanceInfo.class), any(Set.class), any(Source.class))).thenReturn(Observable.just(false));
         incomingSubject.onNext(new UpdateCopy(infoUpdate));
 
         // Capture update on the registry
@@ -134,7 +134,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         handshakeAndRegister(APP_INFO);
 
         // Now remove the record
-        when(registry.unregister(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.just(MultiSourcedDataHolder.Status.RemovedLast));
+        when(registry.unregister(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.just(true));
         incomingSubject.onNext(new UnregisterCopy(APP_INFO.getId()));
 
         // Capture remove on the registry and verify the arguments
@@ -181,7 +181,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
     protected void handshakeAndRegister(InstanceInfo info) {
         incomingSubject.onNext(HELLO);
 
-        when(registry.register(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.just(MultiSourcedDataHolder.Status.AddedChange));
+        when(registry.register(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.just(false));
         incomingSubject.onNext(new RegisterCopy(info));
     }
 

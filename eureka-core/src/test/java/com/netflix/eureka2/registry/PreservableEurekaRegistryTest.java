@@ -92,10 +92,10 @@ public class PreservableEurekaRegistryTest {
 
     @Test
     public void testRemovesEvictedItemsWhenNotInSelfPreservationMode() throws Exception {
-        when(baseRegistry.register(DISCOVERY)).thenReturn(Observable.just(MultiSourcedDataHolder.Status.AddedFirst));
+        when(baseRegistry.register(DISCOVERY)).thenReturn(Observable.just(true));
         preservableRegistry.register(DISCOVERY);
 
-        when(baseRegistry.unregister(DISCOVERY, REMOTE_SOURCE)).thenReturn(Observable.just(Status.RemovedLast));
+        when(baseRegistry.unregister(DISCOVERY, REMOTE_SOURCE)).thenReturn(Observable.just(true));
         // Now evict item, and check that PreservableEurekaRegistry asks for more
         evict(DISCOVERY, REMOTE_SOURCE, 1);
         verify(baseRegistry, times(1)).unregister(DISCOVERY, REMOTE_SOURCE);
@@ -105,10 +105,10 @@ public class PreservableEurekaRegistryTest {
 
     @Test
     public void testDoesNotRemoveEvictedItemsWhenInSelfPreservationMode() throws Exception {
-        when(baseRegistry.register(DISCOVERY)).thenReturn(Observable.just(MultiSourcedDataHolder.Status.AddedFirst));
+        when(baseRegistry.register(DISCOVERY)).thenReturn(Observable.just(true));
         preservableRegistry.register(DISCOVERY);
 
-        when(baseRegistry.unregister(DISCOVERY, REMOTE_SOURCE)).thenReturn(Observable.just(Status.RemovedLast));
+        when(baseRegistry.unregister(DISCOVERY, REMOTE_SOURCE)).thenReturn(Observable.just(true));
         // Now evict item, and check that nothing is requested
         evict(DISCOVERY, REMOTE_SOURCE, 0);
         verify(baseRegistry, times(0)).unregister(DISCOVERY, REMOTE_SOURCE);
@@ -131,44 +131,44 @@ public class PreservableEurekaRegistryTest {
     @Test
     public void testBehavesAsRegularRegistryForNonEvictedItems() throws Exception {
         // Register
-        when(baseRegistry.register(DISCOVERY)).thenReturn(Observable.just(MultiSourcedDataHolder.Status.AddedFirst));
+        when(baseRegistry.register(DISCOVERY)).thenReturn(Observable.just(true));
         when(baseRegistry.size()).thenReturn(1);
-        Observable<Status> status = preservableRegistry.register(DISCOVERY);
-        assertStatus(status, MultiSourcedDataHolder.Status.AddedFirst);
+        Observable<Boolean> status = preservableRegistry.register(DISCOVERY);
+        assertStatus(status, true);
 
         assertThat(preservableRegistry.size(), is(equalTo(1)));
         assertThat(preservableRegistry.expectedRegistrySize, is(equalTo(1)));
 
-        when(baseRegistry.register(DISCOVERY, REMOTE_SOURCE)).thenReturn(Observable.just(MultiSourcedDataHolder.Status.AddedChange));
+        when(baseRegistry.register(DISCOVERY, REMOTE_SOURCE)).thenReturn(Observable.just(false));
         status = preservableRegistry.register(DISCOVERY, REMOTE_SOURCE);
-        assertStatus(status, MultiSourcedDataHolder.Status.AddedChange);
+        assertStatus(status, false);
 
         assertThat(preservableRegistry.expectedRegistrySize, is(equalTo(1)));
 
         // Update
-        when(baseRegistry.update(DISCOVERY, DISCOVERY_DELTAS)).thenReturn(Observable.just(MultiSourcedDataHolder.Status.AddedChange));
+        when(baseRegistry.update(DISCOVERY, DISCOVERY_DELTAS)).thenReturn(Observable.just(false));
         status = preservableRegistry.update(DISCOVERY, DISCOVERY_DELTAS);
-        assertStatus(status, MultiSourcedDataHolder.Status.AddedChange);
+        assertStatus(status, false);
 
         assertThat(preservableRegistry.expectedRegistrySize, is(equalTo(1)));
 
-        when(baseRegistry.update(DISCOVERY, DISCOVERY_DELTAS, REMOTE_SOURCE)).thenReturn(Observable.just(MultiSourcedDataHolder.Status.AddedChange));
+        when(baseRegistry.update(DISCOVERY, DISCOVERY_DELTAS, REMOTE_SOURCE)).thenReturn(Observable.just(false));
         status = preservableRegistry.update(DISCOVERY, DISCOVERY_DELTAS, REMOTE_SOURCE);
-        assertStatus(status, MultiSourcedDataHolder.Status.AddedChange);
+        assertStatus(status, false);
 
         assertThat(preservableRegistry.expectedRegistrySize, is(equalTo(1)));
 
         // Unregister
-        when(baseRegistry.unregister(DISCOVERY)).thenReturn(Observable.just(MultiSourcedDataHolder.Status.RemovedFragment));
+        when(baseRegistry.unregister(DISCOVERY)).thenReturn(Observable.just(false));
         status = preservableRegistry.unregister(DISCOVERY);
-        assertStatus(status, MultiSourcedDataHolder.Status.RemovedFragment);
+        assertStatus(status, false);
 
         assertThat(preservableRegistry.expectedRegistrySize, is(equalTo(1)));
 
-        when(baseRegistry.unregister(DISCOVERY, REMOTE_SOURCE)).thenReturn(Observable.just(MultiSourcedDataHolder.Status.RemovedLast));
+        when(baseRegistry.unregister(DISCOVERY, REMOTE_SOURCE)).thenReturn(Observable.just(true));
         when(baseRegistry.size()).thenReturn(0);
         status = preservableRegistry.unregister(DISCOVERY, REMOTE_SOURCE);
-        assertStatus(status, MultiSourcedDataHolder.Status.RemovedLast);
+        assertStatus(status, true);
 
         assertThat(preservableRegistry.expectedRegistrySize, is(equalTo(0)));
     }
@@ -196,8 +196,8 @@ public class PreservableEurekaRegistryTest {
         verify(baseRegistry, times(1)).shutdown();
     }
 
-    private static void assertStatus(Observable<Status> actual, Status expected) {
-        Status value = actual.timeout(1, TimeUnit.SECONDS).toBlocking().firstOrDefault(null);
+    private static void assertStatus(Observable<Boolean> actual, Boolean expected) {
+        Boolean value = actual.timeout(1, TimeUnit.SECONDS).toBlocking().firstOrDefault(null);
         assertThat(value, is(equalTo(expected)));
     }
 }

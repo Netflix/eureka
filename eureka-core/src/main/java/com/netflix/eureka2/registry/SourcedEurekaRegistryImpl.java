@@ -17,10 +17,8 @@
 package com.netflix.eureka2.registry;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -49,6 +47,11 @@ import rx.schedulers.Schedulers;
 import rx.subjects.ReplaySubject;
 
 /**
+ * An implementation of {@link com.netflix.eureka2.registry.SourcedEurekaRegistry} that uses a
+ * {@link com.netflix.eureka2.registry.MultiSourcedDataHolder} to store multiple copies of entries when the copies
+ * are from independent sources. Note that a true register/update/unregister result is only returned when the
+ * entries holder is added/removed.
+ *
  * @author David Liu
  */
 public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<InstanceInfo> {
@@ -110,12 +113,12 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     // -------------------------------------------------
 
     @Override
-    public Observable<MultiSourcedDataHolder.Status> register(final InstanceInfo instanceInfo) {
+    public Observable<Boolean> register(final InstanceInfo instanceInfo) {
         return register(instanceInfo, Source.localSource());
     }
 
     @Override
-    public Observable<MultiSourcedDataHolder.Status> register(final InstanceInfo instanceInfo, final Source source) {
+    public Observable<Boolean> register(final InstanceInfo instanceInfo, final Source source) {
         MultiSourcedDataHolder<InstanceInfo> holder = new NotifyingInstanceInfoHolder(
                 internalStoreAccessor, notificationSubject, invoker, instanceInfo.getId());
 
@@ -131,15 +134,15 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     }
 
     @Override
-    public Observable<MultiSourcedDataHolder.Status> unregister(final InstanceInfo instanceInfo) {
+    public Observable<Boolean> unregister(final InstanceInfo instanceInfo) {
         return unregister(instanceInfo, Source.localSource());
     }
 
     @Override
-    public Observable<MultiSourcedDataHolder.Status> unregister(final InstanceInfo instanceInfo, final Source source) {
+    public Observable<Boolean> unregister(final InstanceInfo instanceInfo, final Source source) {
         final MultiSourcedDataHolder<InstanceInfo> currentHolder = internalStore.get(instanceInfo.getId());
         if (currentHolder == null) {
-            return Observable.just(MultiSourcedDataHolder.Status.RemoveExpired);
+            return Observable.just(false);
         }
 
         Observable<MultiSourcedDataHolder.Status> result = currentHolder.remove(source, instanceInfo).doOnNext(new Action1<MultiSourcedDataHolder.Status>() {
@@ -154,12 +157,12 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     }
 
     @Override
-    public Observable<MultiSourcedDataHolder.Status> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
+    public Observable<Boolean> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
         return update(updatedInfo, deltas, Source.localSource());
     }
 
     @Override
-    public Observable<MultiSourcedDataHolder.Status> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas, final Source source) {
+    public Observable<Boolean> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas, final Source source) {
         MultiSourcedDataHolder<InstanceInfo> holder = new NotifyingInstanceInfoHolder(
                 internalStoreAccessor, notificationSubject, invoker, updatedInfo.getId());
 
@@ -177,8 +180,8 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     /**
      * TODO: do we have to eagerly subscribe? This code is inefficient.
      */
-    private static Observable<MultiSourcedDataHolder.Status> subscribeToUpdateResult(Observable<MultiSourcedDataHolder.Status> status) {
-        final ReplaySubject<MultiSourcedDataHolder.Status> result = ReplaySubject.create();
+    private static Observable<Boolean> subscribeToUpdateResult(Observable<MultiSourcedDataHolder.Status> status) {
+        final ReplaySubject<Boolean> result = ReplaySubject.create();
         status.subscribe(new Subscriber<MultiSourcedDataHolder.Status>() {
             @Override
             public void onCompleted() {
@@ -195,7 +198,12 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
             @Override
             public void onNext(MultiSourcedDataHolder.Status status) {
                 logger.debug("Registry updated completed with status {}", status);
-                result.onNext(status);
+                if (status.equals(MultiSourcedDataHolder.Status.AddedFirst)
+                        || status.equals(MultiSourcedDataHolder.Status.RemovedLast)) {
+                    result.onNext(true);
+                } else {
+                    result.onNext(false);
+                }
             }
         });
         return result;
