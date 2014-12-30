@@ -21,9 +21,9 @@ import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.client.resolver.WriteServerResolverSet;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.registry.InstanceInfo.Builder;
-import com.netflix.eureka2.registry.InstanceInfo.Status;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo.Builder;
+import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import com.netflix.eureka2.registry.datacenter.BasicDataCenterInfo;
 import rx.Subscriber;
 

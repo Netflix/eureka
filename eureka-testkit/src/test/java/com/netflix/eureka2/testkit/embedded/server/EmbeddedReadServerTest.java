@@ -7,7 +7,7 @@ import com.netflix.eureka2.client.EurekaClientBuilder;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.junit.resources.ReadServerResource;
 import com.netflix.eureka2.testkit.junit.resources.WriteServerResource;

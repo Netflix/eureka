@@ -1,4 +1,4 @@
-package com.netflix.eureka2.registry;
+package com.netflix.eureka2.registry.instance;
 
 import java.util.HashSet;
 

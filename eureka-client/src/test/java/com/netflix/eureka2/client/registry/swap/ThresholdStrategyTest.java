@@ -19,7 +19,7 @@ package com.netflix.eureka2.client.registry.swap;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.client.registry.EurekaClientRegistry;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.junit.Test;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;

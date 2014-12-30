@@ -21,7 +21,7 @@ import javax.inject.Singleton;
 import java.util.Properties;
 import java.util.ServiceLoader;
 
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 

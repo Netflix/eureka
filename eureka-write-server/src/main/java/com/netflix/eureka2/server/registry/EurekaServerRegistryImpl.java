@@ -31,8 +31,8 @@ import com.netflix.eureka2.interests.InstanceInfoInitStateHolder;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.interests.NotificationsSubject;
-import com.netflix.eureka2.registry.Delta;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.Delta;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.metric.EurekaServerRegistryMetrics;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
 import com.netflix.eureka2.server.registry.NotifyingInstanceInfoHolder.NotificationTaskInvoker;
@@ -252,7 +252,7 @@ public class EurekaServerRegistryImpl implements EurekaServerRegistry<InstanceIn
     public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest) {
         try {
             // TODO: this method can be run concurrently from different channels, unless we run everything on single server event loop.
-            // It is possible that the same instance info will be both in snapshot and paused notification queue.
+            // It is possible that the same instanceinfo will be both in snapshot and paused notification queue.
             notificationSubject.pause(); // Pause notifications till we get a snapshot of current registry (registry.values())
             if (interest instanceof MultipleInterests) {
                 return indexRegistry.forCompositeInterest((MultipleInterests) interest, this);

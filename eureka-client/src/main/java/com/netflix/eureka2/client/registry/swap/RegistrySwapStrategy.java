@@ -17,7 +17,7 @@
 package com.netflix.eureka2.client.registry.swap;
 
 import com.netflix.eureka2.client.registry.EurekaClientRegistry;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 
 /**
  * @author Tomasz Bak

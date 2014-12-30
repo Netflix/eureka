@@ -16,7 +16,7 @@
 
 package com.netflix.eureka2.registry;
 
-import com.netflix.eureka2.registry.NetworkAddress.ProtocolType;
+import com.netflix.eureka2.registry.instance.NetworkAddress;
 import com.netflix.eureka2.utils.SystemUtil;
 
 import java.util.ArrayList;
@@ -25,7 +25,7 @@ import java.util.List;
 
 /**
  * This class provides simple query DLS to filter a collection of
- * {@link NetworkAddress} objects.
+ * {@link com.netflix.eureka2.registry.instance.NetworkAddress} objects.
  *
  * @author Tomasz Bak
  */
@@ -43,7 +43,7 @@ public final class AddressSelector extends DataSelector<NetworkAddress, AddressS
         return this;
     }
 
-    public AddressSelector protocolType(ProtocolType... protocolTypes) {
+    public AddressSelector protocolType(NetworkAddress.ProtocolType... protocolTypes) {
         current.add(new ProtocolTypeCriteria(protocolTypes));
         return this;
     }
@@ -97,13 +97,13 @@ public final class AddressSelector extends DataSelector<NetworkAddress, AddressS
         }
     }
 
-    static class ProtocolTypeCriteria extends Criteria<NetworkAddress, ProtocolType> {
-        ProtocolTypeCriteria(ProtocolType... protocolTypes) {
+    static class ProtocolTypeCriteria extends Criteria<NetworkAddress, NetworkAddress.ProtocolType> {
+        ProtocolTypeCriteria(NetworkAddress.ProtocolType... protocolTypes) {
             super(protocolTypes);
         }
 
         @Override
-        protected boolean matches(ProtocolType value, NetworkAddress endpoint) {
+        protected boolean matches(NetworkAddress.ProtocolType value, NetworkAddress endpoint) {
             return endpoint.getProtocolType() == value;
         }
     }

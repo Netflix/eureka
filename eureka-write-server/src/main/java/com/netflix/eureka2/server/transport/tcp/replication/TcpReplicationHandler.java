@@ -17,7 +17,7 @@
 package com.netflix.eureka2.server.transport.tcp.replication;
 
 import com.google.inject.Inject;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.ServerChannelFactory;
 import com.netflix.eureka2.server.channel.ServerChannelFactoryImpl;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;

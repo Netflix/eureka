@@ -1,6 +1,6 @@
 package com.netflix.eureka2.interests;
 
-import com.netflix.eureka2.registry.Delta;
+import com.netflix.eureka2.registry.instance.Delta;
 
 import java.util.Set;
 

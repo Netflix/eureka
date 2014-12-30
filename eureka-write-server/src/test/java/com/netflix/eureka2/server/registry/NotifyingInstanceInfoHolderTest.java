@@ -2,7 +2,7 @@ package com.netflix.eureka2.server.registry;
 
 import com.netflix.eureka2.interests.NotificationsSubject;
 import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.registry.NotifyingInstanceInfoHolder.NotificationTaskInvoker;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Rule;

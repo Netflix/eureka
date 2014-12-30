@@ -23,9 +23,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.registry.Delta;
-import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;
+import com.netflix.eureka2.registry.instance.Delta;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
 import com.netflix.eureka2.server.registry.eviction.EvictionItem;
 import com.netflix.eureka2.server.registry.eviction.EvictionQueue;

@@ -16,11 +16,11 @@
 
 package com.netflix.eureka2.testkit.data.builder;
 
-import com.netflix.eureka2.registry.Delta;
-import com.netflix.eureka2.registry.Delta.Builder;
-import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.registry.InstanceInfo.Status;
-import com.netflix.eureka2.registry.InstanceInfoField;
+import com.netflix.eureka2.registry.instance.Delta;
+import com.netflix.eureka2.registry.instance.Delta.Builder;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
+import com.netflix.eureka2.registry.instance.InstanceInfoField;
 
 /**
  * @author Tomasz Bak
@@ -58,7 +58,7 @@ public enum SampleDelta {
 
     public abstract Builder builder();
 
-    public <T> com.netflix.eureka2.registry.Delta<T> build() {
+    public <T> com.netflix.eureka2.registry.instance.Delta<T> build() {
         return (Delta<T>) builder().build();
     }
 

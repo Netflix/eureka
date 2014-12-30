@@ -1,6 +1,6 @@
 package com.netflix.eureka2.interests;
 
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;

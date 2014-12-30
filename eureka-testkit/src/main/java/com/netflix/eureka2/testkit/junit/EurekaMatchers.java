@@ -2,7 +2,7 @@ package com.netflix.eureka2.testkit.junit;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.junit.matchers.ChangeNotificationMatcher;
 import com.netflix.eureka2.testkit.junit.matchers.InstanceInfoMatcher;
 import org.hamcrest.Matcher;

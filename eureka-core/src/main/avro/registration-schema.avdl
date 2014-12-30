@@ -12,14 +12,14 @@ protocol RegistrationProtocol {
     }
 
     record Register {
-        com.netflix.eureka2.registry.InstanceInfo instanceInfo;
+        com.netflix.eureka2.registry.instance.InstanceInfo instanceInfo;
     }
 
     record Unregister {
     }
 
     record Update {
-        com.netflix.eureka2.registry.InstanceInfo instanceInfo;
+        com.netflix.eureka2.registry.instance.InstanceInfo instanceInfo;
     }
 
     record RegistrationMessages {

@@ -16,17 +16,16 @@
 
 package com.netflix.eureka2.registry.datacenter;
 
-import com.netflix.eureka2.registry.DataCenterInfo;
-import com.netflix.eureka2.registry.NetworkAddress;
-import com.netflix.eureka2.registry.NetworkAddress.ProtocolType;
+import com.netflix.eureka2.registry.instance.NetworkAddress;
+import com.netflix.eureka2.registry.instance.NetworkAddress.ProtocolType;
 import com.netflix.eureka2.utils.SystemUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.netflix.eureka2.registry.NetworkAddress.NetworkAddressBuilder.aNetworkAddress;
-import static com.netflix.eureka2.registry.NetworkAddress.PUBLIC_ADDRESS;
+import static com.netflix.eureka2.registry.instance.NetworkAddress.NetworkAddressBuilder.aNetworkAddress;
+import static com.netflix.eureka2.registry.instance.NetworkAddress.PUBLIC_ADDRESS;
 
 /**
  * This class encapsulates basic server information. It can be created explicitly

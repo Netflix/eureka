@@ -1,7 +1,7 @@
 package com.netflix.eureka2.testkit.junit.matchers;
 
-import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.registry.InstanceInfo.Builder;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo.Builder;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.junit.EurekaMatchers;
 import org.junit.Test;
@@ -27,7 +27,7 @@ public class InstanceInfoMatcherTest {
     public void testMatchesIdenticalEntitiesOnly() throws Exception {
         InstanceInfo infoWithOtherVersion = new Builder().withInstanceInfo(INFO).withVersion(INFO.getVersion() + 1).build();
         boolean result = EurekaMatchers.identicalInstanceInfoAs(INFO).matches(infoWithOtherVersion);
-        assertThat("Two instance info objects with different version numbers should fail this test", result, is(false));
+        assertThat("Two instanceinfo objects with different version numbers should fail this test", result, is(false));
 
         result = EurekaMatchers.identicalInstanceInfoAs(INFO).matches(INFO);
         assertThat("Identical instanceInfo objects should pass this test", result, is(true));

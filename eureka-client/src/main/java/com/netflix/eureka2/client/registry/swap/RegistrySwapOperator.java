@@ -18,7 +18,7 @@ package com.netflix.eureka2.client.registry.swap;
 
 import com.netflix.eureka2.client.registry.EurekaClientRegistry;
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable.Operator;
 import rx.Subscriber;
 import rx.observers.Subscribers;

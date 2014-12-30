@@ -2,7 +2,7 @@ package com.netflix.eureka2.server.channel;
 
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 
 import static com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo.DiscoveryServer;
 import static com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo.ZuulServer;

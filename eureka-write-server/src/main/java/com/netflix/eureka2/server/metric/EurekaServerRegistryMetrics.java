@@ -19,7 +19,7 @@ package com.netflix.eureka2.server.metric;
 import java.util.concurrent.Callable;
 
 import com.netflix.eureka2.metric.EurekaMetrics;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.server.registry.PreservableEurekaRegistry;
 import com.netflix.eureka2.server.registry.Source.Origin;

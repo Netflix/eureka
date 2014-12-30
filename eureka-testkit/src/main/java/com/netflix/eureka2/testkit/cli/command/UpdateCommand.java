@@ -20,11 +20,11 @@ import com.netflix.eureka2.testkit.cli.Command;
 import com.netflix.eureka2.testkit.cli.Context;
 import com.netflix.eureka2.testkit.cli.Session;
 import com.netflix.eureka2.testkit.cli.Session.Status;
-import com.netflix.eureka2.registry.Delta;
-import com.netflix.eureka2.registry.Delta.Builder;
-import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.registry.InstanceInfoField;
-import com.netflix.eureka2.registry.InstanceInfoField.Name;
+import com.netflix.eureka2.registry.instance.Delta;
+import com.netflix.eureka2.registry.instance.Delta.Builder;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfoField;
+import com.netflix.eureka2.registry.instance.InstanceInfoField.Name;
 
 /**
  * @author Tomasz Bak
