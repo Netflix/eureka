@@ -26,7 +26,7 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import com.netflix.eureka2.registry.instance.NetworkAddress.ProtocolType;
-import com.netflix.eureka2.registry.dsl.ServiceSelector;
+import com.netflix.eureka2.registry.selector.ServiceSelector;
 import netflix.ocelli.LoadBalancer;
 import netflix.ocelli.LoadBalancerBuilder;
 import netflix.ocelli.MembershipEvent;

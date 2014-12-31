@@ -50,6 +50,7 @@ import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 import rx.subjects.ReplaySubject;
 
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.*;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -275,21 +276,15 @@ public class RetryableInterestChannelTest {
 
         if (notifications.size() == 2) {
             // the stuck item is the interest app, so we should never see the delete notification
-            assertThat(notifications.get(0).getData(), equalTo(INFO));
-            assertThat(notifications.get(0).getKind(), equalTo(ChangeNotification.Kind.Add));
-            assertThat(notifications.get(1).getData(), equalTo(updatedINFOb));
-            assertThat(notifications.get(1).getKind(), equalTo(ChangeNotification.Kind.Modify));
+            assertThat(notifications.get(0), addChangeNotificationOf(INFO));
+            assertThat(notifications.get(1), modifyChangeNotificationOf(updatedINFOb));
         } else if (notifications.size() == 4) {
             // the stuck item is not the interested app, so we should receive two extra notifications,
             // 1 delete for when the item is evicted, and 1 add for when it is added back via channel2
-            assertThat(notifications.get(0).getData(), equalTo(INFO));
-            assertThat(notifications.get(0).getKind(), equalTo(ChangeNotification.Kind.Add));
-            assertThat(notifications.get(1).getData(), equalTo(INFO));
-            assertThat(notifications.get(1).getKind(), equalTo(ChangeNotification.Kind.Delete));
-            assertThat(notifications.get(2).getData(), equalTo(INFO));
-            assertThat(notifications.get(2).getKind(), equalTo(ChangeNotification.Kind.Add));
-            assertThat(notifications.get(3).getData(), equalTo(updatedINFOb));
-            assertThat(notifications.get(3).getKind(), equalTo(ChangeNotification.Kind.Modify));
+            assertThat(notifications.get(0), addChangeNotificationOf(INFO));
+            assertThat(notifications.get(1), deleteChangeNotificationOf(INFO));
+            assertThat(notifications.get(2), addChangeNotificationOf(INFO));
+            assertThat(notifications.get(3), modifyChangeNotificationOf(updatedINFOb));
         } else {
             fail("Should never reach here");
         }

@@ -20,7 +20,7 @@ import java.net.InetSocketAddress;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.registry.dsl.ServiceSelector;
+import com.netflix.eureka2.registry.selector.ServiceSelector;
 import netflix.ocelli.Host;
 import netflix.ocelli.MembershipEvent;
 import rx.Observable;

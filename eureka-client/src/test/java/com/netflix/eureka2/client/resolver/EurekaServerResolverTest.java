@@ -13,7 +13,7 @@ import com.netflix.eureka2.interests.ModifyNotification;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Builder;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
-import com.netflix.eureka2.registry.dsl.ServiceSelector;
+import com.netflix.eureka2.registry.selector.ServiceSelector;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Before;
 import org.junit.Test;
