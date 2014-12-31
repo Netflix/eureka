@@ -21,6 +21,7 @@ import javax.inject.Singleton;
 import java.util.Deque;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -53,6 +54,7 @@ public class EvictionQueueImpl implements EvictionQueue {
 
     private final Worker worker;
 
+    private final AtomicInteger queueSize;
     private final Deque<EvictionItem> queue = new ConcurrentLinkedDeque<>();
     private final AtomicReference<Subscriber<EvictionItem>> evictionSubscriber = new AtomicReference<>();
 
@@ -63,6 +65,7 @@ public class EvictionQueueImpl implements EvictionQueue {
             long now = worker.now();
             while (evictionQuota.get() > 0 && !queue.isEmpty() && queue.peek().getExpiryTime() <= now) {
                 EvictionItem item = queue.poll();
+                queueSize.decrementAndGet();
                 evictionQuota.decrementAndGet();
 
                 evictionQueueMetrics.decrementEvictionQueueCounter();
@@ -98,6 +101,8 @@ public class EvictionQueueImpl implements EvictionQueue {
         this.evictionQueueMetrics = metricFactory.getEvictionQueueMetrics();
         this.worker = scheduler.createWorker();
 
+        this.queueSize = new AtomicInteger(0);
+
         evictionQueueMetrics.setEvictionQueueSizeMonitor(this);
     }
 
@@ -105,6 +110,7 @@ public class EvictionQueueImpl implements EvictionQueue {
     public void add(InstanceInfo instanceInfo, Source source) {
         evictionQueueMetrics.incrementEvictionQueueAddCounter();
         queue.addLast(new EvictionItem(instanceInfo, source, worker.now() + evictionTimeoutMs));
+        queueSize.incrementAndGet();
     }
 
     @Override
@@ -126,9 +132,15 @@ public class EvictionQueueImpl implements EvictionQueue {
         });
     }
 
+    // don't use queue.size() as .size() is not constant time for ConcurrentLinkedQueue
     @Override
     public int size() {
-        return queue.size();
+        int size = queueSize.get();
+        if (size < 0) {
+            logger.warn("Eviction queue size is less than 0: {}", size);
+            size = 0;
+        }
+        return size;
     }
 
     @Override
