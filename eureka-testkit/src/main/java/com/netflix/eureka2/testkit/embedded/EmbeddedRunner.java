@@ -16,7 +16,7 @@ public class EmbeddedRunner {
     private final EurekaDeployment deployment;
 
     public EmbeddedRunner(int writeSize, int readSize) {
-        this(writeSize, readSize, false, false, false, false, false);
+        this(writeSize, readSize, false, false, false, false, false, false);
     }
 
     public EmbeddedRunner(int writeSize,
@@ -25,7 +25,8 @@ public class EmbeddedRunner {
                           boolean withDashboard,
                           boolean withExt,
                           boolean withAdminUI,
-                          boolean withDeploymentView) {
+                          boolean withDeploymentView,
+                          boolean withEphemeralPorts) {
         deployment = new EurekaDeploymentBuilder()
                 .withWriteClusterSize(writeSize)
                 .withReadClusterSize(readSize)
@@ -34,6 +35,7 @@ public class EmbeddedRunner {
                 .withExtensions(withExt)
                 .withAdminUI(withAdminUI)
                 .withDeploymentView(withDeploymentView)
+                .withEphemeralPorts(withEphemeralPorts)
                 .build();
         logger.info("Eureka clusters are up");
     }
@@ -93,8 +95,12 @@ public class EmbeddedRunner {
         if (args.length >= 7) {
             witAdminUI = Boolean.valueOf(args[6]);
         }
+        boolean withEphemeralPorts = false;
+        if (args.length >= 8) {
+            withEphemeralPorts = Boolean.valueOf(args[7]);
+        }
 
-        new EmbeddedRunner(writeCount, readCount, withBridge, withDashboard, withExt, witAdminUI, withDeploymentView).waitTillShutdown();
+        new EmbeddedRunner(writeCount, readCount, withBridge, withDashboard, withExt, witAdminUI, withDeploymentView, withEphemeralPorts).waitTillShutdown();
     }
 
 }

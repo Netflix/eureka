@@ -13,6 +13,7 @@ import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
+import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer.WriteServerReport;
 import rx.Observable;
 
@@ -62,6 +63,11 @@ public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig,
         return injector.getInstance(TcpDiscoveryServer.class).serverPort();
     }
 
+    public int getReplicationPort() {
+        // Since server might be started on the ephemeral port, we need to get it directly from RxNetty server
+        return injector.getInstance(TcpReplicationServer.class).serverPort();
+    }
+
     public ServerResolver getRegistrationResolver() {
         return ServerResolvers.just("localhost", getRegistrationPort());
     }
@@ -73,9 +79,9 @@ public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig,
     @Override
     public WriteServerReport serverReport() {
         return new WriteServerReport(
-                config.getRegistrationPort(),
-                config.getDiscoveryPort(),
-                config.getReplicationPort(),
+                getRegistrationPort(),
+                getDiscoveryPort(),
+                getReplicationPort(),
                 formatAdminURI(),
                 getEurekaServerRegistry().size()
         );

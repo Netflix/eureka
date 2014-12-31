@@ -58,7 +58,7 @@ public class EmbeddedReadServer extends EmbeddedEurekaServer<EurekaServerConfig,
     @Override
     public ReadServerReport serverReport() {
         return new ReadServerReport(
-                config.getDiscoveryPort(),
+                getDiscoveryPort(),
                 formatAdminURI()
         );
     }

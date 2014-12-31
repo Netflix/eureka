@@ -30,7 +30,7 @@ public class EmbeddedWriteClusterTest {
 
     @Before
     public void setUp() throws Exception {
-        writeCluster = new EmbeddedWriteCluster(false, false) {
+        writeCluster = new EmbeddedWriteCluster(false, false, false) {
             @Override
             protected EmbeddedWriteServer newServer(WriteServerConfig config) {
                 return writeServer;

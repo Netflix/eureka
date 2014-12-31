@@ -86,6 +86,7 @@ public class EurekaDeploymentResource extends ExternalResource {
         eurekaDeployment = new EurekaDeploymentBuilder()
                 .withWriteClusterSize(writeClusterSize)
                 .withReadClusterSize(readClusterSize)
+                .withEphemeralPorts(true)
                 .build();
     }
 
