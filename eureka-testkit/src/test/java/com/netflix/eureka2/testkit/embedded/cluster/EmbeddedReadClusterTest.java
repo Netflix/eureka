@@ -25,7 +25,7 @@ public class EmbeddedReadClusterTest {
 
     @Before
     public void setUp() throws Exception {
-        readCluster = new EmbeddedReadCluster(registrationResolver, discoveryResolver, false, false) {
+        readCluster = new EmbeddedReadCluster(registrationResolver, discoveryResolver, false, false, true) {
             @Override
             protected EmbeddedReadServer newServer(EurekaServerConfig config) {
                 return readServer;

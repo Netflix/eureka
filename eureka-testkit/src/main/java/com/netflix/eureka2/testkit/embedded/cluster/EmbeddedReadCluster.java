@@ -31,23 +31,26 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
     private final ServerResolver discoveryResolver;
     private final boolean withExt;
     private final boolean withAdminUI;
+    private final boolean ephemeralPorts;
 
     private int nextAvailablePort = READ_SERVER_PORTS_FROM;
 
     public EmbeddedReadCluster(ServerResolver registrationResolver,
                                ServerResolver discoveryResolver,
                                boolean withExt,
-                               boolean withAdminUI) {
+                               boolean withAdminUI,
+                               boolean ephemeralPorts) {
         super(READ_SERVER_NAME);
         this.registrationResolver = registrationResolver;
         this.discoveryResolver = discoveryResolver;
         this.withExt = withExt;
         this.withAdminUI = withAdminUI;
+        this.ephemeralPorts = ephemeralPorts;
     }
 
     @Override
     public int scaleUpByOne() {
-        int discoveryPort = nextAvailablePort;
+        int discoveryPort = ephemeralPorts ? 0 : nextAvailablePort;
 
         EurekaServerConfig config = EurekaServerConfig.baseBuilder()
                 .withAppName(READ_SERVER_NAME)
@@ -63,6 +66,10 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
         newServer.start();
 
         nextAvailablePort += 10;
+
+        if(ephemeralPorts) {
+            discoveryPort = newServer.getDiscoveryPort();
+        }
 
         return scaleUpByOne(newServer, new Server("localhost", discoveryPort));
     }

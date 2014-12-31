@@ -54,11 +54,11 @@ public enum SampleNetworkAddress {
                                                             final String hostDomain,
                                                             final String label) {
         int parts = 3;
-        int mask = 1;
+        int mask = 0x00FFFFFF;
         for (int pos = 0; pos < networkAddressPrefix.length(); pos++) {
             if (networkAddressPrefix.charAt(pos) == '.') {
                 parts--;
-                mask *= 256;
+                mask >>= 8;
             }
         }
         if (parts <= 0 || networkAddressPrefix.isEmpty()) {

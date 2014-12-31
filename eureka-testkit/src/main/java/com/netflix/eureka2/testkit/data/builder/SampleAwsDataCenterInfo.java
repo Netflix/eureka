@@ -16,7 +16,10 @@
 
 package com.netflix.eureka2.testkit.data.builder;
 
+import java.util.Iterator;
+
 import com.netflix.eureka2.registry.datacenter.AwsDataCenterInfo;
+import com.netflix.eureka2.registry.instance.NetworkAddress;
 
 /**
  * @author Tomasz Bak
@@ -58,5 +61,39 @@ public enum SampleAwsDataCenterInfo {
 
     public AwsDataCenterInfo build() {
         return builder().build();
+    }
+
+    public static Iterator<AwsDataCenterInfo> collectionOf(String baseName, final AwsDataCenterInfo template) {
+        final Iterator<NetworkAddress> publicAddresses = SampleNetworkAddress.collectionOfIPv4("20", baseName + ".public.net", "public");
+        final Iterator<NetworkAddress> privateAddresses = SampleNetworkAddress.collectionOfIPv4("10", baseName + ".private.internal", "private");
+
+        return new Iterator<AwsDataCenterInfo>() {
+
+            private int instanceId;
+
+            @Override
+            public boolean hasNext() {
+                return true;
+            }
+
+            @Override
+            public AwsDataCenterInfo next() {
+                NetworkAddress publicAddress = publicAddresses.next();
+                NetworkAddress privateAddress = privateAddresses.next();
+                return new AwsDataCenterInfo.Builder()
+                        .withAwsDataCenter(template)
+                        .withInstanceId(String.format("id-%08d", ++instanceId))
+                        .withPublicHostName(publicAddress.getHostName())
+                        .withPublicIPv4(publicAddress.getIpAddress())
+                        .withPrivateHostName(privateAddress.getHostName())
+                        .withPrivateIPv4(privateAddress.getIpAddress())
+                        .build();
+            }
+
+            @Override
+            public void remove() {
+                throw new IllegalStateException("Operation not supported");
+            }
+        };
     }
 }

@@ -72,6 +72,7 @@ public class EurekaDeployment {
 
         private int writeClusterSize;
         private int readClusterSize;
+        private boolean ephemeralPorts;
         private boolean bridgeEnabled;
         private boolean dashboardEnabled;
         private boolean adminUIEnabled;
@@ -85,6 +86,11 @@ public class EurekaDeployment {
 
         public EurekaDeploymentBuilder withReadClusterSize(int size) {
             readClusterSize = size;
+            return this;
+        }
+
+        public EurekaDeploymentBuilder withEphemeralPorts(boolean ephemeralPorts) {
+            this.ephemeralPorts = ephemeralPorts;
             return this;
         }
 
@@ -114,11 +120,11 @@ public class EurekaDeployment {
         }
 
         public EurekaDeployment build() {
-            EmbeddedWriteCluster writeCluster = new EmbeddedWriteCluster(extensionsEnabled, adminUIEnabled);
+            EmbeddedWriteCluster writeCluster = new EmbeddedWriteCluster(extensionsEnabled, adminUIEnabled, ephemeralPorts);
             writeCluster.scaleUpBy(writeClusterSize);
 
             EmbeddedReadCluster readCluster = new EmbeddedReadCluster(writeCluster.registrationResolver(),
-                    writeCluster.discoveryResolver(), extensionsEnabled, adminUIEnabled);
+                    writeCluster.discoveryResolver(), extensionsEnabled, adminUIEnabled, ephemeralPorts);
             readCluster.scaleUpBy(readClusterSize);
 
             EmbeddedBridgeServer bridgeServer = null;

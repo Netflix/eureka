@@ -32,18 +32,22 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
 
     private final boolean withExt;
     private final boolean withAdminUI;
+    private final boolean ephemeralPorts;
 
     private int nextAvailablePort = WRITE_SERVER_PORTS_FROM;
 
-    public EmbeddedWriteCluster(boolean withExt, boolean withAdminUI) {
+    public EmbeddedWriteCluster(boolean withExt, boolean withAdminUI, boolean ephemeralPorts) {
         super(WRITE_SERVER_NAME);
         this.withExt = withExt;
         this.withAdminUI = withAdminUI;
+        this.ephemeralPorts = ephemeralPorts;
     }
 
     @Override
     public int scaleUpByOne() {
-        WriteServerAddress writeServerAddress = new WriteServerAddress("localhost", nextAvailablePort, nextAvailablePort + 1, nextAvailablePort + 2);
+        WriteServerAddress writeServerAddress = ephemeralPorts ?
+                new WriteServerAddress("localhost", 0, 0, 0) :
+                new WriteServerAddress("localhost", nextAvailablePort, nextAvailablePort + 1, nextAvailablePort + 2);
 
         WriteServerConfig config = WriteServerConfig.writeBuilder()
                 .withAppName(WRITE_SERVER_NAME)
@@ -61,6 +65,11 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
         newServer.start();
 
         nextAvailablePort += 10;
+
+        if (ephemeralPorts) {
+            writeServerAddress = new WriteServerAddress("localhost", newServer.getRegistrationPort(),
+                    newServer.getDiscoveryPort(), newServer.getReplicationPort());
+        }
 
         return scaleUpByOne(newServer, writeServerAddress);
     }
