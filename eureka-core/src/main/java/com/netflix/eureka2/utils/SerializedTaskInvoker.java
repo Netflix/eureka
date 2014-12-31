@@ -128,11 +128,12 @@ public abstract class SerializedTaskInvoker {
         protected abstract void execute();
 
         protected void cancel() {
+            logger.info("Cancelling task {}", this.toString());
             subscriberForThisTask.onError(TASK_CANCELLED);
         }
     }
 
-    private class InvokerTaskWithAck extends InvokerTask<Void, Void> {
+    private static class InvokerTaskWithAck extends InvokerTask<Void, Void> {
 
         private InvokerTaskWithAck(Callable<Observable<Void>> actual, Subscriber<? super Void> subscriberForThisTask) {
             super(actual, subscriberForThisTask);
@@ -156,13 +157,18 @@ public abstract class SerializedTaskInvoker {
                         })
                         .subscribe();
             } catch (Throwable e) {
-                logger.error("Exception invoking the InvokerTaskWithAck task.", e);
+                logger.error("Exception invoking the InvokerTaskWithAck task: {}", actual, e);
                 subscriberForThisTask.onError(e);
             }
         }
+
+        @Override
+        public String toString() {
+            return actual.toString();
+        }
     }
 
-    private class InvokerTaskWithResult<T> extends InvokerTask<T, Observable<T>> {
+    private static class InvokerTaskWithResult<T> extends InvokerTask<T, Observable<T>> {
 
         private InvokerTaskWithResult(Callable<Observable<T>> actual, Subscriber<? super Observable<T>> subscriberForThisTask) {
             super(actual, subscriberForThisTask);
@@ -177,6 +183,11 @@ public abstract class SerializedTaskInvoker {
                 logger.error("Exception invoking the InvokerTaskWithResult task.", e);
                 subscriberForThisTask.onError(e);
             }
+        }
+
+        @Override
+        public String toString() {
+            return actual.toString();
         }
     }
 }

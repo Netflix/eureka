@@ -29,23 +29,23 @@ public class NotificationsSubject<T> extends Subject<ChangeNotification<T>, Chan
     private final AtomicInteger resumeState = new AtomicInteger(ResumeState.NotPaused.ordinal());
 
     private AtomicBoolean paused;
-    private final PublishSubject<ChangeNotification<T>> notificationSubject;
+    private final Subject<ChangeNotification<T>, ChangeNotification<T>> notificationSubject;
     private final NotificationsSubjectSubscriber subscriber;
     private final ConcurrentLinkedQueue<ChangeNotification<T>> notificationsWhenPaused; // TODO: See if this should be bounded.
     private volatile boolean completedWhenPaused;
     private volatile Throwable errorWhenPaused;
 
     protected NotificationsSubject(OnSubscribe<ChangeNotification<T>> onSubscribe,
-                                   PublishSubject<ChangeNotification<T>> notificationSubject) {
+                                   Subject<ChangeNotification<T>, ChangeNotification<T>> notificationSubject) {
         super(onSubscribe);
         subscriber = new NotificationsSubjectSubscriber();
         this.notificationSubject = notificationSubject;
-        notificationsWhenPaused = new ConcurrentLinkedQueue<ChangeNotification<T>>();
+        notificationsWhenPaused = new ConcurrentLinkedQueue<>();
         paused = new AtomicBoolean();
     }
 
     public static <T> NotificationsSubject<T> create() {
-        final PublishSubject<ChangeNotification<T>> notificationSubject = PublishSubject.create();
+        final Subject<ChangeNotification<T>, ChangeNotification<T>> notificationSubject = PublishSubject.create();
         return new NotificationsSubject<T>(new OnSubscribe<ChangeNotification<T>>() {
             @Override
             public void call(Subscriber<? super ChangeNotification<T>> subscriber) {

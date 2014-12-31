@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -55,21 +55,21 @@ public abstract class StreamedDataCollector<R> {
         };
     }
 
-    public static <R> StreamedDataCollector<R> from(Observable<ChangeNotification<InstanceInfo>> notifications,
-                                                    Func1<InstanceInfo, R> converter) {
+    public static <E, R> StreamedDataCollector<R> from(Observable<ChangeNotification<E>> notifications,
+                                                    Func1<E, R> converter) {
         return new ChangeNotificationCollector<>(notifications, converter);
     }
 
-    static class ChangeNotificationCollector<R> extends StreamedDataCollector<R> {
+    static class ChangeNotificationCollector<E, R> extends StreamedDataCollector<R> {
 
         private static final Logger logger = LoggerFactory.getLogger(ChangeNotificationCollector.class);
 
         private final ConcurrentSkipListSet<R> servers = new ConcurrentSkipListSet<>();
         private final Subscription subscription;
 
-        ChangeNotificationCollector(Observable<ChangeNotification<InstanceInfo>> notifications,
-                                    final Func1<InstanceInfo, R> converter) {
-            subscription = notifications.subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
+        ChangeNotificationCollector(Observable<ChangeNotification<E>> notifications,
+                                    final Func1<E, R> converter) {
+            subscription = notifications.subscribe(new Subscriber<ChangeNotification<E>>() {
                 @Override
                 public void onCompleted() {
                 }
@@ -80,7 +80,7 @@ public abstract class StreamedDataCollector<R> {
                 }
 
                 @Override
-                public void onNext(ChangeNotification<InstanceInfo> notification) {
+                public void onNext(ChangeNotification<E> notification) {
                     R converted = converter.call(notification.getData());
                     switch (notification.getKind()) {
                         case Add:

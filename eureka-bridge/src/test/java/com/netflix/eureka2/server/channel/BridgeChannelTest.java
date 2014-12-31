@@ -10,12 +10,12 @@ import com.netflix.appinfo.AmazonInfo;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.server.bridge.InstanceInfoConverter;
 import com.netflix.eureka2.server.bridge.InstanceInfoConverterImpl;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.metric.BridgeChannelMetrics;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.server.registry.EurekaServerRegistryImpl;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,7 +26,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
-import static com.netflix.eureka2.server.metric.WriteServerMetricFactory.*;
+import static com.netflix.eureka2.metric.EurekaRegistryMetricFactory.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -41,7 +41,7 @@ public class BridgeChannelTest {
     @Mock
     private Applications mockApplications;
 
-    private EurekaServerRegistry<InstanceInfo> registry;
+    private SourcedEurekaRegistry<InstanceInfo> registry;
 
     private int period = 5;
     private TestScheduler testScheduler;
@@ -60,7 +60,7 @@ public class BridgeChannelTest {
 
         @Override
         protected void before() throws Throwable {
-            registry = spy(new EurekaServerRegistryImpl(writeServerMetrics()));
+            registry = spy(new SourcedEurekaRegistryImpl(registryMetrics()));
 
             testScheduler = Schedulers.test();
             bridgeChannel = new BridgeChannel(registry, mockV1Client, period, SampleInstanceInfo.DiscoveryServer.build(), new BridgeChannelMetrics(), testScheduler);

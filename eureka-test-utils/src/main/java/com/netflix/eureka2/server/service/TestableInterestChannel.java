@@ -18,7 +18,7 @@ package com.netflix.eureka2.server.service;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.channel.InterestChannel;
 import rx.Observable;
 import rx.subjects.PublishSubject;

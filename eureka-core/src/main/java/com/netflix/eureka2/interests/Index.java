@@ -5,6 +5,7 @@ import rx.Subscriber;
 import rx.functions.Func1;
 import rx.observables.ConnectableObservable;
 import rx.subjects.PublishSubject;
+import rx.subjects.ReplaySubject;
 import rx.subjects.Subject;
 
 import java.util.Iterator;
@@ -70,7 +71,7 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
     private final NotificationsSubject<T> notificationsSubject;
 
     protected Index(final Interest<T> interest, final InitStateHolder<T> initStateHolder,
-                    final PublishSubject<ChangeNotification<T>> realTimeSource) {
+                    final Subject<ChangeNotification<T>, ChangeNotification<T>> realTimeSource) {
         super(new OnSubscribe<ChangeNotification<T>>() {
             @Override
             public void call(Subscriber<? super ChangeNotification<T>> subscriber) {
@@ -110,7 +111,7 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
     public static <T> Index<T> forInterest(final Interest<T> interest,
                                            final Observable<ChangeNotification<T>> dataSource,
                                            final InitStateHolder<T> initStateHolder) {
-        PublishSubject<ChangeNotification<T>> realTimeSource = PublishSubject.create();
+        Subject<ChangeNotification<T>, ChangeNotification<T>> realTimeSource = PublishSubject.create();
         Index<T> toReturn = new Index<T>(interest, initStateHolder, realTimeSource);
 
         dataSource.filter(new Func1<ChangeNotification<T>, Boolean>() {

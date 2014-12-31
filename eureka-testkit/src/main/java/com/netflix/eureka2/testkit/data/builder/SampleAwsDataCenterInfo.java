@@ -18,8 +18,8 @@ package com.netflix.eureka2.testkit.data.builder;
 
 import java.util.Iterator;
 
-import com.netflix.eureka2.registry.NetworkAddress;
 import com.netflix.eureka2.registry.datacenter.AwsDataCenterInfo;
+import com.netflix.eureka2.registry.instance.NetworkAddress;
 
 /**
  * @author Tomasz Bak

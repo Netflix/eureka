@@ -1,7 +1,7 @@
 package com.netflix.eureka2.testkit.data.builder;
 
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
 
 import java.util.ArrayList;

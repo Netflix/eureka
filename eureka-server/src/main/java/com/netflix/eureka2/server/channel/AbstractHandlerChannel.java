@@ -2,8 +2,8 @@ package com.netflix.eureka2.server.channel;
 
 import com.netflix.eureka2.channel.AbstractServiceChannel;
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,9 +21,9 @@ public abstract class AbstractHandlerChannel<STATE extends Enum> extends Abstrac
     protected static final Logger logger = LoggerFactory.getLogger(AbstractHandlerChannel.class);
 
     protected final MessageConnection transport;
-    protected final EurekaServerRegistry<InstanceInfo> registry;
+    protected final SourcedEurekaRegistry<InstanceInfo> registry;
 
-    protected AbstractHandlerChannel(STATE initState, MessageConnection transport, final EurekaServerRegistry<InstanceInfo> registry) {
+    protected AbstractHandlerChannel(STATE initState, MessageConnection transport, final SourcedEurekaRegistry<InstanceInfo> registry) {
         super(initState);
         this.transport = transport;
         this.registry = registry;

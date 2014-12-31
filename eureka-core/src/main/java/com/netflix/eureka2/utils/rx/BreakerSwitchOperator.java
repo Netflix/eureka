@@ -17,7 +17,7 @@
 package com.netflix.eureka2.utils.rx;
 
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable.Operator;
 import rx.Subscriber;
 import rx.internal.util.SubscriptionList;

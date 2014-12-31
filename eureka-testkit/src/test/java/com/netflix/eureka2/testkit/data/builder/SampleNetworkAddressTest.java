@@ -2,11 +2,11 @@ package com.netflix.eureka2.testkit.data.builder;
 
 import java.util.Iterator;
 
-import com.netflix.eureka2.registry.NetworkAddress;
-import com.netflix.eureka2.registry.NetworkAddress.ProtocolType;
+import com.netflix.eureka2.registry.instance.NetworkAddress;
+import com.netflix.eureka2.registry.instance.NetworkAddress.ProtocolType;
 import org.junit.Test;
 
-import static com.netflix.eureka2.registry.NetworkAddress.NetworkAddressBuilder.aNetworkAddress;
+import static com.netflix.eureka2.registry.instance.NetworkAddress.NetworkAddressBuilder.aNetworkAddress;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;

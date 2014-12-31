@@ -1,11 +1,11 @@
 package com.netflix.eureka2.server.channel;
 
+import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
-import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.server.registry.EurekaServerRegistryImpl;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.service.replication.RegistryReplicator;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.transport.MessageConnection;
@@ -58,7 +58,7 @@ public class RetryableSenderReplicationChannelTest {
 
     private TestScheduler registryScheduler;
 
-    private EurekaServerRegistry<InstanceInfo> registry;
+    private SourcedEurekaRegistry<InstanceInfo> registry;
     private RetryableSenderReplicationChannel channel;
     private RegistryReplicator replicator;
 
@@ -71,7 +71,7 @@ public class RetryableSenderReplicationChannelTest {
         mockDelegateChannelMethods(delegateChannel2);
 
         registryScheduler = Schedulers.test();
-        registry = new EurekaServerRegistryImpl(WriteServerMetricFactory.writeServerMetrics(), registryScheduler);
+        registry = new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics(), registryScheduler);
 
         registry.register(INFO1).subscribe();
         registry.register(INFO2).subscribe();

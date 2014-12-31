@@ -21,9 +21,9 @@ import javax.inject.Singleton;
 import java.util.Properties;
 import java.util.ServiceLoader;
 
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 
 /**
  * Eureka extensions discovery is based on {@link ServiceLoader} mechanism.
@@ -38,10 +38,10 @@ public class ExtensionContext {
     public static final String PROPERTY_KEYS_PREFIX = "eureka.ext";
 
     private final EurekaServerConfig config;
-    private final EurekaServerRegistry<InstanceInfo> localRegistry;
+    private final SourcedEurekaRegistry<InstanceInfo> localRegistry;
 
     @Inject
-    protected ExtensionContext(EurekaServerConfig config, EurekaServerRegistry localRegistry) {
+    protected ExtensionContext(EurekaServerConfig config, SourcedEurekaRegistry localRegistry) {
         this.config = config;
         this.localRegistry = localRegistry;
     }
@@ -53,7 +53,7 @@ public class ExtensionContext {
         return config.getAppName();
     }
 
-    public EurekaServerRegistry<InstanceInfo> getLocalRegistry() {
+    public SourcedEurekaRegistry<InstanceInfo> getLocalRegistry() {
         return localRegistry;
     }
 

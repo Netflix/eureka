@@ -20,9 +20,12 @@ import com.google.inject.Inject;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.registry.Delta;
+import com.netflix.eureka2.registry.MultiSourcedDataHolder;
+import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.EurekaRegistry;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.channel.ServiceChannel;
 import rx.Observable;
@@ -47,7 +50,7 @@ import java.util.Set;
  *
  * @author Tomasz Bak
  */
-public class EurekaReadServerRegistry implements EurekaServerRegistry<InstanceInfo> {
+public class EurekaReadServerRegistry implements SourcedEurekaRegistry<InstanceInfo> {
 
     private final EurekaClient eurekaClient;
 
@@ -57,48 +60,48 @@ public class EurekaReadServerRegistry implements EurekaServerRegistry<InstanceIn
     }
 
     @Override
-    public Observable<Status> register(InstanceInfo instanceInfo) {
-        throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
+    public Observable<Boolean> register(InstanceInfo instanceInfo) {
+        throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
     }
 
     @Override
-    public Observable<Status> register(InstanceInfo instanceInfo, Source source) {
-        throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
+    public Observable<Boolean> register(InstanceInfo instanceInfo, Source source) {
+        throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
     }
 
     @Override
-    public Observable<Status> unregister(InstanceInfo instanceInfo) {
-        throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
+    public Observable<Boolean> unregister(InstanceInfo instanceInfo) {
+        throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
     }
 
     @Override
-    public Observable<Status> unregister(InstanceInfo instanceInfo, Source source) {
-        throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
+    public Observable<Boolean> unregister(InstanceInfo instanceInfo, Source source) {
+        throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
     }
 
     @Override
-    public Observable<Status> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
-        throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
+    public Observable<Boolean> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
+        throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
     }
 
     @Override
-    public Observable<Status> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas, Source source) {
-        throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
+    public Observable<Boolean> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas, Source source) {
+        throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
     }
 
     @Override
     public int size() {
-        throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
+        throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
     }
 
     @Override
     public Observable<InstanceInfo> forSnapshot(Interest<InstanceInfo> interest) {
-        throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
+        throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
     }
 
     @Override
     public Observable<InstanceInfo> forSnapshot(Interest<InstanceInfo> interest, Source source) {
-        throw new IllegalStateException("method not supported by EurekaReadServerRegistry");
+        throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
     }
 
     @Override
@@ -108,12 +111,32 @@ public class EurekaReadServerRegistry implements EurekaServerRegistry<InstanceIn
 
     @Override
     public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, Source source) {
-        throw new IllegalStateException("Origin filtering not supported by EurekaReadServerRegistry");
+        throw new UnsupportedOperationException("Origin filtering not supported by EurekaReadServerRegistry");
+    }
+
+    @Override
+    public Observable<Long> evictAll(Source source) {
+        throw new UnsupportedOperationException("evictAll not supported by EurekaReadServerRegistry");
+    }
+
+    @Override
+    public Observable<Long> evictAll() {
+        throw new UnsupportedOperationException("evictAll not supported by EurekaReadServerRegistry");
+    }
+
+    @Override
+    public Observable<? extends MultiSourcedDataHolder<InstanceInfo>> getHolders() {
+        throw new UnsupportedOperationException("Origin filtering not supported by EurekaReadServerRegistry");
     }
 
     @Override
     public Observable<Void> shutdown() {
         return Observable.empty();
+    }
+
+    @Override
+    public Observable<Void> shutdown(Throwable cause) {
+        return Observable.error(cause);
     }
 
     @Override

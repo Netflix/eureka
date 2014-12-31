@@ -20,10 +20,10 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.ReplicationChannel;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.server.registry.Source;
+import com.netflix.eureka2.registry.Source;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -40,13 +40,13 @@ public class RegistryReplicator {
     private static final Logger logger = LoggerFactory.getLogger(RegistryReplicator.class);
 
     private final String ownInstanceId;
-    private final EurekaServerRegistry<InstanceInfo> registry;
+    private final SourcedEurekaRegistry<InstanceInfo> registry;
 
     private ReplicationChannel channel;
     private Subscription subscription;
 
     public RegistryReplicator(String ownInstanceId,
-                       EurekaServerRegistry<InstanceInfo> registry) {
+                              SourcedEurekaRegistry<InstanceInfo> registry) {
         this.ownInstanceId = ownInstanceId;
         this.registry = registry;
     }

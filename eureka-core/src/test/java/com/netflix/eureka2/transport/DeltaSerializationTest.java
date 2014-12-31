@@ -1,10 +1,10 @@
 package com.netflix.eureka2.transport;
 
 import com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo;
-import com.netflix.eureka2.registry.Delta;
-import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.registry.InstanceInfoField;
-import com.netflix.eureka2.registry.ServicePort;
+import com.netflix.eureka2.registry.instance.Delta;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfoField;
+import com.netflix.eureka2.registry.instance.ServicePort;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleServicePort;
 import com.netflix.eureka2.transport.codec.avro.AvroCodec;

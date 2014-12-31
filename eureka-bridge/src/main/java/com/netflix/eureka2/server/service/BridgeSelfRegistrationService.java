@@ -3,11 +3,11 @@ package com.netflix.eureka2.server.service;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.netflix.eureka2.Names;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
-import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.registry.ServicePort;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.instance.ServicePort;
 import com.netflix.eureka2.server.config.InstanceInfoFromConfig;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Notification;
@@ -30,13 +30,13 @@ public class BridgeSelfRegistrationService implements SelfRegistrationService {
     private static final Logger logger = LoggerFactory.getLogger(BridgeSelfRegistrationService.class);
 
     private final BridgeServerConfig config;
-    private final EurekaServerRegistry<InstanceInfo> eurekaRegistry;
+    private final SourcedEurekaRegistry<InstanceInfo> eurekaRegistry;
 
     private final AtomicBoolean connected = new AtomicBoolean();
     private final ReplaySubject<InstanceInfo> replaySubject = ReplaySubject.create();
 
     @Inject
-    public BridgeSelfRegistrationService(BridgeServerConfig config, EurekaServerRegistry eurekaRegistry) {
+    public BridgeSelfRegistrationService(BridgeServerConfig config, SourcedEurekaRegistry eurekaRegistry) {
         this.config = config;
         this.eurekaRegistry = eurekaRegistry;
     }

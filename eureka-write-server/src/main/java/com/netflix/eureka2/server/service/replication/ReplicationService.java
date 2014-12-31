@@ -26,7 +26,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.channel.ReplicationChannel;
 import com.netflix.eureka2.server.channel.ReplicationTransportClient;
@@ -34,7 +35,6 @@ import com.netflix.eureka2.server.channel.RetryableSenderReplicationChannel;
 import com.netflix.eureka2.server.channel.SenderReplicationChannel;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import org.slf4j.Logger;
@@ -58,7 +58,7 @@ public class ReplicationService {
     private final long reconnectDelayMillis;
 
     private final AtomicReference<STATE> state = new AtomicReference<>(STATE.Idle);
-    private final EurekaServerRegistry<InstanceInfo> eurekaRegistry;
+    private final SourcedEurekaRegistry<InstanceInfo> eurekaRegistry;
     private final SelfRegistrationService selfRegistrationService;
     private final ReplicationPeerAddressesProvider peerAddressesProvider;
     private final WriteServerMetricFactory metricFactory;
@@ -71,7 +71,7 @@ public class ReplicationService {
 
     @Inject
     public ReplicationService(WriteServerConfig config,
-                              EurekaServerRegistry eurekaRegistry,
+                              SourcedEurekaRegistry eurekaRegistry,
                               SelfRegistrationService selfRegistrationService,
                               ReplicationPeerAddressesProvider peerAddressesProvider,
                               WriteServerMetricFactory metricFactory) {

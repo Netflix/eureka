@@ -16,10 +16,10 @@
 
 package com.netflix.eureka2.protocol.discovery;
 
-import com.netflix.eureka2.registry.Delta;
-import com.netflix.eureka2.registry.InstanceInfoField;
-import com.netflix.eureka2.registry.InstanceInfoField.Name;
-import com.netflix.eureka2.registry.ServicePort;
+import com.netflix.eureka2.registry.instance.Delta;
+import com.netflix.eureka2.registry.instance.InstanceInfoField;
+import com.netflix.eureka2.registry.instance.InstanceInfoField.Name;
+import com.netflix.eureka2.registry.instance.ServicePort;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;

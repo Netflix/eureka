@@ -3,7 +3,7 @@ package com.netflix.eureka2.protocol.discovery;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import rx.Observable;
 

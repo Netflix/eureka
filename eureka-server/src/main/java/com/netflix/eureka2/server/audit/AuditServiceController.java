@@ -18,8 +18,8 @@ package com.netflix.eureka2.server.audit;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,13 +37,13 @@ public class AuditServiceController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuditServiceController.class);
 
-    private final EurekaServerRegistry<InstanceInfo> registry;
+    private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final AuditService auditService;
     private final SelfRegistrationService serverIdentity;
 
     @Inject
     public AuditServiceController(
-            EurekaServerRegistry registry,
+            SourcedEurekaRegistry registry,
             AuditService auditService,
             SelfRegistrationService serverIdentity) {
         this.registry = registry;

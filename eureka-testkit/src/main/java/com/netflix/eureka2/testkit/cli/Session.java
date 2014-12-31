@@ -26,7 +26,7 @@ import com.netflix.eureka2.client.channel.ClientChannelFactory.Mode;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.utils.Sets;
 import rx.Subscriber;
 

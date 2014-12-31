@@ -17,12 +17,12 @@
 package com.netflix.eureka2.server.transport.tcp.replication;
 
 import com.google.inject.Inject;
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.ServerChannelFactory;
 import com.netflix.eureka2.server.channel.ServerChannelFactoryImpl;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
+import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.service.WriteSelfRegistrationService;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
@@ -38,13 +38,13 @@ import rx.schedulers.Schedulers;
 public class TcpReplicationHandler implements ConnectionHandler<Object, Object> {
 
     private final WriteSelfRegistrationService selfRegistrationService;
-    private final EurekaServerRegistry<InstanceInfo> registry;
+    private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final EvictionQueue evictionQueue;
     private final WriteServerMetricFactory metricFactory;
 
     @Inject
     public TcpReplicationHandler(WriteSelfRegistrationService selfRegistrationService,
-                                 EurekaServerRegistry registry,
+                                 SourcedEurekaRegistry registry,
                                  EvictionQueue evictionQueue,
                                  WriteServerMetricFactory metricFactory) {
         this.selfRegistrationService = selfRegistrationService;

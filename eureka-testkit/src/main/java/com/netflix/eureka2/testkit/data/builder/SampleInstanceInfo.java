@@ -5,12 +5,12 @@ import java.util.Iterator;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.netflix.eureka2.registry.DataCenterInfo;
-import com.netflix.eureka2.registry.InstanceInfo;
-import com.netflix.eureka2.registry.InstanceInfo.Builder;
-import com.netflix.eureka2.registry.InstanceInfo.Status;
-import com.netflix.eureka2.registry.NetworkAddress;
-import com.netflix.eureka2.registry.ServicePort;
+import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo.Builder;
+import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
+import com.netflix.eureka2.registry.instance.NetworkAddress;
+import com.netflix.eureka2.registry.instance.ServicePort;
 import com.netflix.eureka2.registry.datacenter.AwsDataCenterInfo;
 import com.netflix.eureka2.utils.Sets;
 

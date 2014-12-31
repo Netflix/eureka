@@ -18,11 +18,11 @@ package com.netflix.eureka2.server.transport.tcp.discovery;
 
 import javax.inject.Inject;
 
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.InterestChannelFactory;
 import com.netflix.eureka2.server.channel.InterestChannelFactoryImpl;
 import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
@@ -47,11 +47,11 @@ public class TcpDiscoveryHandler implements ConnectionHandler<Object, Object> {
             HeartBeatConnection.DEFAULT_HEARTBEAT_INTERVAL_MILLIS
     );
 
-    private final EurekaServerRegistry<InstanceInfo> registry;
+    private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final EurekaServerMetricFactory metricFactory;
 
     @Inject
-    public TcpDiscoveryHandler(EurekaServerRegistry registry, EurekaServerMetricFactory metricFactory) {
+    public TcpDiscoveryHandler(SourcedEurekaRegistry registry, EurekaServerMetricFactory metricFactory) {
         this.registry = registry;
         this.metricFactory = metricFactory;
     }

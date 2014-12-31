@@ -16,16 +16,15 @@
 
 package com.netflix.eureka2.registry.datacenter;
 
-import com.netflix.eureka2.registry.DataCenterInfo;
-import com.netflix.eureka2.registry.NetworkAddress;
+import com.netflix.eureka2.registry.instance.NetworkAddress;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.netflix.eureka2.registry.NetworkAddress.NetworkAddressBuilder.aNetworkAddress;
-import static com.netflix.eureka2.registry.NetworkAddress.PRIVATE_ADDRESS;
-import static com.netflix.eureka2.registry.NetworkAddress.PUBLIC_ADDRESS;
-import static com.netflix.eureka2.registry.NetworkAddress.ProtocolType;
+import static com.netflix.eureka2.registry.instance.NetworkAddress.NetworkAddressBuilder.aNetworkAddress;
+import static com.netflix.eureka2.registry.instance.NetworkAddress.PRIVATE_ADDRESS;
+import static com.netflix.eureka2.registry.instance.NetworkAddress.PUBLIC_ADDRESS;
+import static com.netflix.eureka2.registry.instance.NetworkAddress.ProtocolType;
 
 /**
  * This class represents a location of a server in AWS datacenter.

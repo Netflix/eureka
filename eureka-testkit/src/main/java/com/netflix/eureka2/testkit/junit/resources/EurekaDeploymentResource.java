@@ -92,7 +92,7 @@ public class EurekaDeploymentResource extends ExternalResource {
 
     @Override
     protected void after() {
-        if (eurekaDeployment == null) {
+        if (eurekaDeployment != null) {
             eurekaDeployment.shutdown();
         }
     }

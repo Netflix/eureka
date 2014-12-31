@@ -16,9 +16,9 @@
 
 package com.netflix.eureka2.server.channel;
 
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.transport.MessageConnection;
 
@@ -27,12 +27,12 @@ import com.netflix.eureka2.transport.MessageConnection;
  */
 public class InterestChannelFactoryImpl implements InterestChannelFactory {
 
-    protected final EurekaServerRegistry<InstanceInfo> registry;
+    protected final SourcedEurekaRegistry<InstanceInfo> registry;
     protected final MessageConnection connection;
 
     private final EurekaServerMetricFactory metricFactory;
 
-    public InterestChannelFactoryImpl(EurekaServerRegistry<InstanceInfo> registry,
+    public InterestChannelFactoryImpl(SourcedEurekaRegistry<InstanceInfo> registry,
                                       MessageConnection connection,
                                       EurekaServerMetricFactory metricFactory) {
         this.registry = registry;

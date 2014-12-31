@@ -1,9 +1,9 @@
 package com.netflix.eureka2.server.channel;
 
-import com.netflix.eureka2.registry.InstanceInfo;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
+import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.server.service.WriteSelfRegistrationService;
 import com.netflix.eureka2.transport.MessageConnection;
@@ -23,7 +23,7 @@ public class ServerChannelFactoryImpl extends InterestChannelFactoryImpl impleme
     private final EvictionQueue evictionQueue;
     private final WriteServerMetricFactory metricFactory;
 
-    public ServerChannelFactoryImpl(EurekaServerRegistry<InstanceInfo> registry,
+    public ServerChannelFactoryImpl(SourcedEurekaRegistry<InstanceInfo> registry,
                                     WriteSelfRegistrationService selfRegistrationService,
                                     EvictionQueue evictionQueue,
                                     MessageConnection connection,
