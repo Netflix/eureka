@@ -1,4 +1,4 @@
-package com.netflix.eureka2.client.registry;
+package com.netflix.eureka2.client.interest;
 
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.client.channel.ClientInterestChannel;
@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action0;
-import rx.functions.Action1;
 import rx.functions.Func1;
 
 import java.util.concurrent.atomic.AtomicBoolean;

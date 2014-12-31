@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.client.registry.swap;
+package com.netflix.eureka2.client.interest.swap;
+
+import com.netflix.eureka2.registry.EurekaRegistry;
 
 /**
  * @author Tomasz Bak
  */
-public interface RegistrySwapStrategyFactory {
-    RegistrySwapStrategy newInstance();
+public interface RegistrySwapStrategy {
+
+    boolean isReadyToSwap(EurekaRegistry originalRegistry, EurekaRegistry newRegistry);
 }

@@ -20,7 +20,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import com.netflix.eureka2.client.registration.RegistrationHandler;
-import com.netflix.eureka2.client.registry.InterestHandler;
+import com.netflix.eureka2.client.interest.InterestHandler;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;

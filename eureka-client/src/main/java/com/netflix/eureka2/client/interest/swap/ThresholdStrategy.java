@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.client.registry.swap;
+package com.netflix.eureka2.client.interest.swap;
 
 import com.netflix.eureka2.registry.EurekaRegistry;
 import rx.Scheduler;
