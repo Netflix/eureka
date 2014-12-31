@@ -2,7 +2,7 @@ package com.netflix.eureka2.server.config;
 
 import java.util.HashSet;
 
-import com.netflix.eureka2.registry.dsl.AddressSelector;
+import com.netflix.eureka2.registry.selector.AddressSelector;
 import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;

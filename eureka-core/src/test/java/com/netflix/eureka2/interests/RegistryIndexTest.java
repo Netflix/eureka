@@ -64,7 +64,8 @@ public class RegistryIndexTest {
         }
     };
 
-    @Test
+
+    @Test(timeout = 10000)
     public void testBasicIndex() throws Exception {
         List<ChangeNotification<InstanceInfo>> notifications = doTestWithIndex(forFullRegistry(), 5);
 
@@ -79,7 +80,7 @@ public class RegistryIndexTest {
                         new ModifyNotification<>(newCliServer, newCliServer.diffOlder(cliServer))));
     }
 
-    @Test
+    @Test(timeout = 10000)
     public void testCompositeIndex() throws Exception {
         List<ChangeNotification<InstanceInfo>> notifications =
                 doTestWithIndex(forSome(forInstances(discoveryServer.getId()), forInstances(zuulServer.getId())), 3);
