@@ -5,6 +5,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
@@ -55,5 +56,29 @@ public class WriteClusterIntegrationTest {
         firstClient.unregister(clientInfo).toBlocking().firstOrDefault(null);
 
         assertThat(notificationIterator.next(), is(deleteChangeNotificationOf(clientInfo)));
+    }
+
+    @Test
+    public void testSubscriptionToInterestChannelGetsAllUpdates() throws Exception {
+        EurekaClient dataSourceClient = eurekaDeploymentResource.connectToWriteServer(0);
+        EurekaClient subscriberClient = eurekaDeploymentResource.connectToWriteServer(0);
+
+        Iterator<InstanceInfo> instanceInfos = SampleInstanceInfo.collectionOf("itest", SampleInstanceInfo.ZuulServer.build());
+
+        // First populate registry with some data.
+        InstanceInfo firstRecord = instanceInfos.next();
+        dataSourceClient.register(firstRecord).toBlocking().firstOrDefault(null);
+
+        // Subscribe to get current registry content
+        Iterator<ChangeNotification<InstanceInfo>> notificationIterator =
+                iteratorFrom(5, TimeUnit.SECONDS, subscriberClient.forInterest(Interests.forApplications(firstRecord.getApp())));
+
+        assertThat(notificationIterator.next(), is(addChangeNotificationOf(firstRecord)));
+
+        // Now register another client
+        InstanceInfo secondRecord = instanceInfos.next();
+        dataSourceClient.register(secondRecord).toBlocking().firstOrDefault(null);
+
+        assertThat(notificationIterator.next(), is(addChangeNotificationOf(secondRecord)));
     }
 }
