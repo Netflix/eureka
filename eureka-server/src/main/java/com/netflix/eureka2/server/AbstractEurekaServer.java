@@ -24,7 +24,6 @@ import java.util.concurrent.CountDownLatch;
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
-import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.governator.configuration.ArchaiusConfigurationProvider;
 import com.netflix.governator.configuration.ArchaiusConfigurationProvider.Builder;
 import com.netflix.governator.configuration.ConfigurationOwnershipPolicies;
@@ -87,6 +86,7 @@ public abstract class AbstractEurekaServer<C extends EurekaCommonConfig> {
                 binder.include(new AbstractModule() {
                     @Override
                     protected void configure() {
+                        bind(EurekaShutdownService.class).asEagerSingleton();
                         // TODO: replace fake health check with a real one.
                         bind(HealthCheckHandler.class).to(AlwaysHealthyHealthCheck.class).asEagerSingleton();
                         bind(HealthCheckInvocationStrategy.class).to(SyncHealthCheckInvocationStrategy.class).asEagerSingleton();

@@ -2,6 +2,7 @@ package com.netflix.eureka2.server;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
+import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
@@ -48,6 +49,7 @@ public class EurekaBridgeServerModule extends AbstractModule {
     public void configure() {
         if (config == null) {
             bind(BridgeServerConfig.class).asEagerSingleton();
+            bind(EurekaRegistryConfig.class).to(BridgeServerConfig.class);
         } else {
             bind(EurekaCommonConfig.class).toInstance(config);
             bind(EurekaServerConfig.class).toInstance(config);
