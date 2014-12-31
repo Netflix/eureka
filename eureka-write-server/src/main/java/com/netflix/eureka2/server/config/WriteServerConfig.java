@@ -16,9 +16,10 @@
 
 package com.netflix.eureka2.server.config;
 
+import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
-import com.netflix.eureka2.server.registry.eviction.EvictionStrategyProvider;
-import com.netflix.eureka2.server.registry.eviction.EvictionStrategyProvider.StrategyType;
+import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
+import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider.StrategyType;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import com.netflix.governator.annotations.Configuration;
@@ -26,7 +27,7 @@ import com.netflix.governator.annotations.Configuration;
 /**
  * @author Tomasz Bak
  */
-public class WriteServerConfig extends EurekaServerConfig {
+public class WriteServerConfig extends EurekaServerConfig implements EurekaRegistryConfig {
 
     public static final long DEFAULT_EVICTION_TIMEOUT = 30000;
     public static final long DEFAULT_REPLICATION_RECONNECT_DELAY_MILLIS = 30000;
@@ -84,10 +85,12 @@ public class WriteServerConfig extends EurekaServerConfig {
         return replicationReconnectDelayMillis;
     }
 
+    @Override
     public long getEvictionTimeoutMs() {
         return evictionTimeoutMs;
     }
 
+    @Override
     public EvictionStrategyProvider.StrategyType getEvictionStrategyType() {
         EvictionStrategyProvider.StrategyType type;
         try {
@@ -99,6 +102,7 @@ public class WriteServerConfig extends EurekaServerConfig {
         return type;
     }
 
+    @Override
     public String getEvictionStrategyValue() {
         return evictionStrategyValue;
     }

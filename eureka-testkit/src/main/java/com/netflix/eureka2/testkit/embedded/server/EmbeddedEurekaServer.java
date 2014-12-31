@@ -7,9 +7,9 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.netflix.config.ConfigurationManager;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.server.spi.ExtensionLoader;
 import com.netflix.governator.configuration.ArchaiusConfigurationProvider;
 import com.netflix.governator.configuration.ArchaiusConfigurationProvider.Builder;
@@ -56,8 +56,8 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
         return injector;
     }
 
-    public EurekaServerRegistry<InstanceInfo> getEurekaServerRegistry() {
-        return injector.getInstance(EurekaServerRegistry.class);
+    public SourcedEurekaRegistry<InstanceInfo> getEurekaServerRegistry() {
+        return injector.getInstance(SourcedEurekaRegistry.class);
     }
 
     public abstract R serverReport();

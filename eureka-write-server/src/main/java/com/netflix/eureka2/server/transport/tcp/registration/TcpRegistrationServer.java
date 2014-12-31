@@ -16,10 +16,10 @@
 
 package com.netflix.eureka2.server.transport.tcp.registration;
 
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
+import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.transport.tcp.AbstractTcpServer;
 import com.netflix.eureka2.transport.EurekaTransports;
 import io.reactivex.netty.RxNetty;
@@ -44,7 +44,7 @@ public class TcpRegistrationServer extends AbstractTcpServer<WriteServerConfig, 
 
     @Inject
     public TcpRegistrationServer(WriteServerConfig config,
-                                 EurekaServerRegistry eurekaRegistry,
+                                 SourcedEurekaRegistry eurekaRegistry,
                                  EvictionQueue evictionQueue,
                                  @Named("registration") MetricEventsListenerFactory servoEventsListenerFactory,
                                  WriteServerMetricFactory metricFactory) {

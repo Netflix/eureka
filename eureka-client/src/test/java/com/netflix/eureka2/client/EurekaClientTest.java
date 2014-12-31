@@ -1,25 +1,34 @@
 package com.netflix.eureka2.client;
 
+import com.netflix.eureka2.client.channel.ClientChannelFactory;
+import com.netflix.eureka2.client.channel.ClientChannelFactoryImpl;
 import com.netflix.eureka2.client.metric.EurekaClientMetricFactory;
-import com.netflix.eureka2.client.registry.EurekaClientRegistry;
-import com.netflix.eureka2.client.registry.EurekaClientRegistryImpl;
+import com.netflix.eureka2.client.interest.InterestHandler;
+import com.netflix.eureka2.client.interest.InterestHandlerImpl;
+import com.netflix.eureka2.config.BasicEurekaRegistryConfig;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.interests.MultipleInterests;
+import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
+import com.netflix.eureka2.registry.PreservableEurekaRegistry;
+import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
+import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.transport.TransportClient;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import rx.Observable;
 import rx.Subscriber;
+import rx.Subscription;
+import rx.subjects.ReplaySubject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,6 +39,9 @@ import java.util.concurrent.TimeUnit;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 /**
@@ -38,18 +50,18 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class EurekaClientTest {
 
-    @Mock
-    protected InterestChannel interestChannel;
+    private final MessageConnection mockConnection = mock(MessageConnection.class);
+    private final TransportClient mockReadTransportClient = mock(TransportClient.class);
+    private final TransportClient mockWriteTransportClient = mock(TransportClient.class);
 
     protected EurekaClient client;
-    protected EurekaClientRegistry<InstanceInfo> registry;
+    protected PreservableEurekaRegistry registry;
     protected List<ChangeNotification<InstanceInfo>> allRegistry;
     protected List<ChangeNotification<InstanceInfo>> discoveryRegistry;
     protected List<ChangeNotification<InstanceInfo>> zuulRegistry;
     protected Interest<InstanceInfo> interestAll;
     protected Interest<InstanceInfo> interestDiscovery;
     protected Interest<InstanceInfo> interestZuul;
-
 
     @Rule
     public final ExternalResource testResource = new ExternalResource() {
@@ -71,15 +83,30 @@ public class EurekaClientTest {
             allRegistry = new ArrayList<>(discoveryRegistry);
             allRegistry.addAll(zuulRegistry);
 
-            registry = new EurekaClientRegistryImpl(EurekaClientMetricFactory.clientMetrics().getRegistryMetrics());
+            registry = spy(new PreservableEurekaRegistry(
+                    new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics()),
+                    new BasicEurekaRegistryConfig(),
+                    EurekaRegistryMetricFactory.registryMetrics()));
             for (ChangeNotification<InstanceInfo> notification : allRegistry) {
-                registry.register(notification.getData());
+                registry.register(notification.getData()).toBlocking().firstOrDefault(null);
             }
 
-            // interest channel mocks
-            when(interestChannel.change(org.mockito.Mockito.any(Interest.class))).thenReturn(Observable.empty().cast(Void.class));
+            when(mockConnection.submitWithAck(anyObject())).thenReturn(Observable.<Void>empty());
+            when(mockConnection.incoming()).thenReturn(Observable.never());
+            when(mockConnection.lifecycleObservable()).thenReturn(ReplaySubject.<Void>create());
+            when(mockReadTransportClient.connect()).thenReturn(Observable.just(mockConnection));
 
-            client = new EurekaClientImpl(registry, null);
+            ClientChannelFactory clientChannelFactory = new ClientChannelFactoryImpl(
+                    mockWriteTransportClient,
+                    mockReadTransportClient,
+                    registry,
+                    1000,
+                    EurekaClientMetricFactory.clientMetrics()
+            );
+
+            InterestHandler interestHandler = new InterestHandlerImpl(registry, clientChannelFactory);
+
+            client = new EurekaClientImpl(interestHandler, null);
         }
 
         @Override
@@ -104,30 +131,70 @@ public class EurekaClientTest {
     public void testForInterestSingleUser() throws Exception {
         final List<ChangeNotification<InstanceInfo>> output = new ArrayList<>();
 
-        final CountDownLatch latch = new CountDownLatch(5);
-        client.forInterest(interestAll).subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
+        final CountDownLatch onNextLatch = new CountDownLatch(4);
+        final CountDownLatch onCompletedLatch = new CountDownLatch(1);
+        Subscription interestSubscription = client.forInterest(interestAll).subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
             @Override
             public void onCompleted() {
-                latch.countDown();
+                onCompletedLatch.countDown();
             }
 
             @Override
             public void onError(Throwable e) {
-                Assert.fail("should not onError");
             }
 
             @Override
             public void onNext(ChangeNotification<InstanceInfo> notification) {
                 output.add(notification);
-                latch.countDown();
-                if (latch.getCount() == 1) {
-                    client.close();  // this sends an onComplete to the stream
-                }
+                onNextLatch.countDown();
             }
         });
 
-        assertThat(latch.await(1, TimeUnit.MINUTES), equalTo(true));
+        assertThat(onNextLatch.await(1, TimeUnit.MINUTES), equalTo(true));
 
+        client.close();
+        assertThat(onCompletedLatch.await(1, TimeUnit.MINUTES), equalTo(true));
+        assertThat(interestSubscription.isUnsubscribed(), equalTo(true));
+        assertThat(output, containsInAnyOrder(allRegistry.toArray()));
+    }
+
+    @Ignore  // FIXME
+    @Test
+    public void testForInterestHandleRetryProperly() throws Exception {
+        final List<ChangeNotification<InstanceInfo>> output = new ArrayList<>();
+
+        when(registry.forInterest(interestAll))
+                .thenReturn(Observable.<ChangeNotification<InstanceInfo>>error(new Exception("error msg")))
+                .thenReturn(registry.forInterest(interestAll));
+
+        final CountDownLatch onNextLatch = new CountDownLatch(4);
+        final CountDownLatch onCompletedLatch = new CountDownLatch(1);
+        final CountDownLatch onErrorLatch = new CountDownLatch(1);
+        Subscription interestSubscription = client.forInterest(interestAll)
+                .retry(1)
+                .subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
+                    @Override
+                    public void onCompleted() {
+                        onCompletedLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        onErrorLatch.countDown();
+                    }
+
+                    @Override
+                    public void onNext(ChangeNotification<InstanceInfo> notification) {
+                        output.add(notification);
+                        onNextLatch.countDown();
+                    }
+                });
+
+        assertThat(onNextLatch.await(1, TimeUnit.MINUTES), equalTo(true));
+        assertThat(onCompletedLatch.await(1, TimeUnit.MINUTES), equalTo(true));
+        assertThat(onErrorLatch.await(1, TimeUnit.MINUTES), equalTo(true));
+
+        assertThat(interestSubscription.isUnsubscribed(), equalTo(true));
         assertThat(output, containsInAnyOrder(allRegistry.toArray()));
     }
 

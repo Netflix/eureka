@@ -23,12 +23,12 @@ import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.protocol.replication.UnregisterCopy;
 import com.netflix.eureka2.protocol.replication.UpdateCopy;
+import com.netflix.eureka2.registry.MultiSourcedDataHolder;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry.Status;
-import com.netflix.eureka2.server.registry.Source;
-import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
+import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.service.WriteSelfRegistrationService;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.junit.After;
@@ -58,7 +58,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
     private final PublishSubject<Void> transportLifeCycle = PublishSubject.create();
 
     private final WriteSelfRegistrationService selfRegistrationService = mock(WriteSelfRegistrationService.class);
-    private final EurekaServerRegistry<InstanceInfo> registry = mock(EurekaServerRegistry.class);
+    private final SourcedEurekaRegistry<InstanceInfo> registry = mock(SourcedEurekaRegistry.class);
     private final EvictionQueue evictionQueue = mock(EvictionQueue.class);
 
     private ReceiverReplicationChannel replicationChannel;
@@ -113,7 +113,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         // Now update the record
         InstanceInfo infoUpdate = new InstanceInfo.Builder().withInstanceInfo(APP_INFO).withApp("myNewName").build();
 
-        when(registry.update(any(InstanceInfo.class), any(Set.class), any(Source.class))).thenReturn(Observable.just(Status.AddedChange));
+        when(registry.update(any(InstanceInfo.class), any(Set.class), any(Source.class))).thenReturn(Observable.just(false));
         incomingSubject.onNext(new UpdateCopy(infoUpdate));
 
         // Capture update on the registry
@@ -134,7 +134,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         handshakeAndRegister(APP_INFO);
 
         // Now remove the record
-        when(registry.unregister(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.just(Status.RemovedLast));
+        when(registry.unregister(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.just(true));
         incomingSubject.onNext(new UnregisterCopy(APP_INFO.getId()));
 
         // Capture remove on the registry and verify the arguments
@@ -181,7 +181,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
     protected void handshakeAndRegister(InstanceInfo info) {
         incomingSubject.onNext(HELLO);
 
-        when(registry.register(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.just(Status.AddedChange));
+        when(registry.register(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.just(false));
         incomingSubject.onNext(new RegisterCopy(info));
     }
 

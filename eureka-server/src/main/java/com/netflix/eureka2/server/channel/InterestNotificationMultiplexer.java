@@ -19,8 +19,8 @@ package com.netflix.eureka2.server.channel;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.MultipleInterests;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.utils.rx.BreakerSwitchOperator;
 import rx.Observable;
 import rx.subjects.PublishSubject;
@@ -41,14 +41,14 @@ import java.util.Set;
  */
 public class InterestNotificationMultiplexer {
 
-    private final EurekaServerRegistry<InstanceInfo> eurekaRegistry;
+    private final SourcedEurekaRegistry<InstanceInfo> eurekaRegistry;
 
     private final Map<Interest<InstanceInfo>, BreakerSwitchOperator> subscriptionBreakers = new HashMap<>();
 
     private final PublishSubject<Observable<ChangeNotification<InstanceInfo>>> upgrades = PublishSubject.create();
     private final Observable<ChangeNotification<InstanceInfo>> aggregatedStream = Observable.merge(upgrades);
 
-    public InterestNotificationMultiplexer(EurekaServerRegistry<InstanceInfo> eurekaRegistry) {
+    public InterestNotificationMultiplexer(SourcedEurekaRegistry<InstanceInfo> eurekaRegistry) {
         this.eurekaRegistry = eurekaRegistry;
     }
 

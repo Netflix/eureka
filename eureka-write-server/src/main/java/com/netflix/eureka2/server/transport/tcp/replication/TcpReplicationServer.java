@@ -21,10 +21,10 @@ import javax.inject.Inject;
 import javax.inject.Named;
 
 import com.google.inject.Singleton;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
+import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.service.WriteSelfRegistrationService;
 import com.netflix.eureka2.server.transport.tcp.AbstractTcpServer;
 import com.netflix.eureka2.transport.EurekaTransports;
@@ -46,7 +46,7 @@ public class TcpReplicationServer extends AbstractTcpServer<WriteServerConfig, W
 
     @Inject
     public TcpReplicationServer(WriteServerConfig config,
-                                EurekaServerRegistry eurekaRegistry,
+                                SourcedEurekaRegistry eurekaRegistry,
                                 WriteSelfRegistrationService selfRegistrationService,
                                 EvictionQueue evictionQueue,
                                 @Named("replication") MetricEventsListenerFactory servoEventsListenerFactory,

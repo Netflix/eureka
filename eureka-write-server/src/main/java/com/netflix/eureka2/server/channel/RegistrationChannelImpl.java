@@ -4,14 +4,14 @@ import com.netflix.eureka2.protocol.EurekaProtocolError;
 import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.protocol.registration.Unregister;
 import com.netflix.eureka2.protocol.registration.Update;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.MultiSourcedDataHolder.Status;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.RegistrationChannelImpl.STATES;
 import com.netflix.eureka2.server.metric.RegistrationChannelMetrics;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry.Status;
-import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
-import com.netflix.eureka2.server.registry.Source;
+import com.netflix.eureka2.registry.eviction.EvictionQueue;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.slf4j.Logger;
@@ -42,7 +42,7 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
 
     public enum STATES {Idle, Registered, Closed}
 
-    public RegistrationChannelImpl(EurekaServerRegistry registry,
+    public RegistrationChannelImpl(SourcedEurekaRegistry registry,
                                    final EvictionQueue evictionQueue,
                                    MessageConnection transport,
                                    RegistrationChannelMetrics metrics) {
@@ -114,8 +114,8 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
         final InstanceInfo tempNewInfo = new InstanceInfo.Builder()
                 .withInstanceInfo(instanceInfo).withVersion(tempNewVersion).build();
 
-        Observable<Status> registerResult = registry.register(tempNewInfo);
-        registerResult.subscribe(new Subscriber<Status>() {
+        Observable<Boolean> registerResult = registry.register(tempNewInfo);
+        registerResult.subscribe(new Subscriber<Boolean>() {
             @Override
             public void onCompleted() {
                 currentVersion = tempNewVersion;
@@ -131,7 +131,7 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
             }
 
             @Override
-            public void onNext(Status status) {
+            public void onNext(Boolean status) {
                 // No op
             }
         }); // Callers aren't required to subscribe, so it is eagerly subscribed.
@@ -155,8 +155,8 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
                 logger.debug("Set of InstanceInfo modified fields: {}", deltas);
 
                 // TODO: shall we chain ack observable with update?
-                Observable<Status> updateResult = registry.update(tempNewInfo, deltas);
-                updateResult.subscribe(new Subscriber<Status>() {
+                Observable<Boolean> updateResult = registry.update(tempNewInfo, deltas);
+                updateResult.subscribe(new Subscriber<Boolean>() {
                     @Override
                     public void onCompleted() {
                         currentVersion = tempNewVersion;
@@ -170,7 +170,7 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
                     }
 
                     @Override
-                    public void onNext(Status status) {
+                    public void onNext(Boolean status) {
                         // No op
                     }
                 });
@@ -195,8 +195,8 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
             return Observable.error(new IllegalStateException("Unrecognized channel state: " + currentState));
         }
 
-        Observable<Status> updateResult = registry.unregister(currentInfo);
-        updateResult.subscribe(new Subscriber<Status>() {
+        Observable<Boolean> updateResult = registry.unregister(currentInfo);
+        updateResult.subscribe(new Subscriber<Boolean>() {
             @Override
             public void onCompleted() {
                 currentInfo = null;
@@ -209,7 +209,7 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
             }
 
             @Override
-            public void onNext(Status status) {
+            public void onNext(Boolean status) {
                 // No op
             }
         });

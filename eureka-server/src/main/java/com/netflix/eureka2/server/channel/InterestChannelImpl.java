@@ -10,12 +10,12 @@ import com.netflix.eureka2.protocol.discovery.DeleteInstance;
 import com.netflix.eureka2.protocol.discovery.InterestRegistration;
 import com.netflix.eureka2.protocol.discovery.UnregisterInterestSet;
 import com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.InterestChannelImpl.STATES;
 import com.netflix.eureka2.server.metric.InterestChannelMetrics;
 import com.netflix.eureka2.server.metric.InterestChannelMetrics.ChannelSubscriptionMonitor;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.transport.MessageConnection;
 import rx.Observable;
@@ -39,7 +39,7 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATES> implemen
     private final InterestNotificationMultiplexer notificationMultiplexer;
     private final ChannelSubscriptionMonitor channelSubscriptionMonitor;
 
-    public InterestChannelImpl(final EurekaServerRegistry<InstanceInfo> registry, final MessageConnection transport, final InterestChannelMetrics metrics) {
+    public InterestChannelImpl(final SourcedEurekaRegistry<InstanceInfo> registry, final MessageConnection transport, final InterestChannelMetrics metrics) {
         super(STATES.Idle, transport, registry);
         this.metrics = metrics;
         this.notificationMultiplexer = new InterestNotificationMultiplexer(registry);

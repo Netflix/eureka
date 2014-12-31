@@ -4,6 +4,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.server.service.replication.ReplicationService;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
@@ -15,11 +16,10 @@ import com.netflix.eureka2.server.metric.InterestChannelMetrics;
 import com.netflix.eureka2.server.metric.RegistrationChannelMetrics;
 import com.netflix.eureka2.server.metric.ReplicationChannelMetrics;
 import com.netflix.eureka2.server.registry.EurekaBridgeRegistry;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.server.registry.eviction.EvictionQueue;
-import com.netflix.eureka2.server.registry.eviction.EvictionQueueImpl;
-import com.netflix.eureka2.server.registry.eviction.EvictionStrategy;
-import com.netflix.eureka2.server.registry.eviction.EvictionStrategyProvider;
+import com.netflix.eureka2.registry.eviction.EvictionQueue;
+import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
+import com.netflix.eureka2.registry.eviction.EvictionStrategy;
+import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
 import com.netflix.eureka2.server.service.BridgeSelfRegistrationService;
 import com.netflix.eureka2.server.service.BridgeService;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
@@ -58,7 +58,7 @@ public class EurekaBridgeServerModule extends AbstractModule {
 
         bind(SerializedTaskInvokerMetrics.class).toInstance(new SerializedTaskInvokerMetrics("registry"));
 
-        bind(EurekaServerRegistry.class).to(EurekaBridgeRegistry.class);
+        bind(SourcedEurekaRegistry.class).to(EurekaBridgeRegistry.class);
         bind(EvictionQueue.class).to(EvictionQueueImpl.class).asEagerSingleton();
         bind(EvictionStrategy.class).toProvider(EvictionStrategyProvider.class);
 

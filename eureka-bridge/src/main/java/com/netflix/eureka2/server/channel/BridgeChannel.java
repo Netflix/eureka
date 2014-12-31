@@ -3,14 +3,14 @@ package com.netflix.eureka2.server.channel;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.server.bridge.InstanceInfoConverter;
 import com.netflix.eureka2.server.bridge.InstanceInfoConverterImpl;
 import com.netflix.eureka2.server.bridge.OperatorInstanceInfoFromV1;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.registry.EurekaServerRegistry;
-import com.netflix.eureka2.server.registry.Source;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.server.channel.BridgeChannel.STATES;
 import com.netflix.eureka2.server.metric.BridgeChannelMetrics;
 import org.slf4j.Logger;
@@ -40,7 +40,7 @@ public class BridgeChannel extends AbstractHandlerChannel<STATES> {
 
     public enum STATES {Opened, Closed}
 
-    private final EurekaServerRegistry<InstanceInfo> registry;
+    private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final DiscoveryClient discoveryClient;
     private final InstanceInfoConverter converter;
     private final BridgeChannelMetrics metrics;
@@ -50,7 +50,7 @@ public class BridgeChannel extends AbstractHandlerChannel<STATES> {
 
     private final Subject<Void, Void> lifecycle;
 
-    public BridgeChannel(EurekaServerRegistry<InstanceInfo> registry,
+    public BridgeChannel(SourcedEurekaRegistry<InstanceInfo> registry,
                          DiscoveryClient discoveryClient,
                          int refreshRateSec,
                          InstanceInfo self,
@@ -59,7 +59,7 @@ public class BridgeChannel extends AbstractHandlerChannel<STATES> {
         this(registry, discoveryClient, refreshRateSec, self, metrics, Schedulers.computation());
     }
 
-    public BridgeChannel(EurekaServerRegistry<InstanceInfo> registry,
+    public BridgeChannel(SourcedEurekaRegistry<InstanceInfo> registry,
                          DiscoveryClient discoveryClient,
                          int refreshRateSec,
                          InstanceInfo self,

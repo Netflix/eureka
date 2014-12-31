@@ -42,11 +42,6 @@ public interface ClientChannelFactory {
     RegistrationChannel newRegistrationChannel();
 
     /**
-     * Mode specifies constraints on channels that can be created.
-     */
-    Mode mode();
-
-    /**
      * Release underlying resources.
      */
     void shutdown();

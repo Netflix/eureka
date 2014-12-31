@@ -1,26 +1,30 @@
 package com.netflix.eureka2.interests;
 
-import com.netflix.eureka2.client.metric.EurekaClientMetricFactory;
-import com.netflix.eureka2.client.registry.EurekaClientRegistryImpl;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
+import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import rx.functions.Action1;
+import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static com.netflix.eureka2.interests.Interests.forFullRegistry;
 import static com.netflix.eureka2.interests.Interests.forInstances;
 import static com.netflix.eureka2.interests.Interests.forSome;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 
 /**
@@ -36,8 +40,7 @@ public class RegistryIndexTest {
     private InstanceInfo zuulServer;
     private InstanceInfo cliServer;
 
-    private TestScheduler testScheduler;
-    private EurekaRegistry<InstanceInfo, ?> registry;
+    private EurekaRegistry<InstanceInfo> registry;
 
     @Rule
     public final ExternalResource registryResource = new ExternalResource() {
@@ -52,8 +55,7 @@ public class RegistryIndexTest {
             zuulServer = zuulServerBuilder.build();
             cliServer = cliServerBuilder.build();
 
-            testScheduler = Schedulers.test();
-            registry = new EurekaClientRegistryImpl(EurekaClientMetricFactory.clientMetrics().getRegistryMetrics());
+            registry = new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics());
         }
 
         @Override
@@ -64,10 +66,9 @@ public class RegistryIndexTest {
 
     @Test
     public void testBasicIndex() throws Exception {
-        List<ChangeNotification<InstanceInfo>> notifications = doTestWithIndex(forFullRegistry());
+        List<ChangeNotification<InstanceInfo>> notifications = doTestWithIndex(forFullRegistry(), 5);
 
         assertThat(notifications, hasSize(5));
-
         InstanceInfo newCliServer = cliServerBuilder.withStatus(InstanceInfo.Status.DOWN).build();
 
         assertThat(notifications,  // Checks the order of notifications.
@@ -81,7 +82,7 @@ public class RegistryIndexTest {
     @Test
     public void testCompositeIndex() throws Exception {
         List<ChangeNotification<InstanceInfo>> notifications =
-                doTestWithIndex(forSome(forInstances(discoveryServer.getId()), forInstances(zuulServer.getId())));
+                doTestWithIndex(forSome(forInstances(discoveryServer.getId()), forInstances(zuulServer.getId())), 3);
 
         assertThat(notifications, hasSize(3));
         assertThat(notifications,  // Checks the order of notifications.
@@ -90,27 +91,38 @@ public class RegistryIndexTest {
                         new ChangeNotification<>(Kind.Delete, discoveryServer)));
     }
 
-    private List<ChangeNotification<InstanceInfo>> doTestWithIndex(Interest<InstanceInfo> interest) {
+    private List<ChangeNotification<InstanceInfo>> doTestWithIndex(Interest<InstanceInfo> interest, final int expectedCount) throws Exception {
         final List<ChangeNotification<InstanceInfo>> notifications = new ArrayList<>();
 
-        registry.register(discoveryServer).subscribeOn(testScheduler).subscribe();
+        final CountDownLatch expectedLatch = new CountDownLatch(expectedCount);
+        registry.register(discoveryServer).toBlocking().firstOrDefault(null);
         registry.forInterest(interest)
-                .subscribeOn(testScheduler)
+                .map(new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {  // transform from source version to base version for testing equals
+                    @Override
+                    public ChangeNotification<InstanceInfo> call(ChangeNotification<InstanceInfo> notification) {
+                        if (notification instanceof SourcedChangeNotification) {
+                            return ((SourcedChangeNotification<InstanceInfo>) notification).toBaseNotification();
+                        } else if (notification instanceof SourcedModifyNotification) {
+                            return ((SourcedModifyNotification<InstanceInfo>) notification).toBaseNotification();
+                        }
+                        return notification;
+                    }
+                })
                 .subscribe(new Action1<ChangeNotification<InstanceInfo>>() {
                     @Override
                     public void call(ChangeNotification<InstanceInfo> notification) {
                         notifications.add(notification);
+                        expectedLatch.countDown();
                     }
                 });
-        testScheduler.triggerActions();
 
-        registry.register(zuulServer).subscribeOn(testScheduler).subscribe();
-        registry.unregister(discoveryServer).subscribeOn(testScheduler).subscribe();
-        registry.register(cliServer).subscribeOn(testScheduler).subscribe();
+        registry.register(zuulServer).toBlocking().firstOrDefault(null);
+        registry.unregister(discoveryServer).toBlocking().firstOrDefault(null);
+        registry.register(cliServer).toBlocking().firstOrDefault(null);
         InstanceInfo newCliServer = cliServerBuilder.withStatus(InstanceInfo.Status.DOWN).build();
-        registry.update(newCliServer, newCliServer.diffOlder(cliServer)).subscribeOn(testScheduler).subscribe();;
+        registry.update(newCliServer, newCliServer.diffOlder(cliServer)).toBlocking().firstOrDefault(null);
 
-        testScheduler.triggerActions();
+        assertThat(expectedLatch.await(1, TimeUnit.MINUTES), equalTo(true));
 
         return notifications;
     }

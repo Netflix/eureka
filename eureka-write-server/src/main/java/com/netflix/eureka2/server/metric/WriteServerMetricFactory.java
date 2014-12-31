@@ -20,7 +20,6 @@ import javax.inject.Inject;
 import javax.inject.Named;
 
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
-import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 
 /**
  * @author Tomasz Bak
@@ -34,10 +33,6 @@ public class WriteServerMetricFactory extends EurekaServerMetricFactory {
     private final RegistrationChannelMetrics registrationChannelMetrics;
     private final ReplicationChannelMetrics replicationChannelMetrics;
 
-    private final EurekaServerRegistryMetrics eurekaServerRegistryMetrics;
-    private final EvictionQueueMetrics evictionQueueMetrics;
-    private final SerializedTaskInvokerMetrics registryTaskInvokerMetrics;
-
     @Inject
     public WriteServerMetricFactory(
             @Named("registration") MessageConnectionMetrics registrationConnectionMetrics,
@@ -46,10 +41,7 @@ public class WriteServerMetricFactory extends EurekaServerMetricFactory {
             @Named("clientReplication") MessageConnectionMetrics replicationServerConnectionMetrics,
             RegistrationChannelMetrics registrationChannelMetrics,
             ReplicationChannelMetrics replicationChannelMetrics,
-            InterestChannelMetrics interestChannelMetrics,
-            EurekaServerRegistryMetrics eurekaServerRegistryMetrics,
-            EvictionQueueMetrics evictionQueueMetrics,
-            SerializedTaskInvokerMetrics registryTaskInvokerMetrics) {
+            InterestChannelMetrics interestChannelMetrics) {
         super(registrationConnectionMetrics, replicationConnectionMetrics, discoveryConnectionMetrics,
                 interestChannelMetrics);
         this.registrationServerConnectionMetrics = null;
@@ -57,9 +49,6 @@ public class WriteServerMetricFactory extends EurekaServerMetricFactory {
         this.replicationServerConnectionMetrics = replicationServerConnectionMetrics;
         this.registrationChannelMetrics = registrationChannelMetrics;
         this.replicationChannelMetrics = replicationChannelMetrics;
-        this.eurekaServerRegistryMetrics = eurekaServerRegistryMetrics;
-        this.evictionQueueMetrics = evictionQueueMetrics;
-        this.registryTaskInvokerMetrics = registryTaskInvokerMetrics;
     }
 
     public MessageConnectionMetrics getReplicationServerConnectionMetrics() {
@@ -82,18 +71,6 @@ public class WriteServerMetricFactory extends EurekaServerMetricFactory {
         return replicationChannelMetrics;
     }
 
-    public EurekaServerRegistryMetrics getEurekaServerRegistryMetrics() {
-        return eurekaServerRegistryMetrics;
-    }
-
-    public EvictionQueueMetrics getEvictionQueueMetrics() {
-        return evictionQueueMetrics;
-    }
-
-    public SerializedTaskInvokerMetrics getRegistryTaskInvokerMetrics() {
-        return registryTaskInvokerMetrics;
-    }
-
     public static WriteServerMetricFactory writeServerMetrics() {
         if (INSTANCE == null) {
             synchronized (WriteServerMetricFactory.class) {
@@ -113,28 +90,14 @@ public class WriteServerMetricFactory extends EurekaServerMetricFactory {
                 ReplicationChannelMetrics replicationChannelMetrics = new ReplicationChannelMetrics();
                 replicationChannelMetrics.bindMetrics();
 
-                EurekaServerRegistryMetrics eurekaServerRegistryMetrics = new EurekaServerRegistryMetrics();
-                eurekaServerRegistryMetrics.bindMetrics();
-
-                EvictionQueueMetrics evictionQueueMetrics = new EvictionQueueMetrics();
-                evictionQueueMetrics.bindMetrics();
-
-                SerializedTaskInvokerMetrics registryTaskInvokerMetrics = new SerializedTaskInvokerMetrics("registry");
-                registryTaskInvokerMetrics.bindMetrics();
-
                 INSTANCE = new WriteServerMetricFactory(
                         serverMetrics().getRegistrationConnectionMetrics(),
                         serverMetrics().getReplicationConnectionMetrics(),
                         serverMetrics().getDiscoveryConnectionMetrics(),
-//                        clientRegistration,
-//                        clientDiscovery,
                         clientReplication,
                         registrationChannelMetrics,
                         replicationChannelMetrics,
-                        serverMetrics().getInterestChannelMetrics(),
-                        eurekaServerRegistryMetrics,
-                        evictionQueueMetrics,
-                        registryTaskInvokerMetrics
+                        serverMetrics().getInterestChannelMetrics()
                 );
             }
         }

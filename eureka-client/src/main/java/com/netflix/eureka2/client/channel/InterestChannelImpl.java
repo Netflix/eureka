@@ -2,10 +2,9 @@ package com.netflix.eureka2.client.channel;
 
 import com.netflix.eureka2.channel.AbstractClientChannel;
 import com.netflix.eureka2.client.channel.InterestChannelImpl.STATES;
-import com.netflix.eureka2.client.metric.EurekaClientMetricFactory;
 import com.netflix.eureka2.client.metric.InterestChannelMetrics;
-import com.netflix.eureka2.client.registry.EurekaClientRegistry;
-import com.netflix.eureka2.client.registry.EurekaClientRegistryImpl;
+import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.transport.TransportClient;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
@@ -31,6 +30,7 @@ import rx.observers.SafeSubscriber;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * An implementation of {@link InterestChannel}. It is mandatory that all operations
@@ -59,8 +59,9 @@ public class InterestChannelImpl
 
     public enum STATES {Idle, Open, Closed}
 
+    private final Source selfSource;
     private final InterestChannelMetrics metrics;
-    protected EurekaClientRegistry<InstanceInfo> registry;
+    protected final SourcedEurekaRegistry<InstanceInfo> registry;
 
     /**
      * A local copy of instances received by this channel from the server. This is used for:
@@ -80,13 +81,9 @@ public class InterestChannelImpl
      */
     private final Map<String, InstanceInfo> idVsInstance = new HashMap<>();
 
-    protected InterestChannelImpl(TransportClient client, EurekaClientMetricFactory metricFactory) {
-        this(new EurekaClientRegistryImpl(metricFactory.getRegistryMetrics()), client, metricFactory.getInterestChannelMetrics());
-    }
-
-    // package private for testing
-    InterestChannelImpl(final EurekaClientRegistry<InstanceInfo> registry, TransportClient client, InterestChannelMetrics metrics) {
+    public InterestChannelImpl(final SourcedEurekaRegistry<InstanceInfo> registry, TransportClient client, InterestChannelMetrics metrics) {
         super(STATES.Idle, client);
+        this.selfSource = Source.interestSource(UUID.randomUUID().toString());
         this.registry = registry;
         this.metrics = metrics;
         metrics.incrementStateCounter(STATES.Idle);
@@ -96,13 +93,22 @@ public class InterestChannelImpl
     }
 
     @Override
-    public EurekaClientRegistry<InstanceInfo> associatedRegistry() {
+    public Source getSource() {
+        return selfSource;
+    }
+
+    @Override
+    public SourcedEurekaRegistry<InstanceInfo> associatedRegistry() {
         return registry;
     }
 
     // channel contract means this will be invoked in serial.
     @Override
     public Observable<Void> change(final Interest<InstanceInfo> newInterest) {
+        if (state.get() == STATES.Closed) {
+            return Observable.error(CHANNEL_CLOSED_EXCEPTION);
+        }
+
         Observable<Void> serverRequest = connect() // Connect is idempotent and does not connect on every call.
                 .switchMap(new Func1<MessageConnection, Observable<Void>>() {
                     @Override
@@ -150,7 +156,6 @@ public class InterestChannelImpl
         if (state.get() != STATES.Closed) {
             moveToState(state.get(), STATES.Closed);
             idVsInstance.clear();
-            registry.shutdown();
             super._close();
         }
     }
@@ -280,8 +285,8 @@ public class InterestChannelImpl
         return false;
     }
 
-    protected static class ChannelInterestSubscriber extends SafeSubscriber<ChangeNotification<InstanceInfo>> {
-        public ChannelInterestSubscriber(final EurekaClientRegistry<InstanceInfo> registry) {
+    protected class ChannelInterestSubscriber extends SafeSubscriber<ChangeNotification<InstanceInfo>> {
+        public ChannelInterestSubscriber(final SourcedEurekaRegistry<InstanceInfo> registry) {
             super(new Subscriber<ChangeNotification<InstanceInfo>>() {
                 @Override
                 public void onCompleted() {
@@ -299,15 +304,15 @@ public class InterestChannelImpl
                 public void onNext(ChangeNotification<InstanceInfo> notification) {
                     switch (notification.getKind()) {  // these are in-mem blocking ops
                         case Add:
-                            registry.register(notification.getData());
+                            registry.register(notification.getData(), selfSource);
                             break;
                         case Modify:
                             ModifyNotification<InstanceInfo> modifyNotification
                                     = (ModifyNotification<InstanceInfo>) notification;
-                            registry.update(modifyNotification.getData(), modifyNotification.getDelta());
+                            registry.update(modifyNotification.getData(), modifyNotification.getDelta(), selfSource);
                             break;
                         case Delete:
-                            registry.unregister(notification.getData());
+                            registry.unregister(notification.getData(), selfSource);
                             break;
                         default:
                             logger.error("Unrecognized notification kind");
