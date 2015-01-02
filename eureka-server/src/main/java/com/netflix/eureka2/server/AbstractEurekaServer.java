@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.server;
 
+import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +32,7 @@ import com.netflix.governator.guice.BootstrapBinder;
 import com.netflix.governator.guice.BootstrapModule;
 import com.netflix.governator.guice.LifecycleInjector;
 import com.netflix.governator.lifecycle.LifecycleManager;
+import com.netflix.governator.lifecycle.LifecycleState;
 import netflix.adminresources.resources.KaryonWebAdminModule;
 import netflix.karyon.archaius.DefaultPropertiesLoader;
 import netflix.karyon.archaius.PropertiesLoader;
@@ -55,6 +57,11 @@ public abstract class AbstractEurekaServer<C extends EurekaCommonConfig> {
 
     protected Injector injector;
     private LifecycleManager lifecycleManager;
+
+    /**
+     * A latch released by {@link ShutdownDetector}, to determine when container shutdown started.
+     */
+    private final CountDownLatch injectorShutdown = new CountDownLatch(1);
 
     protected AbstractEurekaServer(String name) {
         this.config = null;
@@ -87,6 +94,7 @@ public abstract class AbstractEurekaServer<C extends EurekaCommonConfig> {
                     @Override
                     protected void configure() {
                         bind(EurekaShutdownService.class).asEagerSingleton();
+                        bind(ShutdownDetector.class).toInstance(new ShutdownDetector());
                         // TODO: replace fake health check with a real one.
                         bind(HealthCheckHandler.class).to(AlwaysHealthyHealthCheck.class).asEagerSingleton();
                         bind(HealthCheckInvocationStrategy.class).to(SyncHealthCheckInvocationStrategy.class).asEagerSingleton();
@@ -120,26 +128,35 @@ public abstract class AbstractEurekaServer<C extends EurekaCommonConfig> {
     }
 
     public void waitTillShutdown() {
-        final CountDownLatch shutdownFinished = new CountDownLatch(1);
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
-                try {
+                if (injectorShutdown.getCount() > 0) {
+                    logger.info("Shutdown hook triggered - terminating the application");
                     shutdown();
-                    logger.info("Leaving main loop - shutdown finished.");
-                } finally {
-                    shutdownFinished.countDown();
                 }
             }
         });
-        while (true) {
+        while (injectorShutdown.getCount() > 0) {
             try {
-                shutdownFinished.await();
-                return;
+                injectorShutdown.await();
             } catch (InterruptedException e) {
-                // IGNORE
+                logger.error("Unexpected interruption", e);
             }
         }
+        long waitTimeMs = 1;
+        while (lifecycleManager.getState(lifecycleManager) != LifecycleState.LATENT) {
+            try {
+                Thread.sleep(waitTimeMs);
+                waitTimeMs = Math.min(1000, waitTimeMs * 2);
+            } catch (InterruptedException e) {
+                logger.error("Unexpected interruption", e);
+            }
+            if (waitTimeMs == 1000) {
+                logger.info("Waiting for the container to complete the shutdown process");
+            }
+        }
+        logger.info("All services stopped; quitting");
     }
 
     public void shutdown() {
@@ -148,4 +165,10 @@ public abstract class AbstractEurekaServer<C extends EurekaCommonConfig> {
         }
     }
 
+    private class ShutdownDetector {
+        @PreDestroy
+        public void shutdown() {
+            injectorShutdown.countDown();
+        }
+    }
 }

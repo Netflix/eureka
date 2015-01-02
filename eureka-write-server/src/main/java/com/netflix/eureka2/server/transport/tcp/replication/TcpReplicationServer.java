@@ -22,9 +22,9 @@ import javax.inject.Named;
 
 import com.google.inject.Singleton;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
-import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.service.WriteSelfRegistrationService;
 import com.netflix.eureka2.server.transport.tcp.AbstractTcpServer;
 import com.netflix.eureka2.transport.EurekaTransports;
@@ -68,5 +68,4 @@ public class TcpReplicationServer extends AbstractTcpServer<WriteServerConfig, W
 
         logger.info("Starting TCP replication server on port {} with {} encoding...", server.getServerPort(), config.getCodec());
     }
-
 }

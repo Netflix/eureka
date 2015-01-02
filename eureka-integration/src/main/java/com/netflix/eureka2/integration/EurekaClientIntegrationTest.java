@@ -14,6 +14,7 @@ import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -41,7 +42,7 @@ public class EurekaClientIntegrationTest {
      * list is first read from the write cluster, and given this information, the client connects
      * the interest channel to one of the provided read servers.
      */
-    @Test(timeout = 1000000)
+    @Test(timeout = 60000)
     public void testReadServerClusterIsResolvedFromWriteCluster() {
         EmbeddedWriteCluster writeCluster = deployment.getWriteCluster();
         String readClusterVip = deployment.getReadCluster().getVip();
