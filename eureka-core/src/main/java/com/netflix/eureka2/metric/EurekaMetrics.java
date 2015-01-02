@@ -16,6 +16,13 @@
 
 package com.netflix.eureka2.metric;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+
 import com.netflix.eureka2.utils.ServoUtils;
 import com.netflix.servo.DefaultMonitorRegistry;
 import com.netflix.servo.monitor.Counter;
@@ -24,13 +31,6 @@ import com.netflix.servo.monitor.Monitor;
 import com.netflix.servo.monitor.MonitorConfig;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Timer;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Base class for component specific metric implementations.
@@ -69,7 +69,7 @@ public abstract class EurekaMetrics {
         if (state.compareAndSet(STATE.Up, STATE.Down)) {
             ServoUtils.unregisterObject(id, this);
             for (Monitor<?> m : monitors) {
-                DefaultMonitorRegistry.getInstance().unregister(m);
+                ServoUtils.unregisterMonitor(m);
             }
             for (EurekaMetrics e : nestedMetrics) {
                 e.unbindMetrics();

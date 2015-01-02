@@ -16,21 +16,21 @@
 
 package com.netflix.eureka2.server.transport.tcp.registration;
 
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
-import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.transport.tcp.AbstractTcpServer;
 import com.netflix.eureka2.transport.EurekaTransports;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
 
 /**
  * @author Tomasz Bak

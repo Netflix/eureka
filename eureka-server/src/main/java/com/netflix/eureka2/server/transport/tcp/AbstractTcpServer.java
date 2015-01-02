@@ -16,19 +16,23 @@
 
 package com.netflix.eureka2.server.transport.tcp;
 
+import javax.annotation.PreDestroy;
+
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 import io.reactivex.netty.server.RxServer;
-
-import javax.annotation.PreDestroy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Tomasz Bak
  */
 public class AbstractTcpServer<C extends EurekaServerConfig, M extends EurekaServerMetricFactory> {
+
+    private static final Logger logger = LoggerFactory.getLogger(AbstractTcpServer.class);
 
     protected final C config;
     protected final SourcedEurekaRegistry<InstanceInfo> eurekaRegistry;
@@ -45,13 +49,27 @@ public class AbstractTcpServer<C extends EurekaServerConfig, M extends EurekaSer
     }
 
     @PreDestroy
-    public void shutdown() throws InterruptedException {
+    public void stop() {
         if (server != null) {
-            server.shutdown();
+            try {
+                server.shutdown();
+                logger.info("Stopped TCP server {}", this);
+            } catch (InterruptedException e) {
+                logger.info("Shutdown of TCP server " + this + " interrupted", e);
+            } finally {
+                server = null;
+            }
         }
     }
 
+
     public int serverPort() {
         return server.getServerPort();
+    }
+
+    @Override
+    public String toString() {
+        String port = server == null ? "N/A" : Integer.toString(serverPort());
+        return "{server=" + this.getClass().getSimpleName() + ", port=" + port + '}';
     }
 }

@@ -16,11 +16,16 @@
 
 package com.netflix.eureka2.utils;
 
+import com.netflix.servo.DefaultMonitorRegistry;
+import com.netflix.servo.MonitorRegistry;
 import com.netflix.servo.monitor.LongGauge;
+import com.netflix.servo.monitor.Monitor;
 import com.netflix.servo.monitor.MonitorConfig;
 import com.netflix.servo.monitor.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static com.netflix.servo.monitor.Monitors.newObjectMonitor;
 
 /**
  * @author Nitesh Kant
@@ -42,10 +47,13 @@ public final class ServoUtils {
     }
 
     public static void unregisterObject(String id, Object objectToRegister) {
-        try {
-            Monitors.unregisterObject(id, objectToRegister);
-        } catch (Exception e) {
-            logger.error("Failed to unregister object with the servo registry.", e);
+        unregisterMonitor(newObjectMonitor(id, objectToRegister));
+    }
+
+    public static void unregisterMonitor(Monitor<?> monitor) {
+        MonitorRegistry monitorRegistry = DefaultMonitorRegistry.getInstance();
+        if (monitorRegistry.getRegisteredMonitors().contains(monitor)) {
+            monitorRegistry.unregister(monitor);
         }
     }
 
