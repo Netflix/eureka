@@ -60,6 +60,23 @@ public class InstanceInfo {
         this.version = version;
     }
 
+    public Builder toBuilder() {
+        return new Builder()
+                .withId(id)
+                .withVersion(version)
+                .withAppGroup(appGroup)
+                .withAsg(asg)
+                .withVipAddress(vipAddress)
+                .withSecureVipAddress(secureVipAddress)
+                .withPorts(new HashSet<>(ports))
+                .withStatus(status)
+                .withHomePageUrl(homePageUrl)
+                .withStatusPageUrl(statusPageUrl)
+                .withHealthCheckUrls(new HashSet<>(healthCheckUrls))
+                .withMetaData(metaData == null ? null : new HashMap<>(metaData))
+                .withDataCenterInfo(dataCenterInfo);
+    }
+
     /**
      * @return unique identifier of this instance
      */
