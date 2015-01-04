@@ -16,14 +16,15 @@
 
 package com.netflix.eureka2.protocol.discovery;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.Set;
+
+import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfoField;
 import com.netflix.eureka2.registry.instance.InstanceInfoField.Name;
 import com.netflix.eureka2.registry.instance.ServicePort;
-
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.Set;
 
 /**
  * @author Tomasz Bak
@@ -83,6 +84,8 @@ public class UpdateInstanceInfo<T> implements InterestSetNotification {
                 return new StringDeltaDTO((Delta<String>) delta);
             } else if (Enum.class.isAssignableFrom(ctype)) {
                 return new EnumDeltaDTO((Delta<Enum>) delta);
+            } else if(DataCenterInfo.class.isAssignableFrom(ctype)) {
+                return new DataCenterInfoDTO((Delta<DataCenterInfo>) delta);
             }
         } else if (type instanceof ParameterizedType) {
             ParameterizedType ptype = (ParameterizedType) type;
@@ -241,6 +244,23 @@ public class UpdateInstanceInfo<T> implements InterestSetNotification {
 
         @Override
         public Set<String> getValue() {
+            return value;
+        }
+    }
+
+    public static class DataCenterInfoDTO extends DeltaDTO<DataCenterInfo> {
+        DataCenterInfo value;
+
+        public DataCenterInfoDTO() {
+        }
+
+        public DataCenterInfoDTO(Delta<DataCenterInfo> delta) {
+            super(delta);
+            value = delta.getValue();
+        }
+
+        @Override
+        public DataCenterInfo getValue() {
             return value;
         }
     }

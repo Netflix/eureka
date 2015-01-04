@@ -18,11 +18,14 @@ import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.protocol.replication.UnregisterCopy;
 import com.netflix.eureka2.protocol.replication.UpdateCopy;
+import com.netflix.eureka2.registry.datacenter.BasicDataCenterInfo;
+import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
 import com.netflix.eureka2.registry.instance.Delta.Builder;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfoField;
 import com.netflix.eureka2.registry.instance.ServicePort;
 import com.netflix.eureka2.rx.RxBlocking;
+import com.netflix.eureka2.testkit.data.builder.SampleAwsDataCenterInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleDelta;
 import com.netflix.eureka2.testkit.data.builder.SampleInterest;
 import com.netflix.eureka2.testkit.data.builder.SampleServicePort;
@@ -211,6 +214,11 @@ public abstract class TransportCompatibilityTestSuite {
             runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.HOMEPAGE_URL, "newHomePageURL").build()));
             runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.STATUS_PAGE_URL, "newStatusPageURL").build()));
             runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.HEALTHCHECK_URLS, Sets.asSet("http://newHealthCheck1", "http://newHealthCheck2")).build()));
+
+            DataCenterInfo awsDataCenterInfo = SampleAwsDataCenterInfo.UsEast1a.builder().withInstanceId("newInstanceId").build();
+            runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.DATA_CENTER_INFO, awsDataCenterInfo).build()));
+            DataCenterInfo basicDataCenterInfo = BasicDataCenterInfo.fromSystemData();
+            runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.DATA_CENTER_INFO, basicDataCenterInfo).build()));
 
             // Update with null values (delete semantic)
             runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.APPLICATION, null).build()));
