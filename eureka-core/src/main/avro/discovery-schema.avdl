@@ -49,12 +49,25 @@ protocol DiscoveryProtocol {
         union { null, @java-class("java.util.HashSet") array<string> } value;
     }
 
+    @namespace("com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$")
+    record DataCenterInfoDTO {
+        string id;
+        long version;
+        string fieldName;
+        union {
+            null,
+            com.netflix.eureka2.registry.datacenter.BasicDataCenterInfo,
+            com.netflix.eureka2.registry.datacenter.AwsDataCenterInfo
+         } value;
+    }
+
     record UpdateInstanceInfo {
         union {
             com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.StringDeltaDTO,
             com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.EnumDeltaDTO,
             com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.SetServicePortDeltaDTO,
-            com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.SetStringDeltaDTO
+            com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.SetStringDeltaDTO,
+            com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.DataCenterInfoDTO
         } deltaDTO;
     }
 
