@@ -28,7 +28,7 @@ import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
-import com.netflix.eureka2.server.service.SelfRegistrationService;
+import com.netflix.eureka2.server.service.SelfIdentityService;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.junit.After;
 import org.junit.Before;
@@ -56,7 +56,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
     private final MessageConnection transport = mock(MessageConnection.class);
     private final PublishSubject<Void> transportLifeCycle = PublishSubject.create();
 
-    private final SelfRegistrationService SelfRegistrationService = mock(SelfRegistrationService.class);
+    private final SelfIdentityService SelfIdentityService = mock(SelfIdentityService.class);
     private final SourcedEurekaRegistry<InstanceInfo> registry = mock(SourcedEurekaRegistry.class);
     private final EvictionQueue evictionQueue = mock(EvictionQueue.class);
 
@@ -74,9 +74,9 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         when(transport.submit(anyObject())).thenReturn(Observable.<Void>empty());
         when(transport.acknowledge()).thenReturn(Observable.<Void>empty());
 
-        when(SelfRegistrationService.resolve()).thenReturn(Observable.just(RECEIVER_INFO));
+        when(SelfIdentityService.resolve()).thenReturn(Observable.just(RECEIVER_INFO));
 
-        replicationChannel = new ReceiverReplicationChannel(transport, SelfRegistrationService, registry,
+        replicationChannel = new ReceiverReplicationChannel(transport, SelfIdentityService, registry,
                 evictionQueue, writeServerMetrics().getReplicationChannelMetrics());
     }
 

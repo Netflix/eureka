@@ -35,7 +35,7 @@ import com.netflix.eureka2.server.channel.RetryableSenderReplicationChannel;
 import com.netflix.eureka2.server.channel.SenderReplicationChannel;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
-import com.netflix.eureka2.server.service.SelfRegistrationService;
+import com.netflix.eureka2.server.service.SelfIdentityService;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +59,7 @@ public class ReplicationService {
 
     private final AtomicReference<STATE> state = new AtomicReference<>(STATE.Idle);
     private final SourcedEurekaRegistry<InstanceInfo> eurekaRegistry;
-    private final SelfRegistrationService selfRegistrationService;
+    private final SelfIdentityService selfIdentityService;
     private final ReplicationPeerAddressesProvider peerAddressesProvider;
     private final WriteServerMetricFactory metricFactory;
     private final Codec codec;
@@ -72,11 +72,11 @@ public class ReplicationService {
     @Inject
     public ReplicationService(WriteServerConfig config,
                               SourcedEurekaRegistry eurekaRegistry,
-                              SelfRegistrationService selfRegistrationService,
+                              SelfIdentityService selfIdentityService,
                               ReplicationPeerAddressesProvider peerAddressesProvider,
                               WriteServerMetricFactory metricFactory) {
         this.eurekaRegistry = eurekaRegistry;
-        this.selfRegistrationService = selfRegistrationService;
+        this.selfIdentityService = selfIdentityService;
         this.peerAddressesProvider = peerAddressesProvider;
         this.metricFactory = metricFactory;
         this.codec = config.getCodec();
@@ -94,7 +94,7 @@ public class ReplicationService {
             throw new IllegalStateException("ReplicationService already closed");
         }
 
-        resolverSubscription = selfRegistrationService.resolve()
+        resolverSubscription = selfIdentityService.resolve()
                 .flatMap(new Func1<InstanceInfo, Observable<ChangeNotification<InetSocketAddress>>>() {
                     @Override
                     public Observable<ChangeNotification<InetSocketAddress>> call(InstanceInfo instanceInfo) {

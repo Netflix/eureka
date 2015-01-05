@@ -24,7 +24,7 @@ public class BridgeService {
     private static final Logger logger = LoggerFactory.getLogger(BridgeService.class);
 
     private final BridgeServerConfig config;
-    private final SelfRegistrationService selfRegistrationService;
+    private final SelfIdentityService selfIdentityService;
     private final BridgeServerMetricFactory metricFactory;
     private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final DiscoveryClient discoveryClient;
@@ -33,13 +33,13 @@ public class BridgeService {
 
     @Inject
     public BridgeService(BridgeServerConfig config,
-                         SelfRegistrationService selfRegistrationService,
+                         SelfIdentityService selfIdentityService,
                          BridgeServerMetricFactory metricFactory,
                          SourcedEurekaRegistry registry,
                          DiscoveryClient discoveryClient) {
 
         this.config = config;
-        this.selfRegistrationService = selfRegistrationService;
+        this.selfIdentityService = selfIdentityService;
         this.metricFactory = metricFactory;
         this.registry = registry;
         this.discoveryClient = discoveryClient;
@@ -50,7 +50,7 @@ public class BridgeService {
     @SuppressWarnings("unchecked")
     @PostConstruct
     public void connect() {
-        selfRegistrationService.resolve().subscribe(new Subscriber<InstanceInfo>() {
+        selfIdentityService.resolve().subscribe(new Subscriber<InstanceInfo>() {
             @Override
             public void onCompleted() {
             }

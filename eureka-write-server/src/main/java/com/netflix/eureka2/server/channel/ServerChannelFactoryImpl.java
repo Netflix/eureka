@@ -5,7 +5,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.channel.RegistrationChannel;
-import com.netflix.eureka2.server.service.SelfRegistrationService;
+import com.netflix.eureka2.server.service.SelfIdentityService;
 import com.netflix.eureka2.transport.MessageConnection;
 
 /**
@@ -19,17 +19,17 @@ import com.netflix.eureka2.transport.MessageConnection;
  */
 public class ServerChannelFactoryImpl extends InterestChannelFactoryImpl implements ServerChannelFactory {
 
-    private final SelfRegistrationService SelfRegistrationService;
+    private final SelfIdentityService SelfIdentityService;
     private final EvictionQueue evictionQueue;
     private final WriteServerMetricFactory metricFactory;
 
     public ServerChannelFactoryImpl(SourcedEurekaRegistry<InstanceInfo> registry,
-                                    SelfRegistrationService SelfRegistrationService,
+                                    SelfIdentityService SelfIdentityService,
                                     EvictionQueue evictionQueue,
                                     MessageConnection connection,
                                     WriteServerMetricFactory metricFactory) {
         super(registry, connection, metricFactory);
-        this.SelfRegistrationService = SelfRegistrationService;
+        this.SelfIdentityService = SelfIdentityService;
         this.evictionQueue = evictionQueue;
         this.metricFactory = metricFactory;
     }
@@ -41,7 +41,7 @@ public class ServerChannelFactoryImpl extends InterestChannelFactoryImpl impleme
 
     @Override
     public ReplicationChannel newReplicationChannel() {
-        return new ReceiverReplicationChannel(connection, SelfRegistrationService, registry, evictionQueue, metricFactory.getReplicationChannelMetrics());
+        return new ReceiverReplicationChannel(connection, SelfIdentityService, registry, evictionQueue, metricFactory.getReplicationChannelMetrics());
     }
 
     @Override

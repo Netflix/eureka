@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * @author David Liu
  */
-public abstract class EurekaServerHealthService implements SelfRegistrationService {
+public abstract class EurekaServerHealthService implements SelfIdentityService {
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaServerHealthService.class);
 

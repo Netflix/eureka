@@ -23,7 +23,7 @@ import com.netflix.eureka2.server.channel.ServerChannelFactory;
 import com.netflix.eureka2.server.channel.ServerChannelFactoryImpl;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
-import com.netflix.eureka2.server.service.SelfRegistrationService;
+import com.netflix.eureka2.server.service.SelfIdentityService;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
@@ -37,17 +37,17 @@ import rx.schedulers.Schedulers;
  */
 public class TcpReplicationHandler implements ConnectionHandler<Object, Object> {
 
-    private final SelfRegistrationService SelfRegistrationService;
+    private final SelfIdentityService SelfIdentityService;
     private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final EvictionQueue evictionQueue;
     private final WriteServerMetricFactory metricFactory;
 
     @Inject
-    public TcpReplicationHandler(SelfRegistrationService SelfRegistrationService,
+    public TcpReplicationHandler(SelfIdentityService SelfIdentityService,
                                  SourcedEurekaRegistry registry,
                                  EvictionQueue evictionQueue,
                                  WriteServerMetricFactory metricFactory) {
-        this.SelfRegistrationService = SelfRegistrationService;
+        this.SelfIdentityService = SelfIdentityService;
         this.registry = registry;
         this.evictionQueue = evictionQueue;
         this.metricFactory = metricFactory;
@@ -60,7 +60,7 @@ public class TcpReplicationHandler implements ConnectionHandler<Object, Object> 
                 30000, 3,
                 Schedulers.computation()
         );
-        final ServerChannelFactory service = new ServerChannelFactoryImpl(registry, SelfRegistrationService, evictionQueue, broker, metricFactory);
+        final ServerChannelFactory service = new ServerChannelFactoryImpl(registry, SelfIdentityService, evictionQueue, broker, metricFactory);
         return service.newReplicationChannel().asLifecycleObservable();
     }
 }

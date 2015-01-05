@@ -6,6 +6,8 @@ import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.server.service.EurekaBridgeServerHealthService;
+import com.netflix.eureka2.server.service.EurekaServerHealthService;
 import com.netflix.eureka2.server.service.replication.ReplicationService;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
@@ -21,9 +23,8 @@ import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
 import com.netflix.eureka2.registry.eviction.EvictionStrategy;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
-import com.netflix.eureka2.server.service.BridgeSelfRegistrationService;
 import com.netflix.eureka2.server.service.BridgeService;
-import com.netflix.eureka2.server.service.SelfRegistrationService;
+import com.netflix.eureka2.server.service.SelfIdentityService;
 import com.netflix.eureka2.server.spi.ExtensionContext;
 import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
@@ -51,18 +52,21 @@ public class EurekaBridgeServerModule extends AbstractModule {
             bind(BridgeServerConfig.class).asEagerSingleton();
             bind(EurekaRegistryConfig.class).to(BridgeServerConfig.class);
         } else {
+            bind(EurekaRegistryConfig.class).toInstance(config);
             bind(EurekaCommonConfig.class).toInstance(config);
             bind(EurekaServerConfig.class).toInstance(config);
             bind(WriteServerConfig.class).toInstance(config);
             bind(BridgeServerConfig.class).toInstance(config);
         }
-        bind(SelfRegistrationService.class).to(BridgeSelfRegistrationService.class).asEagerSingleton();
 
         bind(SerializedTaskInvokerMetrics.class).toInstance(new SerializedTaskInvokerMetrics("registry"));
 
         bind(SourcedEurekaRegistry.class).to(EurekaBridgeRegistry.class);
         bind(EvictionQueue.class).to(EvictionQueueImpl.class).asEagerSingleton();
         bind(EvictionStrategy.class).toProvider(EvictionStrategyProvider.class);
+
+        bind(SelfIdentityService.class).to(EurekaServerHealthService.class);
+        bind(EurekaServerHealthService.class).to(EurekaBridgeServerHealthService.class).asEagerSingleton();
 
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new ServoEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("replication")).toInstance(new ServoEventsListenerFactory("replication-rx-client-", "replication-rx-server-"));

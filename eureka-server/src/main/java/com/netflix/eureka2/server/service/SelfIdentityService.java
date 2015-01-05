@@ -22,6 +22,6 @@ import rx.Observable;
 /**
  * @author Tomasz Bak
  */
-public interface SelfRegistrationService {
+public interface SelfIdentityService {
     Observable<InstanceInfo> resolve();
 }
