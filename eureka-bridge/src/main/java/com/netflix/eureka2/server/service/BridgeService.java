@@ -24,7 +24,7 @@ public class BridgeService {
     private static final Logger logger = LoggerFactory.getLogger(BridgeService.class);
 
     private final BridgeServerConfig config;
-    private final SelfIdentityService selfIdentityService;
+    private final SelfInfoResolver selfIdentityService;
     private final BridgeServerMetricFactory metricFactory;
     private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final DiscoveryClient discoveryClient;
@@ -33,7 +33,7 @@ public class BridgeService {
 
     @Inject
     public BridgeService(BridgeServerConfig config,
-                         SelfIdentityService selfIdentityService,
+                         SelfInfoResolver selfIdentityService,
                          BridgeServerMetricFactory metricFactory,
                          SourcedEurekaRegistry registry,
                          DiscoveryClient discoveryClient) {

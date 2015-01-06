@@ -20,8 +20,8 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
 
 /**
- * @author Tomasz Bak
+ * @author David Liu
  */
-public interface SelfIdentityService {
+public interface SelfInfoResolver {
     Observable<InstanceInfo> resolve();
 }

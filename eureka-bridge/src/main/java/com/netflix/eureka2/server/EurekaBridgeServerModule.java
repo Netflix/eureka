@@ -6,8 +6,10 @@ import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.server.service.EurekaBridgeServerHealthService;
-import com.netflix.eureka2.server.service.EurekaServerHealthService;
+import com.netflix.eureka2.server.service.EurekaBridgeServerSelfInfoResolver;
+import com.netflix.eureka2.server.service.EurekaBridgeServerSelfRegistrationService;
+import com.netflix.eureka2.server.service.SelfRegistrationService;
+import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.server.service.replication.ReplicationService;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
@@ -24,7 +26,6 @@ import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
 import com.netflix.eureka2.registry.eviction.EvictionStrategy;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
 import com.netflix.eureka2.server.service.BridgeService;
-import com.netflix.eureka2.server.service.SelfIdentityService;
 import com.netflix.eureka2.server.spi.ExtensionContext;
 import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
@@ -65,8 +66,8 @@ public class EurekaBridgeServerModule extends AbstractModule {
         bind(EvictionQueue.class).to(EvictionQueueImpl.class).asEagerSingleton();
         bind(EvictionStrategy.class).toProvider(EvictionStrategyProvider.class);
 
-        bind(SelfIdentityService.class).to(EurekaServerHealthService.class);
-        bind(EurekaServerHealthService.class).to(EurekaBridgeServerHealthService.class).asEagerSingleton();
+        bind(SelfInfoResolver.class).to(EurekaBridgeServerSelfInfoResolver.class).asEagerSingleton();
+        bind(SelfRegistrationService.class).to(EurekaBridgeServerSelfRegistrationService.class).asEagerSingleton();
 
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new ServoEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("replication")).toInstance(new ServoEventsListenerFactory("replication-rx-client-", "replication-rx-server-"));

@@ -17,7 +17,7 @@ import com.netflix.eureka2.server.channel.ReceiverReplicationChannel.STATES;
 import com.netflix.eureka2.server.metric.ReplicationChannelMetrics;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
-import com.netflix.eureka2.server.service.SelfIdentityService;
+import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +39,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATES> i
     static final Exception HANDSHAKE_FINISHED_EXCEPTION = new Exception("Handshake already done");
     static final Exception REPLICATION_LOOP_EXCEPTION = new Exception("Self replicating to itself");
 
-    private final SelfIdentityService selfIdentityService;
+    private final SelfInfoResolver selfIdentityService;
     private final ReplicationChannelMetrics metrics;
     private Source replicationSource;
     private long currentVersion;
@@ -52,7 +52,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATES> i
     private final Map<String, InstanceInfo> instanceInfoById = new HashMap<>();
 
     public ReceiverReplicationChannel(MessageConnection transport,
-                                      SelfIdentityService selfIdentityService,
+                                      SelfInfoResolver selfIdentityService,
                                       SourcedEurekaRegistry<InstanceInfo> registry,
                                       final EvictionQueue evictionQueue,
                                       ReplicationChannelMetrics metrics) {

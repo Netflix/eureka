@@ -20,7 +20,7 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.service.SelfIdentityService;
+import com.netflix.eureka2.server.service.SelfInfoResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Subscriber;
@@ -39,13 +39,13 @@ public class AuditServiceController {
 
     private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final AuditService auditService;
-    private final SelfIdentityService serverIdentity;
+    private final SelfInfoResolver serverIdentity;
 
     @Inject
     public AuditServiceController(
             SourcedEurekaRegistry registry,
             AuditService auditService,
-            SelfIdentityService serverIdentity) {
+            SelfInfoResolver serverIdentity) {
         this.registry = registry;
         this.auditService = auditService;
         this.serverIdentity = serverIdentity;

@@ -25,7 +25,7 @@ import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
-import com.netflix.eureka2.server.service.SelfIdentityService;
+import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.server.transport.tcp.AbstractTcpServer;
 import com.netflix.eureka2.transport.EurekaTransports;
 import io.reactivex.netty.RxNetty;
@@ -41,13 +41,13 @@ public class TcpReplicationServer extends AbstractTcpServer<WriteServerConfig, W
 
     private static final Logger logger = LoggerFactory.getLogger(TcpReplicationServer.class);
 
-    private final SelfIdentityService SelfIdentityService;
+    private final SelfInfoResolver SelfIdentityService;
     private final EvictionQueue evictionQueue;
 
     @Inject
     public TcpReplicationServer(WriteServerConfig config,
                                 SourcedEurekaRegistry eurekaRegistry,
-                                SelfIdentityService SelfIdentityService,
+                                SelfInfoResolver SelfIdentityService,
                                 EvictionQueue evictionQueue,
                                 @Named("replication") MetricEventsListenerFactory servoEventsListenerFactory,
                                 WriteServerMetricFactory metricFactory) {

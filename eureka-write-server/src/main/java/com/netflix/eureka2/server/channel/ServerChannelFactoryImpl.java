@@ -5,7 +5,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.channel.RegistrationChannel;
-import com.netflix.eureka2.server.service.SelfIdentityService;
+import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.transport.MessageConnection;
 
 /**
@@ -19,12 +19,12 @@ import com.netflix.eureka2.transport.MessageConnection;
  */
 public class ServerChannelFactoryImpl extends InterestChannelFactoryImpl implements ServerChannelFactory {
 
-    private final SelfIdentityService SelfIdentityService;
+    private final SelfInfoResolver SelfIdentityService;
     private final EvictionQueue evictionQueue;
     private final WriteServerMetricFactory metricFactory;
 
     public ServerChannelFactoryImpl(SourcedEurekaRegistry<InstanceInfo> registry,
-                                    SelfIdentityService SelfIdentityService,
+                                    SelfInfoResolver SelfIdentityService,
                                     EvictionQueue evictionQueue,
                                     MessageConnection connection,
                                     WriteServerMetricFactory metricFactory) {

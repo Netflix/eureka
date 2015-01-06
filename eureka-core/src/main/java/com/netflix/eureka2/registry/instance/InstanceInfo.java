@@ -68,11 +68,11 @@ public class InstanceInfo {
                 .withAsg(asg)
                 .withVipAddress(vipAddress)
                 .withSecureVipAddress(secureVipAddress)
-                .withPorts(new HashSet<>(ports))
+                .withPorts(ports == null ? null : new HashSet<>(ports))
                 .withStatus(status)
                 .withHomePageUrl(homePageUrl)
                 .withStatusPageUrl(statusPageUrl)
-                .withHealthCheckUrls(new HashSet<>(healthCheckUrls))
+                .withHealthCheckUrls(healthCheckUrls == null ? null : new HashSet<>(healthCheckUrls))
                 .withMetaData(metaData == null ? null : new HashMap<>(metaData))
                 .withDataCenterInfo(dataCenterInfo);
     }
@@ -421,6 +421,25 @@ public class InstanceInfo {
             this.healthCheckUrls = another.healthCheckUrls;
             this.metaData = another.metaData;
             this.dataCenterInfo = another.dataCenterInfo;
+            return this;
+        }
+
+        public Builder withBuilder(Builder another) {
+            this.id = another.id == null ? this.id : another.id;
+            this.version = another.version == null ? this.version : another.version;
+
+            this.appGroup = another.appGroup == null ? this.appGroup : another.appGroup;
+            this.app = another.app == null ? this.app : another.app;
+            this.asg = another.asg == null ? this.asg : another.asg;
+            this.vipAddress = another.vipAddress == null ? this.vipAddress : another.vipAddress;
+            this.secureVipAddress = another.secureVipAddress == null ? this.secureVipAddress : another.secureVipAddress;
+            this.ports = another.ports == null ? this.ports : new HashSet<>(another.ports);
+            this.status = another.status == null ? this.status : another.status;
+            this.homePageUrl = another.homePageUrl == null ? this.homePageUrl : another.homePageUrl;
+            this.statusPageUrl = another.statusPageUrl == null ? this.statusPageUrl : another.statusPageUrl;
+            this.healthCheckUrls = another.healthCheckUrls == null ? this.healthCheckUrls : new HashSet<>(another.healthCheckUrls);
+            this.metaData = another.metaData == null ? this.metaData : new HashMap<>(another.metaData);
+            this.dataCenterInfo = another.dataCenterInfo == null ? this.dataCenterInfo : another.dataCenterInfo;
             return this;
         }
 

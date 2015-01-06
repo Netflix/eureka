@@ -35,9 +35,10 @@ import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
 import com.netflix.eureka2.registry.eviction.EvictionStrategy;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
-import com.netflix.eureka2.server.service.EurekaServerHealthService;
-import com.netflix.eureka2.server.service.EurekaWriteServerHealthService;
-import com.netflix.eureka2.server.service.SelfIdentityService;
+import com.netflix.eureka2.server.service.EurekaWriteServerSelfInfoResolver;
+import com.netflix.eureka2.server.service.EurekaWriteServerSelfRegistrationService;
+import com.netflix.eureka2.server.service.SelfRegistrationService;
+import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.server.service.replication.ReplicationService;
 import com.netflix.eureka2.server.spi.ExtensionContext;
 import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
@@ -82,8 +83,8 @@ public class EurekaWriteServerModule extends AbstractModule {
         bind(EvictionStrategy.class).toProvider(EvictionStrategyProvider.class);
         bind(AuditServiceController.class).asEagerSingleton();
 
-        bind(SelfIdentityService.class).to(EurekaServerHealthService.class);
-        bind(EurekaServerHealthService.class).to(EurekaWriteServerHealthService.class).asEagerSingleton();
+        bind(SelfInfoResolver.class).to(EurekaWriteServerSelfInfoResolver.class).asEagerSingleton();
+        bind(SelfRegistrationService.class).to(EurekaWriteServerSelfRegistrationService.class).asEagerSingleton();
 
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("registration")).toInstance(new ServoEventsListenerFactory("registration-rx-client-", "registration-rx-server-"));
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new ServoEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
