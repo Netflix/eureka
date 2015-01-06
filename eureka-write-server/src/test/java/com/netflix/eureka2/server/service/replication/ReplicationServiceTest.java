@@ -25,7 +25,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.channel.ReplicationChannel;
 import com.netflix.eureka2.server.config.WriteServerConfig;
-import com.netflix.eureka2.server.service.SelfRegistrationService;
+import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,7 +47,7 @@ public class ReplicationServiceTest {
 
     private final WriteServerConfig config = WriteServerConfig.writeBuilder().build();
     private final SourcedEurekaRegistry<InstanceInfo> eurekaRegistry = mock(SourcedEurekaRegistry.class);
-    private final SelfRegistrationService selfRegistrationService = mock(SelfRegistrationService.class);
+    private final SelfInfoResolver selfIdentityService = mock(SelfInfoResolver.class);
 
     private final ReplicationPeerAddressesProvider peerAddressProvider = mock(ReplicationPeerAddressesProvider.class);
 
@@ -59,7 +59,7 @@ public class ReplicationServiceTest {
 
     @Before
     public void setUp() throws Exception {
-        replicationService = new ReplicationService(config, eurekaRegistry, selfRegistrationService, peerAddressProvider, writeServerMetrics()) {
+        replicationService = new ReplicationService(config, eurekaRegistry, selfIdentityService, peerAddressProvider, writeServerMetrics()) {
             @Override
             ReplicationChannel createRetryableSenderReplicationChannel(InetSocketAddress address) {
                 lastAddedAddress = address;
@@ -67,7 +67,7 @@ public class ReplicationServiceTest {
             }
         };
 
-        when(selfRegistrationService.resolve()).thenReturn(Observable.just(SELF_INFO));
+        when(selfIdentityService.resolve()).thenReturn(Observable.just(SELF_INFO));
     }
 
     @Test

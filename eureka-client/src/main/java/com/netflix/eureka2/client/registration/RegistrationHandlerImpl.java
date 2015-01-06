@@ -56,7 +56,7 @@ public class RegistrationHandlerImpl implements RegistrationHandler {
 
         final RegistrationChannel registrationChannel = instanceIdVsChannel.remove(instanceInfo.getId());
         if (null == registrationChannel) {
-            logger.info("Instance: %s is not registered. Ignoring unregister", instanceInfo);
+            logger.info("Instance: {} is not registered. Ignoring unregister", instanceInfo);
             return Observable.empty(); // Be more acceptable to errors from user as unregister for non-existent instance is a no-op.
         }
         return registrationChannel.unregister().doOnTerminate(new Action0() {
@@ -76,7 +76,7 @@ public class RegistrationHandlerImpl implements RegistrationHandler {
 
         final RegistrationChannel registrationChannel = instanceIdVsChannel.get(instanceInfo.getId());
         if (null == registrationChannel) {
-            logger.info("Instance: %s is not registered. Relaying update as register.", instanceInfo);
+            logger.info("Instance: {} is not registered. Relaying update as register.", instanceInfo);
             return register(instanceInfo); // Be more acceptable to errors from user.
         }
         return registrationChannel.update(instanceInfo);
@@ -89,7 +89,7 @@ public class RegistrationHandlerImpl implements RegistrationHandler {
         Set<Map.Entry<String, RegistrationChannel>> entries = instanceIdVsChannel.entrySet();
         for (final Map.Entry<String, RegistrationChannel> entry : entries) {
             String instanceId = entry.getKey();
-            logger.info("Shutting down registration handler. Unregister instance Id: " + instanceId);
+            logger.info("Shutting down registration handler. Unregister instance Id: {}", instanceId);
             entry.getValue().unregister().doOnTerminate(new Action0() {
                 @Override
                 public void call() {

@@ -17,7 +17,7 @@ import com.netflix.eureka2.server.channel.ReceiverReplicationChannel.STATES;
 import com.netflix.eureka2.server.metric.ReplicationChannelMetrics;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
-import com.netflix.eureka2.server.service.WriteSelfRegistrationService;
+import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +39,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATES> i
     static final Exception HANDSHAKE_FINISHED_EXCEPTION = new Exception("Handshake already done");
     static final Exception REPLICATION_LOOP_EXCEPTION = new Exception("Self replicating to itself");
 
-    private final WriteSelfRegistrationService selfRegistrationService;
+    private final SelfInfoResolver selfIdentityService;
     private final ReplicationChannelMetrics metrics;
     private Source replicationSource;
     private long currentVersion;
@@ -52,12 +52,12 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATES> i
     private final Map<String, InstanceInfo> instanceInfoById = new HashMap<>();
 
     public ReceiverReplicationChannel(MessageConnection transport,
-                                      WriteSelfRegistrationService selfRegistrationService,
+                                      SelfInfoResolver selfIdentityService,
                                       SourcedEurekaRegistry<InstanceInfo> registry,
                                       final EvictionQueue evictionQueue,
                                       ReplicationChannelMetrics metrics) {
         super(STATES.Idle, transport, registry);
-        this.selfRegistrationService = selfRegistrationService;
+        this.selfIdentityService = selfIdentityService;
         this.metrics = metrics;
         this.metrics.incrementStateCounter(STATES.Idle);
 
@@ -142,7 +142,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATES> i
 
         replicationSource = Source.replicationSource(hello.getSourceId());
 
-        return selfRegistrationService.resolve().flatMap(new Func1<InstanceInfo, Observable<ReplicationHelloReply>>() {
+        return selfIdentityService.resolve().flatMap(new Func1<InstanceInfo, Observable<ReplicationHelloReply>>() {
             @Override
             public Observable<ReplicationHelloReply> call(InstanceInfo instanceInfo) {
                 replicationLoop = instanceInfo.getId().equals(hello.getSourceId());

@@ -14,7 +14,6 @@ import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -47,8 +46,10 @@ public class EurekaClientIntegrationTest {
         EmbeddedWriteCluster writeCluster = deployment.getWriteCluster();
         String readClusterVip = deployment.getReadCluster().getVip();
 
+        // FIXME re-enable after we fix eurekaServerResolver
         EurekaClient eurekaClient = Eureka.newClientBuilder(
-                ServerResolvers.fromWriteServer(writeCluster.discoveryResolver(), readClusterVip),
+                deployment.getReadCluster().discoveryResolver(),
+//                ServerResolvers.fromWriteServer(writeCluster.discoveryResolver(), readClusterVip),
                 writeCluster.registrationResolver()
         ).build();
 

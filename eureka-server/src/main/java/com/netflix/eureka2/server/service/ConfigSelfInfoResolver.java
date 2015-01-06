@@ -1,37 +1,41 @@
-package com.netflix.eureka2.server.config;
+package com.netflix.eureka2.server.service;
 
-import java.util.HashSet;
-
-import com.netflix.eureka2.registry.selector.AddressSelector;
 import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.selector.AddressSelector;
+import com.netflix.eureka2.server.config.EurekaServerConfig;
 import rx.Observable;
 import rx.functions.Func1;
 
+import java.util.HashSet;
 import java.util.UUID;
 
 /**
+ * A self info resolver that auto resolves datacenter info and then resolves config information into an instance info.
+ *
  * @author David Liu
  */
-public class InstanceInfoFromConfig {
+public class ConfigSelfInfoResolver extends ChainableSelfInfoResolver {
 
+    private final String instanceUUID;
     private final EurekaServerConfig config;
 
-    public InstanceInfoFromConfig(EurekaServerConfig config) {
+    public ConfigSelfInfoResolver(EurekaServerConfig config) {
         this.config = config;
+        this.instanceUUID = UUID.randomUUID().toString();
     }
 
-    public Observable<InstanceInfo.Builder> get() {
+    @Override
+    protected Observable<InstanceInfo.Builder> resolveMutable() {
         return resolveDataCenterInfo()
-                .take(1)
                 .map(new Func1<DataCenterInfo, InstanceInfo.Builder>() {
                     @Override
                     public InstanceInfo.Builder call(DataCenterInfo dataCenterInfo) {
-                        final String instanceId = config.getAppName() + '#' + UUID.randomUUID().toString();
+                        final String instanceId = config.getAppName() + '#' + instanceUUID;
 
                         String address = AddressSelector.selectBy().publicIp(true).or().any().returnNameOrIp(dataCenterInfo.getAddresses());
-                        HashSet<String> healthCheckUrls = new HashSet<String>();
+                        HashSet<String> healthCheckUrls = new HashSet<>();
                         healthCheckUrls.add("http://" + address + ':' + config.getWebAdminPort() + "/healthcheck");
 
                         return new InstanceInfo.Builder()
@@ -40,7 +44,7 @@ public class InstanceInfoFromConfig {
                                 .withVipAddress(config.getVipAddress())
                                 .withHealthCheckUrls(healthCheckUrls)
                                 .withDataCenterInfo(dataCenterInfo)
-                                .withStatus(InstanceInfo.Status.UP);  // for now just register with UP
+                                .withStatus(InstanceInfo.Status.STARTING);
                     }
                 });
     }
