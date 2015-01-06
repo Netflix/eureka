@@ -1,223 +1,191 @@
 function ClusterStatusChart(options) {
     options = options || {};
-    var data = [],
+    var writeClustersInfo = [],
+            readClustersInfo = [],
             containerId = options.containerId || 'cluster',
-            width = options.width || 560,
-            height = 500,
-            radius = Math.min(width, height) / 2,
-            outerRadius = radius - 10,
-            innerRadius = outerRadius / 2;
-
+            width = options.width || 760,
+            height = 700,
+            radius = Math.min(width, height) / 2;
 
     var color = d3.scale.ordinal()
             .domain(["G", "Y", "R"])
             .range(["#c7e9c0", "#ec7014", "#fff7bc"]);
 
     var arc = d3.svg.arc()
-            .padRadius(outerRadius)
-            .innerRadius(innerRadius);
+            .outerRadius(radius - 10)
+            .innerRadius(radius - 100);
+
+    var arcInner = d3.svg.arc()
+            .outerRadius(radius / 2 - 10)
+            .innerRadius(radius / 2 - 70);
 
     var pie = d3.layout.pie()
-            .padAngle(.02)
+            .padAngle(.01)
             .value(function (d) {
                 return d.value;
             });
 
 
-
     function loadData(serversInfo) {
-        data = serversInfo;
-        injectStubValue(data);
+        writeClustersInfo = serversInfo.writeClusters;
+        readClustersInfo = serversInfo.readClusters;
+        injectClusterType(writeClustersInfo, 'W');
+        injectClusterType(readClustersInfo, 'R');
         return this;
     }
 
     function render() {
-
-        function clear() {
-            $('#' + containerId).empty();
-        }
-
         clear();
-
         var svg = d3.select('#' + containerId).append("svg")
                 .attr("width", width)
                 .attr("height", height)
                 .append("g")
                 .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
 
-        var nodeStatus = svg.append("g").append("text")
-                .attr("class", "node-status")
-                .attr("y", "-2em")
-                .attr("x", "-8em")
-                .attr('opacity', '0')
-                .attr('text-anchor', 'left')
-                .text("DOWN");
+        // write clusters
+        drawClusterChart(writeClustersInfo, arc, 'arc-outer');
 
-        var nodeVip = svg.append("g").append("text")
-                .attr("class", "node-vip")
-                .attr("y", "-1em")
-                .attr("x", "-8em")
-                .attr('opacity', '0')
-                .attr('text-anchor', 'left')
-                .text("VIP");
+        // read clusters
+        drawClusterChart(readClustersInfo, arcInner, 'arc-inner');
 
-        var nodeId = svg.append("g").append("text")
-                .attr("class", "node-id")
-                .attr("y", "0em")
-                .attr("x", "-8em")
-                .attr('opacity', '0')
-                .attr('text-anchor', 'left')
-                .text("InstanceID");
-
-        var nodeHostName = svg.append("g").append("text")
-                .attr("class", "node-hostname")
-                .attr("y", "1em")
-                .attr("x", "-8em")
-                .attr('opacity', '0')
-                .attr('text-anchor', 'left')
-                .text("HostName");
-
-        var ports = svg.append("g").append("text")
-                .attr("class", "node-ports")
-                .attr("y", "2em")
-                .attr("x", "-8em")
-                .attr('opacity', '0')
-                .attr('text-anchor', 'left')
-                .text("Ports");
-
-        var g = svg.selectAll(".arc")
-                .data(pie(data), function(d) {return d.data.id + '_' + d.data.status;})
-                .enter().append("g")
-                .attr("class", "arc");
-
-
-        g.append("path")
-                .each(function(d) {d.outerRadius = outerRadius - 20})
-                .attr("d", arc)
-                .style("fill", function (d) {
-                    return color(d.data.status);
-                })
-                .on('click', onClick)
-                .on('mouseover', onMouseOver(outerRadius, 0))
-                .on('mouseout', onMouseOut(outerRadius - 20, 150));
-
-        g.append("text")
-                .attr("transform", function (d) {
-                    return "translate(" + arc.centroid(d) + ")";
-                })
-                .attr("dy", ".35em")
-                .style("text-anchor", "middle")
-                .text(function (d) {
-                    return d.data['dataCenterInfo']['zone'];
-                });
-
-
-        function onMouseOver(outerRadius, delay) {
-            return function(d) {
-                d3.select(this).attr('cursor', 'pointer');
-                showServerDetails(d);
-                d3.select(this).transition().delay(delay).attrTween("d", function(d) {
-                    var i = d3.interpolate(d.outerRadius, outerRadius);
-                    return function(t) { d.outerRadius = i(t); return arc(d); };
-                });
-            };
+        function drawClusterChart(dataForPieChart, arcLayout, arcClassName) {
+            var g = svg.selectAll("." + arcClassName)
+                    .data(pie(dataForPieChart), function (d) {
+                        return d.data.id + '_' + d.data.status;
+                    })
+                    .enter().append("g")
+                    .attr("class", arcClassName);
+            drawArc(g, arcLayout);
+            drawText(g, arcLayout);
         }
 
-        function onMouseOut(outerRadius, delay) {
-            return function(d) {
-                d3.select(this).attr('cursor', 'pointer');
-                hideServerDetails(d);
-                d3.select(this).transition().delay(delay).attrTween("d", function(d) {
-                    var i = d3.interpolate(d.outerRadius, outerRadius);
-                    return function(t) { d.outerRadius = i(t); return arc(d); };
-                });
-            };
+        function drawArc(g, arc) {
+            g.append("path")
+                    .attr("d", arc)
+                    .style("fill", function (d) {
+                        return color(d.data.status);
+                    })
+                    .on('mouseover', function (d) {
+                        d3.select(this).style('cursor', 'pointer');
+                    })
+                    .on('click', onClick);
+        }
+
+        function drawText(g, arc) {
+            g.append("text")
+                    .attr("transform", function (d) {
+                        return "translate(" + arc.centroid(d) + ")";
+                    })
+                    .attr("dy", ".35em")
+                    .style("text-anchor", "middle")
+                    .text(function (d) {
+                        return d.data['type'];
+                    });
         }
 
         function onClick(d) {
-            var hostName;
-            if ('dataCenterInfo' in d.data &&
-                    'publicAddress' in d.data['dataCenterInfo'] &&
-                    'hostName' in d.data['dataCenterInfo']['publicAddress']) {
-                hostName = d.data['dataCenterInfo']['publicAddress']['hostName'];
-                window.open(buildEurekaDashboardLinkForHost(hostName));
-            }
+            var serverDetails = new ServerDetails(d);
+            $('#server-info').html(serverDetails.buildMarkup()).show();
         }
 
-        function showServerDetails(d) {
-            var hostName = "--", instanceId = '--';
-            nodeStatus.attr('opacity', 1).text("Status : " + d.data['status']);
-            nodeVip.attr('opacity', 1).text("VIP : " + d.data['vipAddress']);
-            if ('instanceId' in d.data['dataCenterInfo']) {
-                instanceId = d.data['dataCenterInfo']['instanceId'];
-            }
-            nodeId.attr('opacity', 1).text("InstanceId : " + instanceId);
-
-            if ('publicAddress' in d.data['dataCenterInfo'] &&
-                    'hostName' in d.data['dataCenterInfo']['publicAddress']) {
-                hostName = d.data['dataCenterInfo']['publicAddress']['hostName'];
-            }
-
-            nodeHostName.attr('opacity', 1).text("Host : " + hostName);
-
-            var portsList = "";
-            d.data['ports'].forEach(function(portObj, i) {
-                if (portObj.port) {
-                    if (i != 0) {
-                        portsList = portsList + "," + portObj.port;
-                    } else {
-                        portsList = portObj.port;
-                    }
-                }
-            });
-            if (portsList) {
-                ports.attr('opacity', 1).text("Ports : " + portsList);
-            }
-        }
-
-        function hideServerDetails(d) {
-            nodeStatus.attr('opacity', 0);
-            nodeVip.attr('opacity', 0);
-            nodeId.attr('opacity', 0);
-            nodeHostName.attr('opacity', 0);
-            ports.attr('opacity', 0);
-        }
-
-        function buildEurekaDashboardLinkForHost(hostname) {
-            return "http://" + hostname + ":8077/admin#view=eureka2&";
+        function clear() {
+            $('#' + containerId + ' svg').remove();
         }
 
     }
 
-    function injectStubValue(clusterInfo) {
+    function injectClusterType(clusterInfo, clusterType) {
         for (var i = 0; i < clusterInfo.length; i++) {
-            clusterInfo[i].value = 100;
+            clusterInfo[i].value = 100; // stub value needed for layout algorithm
+            clusterInfo[i].type = clusterType;
         }
     }
 
     return {
-        render: render,
-        loadData : loadData
+        render  : render,
+        loadData: loadData
     }
 }
 
-$(function() {
+function ServerDetails(d) {
+    this.serverInfo = d.data || {};
+}
 
-    var writeClusterChart = new ClusterStatusChart({containerId : "write-cluster"});
-    var readClusterChart = new ClusterStatusChart({containerId : "read-cluster"});
+ServerDetails.prototype.status = function () {
+    return this.serverInfo['status'];
+};
 
-    $(window).on('RenderClusterStatusChart', function(e, data) {
-        writeClusterChart.loadData(filterEurekaServers(data.clustersInfo, ['eureka2-write', 'eureka2_write'])).render();
-        readClusterChart.loadData(filterEurekaServers(data.clustersInfo, ['eureka2-read', 'eureka2_read'])).render();
+ServerDetails.prototype.vipAddress = function () {
+    return this.serverInfo['vipAddress'];
+};
+
+ServerDetails.prototype.instanceId = function () {
+    if ('instanceId' in this.serverInfo['dataCenterInfo']) {
+        return this.serverInfo['dataCenterInfo']['instanceId'];
+    }
+    return '--';
+};
+
+ServerDetails.prototype.hostname = function () {
+    if ('publicAddress' in this.serverInfo['dataCenterInfo'] &&
+            'hostName' in this.serverInfo['dataCenterInfo']['publicAddress']) {
+        return this.serverInfo['dataCenterInfo']['publicAddress']['hostName'];
+    }
+
+    return '--';
+};
+
+ServerDetails.prototype.ports = function () {
+    var portsList = "";
+    this.serverInfo['ports'].forEach(function (portObj, i) {
+        if (portObj.port) {
+            if (i != 0) {
+                portsList = portsList + "," + portObj.port;
+            } else {
+                portsList = portObj.port;
+            }
+        }
+    });
+    return portsList;
+};
+
+ServerDetails.prototype.buildEurekaDashboardLinkForHost = function () {
+    return "http://" + this.hostname() + ":8077/admin#view=eureka2&";
+};
+
+ServerDetails.prototype.buildMarkup = function () {
+    var markup = ['<ul><h5>Eureka Server</h5>'];
+    markup.push('<li><span class="name">Status</span> : <span class="value">' + this.status() + '</span></li>');
+    markup.push('<li><span class="name">VIP</span> : <span class="value">' + this.vipAddress() + '</span></li>');
+    markup.push('<li><span class="name">InstanceId</span> : <span class="value">' + this.instanceId() + '</span></li>');
+    markup.push('<li><span class="name">Host</span> : <span class="value">' + this.hostname() + '</span></li>');
+    markup.push('<li><span class="name">Ports</span> : <span class="value">' + this.ports() + '</span></li>');
+    if (this.hostname() != '--') {
+        markup.push('<li><a href="' + this.buildEurekaDashboardLinkForHost() + '" target="_blank">host-dashboard</a>');
+    }
+    markup.push('</ul>');
+    return markup.join('');
+};
+
+
+$(function () {
+
+    var eurekaClustersChart = new ClusterStatusChart({containerId: "eureka-clusters"});
+    $(window).on('RenderClusterStatusChart', function (e, data) {
+        eurekaClustersChart.loadData({
+            writeClusters: filterEurekaServers(data.clustersInfo, ['eureka2-write', 'eureka2_write']),
+            readClusters : filterEurekaServers(data.clustersInfo, ['eureka2-read', 'eureka2_read'])
+        }).render();
+        //readClusterChart.loadData(filterEurekaServers(data.clustersInfo, ['eureka2-read', 'eureka2_read'])).render();
 
     });
 
 
     function filterEurekaServers(clustersInfo, appNamePrefixList) {
         var eurekaSvrList = [], appName;
-        clustersInfo.forEach(function(eurekaSvr) {
+        clustersInfo.forEach(function (eurekaSvr) {
             appName = eurekaSvr.app.toLowerCase();
-            appNamePrefixList.forEach(function(appNamePrefix) {
+            appNamePrefixList.forEach(function (appNamePrefix) {
                 if (appName.indexOf(appNamePrefix) > -1) {
                     eurekaSvrList.push(eurekaSvr);
                 }
