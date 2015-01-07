@@ -61,7 +61,7 @@ public class RegistrationHandlerImplTest {
     }
 
     @Test
-    public void testConvertsRegistrationToUpdateIfAlreadyRegistered() throws Exception {
+    public void testSubsequentRegistrationWithChangesIfAlreadyRegistered() throws Exception {
         registrationHandler.register(DISCOVERY_1).subscribe();
         InstanceInfo update = new InstanceInfo.Builder().withInstanceInfo(DISCOVERY_1).withVipAddress("aNewName").build();
         registrationHandler.register(update).subscribe();

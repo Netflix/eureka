@@ -198,7 +198,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATES> i
                 .map(new Func1<Boolean, Void>() {
                     @Override
                     public Void call(Boolean aBoolean) {
-                        // an emit means the tempNewInfo was successfully registered
+                        // an emit means the tempNewInfo was successfully unregistered
                         instanceInfoById.remove(instanceId);
                         logger.debug("Successfully replicated an unregister");
                         return null;

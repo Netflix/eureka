@@ -138,7 +138,7 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
         if (!moveToState(STATES.Registered, STATES.Closed)) {
             STATES currentState = state.get();
             if (currentState == STATES.Idle) {
-                sendErrorOnTransport(INSTANCE_ALREADY_REGISTERED_EXCEPTION);
+                sendErrorOnTransport(INSTANCE_NOT_REGISTERED_EXCEPTION);
                 return Observable.error(INSTANCE_NOT_REGISTERED_EXCEPTION);
             }
             if (currentState == STATES.Closed) {
