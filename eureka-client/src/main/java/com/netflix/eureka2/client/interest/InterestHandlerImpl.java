@@ -16,11 +16,13 @@ import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Func1;
 
+import javax.inject.Singleton;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author David Liu
  */
+@Singleton
 public class InterestHandlerImpl implements InterestHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(InterestChannelImpl.class);

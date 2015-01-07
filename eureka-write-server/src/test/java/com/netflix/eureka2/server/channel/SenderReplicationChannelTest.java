@@ -5,7 +5,6 @@ import java.util.Collections;
 import com.netflix.eureka2.protocol.replication.RegisterCopy;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.protocol.replication.UnregisterCopy;
-import com.netflix.eureka2.protocol.replication.UpdateCopy;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.TransportClient;
 import org.junit.Before;
@@ -65,19 +64,6 @@ public class SenderReplicationChannelTest extends AbstractReplicationChannelTest
         RegisterCopy message = new RegisterCopy(APP_INFO);
         when(connection.submit(message)).thenReturn(Observable.<Void>empty());
         replicationChannel.register(APP_INFO).subscribe(replySubscriber);
-
-        replySubscriber.assertNoErrors();
-        replySubscriber.assertTerminalEvent();
-        verify(connection, times(1)).submit(message);
-    }
-
-    @Test
-    public void testUpdate() throws Exception {
-        TestSubscriber<Void> replySubscriber = new TestSubscriber<>();
-
-        UpdateCopy message = new UpdateCopy(APP_INFO);
-        when(connection.submit(message)).thenReturn(Observable.<Void>empty());
-        replicationChannel.update(APP_INFO).subscribe(replySubscriber);
 
         replySubscriber.assertNoErrors();
         replySubscriber.assertTerminalEvent();

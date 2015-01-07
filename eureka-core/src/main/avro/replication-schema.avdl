@@ -29,17 +29,12 @@ protocol ReplicationProtocol {
         string instanceId;
     }
 
-    record UpdateCopy {
-        com.netflix.eureka2.registry.instance.InstanceInfo instanceInfo;
-    }
-
     record ReplicationMessages {
         union {
             ReplicationHello,
             ReplicationHelloReply,
             RegisterCopy,
             UnregisterCopy,
-            UpdateCopy,
             com.netflix.eureka2.transport.Acknowledgement,
             com.netflix.eureka2.protocol.Heartbeat
         } message;

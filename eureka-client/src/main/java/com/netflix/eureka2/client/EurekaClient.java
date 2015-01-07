@@ -48,23 +48,13 @@ import rx.Observable;
 public abstract class EurekaClient {
 
     /**
-     * Registers a new instance with eureka.
+     * Register or update an instance with eureka.
      *
      * @param instanceInfo Instance to register.
      *
      * @return An {@link Observable} representing an acknowledgment for the registration.
      */
     public abstract Observable<Void> register(InstanceInfo instanceInfo);
-
-    /**
-     * Updates an instance, previous registered from this client with eureka. If this instance was not registered
-     * previously, this is treated as a registration.
-     *
-     * @param instanceInfo Instance to update.
-     *
-     * @return An {@link Observable} representing an acknowledgment for the update.
-     */
-    public abstract Observable<Void> update(InstanceInfo instanceInfo);
 
     /**
      * Unregister the passed instance from eureka. If the instance was not registered, this call is ignored.

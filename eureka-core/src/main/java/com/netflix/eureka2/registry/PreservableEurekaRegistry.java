@@ -18,7 +18,6 @@ package com.netflix.eureka2.registry;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.netflix.eureka2.config.EurekaRegistryConfig;
@@ -30,9 +29,7 @@ import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
 import com.netflix.eureka2.registry.eviction.EvictionItem;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.eviction.EvictionStrategy;
-import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.registry.MultiSourcedDataHolder.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -132,16 +129,6 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
         Observable<Boolean> result = eurekaRegistry.unregister(instanceInfo, source);
         result.subscribe(decreaseExpectedSize);
         return result;
-    }
-
-    @Override
-    public Observable<Boolean> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
-        return eurekaRegistry.update(updatedInfo, deltas);
-    }
-
-    @Override
-    public Observable<Boolean> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas, Source source) {
-        return eurekaRegistry.update(updatedInfo, deltas, source);
     }
 
     @Override

@@ -41,7 +41,7 @@ public class RegistrationHandlerImpl implements RegistrationHandler {
         final RegistrationChannel newChannel = channelFactory.newRegistrationChannel();
         final RegistrationChannel existing = instanceIdVsChannel.putIfAbsent(instanceInfo.getId(), newChannel);
         if (null != existing) {
-            return existing.update(instanceInfo); // Be more acceptable to failure in contract adherence from the user.
+            return existing.register(instanceInfo); // Be more acceptable to failure in contract adherence from the user.
             // If it is the same instance as existing, the server should not
             // generate unnecessary notifications.
         }
@@ -66,20 +66,6 @@ public class RegistrationHandlerImpl implements RegistrationHandler {
                 registrationChannel.close();
             }
         });
-    }
-
-    @Override
-    public Observable<Void> update(InstanceInfo instanceInfo) {
-        if (shutdown) {
-            return Observable.error(new IllegalStateException("Registration handler is already shutdown."));
-        }
-
-        final RegistrationChannel registrationChannel = instanceIdVsChannel.get(instanceInfo.getId());
-        if (null == registrationChannel) {
-            logger.info("Instance: {} is not registered. Relaying update as register.", instanceInfo);
-            return register(instanceInfo); // Be more acceptable to errors from user.
-        }
-        return registrationChannel.update(instanceInfo);
     }
 
     @Override

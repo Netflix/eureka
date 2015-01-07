@@ -61,16 +61,6 @@ public class RetryableSenderReplicationChannel
     }
 
     @Override
-    public Observable<Void> update(final InstanceInfo newInfo) {
-        return currentDelegateChannelObservable().switchMap(new Func1<ReplicationChannel, Observable<? extends Void>>() {
-            @Override
-            public Observable<? extends Void> call(ReplicationChannel replicationChannel) {
-                return replicationChannel.update(newInfo);
-            }
-        });
-    }
-
-    @Override
     public Observable<Void> unregister(final String instanceId) {
         return currentDelegateChannelObservable().switchMap(new Func1<ReplicationChannel, Observable<? extends Void>>() {
             @Override

@@ -11,8 +11,6 @@ import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import rx.functions.Action1;
 import rx.functions.Func1;
-import rx.schedulers.Schedulers;
-import rx.schedulers.TestScheduler;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -121,7 +119,7 @@ public class RegistryIndexTest {
         registry.unregister(discoveryServer).toBlocking().firstOrDefault(null);
         registry.register(cliServer).toBlocking().firstOrDefault(null);
         InstanceInfo newCliServer = cliServerBuilder.withStatus(InstanceInfo.Status.DOWN).build();
-        registry.update(newCliServer, newCliServer.diffOlder(cliServer)).toBlocking().firstOrDefault(null);
+        registry.register(newCliServer).toBlocking().firstOrDefault(null);
 
         assertThat(expectedLatch.await(1, TimeUnit.MINUTES), equalTo(true));
 

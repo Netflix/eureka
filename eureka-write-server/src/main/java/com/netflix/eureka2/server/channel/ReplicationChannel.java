@@ -36,22 +36,13 @@ public interface ReplicationChannel extends ServiceChannel {
     Observable<ReplicationHelloReply> hello(ReplicationHello hello);
 
     /**
-     * Registers the passed instance with eureka.
+     * Register or update the passed instance with eureka
      *
      * @param instanceInfo The instance definition.
      *
      * @return Acknowledgment for the registration.
      */
     Observable<Void> register(InstanceInfo instanceInfo);
-
-    /**
-     * Updates the {@link InstanceInfo} registered with this channel.
-     *
-     * @param newInfo The updated info.
-     *
-     * @return Acknowledgment for this update.
-     */
-    Observable<Void> update(InstanceInfo newInfo);
 
     /**
      * Unregisters the {@link InstanceInfo} with given id.

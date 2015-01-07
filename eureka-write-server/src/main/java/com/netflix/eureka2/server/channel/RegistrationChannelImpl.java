@@ -3,10 +3,7 @@ package com.netflix.eureka2.server.channel;
 import com.netflix.eureka2.protocol.EurekaProtocolError;
 import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.protocol.registration.Unregister;
-import com.netflix.eureka2.protocol.registration.Update;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.MultiSourcedDataHolder.Status;
-import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.RegistrationChannelImpl.STATES;
 import com.netflix.eureka2.server.metric.RegistrationChannelMetrics;
@@ -19,8 +16,6 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action1;
-
-import java.util.Set;
 
 /**
  * @author Nitesh Kant
@@ -60,9 +55,6 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
                     register(instanceInfo);// No need to subscribe, the register() call does the subscription.
                 } else if (message instanceof Unregister) {
                     unregister();// No need to subscribe, the unregister() call does the subscription.
-                } else if (message instanceof Update) {
-                    InstanceInfo instanceInfo = ((Update) message).getInstanceInfo();
-                    update(instanceInfo);// No need to subscribe, the update() call does the subscription.
                 } else {
                     sendErrorOnTransport(new EurekaProtocolError("Unexpected message " + message));
                 }
@@ -98,15 +90,18 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
     public Observable<Void> register(final InstanceInfo instanceInfo) {
         logger.debug("Registering service in registry: {}", instanceInfo);
 
-        if (!moveToState(STATES.Idle, STATES.Registered)) {// State check. Only register if the state is Idle.
-            if (STATES.Closed == state.get()) {
+        if (!moveToState(STATES.Idle, STATES.Registered) &&
+            !moveToState(STATES.Registered, STATES.Registered)) {
+            STATES currentState = state.get();
+            if (STATES.Closed == currentState) {
                 /**
                  * Since channel is already closed and hence the transport, we don't need to send an error on transport.
                  */
                 return Observable.error(CHANNEL_CLOSED_EXCEPTION);
             } else {
-                sendErrorOnTransport(INSTANCE_ALREADY_REGISTERED_EXCEPTION);
-                return Observable.error(INSTANCE_ALREADY_REGISTERED_EXCEPTION);
+                Exception exception = new IllegalStateException("Unknown state error when registering, current state: " + currentState);
+                sendErrorOnTransport(exception);
+                return Observable.error(exception);
             }
         }
 
@@ -126,8 +121,6 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
             @Override
             public void onError(Throwable e) {
                 sendErrorOnTransport(e);
-                moveToState(STATES.Registered, STATES.Idle); // Set the state back to enable subsequent
-                // registrations.
             }
 
             @Override
@@ -139,54 +132,13 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
     }
 
     @Override
-    public Observable<Void> update(final InstanceInfo newInfo) {
-        logger.debug("Updating service entry in registry. New info= {}", newInfo);
-
-        STATES currentState = state.get();
-        switch (currentState) {
-            case Idle:
-                return Observable.error(INSTANCE_NOT_REGISTERED_EXCEPTION);
-            case Registered:
-                final long tempNewVersion = currentVersion + 1;
-                final InstanceInfo tempNewInfo = new InstanceInfo.Builder()
-                        .withInstanceInfo(newInfo).withVersion(tempNewVersion).build();
-
-                Set<Delta<?>> deltas = tempNewInfo.diffOlder(currentInfo);
-                logger.debug("Set of InstanceInfo modified fields: {}", deltas);
-
-                // TODO: shall we chain ack observable with update?
-                Observable<Boolean> updateResult = registry.update(tempNewInfo, deltas);
-                updateResult.subscribe(new Subscriber<Boolean>() {
-                    @Override
-                    public void onCompleted() {
-                        currentVersion = tempNewVersion;
-                        currentInfo = tempNewInfo;
-                        sendAckOnTransport();
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        sendErrorOnTransport(e);
-                    }
-
-                    @Override
-                    public void onNext(Boolean status) {
-                        // No op
-                    }
-                });
-                return updateResult.ignoreElements().cast(Void.class);
-            case Closed:
-                return Observable.error(CHANNEL_CLOSED_EXCEPTION);
-            default:
-                return Observable.error(new IllegalStateException("Unrecognized channel state: " + currentState));
-        }
-    }
-
-    @Override
     public Observable<Void> unregister() {
+        logger.debug("Unregistering service in registry: {}", currentInfo);
+
         if (!moveToState(STATES.Registered, STATES.Closed)) {
             STATES currentState = state.get();
             if (currentState == STATES.Idle) {
+                sendErrorOnTransport(INSTANCE_NOT_REGISTERED_EXCEPTION);
                 return Observable.error(INSTANCE_NOT_REGISTERED_EXCEPTION);
             }
             if (currentState == STATES.Closed) {
@@ -220,8 +172,10 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
 
     protected boolean moveToState(STATES from, STATES to) {
         if (state.compareAndSet(from, to)) {
-            metrics.decrementStateCounter(from);
-            metrics.incrementStateCounter(to);
+            if (from != to) {
+                metrics.decrementStateCounter(from);
+                metrics.incrementStateCounter(to);
+            }
             return true;
         }
         return false;

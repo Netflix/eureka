@@ -49,21 +49,6 @@ public class RetryableRegistrationChannel
     }
 
     @Override
-    public Observable<Void> update(final InstanceInfo newInfo) {
-        return currentDelegateChannelObservable().switchMap(new Func1<RegistrationChannel, Observable<? extends Void>>() {
-            @Override
-            public Observable<? extends Void> call(RegistrationChannel registrationChannel) {
-                return registrationChannel.update(newInfo).doOnCompleted(new Action0() {
-                    @Override
-                    public void call() {
-                        instanceInfoRef.set(newInfo);
-                    }
-                });
-            }
-        });
-    }
-
-    @Override
     public Observable<Void> unregister() {
         return currentDelegateChannelObservable().switchMap(new Func1<RegistrationChannel, Observable<? extends Void>>() {
             @Override

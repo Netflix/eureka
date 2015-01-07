@@ -157,7 +157,7 @@ public class Session {
             System.err.println("ERROR: subscription-only session");
             return;
         }
-        eurekaClient.update(newInfo).subscribe(new Subscriber<Void>() {
+        eurekaClient.register(newInfo).subscribe(new Subscriber<Void>() {
             @Override
             public void onCompleted() {
                 System.out.println("Successfully updated registry information.");

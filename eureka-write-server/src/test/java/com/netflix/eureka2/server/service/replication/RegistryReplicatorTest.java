@@ -75,14 +75,14 @@ public class RegistryReplicatorTest {
         verify(channel, times(1)).register(INSTANCE_INFO);
 
         // Trigger update
-        when(channel.update(any(InstanceInfo.class))).thenReturn(Observable.<Void>empty());
+        when(channel.register(any(InstanceInfo.class))).thenReturn(Observable.<Void>empty());
 
         InstanceInfo updateInfo = new InstanceInfo.Builder().withInstanceInfo(INSTANCE_INFO).withAsg("newAsg").build();
 
-        registry.update(updateInfo, updateInfo.diffOlder(updateInfo)).subscribe();
+        registry.register(updateInfo).subscribe();
         testScheduler.triggerActions();
 
-        verify(channel, times(1)).update(updateInfo);
+        verify(channel, times(1)).register(updateInfo);
 
         // Trigger remove
         when(channel.unregister(anyString())).thenReturn(Observable.<Void>empty());

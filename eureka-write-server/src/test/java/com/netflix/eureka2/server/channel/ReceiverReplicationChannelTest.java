@@ -16,15 +16,14 @@
 
 package com.netflix.eureka2.server.channel;
 
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.netflix.eureka2.protocol.replication.RegisterCopy;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.protocol.replication.UnregisterCopy;
-import com.netflix.eureka2.protocol.replication.UpdateCopy;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
@@ -41,6 +40,7 @@ import static com.netflix.eureka2.server.metric.WriteServerMetricFactory.writeSe
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyObject;
 import static org.mockito.Mockito.mock;
@@ -106,26 +106,27 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
     }
 
     @Test
-    public void testHandlesUpdate() throws Exception {
+    public void testHandlesRegisterThatIsAnUpdate() throws Exception {
         handshakeAndRegister(APP_INFO);
 
         // Now update the record
         InstanceInfo infoUpdate = new InstanceInfo.Builder().withInstanceInfo(APP_INFO).withApp("myNewName").build();
 
-        when(registry.update(any(InstanceInfo.class), any(Set.class), any(Source.class))).thenReturn(Observable.just(false));
-        incomingSubject.onNext(new UpdateCopy(infoUpdate));
+        when(registry.register(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.just(false));
+        incomingSubject.onNext(new RegisterCopy(infoUpdate));
 
-        // Capture update on the registry
-        ArgumentCaptor<Set> deltaCaptor = ArgumentCaptor.forClass(Set.class);
+        verify(registry, times(2)).register(infoCaptor.capture(), sourceCaptor.capture());
 
-        verify(registry, times(1)).update(infoCaptor.capture(), deltaCaptor.capture(), sourceCaptor.capture());
+        List<InstanceInfo> capturedInfos = new ArrayList<>();
+        // reset the versions in the captured to -1 as they will have been stamped by the channel
+        for (InstanceInfo captured : infoCaptor.getAllValues()) {
+            capturedInfos.add(new InstanceInfo.Builder().withInstanceInfo(captured).withVersion(-1l).build());
+        }
 
-        Set<Delta<?>> capturedDelta = deltaCaptor.getValue();
+        assertThat(capturedInfos, contains(APP_INFO, infoUpdate));
 
         // Verify
-        verifyInstanceAndSourceCaptures(APP_INFO, SENDER_ID);
-        assertThat(capturedDelta.size(), is(equalTo(1)));
-        assertThat((String) capturedDelta.iterator().next().getValue(), is(equalTo("myNewName")));
+        verifyInstanceAndSourceCaptures(infoUpdate, SENDER_ID);
     }
 
     @Test
@@ -147,7 +148,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         incomingSubject.onNext(hello);
 
         incomingSubject.onNext(new RegisterCopy(APP_INFO));
-        incomingSubject.onNext(new UpdateCopy(APP_INFO));
+        incomingSubject.onNext(new RegisterCopy(APP_INFO));  // this is an update
         incomingSubject.onNext(new UnregisterCopy(APP_INFO.getId()));
         verify(transport, times(3)).onError(ReceiverReplicationChannel.REPLICATION_LOOP_EXCEPTION);
     }

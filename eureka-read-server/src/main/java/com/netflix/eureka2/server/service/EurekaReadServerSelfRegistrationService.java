@@ -36,6 +36,6 @@ public class EurekaReadServerSelfRegistrationService extends SelfRegistrationSer
 
     @Override
     public Observable<Void> report(final InstanceInfo instanceInfo) {
-        return eurekaClient.update(instanceInfo);
+        return eurekaClient.register(instanceInfo);
     }
 }

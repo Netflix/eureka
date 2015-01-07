@@ -98,8 +98,9 @@ public class RetryableSenderReplicationChannelTest {
         channel.register(INFO3).subscribe();
         verify(delegateChannel1, times(1)).register(INFO3);
 
-        channel.update(INFO3).subscribe();
-        verify(delegateChannel1, times(1)).update(INFO3);
+        InstanceInfo newInfo3 = new InstanceInfo.Builder().withInstanceInfo(INFO3).withVipAddress("aNewName").build();
+        channel.register(newInfo3).subscribe();
+        verify(delegateChannel1, times(1)).register(newInfo3);
 
         channel.unregister(INFO3.getId()).subscribe();
         verify(delegateChannel1, times(1)).unregister(INFO3.getId());
@@ -144,7 +145,6 @@ public class RetryableSenderReplicationChannelTest {
     protected void mockDelegateChannelMethods(SenderReplicationChannel channel) {
         doReturn(Observable.just(new ReplicationHelloReply("222", false))).when(channel).hello(any(ReplicationHello.class));
         doReturn(Observable.<Void>empty()).when(channel).register(any(InstanceInfo.class));
-        doReturn(Observable.<Void>empty()).when(channel).update(any(InstanceInfo.class));
         doReturn(Observable.<Void>empty()).when(channel).unregister(any(String.class));
     }
 }

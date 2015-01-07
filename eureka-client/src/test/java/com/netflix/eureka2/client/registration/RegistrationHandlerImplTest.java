@@ -44,7 +44,6 @@ public class RegistrationHandlerImplTest {
         when(channelFactory.newRegistrationChannel()).thenReturn(registrationChannel);
 
         when(registrationChannel.register(any(InstanceInfo.class))).thenReturn(Observable.<Void>empty());
-        when(registrationChannel.update(any(InstanceInfo.class))).thenReturn(Observable.<Void>empty());
         when(registrationChannel.unregister()).thenReturn(Observable.<Void>empty());
 
         registrationHandler = new RegistrationHandlerImpl(channelFactory);
@@ -62,19 +61,12 @@ public class RegistrationHandlerImplTest {
     }
 
     @Test
-    public void testConvertsRegistrationToUpdateIfAlreadyRegistered() throws Exception {
+    public void testSubsequentRegistrationWithChangesIfAlreadyRegistered() throws Exception {
         registrationHandler.register(DISCOVERY_1).subscribe();
-        registrationHandler.register(DISCOVERY_1).subscribe();
+        InstanceInfo update = new InstanceInfo.Builder().withInstanceInfo(DISCOVERY_1).withVipAddress("aNewName").build();
+        registrationHandler.register(update).subscribe();
         verify(registrationChannel, times(1)).register(DISCOVERY_1);
-        verify(registrationChannel, times(1)).update(DISCOVERY_1);
-    }
-
-    @Test
-    public void testConvertsUpdateToRegisterIfNotRegistered() throws Exception {
-        registrationHandler.update(DISCOVERY_1).subscribe();
-        registrationHandler.update(DISCOVERY_1).subscribe();
-        verify(registrationChannel, times(1)).register(DISCOVERY_1);
-        verify(registrationChannel, times(1)).update(DISCOVERY_1);
+        verify(registrationChannel, times(1)).register(update);
     }
 
     @Test
