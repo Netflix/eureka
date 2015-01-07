@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit;
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
+import com.netflix.eureka2.integration.categories.IntegrationTest;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rx.RxBlocking;
@@ -14,9 +15,9 @@ import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -25,6 +26,7 @@ import static org.junit.Assert.assertThat;
 /**
  * @author Tomasz Bak
  */
+@Category(IntegrationTest.class)
 public class EurekaClientIntegrationTest {
 
     @Rule

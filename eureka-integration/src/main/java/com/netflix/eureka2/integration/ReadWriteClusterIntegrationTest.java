@@ -4,6 +4,7 @@ import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.client.EurekaClient;
+import com.netflix.eureka2.integration.categories.IntegrationTest;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -14,6 +15,7 @@ import com.netflix.eureka2.testkit.junit.resources.EurekaClientResource;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import rx.observers.TestSubscriber;
@@ -25,6 +27,7 @@ import static org.hamcrest.Matchers.*;
 /**
  * @author David Liu
  */
+@Category(IntegrationTest.class)
 public class ReadWriteClusterIntegrationTest {
 
     public final WriteServerResource writeServerResource = new WriteServerResource();
