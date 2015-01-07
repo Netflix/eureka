@@ -1,13 +1,18 @@
 package com.netflix.eureka2.server.channel;
 
+import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.interests.ModifyNotification;
+import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.protocol.EurekaProtocolError;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.DeleteInstance;
 import com.netflix.eureka2.protocol.discovery.InterestRegistration;
+import com.netflix.eureka2.protocol.discovery.SnapshotComplete;
+import com.netflix.eureka2.protocol.discovery.SnapshotRegistration;
 import com.netflix.eureka2.protocol.discovery.UnregisterInterestSet;
 import com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
@@ -16,7 +21,6 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.InterestChannelImpl.STATES;
 import com.netflix.eureka2.server.metric.InterestChannelMetrics;
 import com.netflix.eureka2.server.metric.InterestChannelMetrics.ChannelSubscriptionMonitor;
-import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.transport.MessageConnection;
 import rx.Observable;
 import rx.Subscriber;
@@ -32,6 +36,8 @@ import rx.functions.Action1;
  */
 public class InterestChannelImpl extends AbstractHandlerChannel<STATES> implements InterestChannel {
 
+    private static final Exception SNAPSHOT_REQUEST_NOT_ALLOWED = new Exception("Snapshot subscription not allowed on active channel");
+
     public enum STATES {Idle, Open, Closed}
 
     private final InterestChannelMetrics metrics;
@@ -42,6 +48,7 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATES> implemen
     public InterestChannelImpl(final SourcedEurekaRegistry<InstanceInfo> registry, final MessageConnection transport, final InterestChannelMetrics metrics) {
         super(STATES.Idle, transport, registry);
         this.metrics = metrics;
+        this.metrics.incrementStateCounter(STATES.Idle);
         this.notificationMultiplexer = new InterestNotificationMultiplexer(registry);
         this.channelSubscriptionMonitor = new ChannelSubscriptionMonitor(metrics);
 
@@ -53,9 +60,28 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATES> implemen
                  * invocation), we do not need to worry about thread safety here and hence we can safely do a
                  * isRegistered -> register kind of actions without worrying about race conditions.
                  */
-                if (message instanceof InterestRegistration) {
+                if (message instanceof SnapshotRegistration) {
+                    switch (state.get()) {
+                        case Idle:
+                            state.set(STATES.Open);
+                            metrics.stateTransition(STATES.Idle, STATES.Open);
+
+                            sendSnapshot(((SnapshotRegistration) message).getInterests());
+
+                            state.set(STATES.Closed);
+                            metrics.stateTransition(STATES.Idle, STATES.Closed);
+                            break;
+                        case Open:
+                            sendErrorOnTransport(SNAPSHOT_REQUEST_NOT_ALLOWED);
+                            break;
+                        case Closed:
+                            sendErrorOnTransport(CHANNEL_CLOSED_EXCEPTION);
+                            break;
+                    }
+                } else if (message instanceof InterestRegistration) {
                     Interest<InstanceInfo> interest = ((InterestRegistration) message).toComposite();
                     switch (state.get()) {
+                        case Idle:
                         case Open:
                             change(interest);
                             break;
@@ -65,6 +91,7 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATES> implemen
                     }
                 } else if (message instanceof UnregisterInterestSet) {
                     switch (state.get()) {
+                        case Idle:
                         case Open:
                             change(Interests.forNone());
                             break;
@@ -77,10 +104,56 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATES> implemen
                 }
             }
         });
+    }
 
-        state.set(STATES.Open);
-        this.metrics.incrementStateCounter(STATES.Open);
+    private void sendSnapshot(Interest<InstanceInfo>[] interests) {
+        Observable<Void> toReturn = transport.acknowledge();
+        subscribeToTransportSend(toReturn, "acknowledgment(SnapshotRegistration)");
 
+        registry.forSnapshot(new MultipleInterests<InstanceInfo>(interests)).subscribe(new Subscriber<InstanceInfo>() {
+            @Override
+            public void onCompleted() {
+                logger.debug("Snapshot stream from registry completed. Sending SnapshotComplete to the client");
+                Observable<Void> sendResult = transport.submit(SnapshotComplete.INSTANCE);
+                subscribeToTransportSend(sendResult, "snapshotCompleted");
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                logger.error("Snapshot subscription stream terminated due to an error", e);
+            }
+
+            @Override
+            public void onNext(InstanceInfo instanceInfo) {
+                handleChangeNotification(new ChangeNotification<InstanceInfo>(Kind.Add, instanceInfo));
+            }
+        });
+    }
+
+    @Override
+    public Observable<Void> change(Interest<InstanceInfo> newInterest) {
+        logger.debug("Received interest change request {}", newInterest);
+
+        if (STATES.Closed == state.get()) {
+            /**
+             * Since channel is already closed and hence the transport, we don't need to send an error on transport.
+             */
+            return Observable.error(CHANNEL_CLOSED_EXCEPTION);
+        }
+        if (state.compareAndSet(STATES.Idle, STATES.Open)) {
+            metrics.stateTransition(STATES.Idle, STATES.Open);
+            initializeNotificationMultiplexer();
+        }
+
+        channelSubscriptionMonitor.update(newInterest);
+        notificationMultiplexer.update(newInterest);
+
+        Observable<Void> toReturn = transport.acknowledge();
+        subscribeToTransportSend(toReturn, "acknowledgment"); // Subscribe eagerly and not require the caller to subscribe.
+        return toReturn;
+    }
+
+    private void initializeNotificationMultiplexer() {
         notificationMultiplexer.changeNotifications().subscribe(
                 new Subscriber<ChangeNotification<InstanceInfo>>() {
                     @Override
@@ -96,19 +169,23 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATES> implemen
 
                     @Override
                     public void onNext(ChangeNotification<InstanceInfo> notification) {
-                        metrics.incrementApplicationNotificationCounter(notification.getData().getApp());
-                        Observable<Void> sendResult = sendNotification(notification);
-                        if(sendResult != null) {
-                            subscribeToTransportSend(sendResult, "notification");
-                        } else {
-                            // TODO: how to report effectively invariant violations that should never happen in a valid code, but are not errors?
-                            logger.warn("No-effect modify in the interest channel: {}", notification);
-                        }
+                        handleChangeNotification(notification);
                     }
                 });
     }
 
-    public Observable<Void> sendNotification(ChangeNotification<InstanceInfo> notification) {
+    protected void handleChangeNotification(ChangeNotification<InstanceInfo> notification) {
+        metrics.incrementApplicationNotificationCounter(notification.getData().getApp());
+        Observable<Void> sendResult = sendNotification(notification);
+        if (sendResult != null) {
+            subscribeToTransportSend(sendResult, "notification");
+        } else {
+            // TODO: how to report effectively invariant violations that should never happen in a valid code, but are not errors?
+            logger.warn("No-effect modify in the interest channel: {}", notification);
+        }
+    }
+
+    private Observable<Void> sendNotification(ChangeNotification<InstanceInfo> notification) {
         switch (notification.getKind()) {
             case Add:
                 return transport.submitWithAck(new AddInstance(notification.getData()));
@@ -135,25 +212,6 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATES> implemen
         }
         return Observable.error(new IllegalArgumentException("Unknown change notification type: " +
                 notification.getKind()));
-    }
-
-    @Override
-    public Observable<Void> change(Interest<InstanceInfo> newInterest) {
-        logger.debug("Received interest change request {}", newInterest);
-
-        if (STATES.Closed == state.get()) {
-            /**
-             * Since channel is already closed and hence the transport, we don't need to send an error on transport.
-             */
-            return Observable.error(CHANNEL_CLOSED_EXCEPTION);
-        }
-
-        channelSubscriptionMonitor.update(newInterest);
-        notificationMultiplexer.update(newInterest);
-
-        Observable<Void> toReturn = transport.acknowledge();
-        subscribeToTransportSend(toReturn, "acknowledgment"); // Subscribe eagerly and not require the caller to subscribe.
-        return toReturn;
     }
 
     @Override
