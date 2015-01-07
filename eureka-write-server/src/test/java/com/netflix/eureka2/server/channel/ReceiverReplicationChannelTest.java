@@ -23,13 +23,12 @@ import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.protocol.replication.UnregisterCopy;
 import com.netflix.eureka2.protocol.replication.UpdateCopy;
-import com.netflix.eureka2.registry.MultiSourcedDataHolder;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
-import com.netflix.eureka2.server.service.WriteSelfRegistrationService;
+import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.junit.After;
 import org.junit.Before;
@@ -57,7 +56,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
     private final MessageConnection transport = mock(MessageConnection.class);
     private final PublishSubject<Void> transportLifeCycle = PublishSubject.create();
 
-    private final WriteSelfRegistrationService selfRegistrationService = mock(WriteSelfRegistrationService.class);
+    private final SelfInfoResolver SelfIdentityService = mock(SelfInfoResolver.class);
     private final SourcedEurekaRegistry<InstanceInfo> registry = mock(SourcedEurekaRegistry.class);
     private final EvictionQueue evictionQueue = mock(EvictionQueue.class);
 
@@ -75,9 +74,9 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         when(transport.submit(anyObject())).thenReturn(Observable.<Void>empty());
         when(transport.acknowledge()).thenReturn(Observable.<Void>empty());
 
-        when(selfRegistrationService.resolve()).thenReturn(Observable.just(RECEIVER_INFO));
+        when(SelfIdentityService.resolve()).thenReturn(Observable.just(RECEIVER_INFO));
 
-        replicationChannel = new ReceiverReplicationChannel(transport, selfRegistrationService, registry,
+        replicationChannel = new ReceiverReplicationChannel(transport, SelfIdentityService, registry,
                 evictionQueue, writeServerMetrics().getReplicationChannelMetrics());
     }
 

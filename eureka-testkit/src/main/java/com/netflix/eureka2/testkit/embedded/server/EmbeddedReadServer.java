@@ -20,7 +20,7 @@ public class EmbeddedReadServer extends EmbeddedEurekaServer<EurekaServerConfig,
     private final ServerResolver discoveryResolver;
 
     public EmbeddedReadServer(EurekaServerConfig config,
-                              final ServerResolver registrationResolver,
+                              ServerResolver registrationResolver,
                               ServerResolver discoveryResolver,
                               boolean withExt,
                               boolean withDashboard) {

@@ -18,6 +18,7 @@ import com.netflix.governator.guice.BootstrapBinder;
 import com.netflix.governator.guice.BootstrapModule;
 import com.netflix.governator.guice.LifecycleInjector;
 import com.netflix.governator.guice.LifecycleInjectorBuilder;
+import com.netflix.governator.guice.transformer.OverrideAllDuplicateBindings;
 import com.netflix.governator.lifecycle.LifecycleManager;
 import io.reactivex.netty.RxNetty;
 import netflix.adminresources.AdminResourcesContainer;
@@ -63,7 +64,8 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
     public abstract R serverReport();
 
     protected void setup(Module[] modules) {
-        LifecycleInjectorBuilder builder = LifecycleInjector.builder();
+        LifecycleInjectorBuilder builder = LifecycleInjector.builder()
+                .withModuleTransformer(new OverrideAllDuplicateBindings());
         builder.withAdditionalModules(modules);
 
         // Extensions
