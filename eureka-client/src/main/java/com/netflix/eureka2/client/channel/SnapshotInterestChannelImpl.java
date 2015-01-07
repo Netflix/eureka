@@ -44,7 +44,12 @@ public class SnapshotInterestChannelImpl implements SnapshotInterestChannel {
                                 .doOnNext(new Action1<Object>() {
                                     @Override
                                     public void call(Object message) {
-                                        connection.acknowledge().subscribe();
+                                        connection.acknowledge().doOnError(new Action1<Throwable>() {
+                                            @Override
+                                            public void call(Throwable e) {
+                                                logger.error("Failed to send an acknowledgment to snapshot change notification message", e);
+                                            }
+                                        }).subscribe();
                                     }
                                 })
                                 .map(new Func1<Object, InstanceInfo>() {

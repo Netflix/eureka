@@ -63,9 +63,13 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATES> implemen
                 if (message instanceof SnapshotRegistration) {
                     switch (state.get()) {
                         case Idle:
-                            sendSnapshot(((SnapshotRegistration) message).getInterests());
-                            state.set(STATES.Closed);
+                            state.set(STATES.Open);
                             metrics.stateTransition(STATES.Idle, STATES.Open);
+
+                            sendSnapshot(((SnapshotRegistration) message).getInterests());
+
+                            state.set(STATES.Closed);
+                            metrics.stateTransition(STATES.Idle, STATES.Closed);
                             break;
                         case Open:
                             sendErrorOnTransport(SNAPSHOT_REQUEST_NOT_ALLOWED);
