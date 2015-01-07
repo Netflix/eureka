@@ -304,12 +304,8 @@ public class InterestChannelImpl
                 public void onNext(ChangeNotification<InstanceInfo> notification) {
                     switch (notification.getKind()) {  // these are in-mem blocking ops
                         case Add:
-                            registry.register(notification.getData(), selfSource);
-                            break;
                         case Modify:
-                            ModifyNotification<InstanceInfo> modifyNotification
-                                    = (ModifyNotification<InstanceInfo>) notification;
-                            registry.update(modifyNotification.getData(), modifyNotification.getDelta(), selfSource);
+                            registry.register(notification.getData(), selfSource);
                             break;
                         case Delete:
                             registry.unregister(notification.getData(), selfSource);

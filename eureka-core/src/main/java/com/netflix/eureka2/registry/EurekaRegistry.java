@@ -18,10 +18,7 @@ package com.netflix.eureka2.registry;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.registry.instance.Delta;
 import rx.Observable;
-
-import java.util.Set;
 
 /**
  * Base interface for Eureka Registries
@@ -31,7 +28,7 @@ import java.util.Set;
 public interface EurekaRegistry<T> {
 
     /**
-     * @return a boolean to denote whether the register action successfully added a new entry
+     * @return a boolean to denote whether the register action successfully added a new entry or updated an existing entry
      */
     Observable<Boolean> register(T instanceInfo);
 
@@ -39,11 +36,6 @@ public interface EurekaRegistry<T> {
      * @return a boolean to denote whether the update action successfully added a new entry
      */
     Observable<Boolean> unregister(T instanceInfo);
-
-    /**
-     * @return a boolean to denote whether the unregister action successfully removed an existing entry
-     */
-    Observable<Boolean> update(T updatedInfo, Set<Delta<?>> deltas);
 
     int size();
 

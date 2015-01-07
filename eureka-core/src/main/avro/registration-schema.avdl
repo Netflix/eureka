@@ -18,15 +18,10 @@ protocol RegistrationProtocol {
     record Unregister {
     }
 
-    record Update {
-        com.netflix.eureka2.registry.instance.InstanceInfo instanceInfo;
-    }
-
     record RegistrationMessages {
         union {
             Register,
             Unregister,
-            Update,
             com.netflix.eureka2.transport.Acknowledgement,
             com.netflix.eureka2.protocol.Heartbeat
         } message;

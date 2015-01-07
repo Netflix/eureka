@@ -149,8 +149,7 @@ public class BridgeChannel extends AbstractHandlerChannel<STATES> {
                         if (currentSnapshot.containsKey(instanceInfo.getId())) {
                             InstanceInfo older = currentSnapshot.get(instanceInfo.getId());
                             if (!older.equals(instanceInfo)) {
-                                Set<Delta<?>> deltas = older.diffNewer(instanceInfo);
-                                registry.update(instanceInfo, deltas);
+                                registry.register(instanceInfo);
                                 updateCount.incrementAndGet();
                             }
                         } else {

@@ -21,7 +21,6 @@ import com.netflix.eureka2.protocol.replication.RegisterCopy;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.protocol.replication.UnregisterCopy;
-import com.netflix.eureka2.protocol.replication.UpdateCopy;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.SenderReplicationChannel.STATE;
 import com.netflix.eureka2.transport.MessageConnection;
@@ -80,20 +79,6 @@ public class SenderReplicationChannel extends AbstractClientChannel<STATE> imple
             @Override
             public Observable<Void> call(MessageConnection connection) {
                 return connection.submit(new RegisterCopy(instanceInfo));
-            }
-        });
-    }
-
-    @Override
-    public Observable<Void> update(final InstanceInfo newInfo) {
-        if (state.get() == STATE.Closed) {
-            return Observable.error(CHANNEL_CLOSED_EXCEPTION);
-        }
-
-        return connect().switchMap(new Func1<MessageConnection, Observable<Void>>() {
-            @Override
-            public Observable<Void> call(MessageConnection connection) {
-                return connection.submit(new UpdateCopy(newInfo));
             }
         });
     }

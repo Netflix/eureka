@@ -24,12 +24,10 @@ import com.netflix.eureka2.protocol.discovery.UnregisterInterestSet;
 import com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.protocol.registration.Unregister;
-import com.netflix.eureka2.protocol.registration.Update;
 import com.netflix.eureka2.protocol.replication.RegisterCopy;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.protocol.replication.UnregisterCopy;
-import com.netflix.eureka2.protocol.replication.UpdateCopy;
 import com.netflix.eureka2.transport.codec.avro.AvroPipelineConfigurator;
 import com.netflix.eureka2.transport.codec.json.JsonPipelineConfigurator;
 import io.reactivex.netty.pipeline.PipelineConfigurator;
@@ -67,12 +65,12 @@ public final class EurekaTransports {
     }
 
     static final Class<?>[] REGISTRATION_PROTOCOL_MODEL = {
-            Register.class, Unregister.class, Heartbeat.class, Update.class
+            Register.class, Unregister.class, Heartbeat.class
     };
     static final Set<Class<?>> REGISTRATION_PROTOCOL_MODEL_SET = new HashSet<>(Arrays.asList(REGISTRATION_PROTOCOL_MODEL));
 
     static final Class<?>[] REPLICATION_PROTOCOL_MODEL = {
-            ReplicationHello.class, ReplicationHelloReply.class, RegisterCopy.class, UnregisterCopy.class, Heartbeat.class, UpdateCopy.class
+            ReplicationHello.class, ReplicationHelloReply.class, RegisterCopy.class, UnregisterCopy.class, Heartbeat.class
     };
     static final Set<Class<?>> REPLICATION_PROTOCOL_MODEL_SET = new HashSet<>(Arrays.asList(REPLICATION_PROTOCOL_MODEL));
 

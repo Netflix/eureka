@@ -12,12 +12,10 @@ import com.netflix.eureka2.protocol.discovery.UnregisterInterestSet;
 import com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.protocol.registration.Unregister;
-import com.netflix.eureka2.protocol.registration.Update;
 import com.netflix.eureka2.protocol.replication.RegisterCopy;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.protocol.replication.UnregisterCopy;
-import com.netflix.eureka2.protocol.replication.UpdateCopy;
 import com.netflix.eureka2.registry.datacenter.BasicDataCenterInfo;
 import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
 import com.netflix.eureka2.registry.instance.Delta.Builder;
@@ -90,7 +88,6 @@ public abstract class TransportCompatibilityTestSuite {
         public void runTestSuite() {
             registrationTest();
             unregisterTest();
-            updateTest();
             hearbeatTest();
         }
 
@@ -100,10 +97,6 @@ public abstract class TransportCompatibilityTestSuite {
 
         private void unregisterTest() {
             runClientToServerWithAck(new Unregister());
-        }
-
-        private void updateTest() {
-            runClientToServerWithAck(new Update(DiscoveryServer.build()));
         }
 
         private void hearbeatTest() {
@@ -124,7 +117,6 @@ public abstract class TransportCompatibilityTestSuite {
             registrationTest();
             registrationWithNullsTest();
             unregisterTest();
-            updateTest();
             hearbeatTest();
         }
 
@@ -154,10 +146,6 @@ public abstract class TransportCompatibilityTestSuite {
 
         private void unregisterTest() {
             runClientToServerWithAck(new UnregisterCopy(instanceInfo.getId()));
-        }
-
-        private void updateTest() {
-            runClientToServerWithAck(new UpdateCopy(instanceInfo));
         }
 
         private void hearbeatTest() {

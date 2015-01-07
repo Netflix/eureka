@@ -270,8 +270,8 @@ public class RetryableInterestChannelTest {
         // update but not the channel1 update
         InstanceInfo updatedINFOa = new InstanceInfo.Builder().withInstanceInfo(INFO).withStatus(InstanceInfo.Status.DOWN).build();
         InstanceInfo updatedINFOb = new InstanceInfo.Builder().withInstanceInfo(INFO).withStatus(InstanceInfo.Status.OUT_OF_SERVICE).build();
-        registry.update(updatedINFOa, updatedINFOa.diffOlder(INFO), interestChannel1.getSource()).subscribe();
-        registry.update(updatedINFOb, updatedINFOb.diffOlder(INFO), interestChannel2.getSource()).subscribe();
+        registry.register(updatedINFOa, interestChannel1.getSource()).subscribe();
+        registry.register(updatedINFOb, interestChannel2.getSource()).subscribe();
         scheduler.triggerActions();
 
         if (notifications.size() == 2) {

@@ -48,11 +48,6 @@ public class EurekaClientImpl extends EurekaClient {
     }
 
     @Override
-    public Observable<Void> update(InstanceInfo instanceInfo) {
-        return registrationHandler.update(instanceInfo);
-    }
-
-    @Override
     public Observable<Void> unregister(InstanceInfo instanceInfo) {
         return registrationHandler.unregister(instanceInfo);
     }

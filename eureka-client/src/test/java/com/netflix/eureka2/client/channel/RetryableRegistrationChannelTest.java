@@ -80,8 +80,9 @@ public class RetryableRegistrationChannelTest {
         channel.register(INSTANCE_INFO).subscribe();
         verify(delegateChannel1, timeout(1)).register(INSTANCE_INFO);
 
-        channel.update(INSTANCE_INFO).subscribe();
-        verify(delegateChannel1, timeout(1)).update(INSTANCE_INFO);
+        InstanceInfo newInfo = new InstanceInfo.Builder().withInstanceInfo(INSTANCE_INFO).withVipAddress("aNewName").build();
+        channel.register(newInfo).subscribe();
+        verify(delegateChannel1, timeout(1)).register(newInfo);
 
         channel.unregister().subscribe();
         verify(delegateChannel1, timeout(1)).unregister();
@@ -144,7 +145,6 @@ public class RetryableRegistrationChannelTest {
 
     protected void withChannelMocks(RegistrationChannel channel, Observable<Void> channelLifecycle) {
         when(channel.register(any(InstanceInfo.class))).thenReturn(Observable.<Void>empty());
-        when(channel.update(any(InstanceInfo.class))).thenReturn(Observable.<Void>empty());
         when(channel.unregister()).thenReturn(Observable.<Void>empty());
         when(channel.asLifecycleObservable()).thenReturn(channelLifecycle);
     }

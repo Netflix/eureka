@@ -137,7 +137,7 @@ public class SourcedEurekaRegistryImplTest {
     }
 
     @Test
-    public void testUpdate() {
+    public void testRegisterAsUpdate() {
         InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
                 .withStatus(InstanceInfo.Status.UP)
                 .build();
@@ -158,7 +158,7 @@ public class SourcedEurekaRegistryImplTest {
                 .withVersion(1L)
                 .withStatus(InstanceInfo.Status.OUT_OF_SERVICE).build();
 
-        registry.update(newInstanceInfo, newInstanceInfo.diffOlder(original));
+        registry.register(newInstanceInfo);
         testScheduler.triggerActions();
 
         assertThat(internalStore.size(), equalTo(1));

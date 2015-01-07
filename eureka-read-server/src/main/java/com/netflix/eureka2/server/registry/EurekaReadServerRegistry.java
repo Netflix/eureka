@@ -23,14 +23,11 @@ import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.registry.MultiSourcedDataHolder;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.channel.ServiceChannel;
 import rx.Observable;
-
-import java.util.Set;
 
 /**
  * Registry implemented on top of eureka-client. It does not story anything, just
@@ -76,16 +73,6 @@ public class EurekaReadServerRegistry implements SourcedEurekaRegistry<InstanceI
 
     @Override
     public Observable<Boolean> unregister(InstanceInfo instanceInfo, Source source) {
-        throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
-    }
-
-    @Override
-    public Observable<Boolean> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
-        throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
-    }
-
-    @Override
-    public Observable<Boolean> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas, Source source) {
         throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
     }
 

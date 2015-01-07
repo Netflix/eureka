@@ -2,16 +2,13 @@ package com.netflix.eureka2.server.channel;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import com.netflix.eureka2.protocol.EurekaProtocolError;
 import com.netflix.eureka2.protocol.replication.RegisterCopy;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.protocol.replication.UnregisterCopy;
-import com.netflix.eureka2.protocol.replication.UpdateCopy;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.ReceiverReplicationChannel.STATES;
 import com.netflix.eureka2.server.metric.ReplicationChannelMetrics;
@@ -23,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
-import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
 
@@ -107,9 +103,6 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATES> i
             reply = register(instanceInfo);// No need to subscribe, the register() call does the subscription.
         } else if (message instanceof UnregisterCopy) {
             reply = unregister(((UnregisterCopy) message).getInstanceId());// No need to subscribe, the unregister() call does the subscription.
-        } else if (message instanceof UpdateCopy) {
-            InstanceInfo instanceInfo = ((UpdateCopy) message).getInstanceInfo();
-            reply = update(instanceInfo);// No need to subscribe, the update() call does the subscription.
         } else {
             reply = Observable.error(new EurekaProtocolError("Unexpected message " + message));
         }
@@ -163,54 +156,25 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATES> i
         if (replicationLoop) {
             return Observable.error(REPLICATION_LOOP_EXCEPTION);
         }
+
         if (instanceInfoById.containsKey(instanceInfo.getId())) {
-            logger.info("Overwriting existing registration entry for instance {}", instanceInfo.getId());
+            logger.info("Updating an existing instance info with id {}", instanceInfo.getId());
         }
 
-        InstanceInfo tempNewInfo = new InstanceInfo.Builder()
+        final InstanceInfo tempNewInfo = new InstanceInfo.Builder()
                 .withInstanceInfo(instanceInfo).withVersion(currentVersion++).build();
 
         return registry.register(tempNewInfo, replicationSource)
-                .ignoreElements()
-                .cast(Void.class)
-                .doOnCompleted(new Action0() {
+                .map(new Func1<Boolean, Void>() {
                     @Override
-                    public void call() {
-                        instanceInfoById.put(instanceInfo.getId(), instanceInfo);
+                    public Void call(Boolean aBoolean) {
+                        // an emit means the tempNewInfo was successfully registered
+                        instanceInfoById.put(tempNewInfo.getId(), tempNewInfo);
+                        logger.debug("Successfully replicated an {}", (aBoolean ? "add" : "update"));
+                        return null;
                     }
-                });
-    }
-
-    @Override
-    public Observable<Void> update(final InstanceInfo newInfo) {
-        logger.debug("Updating existing registry entry. New info= {}", newInfo);
-
-        if (STATES.Opened != state.get()) {
-            return Observable.error(state.get() == STATES.Closed ? CHANNEL_CLOSED_EXCEPTION : IDLE_STATE_EXCEPTION);
-        }
-        if (replicationLoop) {
-            return Observable.error(REPLICATION_LOOP_EXCEPTION);
-        }
-        InstanceInfo currentInfo = instanceInfoById.get(newInfo.getId());
-        if (currentInfo == null) {
-            logger.info("Replication update request for non-existing entry {}; handling it as an initial registration", newInfo.getId());
-            return register(newInfo);
-        }
-
-        InstanceInfo tempNewInfo = new InstanceInfo.Builder()
-                .withInstanceInfo(newInfo).withVersion(currentVersion++).build();
-        Set<Delta<?>> deltas = tempNewInfo.diffOlder(currentInfo);
-        logger.debug("Set of InstanceInfo modified fields: {}", deltas);
-
-        return registry.update(tempNewInfo, deltas, replicationSource)
-                .ignoreElements()
-                .cast(Void.class)
-                .doOnCompleted(new Action0() {
-                    @Override
-                    public void call() {
-                        instanceInfoById.put(newInfo.getId(), newInfo);
-                    }
-                });
+                })
+                .ignoreElements();
     }
 
     @Override
@@ -231,14 +195,16 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATES> i
         }
 
         return registry.unregister(toUnregister, replicationSource)
-                .ignoreElements()
-                .cast(Void.class)
-                .doOnCompleted(new Action0() {
+                .map(new Func1<Boolean, Void>() {
                     @Override
-                    public void call() {
+                    public Void call(Boolean aBoolean) {
+                        // an emit means the tempNewInfo was successfully registered
                         instanceInfoById.remove(instanceId);
+                        logger.debug("Successfully replicated an unregister");
+                        return null;
                     }
-                });
+                })
+                .ignoreElements();
     }
 
     @Override

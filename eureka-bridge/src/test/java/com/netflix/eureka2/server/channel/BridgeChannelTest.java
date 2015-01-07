@@ -3,7 +3,6 @@ package com.netflix.eureka2.server.channel;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.appinfo.AmazonInfo;
@@ -94,14 +93,13 @@ public class BridgeChannelTest {
 
         InstanceInfo app1t0Info = converter.fromV1(app1t0.getInstances().get(0));
         verify(registry, times(1)).register(app1t0Info);
-        verify(registry, never()).update(any(InstanceInfo.class), any(Set.class));
         verify(registry, never()).unregister(any(InstanceInfo.class));
 
         testScheduler.advanceTimeTo(period * 2 - 1, TimeUnit.SECONDS);
 
         InstanceInfo app1t1Info = converter.fromV1(app1t1.getInstances().get(0));
         verify(registry, times(1)).register(app1t0Info);
-        verify(registry, times(1)).update(app1t1Info, app1t1Info.diffOlder(app1t0Info));
+        verify(registry, times(1)).register(app1t1Info);
         verify(registry, never()).unregister(any(InstanceInfo.class));
     }
 
@@ -116,13 +114,11 @@ public class BridgeChannelTest {
 
         InstanceInfo app2t0Info = converter.fromV1(app2t0.getInstances().get(0));
         verify(registry, times(1)).register(app2t0Info);
-        verify(registry, never()).update(any(InstanceInfo.class), any(Set.class));
         verify(registry, never()).unregister(any(InstanceInfo.class));
 
         testScheduler.advanceTimeTo(period * 2 - 1, TimeUnit.SECONDS);
 
         verify(registry, times(1)).register(app2t0Info);
-        verify(registry, never()).update(any(InstanceInfo.class), any(Set.class));
         verify(registry, times(1)).unregister(app2t0Info);
     }
 

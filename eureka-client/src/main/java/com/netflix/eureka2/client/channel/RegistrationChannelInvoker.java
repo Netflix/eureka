@@ -33,16 +33,6 @@ import java.util.concurrent.Callable;
     }
 
     @Override
-    public Observable<Void> update(final InstanceInfo newInfo) {
-        return submitForAck(new Callable<Observable<Void>>() {
-            @Override
-            public Observable<Void> call() throws Exception {
-                return delegate.update(newInfo);
-            }
-        });
-    }
-
-    @Override
     public Observable<Void> unregister() {
         return submitForAck(new Callable<Observable<Void>>() {
             @Override

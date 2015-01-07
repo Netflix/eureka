@@ -25,7 +25,6 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
-import com.netflix.eureka2.registry.MultiSourcedDataHolder.Status;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.eviction.EvictionItem;
@@ -146,14 +145,15 @@ public class PreservableEurekaRegistryTest {
         assertThat(preservableRegistry.expectedRegistrySize, is(equalTo(1)));
 
         // Update
-        when(baseRegistry.update(DISCOVERY, DISCOVERY_DELTAS)).thenReturn(Observable.just(false));
-        status = preservableRegistry.update(DISCOVERY, DISCOVERY_DELTAS);
+        InstanceInfo update = new InstanceInfo.Builder().withInstanceInfo(DISCOVERY).withVipAddress("aNewName").build();
+        when(baseRegistry.register(update)).thenReturn(Observable.just(false));
+        status = preservableRegistry.register(update);
         assertStatus(status, false);
 
         assertThat(preservableRegistry.expectedRegistrySize, is(equalTo(1)));
 
-        when(baseRegistry.update(DISCOVERY, DISCOVERY_DELTAS, REMOTE_SOURCE)).thenReturn(Observable.just(false));
-        status = preservableRegistry.update(DISCOVERY, DISCOVERY_DELTAS, REMOTE_SOURCE);
+        when(baseRegistry.register(update, REMOTE_SOURCE)).thenReturn(Observable.just(false));
+        status = preservableRegistry.register(DISCOVERY, REMOTE_SOURCE);
         assertStatus(status, false);
 
         assertThat(preservableRegistry.expectedRegistrySize, is(equalTo(1)));

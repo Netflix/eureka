@@ -18,10 +18,7 @@ package com.netflix.eureka2.registry;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.registry.instance.Delta;
 import rx.Observable;
-
-import java.util.Set;
 
 /**
  * Interface for eureka registries that contain a notion of data source
@@ -31,19 +28,15 @@ import java.util.Set;
 public interface SourcedEurekaRegistry<T> extends EurekaRegistry<T> {
 
     /**
-     * @return a boolean to denote whether the register added a new entry
+     * @return a boolean to denote whether the register added a new entry or updated an existing entry
      */
     Observable<Boolean> register(T instanceInfo, Source source);
 
     /**
-     * @return a boolean to denote whether the update added a new entry
+     * @return a boolean to denote whether the unregister removed an existing entry
      */
     Observable<Boolean> unregister(T instanceInfo, Source source);
 
-    /**
-     * @return a boolean to denote whether the unregister removed an existing entry
-     */
-    Observable<Boolean> update(T updatedInfo, Set<Delta<?>> deltas, Source source);
 
     Observable<T> forSnapshot(Interest<T> interest, Source source);
 

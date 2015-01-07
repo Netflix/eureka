@@ -93,7 +93,7 @@ public class RegistryReplicator {
                                 subscribeToTransportSend(channel.register(changeNotification.getData()), "register request");
                                 break;
                             case Modify:
-                                subscribeToTransportSend(channel.update(changeNotification.getData()), "update request");
+                                subscribeToTransportSend(channel.register(changeNotification.getData()), "update request");
                                 break;
                             case Delete:
                                 subscribeToTransportSend(channel.unregister(changeNotification.getData().getId()), "delete request");

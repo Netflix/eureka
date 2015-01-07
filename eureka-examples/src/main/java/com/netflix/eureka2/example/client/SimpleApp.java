@@ -77,7 +77,7 @@ public final class SimpleApp {
         // Modify client 1 status
         System.out.println("Updating service status to DOWN...");
         InstanceInfo updatedInfo = new Builder().withInstanceInfo(SERVICE_A).withStatus(Status.DOWN).build();
-        client.update(updatedInfo).toBlocking().singleOrDefault(null);
+        client.register(updatedInfo).toBlocking().singleOrDefault(null);
         Thread.sleep(1000);
 
         // Unregister client 1

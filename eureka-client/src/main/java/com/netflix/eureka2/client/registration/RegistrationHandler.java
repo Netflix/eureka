@@ -17,7 +17,5 @@ public interface RegistrationHandler {
 
     Observable<Void> unregister(InstanceInfo instanceInfo);
 
-    Observable<Void> update(InstanceInfo instanceInfo);
-
     void shutdown();
 }

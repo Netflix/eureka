@@ -156,27 +156,6 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
         return subscribeToUpdateResult(result);
     }
 
-    @Override
-    public Observable<Boolean> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas) {
-        return update(updatedInfo, deltas, Source.localSource());
-    }
-
-    @Override
-    public Observable<Boolean> update(InstanceInfo updatedInfo, Set<Delta<?>> deltas, final Source source) {
-        MultiSourcedDataHolder<InstanceInfo> holder = new NotifyingInstanceInfoHolder(
-                internalStoreAccessor, notificationSubject, invoker, updatedInfo.getId());
-
-        Observable<MultiSourcedDataHolder.Status> result = holder.update(source, updatedInfo).doOnNext(new Action1<MultiSourcedDataHolder.Status>() {
-            @Override
-            public void call(MultiSourcedDataHolder.Status status) {
-                if (status != MultiSourcedDataHolder.Status.AddExpired) {
-                    metrics.incrementUpdateCounter(source.getOrigin());
-                }
-            }
-        });
-        return subscribeToUpdateResult(result);
-    }
-
     /**
      * TODO: do we have to eagerly subscribe? This code is inefficient.
      */
