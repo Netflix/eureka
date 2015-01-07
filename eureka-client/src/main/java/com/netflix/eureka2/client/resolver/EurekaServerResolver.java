@@ -17,127 +17,153 @@
 package com.netflix.eureka2.client.resolver;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.TimeUnit;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.netflix.eureka2.Names;
-import com.netflix.eureka2.client.Eureka;
-import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.client.channel.SnapshotInterestChannel;
+import com.netflix.eureka2.client.channel.SnapshotInterestChannelImpl;
+import com.netflix.eureka2.client.transport.TransportClients;
+import com.netflix.eureka2.client.transport.tcp.TcpDiscoveryClient;
+import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import com.netflix.eureka2.registry.instance.NetworkAddress.ProtocolType;
 import com.netflix.eureka2.registry.selector.ServiceSelector;
 import netflix.ocelli.LoadBalancer;
 import netflix.ocelli.LoadBalancerBuilder;
 import netflix.ocelli.MembershipEvent;
+import netflix.ocelli.MembershipEvent.EventType;
 import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
-import rx.functions.Action0;
 import rx.functions.Func1;
-
-import static netflix.ocelli.MembershipEvent.EventType.ADD;
-import static netflix.ocelli.MembershipEvent.EventType.REMOVE;
+import rx.functions.Func2;
+import rx.subjects.PublishSubject;
 
 /**
- * A resolver fetching server list from the Eureka cluster. Eureka client uses
- * this resolver to load read cluster server list from the write cluster, after the
- * registration process.
+ * A resolver for selecting read server node from a notification stream
+ * returned by a write server node.
+ *
+ * To minimize load on the write cluster, a short running connection is established
+ * to fetch latest read cluster server list, on each resolve invocation to refresh
+ * server list in the load balancer. If the data cannot be refreshed, the stale
+ * load balancer content is used.
+ *
+ * <h1>Failure scenarios</h1>
+ *
+ * As a general rule, the resolver returns any available data rather than failing
+ * due to an error. If the internal load balancer has at least one item, this item
+ * will be returned (even if the data is stale).
+ *
+ * If there is an issue with connecting to an interest channel, the request is retried.
+ * If all retries fail, and load balancer server list is empty, the last error is
+ * returned to the client. If the subscription stream returned empty stream, the stale
+ * data are used in the reply.
  *
  * @author Tomasz Bak
  */
 public class EurekaServerResolver implements ServerResolver {
-
     private static final Logger logger = LoggerFactory.getLogger(EurekaServerResolver.class);
 
-    private final String readServerVip;
+    private final SnapshotInterestChannel snapshotInterestChannel;
+    private final Interest<InstanceInfo> readServerInterest;
     private final ServiceSelector serviceSelector;
-    private final LoadBalancerBuilder<Server> loadBalancerBuilder;
-    private LoadBalancer<Server> loadBalancer;
-    private final EurekaClient eurekaClient;
+
+    private final LoadBalancer<Server> loadBalancer;
+    private final PublishSubject<MembershipEvent<Server>> loadBalancerUpdates = PublishSubject.create();
+    private Set<Server> lastServerSet = new HashSet<>();
 
     public EurekaServerResolver(
-            ServerResolver bootstrapResolver,
-            String readServerVip,
+            SnapshotInterestChannel snapshotInterestChannel,
+            Interest<InstanceInfo> readServerInterest,
             ServiceSelector serviceSelector,
             LoadBalancerBuilder<Server> loadBalancerBuilder) {
-        this(Eureka.newClientBuilder(bootstrapResolver).build(), readServerVip, serviceSelector, loadBalancerBuilder);
-    }
-
-    public EurekaServerResolver(
-            EurekaClient eurekaClient,
-            String readServerVip,
-            ServiceSelector serviceSelector,
-            LoadBalancerBuilder<Server> loadBalancerBuilder) {
-        this.eurekaClient = eurekaClient;
-        this.readServerVip = readServerVip;
+        this.snapshotInterestChannel = snapshotInterestChannel;
+        this.readServerInterest = readServerInterest;
         this.serviceSelector = serviceSelector;
-        this.loadBalancerBuilder = loadBalancerBuilder;
+        this.loadBalancer = loadBalancerBuilder.withMembershipSource(loadBalancerUpdates).build();
     }
 
     @Override
     public Observable<Server> resolve() {
-        if (loadBalancer == null) {
-            loadBalancer = loadBalancerBuilder.withMembershipSource(serverUpdates()).build();
+        return fetchFreshServerSet().flatMap(new Func1<Set<Server>, Observable<Server>>() {
+            @Override
+            public Observable<Server> call(Set<Server> newServers) {
+                if (!newServers.isEmpty()) {
+                    updateLoadBalancer(newServers);
+                } else {
+                    logger.info("resolver returned empty server list; keeping the previous data");
+                }
+                return loadBalancer.choose();
+            }
+        }).onErrorResumeNext(new Func1<Throwable, Observable<Server>>() {
+            @Override
+            public Observable<Server> call(Throwable error) {
+                // We use stale data if available in case of an error
+                if (!lastServerSet.isEmpty()) {
+                    return loadBalancer.choose();
+                }
+                return Observable.error(error);
+            }
+        });
+    }
+
+    /**
+     * Fetch a new set of servers from the write cluster. This function returns always
+     * exactly one item with list of retrieved servers, or an empty list, or an error.
+     */
+    private Observable<Set<Server>> fetchFreshServerSet() {
+        return snapshotInterestChannel
+                .forSnapshot(readServerInterest)
+                .reduce(new HashSet<Server>(), new Func2<Set<Server>, InstanceInfo, Set<Server>>() {
+                    @Override
+                    public Set<Server> call(Set<Server> servers, InstanceInfo newInstanceInfo) {
+                        InetSocketAddress socketAddress = serviceSelector.returnServiceAddress(newInstanceInfo);
+                        Server newServer = new Server(socketAddress.getHostString(), socketAddress.getPort());
+                        servers.add(newServer);
+                        return servers;
+                    }
+                })
+                .retry(2)
+                .concatWith(Observable.just(Collections.<Server>emptySet()))
+                .take(1);
+    }
+
+    /**
+     * This function removes from load balancer all server entries not present in
+     * the new server set, and adds all the new entries.
+     */
+    private void updateLoadBalancer(Set<Server> newServers) {
+        // Remove
+        HashSet<Server> toRemove = new HashSet<>(lastServerSet);
+        toRemove.removeAll(newServers);
+        logger.info("Removing load balancer entries: {}", toRemove);
+        for (Server server : toRemove) {
+            loadBalancerUpdates.onNext(new MembershipEvent<Server>(EventType.REMOVE, server));
         }
 
-        return loadBalancer.choose();
+        // Add
+        HashSet<Server> toAdd = new HashSet<>(newServers);
+        toAdd.removeAll(lastServerSet);
+        logger.info("Adding load balancer entries: {}", toAdd);
+        for (Server server : toAdd) {
+            loadBalancerUpdates.onNext(new MembershipEvent<Server>(EventType.ADD, server));
+        }
+        lastServerSet = newServers;
     }
 
     @Override
     public void close() {
-        eurekaClient.close();
-        if (loadBalancer != null) {
-            loadBalancer.shutdown();
-            loadBalancer = null;
-        }
-    }
-
-    // FIXME: simulate stream completion with a timeout. Remove once we have the bootstrap API
-    protected Observable<MembershipEvent<Server>> serverUpdates() {
-        return eurekaClient.forVips(readServerVip)
-                .timeout(5000, TimeUnit.MILLISECONDS, Observable.<ChangeNotification<InstanceInfo>>empty())
-                .map(new Func1<ChangeNotification<InstanceInfo>, MembershipEvent<Server>>() {
-                    @Override
-                    public MembershipEvent<Server> call(ChangeNotification<InstanceInfo> notification) {
-                        InstanceInfo info = notification.getData();
-                        InetSocketAddress address = serviceSelector.returnServiceAddress(info);
-                        if (address == null) {
-                            logger.warn("Unable to determine Eureka read server address/port from provided instance info: {}", info);
-                            return null;
-                        }
-                        Server server = new Server(address.getHostString(), address.getPort());
-                        switch (notification.getKind()) {
-                            case Add:
-                                if (info.getStatus() == Status.UP) {
-                                    return new MembershipEvent<>(ADD, server);
-                                }
-                                break;
-                            case Modify:
-                                if (info.getStatus() == Status.UP) {
-                                    return new MembershipEvent<>(ADD, server);
-                                }
-                                return new MembershipEvent<>(REMOVE, server);
-                            case Delete:
-                                return new MembershipEvent<>(REMOVE, server);
-                        }
-                        return null;
-                    }
-                })
-                .doOnCompleted(new Action0() {
-                    @Override
-                    public void call() {
-                        logger.info("Stream to resolve read servers completed");
-                    }
-                });
+        loadBalancer.shutdown();
+        snapshotInterestChannel.close();
     }
 
     public static class EurekaServerResolverBuilder {
 
         private ServerResolver bootstrapResolver;
-        private EurekaClient eurekaClient;
-        private String readServerVip;
+        private Interest<InstanceInfo> readServerInterest;
         private LoadBalancerBuilder<Server> loadBalancerBuilder;
         private ServiceSelector serviceSelector;
 
@@ -146,13 +172,8 @@ public class EurekaServerResolver implements ServerResolver {
             return this;
         }
 
-        public EurekaServerResolverBuilder withEurekaClient(EurekaClient eurekaClient) {
-            this.eurekaClient = eurekaClient;
-            return this;
-        }
-
-        public EurekaServerResolverBuilder withReadServerVip(String readServerVip) {
-            this.readServerVip = readServerVip;
+        public EurekaServerResolverBuilder withReadServerInterest(Interest<InstanceInfo> readServerInterest) {
+            this.readServerInterest = readServerInterest;
             return this;
         }
 
@@ -173,16 +194,13 @@ public class EurekaServerResolver implements ServerResolver {
             if (loadBalancerBuilder == null) {
                 loadBalancerBuilder = new DefaultLoadBalancerBuilder<>(null);
             }
-            if (eurekaClient != null && bootstrapResolver != null) {
-                throw new IllegalArgumentException("Both EurekaClient and bootstrap ServerResolver provided, while only one of the two expected");
+            if (bootstrapResolver == null) {
+                throw new IllegalStateException("BootstrapResolver property not set");
             }
-            if (eurekaClient != null) {
-                return new EurekaServerResolver(eurekaClient, readServerVip, serviceSelector, loadBalancerBuilder);
-            }
-            if (bootstrapResolver != null) {
-                return new EurekaServerResolver(bootstrapResolver, readServerVip, serviceSelector, loadBalancerBuilder);
-            }
-            return null;
+
+            TcpDiscoveryClient transportClient = (TcpDiscoveryClient) TransportClients.newTcpDiscoveryClient(bootstrapResolver);
+            SnapshotInterestChannel snapshotInterestChannel = new SnapshotInterestChannelImpl(transportClient);
+            return new EurekaServerResolver(snapshotInterestChannel, readServerInterest, serviceSelector, loadBalancerBuilder);
         }
     }
 }

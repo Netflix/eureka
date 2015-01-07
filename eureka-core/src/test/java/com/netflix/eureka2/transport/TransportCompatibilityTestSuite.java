@@ -4,10 +4,13 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
+import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.protocol.Heartbeat;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.DeleteInstance;
 import com.netflix.eureka2.protocol.discovery.InterestRegistration;
+import com.netflix.eureka2.protocol.discovery.SnapshotComplete;
+import com.netflix.eureka2.protocol.discovery.SnapshotRegistration;
 import com.netflix.eureka2.protocol.discovery.UnregisterInterestSet;
 import com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka2.protocol.registration.Register;
@@ -63,6 +66,12 @@ public abstract class TransportCompatibilityTestSuite {
 
     public <T> void runClientToServerWithAck(T content) {
         runWithAck(clientBroker, serverBroker, serverIterator, content);
+    }
+
+    public <T> void runServerToClient(T content) {
+        sniff("submit", serverBroker.submit(content));
+        T receivedMsg = (T) clientIterator.next();
+        assertEquals(content, receivedMsg);
     }
 
     public <T> void runServerToClientWithAck(T content) {
@@ -222,6 +231,10 @@ public abstract class TransportCompatibilityTestSuite {
 
             // Update with null values (delete semantic)
             runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.APPLICATION, null).build()));
+
+            // Snapshot  subscription
+            runClientToServerWithAck(new SnapshotRegistration(Interests.forFullRegistry()));
+            runServerToClient(SnapshotComplete.INSTANCE);
         }
     }
 }

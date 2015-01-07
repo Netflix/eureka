@@ -1,11 +1,13 @@
 package com.netflix.eureka2.integration;
 
+import com.netflix.eureka2.integration.categories.IntegrationTest;
 import com.netflix.eureka2.server.EurekaReadServer;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import io.netty.buffer.ByteBuf;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ObservableConnection;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -15,6 +17,7 @@ import rx.functions.Func1;
 /**
  * @author David Liu
  */
+@Category(IntegrationTest.class)
 public class ReadServerIntegrationTest {
 
     private static final Logger logger = LoggerFactory.getLogger(ReadServerIntegrationTest.class);
