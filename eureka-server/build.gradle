@@ -16,10 +16,6 @@
 
 apply plugin: 'osgi'
 
-configurations {
-    all*.exclude module: 'eureka-client' // Transitive dependency from karyon-admin-web
-}
-
 dependencies {
     compile "org.slf4j:slf4j-simple:${slf4j_version}"
     compile "commons-cli:commons-cli:${commons_cli_version}"
@@ -31,7 +27,9 @@ dependencies {
     compile "com.netflix.karyon2:karyon-servo:${karyon_version}"
 
     // Karyon admin and its dependencies
-    compile "com.netflix.karyon2:karyon-admin-web:${karyon_version}"
+    compile("com.netflix.karyon2:karyon-admin-web:${karyon_version}") {
+        exclude module: 'eureka-client'
+    }
     compile "commons-codec:commons-codec:${commons_codec_version}"
 
     testCompile project(':eureka-test-utils')
