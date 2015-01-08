@@ -1,0 +1,19 @@
+apply plugin: 'nebula-test-jar'
+
+dependencies {
+    compile "com.netflix.netflix-commons:netflix-eventbus:0.1.2"
+    compile 'com.thoughtworks.xstream:xstream:1.4.2'
+    compile "com.netflix.archaius:archaius-core:$archaiusVersion"
+    compile 'javax.ws.rs:jsr311-api:1.1.1'
+    compile 'com.netflix.servo:servo-core:0.7.4'
+    compile "com.sun.jersey:jersey-core:$jerseyVersion"
+    compile "com.sun.jersey:jersey-client:$jerseyVersion"
+    compile 'com.sun.jersey.contribs:jersey-apache-client4:1.11'
+    compile 'org.apache.httpcomponents:httpclient:4.2.1'
+    compile "com.netflix.ribbon:ribbon-httpclient:$ribbonVersion"
+    compile "com.netflix.governator:governator:$governatorVersion"
+    runtime 'org.codehaus.jettison:jettison:1.2'
+
+    testCompile 'junit:junit:4.10'
+    testCompile 'org.mortbay.jetty:jetty:6.1H.22'
+}
