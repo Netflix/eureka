@@ -50,6 +50,14 @@ protocol DiscoveryProtocol {
     }
 
     @namespace("com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$")
+    record MapStringDeltaDTO {
+        string id;
+        long version;
+        string fieldName;
+        union { null, @java-class("java.util.HashMap") map<string> } value;
+    }
+
+    @namespace("com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$")
     record DataCenterInfoDTO {
         string id;
         long version;
@@ -67,6 +75,7 @@ protocol DiscoveryProtocol {
             com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.EnumDeltaDTO,
             com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.SetServicePortDeltaDTO,
             com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.SetStringDeltaDTO,
+            com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.MapStringDeltaDTO,
             com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.DataCenterInfoDTO
         } deltaDTO;
     }

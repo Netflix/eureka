@@ -18,6 +18,7 @@ package com.netflix.eureka2.protocol.discovery;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.Map;
 import java.util.Set;
 
 import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
@@ -84,7 +85,7 @@ public class UpdateInstanceInfo<T> implements InterestSetNotification {
                 return new StringDeltaDTO((Delta<String>) delta);
             } else if (Enum.class.isAssignableFrom(ctype)) {
                 return new EnumDeltaDTO((Delta<Enum>) delta);
-            } else if(DataCenterInfo.class.isAssignableFrom(ctype)) {
+            } else if (DataCenterInfo.class.isAssignableFrom(ctype)) {
                 return new DataCenterInfoDTO((Delta<DataCenterInfo>) delta);
             }
         } else if (type instanceof ParameterizedType) {
@@ -95,6 +96,12 @@ public class UpdateInstanceInfo<T> implements InterestSetNotification {
                     return new SetServicePortDeltaDTO((Delta<Set<ServicePort>>) delta);
                 } else if (String.class.equals(targ)) {
                     return new SetStringDeltaDTO((Delta<Set<String>>) delta);
+                }
+            } else if (Map.class.isAssignableFrom((Class<?>) ptype.getRawType())) {
+                Type keyType = ptype.getActualTypeArguments()[0];
+                Type valueType = ptype.getActualTypeArguments()[1];
+                if (String.class.equals(keyType) && String.class.equals(valueType)) {
+                    return new MapStringDeltaDTO((Delta<Map<String, String>>) delta);
                 }
             }
         }
@@ -244,6 +251,23 @@ public class UpdateInstanceInfo<T> implements InterestSetNotification {
 
         @Override
         public Set<String> getValue() {
+            return value;
+        }
+    }
+
+    public static class MapStringDeltaDTO extends DeltaDTO<Map<String, String>> {
+        Map<String, String> value;
+
+        public MapStringDeltaDTO() {
+        }
+
+        public MapStringDeltaDTO(Delta<Map<String, String>> delta) {
+            super(delta);
+            value = delta.getValue();
+        }
+
+        @Override
+        public Map<String, String> getValue() {
             return value;
         }
     }
