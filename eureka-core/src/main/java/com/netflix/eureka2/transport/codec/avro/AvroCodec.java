@@ -16,38 +16,50 @@
 
 package com.netflix.eureka2.transport.codec.avro;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Set;
+
 import com.netflix.eureka2.transport.Acknowledgement;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufInputStream;
+import io.netty.buffer.ByteBufOutputStream;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.EncoderException;
 import org.apache.avro.Schema;
-import org.apache.avro.io.Decoder;
+import org.apache.avro.io.BinaryDecoder;
+import org.apache.avro.io.BinaryEncoder;
 import org.apache.avro.io.DecoderFactory;
-import org.apache.avro.io.Encoder;
 import org.apache.avro.io.EncoderFactory;
 import org.apache.avro.reflect.ReflectDatumReader;
 import org.apache.avro.reflect.ReflectDatumWriter;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.List;
-import java.util.Set;
-
 /**
- * TODO Possibly we can do some optimizations here. For now lets keep it simple.
- *
  * @author Tomasz Bak
  */
 public class AvroCodec extends ByteToMessageCodec<Object> {
 
     private final Set<Class<?>> protocolTypes;
-    private final Schema rootSchema;
 
+    private final ReflectDatumWriter<Object> datumWriter;
+    private final ReflectDatumReader<Object> datumReader;
+    private BinaryEncoder encoder;
+    private BinaryDecoder decoder;
+
+    /**
+     * This constructor creates a new {@link SchemaReflectData}, which is prohibitively
+     * expensive. It is however convenient for testing.
+     */
     public AvroCodec(Set<Class<?>> protocolTypes, Schema rootSchema) {
+        this(protocolTypes, rootSchema, new SchemaReflectData(rootSchema));
+    }
+
+    public AvroCodec(Set<Class<?>> protocolTypes, Schema rootSchema, SchemaReflectData reflectData) {
         this.protocolTypes = protocolTypes;
-        this.rootSchema = rootSchema;
+        this.datumWriter = new ReflectDatumWriter<>(rootSchema, reflectData);
+        this.datumReader = new ReflectDatumReader<>(rootSchema, rootSchema, reflectData);
     }
 
     @Override
@@ -57,36 +69,25 @@ public class AvroCodec extends ByteToMessageCodec<Object> {
 
     @Override
     protected void encode(ChannelHandlerContext ctx, Object msg, ByteBuf out) {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        Encoder encoder = EncoderFactory.get().binaryEncoder(bos, null);
-
-        SchemaReflectData reflectData = new SchemaReflectData(rootSchema);
-        ReflectDatumWriter<Object> writer = new ReflectDatumWriter(rootSchema, reflectData);
+        ByteBufOutputStream os = new ByteBufOutputStream(out);
+        encoder = EncoderFactory.get().binaryEncoder(os, encoder);
 
         try {
-            writer.write(msg, encoder);
+            datumWriter.write(msg, encoder);
             encoder.flush();
-            bos.close();
+            os.close();
         } catch (IOException e) {
             throw new EncoderException("Avro encoding failure of object of type " + msg.getClass().getName(), e);
         }
-
-        byte[] bytes = bos.toByteArray();
-        out.ensureWritable(bytes.length);
-        out.writeBytes(bytes);
     }
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
-        byte[] array = new byte[in.readableBytes()];
-        in.readBytes(array);
-
-        SchemaReflectData reflectData = new SchemaReflectData(rootSchema);
-        ReflectDatumReader reader = new ReflectDatumReader(rootSchema, rootSchema, reflectData);
-        Decoder decoder = DecoderFactory.get().binaryDecoder(array, null);
+        ByteBufInputStream is = new ByteBufInputStream(in);
+        decoder = DecoderFactory.get().binaryDecoder(is, decoder);
 
         try {
-            out.add(reader.read(null, decoder));
+            out.add(datumReader.read(null, decoder));
         } catch (IOException e) {
             throw new DecoderException("Avro decoding failure", e);
         }

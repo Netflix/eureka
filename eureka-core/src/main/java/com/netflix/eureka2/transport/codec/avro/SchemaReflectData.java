@@ -31,6 +31,10 @@ import java.util.Map;
  * to underlying Java data model. We can just reuse it, instead of generation
  * that has multiple shortcomings.
  *
+ * <h1>Thread safety</h1>
+ * The base class {@link ReflectData}, and this derived implementation are thread
+ * safe and a single instance can be shared across all channels.
+ *
  * @author Tomasz Bak
  */
 public class SchemaReflectData extends ReflectData {

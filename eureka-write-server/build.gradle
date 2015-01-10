@@ -38,6 +38,10 @@ jar {
 mainClassName = "com.netflix.eureka2.server.EurekaWriteServer"
 applicationDefaultJvmArgs = ["-Xms2g",
                              "-Xmx4g",
+                             "-XX:+UseConcMarkSweepGC",
+                             "-XX:+CMSParallelRemarkEnabled",
+                             "-XX:+ScavengeBeforeFullGC",
+                             "-XX:+CMSScavengeBeforeRemark",
 //                             "-Dcom.sun.management.jmxremote",
 //                             "-XX:+UnlockCommercialFeatures",
 //                             "-XX:+FlightRecorder",

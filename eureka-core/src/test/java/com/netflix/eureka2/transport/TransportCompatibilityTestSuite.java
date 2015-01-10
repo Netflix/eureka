@@ -1,7 +1,9 @@
 package com.netflix.eureka2.transport;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.interests.Interests;
@@ -211,6 +213,10 @@ public abstract class TransportCompatibilityTestSuite {
             runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.HOMEPAGE_URL, "newHomePageURL").build()));
             runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.STATUS_PAGE_URL, "newStatusPageURL").build()));
             runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.HEALTHCHECK_URLS, Sets.asSet("http://newHealthCheck1", "http://newHealthCheck2")).build()));
+
+            Map<String, String> metaData = new HashMap<>();
+            metaData.put("key1", "value1");
+            runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.META_DATA, metaData).build()));
 
             DataCenterInfo awsDataCenterInfo = SampleAwsDataCenterInfo.UsEast1a.builder().withInstanceId("newInstanceId").build();
             runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.DATA_CENTER_INFO, awsDataCenterInfo).build()));

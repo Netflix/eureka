@@ -13,51 +13,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-ext.githubProjectName = "eureka"
-
 buildscript {
-    repositories {
-//        mavenLocal()
-        mavenCentral() // maven { url 'http://jcenter.bintray.com' }
-    }
-    apply from: file('gradle/buildscript.gradle'), to: buildscript
-}
-
-allprojects {
-    apply plugin: 'idea'
-
-    repositories {
-//        mavenLocal()
-        mavenCentral() // maven { url: 'http://jcenter.bintray.com' }
+    repositories { jcenter() }
+    dependencies {
+        classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:2.0.1'
     }
 }
 
-apply from: file('gradle/convention.gradle')
-apply from: file('gradle/maven.gradle')
-//apply from: file('gradle/check.gradle')
-apply from: file('gradle/license.gradle')
-apply from: file('gradle/release.gradle')
+plugins {
+    id 'nebula.netflixoss' version '2.2.3'
+}
 
-apply plugin: 'idea'
+ext {
+    githubProjectName = "eureka"
+}
 
 subprojects {
+    apply plugin: 'nebula.netflixoss'
+    apply plugin: 'groovy'
+    apply plugin: 'nebula.provided-base'
 
     group = "com.netflix.eureka2"
 
-    apply plugin: 'groovy'
-    apply plugin: 'eclipse'
+    repositories {
+        jcenter()
+    }
 
     /**
      * Exclude from the transitive dependencies all artifacts that we
      * include explicitly. Version resolution is usually done right by
      * gradle build, but confuses Intellij a lot.
      */
-    configurations {
-        all*.exclude group: 'com.netflix.rxjava' // Use io.reactivex:rxjava
-        all*.exclude group: 'com.netflix.rxnetty' // Use io.reactivex:rxnetty
-        all*.exclude module: 'log4j' // From ocelli
-        all*.exclude module: 'slf4j-log4j12' // From ocelli
+    configurations.all {
+        exclude group: 'com.netflix.rxjava' // Use io.reactivex:rxjava
+        exclude group: 'com.netflix.rxnetty' // Use io.reactivex:rxnetty
+        exclude module: 'log4j' // From ocelli
+        exclude module: 'slf4j-log4j12' // From ocelli
     }
 
     dependencies {
@@ -71,7 +62,7 @@ subprojects {
     eclipse {
         classpath {
             // include 'provided' dependencies on the classpath
-            plusConfigurations += configurations.provided
+            plusConfigurations += [configurations.provided]
 
             downloadSources = true
             downloadJavadoc = true
@@ -81,8 +72,8 @@ subprojects {
     idea {
         module {
             // include 'provided' dependencies on the classpath
-            scopes.PROVIDED.plus += configurations.provided
-            scopes.PROVIDED.plus += configurations.provided
+            scopes.PROVIDED.plus += [configurations.provided]
+            scopes.PROVIDED.plus += [configurations.provided]
         }
     }
 
