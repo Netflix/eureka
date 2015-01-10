@@ -1,6 +1,9 @@
 package com.netflix.eureka2.transport.base;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -19,12 +22,12 @@ import org.junit.Before;
 import org.junit.Test;
 import rx.Notification;
 import rx.Observable;
+import rx.Subscriber;
 import rx.functions.Func1;
 
 import static com.netflix.eureka2.rx.RxSniffer.sniff;
 import static com.netflix.eureka2.transport.base.SampleObject.CONTENT;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * @author Tomasz Bak
@@ -126,5 +129,43 @@ public class BaseMessageConnectionTest {
         // Client side timeout
         assertTrue("Ack not received", ackIterator.hasNext());
         assertTrue("Expected Acknowledgement instance", ackIterator.next().getThrowable() instanceof TimeoutException);
+    }
+
+    @Test(timeout = 10000)
+    public void testMultipleSubscriptionToSingleResultOnlyWriteAndFlushOnce() throws Exception {
+        final SampleObject completionObj = new SampleObject(new SampleObject.Internal("STOP"));
+
+        final List<Object> serverIncoming = new ArrayList<>();
+        final CountDownLatch completionLatch = new CountDownLatch(1);
+        serverBroker.incoming().subscribe(new Subscriber<Object>() {
+            @Override
+            public void onCompleted() {
+            }
+
+            @Override
+            public void onError(Throwable e) {
+
+            }
+
+            @Override
+            public void onNext(Object o) {
+                if (o.equals(completionObj)) {
+                    completionLatch.countDown();
+                } else {
+                    serverIncoming.add(o);
+                }
+            }
+        });
+
+        Observable<Void> ackObservable = clientBroker.submitWithAck(CONTENT);
+        Observable<Void> completionObservable = clientBroker.submitWithAck(completionObj);
+        ackObservable.subscribe();
+        ackObservable.subscribe();
+        completionObservable.subscribe();
+
+        assertTrue(completionLatch.await(10, TimeUnit.SECONDS));
+
+        assertEquals(1, serverIncoming.size());
+        assertNotNull("expected message on server side", serverIncoming.get(0));
     }
 }

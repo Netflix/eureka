@@ -84,6 +84,7 @@ public class SampleObject {
 
         public Internal(String value) {
             this.value = value;
+            this.mapValue = Collections.emptyMap();
         }
 
         public Internal(Map<String, String> mapValue) {
