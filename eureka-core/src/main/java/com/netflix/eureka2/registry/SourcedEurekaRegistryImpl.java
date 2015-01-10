@@ -44,6 +44,7 @@ import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
+import rx.subjects.AsyncSubject;
 import rx.subjects.ReplaySubject;
 
 /**
@@ -160,7 +161,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
      * TODO: do we have to eagerly subscribe? This code is inefficient.
      */
     private static Observable<Boolean> subscribeToUpdateResult(Observable<MultiSourcedDataHolder.Status> status) {
-        final ReplaySubject<Boolean> result = ReplaySubject.create();
+        final AsyncSubject<Boolean> result = AsyncSubject.create();  // use an async subject as we only need the last result
         status.subscribe(new Subscriber<MultiSourcedDataHolder.Status>() {
             @Override
             public void onCompleted() {

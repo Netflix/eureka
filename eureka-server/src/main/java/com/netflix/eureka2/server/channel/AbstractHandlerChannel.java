@@ -13,12 +13,13 @@ import rx.functions.Action1;
 
 /**
  * An abstract {@link com.netflix.eureka2.channel.ServiceChannel} implementation for common methods.
+ * All send* methods eagerly subscribes to the send result observable, and also returns the send result observable
  *
  * @author Nitesh Kant
  */
 public abstract class AbstractHandlerChannel<STATE extends Enum> extends AbstractServiceChannel<STATE> {
 
-    protected static final Logger logger = LoggerFactory.getLogger(AbstractHandlerChannel.class);
+    private static final Logger logger = LoggerFactory.getLogger(AbstractHandlerChannel.class);
 
     protected final MessageConnection transport;
     protected final SourcedEurekaRegistry<InstanceInfo> registry;
@@ -39,42 +40,45 @@ public abstract class AbstractHandlerChannel<STATE extends Enum> extends Abstrac
         connectInputToLifecycle(transport.incoming(), onNext);
     }
 
-    protected <T> void sendOnTransport(T message) {
+    protected <T> Observable<Void> sendOnTransport(T message) {
         if (logger.isDebugEnabled()) {
             logger.debug("Sending message on the transport: {}", message);
         }
-        subscribeToTransportSend(transport.submit(message), message.getClass().getSimpleName());
+        return subscribeToTransportSend(transport.submit(message), message.getClass().getSimpleName());
     }
 
-    protected void sendNotificationOnTransport(ChangeNotification<InstanceInfo> notification) {
+    protected Observable<Void> sendNotificationOnTransport(ChangeNotification<InstanceInfo> notification) {
         if (logger.isDebugEnabled()) {
             logger.debug("Sending change notification on the transport: {}", notification);
         }
-        subscribeToTransportSend(transport.submit(notification), "notification");
+        return subscribeToTransportSend(transport.submit(notification), "notification");
     }
 
-    protected void sendOnCompleteOnTransport() {
+    protected Observable<Void> sendOnCompleteOnTransport() {
         if (logger.isDebugEnabled()) {
             logger.debug("Sending onComplete on the transport.");
         }
-        subscribeToTransportSend(transport.onCompleted(), "completion");
+        return subscribeToTransportSend(transport.onCompleted(), "completion");
     }
 
-    protected void sendErrorOnTransport(Throwable throwable) {
+    protected Observable<Void> sendErrorOnTransport(Throwable throwable) {
         if (logger.isErrorEnabled()) {
             logger.error("Sending error on the transport.", throwable);
         }
-        subscribeToTransportSend(transport.onError(throwable), "error");
+        return subscribeToTransportSend(transport.onError(throwable), "error");
     }
 
-    protected void sendAckOnTransport() {
+    protected Observable<Void> sendAckOnTransport() {
         if (logger.isDebugEnabled()) {
             logger.debug("Sending acknowledgment on the transport.");
         }
-        subscribeToTransportSend(transport.acknowledge(), "acknowledgment");
+        return subscribeToTransportSend(transport.acknowledge(), "acknowledgment");
     }
 
-    protected void subscribeToTransportSend(Observable<Void> transportSendResult, final String sendType) {
+    /**
+     * Eagerly subscribe to the transportSend, and return the transportSendResult
+     */
+    protected Observable<Void> subscribeToTransportSend(Observable<Void> transportSendResult, final String sendType) {
         transportSendResult.subscribe(new Subscriber<Void>() {
             @Override
             public void onCompleted() {
@@ -91,5 +95,7 @@ public abstract class AbstractHandlerChannel<STATE extends Enum> extends Abstrac
             public void onNext(Void aVoid) {
             }
         });
+
+        return transportSendResult;
     }
 }

@@ -158,7 +158,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATES> i
         }
 
         if (instanceInfoById.containsKey(instanceInfo.getId())) {
-            logger.info("Updating an existing instance info with id {}", instanceInfo.getId());
+            logger.debug("Updating an existing instance info with id {}", instanceInfo.getId());
         }
 
         final InstanceInfo tempNewInfo = new InstanceInfo.Builder()
@@ -170,7 +170,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATES> i
                     public Void call(Boolean aBoolean) {
                         // an emit means the tempNewInfo was successfully registered
                         instanceInfoById.put(tempNewInfo.getId(), tempNewInfo);
-                        logger.debug("Successfully replicated an {}", (aBoolean ? "add" : "update"));
+                        logger.info("Successfully replicated an {} of {}", (aBoolean ? "add" : "update"), tempNewInfo);
                         return null;
                     }
                 })
@@ -199,8 +199,8 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATES> i
                     @Override
                     public Void call(Boolean aBoolean) {
                         // an emit means the tempNewInfo was successfully unregistered
-                        instanceInfoById.remove(instanceId);
-                        logger.debug("Successfully replicated an unregister");
+                        InstanceInfo removed = instanceInfoById.remove(instanceId);
+                        logger.info("Successfully replicated an unregister {}", removed);
                         return null;
                     }
                 })
