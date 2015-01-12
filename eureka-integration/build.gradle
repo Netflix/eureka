@@ -27,7 +27,7 @@ dependencies {
 
 test {
     useJUnit {
-        excludeCategories 'com.netflix.eureka2.integration.categories.LongRunningTest'
+        excludeCategories 'com.netflix.eureka2.junit.categories.LongRunningTest'
     }
 }
 

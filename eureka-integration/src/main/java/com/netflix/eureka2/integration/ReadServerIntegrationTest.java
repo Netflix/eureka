@@ -1,6 +1,6 @@
 package com.netflix.eureka2.integration;
 
-import com.netflix.eureka2.integration.categories.IntegrationTest;
+import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.server.EurekaReadServer;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import io.netty.buffer.ByteBuf;
