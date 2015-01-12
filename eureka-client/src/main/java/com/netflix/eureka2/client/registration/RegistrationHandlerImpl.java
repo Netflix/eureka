@@ -59,7 +59,7 @@ public class RegistrationHandlerImpl implements RegistrationHandler {
             logger.info("Instance: {} is not registered. Ignoring unregister", instanceInfo);
             return Observable.empty(); // Be more acceptable to errors from user as unregister for non-existent instance is a no-op.
         }
-        return registrationChannel.unregister().doOnTerminate(new Action0() {
+        return registrationChannel.unregister().doOnCompleted(new Action0() {
             @Override
             public void call() {
                 // Since we do not reuse the channel, we must shut it down with the underlying connection.

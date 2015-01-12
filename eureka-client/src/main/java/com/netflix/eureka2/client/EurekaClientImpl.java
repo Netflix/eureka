@@ -28,6 +28,8 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
 
 /**
+ * FIXME need to shutdown clientChannelFactory (or it's future version)
+ *
  * @author Tomasz Bak
  */
 @Singleton

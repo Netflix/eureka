@@ -53,7 +53,7 @@ public class AuditServiceController {
 
     @PostConstruct
     public void startRegistryAuditing() {
-        InstanceInfo auditServer = serverIdentity.resolve().toBlocking().firstOrDefault(null);
+        InstanceInfo auditServer = serverIdentity.resolve().toBlocking().firstOrDefault(null);  // FIXME why toBlocking?
         final String auditServerId = auditServer == null ? null : auditServer.getId();
 
         // TODO: this should be only Origin.Local, but since bridge works on replication channel we would not audit eureka 1.0 entries.

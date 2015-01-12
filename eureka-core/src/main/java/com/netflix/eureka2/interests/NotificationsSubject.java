@@ -100,10 +100,15 @@ public class NotificationsSubject<T> extends Subject<ChangeNotification<T>, Chan
         }
     }
 
-    protected void drainBuffer() {
+    /**
+     * We drain the queue on the resume invocation (while still in paused state), or
+     * on each oNext, if paused is false. It is suboptimal but fixes the race condition issue.
+     * We can optimize it later by introducing FSM for state management.
+     */
+    private void drainBuffer() {
         ChangeNotification<T> nextPolled;
-        while ((nextPolled = notificationsWhenPaused.poll()) != null) { // drain pending queue.
-            notificationSubject.onNext(nextPolled); // Since pause flag is not yet unset, don't call this.onNext()
+        while ((nextPolled = notificationsWhenPaused.poll()) != null) {
+            notificationSubject.onNext(nextPolled);
         }
     }
 

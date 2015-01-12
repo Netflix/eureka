@@ -37,47 +37,48 @@ public class RetryableSenderReplicationChannelTest {
 
     private final TestScheduler scheduler = Schedulers.test();
 
+    private final MessageConnection mockMessageConnection = mock(MessageConnection.class);
     private final TransportClient mockClient = mock(TransportClient.class);
-    private final SenderReplicationChannel delegateChannel1 = spy(new SenderReplicationChannel(mockClient));
-    private final SenderReplicationChannel delegateChannel2 = spy(new SenderReplicationChannel(mockClient));
 
     private final ReplicationHello replicationHello = new ReplicationHello("111", 2);
 
-    private final Func0<ReplicationChannel> channelFactory = new Func0<ReplicationChannel>() {
+    private SenderReplicationChannel delegateChannel1;
+    private SenderReplicationChannel delegateChannel2;
 
-        private final SenderReplicationChannel[] channels = {delegateChannel1, delegateChannel2};
-        private int idx;
-
-        @Override
-        public SenderReplicationChannel call() {
-            SenderReplicationChannel next = channels[idx];
-            idx = (idx + 1) % channels.length;
-            return next;
-        }
-    };
-
-    private TestScheduler registryScheduler;
-
-    private SourcedEurekaRegistry<InstanceInfo> registry;
     private RetryableSenderReplicationChannel channel;
-    private RegistryReplicator replicator;
 
     @Before
     public void setUp() throws Exception {
-        when(mockClient.connect()).thenReturn(Observable.<MessageConnection>empty());
+        when(mockClient.connect()).thenReturn(Observable.just(mockMessageConnection));
+
+        delegateChannel1 = spy(new SenderReplicationChannel(mockClient));
+        delegateChannel2 = spy(new SenderReplicationChannel(mockClient));
+
+        Func0<ReplicationChannel> channelFactory = new Func0<ReplicationChannel>() {
+
+            private final SenderReplicationChannel[] channels = {delegateChannel1, delegateChannel2};
+            private int idx;
+
+            @Override
+            public SenderReplicationChannel call() {
+                SenderReplicationChannel next = channels[idx];
+                idx = (idx + 1) % channels.length;
+                return next;
+            }
+        };
 
         // mock their methods so we don't actually execute them (and hence won't need to mock inside)
         mockDelegateChannelMethods(delegateChannel1);
         mockDelegateChannelMethods(delegateChannel2);
 
-        registryScheduler = Schedulers.test();
-        registry = new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics(), registryScheduler);
+        TestScheduler registryScheduler = Schedulers.test();
+        SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics(), registryScheduler);
 
         registry.register(INFO1).subscribe();
         registry.register(INFO2).subscribe();
         registryScheduler.triggerActions();
 
-        replicator = new RegistryReplicator("111", registry);
+        RegistryReplicator replicator = new RegistryReplicator("111", registry);
 
         channel = spy(new RetryableSenderReplicationChannel(channelFactory, replicator, INITIAL_DELAY, scheduler));
         verify(delegateChannel1, times(1)).hello(any(ReplicationHello.class));  // initial hello at create time

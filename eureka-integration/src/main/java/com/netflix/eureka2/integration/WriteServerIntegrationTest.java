@@ -1,66 +1,64 @@
 package com.netflix.eureka2.integration;
 
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import com.netflix.eureka2.client.EurekaClient;
+import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
-import com.netflix.eureka2.junit.categories.LongRunningTest;
-import com.netflix.eureka2.server.EurekaWriteServer;
-import com.netflix.eureka2.server.config.WriteServerConfig;
-import com.netflix.eureka2.server.config.WriteServerConfig.WriteServerConfigBuilder;
-import io.netty.buffer.ByteBuf;
-import io.reactivex.netty.RxNetty;
-import io.reactivex.netty.channel.ObservableConnection;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import rx.Observable;
-import rx.Subscriber;
-import rx.functions.Func1;
+
+import static com.netflix.eureka2.rx.RxBlocking.iteratorFrom;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.modifyChangeNotificationOf;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 /**
+ * FIXME getting interest is flaky
  * @author David Liu
  */
-@Category({IntegrationTest.class, LongRunningTest.class})
+@Category(IntegrationTest.class)
 public class WriteServerIntegrationTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(WriteServerIntegrationTest.class);
+    @Rule
+    public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResource(1, 0);
 
-    private static final String SHUTDOWN_CMD = "shutdown\n";
 
-    @Test
-    public void testRemoteShutdownStopsAllServices() throws Exception {
-        WriteServerConfig config = new WriteServerConfigBuilder().build();
-        final EurekaWriteServer server = new EurekaWriteServer(config);
-        server.start();
+    @Test(timeout = 60000)
+    public void testRegistrationLifecycle() throws Exception {
+        final EurekaClient registrationClient = eurekaDeploymentResource.connectToWriteServer(0);
+        final EurekaClient discoveryClient = eurekaDeploymentResource.connectToWriteServer(0);
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                RxNetty.createTcpClient("localhost", 7700).connect().flatMap(new Func1<ObservableConnection<ByteBuf, ByteBuf>, Observable<Void>>() {
-                    @Override
-                    public Observable<Void> call(ObservableConnection<ByteBuf, ByteBuf> connection) {
-                        connection.writeStringAndFlush(SHUTDOWN_CMD);
-                        return connection.close();
-                    }
-                }).subscribe(
-                        new Subscriber<Void>() {
-                            @Override
-                            public void onCompleted() {
-                                logger.debug("Shutdown command send");
-                            }
+        InstanceInfo.Builder seedBuilder = new InstanceInfo.Builder().withId("id").withApp("app");
+        List<InstanceInfo> infos = Arrays.asList(
+                seedBuilder.withAppGroup("AAA").build(),
+                seedBuilder.withAppGroup("BBB").build(),
+                seedBuilder.withAppGroup("CCC").build()
+        );
 
-                            @Override
-                            public void onError(Throwable e) {
-                                logger.error("Failed to send shutdown command", e);
-                            }
+        registrationClient.register(infos.get(0)).subscribe();
+        registrationClient.register(infos.get(1)).subscribe();
+        registrationClient.register(infos.get(2)).subscribe();
+        registrationClient.unregister(infos.get(2)).subscribe();
 
-                            @Override
-                            public void onNext(Void aVoid) {
-                            }
-                        }
-                );
-            }
-        }).start();
+        // Subscribe to second write server
+        Iterator<ChangeNotification<InstanceInfo>> notificationIterator =
+                iteratorFrom(10, TimeUnit.SECONDS, discoveryClient.forApplication(infos.get(0).getApp()));
 
-        server.waitTillShutdown();
+        assertThat(notificationIterator.next(), is(addChangeNotificationOf(infos.get(0))));
+        assertThat(notificationIterator.next(), is(modifyChangeNotificationOf(infos.get(1))));
+        assertThat(notificationIterator.next(), is(modifyChangeNotificationOf(infos.get(2))));
+        assertThat(notificationIterator.next(), is(deleteChangeNotificationOf(infos.get(2))));
+
+        registrationClient.close();
+        discoveryClient.close();
     }
 }

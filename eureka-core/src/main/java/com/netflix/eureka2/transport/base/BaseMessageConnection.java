@@ -25,19 +25,18 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
 import rx.Scheduler.Worker;
-import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
 import rx.subjects.ReplaySubject;
+import rx.subjects.Subject;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -50,6 +49,9 @@ public class BaseMessageConnection implements MessageConnection {
 
     private static final Pattern NETTY_CHANNEL_NAME_RE = Pattern.compile("\\[.*=>\\s*(.*)\\]");
 
+    private static final Exception ACKNOWLEDGEMENT_TIMEOUT_EXCEPTION = new TimeoutException("acknowledgement timeout");
+    private static final Exception UNEXPECTED_ACKNOWLEDGEMENT_EXCEPTION = new IllegalStateException("received acknowledgment while non expected");
+
     private final String name;
     private final ObservableConnection<Object, Object> connection;
     private final MessageConnectionMetrics metrics;
@@ -60,18 +62,18 @@ public class BaseMessageConnection implements MessageConnection {
 
     private final Queue<PendingAck> pendingAck = new ConcurrentLinkedQueue<>();
 
+    // FIXME this is not used now, may have race conditions with the acknowledgement handler so fix before enable
     private final Action0 cleanupTask = new Action0() {
         @Override
         public void call() {
             try {
                 long currentTime = schedulerWorker.now();
                 if (!pendingAck.isEmpty() && pendingAck.peek().getExpiryTime() <= currentTime) {
-                    TimeoutException timeoutException = new TimeoutException("acknowledgement timeout");
                     while (!pendingAck.isEmpty()) {
-                        ReplaySubject<Void> ackSubject = pendingAck.poll().getAckSubject();
-                        ackSubject.onError(timeoutException);
+                        Subject<Void, Void> ackSubject = pendingAck.poll().getAckSubject();
+                        ackSubject.onError(ACKNOWLEDGEMENT_TIMEOUT_EXCEPTION);
                     }
-                    lifecycleSubject.onError(timeoutException);
+                    lifecycleSubject.onError(ACKNOWLEDGEMENT_TIMEOUT_EXCEPTION);
                 } else {
                     schedulerWorker.schedule(cleanupTask, 1, TimeUnit.SECONDS);
                 }
@@ -115,20 +117,19 @@ public class BaseMessageConnection implements MessageConnection {
     }
 
     private void installAcknowledgementHandler() {
-        connection.getInput().subscribe(new Action1<Object>() {
-            @Override
-            public void call(Object message) {
-                if (!(message instanceof Acknowledgement)) {
-                    return;
-                }
-                if (pendingAck.isEmpty()) {
-                    lifecycleSubject.onError(new IllegalStateException("received acknowledgment while non expected"));
-                    return;
-                }
-                ReplaySubject<Void> observable = pendingAck.poll().ackSubject;
-                observable.onCompleted();
-            }
-        });
+        connection.getInput()
+                .ofType(Acknowledgement.class)
+                .subscribe(new Action1<Acknowledgement>() {
+                    @Override
+                    public void call(Acknowledgement acknowledgement) {
+                        PendingAck pending = pendingAck.poll();
+                        if (pending == null) {
+                            lifecycleSubject.onError(UNEXPECTED_ACKNOWLEDGEMENT_EXCEPTION);
+                        } else {
+                            pending.ackSubject.onCompleted();
+                        }
+                    }
+                });
 
         schedulerWorker.schedule(cleanupTask, 1, TimeUnit.SECONDS);
     }
@@ -149,15 +150,10 @@ public class BaseMessageConnection implements MessageConnection {
     }
 
     @Override
-    public Observable<Void> submitWithAck(Object message, long timeout) {
-        ReplaySubject<Void> ackObservable = ReplaySubject.create();
+    public Observable<Void> submitWithAck(final Object message, final long timeout) {
         long expiryTime = timeout <= 0 ? Long.MAX_VALUE : schedulerWorker.now() + timeout;
-        pendingAck.add(new PendingAck(expiryTime, ackObservable));
 
-        return Observable.concat(
-                writeWhenSubscribed(message),
-                ackObservable
-        );
+        return writeWhenSubscribed(message, new PendingAck(expiryTime));
     }
 
     @Override
@@ -206,37 +202,46 @@ public class BaseMessageConnection implements MessageConnection {
         return lifecycleSubject;
     }
 
-    // TODO: can we optimize that?
     private Observable<Void> writeWhenSubscribed(final Object message) {
-        final AtomicReference<Observable<Void>> observableRef = new AtomicReference<>();
-        return Observable.create(new Observable.OnSubscribe<Void>() {
-            @Override
-            public void call(Subscriber<? super Void> subscriber) {
-                synchronized (observableRef) {
-                    if (observableRef.get() == null) {
-                        observableRef.set(connection.writeAndFlush(message));
+        return connection.writeAndFlush(message)
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        metrics.incrementOutgoingMessageCounter(message.getClass(), 1);
                     }
-                }
-                metrics.incrementOutgoingMessageCounter(message.getClass(), 1);
-                observableRef.get().subscribe(subscriber);
-            }
-        });
+                })
+                .replay()
+                .refCount();
+    }
+
+    private Observable<Void> writeWhenSubscribed(final Object message, final PendingAck ack) {
+        return connection.writeAndFlush(message)
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        pendingAck.add(ack);
+                        metrics.incrementOutgoingMessageCounter(message.getClass(), 1);
+                    }
+                })
+                .concatWith(ack.getAckSubject())
+                .replay()
+                .refCount();
     }
 
     static class PendingAck {
         private final long expiryTime;
-        private final ReplaySubject<Void> ackSubject;
+        private final Subject<Void, Void> ackSubject;
 
-        PendingAck(long expiryTime, ReplaySubject<Void> ackSubject) {
+        PendingAck(long expiryTime) {
             this.expiryTime = expiryTime;
-            this.ackSubject = ackSubject;
+            this.ackSubject = ReplaySubject.create();
         }
 
         public long getExpiryTime() {
             return expiryTime;
         }
 
-        public ReplaySubject<Void> getAckSubject() {
+        public Subject<Void, Void> getAckSubject() {
             return ackSubject;
         }
     }
