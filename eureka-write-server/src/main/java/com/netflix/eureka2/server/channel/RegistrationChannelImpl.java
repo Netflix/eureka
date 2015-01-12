@@ -61,9 +61,35 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
             public void call(Object message) {
                 if (message instanceof Register) {
                     InstanceInfo instanceInfo = ((Register) message).getInstanceInfo();
-                    register(instanceInfo).subscribe();
+                    register(instanceInfo).subscribe(new Subscriber<Void>() {
+                        @Override
+                        public void onCompleted() {
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+                            logger.warn("Error calling register", e);
+                        }
+
+                        @Override
+                        public void onNext(Void aVoid) {
+                        }
+                    });
                 } else if (message instanceof Unregister) {
-                    unregister().subscribe();
+                    unregister().subscribe(new Subscriber<Void>() {
+                        @Override
+                        public void onCompleted() {
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+                            logger.warn("Error calling unregister", e);
+                        }
+
+                        @Override
+                        public void onNext(Void aVoid) {
+                        }
+                    });
                 } else {
                     sendErrorOnTransport(new EurekaProtocolError("Unexpected message " + message));
                 }
@@ -183,13 +209,13 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
 
         logger.debug("Unregistering service in registry: {}", cachedInfo);
 
-        InstanceInfo toUnregister = new InstanceInfo.Builder()
-                .withInstanceInfo(cachedInfo.get())
-                .withVersion(currentVersion.get())
-                .build();
-
         switch (currentState) {
             case Registered:
+                InstanceInfo toUnregister = new InstanceInfo.Builder()
+                        .withInstanceInfo(cachedInfo.get())
+                        .withVersion(currentVersion.get())
+                        .build();
+
                 return registry.unregister(toUnregister)
                         .ignoreElements()
                         .cast(Void.class)
@@ -208,7 +234,7 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
                                     public void call() {
                                         close();
                                     }
-                                });
+                                }).subscribe();
                             }
                         });
             case Closed:
@@ -236,5 +262,13 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
             return true;
         }
         return false;
+    }
+
+    @Override
+    protected void _close() {
+        if (state.get() != STATES.Closed) {
+            moveToState(state.get(), STATES.Closed);
+        }
+        super._close();
     }
 }

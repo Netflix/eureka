@@ -12,7 +12,6 @@ import com.netflix.eureka2.transport.MessageConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
-import rx.functions.Action0;
 import rx.functions.Func1;
 
 /**
@@ -96,5 +95,13 @@ public class RegistrationChannelImpl
             return true;
         }
         return false;
+    }
+
+    @Override
+    protected void _close() {
+        if (state.get() != STATES.Closed) {
+            moveToState(state.get(), STATES.Closed);
+        }
+        super._close();
     }
 }
