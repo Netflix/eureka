@@ -7,10 +7,6 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Action1;
 import rx.functions.Func1;
-import rx.subjects.ReplaySubject;
-import rx.subjects.Subject;
-
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * An abstract {@link ServiceChannel} implementation for common methods.
@@ -23,25 +19,25 @@ public abstract class AbstractClientChannel<STATE extends Enum> extends Abstract
 
     protected final TransportClient client;
 
-    /**
-     * There can only ever be one connection associated with a channel. This subject provides access to that connection
-     * after a call is made to {@link #connect()}
-     *
-     * Why is this a {@link ReplaySubject}?
-     *
-     * Since there is always every a single connection created by this channel, everyone needs to get the same
-     * connection. Now, the connection creation is lazy (in {@link #connect()} so we need a way to update this
-     * {@link Observable}. Hence a {@link Subject} and one that replays the single connection created.
-     */
-    private final ReplaySubject<MessageConnection> singleConnectionSubject;
+    private volatile MessageConnection connectionIfConnected;
 
-    private volatile MessageConnection connectionIfConnected; // External callers should use "singleConnectionSubject"
-    private final AtomicBoolean connectionRequestedOnce = new AtomicBoolean();
+    private final Observable<MessageConnection> singleConnection;
 
     protected AbstractClientChannel(final STATE initState, final TransportClient client) {
         super(initState);
         this.client = client;
-        singleConnectionSubject = ReplaySubject.create();
+
+        singleConnection = client.connect()
+                .take(1)
+                .map(new Func1<MessageConnection, MessageConnection>() {
+                    @Override
+                    public MessageConnection call(MessageConnection serverConnection) {
+                        connectionIfConnected = serverConnection;
+                        return connectionIfConnected;
+                    }
+                })
+                .replay()
+                .refCount();
     }
 
     @Override
@@ -61,27 +57,7 @@ public abstract class AbstractClientChannel<STATE extends Enum> extends Abstract
      * @return The one and only connection associated with this channel.
      */
     protected Observable<MessageConnection> connect() {
-        if (connectionRequestedOnce.compareAndSet(false, true)) {
-            return client.connect()
-                    .take(1)
-                    .map(new Func1<MessageConnection, MessageConnection>() {
-                        @Override
-                        public MessageConnection call(final MessageConnection serverConnection) {
-                            // Guarded by the connection state, so it will only be invoked once.
-                            connectionIfConnected = serverConnection;
-                            singleConnectionSubject.onNext(serverConnection);
-                            singleConnectionSubject.onCompleted();
-
-                            // Join channel lifecycle with the connection lifecycle
-                            serverConnection.lifecycleObservable().subscribe(lifecycle);
-
-                            return serverConnection;
-                        }
-                    });
-        } else {
-            return singleConnectionSubject;
-        }
-
+        return singleConnection;
     }
 
     protected void sendErrorOnConnection(MessageConnection connection, Throwable throwable) {

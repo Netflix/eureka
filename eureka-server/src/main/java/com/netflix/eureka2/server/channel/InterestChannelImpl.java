@@ -22,6 +22,8 @@ import com.netflix.eureka2.server.channel.InterestChannelImpl.STATES;
 import com.netflix.eureka2.server.metric.InterestChannelMetrics;
 import com.netflix.eureka2.server.metric.InterestChannelMetrics.ChannelSubscriptionMonitor;
 import com.netflix.eureka2.transport.MessageConnection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action1;
@@ -35,6 +37,8 @@ import rx.functions.Action1;
  * @author Nitesh Kant
  */
 public class InterestChannelImpl extends AbstractHandlerChannel<STATES> implements InterestChannel {
+
+    private static final Logger logger = LoggerFactory.getLogger(InterestChannelImpl.class);
 
     private static final Exception SNAPSHOT_REQUEST_NOT_ALLOWED = new Exception("Snapshot subscription not allowed on active channel");
 

@@ -98,7 +98,7 @@ public abstract class SerializedTaskInvoker {
         if (success) {
             queueSize.incrementAndGet();
             metrics.incrementInputSuccess();
-        } else {
+        } else {  // needed? ConcurrentLinkedDeque never returns false for add
             metrics.incrementInputFailure();
         }
 

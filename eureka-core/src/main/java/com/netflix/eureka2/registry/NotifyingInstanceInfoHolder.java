@@ -111,6 +111,10 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
             public Observable<Status> call() throws Exception {
                 return doUpdate(source, data);
             }
+            @Override
+            public String toString() {
+                return "NotifyingInstanceInfoHolder - Update: " + data;
+            }
         }).doOnError(new Action1<Throwable>() {
             @Override
             public void call(Throwable throwable) {
@@ -191,6 +195,10 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
                 return doRemove(source);
 
             }
+            @Override
+            public String toString() {
+                return "NotifyingInstanceInfoHolder - Remove: " + data;
+            }
         }).doOnError(new Action1<Throwable>() {
             @Override
             public void call(Throwable throwable) {
@@ -210,6 +218,10 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
             @Override
             public Observable<Status> call() throws Exception {
                 return doRemove(source);
+            }
+            @Override
+            public String toString() {
+                return "NotifyingInstanceInfoHolder - Remove All For Source: " + source;
             }
         }).doOnError(new Action1<Throwable>() {
             @Override

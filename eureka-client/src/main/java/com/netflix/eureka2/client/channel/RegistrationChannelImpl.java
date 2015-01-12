@@ -9,8 +9,9 @@ import com.netflix.eureka2.protocol.registration.Unregister;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.transport.MessageConnection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
-import rx.functions.Action0;
 import rx.functions.Func1;
 
 /**
@@ -24,6 +25,8 @@ import rx.functions.Func1;
  */
 public class RegistrationChannelImpl
         extends AbstractClientChannel<STATES> implements RegistrationChannel {
+
+    private static final Logger logger = LoggerFactory.getLogger(RegistrationChannelImpl.class);
 
     private static final IllegalStateException INSTANCE_NOT_REGISTERED_EXCEPTION =
             new IllegalStateException("Instance is not registered yet.");
@@ -76,13 +79,9 @@ public class RegistrationChannelImpl
         return connect().switchMap(new Func1<MessageConnection, Observable<? extends Void>>() {
             @Override
             public Observable<? extends Void> call(final MessageConnection connection) {
-                return connection.submitWithAck(Unregister.INSTANCE)
-                        .doOnCompleted(new Action0() {
-                            @Override
-                            public void call() {
-                                connection.onCompleted();
-                            }
-                        });
+                return connection.submitWithAck(Unregister.INSTANCE);
+                // we can optimize here by closing the connection when this onComplete, but the registrationHandler
+                // also does this for us so let's not over optimize.
             }
         });
     }
@@ -96,5 +95,13 @@ public class RegistrationChannelImpl
             return true;
         }
         return false;
+    }
+
+    @Override
+    protected void _close() {
+        if (state.get() != STATES.Closed) {
+            moveToState(state.get(), STATES.Closed);
+        }
+        super._close();
     }
 }

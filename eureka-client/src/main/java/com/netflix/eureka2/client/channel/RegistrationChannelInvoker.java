@@ -3,6 +3,8 @@ package com.netflix.eureka2.client.channel;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.utils.SerializedTaskInvoker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
 
 import java.util.concurrent.Callable;
@@ -15,6 +17,8 @@ import java.util.concurrent.Callable;
  */
 /*pkg-private: Used by EurekaClientService only*/class RegistrationChannelInvoker
         extends SerializedTaskInvoker implements RegistrationChannel {
+
+    private static final Logger logger = LoggerFactory.getLogger(RegistrationChannelInvoker.class);
 
     private final RegistrationChannel delegate;
 
@@ -29,6 +33,10 @@ import java.util.concurrent.Callable;
             public Observable<Void> call() throws Exception {
                 return delegate.register(instanceInfo);
             }
+            @Override
+            public String toString() {
+                return "RegistrationChannelInvoker - Register: " + instanceInfo;
+            }
         });
     }
 
@@ -38,6 +46,10 @@ import java.util.concurrent.Callable;
             @Override
             public Observable<Void> call() throws Exception {
                 return delegate.unregister();
+            }
+            @Override
+            public String toString() {
+                return "RegistrationChannelInvoker - Unregister";
             }
         });
     }
