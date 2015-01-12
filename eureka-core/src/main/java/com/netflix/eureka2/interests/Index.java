@@ -1,14 +1,12 @@
 package com.netflix.eureka2.interests;
 
+import java.util.Iterator;
+
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Func1;
-import rx.observables.ConnectableObservable;
 import rx.subjects.PublishSubject;
-import rx.subjects.ReplaySubject;
 import rx.subjects.Subject;
-
-import java.util.Iterator;
 
 
 /**
@@ -75,12 +73,22 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
         super(new OnSubscribe<ChangeNotification<T>>() {
             @Override
             public void call(Subscriber<? super ChangeNotification<T>> subscriber) {
-                ConnectableObservable<ChangeNotification<T>> realTimePublish = realTimeSource.publish();
-                realTimePublish.subscribe(subscriber); // For real time notifications.
+                // We need to buffer all the changes while the init state is replayed.
+                // Because new instance holder updates will be added while we replay them, they will be
+                // partially visible by the subscriber. When we replay buffered real time updates,
+                // they may overlap with what was already sent from the init holder.
+                NotificationsSubject<T> realTimeSubject = NotificationsSubject.create();
+                realTimeSubject.pause();
+                realTimeSource.subscribe(realTimeSubject);
+                realTimeSubject.subscribe(subscriber);
+
+                // Reply initial state
                 for (ChangeNotification<T> notification : initStateHolder) {
                     subscriber.onNext(notification);
                 }
-                realTimePublish.connect(); // This makes sure that there is complete order between init state & real time.
+
+                // Now open real time source
+                realTimeSubject.resume();
             }
         });
         this.interest = interest;
@@ -199,8 +207,8 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
         @Override
         public final void onError(Throwable e) {
             done = true; // Since, any one interested in this source will also be interested in the real time source,
-                         // we leave it to the real time source to propagate this error. We just return an empty iterator
-                         // whenever the upstream source is done (i.e. onComplete/onError on this instance)
+            // we leave it to the real time source to propagate this error. We just return an empty iterator
+            // whenever the upstream source is done (i.e. onComplete/onError on this instance)
             clearAllNotifications(); // Completion == shutdown, so after this, there isn't anything to be done.
         }
 
