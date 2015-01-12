@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.integration.categories.IntegrationTest;
+import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.instance.InstanceInfo;

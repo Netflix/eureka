@@ -1,23 +1,25 @@
 package com.netflix.eureka2.integration;
 
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.integration.categories.IntegrationTest;
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import static com.netflix.eureka2.rx.RxBlocking.*;
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.*;
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
+import static com.netflix.eureka2.rx.RxBlocking.iteratorFrom;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.modifyChangeNotificationOf;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 /**
  * FIXME getting interest is flaky

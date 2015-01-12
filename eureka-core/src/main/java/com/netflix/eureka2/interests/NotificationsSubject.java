@@ -1,15 +1,15 @@
 package com.netflix.eureka2.interests;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Subscriber;
 import rx.observers.SafeSubscriber;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
-
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A special {@link Subject} implementation for {@link ChangeNotification}s. This has the capability to optionally
@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Nitesh Kant
  */
-public class NotificationsSubject<T> extends Subject<ChangeNotification<T>, ChangeNotification<T>>{
+public class NotificationsSubject<T> extends Subject<ChangeNotification<T>, ChangeNotification<T>> {
 
     public enum ResumeResult {NotPaused, DuplicateResume, Resumed}
 
@@ -71,11 +71,10 @@ public class NotificationsSubject<T> extends Subject<ChangeNotification<T>, Chan
         if (isPaused()) {
             if (resumeState.compareAndSet(ResumeState.NotPaused.ordinal(), ResumeState.Resuming.ordinal())) {
                 try {
-                    ChangeNotification<T> nextPolled;
-                    while ((nextPolled = notificationsWhenPaused.poll()) != null) { // drain pending queue.
-                        notificationSubject.onNext(nextPolled); // Since pause flag is not yet unset, don't call this.onNext()
-                    }
+                    drainBuffer();
 
+                    // We have here a race condition, as onNext could be called just before paused is set to false,
+                    // but after the while loop above. That is why we need to drain the buffer, before each onNext.
                     paused.set(false);
 
                     if (completedWhenPaused) {
@@ -98,6 +97,18 @@ public class NotificationsSubject<T> extends Subject<ChangeNotification<T>, Chan
             }
         } else {
             return ResumeResult.NotPaused;
+        }
+    }
+
+    /**
+     * We drain the queue on the resume invocation (while still in paused state), or
+     * on each oNext, if paused is false. It is suboptimal but fixes the race condition issue.
+     * We can optimize it later by introducing FSM for state management.
+     */
+    private void drainBuffer() {
+        ChangeNotification<T> nextPolled;
+        while ((nextPolled = notificationsWhenPaused.poll()) != null) {
+            notificationSubject.onNext(nextPolled);
         }
     }
 
@@ -147,6 +158,8 @@ public class NotificationsSubject<T> extends Subject<ChangeNotification<T>, Chan
                     if (paused.get()) {
                         notificationsWhenPaused.add(notification);
                     } else {
+                        // Need to drain each time, as may not be emptied by resume() call.
+                        drainBuffer();
                         notificationSubject.onNext(notification);
                     }
                 }

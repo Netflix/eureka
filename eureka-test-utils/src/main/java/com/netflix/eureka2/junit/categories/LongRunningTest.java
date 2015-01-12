@@ -1,4 +1,4 @@
-package com.netflix.eureka2.integration.categories;
+package com.netflix.eureka2.junit.categories;
 
 /**
  * Category for long running tests, that should be excluded from the regular

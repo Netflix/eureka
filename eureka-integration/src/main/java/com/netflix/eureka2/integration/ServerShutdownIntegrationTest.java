@@ -1,7 +1,7 @@
 package com.netflix.eureka2.integration;
 
-import com.netflix.eureka2.integration.categories.IntegrationTest;
-import com.netflix.eureka2.integration.categories.LongRunningTest;
+import com.netflix.eureka2.junit.categories.IntegrationTest;
+import com.netflix.eureka2.junit.categories.LongRunningTest;
 import com.netflix.eureka2.server.EurekaReadServer;
 import com.netflix.eureka2.server.EurekaWriteServer;
 import com.netflix.eureka2.server.config.EurekaServerConfig;

@@ -5,8 +5,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.resolver.ServerResolvers;
-import com.netflix.eureka2.integration.categories.IntegrationTest;
+import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rx.RxBlocking;
