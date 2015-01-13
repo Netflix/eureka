@@ -76,14 +76,16 @@ public class WriteClusterIntegrationTest {
                 seedBuilder.withAppGroup("CCC").build()
         );
 
-        registrationClient.register(infos.get(0)).subscribe();
-        registrationClient.register(infos.get(1)).subscribe();
-        registrationClient.register(infos.get(2)).subscribe();
-        registrationClient.unregister(infos.get(2)).subscribe();
-
         // Subscribe to second write server
         Iterator<ChangeNotification<InstanceInfo>> notificationIterator =
                 iteratorFrom(10, TimeUnit.SECONDS, discoveryClient.forApplication(infos.get(0).getApp()));
+
+        // We need to block, otherwise if we shot all of them in one row, they will be processed
+        // in order, but subscribe operations may eventually re-ordered them.
+        registrationClient.register(infos.get(0)).toBlocking().firstOrDefault(null);
+        registrationClient.register(infos.get(1)).toBlocking().firstOrDefault(null);
+        registrationClient.register(infos.get(2)).toBlocking().firstOrDefault(null);
+        registrationClient.unregister(infos.get(2)).subscribe();
 
         assertThat(notificationIterator.next(), is(addChangeNotificationOf(infos.get(0))));
         assertThat(notificationIterator.next(), is(modifyChangeNotificationOf(infos.get(1))));
