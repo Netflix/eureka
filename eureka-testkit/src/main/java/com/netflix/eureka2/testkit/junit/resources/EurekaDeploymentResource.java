@@ -2,10 +2,12 @@ package com.netflix.eureka2.testkit.junit.resources;
 
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
+import com.netflix.eureka2.client.resolver.WriteServerResolverSet;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment.EurekaDeploymentBuilder;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
+import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import org.junit.rules.ExternalResource;
 
 /**
@@ -15,12 +17,18 @@ public class EurekaDeploymentResource extends ExternalResource {
 
     private final int writeClusterSize;
     private final int readClusterSize;
+    private final Codec codec;
 
     private EurekaDeployment eurekaDeployment;
 
     public EurekaDeploymentResource(int writeClusterSize, int readClusterSize) {
+        this(writeClusterSize, readClusterSize, Codec.Avro);
+    }
+
+    public EurekaDeploymentResource(int writeClusterSize, int readClusterSize, Codec codec) {
         this.writeClusterSize = writeClusterSize;
         this.readClusterSize = readClusterSize;
+        this.codec = codec;
     }
 
     public EurekaDeployment getEurekaDeployment() {
@@ -37,7 +45,7 @@ public class EurekaDeploymentResource extends ExternalResource {
         return Eureka.newClientBuilder(
                 server.getDiscoveryResolver(),
                 server.getRegistrationResolver()
-        ).build();
+        ).withCodec(codec).build();
     }
 
     /**
@@ -50,7 +58,7 @@ public class EurekaDeploymentResource extends ExternalResource {
         return Eureka.newClientBuilder(
                 server.getDiscoveryResolver(),
                 null
-        ).build();
+        ).withCodec(codec).build();
     }
 
     /**
@@ -60,7 +68,7 @@ public class EurekaDeploymentResource extends ExternalResource {
         return Eureka.newClientBuilder(
                 eurekaDeployment.getWriteCluster().discoveryResolver(),
                 eurekaDeployment.getWriteCluster().registrationResolver()
-        ).build();
+        ).withCodec(codec).build();
     }
 
     /**
@@ -70,7 +78,7 @@ public class EurekaDeploymentResource extends ExternalResource {
         return Eureka.newClientBuilder(
                 eurekaDeployment.getReadCluster().discoveryResolver(),
                 null
-        ).build();
+        ).withCodec(codec).build();
     }
 
     /**
@@ -78,7 +86,13 @@ public class EurekaDeploymentResource extends ExternalResource {
      * write cluster first.
      */
     public EurekaClient connectToEureka() {
-        return null;
+        return Eureka.newClientBuilder(
+                WriteServerResolverSet.forResolvers(
+                        eurekaDeployment.getWriteCluster().registrationResolver(),
+                        eurekaDeployment.getWriteCluster().discoveryResolver()
+                ),
+                eurekaDeployment.getReadCluster().getVip()
+        ).withCodec(codec).build();
     }
 
     @Override
@@ -86,7 +100,8 @@ public class EurekaDeploymentResource extends ExternalResource {
         eurekaDeployment = new EurekaDeploymentBuilder()
                 .withWriteClusterSize(writeClusterSize)
                 .withReadClusterSize(readClusterSize)
-                .withEphemeralPorts(false)
+                .withEphemeralPorts(true)
+                .withCodec(codec)
                 .build();
     }
 

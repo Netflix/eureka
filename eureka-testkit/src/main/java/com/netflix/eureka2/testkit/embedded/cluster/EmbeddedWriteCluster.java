@@ -33,14 +33,20 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
     private final boolean withExt;
     private final boolean withAdminUI;
     private final boolean ephemeralPorts;
+    private final Codec codec;
 
     private int nextAvailablePort = WRITE_SERVER_PORTS_FROM;
 
     public EmbeddedWriteCluster(boolean withExt, boolean withAdminUI, boolean ephemeralPorts) {
+        this(withExt, withAdminUI, ephemeralPorts, Codec.Avro);
+    }
+
+    public EmbeddedWriteCluster(boolean withExt, boolean withAdminUI, boolean ephemeralPorts, Codec codec) {
         super(WRITE_SERVER_NAME);
         this.withExt = withExt;
         this.withAdminUI = withAdminUI;
         this.ephemeralPorts = ephemeralPorts;
+        this.codec = codec;
     }
 
     @Override
@@ -56,7 +62,7 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
                 .withRegistrationPort(writeServerAddress.getRegistrationPort())
                 .withDiscoveryPort(writeServerAddress.getDiscoveryPort())
                 .withReplicationPort(writeServerAddress.getReplicationPort())
-                .withCodec(Codec.Avro)
+                .withCodec(codec)
                 .withShutDownPort(nextAvailablePort + 3)
                 .withWebAdminPort(nextAvailablePort + 4)
                 .withReplicationRetryMillis(1000)
