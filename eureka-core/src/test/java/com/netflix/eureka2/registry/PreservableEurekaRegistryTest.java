@@ -56,7 +56,8 @@ public class PreservableEurekaRegistryTest {
 
     private static final InstanceInfo DISCOVERY = SampleInstanceInfo.DiscoveryServer.build();
     private static final Set<Delta<?>> DISCOVERY_DELTAS = new HashSet<>();
-    private static final Source REMOTE_SOURCE = Source.replicatedSource("test");
+    private final Source localSource = new Source(Source.Origin.LOCAL);
+    private final Source remoteSource = new Source(Source.Origin.REPLICATED, "test");
 
     private final EvictionQueue evictionQueue = mock(EvictionQueue.class);
     private final EvictionStrategy evictionStrategy = mock(EvictionStrategy.class);
@@ -91,32 +92,32 @@ public class PreservableEurekaRegistryTest {
 
     @Test
     public void testRemovesEvictedItemsWhenNotInSelfPreservationMode() throws Exception {
-        when(baseRegistry.register(DISCOVERY)).thenReturn(Observable.just(true));
-        preservableRegistry.register(DISCOVERY);
+        when(baseRegistry.register(DISCOVERY, localSource)).thenReturn(Observable.just(true));
+        preservableRegistry.register(DISCOVERY, localSource);
 
-        when(baseRegistry.unregister(DISCOVERY, REMOTE_SOURCE)).thenReturn(Observable.just(true));
+        when(baseRegistry.unregister(DISCOVERY, remoteSource)).thenReturn(Observable.just(true));
         // Now evict item, and check that PreservableEurekaRegistry asks for more
-        evict(DISCOVERY, REMOTE_SOURCE, 1);
-        verify(baseRegistry, times(1)).unregister(DISCOVERY, REMOTE_SOURCE);
+        evict(DISCOVERY, remoteSource, 1);
+        verify(baseRegistry, times(1)).unregister(DISCOVERY, remoteSource);
 
         assertThat(requestedEvictedItems.get(), is(equalTo(1L)));
     }
 
     @Test
     public void testDoesNotRemoveEvictedItemsWhenInSelfPreservationMode() throws Exception {
-        when(baseRegistry.register(DISCOVERY)).thenReturn(Observable.just(true));
-        preservableRegistry.register(DISCOVERY);
+        when(baseRegistry.register(DISCOVERY, localSource)).thenReturn(Observable.just(true));
+        preservableRegistry.register(DISCOVERY, localSource);
 
-        when(baseRegistry.unregister(DISCOVERY, REMOTE_SOURCE)).thenReturn(Observable.just(true));
+        when(baseRegistry.unregister(DISCOVERY, remoteSource)).thenReturn(Observable.just(true));
         // Now evict item, and check that nothing is requested
-        evict(DISCOVERY, REMOTE_SOURCE, 0);
-        verify(baseRegistry, times(0)).unregister(DISCOVERY, REMOTE_SOURCE);
+        evict(DISCOVERY, remoteSource, 0);
+        verify(baseRegistry, times(0)).unregister(DISCOVERY, remoteSource);
 
         assertThat(requestedEvictedItems.get(), is(equalTo(0L)));
 
         // Now add one more item, turn off self-preservation, and check that eviction consumption is resumed
         when(evictionStrategy.allowedToEvict(anyInt(), anyInt())).thenReturn(1);
-        preservableRegistry.register(DISCOVERY);
+        preservableRegistry.register(DISCOVERY, localSource);
 
         assertThat(requestedEvictedItems.get(), is(equalTo(1L)));
     }
@@ -130,44 +131,44 @@ public class PreservableEurekaRegistryTest {
     @Test
     public void testBehavesAsRegularRegistryForNonEvictedItems() throws Exception {
         // Register
-        when(baseRegistry.register(DISCOVERY)).thenReturn(Observable.just(true));
+        when(baseRegistry.register(DISCOVERY, localSource)).thenReturn(Observable.just(true));
         when(baseRegistry.size()).thenReturn(1);
-        Observable<Boolean> status = preservableRegistry.register(DISCOVERY);
+        Observable<Boolean> status = preservableRegistry.register(DISCOVERY, localSource);
         assertStatus(status, true);
 
         assertThat(preservableRegistry.size(), is(equalTo(1)));
         assertThat(preservableRegistry.expectedRegistrySize, is(equalTo(1)));
 
-        when(baseRegistry.register(DISCOVERY, REMOTE_SOURCE)).thenReturn(Observable.just(false));
-        status = preservableRegistry.register(DISCOVERY, REMOTE_SOURCE);
+        when(baseRegistry.register(DISCOVERY, remoteSource)).thenReturn(Observable.just(false));
+        status = preservableRegistry.register(DISCOVERY, remoteSource);
         assertStatus(status, false);
 
         assertThat(preservableRegistry.expectedRegistrySize, is(equalTo(1)));
 
         // Update
         InstanceInfo update = new InstanceInfo.Builder().withInstanceInfo(DISCOVERY).withVipAddress("aNewName").build();
-        when(baseRegistry.register(update)).thenReturn(Observable.just(false));
-        status = preservableRegistry.register(update);
+        when(baseRegistry.register(update, localSource)).thenReturn(Observable.just(false));
+        status = preservableRegistry.register(update, localSource);
         assertStatus(status, false);
 
         assertThat(preservableRegistry.expectedRegistrySize, is(equalTo(1)));
 
-        when(baseRegistry.register(update, REMOTE_SOURCE)).thenReturn(Observable.just(false));
-        status = preservableRegistry.register(DISCOVERY, REMOTE_SOURCE);
+        when(baseRegistry.register(update, remoteSource)).thenReturn(Observable.just(false));
+        status = preservableRegistry.register(DISCOVERY, remoteSource);
         assertStatus(status, false);
 
         assertThat(preservableRegistry.expectedRegistrySize, is(equalTo(1)));
 
         // Unregister
-        when(baseRegistry.unregister(DISCOVERY)).thenReturn(Observable.just(false));
-        status = preservableRegistry.unregister(DISCOVERY);
+        when(baseRegistry.unregister(DISCOVERY, localSource)).thenReturn(Observable.just(false));
+        status = preservableRegistry.unregister(DISCOVERY, localSource);
         assertStatus(status, false);
 
         assertThat(preservableRegistry.expectedRegistrySize, is(equalTo(1)));
 
-        when(baseRegistry.unregister(DISCOVERY, REMOTE_SOURCE)).thenReturn(Observable.just(true));
+        when(baseRegistry.unregister(DISCOVERY, remoteSource)).thenReturn(Observable.just(true));
         when(baseRegistry.size()).thenReturn(0);
-        status = preservableRegistry.unregister(DISCOVERY, REMOTE_SOURCE);
+        status = preservableRegistry.unregister(DISCOVERY, remoteSource);
         assertStatus(status, true);
 
         assertThat(preservableRegistry.expectedRegistrySize, is(equalTo(0)));
@@ -175,17 +176,18 @@ public class PreservableEurekaRegistryTest {
 
     @Test
     public void testDelegatesInterestSubscriptions() throws Exception {
-        Observable<ChangeNotification<InstanceInfo>> notification1 = Observable.just(new ChangeNotification<InstanceInfo>(Kind.Add, DISCOVERY));
+        Observable<ChangeNotification<InstanceInfo>> notification1 = Observable.just(new ChangeNotification<>(Kind.Add, DISCOVERY));
         when(baseRegistry.forInterest(Interests.forFullRegistry())).thenReturn(notification1);
-        assertSame(preservableRegistry.forInterest(Interests.forFullRegistry()), notification1);
+        assertSame(notification1, preservableRegistry.forInterest(Interests.forFullRegistry()));
 
-        Observable<ChangeNotification<InstanceInfo>> notification2 = Observable.just(new ChangeNotification<InstanceInfo>(Kind.Add, DISCOVERY));
-        when(baseRegistry.forInterest(Interests.forFullRegistry(), REMOTE_SOURCE)).thenReturn(notification2);
-        assertSame(preservableRegistry.forInterest(Interests.forFullRegistry(), REMOTE_SOURCE), notification2);
+        Source.Matcher matcher = Source.matcherFor(remoteSource);
+        Observable<ChangeNotification<InstanceInfo>> notification2 = Observable.just(new ChangeNotification<>(Kind.Add, DISCOVERY));
+        when(baseRegistry.forInterest(Interests.forFullRegistry(), matcher)).thenReturn(notification2);
+        assertSame(notification2, preservableRegistry.forInterest(Interests.forFullRegistry(), matcher));
 
         Observable<InstanceInfo> notification3 = Observable.just(DISCOVERY);
         when(baseRegistry.forSnapshot(Interests.forFullRegistry())).thenReturn(notification3);
-        assertSame(preservableRegistry.forSnapshot(Interests.forFullRegistry()), notification3);
+        assertSame(notification3, preservableRegistry.forSnapshot(Interests.forFullRegistry()));
     }
 
     @Test

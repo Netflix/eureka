@@ -51,7 +51,7 @@ public class NotifyingInstanceInfoHolderTest {
                 }
             };
             invoker = new NotificationTaskInvoker(SerializedTaskInvokerMetrics.dummyMetrics(), Schedulers.computation());
-            localSource = Source.localSource(UUID.randomUUID().toString());
+            localSource = new Source(Source.Origin.LOCAL);
         }
     };
 
@@ -96,7 +96,7 @@ public class NotifyingInstanceInfoHolderTest {
                 .withStatus(InstanceInfo.Status.UP)
                 .build();
 
-        Source fooSource = Source.replicatedSource("foo");
+        Source fooSource = new Source(Source.Origin.REPLICATED, "foo");
         holder.update(fooSource, secondInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(2));
@@ -155,7 +155,7 @@ public class NotifyingInstanceInfoHolderTest {
                 .withStatus(InstanceInfo.Status.UP)
                 .build();
 
-        Source fooSource = Source.replicatedSource("foo");
+        Source fooSource = new Source(Source.Origin.REPLICATED, "foo");
         holder.update(fooSource, fooInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(2));
@@ -188,7 +188,7 @@ public class NotifyingInstanceInfoHolderTest {
                 .withStatus(InstanceInfo.Status.UP)
                 .build();
 
-        Source fooSource = Source.replicatedSource("foo");
+        Source fooSource = new Source(Source.Origin.REPLICATED, "foo");
         holder.update(fooSource, fooInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(2));

@@ -1,6 +1,6 @@
 package com.netflix.eureka2.interests;
 
-import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import rx.Observable;
 
 /**
@@ -12,7 +12,7 @@ public interface IndexRegistry<T> {
                                                   Observable<ChangeNotification<T>> dataSource,
                                                   Index.InitStateHolder<T> initStateHolder);
 
-    Observable<ChangeNotification<T>> forCompositeInterest(MultipleInterests<T> interest, EurekaRegistry<T> registry);
+    Observable<ChangeNotification<T>> forCompositeInterest(MultipleInterests<T> interest, SourcedEurekaRegistry<T> registry);
 
     Observable<Void> shutdown();
 

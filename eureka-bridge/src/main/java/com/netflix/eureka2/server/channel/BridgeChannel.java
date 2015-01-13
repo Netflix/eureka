@@ -3,7 +3,6 @@ package com.netflix.eureka2.server.channel;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
-import com.netflix.eureka2.registry.SourceMatcher;
 import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.server.bridge.InstanceInfoConverter;
@@ -27,7 +26,6 @@ import rx.subjects.Subject;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -73,7 +71,7 @@ public class BridgeChannel extends AbstractHandlerChannel<STATES> implements Sou
         this.discoveryClient = discoveryClient;
         this.refreshRateSec = refreshRateSec;
         this.self = self;
-        this.selfSource = Source.localSource(self.getId() + "_" + UUID.randomUUID().toString());
+        this.selfSource = new Source(Source.Origin.LOCAL);
         this.metrics = metrics;
 
         converter = new InstanceInfoConverterImpl();
@@ -92,7 +90,7 @@ public class BridgeChannel extends AbstractHandlerChannel<STATES> implements Sou
             @Override
             public void call() {
                 logger.info("Starting new round of replication from v1 to v2");
-                registry.forSnapshot(Interests.forFullRegistry(), SourceMatcher.localSource())
+                registry.forSnapshot(Interests.forFullRegistry(), Source.matcherFor(Source.Origin.LOCAL))
                         .filter(new Func1<InstanceInfo, Boolean>() {  // filter self so it's not take into account
                             @Override
                             public Boolean call(InstanceInfo instanceInfo) {

@@ -23,7 +23,6 @@ import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.registry.MultiSourcedDataHolder;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.channel.ServiceChannel;
@@ -31,7 +30,7 @@ import rx.Observable;
 
 /**
  * Registry implemented on top of eureka-client. It does not story anything, just
- * provides an adapter from {@link EurekaClient} to {@link EurekaRegistry} interface.
+ * provides an adapter from {@link EurekaClient} to {@link SourcedEurekaRegistry} interface.
  * Server side {@link InterestChannel} is bound to real registry on write server,
  * and to proxy registry (this class) for read server.
  *
@@ -57,17 +56,7 @@ public class EurekaReadServerRegistry implements SourcedEurekaRegistry<InstanceI
     }
 
     @Override
-    public Observable<Boolean> register(InstanceInfo instanceInfo) {
-        throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
-    }
-
-    @Override
     public Observable<Boolean> register(InstanceInfo instanceInfo, Source source) {
-        throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
-    }
-
-    @Override
-    public Observable<Boolean> unregister(InstanceInfo instanceInfo) {
         throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
     }
 
@@ -87,7 +76,7 @@ public class EurekaReadServerRegistry implements SourcedEurekaRegistry<InstanceI
     }
 
     @Override
-    public Observable<InstanceInfo> forSnapshot(Interest<InstanceInfo> interest, Source source) {
+    public Observable<InstanceInfo> forSnapshot(Interest<InstanceInfo> interest, Source.Matcher sourceMatcher) {
         throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
     }
 
@@ -97,7 +86,7 @@ public class EurekaReadServerRegistry implements SourcedEurekaRegistry<InstanceI
     }
 
     @Override
-    public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, Source source) {
+    public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, Source.Matcher sourceMatcher) {
         throw new UnsupportedOperationException("Origin filtering not supported by EurekaReadServerRegistry");
     }
 

@@ -18,7 +18,6 @@ package com.netflix.eureka2.registry.eviction;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
@@ -48,7 +47,7 @@ public class EvictionQueueImplTest {
     private final EvictionQueueImpl evictionQueue = new EvictionQueueImpl(EVICTION_TIMEOUT, EurekaRegistryMetricFactory.registryMetrics(), testScheduler);
     private final List<EvictionItem> evictedList = new ArrayList<>();
     private final EvictionQueueSubscriber evictionQueueSubscriber = new EvictionQueueSubscriber();
-    private final Source localSource = Source.localSource(UUID.randomUUID().toString());
+    private final Source localSource = new Source(Source.Origin.LOCAL);
 
     @Before
     public void setUp() throws Exception {

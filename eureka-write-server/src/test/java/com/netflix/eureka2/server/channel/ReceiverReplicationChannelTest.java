@@ -188,6 +188,6 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
     private void verifyInstanceAndSourceCaptures(InstanceInfo info, String senderId) {
         assertThat(infoCaptor.getValue().getId(), is(equalTo(info.getId())));
         assertThat(sourceCaptor.getValue().getId(), is(equalTo(replicationChannel.getSource().getId())));
-        assertThat(replicationChannel.getSource().getId().contains(senderId), is(true));
+        assertThat(replicationChannel.getSource().getName().contains(senderId), is(true));
     }
 }

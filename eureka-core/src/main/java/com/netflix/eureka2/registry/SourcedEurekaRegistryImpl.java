@@ -111,11 +111,6 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     // -------------------------------------------------
 
     @Override
-    public Observable<Boolean> register(final InstanceInfo instanceInfo) {
-        throw new UnsupportedOperationException("SourceRegistry must provide source for operations");
-    }
-
-    @Override
     public Observable<Boolean> register(final InstanceInfo instanceInfo, final Source source) {
         MultiSourcedDataHolder<InstanceInfo> holder = new NotifyingInstanceInfoHolder(
                 internalStoreAccessor, notificationSubject, invoker, instanceInfo.getId());
@@ -129,11 +124,6 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
             }
         });
         return subscribeToUpdateResult(result);
-    }
-
-    @Override
-    public Observable<Boolean> unregister(final InstanceInfo instanceInfo) {
-        throw new UnsupportedOperationException("SourceRegistry must provide source for operations");
     }
 
     @Override
@@ -219,12 +209,12 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     }
 
     @Override
-    public Observable<InstanceInfo> forSnapshot(final Interest<InstanceInfo> interest, final Source source) {
+    public Observable<InstanceInfo> forSnapshot(final Interest<InstanceInfo> interest, final Source.Matcher sourceMatcher) {
         return forSnapshot(interest).filter(new Func1<InstanceInfo, Boolean>() {
             @Override
             public Boolean call(InstanceInfo instanceInfo) {
                 MultiSourcedDataHolder<InstanceInfo> holder = internalStore.get(instanceInfo.getId());
-                return holder != null && SourceMatcher.match(source, holder.getSource());
+                return holder != null && sourceMatcher.match(holder.getSource());
             }
         });
     }
@@ -254,13 +244,13 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     }
 
     @Override
-    public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, final Source source) {
+    public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, final Source.Matcher sourceMatcher) {
         return forInterest(interest).filter(new Func1<ChangeNotification<InstanceInfo>, Boolean>() {
             @Override
             public Boolean call(ChangeNotification<InstanceInfo> changeNotification) {
                 if (changeNotification instanceof Sourced) {
                     Source notificationSource = ((Sourced) changeNotification).getSource();
-                    return SourceMatcher.match(source, notificationSource);
+                    return sourceMatcher.match(notificationSource);
                 } else {
                     logger.warn("Received notification without a source, {}", changeNotification);
                     return false;

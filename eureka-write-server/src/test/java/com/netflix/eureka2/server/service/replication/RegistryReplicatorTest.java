@@ -32,8 +32,6 @@ import rx.Observable;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
-import java.util.UUID;
-
 import static org.mockito.Mockito.*;
 
 /**
@@ -51,7 +49,7 @@ public class RegistryReplicatorTest {
     private final ReplicationChannel channel = mock(ReplicationChannel.class);
 
     private final SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics(), testScheduler);
-    private final Source localSource = Source.localSource(UUID.randomUUID().toString());
+    private final Source localSource = new Source(Source.Origin.LOCAL);
     private RegistryReplicator replicator;
 
     @Before

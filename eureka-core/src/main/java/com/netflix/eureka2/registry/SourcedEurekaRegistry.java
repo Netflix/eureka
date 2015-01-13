@@ -25,7 +25,9 @@ import rx.Observable;
  *
  * @author Tomasz Bak
  */
-public interface SourcedEurekaRegistry<T> extends EurekaRegistry<T> {
+public interface SourcedEurekaRegistry<T> {
+
+    int size();
 
     /**
      * @return a boolean to denote whether the register added a new entry or updated an existing entry
@@ -37,13 +39,16 @@ public interface SourcedEurekaRegistry<T> extends EurekaRegistry<T> {
      */
     Observable<Boolean> unregister(T instanceInfo, Source source);
 
+    Observable<T> forSnapshot(Interest<T> interest);
 
-    Observable<T> forSnapshot(Interest<T> interest, Source source);
+    Observable<T> forSnapshot(Interest<T> interest, Source.Matcher sourceMatcher);
 
-    Observable<ChangeNotification<T>> forInterest(Interest<T> interest, Source source);
+    Observable<ChangeNotification<T>> forInterest(Interest<T> interest);
+
+    Observable<ChangeNotification<T>> forInterest(Interest<T> interest, Source.Matcher sourceMatcher);
 
     /**
-     * Evict all registry info for the given source
+     * Evict all registry info with the given source
      * @return an observable of long denoting the number of holder items touched for the eviction
      */
     Observable<Long> evictAll(Source source);
@@ -55,4 +60,14 @@ public interface SourcedEurekaRegistry<T> extends EurekaRegistry<T> {
     Observable<Long> evictAll();
 
     Observable<? extends MultiSourcedDataHolder<T>> getHolders();
+
+    Observable<Void> shutdown();
+
+    /**
+     * Shuts down the registry. All the interest client subscriptions are terminated
+     * with an error, where the error value is the provided parameter.
+     *
+     * @param cause error to propagate to subscription clients
+     */
+    Observable<Void> shutdown(Throwable cause);
 }

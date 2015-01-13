@@ -30,7 +30,6 @@ import rx.observers.SafeSubscriber;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * An implementation of {@link InterestChannel}. It is mandatory that all operations
@@ -83,7 +82,7 @@ public class InterestChannelImpl
 
     public InterestChannelImpl(final SourcedEurekaRegistry<InstanceInfo> registry, TransportClient client, InterestChannelMetrics metrics) {
         super(STATES.Idle, client);
-        this.selfSource = Source.interestedSource(UUID.randomUUID().toString());
+        this.selfSource = new Source(Source.Origin.LOCAL);
         this.registry = registry;
         this.metrics = metrics;
         metrics.incrementStateCounter(STATES.Idle);

@@ -15,7 +15,6 @@ import rx.functions.Func1;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -57,7 +56,7 @@ public class RegistryIndexTest {
             cliServer = cliServerBuilder.build();
 
             registry = new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics());
-            localSource = Source.localSource(UUID.randomUUID().toString());
+            localSource = new Source(Source.Origin.LOCAL);
         }
 
         @Override
