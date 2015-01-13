@@ -24,17 +24,33 @@
     .arc path {
       stroke: #fff;
     }
+    #eureka-clusters h4 {
+      margin-bottom: 10px;
+    }
 
-    .left-col {
+    #server-info {
       float: left;
+      border: 1px dashed green;
+      padding: 5px;
+      width: 300px;
+      display: none;
     }
 
-    .right-col {
-      float: right;
-      margin-left: 35px;
+    #server-info ul {
+      padding: 0;
     }
 
-    .left-col, .right-col {
+    #server-info li span.name {
+      font-weight: bold;
+    }
+
+    #server-info h5 {
+      text-decoration: underline;
+    }
+
+    #eureka-clusters {
+      float: left;
+      width: 800px;
       text-align: center;
     }
 
@@ -50,18 +66,10 @@
 </div>
 
 <div class="container">
-  <div class="left-col">
-    <h4>Eureka Write Cluster</h4>
-
-    <div id="write-cluster"></div>
+  <div id="eureka-clusters">
+    <h4>Eureka Clusters</h4>
   </div>
-
-  <div class="right-col">
-    <h4>Eureka Read Cluster</h4>
-
-    <div id="read-cluster"></div>
-  </div>
-
+  <div id="server-info"></div>
 </div>
 
 </body>

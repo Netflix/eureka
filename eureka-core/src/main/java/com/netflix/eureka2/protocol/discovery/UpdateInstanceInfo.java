@@ -110,18 +110,15 @@ public class UpdateInstanceInfo<T> implements InterestSetNotification {
 
     abstract static class DeltaDTO<T> {
         protected final String id;
-        protected final long version;
         protected final String fieldName;
 
         protected DeltaDTO() {
             id = null;
-            version = -1;
             fieldName = null;
         }
 
         protected DeltaDTO(Delta<T> delta) {
             this.id = delta.getId();
-            this.version = delta.getVersion();
             this.fieldName = delta.getField().getFieldName().name();
         }
 
@@ -139,9 +136,6 @@ public class UpdateInstanceInfo<T> implements InterestSetNotification {
 
             DeltaDTO deltaDTO = (DeltaDTO) o;
 
-            if (version != deltaDTO.version) {
-                return false;
-            }
             if (fieldName != null ? !fieldName.equals(deltaDTO.fieldName) : deltaDTO.fieldName != null) {
                 return false;
             }
@@ -160,7 +154,6 @@ public class UpdateInstanceInfo<T> implements InterestSetNotification {
         public Delta<T> toDelta() {
             return (Delta<T>) new Delta.Builder()
                     .withId(id)
-                    .withVersion(version)
                     .withDelta(InstanceInfoField.forName(Name.forName(fieldName)), getValue())
                     .build();
         }
@@ -168,7 +161,6 @@ public class UpdateInstanceInfo<T> implements InterestSetNotification {
         @Override
         public int hashCode() {
             int result = id != null ? id.hashCode() : 0;
-            result = 31 * result + (int) (version ^ (version >>> 32));
             result = 31 * result + (fieldName != null ? fieldName.hashCode() : 0);
             Object value = getValue();
             result = 31 * result + (value != null ? value.hashCode() : 0);
@@ -179,7 +171,6 @@ public class UpdateInstanceInfo<T> implements InterestSetNotification {
         public String toString() {
             return "DeltaDTO{" +
                     "id='" + id + '\'' +
-                    ", version=" + version +
                     ", fieldName='" + fieldName + '\'' +
                     ", value=" + getValue() +
                     '}';

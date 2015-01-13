@@ -10,6 +10,8 @@ import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import rx.schedulers.Schedulers;
 
+import java.util.UUID;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
@@ -22,6 +24,7 @@ public class NotifyingInstanceInfoHolderTest {
     private NotificationsSubject<InstanceInfo> notificationSubject;
     private MultiSourcedDataHolder.HolderStoreAccessor<NotifyingInstanceInfoHolder> storeAccessor;
     private NotificationTaskInvoker invoker;
+    private Source localSource;
 
     @Rule
     public final ExternalResource testResource = new ExternalResource() {
@@ -48,6 +51,7 @@ public class NotifyingInstanceInfoHolderTest {
                 }
             };
             invoker = new NotificationTaskInvoker(SerializedTaskInvokerMetrics.dummyMetrics(), Schedulers.computation());
+            localSource = Source.localSource(UUID.randomUUID().toString());
         }
     };
 
@@ -59,7 +63,7 @@ public class NotifyingInstanceInfoHolderTest {
                 .build();
 
         NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, notificationSubject, invoker, firstInfo.getId());
-        holder.update(Source.localSource(), firstInfo).toBlocking().firstOrDefault(null);
+        holder.update(localSource, firstInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(1));
         assertThat(holder.get(), equalTo(firstInfo));
@@ -68,7 +72,7 @@ public class NotifyingInstanceInfoHolderTest {
                 .withStatus(InstanceInfo.Status.UP)
                 .build();
 
-        holder.update(Source.localSource(), secondInfo).toBlocking().firstOrDefault(null);
+        holder.update(localSource, secondInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(1));
         assertThat(holder.get(), not(equalTo(firstInfo)));
@@ -83,7 +87,7 @@ public class NotifyingInstanceInfoHolderTest {
                 .build();
 
         NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, notificationSubject, invoker, firstInfo.getId());
-        holder.update(Source.localSource(), firstInfo).toBlocking().firstOrDefault(null);
+        holder.update(localSource, firstInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(1));
         assertThat(holder.get(), equalTo(firstInfo));
@@ -92,7 +96,7 @@ public class NotifyingInstanceInfoHolderTest {
                 .withStatus(InstanceInfo.Status.UP)
                 .build();
 
-        Source fooSource = Source.replicationSource("foo");
+        Source fooSource = Source.replicatedSource("foo");
         holder.update(fooSource, secondInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(2));
@@ -122,16 +126,16 @@ public class NotifyingInstanceInfoHolderTest {
                 .build();
 
         NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, notificationSubject, invoker, firstInfo.getId());
-        holder.update(Source.localSource(), firstInfo).toBlocking().firstOrDefault(null);
+        holder.update(localSource, firstInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(1));
         assertThat(holder.get(), equalTo(firstInfo));
 
-        holder.remove(Source.localSource(), firstInfo).toBlocking().firstOrDefault(null);
+        holder.remove(localSource).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(0));
         assertThat(holder.get(), equalTo(null));
-        assertThat(holder.get(Source.localSource()), equalTo(null));
+        assertThat(holder.get(localSource), equalTo(null));
     }
 
     @Test
@@ -142,7 +146,7 @@ public class NotifyingInstanceInfoHolderTest {
                 .build();
 
         NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, notificationSubject, invoker, localInfo.getId());
-        holder.update(Source.localSource(), localInfo).toBlocking().firstOrDefault(null);
+        holder.update(localSource, localInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(1));
         assertThat(holder.get(), equalTo(localInfo));
@@ -151,7 +155,7 @@ public class NotifyingInstanceInfoHolderTest {
                 .withStatus(InstanceInfo.Status.UP)
                 .build();
 
-        Source fooSource = Source.replicationSource("foo");
+        Source fooSource = Source.replicatedSource("foo");
         holder.update(fooSource, fooInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(2));
@@ -160,7 +164,7 @@ public class NotifyingInstanceInfoHolderTest {
 
         assertThat(holder.get(fooSource), equalTo(fooInfo));
 
-        holder.remove(fooSource, fooInfo).toBlocking().firstOrDefault(null);
+        holder.remove(fooSource).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(1));
         assertThat(holder.get(), equalTo(localInfo));
@@ -175,7 +179,7 @@ public class NotifyingInstanceInfoHolderTest {
                 .build();
 
         NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, notificationSubject, invoker, localInfo.getId());
-        holder.update(Source.localSource(), localInfo).toBlocking().firstOrDefault(null);
+        holder.update(localSource, localInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(1));
         assertThat(holder.get(), equalTo(localInfo));
@@ -184,7 +188,7 @@ public class NotifyingInstanceInfoHolderTest {
                 .withStatus(InstanceInfo.Status.UP)
                 .build();
 
-        Source fooSource = Source.replicationSource("foo");
+        Source fooSource = Source.replicatedSource("foo");
         holder.update(fooSource, fooInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(2));
@@ -193,11 +197,11 @@ public class NotifyingInstanceInfoHolderTest {
 
         assertThat(holder.get(fooSource), equalTo(fooInfo));
 
-        holder.remove(Source.localSource(), localInfo).toBlocking().firstOrDefault(null);
+        holder.remove(localSource).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(1));
         assertThat(holder.get(), equalTo(fooInfo));
         assertThat(holder.get(fooSource), equalTo(fooInfo));
-        assertThat(holder.get(Source.localSource()), not(equalTo(localInfo)));
+        assertThat(holder.get(localSource), not(equalTo(localInfo)));
     }
 }

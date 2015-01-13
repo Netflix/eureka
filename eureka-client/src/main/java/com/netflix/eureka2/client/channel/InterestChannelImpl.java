@@ -83,7 +83,7 @@ public class InterestChannelImpl
 
     public InterestChannelImpl(final SourcedEurekaRegistry<InstanceInfo> registry, TransportClient client, InterestChannelMetrics metrics) {
         super(STATES.Idle, client);
-        this.selfSource = Source.interestSource(UUID.randomUUID().toString());
+        this.selfSource = Source.interestedSource(UUID.randomUUID().toString());
         this.registry = registry;
         this.metrics = metrics;
         metrics.incrementStateCounter(STATES.Idle);
@@ -206,20 +206,17 @@ public class InterestChannelImpl
     /**
      * For an AddInstance msg,
      * - if it does not exist in cache, this is an Add Notification to the store
-     * - if it exist in cache but had a different version, this is a modify notification to the store.
      *   For simplicity we treat this as an add if the new msg have a GREATER version number,
      *   and ignore it otherwise
      */
     private ChangeNotification<InstanceInfo> addMessageToChangeNotification(AddInstance msg) {
-        ChangeNotification<InstanceInfo> notification = null;
+        ChangeNotification<InstanceInfo> notification;
 
         InstanceInfo incoming = msg.getInstanceInfo();
         InstanceInfo cached = idVsInstance.get(incoming.getId());
         if (cached == null) {
             idVsInstance.put(incoming.getId(), incoming);
             notification = new ChangeNotification<>(ChangeNotification.Kind.Add, incoming);
-        } else if (incoming.getVersion() <= cached.getVersion()) {
-            logger.debug("Skipping <= version of the instanceInfo. Cached: {}, Incoming: {}", cached, incoming);
         } else {
             logger.debug("Received newer version of an existing instanceInfo as Add");
             idVsInstance.put(incoming.getId(), incoming);
@@ -246,8 +243,6 @@ public class InterestChannelImpl
             if (logger.isWarnEnabled()) {
                 logger.warn("Update notification received for non-existent instance id " + delta.getId());
             }
-        } else if (delta.getVersion() <= cached.getVersion()) {
-            logger.debug("Skipping <= version of the delta. Cached: {}, Delta: {}", cached, delta);
         } else {
             InstanceInfo updatedInfo = cached.applyDelta(delta);
             idVsInstance.put(updatedInfo.getId(), updatedInfo);

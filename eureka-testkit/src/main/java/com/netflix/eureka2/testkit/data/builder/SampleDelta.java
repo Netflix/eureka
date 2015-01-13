@@ -64,7 +64,6 @@ public enum SampleDelta {
 
     Builder newBuilder() {
         return new Builder()
-                .withId(this.baseInstanceInfo.getId())
-                .withVersion(this.baseInstanceInfo.getVersion() + 1);
+                .withId(this.baseInstanceInfo.getId());
     }
 }

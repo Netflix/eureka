@@ -25,8 +25,19 @@ dependencies {
     compile "junit:junit:${junit_version}"
 }
 
+test {
+    testClassesDir sourceSets.main.output.classesDir
+    useJUnit {
+        excludeCategories 'com.netflix.eureka2.junit.categories.LongRunningTest'
+    }
+}
+
 task itest(type: Test) {
     testClassesDir = sourceSets.main.output.classesDir
     classpath = sourceSets.main.runtimeClasspath
+    useJUnit {
+        includeCategories 'com.netflix.eureka2.junit.categories.IntegrationTest'
+    }
 }
 
+testAll.dependsOn itest

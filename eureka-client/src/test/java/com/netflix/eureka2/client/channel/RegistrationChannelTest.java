@@ -45,6 +45,8 @@ public class RegistrationChannelTest {
         update2 = seed.withStatus(InstanceInfo.Status.DOWN).build();
 
         messageConnection = mock(MessageConnection.class);
+        when(messageConnection.submitWithAck(anyObject())).thenReturn(Observable.<Void>empty());
+
         transportClient = mock(TransportClient.class);
         when(transportClient.connect()).thenReturn(Observable.just(messageConnection));
 

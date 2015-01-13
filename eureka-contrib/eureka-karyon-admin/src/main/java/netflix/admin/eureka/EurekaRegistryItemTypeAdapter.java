@@ -21,7 +21,6 @@ public class EurekaRegistryItemTypeAdapter implements JsonSerializer<InstanceInf
         result.addProperty("appId", instanceInfo.getApp());
         result.addProperty("status", instanceInfo.getStatus().name());
         result.addProperty("vip", instanceInfo.getVipAddress());
-        result.addProperty("ts", instanceInfo.getVersion());
         return result;
     }
 }
