@@ -32,12 +32,13 @@ public abstract class AbstractClientChannel<STATE extends Enum> extends Abstract
                 .map(new Func1<MessageConnection, MessageConnection>() {
                     @Override
                     public MessageConnection call(MessageConnection serverConnection) {
-                        connectionIfConnected = serverConnection;
+                        if (connectionIfConnected == null) {
+                            connectionIfConnected = serverConnection;
+                        }
                         return connectionIfConnected;
                     }
                 })
-                .replay()
-                .refCount();
+                .cache();
     }
 
     @Override
