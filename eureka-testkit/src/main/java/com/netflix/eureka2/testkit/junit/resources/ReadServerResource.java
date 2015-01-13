@@ -18,6 +18,7 @@ public class ReadServerResource extends ExternalResource {
 
     private final String name;
     private final WriteServerResource writeServerResource;
+    private final Codec codec;
 
     private EmbeddedReadServer server;
     private int discoveryPort;
@@ -27,8 +28,13 @@ public class ReadServerResource extends ExternalResource {
     }
 
     public ReadServerResource(String name, WriteServerResource writeServerResource) {
+        this(name, writeServerResource, Codec.Avro);
+    }
+
+    public ReadServerResource(String name, WriteServerResource writeServerResource, Codec codec) {
         this.name = name;
         this.writeServerResource = writeServerResource;
+        this.codec = codec;
     }
 
     @Override
@@ -40,7 +46,7 @@ public class ReadServerResource extends ExternalResource {
                 .withDiscoveryPort(0)
                 .withShutDownPort(0)
                 .withWebAdminPort(0)
-                .withCodec(Codec.Avro)
+                .withCodec(codec)
                 .build();
         ServerResolver registrationResolver = ServerResolvers.just("localhost", writeServerResource.getRegistrationPort());
         ServerResolver discoveryResolver = ServerResolvers.just("localhost", writeServerResource.getDiscoveryPort());

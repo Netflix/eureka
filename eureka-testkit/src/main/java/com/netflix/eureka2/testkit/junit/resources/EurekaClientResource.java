@@ -7,6 +7,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo.Builder;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import com.netflix.eureka2.testkit.data.builder.SampleAwsDataCenterInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleServicePort;
+import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import org.junit.rules.ExternalResource;
 
 /**
@@ -16,6 +17,7 @@ public class EurekaClientResource extends ExternalResource {
 
     private final WriteServerResource writeServerResource;
     private final ReadServerResource readServerResource;
+    private final Codec codec;
     private final InstanceInfo clientInfo;
 
     private EurekaClient eurekaClient;
@@ -26,8 +28,14 @@ public class EurekaClientResource extends ExternalResource {
 
     public EurekaClientResource(String name, WriteServerResource writeServerResource,
                                 ReadServerResource readServerResource) {
+        this(name, writeServerResource, readServerResource, Codec.Avro);
+    }
+
+    public EurekaClientResource(String name, WriteServerResource writeServerResource,
+                                ReadServerResource readServerResource, Codec codec) {
         this.writeServerResource = writeServerResource;
         this.readServerResource = readServerResource;
+        this.codec = codec;
         this.clientInfo = buildClientInfo(name);
     }
 
@@ -45,12 +53,12 @@ public class EurekaClientResource extends ExternalResource {
             eurekaClient = new EurekaClientBuilder(
                     writeServerResource.getDiscoveryResolver(),
                     writeServerResource.getRegistrationResolver()
-            ).build();
+            ).withCodec(codec).build();
         } else {
             eurekaClient = new EurekaClientBuilder(
                     readServerResource.getDiscoveryResolver(),
                     writeServerResource.getRegistrationResolver()
-            ).build();
+            ).withCodec(codec).build();
         }
     }
 

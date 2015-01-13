@@ -27,6 +27,10 @@ public class WriteServerResolverSet {
         );
     }
 
+    public static WriteServerResolverSet forResolvers(ServerResolver registrationBootstrap, ServerResolver discoveryBootstrap) {
+        return new WriteServerResolverSet(registrationBootstrap, discoveryBootstrap);
+    }
+
     public ServerResolver forDiscovery() {
         return discoveryBootstrap;
     }
