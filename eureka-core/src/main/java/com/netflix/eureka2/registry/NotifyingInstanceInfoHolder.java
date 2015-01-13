@@ -132,14 +132,6 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
             return existing.doUpdate(source, data);  // execute inline instead of reschedule as task
         }
 
-        // Do not overwrite with older version
-        // This should never happen for adds coming from the channel, as they
-        // are always processed in order (unlike remove which has eviction queue).
-        InstanceInfo prev = dataMap.get(source);
-        if (prev != null && prev.getVersion() > data.getVersion()) {
-            return Observable.just(Status.AddExpired);
-        }
-
         dataMap.put(source, data);
 
         Snapshot<InstanceInfo> currSnapshot = snapshot;
@@ -172,39 +164,6 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
 
         logger.debug("CHANGE result: {}, data: {}", result, data);
         return Observable.just(result);
-    }
-
-    /**
-     * If the remove is from the head and there is a new head, send the diff to the old head as a MODIFY notification;
-     * if the remove is of the last copy, send a DELETE notification;
-     * else no-op.
-     */
-    @Override
-    public Observable<Status> remove(final Source source, final InstanceInfo data) {
-        return invoker.submitTask(new Callable<Observable<Status>>() {
-            @Override
-            public Observable<Status> call() throws Exception {
-                // Do not remove older version.
-                // Older version may come from eviction queue, after registration from
-                // new connection was already processed.
-                InstanceInfo prev = dataMap.get(source);
-                if (prev != null && prev.getVersion() > data.getVersion()) {
-                    return Observable.just(Status.RemoveExpired);
-                }
-
-                return doRemove(source);
-
-            }
-            @Override
-            public String toString() {
-                return "NotifyingInstanceInfoHolder - Remove: " + data;
-            }
-        }).doOnError(new Action1<Throwable>() {
-            @Override
-            public void call(Throwable throwable) {
-                logger.error("Error removing instance copy");
-            }
-        });
     }
 
     /**

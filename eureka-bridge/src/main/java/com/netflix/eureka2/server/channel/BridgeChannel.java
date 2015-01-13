@@ -3,12 +3,13 @@ package com.netflix.eureka2.server.channel;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.eureka2.registry.SourceMatcher;
+import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.server.bridge.InstanceInfoConverter;
 import com.netflix.eureka2.server.bridge.InstanceInfoConverterImpl;
 import com.netflix.eureka2.server.bridge.OperatorInstanceInfoFromV1;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.server.channel.BridgeChannel.STATES;
@@ -26,7 +27,7 @@ import rx.subjects.Subject;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -35,7 +36,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author David Liu
  */
-public class BridgeChannel extends AbstractHandlerChannel<STATES> {
+public class BridgeChannel extends AbstractHandlerChannel<STATES> implements Sourced {
     private static final Logger logger = LoggerFactory.getLogger(BridgeChannel.class);
 
     public enum STATES {Opened, Closed}
@@ -46,6 +47,7 @@ public class BridgeChannel extends AbstractHandlerChannel<STATES> {
     private final BridgeChannelMetrics metrics;
     private final int refreshRateSec;
     private final InstanceInfo self;
+    private final Source selfSource;
     private final Scheduler.Worker worker;
 
     private final Subject<Void, Void> lifecycle;
@@ -71,6 +73,7 @@ public class BridgeChannel extends AbstractHandlerChannel<STATES> {
         this.discoveryClient = discoveryClient;
         this.refreshRateSec = refreshRateSec;
         this.self = self;
+        this.selfSource = Source.localSource(self.getId() + "_" + UUID.randomUUID().toString());
         this.metrics = metrics;
 
         converter = new InstanceInfoConverterImpl();
@@ -79,12 +82,17 @@ public class BridgeChannel extends AbstractHandlerChannel<STATES> {
         lifecycle = ReplaySubject.create();
     }
 
+    @Override
+    public Source getSource() {
+        return selfSource;
+    }
+
     public void connect() {
         worker.schedulePeriodically(new Action0() {
             @Override
             public void call() {
                 logger.info("Starting new round of replication from v1 to v2");
-                registry.forSnapshot(Interests.forFullRegistry(), Source.localSource())
+                registry.forSnapshot(Interests.forFullRegistry(), SourceMatcher.localSource())
                         .filter(new Func1<InstanceInfo, Boolean>() {  // filter self so it's not take into account
                             @Override
                             public Boolean call(InstanceInfo instanceInfo) {
@@ -149,11 +157,11 @@ public class BridgeChannel extends AbstractHandlerChannel<STATES> {
                         if (currentSnapshot.containsKey(instanceInfo.getId())) {
                             InstanceInfo older = currentSnapshot.get(instanceInfo.getId());
                             if (!older.equals(instanceInfo)) {
-                                registry.register(instanceInfo);
+                                registry.register(instanceInfo, selfSource);
                                 updateCount.incrementAndGet();
                             }
                         } else {
-                            registry.register(instanceInfo);
+                            registry.register(instanceInfo, selfSource);
                             registerCount.incrementAndGet();
                         }
                     }
@@ -173,7 +181,7 @@ public class BridgeChannel extends AbstractHandlerChannel<STATES> {
 
                     @Override
                     public void onNext(InstanceInfo instanceInfo) {
-                        registry.unregister(instanceInfo);
+                        registry.unregister(instanceInfo, selfSource);
                         unregisterCount.incrementAndGet();
                     }
                 });

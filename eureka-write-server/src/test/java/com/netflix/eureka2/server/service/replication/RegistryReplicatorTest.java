@@ -19,6 +19,7 @@ package com.netflix.eureka2.server.service.replication;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -30,6 +31,8 @@ import org.junit.Test;
 import rx.Observable;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
+
+import java.util.UUID;
 
 import static org.mockito.Mockito.*;
 
@@ -48,13 +51,14 @@ public class RegistryReplicatorTest {
     private final ReplicationChannel channel = mock(ReplicationChannel.class);
 
     private final SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics(), testScheduler);
+    private final Source localSource = Source.localSource(UUID.randomUUID().toString());
     private RegistryReplicator replicator;
 
     @Before
     public void setUp() throws Exception {
         replicator = new RegistryReplicator(SELF_INFO.getId(), registry);
 
-        registry.register(INSTANCE_INFO).subscribe();
+        registry.register(INSTANCE_INFO, localSource).subscribe();
         testScheduler.triggerActions();
     }
 
@@ -79,7 +83,7 @@ public class RegistryReplicatorTest {
 
         InstanceInfo updateInfo = new InstanceInfo.Builder().withInstanceInfo(INSTANCE_INFO).withAsg("newAsg").build();
 
-        registry.register(updateInfo).subscribe();
+        registry.register(updateInfo, localSource).subscribe();
         testScheduler.triggerActions();
 
         verify(channel, times(1)).register(updateInfo);
@@ -87,7 +91,7 @@ public class RegistryReplicatorTest {
         // Trigger remove
         when(channel.unregister(anyString())).thenReturn(Observable.<Void>empty());
 
-        registry.unregister(updateInfo).subscribe();
+        registry.unregister(updateInfo, localSource).subscribe();
         testScheduler.triggerActions();
 
         verify(channel, times(1)).unregister(updateInfo.getId());

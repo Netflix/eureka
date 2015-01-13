@@ -92,15 +92,15 @@ public class BridgeChannelTest {
         testScheduler.advanceTimeTo(period - 1, TimeUnit.SECONDS);
 
         InstanceInfo app1t0Info = converter.fromV1(app1t0.getInstances().get(0));
-        verify(registry, times(1)).register(app1t0Info);
-        verify(registry, never()).unregister(any(InstanceInfo.class));
+        verify(registry, times(1)).register(app1t0Info, bridgeChannel.getSource());
+        verify(registry, never()).unregister(any(InstanceInfo.class), eq(bridgeChannel.getSource()));
 
         testScheduler.advanceTimeTo(period * 2 - 1, TimeUnit.SECONDS);
 
         InstanceInfo app1t1Info = converter.fromV1(app1t1.getInstances().get(0));
-        verify(registry, times(1)).register(app1t0Info);
-        verify(registry, times(1)).register(app1t1Info);
-        verify(registry, never()).unregister(any(InstanceInfo.class));
+        verify(registry, times(1)).register(app1t0Info, bridgeChannel.getSource());
+        verify(registry, times(1)).register(app1t1Info, bridgeChannel.getSource());
+        verify(registry, never()).unregister(any(InstanceInfo.class), eq(bridgeChannel.getSource()));
     }
 
     @Test
@@ -113,13 +113,13 @@ public class BridgeChannelTest {
         testScheduler.advanceTimeTo(period - 1, TimeUnit.SECONDS);
 
         InstanceInfo app2t0Info = converter.fromV1(app2t0.getInstances().get(0));
-        verify(registry, times(1)).register(app2t0Info);
-        verify(registry, never()).unregister(any(InstanceInfo.class));
+        verify(registry, times(1)).register(app2t0Info, bridgeChannel.getSource());
+        verify(registry, never()).unregister(any(InstanceInfo.class), eq(bridgeChannel.getSource()));
 
         testScheduler.advanceTimeTo(period * 2 - 1, TimeUnit.SECONDS);
 
-        verify(registry, times(1)).register(app2t0Info);
-        verify(registry, times(1)).unregister(app2t0Info);
+        verify(registry, times(1)).register(app2t0Info, bridgeChannel.getSource());
+        verify(registry, times(1)).unregister(app2t0Info, bridgeChannel.getSource());
     }
 
 

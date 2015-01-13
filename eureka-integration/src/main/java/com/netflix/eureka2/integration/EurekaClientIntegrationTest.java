@@ -5,6 +5,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
+import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -48,10 +49,8 @@ public class EurekaClientIntegrationTest {
         EmbeddedWriteCluster writeCluster = deployment.getWriteCluster();
         String readClusterVip = deployment.getReadCluster().getVip();
 
-        // FIXME re-enable after we fix eurekaServerResolver
         EurekaClient eurekaClient = Eureka.newClientBuilder(
-                deployment.getReadCluster().discoveryResolver(),
-//                ServerResolvers.fromWriteServer(writeCluster.discoveryResolver(), readClusterVip),
+                ServerResolvers.fromWriteServer(writeCluster.discoveryResolver(), readClusterVip),
                 writeCluster.registrationResolver()
         ).build();
 

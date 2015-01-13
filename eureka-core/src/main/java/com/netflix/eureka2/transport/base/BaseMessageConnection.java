@@ -210,8 +210,7 @@ public class BaseMessageConnection implements MessageConnection {
                         metrics.incrementOutgoingMessageCounter(message.getClass(), 1);
                     }
                 })
-                .replay()
-                .refCount();
+                .cache();
     }
 
     private Observable<Void> writeWhenSubscribed(final Object message, final PendingAck ack) {
@@ -224,8 +223,7 @@ public class BaseMessageConnection implements MessageConnection {
                     }
                 })
                 .concatWith(ack.getAckSubject())
-                .replay()
-                .refCount();
+                .cache();
     }
 
     static class PendingAck {

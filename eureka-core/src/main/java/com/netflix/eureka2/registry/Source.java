@@ -1,11 +1,9 @@
 package com.netflix.eureka2.registry;
 
-import java.util.UUID;
-
 /**
  * @author David Liu
  */
-public final class Source {
+public class Source {
     /**
      * Each entry in a registry is associated with exactly one origin:
      * <ul>
@@ -19,7 +17,7 @@ public final class Source {
     private final Origin origin;
     private final String id;
 
-    private Source(Origin origin, String id) {
+    protected Source(Origin origin, String id) {
         this.origin = origin;
         this.id = id;
     }
@@ -60,17 +58,16 @@ public final class Source {
                 '}';
     }
 
-    private static final Source LOCAL_SOURCE = new Source(Origin.LOCAL, UUID.randomUUID().toString());
-
-    public static Source localSource() {
-        return LOCAL_SOURCE;
+    public static Source localSource(String id) {
+        return new Source(Origin.LOCAL, id);
     }
 
-    public static Source replicationSource(String id) {
+    public static Source replicatedSource(String id) {
         return new Source(Origin.REPLICATED, id);
     }
 
-    public static Source interestSource(String id) {
+    public static Source interestedSource(String id) {
         return new Source(Origin.INTERESTED, id);
     }
+
 }

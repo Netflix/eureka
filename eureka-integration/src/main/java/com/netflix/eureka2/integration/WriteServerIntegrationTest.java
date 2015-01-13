@@ -44,14 +44,14 @@ public class WriteServerIntegrationTest {
                 seedBuilder.withAppGroup("CCC").build()
         );
 
+        // Subscribe to second write server
+        Iterator<ChangeNotification<InstanceInfo>> notificationIterator =
+                iteratorFrom(10, TimeUnit.SECONDS, discoveryClient.forApplication(infos.get(0).getApp()));
+
         registrationClient.register(infos.get(0)).subscribe();
         registrationClient.register(infos.get(1)).subscribe();
         registrationClient.register(infos.get(2)).subscribe();
         registrationClient.unregister(infos.get(2)).subscribe();
-
-        // Subscribe to second write server
-        Iterator<ChangeNotification<InstanceInfo>> notificationIterator =
-                iteratorFrom(10, TimeUnit.SECONDS, discoveryClient.forApplication(infos.get(0).getApp()));
 
         assertThat(notificationIterator.next(), is(addChangeNotificationOf(infos.get(0))));
         assertThat(notificationIterator.next(), is(modifyChangeNotificationOf(infos.get(1))));

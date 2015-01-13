@@ -56,7 +56,7 @@ public class PreservableEurekaRegistryTest {
 
     private static final InstanceInfo DISCOVERY = SampleInstanceInfo.DiscoveryServer.build();
     private static final Set<Delta<?>> DISCOVERY_DELTAS = new HashSet<>();
-    private static final Source REMOTE_SOURCE = Source.replicationSource("test");
+    private static final Source REMOTE_SOURCE = Source.replicatedSource("test");
 
     private final EvictionQueue evictionQueue = mock(EvictionQueue.class);
     private final EvictionStrategy evictionStrategy = mock(EvictionStrategy.class);

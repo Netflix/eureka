@@ -120,7 +120,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         List<InstanceInfo> capturedInfos = new ArrayList<>();
         // reset the versions in the captured to -1 as they will have been stamped by the channel
         for (InstanceInfo captured : infoCaptor.getAllValues()) {
-            capturedInfos.add(new InstanceInfo.Builder().withInstanceInfo(captured).withVersion(-1l).build());
+            capturedInfos.add(new InstanceInfo.Builder().withInstanceInfo(captured).build());
         }
 
         assertThat(capturedInfos, contains(APP_INFO, infoUpdate));
@@ -187,6 +187,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
 
     private void verifyInstanceAndSourceCaptures(InstanceInfo info, String senderId) {
         assertThat(infoCaptor.getValue().getId(), is(equalTo(info.getId())));
-        assertThat(sourceCaptor.getValue().getId(), is(equalTo(senderId)));
+        assertThat(sourceCaptor.getValue().getId(), is(equalTo(replicationChannel.getSource().getId())));
+        assertThat(replicationChannel.getSource().getId().contains(senderId), is(true));
     }
 }

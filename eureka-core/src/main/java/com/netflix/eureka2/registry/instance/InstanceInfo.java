@@ -35,7 +35,6 @@ import java.util.Set;
 public class InstanceInfo {
 
     protected final String id;
-    protected final Long version;
 
     protected String appGroup;
     protected String app;
@@ -52,12 +51,11 @@ public class InstanceInfo {
 
     // for serializers
     private InstanceInfo() {
-        this(null, -1l);
+        this(null);
     }
 
-    protected InstanceInfo(String id, Long version) {
+    protected InstanceInfo(String id) {
         this.id = id;
-        this.version = version;
     }
 
     /**
@@ -65,16 +63,6 @@ public class InstanceInfo {
      */
     public String getId() {
         return id;
-    }
-
-    /**
-     * All InstanceInfo instances contain a version string that can be used to determine timeline ordering
-     * for InstanceInfo records with the same id.
-     *
-     * @return the version string for this InstanceInfo
-     */
-    public Long getVersion() {
-        return version;
     }
 
     /**
@@ -216,9 +204,6 @@ public class InstanceInfo {
         if (statusPageUrl != null ? !statusPageUrl.equals(that.statusPageUrl) : that.statusPageUrl != null) {
             return false;
         }
-        if (version != null ? !version.equals(that.version) : that.version != null) {
-            return false;
-        }
         if (vipAddress != null ? !vipAddress.equals(that.vipAddress) : that.vipAddress != null) {
             return false;
         }
@@ -229,7 +214,6 @@ public class InstanceInfo {
     @Override
     public int hashCode() {
         int result = id != null ? id.hashCode() : 0;
-        result = 31 * result + (version != null ? version.hashCode() : 0);
         result = 31 * result + (appGroup != null ? appGroup.hashCode() : 0);
         result = 31 * result + (app != null ? app.hashCode() : 0);
         result = 31 * result + (asg != null ? asg.hashCode() : 0);
@@ -249,7 +233,6 @@ public class InstanceInfo {
     public String toString() {
         return "InstanceInfo{" +
                 "id='" + id + '\'' +
-                ", version=" + version +
                 ", appGroup='" + appGroup + '\'' +
                 ", app='" + app + '\'' +
                 ", asg='" + asg + '\'' +
@@ -278,7 +261,6 @@ public class InstanceInfo {
         }
 
         InstanceInfo.Builder newInstanceInfoBuilder = new InstanceInfo.Builder().withInstanceInfo(this);
-        newInstanceInfoBuilder.withVersion(delta.getVersion());
         return delta.applyTo(newInstanceInfoBuilder).build();
     }
 
@@ -297,7 +279,6 @@ public class InstanceInfo {
     /**
      * Diff the current instanceInfo with another "older" InstanceInfo, returning the results as a set of Deltas
      * iff the two instanceInfo have matching ids.
-     * The version of the delta will be the version of the current ("newer") instanceInfo
      *
      * @param another the "older" instanceInfo
      * @return the set of deltas, or null if the diff is invalid (InstanceInfos are null or id mismatch)
@@ -317,7 +298,6 @@ public class InstanceInfo {
 
         Set<Delta<?>> deltas = new HashSet<Delta<?>>();
 
-        Long newVersion = newInstanceInfo.getVersion();
         for (InstanceInfoField.Name fieldName : InstanceInfoField.Name.values()) {
             InstanceInfoField<Object> field = InstanceInfoField.forName(fieldName);
             Object oldValue = field.getValue(oldInstanceInfo);
@@ -326,7 +306,6 @@ public class InstanceInfo {
             if (!equalsNullable(oldValue, newValue)) {  // there is a difference
                 Delta<?> delta = new Delta.Builder()
                         .withId(newInstanceInfo.getId())
-                        .withVersion(newVersion)
                         .withDelta(field, newValue)
                         .build();
                 deltas.add(delta);
@@ -373,7 +352,6 @@ public class InstanceInfo {
 
     public static final class Builder {
         private String id;
-        private Long version;
 
         private String appGroup;
         private String app;
@@ -390,7 +368,6 @@ public class InstanceInfo {
 
         public Builder withInstanceInfo(InstanceInfo another) {
             this.id = another.id;
-            this.version = another.version;
 
             this.appGroup = another.appGroup;
             this.app = another.app;
@@ -409,7 +386,6 @@ public class InstanceInfo {
 
         public Builder withBuilder(Builder another) {
             this.id = another.id == null ? this.id : another.id;
-            this.version = another.version == null ? this.version : another.version;
 
             this.appGroup = another.appGroup == null ? this.appGroup : another.appGroup;
             this.app = another.app == null ? this.app : another.app;
@@ -428,11 +404,6 @@ public class InstanceInfo {
 
         public Builder withId(String id) {
             this.id = id;
-            return this;
-        }
-
-        public Builder withVersion(Long version) {
-            this.version = version;
             return this;
         }
 
@@ -524,14 +495,10 @@ public class InstanceInfo {
         }
 
         public InstanceInfo build() {
-            if (this.version == null) {
-                this.version = -1l;
-            }
-
             if (id == null) {
                 throw new IllegalArgumentException("InstanceInfo id cannot be null");
             }
-            InstanceInfo result = new InstanceInfo(this.id, this.version);
+            InstanceInfo result = new InstanceInfo(this.id);
             result.appGroup = this.appGroup;
             result.app = this.app;
             result.asg = this.asg;

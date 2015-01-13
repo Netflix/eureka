@@ -16,11 +16,7 @@ public final class EurekaMatchers {
     }
 
     public static Matcher<InstanceInfo> sameInstanceInfoAs(InstanceInfo expectedValue) {
-        return new InstanceInfoMatcher(expectedValue, false);
-    }
-
-    public static Matcher<InstanceInfo> identicalInstanceInfoAs(InstanceInfo expectedValue) {
-        return new InstanceInfoMatcher(expectedValue, true);
+        return new InstanceInfoMatcher(expectedValue);
     }
 
     public static Matcher<ChangeNotification<InstanceInfo>> addChangeNotificationOf(InstanceInfo expectedValue) {

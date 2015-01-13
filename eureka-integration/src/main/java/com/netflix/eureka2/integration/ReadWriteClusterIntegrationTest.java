@@ -49,7 +49,6 @@ public class ReadWriteClusterIntegrationTest {
         clientInfo = eurekaClientResource.getClientInfo();
     }
 
-    // FIXME the client seem to create a different registration channel each time
     @Test(timeout = 10000)
     public void testReadServerFetchesDataFromWriteServerRegistry() throws Exception {
         // Listen to interest stream updates

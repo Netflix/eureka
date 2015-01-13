@@ -2,7 +2,8 @@ package com.netflix.eureka2.interests;
 
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
-import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
@@ -14,6 +15,7 @@ import rx.functions.Func1;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -38,7 +40,8 @@ public class RegistryIndexTest {
     private InstanceInfo zuulServer;
     private InstanceInfo cliServer;
 
-    private EurekaRegistry<InstanceInfo> registry;
+    private SourcedEurekaRegistry<InstanceInfo> registry;
+    private Source localSource;
 
     @Rule
     public final ExternalResource registryResource = new ExternalResource() {
@@ -54,6 +57,7 @@ public class RegistryIndexTest {
             cliServer = cliServerBuilder.build();
 
             registry = new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics());
+            localSource = Source.localSource(UUID.randomUUID().toString());
         }
 
         @Override
@@ -94,7 +98,7 @@ public class RegistryIndexTest {
         final List<ChangeNotification<InstanceInfo>> notifications = new ArrayList<>();
 
         final CountDownLatch expectedLatch = new CountDownLatch(expectedCount);
-        registry.register(discoveryServer).toBlocking().firstOrDefault(null);
+        registry.register(discoveryServer, localSource).toBlocking().firstOrDefault(null);
         registry.forInterest(interest)
                 .map(new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {  // transform from source version to base version for testing equals
                     @Override
@@ -115,11 +119,11 @@ public class RegistryIndexTest {
                     }
                 });
 
-        registry.register(zuulServer).toBlocking().firstOrDefault(null);
-        registry.unregister(discoveryServer).toBlocking().firstOrDefault(null);
-        registry.register(cliServer).toBlocking().firstOrDefault(null);
+        registry.register(zuulServer, localSource).toBlocking().firstOrDefault(null);
+        registry.unregister(discoveryServer, localSource).toBlocking().firstOrDefault(null);
+        registry.register(cliServer, localSource).toBlocking().firstOrDefault(null);
         InstanceInfo newCliServer = cliServerBuilder.withStatus(InstanceInfo.Status.DOWN).build();
-        registry.register(newCliServer).toBlocking().firstOrDefault(null);
+        registry.register(newCliServer, localSource).toBlocking().firstOrDefault(null);
 
         assertThat(expectedLatch.await(1, TimeUnit.MINUTES), equalTo(true));
 

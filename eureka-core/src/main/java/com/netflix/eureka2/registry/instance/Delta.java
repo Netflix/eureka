@@ -18,15 +18,13 @@ package com.netflix.eureka2.registry.instance;
 
 /**
  * A matching pair of field:value that denotes a delta change to an InstanceInfo
- * Deltas must also contain an id denoting which InstanceInfo id it correspond to,
- * as well as a version string for the instance to update to.
+ * Deltas must also contain an id denoting which InstanceInfo id it correspond to.
  *
  * @author David Liu
  */
 public class Delta<ValueType> {
 
     private String id;
-    private Long version;
 
     private InstanceInfoField<ValueType> field;
     private ValueType value;
@@ -39,10 +37,6 @@ public class Delta<ValueType> {
 
     public String getId() {
         return id;
-    }
-
-    public Long getVersion() {
-        return version;
     }
 
     public InstanceInfoField<ValueType> getField() {
@@ -73,9 +67,6 @@ public class Delta<ValueType> {
         if (value != null ? !value.equals(delta.value) : delta.value != null) {
             return false;
         }
-        if (version != null ? !version.equals(delta.version) : delta.version != null) {
-            return false;
-        }
 
         return true;
     }
@@ -83,7 +74,6 @@ public class Delta<ValueType> {
     @Override
     public int hashCode() {
         int result = id != null ? id.hashCode() : 0;
-        result = 31 * result + (version != null ? version.hashCode() : 0);
         result = 31 * result + (field != null ? field.hashCode() : 0);
         result = 31 * result + (value != null ? value.hashCode() : 0);
         return result;
@@ -91,13 +81,16 @@ public class Delta<ValueType> {
 
     @Override
     public String toString() {
-        return "Delta{" + "id='" + id + '\'' + ", version=" + version + ", field=" + field + ", value=" + value + '}';
+        return "Delta{" +
+                "id='" + id + '\'' +
+                ", field=" + field +
+                ", value=" + value +
+                '}';
     }
 
     //TODO (nkant): Is this builder required?
     public static final class Builder {
         private String id;
-        private Long version;
         Delta<?> delta;
 
         public Builder() {
@@ -109,7 +102,6 @@ public class Delta<ValueType> {
         }
 
         public Builder withVersion(Long version) {
-            this.version = version;
             return this;
         }
 
@@ -123,9 +115,7 @@ public class Delta<ValueType> {
 
         public Delta<?> build() {
             delta.id = this.id;
-            delta.version = this.version;
-            if (delta.id == null || delta.version == null
-                    || delta.field == null) {  // null data.value is ok
+            if (delta.id == null || delta.field == null) {  // null data.value is ok
                 throw new IllegalStateException("Incomplete delta information");
             }
 

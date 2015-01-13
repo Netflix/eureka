@@ -74,7 +74,6 @@ public class UpdateCommand extends Command {
         InstanceInfo lastInstanceInfo = activeSession.getInstanceInfo();
         Delta<?> delta = new Builder()
                 .withId(lastInstanceInfo.getId())
-                .withVersion(lastInstanceInfo.getVersion())
                 .withDelta(field, value)
                 .build();
         lastInstanceInfo = lastInstanceInfo.applyDelta(delta);

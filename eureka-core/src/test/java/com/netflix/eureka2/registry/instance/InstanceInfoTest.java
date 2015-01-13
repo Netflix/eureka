@@ -21,7 +21,6 @@ public class InstanceInfoTest {
 
         Delta delta = new Delta.Builder()
                 .withId(instanceInfo.getId())
-                .withVersion(instanceInfo.getVersion() + 1)
                 .withDelta(InstanceInfoField.STATUS, InstanceInfo.Status.OUT_OF_SERVICE)
                 .build();
 

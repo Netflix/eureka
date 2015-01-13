@@ -3,6 +3,7 @@ package com.netflix.eureka2.registry;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -35,6 +36,8 @@ import static org.hamcrest.Matchers.*;
 public class SourcedEurekaRegistryImplTest {
 
     private final TestScheduler testScheduler = Schedulers.test();
+    private final Source localSource = Source.localSource(UUID.randomUUID().toString());
+
     private TestEurekaServerRegistry registry;
 
     @Rule
@@ -43,6 +46,7 @@ public class SourcedEurekaRegistryImplTest {
         @Override
         protected void before() throws Throwable {
             registry = new TestEurekaServerRegistry(testScheduler);
+
         }
 
         @Override
@@ -57,9 +61,9 @@ public class SourcedEurekaRegistryImplTest {
         InstanceInfo discovery2 = SampleInstanceInfo.DiscoveryServer.build();
         InstanceInfo discovery3 = SampleInstanceInfo.DiscoveryServer.build();
 
-        registry.register(discovery1);
-        registry.register(discovery2);
-        registry.register(discovery3);
+        registry.register(discovery1, localSource);
+        registry.register(discovery2, localSource);
+        registry.register(discovery3, localSource);
 
         testScheduler.triggerActions();
 
@@ -70,7 +74,7 @@ public class SourcedEurekaRegistryImplTest {
             @Override
             public void call(InstanceInfo instanceInfo) {
                 returnedInstanceInfos.add(instanceInfo);
-                registry.register(SampleInstanceInfo.ZuulServer.build());
+                registry.register(SampleInstanceInfo.ZuulServer.build(), localSource);
             }
         });
 
@@ -95,10 +99,10 @@ public class SourcedEurekaRegistryImplTest {
         InstanceInfo discovery3 = SampleInstanceInfo.DiscoveryServer.build();
         InstanceInfo zuul1 = SampleInstanceInfo.ZuulServer.build();
 
-        registry.register(discovery1);
-        registry.register(discovery2);
-        registry.register(discovery3);
-        registry.register(zuul1);
+        registry.register(discovery1, localSource);
+        registry.register(discovery2, localSource);
+        registry.register(discovery3, localSource);
+        registry.register(zuul1, localSource);
 
         testScheduler.triggerActions();
 
@@ -124,7 +128,7 @@ public class SourcedEurekaRegistryImplTest {
                 .withStatus(InstanceInfo.Status.UP)
                 .build();
 
-        registry.register(original);
+        registry.register(original, localSource);
         testScheduler.triggerActions();
 
         ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
@@ -142,7 +146,7 @@ public class SourcedEurekaRegistryImplTest {
                 .withStatus(InstanceInfo.Status.UP)
                 .build();
 
-        registry.register(original);
+        registry.register(original, localSource);
         testScheduler.triggerActions();
 
         ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
@@ -155,10 +159,9 @@ public class SourcedEurekaRegistryImplTest {
 
         InstanceInfo newInstanceInfo = new InstanceInfo.Builder()
                 .withInstanceInfo(original)
-                .withVersion(1L)
                 .withStatus(InstanceInfo.Status.OUT_OF_SERVICE).build();
 
-        registry.register(newInstanceInfo);
+        registry.register(newInstanceInfo, localSource);
         testScheduler.triggerActions();
 
         assertThat(internalStore.size(), equalTo(1));
@@ -180,8 +183,8 @@ public class SourcedEurekaRegistryImplTest {
                 .withStatus(InstanceInfo.Status.OUT_OF_SERVICE)
                 .build();
 
-        registry.register(original);
-        registry.register(replicated, Source.replicationSource("replicationSourceId"));
+        registry.register(original, localSource);
+        registry.register(replicated, Source.replicatedSource("replicationSourceId"));
         testScheduler.triggerActions();
 
         ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
@@ -192,7 +195,7 @@ public class SourcedEurekaRegistryImplTest {
         InstanceInfo snapshot1 = holder.get();
         assertThat(snapshot1, equalTo(original));
 
-        registry.unregister(original);
+        registry.unregister(original, localSource);
         testScheduler.triggerActions();
 
         assertThat(internalStore.size(), equalTo(1));
@@ -208,7 +211,7 @@ public class SourcedEurekaRegistryImplTest {
                 .withStatus(InstanceInfo.Status.UP)
                 .build();
 
-        registry.register(original);
+        registry.register(original, localSource);
         testScheduler.triggerActions();
 
         ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
@@ -219,7 +222,7 @@ public class SourcedEurekaRegistryImplTest {
         InstanceInfo snapshot1 = holder.get();
         assertThat(snapshot1, equalTo(original));
 
-        registry.unregister(original);
+        registry.unregister(original, localSource);
         testScheduler.triggerActions();
 
         assertThat(internalStore.size(), equalTo(0));
@@ -237,7 +240,7 @@ public class SourcedEurekaRegistryImplTest {
                 .withStatus(InstanceInfo.Status.DOWN)
                 .build();
 
-        registry.register(original);
+        registry.register(original, localSource);
         testScheduler.triggerActions();
 
         ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
@@ -248,8 +251,8 @@ public class SourcedEurekaRegistryImplTest {
         InstanceInfo snapshot = holder.get();
         assertThat(snapshot, equalTo(original));
 
-        registry.unregister(original);
-        registry.register(replicated, Source.replicationSource("replicationSourceId"));
+        registry.unregister(original, localSource);
+        registry.register(replicated, Source.replicatedSource("replicationSourceId"));
         testScheduler.triggerActions();
 
         holder = internalStore.values().iterator().next();
@@ -258,7 +261,7 @@ public class SourcedEurekaRegistryImplTest {
         assertThat(snapshot, equalTo(replicated));
 
         // unregister original again, should not affect the registry
-        registry.unregister(original);
+        registry.unregister(original, localSource);
         testScheduler.triggerActions();
 
         holder = internalStore.values().iterator().next();
@@ -274,7 +277,7 @@ public class SourcedEurekaRegistryImplTest {
                 .withStatus(InstanceInfo.Status.UP)
                 .build();
 
-        registry.register(original);
+        registry.register(original, localSource);
         testScheduler.triggerActions();
 
         ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
@@ -285,9 +288,9 @@ public class SourcedEurekaRegistryImplTest {
         InstanceInfo snapshot1 = holder.get();
         assertThat(snapshot1, equalTo(original));
 
-        registry.unregister(original);
+        registry.unregister(original, localSource);
         final List<ChangeNotification<InstanceInfo>> notifications = new ArrayList<>();
-        registry.forInterest(Interests.forFullRegistry(), Source.localSource())
+        registry.forInterest(Interests.forFullRegistry(), SourceMatcher.localSource())
                 .subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
                                @Override
                                public void onCompleted() {
@@ -322,10 +325,10 @@ public class SourcedEurekaRegistryImplTest {
         InstanceInfo discovery3 = SampleInstanceInfo.DiscoveryServer.build();
         InstanceInfo zuul1 = SampleInstanceInfo.ZuulServer.build();
 
-        registry.register(discovery1);
-        registry.register(discovery2);
-        registry.register(discovery3);
-        registry.register(zuul1);
+        registry.register(discovery1, localSource);
+        registry.register(discovery2, localSource);
+        registry.register(discovery3, localSource);
+        registry.register(zuul1, localSource);
 
         testScheduler.triggerActions();
 

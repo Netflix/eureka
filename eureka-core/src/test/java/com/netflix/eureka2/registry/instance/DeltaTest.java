@@ -37,7 +37,6 @@ public class DeltaTest {
         HashSet<ServicePort> newPorts = SampleServicePort.httpPorts();
         Delta<?> delta = new Delta.Builder()
                 .withId(original.getId())
-                .withVersion(original.getVersion() + 1)
                 .withDelta(InstanceInfoField.PORTS, newPorts)
                 .build();
 
@@ -53,7 +52,6 @@ public class DeltaTest {
         HashSet<String> newHealthCheckUrls = Sets.asSet("http://foo", "http://bar");
         Delta<?> delta = new Delta.Builder()
                 .withId(original.getId())
-                .withVersion(original.getVersion() + 1)
                 .withDelta(InstanceInfoField.HEALTHCHECK_URLS, newHealthCheckUrls)
                 .build();
 
@@ -69,7 +67,6 @@ public class DeltaTest {
         String newHomepage = "http://something.random.net";
         Delta<?> delta = new Delta.Builder()
                 .withId(original.getId())
-                .withVersion(original.getVersion() + 1)
                 .withDelta(InstanceInfoField.HOMEPAGE_URL, newHomepage)
                 .build();
 
@@ -85,7 +82,6 @@ public class DeltaTest {
         InstanceInfo.Status newStatus = InstanceInfo.Status.OUT_OF_SERVICE;
         Delta<?> delta = new Delta.Builder()
                 .withId(original.getId())
-                .withVersion(original.getVersion() + 1)
                 .withDelta(InstanceInfoField.STATUS, newStatus)
                 .build();
 
