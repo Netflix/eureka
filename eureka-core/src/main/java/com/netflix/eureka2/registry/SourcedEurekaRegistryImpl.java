@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.eureka2.interests.ChangeNotification;
@@ -33,7 +32,6 @@ import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.interests.NotificationsSubject;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.EurekaRegistryMetrics;
-import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +43,6 @@ import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 import rx.subjects.AsyncSubject;
-import rx.subjects.ReplaySubject;
 
 /**
  * An implementation of {@link com.netflix.eureka2.registry.SourcedEurekaRegistry} that uses a
@@ -115,7 +112,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
 
     @Override
     public Observable<Boolean> register(final InstanceInfo instanceInfo) {
-        return register(instanceInfo, Source.localSource());
+        throw new UnsupportedOperationException("SourceRegistry must provide source for operations");
     }
 
     @Override
@@ -136,7 +133,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
 
     @Override
     public Observable<Boolean> unregister(final InstanceInfo instanceInfo) {
-        return unregister(instanceInfo, Source.localSource());
+        throw new UnsupportedOperationException("SourceRegistry must provide source for operations");
     }
 
     @Override
@@ -146,7 +143,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
             return Observable.just(false);
         }
 
-        Observable<MultiSourcedDataHolder.Status> result = currentHolder.remove(source, instanceInfo).doOnNext(new Action1<MultiSourcedDataHolder.Status>() {
+        Observable<MultiSourcedDataHolder.Status> result = currentHolder.remove(source).doOnNext(new Action1<MultiSourcedDataHolder.Status>() {
             @Override
             public void call(MultiSourcedDataHolder.Status status) {
                 if (status != MultiSourcedDataHolder.Status.RemoveExpired) {
@@ -227,7 +224,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
             @Override
             public Boolean call(InstanceInfo instanceInfo) {
                 MultiSourcedDataHolder<InstanceInfo> holder = internalStore.get(instanceInfo.getId());
-                return holder != null && source.equals(holder.getSource());
+                return holder != null && SourceMatcher.match(source, holder.getSource());
             }
         });
     }
@@ -263,7 +260,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
             public Boolean call(ChangeNotification<InstanceInfo> changeNotification) {
                 if (changeNotification instanceof Sourced) {
                     Source notificationSource = ((Sourced) changeNotification).getSource();
-                    return source.equals(notificationSource);
+                    return SourceMatcher.match(source, notificationSource);
                 } else {
                     logger.warn("Received notification without a source, {}", changeNotification);
                     return false;

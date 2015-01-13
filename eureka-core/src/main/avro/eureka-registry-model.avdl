@@ -71,7 +71,6 @@ protocol EurekaRegistryModel {
             null,
             @java-class("java.util.HashSet") array<string>
         } healthCheckUrls;
-        union { null, long } version;
         union {
             null,
             @java-class("java.util.HashMap") map<string>

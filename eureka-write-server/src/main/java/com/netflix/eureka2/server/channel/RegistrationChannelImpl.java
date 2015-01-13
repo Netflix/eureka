@@ -3,6 +3,7 @@ package com.netflix.eureka2.server.channel;
 import com.netflix.eureka2.protocol.EurekaProtocolError;
 import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.protocol.registration.Unregister;
+import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.RegistrationChannelImpl.STATES;
@@ -18,19 +19,10 @@ import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Action1;
 
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * TODO: remove versioning with multisourced solution soon
- * A note on server side versioning:
- *   An atomic version number is associated with this channel. When a register event happens, we synchronously inc the
- * version number associated with this channel, regardless of whether the actual register with the registry succeeds or
- * fails. This is fine for the registration side since we are guaranteed that the requests will come in order, our
- * version number will only monotonically increase.
- *   For the unregister part, we always attempt to unregister with the latest channel version, NOT the version of the
- * cached channel instance info.
- *
  * @author Nitesh Kant
  */
 public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> implements RegistrationChannel {
@@ -39,8 +31,8 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
 
     private final RegistrationChannelMetrics metrics;
 
-    private final AtomicLong currentVersion;
-    private final AtomicReference<InstanceInfo> cachedInfo;
+    private final Source selfSource;
+    private final AtomicReference<InstanceInfo> instanceInfoRef;
 
     public enum STATES {Idle, Registered, Closed}
 
@@ -53,8 +45,8 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
 
         metrics.incrementStateCounter(STATES.Idle);
 
-        currentVersion = new AtomicLong(System.currentTimeMillis());
-        cachedInfo = new AtomicReference<>();
+        selfSource = Source.localSource(UUID.randomUUID().toString());
+        instanceInfoRef = new AtomicReference<>();
 
         subscribeToTransportInput(new Action1<Object>() {
             @Override
@@ -113,14 +105,10 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
             }
 
             private void evictIfPresent() {
-                if (cachedInfo.get() != null) {
-                    logger.info("Connection terminated without unregister; adding instance {} to eviction queue", cachedInfo.get().getId());
-                    InstanceInfo latestCached = new InstanceInfo.Builder()
-                            .withInstanceInfo(cachedInfo.get())
-                            .withVersion(currentVersion.get())
-                            .build();
-
-                    evictionQueue.add(latestCached, Source.localSource());
+                InstanceInfo toEvict = instanceInfoRef.get();
+                if (toEvict != null) {
+                    logger.info("Connection terminated without unregister; adding instance {} to eviction queue", toEvict);
+                    evictionQueue.add(toEvict, selfSource);
                 }
             }
         });
@@ -156,16 +144,10 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
 
         logger.debug("Registering service in registry: {}", instanceInfo);
 
-        final long tempNewVersion = currentVersion.getAndIncrement();
+        // it doesn't matter too much whether this cached instance info is the most update to date one
+        instanceInfoRef.set(instanceInfo);
 
-        if (cachedInfo.get() == null) {  // setup initial cache
-            cachedInfo.set(new InstanceInfo.Builder().withInstanceInfo(instanceInfo).withVersion(tempNewVersion - 1).build());
-        }
-
-        final InstanceInfo tempNewInfo = new InstanceInfo.Builder()
-                .withInstanceInfo(instanceInfo).withVersion(tempNewVersion).build();
-
-        return registry.register(tempNewInfo)
+        return registry.register(instanceInfo, selfSource)
                 .ignoreElements()
                 .cast(Void.class)
                 .doOnError(new Action1<Throwable>() {
@@ -185,7 +167,7 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
                         sendAckOnTransport().doOnError(new Action1<Throwable>() {
                             @Override
                             public void call(Throwable throwable) {
-                                logger.warn("Failed to send ack for register operation for instanceInfo {}", cachedInfo.get());
+                                logger.warn("Failed to send ack for register operation for instanceInfo {}", instanceInfo);
                             }
                         });
                     }
@@ -207,16 +189,13 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
     public Observable<Void> unregister() {
         STATES currentState = state.getAndSet(STATES.Closed);
 
-        logger.debug("Unregistering service in registry: {}", cachedInfo);
+        logger.debug("Unregistering service in registry: {}", instanceInfoRef.get());
 
         switch (currentState) {
             case Registered:
-                InstanceInfo toUnregister = new InstanceInfo.Builder()
-                        .withInstanceInfo(cachedInfo.get())
-                        .withVersion(currentVersion.get())
-                        .build();
+                InstanceInfo toUnregister = instanceInfoRef.get();
 
-                return registry.unregister(toUnregister)
+                return registry.unregister(toUnregister, selfSource)
                         .ignoreElements()
                         .cast(Void.class)
                         .doOnError(new Action1<Throwable>() {
@@ -228,7 +207,7 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
                         .doOnCompleted(new Action0() {
                             @Override
                             public void call() {
-                                cachedInfo.set(null);
+                                instanceInfoRef.set(null);
                                 sendAckOnTransport().doOnTerminate(new Action0() {
                                     @Override
                                     public void call() {
@@ -243,7 +222,6 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
             case Idle:
                 logger.info("Unregistered an Idle channel, This is a no-op");
             default:
-                logger.warn("unknown state {}", currentState);
                 return sendAckOnTransport().doOnTerminate(new Action0() {
                     @Override
                     public void call() {

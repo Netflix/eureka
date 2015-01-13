@@ -12,6 +12,7 @@ import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.registry.PreservableEurekaRegistry;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
@@ -33,6 +34,7 @@ import rx.subjects.ReplaySubject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -53,6 +55,8 @@ public class EurekaClientTest {
     private final MessageConnection mockConnection = mock(MessageConnection.class);
     private final TransportClient mockReadTransportClient = mock(TransportClient.class);
     private final TransportClient mockWriteTransportClient = mock(TransportClient.class);
+
+    private Source localSource = Source.localSource(UUID.randomUUID().toString());
 
     protected EurekaClient client;
     protected PreservableEurekaRegistry registry;
@@ -88,7 +92,7 @@ public class EurekaClientTest {
                     new BasicEurekaRegistryConfig(),
                     EurekaRegistryMetricFactory.registryMetrics()));
             for (ChangeNotification<InstanceInfo> notification : allRegistry) {
-                registry.register(notification.getData()).toBlocking().firstOrDefault(null);
+                registry.register(notification.getData(), localSource).toBlocking().firstOrDefault(null);
             }
 
             when(mockConnection.submitWithAck(anyObject())).thenReturn(Observable.<Void>empty());

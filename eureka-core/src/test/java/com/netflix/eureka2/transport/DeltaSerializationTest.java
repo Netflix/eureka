@@ -40,7 +40,6 @@ public class DeltaSerializationTest {
         HashSet<ServicePort> newPorts = SampleServicePort.httpPorts();
         Delta<?> delta = new Delta.Builder()
                 .withId(instanceInfo.getId())
-                .withVersion(instanceInfo.getVersion() + 1)
                 .withDelta(InstanceInfoField.PORTS, newPorts)
                 .build();
 
@@ -52,7 +51,6 @@ public class DeltaSerializationTest {
         HashSet<String> newHealthCheckUrls = Sets.asSet("http://foo", "http://bar");
         Delta<?> delta = new Delta.Builder()
                 .withId(instanceInfo.getId())
-                .withVersion(instanceInfo.getVersion() + 1)
                 .withDelta(InstanceInfoField.HEALTHCHECK_URLS, newHealthCheckUrls)
                 .build();
         doDeltaTest(delta);
@@ -63,7 +61,6 @@ public class DeltaSerializationTest {
         String newHomepage = "http://something.random.net";
         Delta<?> delta = new Delta.Builder()
                 .withId(instanceInfo.getId())
-                .withVersion(instanceInfo.getVersion() + 1)
                 .withDelta(InstanceInfoField.HOMEPAGE_URL, newHomepage)
                 .build();
         doDeltaTest(delta);
@@ -74,7 +71,6 @@ public class DeltaSerializationTest {
         InstanceInfo.Status newStatus = InstanceInfo.Status.OUT_OF_SERVICE;
         Delta<?> delta = new Delta.Builder()
                 .withId(instanceInfo.getId())
-                .withVersion(instanceInfo.getVersion() + 1)
                 .withDelta(InstanceInfoField.STATUS, newStatus)
                 .build();
         doDeltaTest(delta);

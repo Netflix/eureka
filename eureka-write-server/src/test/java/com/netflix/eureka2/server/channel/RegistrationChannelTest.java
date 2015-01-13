@@ -3,6 +3,7 @@ package com.netflix.eureka2.server.channel;
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.protocol.registration.Unregister;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -67,8 +68,8 @@ public class RegistrationChannelTest {
         when(transport.acknowledge()).thenReturn(Observable.<Void>empty());
         when(transport.onError(any(Throwable.class))).thenReturn(Observable.<Void>empty());
 
-        when(registry.register(any(InstanceInfo.class))).thenReturn(Observable.just(true));
-        when(registry.unregister(any(InstanceInfo.class))).thenReturn(Observable.just(true));
+        when(registry.register(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.just(true));
+        when(registry.unregister(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.just(true));
 
         channel = spy(new RegistrationChannelImpl(registry, evictionQueue, transport, mock(RegistrationChannelMetrics.class)));
     }
@@ -85,8 +86,8 @@ public class RegistrationChannelTest {
         incomingSubject.onNext(new Register(update2));
         incomingSubject.onNext(Unregister.INSTANCE);
 
-        verify(registry, times(3)).register(registryCaptor.capture());
-        verify(registry, times(1)).unregister(registryCaptor.capture());
+        verify(registry, times(3)).register(registryCaptor.capture(), any(Source.class));
+        verify(registry, times(1)).unregister(registryCaptor.capture(), any(Source.class));
 
         List<InstanceInfo> captured = registryCaptor.getAllValues();
         assertThat(captured.size(), equalTo(4));
@@ -100,7 +101,7 @@ public class RegistrationChannelTest {
     public void testRegisterOnIdleSuccess() {
         incomingSubject.onNext(new Register(register));
 
-        verify(registry, times(1)).register(registryCaptor.capture());
+        verify(registry, times(1)).register(registryCaptor.capture(), any(Source.class));
         verify(transport, times(0)).onError(errorCaptor.capture());
 
         List<InstanceInfo> captured = registryCaptor.getAllValues();
@@ -111,10 +112,10 @@ public class RegistrationChannelTest {
     @Test
     public void testRegisterOnIdleFail() {
         Exception exception = new Exception("msg");
-        when(registry.register(any(InstanceInfo.class))).thenReturn(Observable.<Boolean>error(exception));
+        when(registry.register(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.<Boolean>error(exception));
         incomingSubject.onNext(new Register(register));
 
-        verify(registry, times(1)).register(registryCaptor.capture());
+        verify(registry, times(1)).register(registryCaptor.capture(), any(Source.class));
         verify(transport, times(1)).onError(errorCaptor.capture());
 
         List<InstanceInfo> captured = registryCaptor.getAllValues();
@@ -162,8 +163,8 @@ public class RegistrationChannelTest {
         incomingSubject.onNext(new Register(register));  // need to register first to setup the cache
         incomingSubject.onNext(Unregister.INSTANCE);
 
-        verify(registry, times(1)).register(any(InstanceInfo.class));  // for the setup register
-        verify(registry, times(1)).unregister(registryCaptor.capture());
+        verify(registry, times(1)).register(any(InstanceInfo.class), any(Source.class));  // for the setup register
+        verify(registry, times(1)).unregister(registryCaptor.capture(), any(Source.class));
         verify(transport, times(0)).onError(errorCaptor.capture());
         verify(transport, times(2)).acknowledge();  // one for the setup register
 
@@ -180,10 +181,10 @@ public class RegistrationChannelTest {
         incomingSubject.onNext(new Register(register));  // need to register first to setup the cache
 
         Exception exception = new Exception("msg");
-        when(registry.unregister(any(InstanceInfo.class))).thenReturn(Observable.<Boolean>error(exception));
+        when(registry.unregister(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.<Boolean>error(exception));
         incomingSubject.onNext(Unregister.INSTANCE);
 
-        verify(registry, times(1)).unregister(registryCaptor.capture());
+        verify(registry, times(1)).unregister(registryCaptor.capture(), any(Source.class));
         verify(transport, times(1)).onError(errorCaptor.capture());
 
         List<InstanceInfo> captured = registryCaptor.getAllValues();
@@ -218,8 +219,8 @@ public class RegistrationChannelTest {
         // don't do initial register
         incomingSubject.onNext(Unregister.INSTANCE);
 
-        verify(registry, times(0)).register(any(InstanceInfo.class));
-        verify(registry, times(0)).unregister(any(InstanceInfo.class));
+        verify(registry, times(0)).register(any(InstanceInfo.class), any(Source.class));
+        verify(registry, times(0)).unregister(any(InstanceInfo.class), any(Source.class));
         verify(transport, times(0)).onError(errorCaptor.capture());
         verify(transport, times(1)).acknowledge();
 

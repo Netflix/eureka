@@ -18,6 +18,7 @@ package com.netflix.eureka2.registry.eviction;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
@@ -47,6 +48,7 @@ public class EvictionQueueImplTest {
     private final EvictionQueueImpl evictionQueue = new EvictionQueueImpl(EVICTION_TIMEOUT, EurekaRegistryMetricFactory.registryMetrics(), testScheduler);
     private final List<EvictionItem> evictedList = new ArrayList<>();
     private final EvictionQueueSubscriber evictionQueueSubscriber = new EvictionQueueSubscriber();
+    private final Source localSource = Source.localSource(UUID.randomUUID().toString());
 
     @Before
     public void setUp() throws Exception {
@@ -58,7 +60,7 @@ public class EvictionQueueImplTest {
         evictionQueueSubscriber.allow(1);
 
         InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();
-        evictionQueue.add(instanceInfo, Source.localSource());
+        evictionQueue.add(instanceInfo, localSource);
 
         testScheduler.advanceTimeBy(EVICTION_TIMEOUT - 1, TimeUnit.MILLISECONDS);
         assertThat(evictedList.size(), is(equalTo(0)));
@@ -75,7 +77,7 @@ public class EvictionQueueImplTest {
         evictionQueueSubscriber.allow(0);
 
         InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();
-        evictionQueue.add(instanceInfo, Source.localSource());
+        evictionQueue.add(instanceInfo, localSource);
 
         // Advance time pass the item expiry time
         testScheduler.advanceTimeBy(EVICTION_TIMEOUT, TimeUnit.MILLISECONDS);

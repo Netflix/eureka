@@ -18,6 +18,8 @@ package com.netflix.eureka2.server.channel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.eureka2.protocol.replication.RegisterCopy;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
@@ -29,11 +31,16 @@ import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.transport.MessageConnection;
+import io.reactivex.netty.util.NoOpSubscriber;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import rx.Observable;
+import rx.Subscriber;
+import rx.functions.Action0;
+import rx.functions.Func1;
+import rx.observers.SafeSubscriber;
 import rx.subjects.PublishSubject;
 
 import static com.netflix.eureka2.server.metric.WriteServerMetricFactory.writeServerMetrics;
@@ -120,7 +127,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         List<InstanceInfo> capturedInfos = new ArrayList<>();
         // reset the versions in the captured to -1 as they will have been stamped by the channel
         for (InstanceInfo captured : infoCaptor.getAllValues()) {
-            capturedInfos.add(new InstanceInfo.Builder().withInstanceInfo(captured).withVersion(-1l).build());
+            capturedInfos.add(new InstanceInfo.Builder().withInstanceInfo(captured).build());
         }
 
         assertThat(capturedInfos, contains(APP_INFO, infoUpdate));
@@ -187,6 +194,92 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
 
     private void verifyInstanceAndSourceCaptures(InstanceInfo info, String senderId) {
         assertThat(infoCaptor.getValue().getId(), is(equalTo(info.getId())));
-        assertThat(sourceCaptor.getValue().getId(), is(equalTo(senderId)));
+        assertThat(sourceCaptor.getValue().getId(), is(equalTo(replicationChannel.getSource().getId())));
+        assertThat(replicationChannel.getSource().getId().contains(senderId), is(true));
     }
+
+    /**
+    private volatile Long myCount;
+
+    Observable<Long> cachedProducer = Observable.create(new Observable.OnSubscribe<Long>() {
+        @Override
+        public void call(Subscriber<? super Long> subscriber) {
+            if(myCount != null) {
+                subscriber.onNext(myCount);
+            }
+            subscriber.onCompleted();
+        }
+    });
+
+    final AtomicInteger subCount = new AtomicInteger(0);
+    final AtomicInteger unsubCount = new AtomicInteger(0);
+    Observable<Long> producer = Observable.interval(1, TimeUnit.SECONDS)
+            .doOnSubscribe(new Action0() {
+                @Override
+                public void call() {
+                    subCount.incrementAndGet();
+                }
+            })
+            .doOnUnsubscribe(new Action0() {
+                @Override
+                public void call() {
+                    unsubCount.incrementAndGet();
+                }
+            });
+
+    Observable<Long> ob = cachedProducer.concatWith(producer.take(1).map(new Func1<Long, Long>() {
+        @Override
+        public Long call(Long aLong) {
+            myCount = aLong;
+            return myCount;
+        }
+    })).take(1)
+//                    .cache()
+//            .replay()
+//            .refCount()
+            .doOnSubscribe(new Action0() {
+                @Override
+                public void call() {
+                    System.out.println("Subscribed");
+                }
+            });
+
+
+    @Test
+    public void asdf() throws Exception {
+
+
+        getObservable().subscribe(new PrintingSubscriber());
+        Thread.sleep(2000);
+
+        getObservable().subscribe(new PrintingSubscriber());
+
+        Thread.sleep(2000);
+
+        System.out.println("SubCount " + subCount.get());
+        System.out.println("UnSubCount " + unsubCount.get());
+    }
+
+    public Observable<Long> getObservable() {
+        return ob;
+    }
+
+    static class PrintingSubscriber extends Subscriber<Long> {
+
+        @Override
+        public void onCompleted() {
+            System.out.println("onCompleted");
+        }
+
+        @Override
+        public void onError(Throwable e) {
+            System.out.println("onError " + e);
+        }
+
+        @Override
+        public void onNext(Long integer) {
+            System.out.println("onNext " + integer);
+        }
+    }
+*/
 }

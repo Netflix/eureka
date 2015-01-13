@@ -30,6 +30,7 @@ public class EmbeddedWriteServerTest {
                 ServerResolvers.just("localhost", writeServerResource.getDiscoveryPort()),
                 ServerResolvers.just("localhost", writeServerResource.getRegistrationPort())
         ).build();
+
         InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();
         eurekaClient.register(instanceInfo).toBlocking().lastOrDefault(null);
 

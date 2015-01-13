@@ -3,6 +3,7 @@ package com.netflix.eureka2.server.channel;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -18,6 +19,7 @@ import rx.functions.Func0;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Matchers.any;
@@ -74,8 +76,9 @@ public class RetryableSenderReplicationChannelTest {
         TestScheduler registryScheduler = Schedulers.test();
         SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics(), registryScheduler);
 
-        registry.register(INFO1).subscribe();
-        registry.register(INFO2).subscribe();
+        Source localSource = Source.localSource(UUID.randomUUID().toString());
+        registry.register(INFO1, localSource).subscribe();
+        registry.register(INFO2, localSource).subscribe();
         registryScheduler.triggerActions();
 
         RegistryReplicator replicator = new RegistryReplicator("111", registry);
