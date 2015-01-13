@@ -3,7 +3,8 @@ package com.netflix.eureka2.channel;
 import rx.Observable;
 
 /**
- * A {@link ServiceChannel} is a medium to define eureka protocols for modification to the {@link EurekaRegistry}.
+ * A {@link ServiceChannel} is a medium to define eureka protocols for modification to the
+ * {@link com.netflix.eureka2.registry.SourcedEurekaRegistry}.
  *
  * As is the case with a typical channel, there are two ends to a channel, viz.
  *
