@@ -9,7 +9,6 @@ include 'eureka-client',\
         'eureka-test-utils',\
         'eureka-integration',\
         'eureka-contrib:eureka-kafka',\
-        'eureka-contrib:eureka-ocelli',\
         'eureka-contrib:eureka-karyon-admin',\
         'eureka-testkit',\
         'eureka-examples'
