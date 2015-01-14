@@ -9,7 +9,6 @@ import rx.Observable;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.UUID;
 
 /**
  * @author David Liu
@@ -24,7 +23,7 @@ public class EurekaWriteServerSelfRegistrationService extends SelfRegistrationSe
     public EurekaWriteServerSelfRegistrationService(SelfInfoResolver resolver, SourcedEurekaRegistry registry) {
         super(resolver);
         this.registry = registry;
-        this.selfSource = Source.localSource(UUID.randomUUID().toString());
+        this.selfSource = new Source(Source.Origin.LOCAL);
     }
 
     @PostConstruct

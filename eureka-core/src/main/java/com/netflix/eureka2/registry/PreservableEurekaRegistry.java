@@ -104,23 +104,9 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
     }
 
     @Override
-    public Observable<Boolean> register(final InstanceInfo instanceInfo) {
-        Observable<Boolean> result = eurekaRegistry.register(instanceInfo);
-        result.subscribe(increaseExpectedSize);
-        return result;
-    }
-
-    @Override
     public Observable<Boolean> register(final InstanceInfo instanceInfo, final Source source) {
         Observable<Boolean> result = eurekaRegistry.register(instanceInfo, source);
         result.subscribe(increaseExpectedSize);
-        return result;
-    }
-
-    @Override
-    public Observable<Boolean> unregister(InstanceInfo instanceInfo) {
-        Observable<Boolean> result = eurekaRegistry.unregister(instanceInfo);
-        result.subscribe(decreaseExpectedSize);
         return result;
     }
 
@@ -142,8 +128,8 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
     }
 
     @Override
-    public Observable<InstanceInfo> forSnapshot(Interest<InstanceInfo> interest, Source source) {
-        return eurekaRegistry.forSnapshot(interest, source);
+    public Observable<InstanceInfo> forSnapshot(Interest<InstanceInfo> interest, Source.Matcher sourceMatcher) {
+        return eurekaRegistry.forSnapshot(interest, sourceMatcher);
     }
 
     @Override
@@ -152,8 +138,8 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
     }
 
     @Override
-    public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, Source source) {
-        return eurekaRegistry.forInterest(interest, source);
+    public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, Source.Matcher sourceMatcher) {
+        return eurekaRegistry.forInterest(interest, sourceMatcher);
     }
 
     @Override

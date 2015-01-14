@@ -1,6 +1,5 @@
 package com.netflix.eureka2.server.channel;
 
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.eureka2.protocol.EurekaProtocolError;
@@ -136,7 +135,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATES> i
         }
         metrics.stateTransition(STATES.Idle, STATES.Opened);
 
-        replicationSource = Source.replicatedSource(hello.getSourceId() + "_" + UUID.randomUUID().toString());
+        replicationSource = new Source(Source.Origin.REPLICATED, hello.getSourceId());
 
         return selfIdentityService.resolve().flatMap(new Func1<InstanceInfo, Observable<ReplicationHelloReply>>() {
             @Override
@@ -223,7 +222,6 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATES> i
                     @Override
                     public Void call(Boolean aBoolean) {
                         // an emit means the tempNewInfo was successfully unregistered
-                        instanceInfoById.remove(instanceId);
                         logger.debug("Successfully replicated an unregister {}", toUnregister);
                         return null;
                     }

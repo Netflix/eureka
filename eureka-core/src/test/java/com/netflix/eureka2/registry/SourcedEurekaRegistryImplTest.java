@@ -3,7 +3,6 @@ package com.netflix.eureka2.registry;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -36,7 +35,7 @@ import static org.hamcrest.Matchers.*;
 public class SourcedEurekaRegistryImplTest {
 
     private final TestScheduler testScheduler = Schedulers.test();
-    private final Source localSource = Source.localSource(UUID.randomUUID().toString());
+    private final Source localSource = new Source(Source.Origin.LOCAL);
 
     private TestEurekaServerRegistry registry;
 
@@ -184,7 +183,7 @@ public class SourcedEurekaRegistryImplTest {
                 .build();
 
         registry.register(original, localSource);
-        registry.register(replicated, Source.replicatedSource("replicationSourceId"));
+        registry.register(replicated, new Source(Source.Origin.REPLICATED, "replicationSourceId"));
         testScheduler.triggerActions();
 
         ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
@@ -252,7 +251,7 @@ public class SourcedEurekaRegistryImplTest {
         assertThat(snapshot, equalTo(original));
 
         registry.unregister(original, localSource);
-        registry.register(replicated, Source.replicatedSource("replicationSourceId"));
+        registry.register(replicated, new Source(Source.Origin.REPLICATED, "replicationSourceId"));
         testScheduler.triggerActions();
 
         holder = internalStore.values().iterator().next();
@@ -290,7 +289,7 @@ public class SourcedEurekaRegistryImplTest {
 
         registry.unregister(original, localSource);
         final List<ChangeNotification<InstanceInfo>> notifications = new ArrayList<>();
-        registry.forInterest(Interests.forFullRegistry(), SourceMatcher.localSource())
+        registry.forInterest(Interests.forFullRegistry(), Source.matcherFor(Source.Origin.LOCAL))
                 .subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
                                @Override
                                public void onCompleted() {

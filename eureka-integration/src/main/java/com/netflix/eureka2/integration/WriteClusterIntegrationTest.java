@@ -88,11 +88,15 @@ public class WriteClusterIntegrationTest {
         registrationClient.register(infos.get(0)).toBlocking().firstOrDefault(null);
         registrationClient.register(infos.get(1)).toBlocking().firstOrDefault(null);
         registrationClient.register(infos.get(2)).toBlocking().firstOrDefault(null);
-        registrationClient.unregister(infos.get(2)).toBlocking().firstOrDefault(null);
 
         assertThat(testSubscriber.takeNextOrWait(), is(addChangeNotificationOf(infos.get(0))));
         assertThat(testSubscriber.takeNextOrWait(), is(modifyChangeNotificationOf(infos.get(1))));
         assertThat(testSubscriber.takeNextOrWait(), is(modifyChangeNotificationOf(infos.get(2))));
+
+        // do the unregister after we've looked at the register and updates. Otherwise the unregister may process
+        // before replication happen which means no data will be replicated to the second write server.
+        registrationClient.unregister(infos.get(2)).toBlocking().firstOrDefault(null);
+
         assertThat(testSubscriber.takeNextOrWait(), is(deleteChangeNotificationOf(infos.get(2))));
 
         registrationClient.close();

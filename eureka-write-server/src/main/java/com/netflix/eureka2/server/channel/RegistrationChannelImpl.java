@@ -19,13 +19,12 @@ import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Action1;
 
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Nitesh Kant
  */
-public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> implements RegistrationChannel {
+public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> implements RegistrationChannel, Sourced {
 
     private static final Logger logger = LoggerFactory.getLogger(RegistrationChannelImpl.class);
 
@@ -45,7 +44,7 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
 
         metrics.incrementStateCounter(STATES.Idle);
 
-        selfSource = Source.localSource(UUID.randomUUID().toString());
+        selfSource = new Source(Source.Origin.LOCAL);
         instanceInfoRef = new AtomicReference<>();
 
         subscribeToTransportInput(new Action1<Object>() {
@@ -112,6 +111,11 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
                 }
             }
         });
+    }
+
+    @Override
+    public Source getSource() {
+        return selfSource;
     }
 
     /**

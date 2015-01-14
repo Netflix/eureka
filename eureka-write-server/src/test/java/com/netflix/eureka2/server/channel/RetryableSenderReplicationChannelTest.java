@@ -19,7 +19,6 @@ import rx.functions.Func0;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Matchers.any;
@@ -76,7 +75,7 @@ public class RetryableSenderReplicationChannelTest {
         TestScheduler registryScheduler = Schedulers.test();
         SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics(), registryScheduler);
 
-        Source localSource = Source.localSource(UUID.randomUUID().toString());
+        Source localSource = new Source(Source.Origin.LOCAL);
         registry.register(INFO1, localSource).subscribe();
         registry.register(INFO2, localSource).subscribe();
         registryScheduler.triggerActions();
