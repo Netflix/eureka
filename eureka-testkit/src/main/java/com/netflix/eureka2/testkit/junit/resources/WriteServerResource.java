@@ -19,6 +19,7 @@ public class WriteServerResource extends ExternalResource {
     public static final String DEFAULT_WRITE_CLUSTER_NAME = "write-test";
 
     private final String name;
+    private final Codec codec;
 
     private EmbeddedWriteServer server;
 
@@ -27,7 +28,12 @@ public class WriteServerResource extends ExternalResource {
     }
 
     public WriteServerResource(String name) {
+        this(name, Codec.Avro);
+    }
+
+    public WriteServerResource(String name, Codec codec) {
         this.name = name;
+        this.codec = codec;
     }
 
     @Override
@@ -39,7 +45,7 @@ public class WriteServerResource extends ExternalResource {
                 .withRegistrationPort(0)
                 .withDiscoveryPort(0)
                 .withReplicationPort(0)
-                .withCodec(Codec.Avro)
+                .withCodec(codec)
                 .withShutDownPort(0)
                 .withWebAdminPort(0)
                 .withReplicationRetryMillis(1000)

@@ -21,7 +21,7 @@ buildscript {
 }
 
 plugins {
-    id 'nebula.netflixoss' version '2.2.3'
+    id 'nebula.netflixoss' version '2.2.4'
 }
 
 ext {
@@ -79,6 +79,18 @@ subprojects {
 
     tasks.withType(Javadoc).each {
         it.classpath = sourceSets.main.compileClasspath
+    }
+
+    test {
+        useJUnit {
+            excludeCategories 'com.netflix.eureka2.junit.categories.IntegrationTest'
+            excludeCategories 'com.netflix.eureka2.junit.categories.LongRunningTest'
+        }
+    }
+
+    task testAll(type: Test) {
+        useJUnit {
+        }
     }
 }
 

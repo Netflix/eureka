@@ -7,6 +7,7 @@ import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedBridgeServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedDashboardServer;
 import com.netflix.eureka2.testkit.embedded.view.ClusterViewHttpServer;
+import com.netflix.eureka2.transport.EurekaTransports.Codec;
 
 /**
  * @author Tomasz Bak
@@ -78,6 +79,7 @@ public class EurekaDeployment {
         private boolean adminUIEnabled;
         private boolean extensionsEnabled;
         private boolean viewEnabled;
+        private Codec codec;
 
         public EurekaDeploymentBuilder withWriteClusterSize(int size) {
             writeClusterSize = size;
@@ -91,6 +93,11 @@ public class EurekaDeployment {
 
         public EurekaDeploymentBuilder withEphemeralPorts(boolean ephemeralPorts) {
             this.ephemeralPorts = ephemeralPorts;
+            return this;
+        }
+
+        public EurekaDeploymentBuilder withCodec(Codec codec) {
+            this.codec = codec;
             return this;
         }
 
@@ -120,16 +127,16 @@ public class EurekaDeployment {
         }
 
         public EurekaDeployment build() {
-            EmbeddedWriteCluster writeCluster = new EmbeddedWriteCluster(extensionsEnabled, adminUIEnabled, ephemeralPorts);
+            EmbeddedWriteCluster writeCluster = new EmbeddedWriteCluster(extensionsEnabled, adminUIEnabled, ephemeralPorts, codec);
             writeCluster.scaleUpBy(writeClusterSize);
 
             EmbeddedReadCluster readCluster = new EmbeddedReadCluster(writeCluster.registrationResolver(),
-                    writeCluster.discoveryResolver(), extensionsEnabled, adminUIEnabled, ephemeralPorts);
+                    writeCluster.discoveryResolver(), extensionsEnabled, adminUIEnabled, ephemeralPorts, codec);
             readCluster.scaleUpBy(readClusterSize);
 
             EmbeddedBridgeServer bridgeServer = null;
             if (bridgeEnabled) {
-                bridgeServer = EmbeddedBridgeServer.newBridge(writeCluster.replicationPeers(), extensionsEnabled, adminUIEnabled);
+                bridgeServer = EmbeddedBridgeServer.newBridge(writeCluster.replicationPeers(), extensionsEnabled, adminUIEnabled, codec);
                 bridgeServer.start();
             }
             EmbeddedDashboardServer dashboardServer = null;

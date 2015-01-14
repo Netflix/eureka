@@ -70,6 +70,13 @@ public class EmbeddedBridgeServer extends EmbeddedEurekaServer<BridgeServerConfi
     public static EmbeddedBridgeServer newBridge(final Observable<ChangeNotification<InetSocketAddress>> replicationPeers,
                                                  boolean withExt,
                                                  boolean withDashboard) {
+        return newBridge(replicationPeers, withExt, withDashboard, Codec.Avro);
+    }
+
+    public static EmbeddedBridgeServer newBridge(final Observable<ChangeNotification<InetSocketAddress>> replicationPeers,
+                                                 boolean withExt,
+                                                 boolean withDashboard,
+                                                 Codec codec) {
         BridgeServerConfig config = BridgeServerConfig.newBuilder()
                 .withAppName(BRIDGE_SERVER_NAME)
                 .withVipAddress(BRIDGE_SERVER_NAME)
@@ -77,7 +84,7 @@ public class EmbeddedBridgeServer extends EmbeddedEurekaServer<BridgeServerConfi
                 .withRegistrationPort(BRIDGE_SERVER_PORTS_FROM)
                 .withDiscoveryPort(BRIDGE_SERVER_PORTS_FROM + 1)  // explicitly set it to a different port to verify
                 .withReplicationPort(BRIDGE_SERVER_PORTS_FROM + 2)  // explicitly set it to a different port to verify
-                .withCodec(Codec.Avro)
+                .withCodec(codec)
                 .withRefreshRateSec(30)
                 .withShutDownPort(BRIDGE_SERVER_PORTS_FROM + 3)
                 .withWebAdminPort(BRIDGE_SERVER_PORTS_FROM + 4)
