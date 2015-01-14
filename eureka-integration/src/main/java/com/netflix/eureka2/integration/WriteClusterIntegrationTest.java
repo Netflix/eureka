@@ -83,19 +83,18 @@ public class WriteClusterIntegrationTest {
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
         discoveryClient.forApplication(infos.get(0).getApp()).subscribe(testSubscriber);
 
-        // We need to block, otherwise if we shot all of them in one row, they may be
-        // compacted in the index.
-        registrationClient.register(infos.get(0)).toBlocking().firstOrDefault(null);
-        registrationClient.register(infos.get(1)).toBlocking().firstOrDefault(null);
-        registrationClient.register(infos.get(2)).toBlocking().firstOrDefault(null);
-
+        // We need to wait for notification after each registry update, to avoid compaction
+        // on the way.
+        registrationClient.register(infos.get(0)).subscribe();
         assertThat(testSubscriber.takeNextOrWait(), is(addChangeNotificationOf(infos.get(0))));
+        registrationClient.register(infos.get(1)).subscribe();
         assertThat(testSubscriber.takeNextOrWait(), is(modifyChangeNotificationOf(infos.get(1))));
+        registrationClient.register(infos.get(2)).subscribe();
         assertThat(testSubscriber.takeNextOrWait(), is(modifyChangeNotificationOf(infos.get(2))));
 
         // do the unregister after we've looked at the register and updates. Otherwise the unregister may process
         // before replication happen which means no data will be replicated to the second write server.
-        registrationClient.unregister(infos.get(2)).toBlocking().firstOrDefault(null);
+        registrationClient.unregister(infos.get(2)).subscribe();
 
         assertThat(testSubscriber.takeNextOrWait(), is(deleteChangeNotificationOf(infos.get(2))));
 
