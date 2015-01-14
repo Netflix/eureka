@@ -3,8 +3,6 @@ package com.netflix.eureka2.integration;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.client.EurekaClient;
@@ -12,12 +10,12 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import rx.functions.Action1;
 
 import static com.netflix.eureka2.rx.RxBlocking.iteratorFrom;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
@@ -82,25 +80,20 @@ public class WriteClusterIntegrationTest {
         );
 
         // Subscribe to second write server
-        final BlockingQueue<ChangeNotification<InstanceInfo>> notifications = new LinkedBlockingQueue<>();
-        discoveryClient.forApplication(infos.get(0).getApp()).subscribe(new Action1<ChangeNotification<InstanceInfo>>() {
-            @Override
-            public void call(ChangeNotification<InstanceInfo> notification) {
-                notifications.add(notification);
-            }
-        });
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
+        discoveryClient.forApplication(infos.get(0).getApp()).subscribe(testSubscriber);
 
-        // We need to block, otherwise if we shot all of them in one row, they will be processed
-        // in order, but subscribe operations may eventually re-ordered them.
+        // We need to block, otherwise if we shot all of them in one row, they may be
+        // compacted in the index.
         registrationClient.register(infos.get(0)).toBlocking().firstOrDefault(null);
         registrationClient.register(infos.get(1)).toBlocking().firstOrDefault(null);
         registrationClient.register(infos.get(2)).toBlocking().firstOrDefault(null);
         registrationClient.unregister(infos.get(2)).toBlocking().firstOrDefault(null);
 
-        assertThat(notifications.poll(10, TimeUnit.SECONDS), is(addChangeNotificationOf(infos.get(0))));
-        assertThat(notifications.poll(10, TimeUnit.SECONDS), is(modifyChangeNotificationOf(infos.get(1))));
-        assertThat(notifications.poll(10, TimeUnit.SECONDS), is(modifyChangeNotificationOf(infos.get(2))));
-        assertThat(notifications.poll(10, TimeUnit.SECONDS), is(deleteChangeNotificationOf(infos.get(2))));
+        assertThat(testSubscriber.takeNextOrWait(), is(addChangeNotificationOf(infos.get(0))));
+        assertThat(testSubscriber.takeNextOrWait(), is(modifyChangeNotificationOf(infos.get(1))));
+        assertThat(testSubscriber.takeNextOrWait(), is(modifyChangeNotificationOf(infos.get(2))));
+        assertThat(testSubscriber.takeNextOrWait(), is(deleteChangeNotificationOf(infos.get(2))));
 
         registrationClient.close();
         discoveryClient.close();

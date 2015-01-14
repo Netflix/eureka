@@ -1,388 +1,198 @@
 package com.netflix.eureka2.client.channel;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.List;
 
-import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
-import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
-import com.netflix.eureka2.testkit.data.builder.SampleInterest;
-import com.netflix.eureka2.transport.TransportClient;
+import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.interests.MultipleInterests;
+import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.DeleteInstance;
+import com.netflix.eureka2.protocol.discovery.InterestSetNotification;
 import com.netflix.eureka2.protocol.discovery.SampleAddInstance;
-import com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo;
-import com.netflix.eureka2.registry.instance.Delta;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
+import com.netflix.eureka2.testkit.data.builder.SampleInterest;
 import com.netflix.eureka2.transport.MessageConnection;
-import org.junit.Assert;
-import org.junit.Rule;
+import com.netflix.eureka2.transport.TransportClient;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.rules.ExternalResource;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
 import rx.Observable;
-import rx.Subscriber;
-import rx.functions.Action0;
+import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.subjects.PublishSubject;
 import rx.subjects.ReplaySubject;
 
-import static com.netflix.eureka2.client.metric.EurekaClientMetricFactory.*;
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
-import static org.mockito.Mockito.*;
+import static com.netflix.eureka2.client.metric.EurekaClientMetricFactory.clientMetrics;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * @author David Liu
  */
-@RunWith(MockitoJUnitRunner.class)
 public class InterestChannelImplTest {
 
-    @Mock
-    protected MessageConnection serverConnection;
+    protected MessageConnection serverConnection = mock(MessageConnection.class);
+    private final PublishSubject<Object> incomingSubject = PublishSubject.create();
+    private final ReplaySubject<Void> serverConnectionLifecycle = ReplaySubject.create();
 
-    @Mock
-    protected TransportClient transportClient;
+    protected TransportClient transportClient = mock(TransportClient.class);
 
-    protected SourcedEurekaRegistry<InstanceInfo> registry;
+    protected SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics());
+
     protected InterestChannelImpl channel;
 
-    protected Interest<InstanceInfo> sampleInterestZuul;
-    protected Observable<AddInstance> sampleAddMessagesZuul;
+    protected Interest<InstanceInfo> sampleInterestZuul = SampleInterest.ZuulApp.build();
+    protected Observable<AddInstance> sampleAddMessagesZuul = SampleAddInstance.newMessages(SampleAddInstance.ZuulAdd, 10);
 
-    protected Interest<InstanceInfo> sampleInterestDiscovery;
-    protected Observable<AddInstance> sampleAddMessagesDiscovery;
+    protected Interest<InstanceInfo> sampleInterestDiscovery = SampleInterest.DiscoveryApp.build();
+    protected Observable<AddInstance> sampleAddMessagesDiscovery = SampleAddInstance.newMessages(SampleAddInstance.DiscoveryAdd, 10);
 
-    protected Interest<InstanceInfo> sampleInterestAll;
-    protected Observable<AddInstance> sampleAddMessagesAll;
+    protected Interest<InstanceInfo> sampleInterestAll = Interests.forFullRegistry();
 
-    private final ReplaySubject<Void> serverConnectionLifecycle = ReplaySubject.create();
-    @Rule
-    public final ExternalResource testResource = new ExternalResource() {
+    protected Observable<AddInstance> sampleAddMessagesAll = sampleAddMessagesZuul.concatWith(sampleAddMessagesDiscovery);
 
-        @Override
-        protected void before() throws Throwable {
-            registry = new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics());
-            when(serverConnection.acknowledge()).thenReturn(Observable.<Void>empty());
-            when(serverConnection.submitWithAck(Mockito.anyObject())).thenReturn(Observable.<Void>empty());
-            when(serverConnection.lifecycleObservable()).thenReturn(serverConnectionLifecycle);
-            when(transportClient.connect()).thenReturn(Observable.just(serverConnection));
+    @Before
+    public void setup() throws Throwable {
+        when(serverConnection.incoming()).thenReturn(incomingSubject);
+        when(serverConnection.acknowledge()).thenReturn(Observable.<Void>empty());
+        when(serverConnection.submitWithAck(Mockito.anyObject())).thenReturn(Observable.<Void>empty());
+        when(serverConnection.lifecycleObservable()).thenReturn(serverConnectionLifecycle);
+        when(transportClient.connect()).thenReturn(Observable.just(serverConnection));
 
-            channel = new InterestChannelImpl(registry, transportClient, clientMetrics().getInterestChannelMetrics());
+        channel = new InterestChannelImpl(registry, transportClient, clientMetrics().getInterestChannelMetrics());
+    }
 
-            sampleInterestZuul = SampleInterest.ZuulApp.build();
-            sampleAddMessagesZuul = SampleAddInstance.newMessages(SampleAddInstance.ZuulAdd, 10);
+    @After
+    public void tearDown() {
+        channel.close();
+        registry.shutdown();
+    }
 
-            sampleInterestDiscovery = SampleInterest.DiscoveryApp.build();
-            sampleAddMessagesDiscovery = SampleAddInstance.newMessages(SampleAddInstance.DiscoveryAdd, 10);
+    @Test
+    public void testChangeWithFirstInterest() throws Exception {
+        // Subscriber
+        ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
+        channel.change(sampleInterestZuul).subscribe(testSubscriber);
 
-            sampleInterestAll = Interests.forFullRegistry();
-            sampleAddMessagesAll = sampleAddMessagesZuul.concatWith(sampleAddMessagesDiscovery);
-        }
+        testSubscriber.assertOnCompleted();
 
-        @Override
-        protected void after() {
-            channel.close();
-            registry.shutdown();
-        }
-    };
+        // Send subscription data
+        sendInput(sampleAddMessagesZuul);
+
+        // Now fetch registry content, and verify reply
+        assertForInterestReturns(sampleInterestZuul, sampleAddMessagesZuul);
+    }
+
+    @Test
+    public void testChangeWithSubsequentInterest() throws Exception {
+        // Subscribe to Zuul, and send Zuul change notifications
+        ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
+        channel.change(sampleInterestZuul).subscribe(testSubscriber);
+
+        testSubscriber.assertOnCompleted();
+
+        sendInput(sampleAddMessagesZuul);
+
+        // Subscribe to Discovery, and send Zuul change notifications
+        testSubscriber = new ExtTestSubscriber<>();
+        channel.change(sampleInterestDiscovery).subscribe(testSubscriber);
+
+        testSubscriber.assertOnCompleted();
+
+        sendInput(sampleAddMessagesDiscovery);
+
+        // Check that the registry contains both sets
+        assertForInterestReturns(sampleInterestZuul, sampleAddMessagesZuul);
+        assertForInterestReturns(sampleInterestDiscovery, sampleAddMessagesDiscovery);
+    }
 
     @Test
     public void testCleanUpResourcesOnClose() throws Exception {
-        final CountDownLatch streamEndLatch = new CountDownLatch(1);
-        when(serverConnection.incoming())
-                .thenReturn(sampleAddMessagesZuul.cast(Object.class).doOnCompleted(new Action0() {
-                    @Override
-                    public void call() {
-                        streamEndLatch.countDown();
-                    }
-                }));
+        // Subscriber
+        ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
+        channel.change(sampleInterestZuul).subscribe(testSubscriber);
 
-        final CountDownLatch completionLatch = new CountDownLatch(1);
-        channel.change(sampleInterestZuul).subscribe(new Subscriber<Void>() {
-            @Override
-            public void onCompleted() {
-                completionLatch.countDown();
-            }
+        testSubscriber.assertOnCompleted();
 
-            @Override
-            public void onError(Throwable e) {
-                Assert.fail("Should not onError here");
-            }
-
-            @Override
-            public void onNext(Void aVoid) {
-                Assert.fail("Should onNext here");
-            }
-        });
-
-        assertThat(completionLatch.await(1, TimeUnit.MINUTES), equalTo(true));
-        assertThat(streamEndLatch.await(1, TimeUnit.MINUTES), equalTo(true));
-
-        Collection<InstanceInfo> actual = registry.forSnapshot(sampleInterestZuul).toList().toBlocking().first();
-
-        Collection<InstanceInfo> expected = sampleAddMessagesZuul
-                .map(new Func1<AddInstance, InstanceInfo>() {
-                    @Override
-                    public InstanceInfo call(AddInstance addInstance) {
-                        return addInstance.getInstanceInfo();
-                    }
-                }).toList().toBlocking().first();
-
-        assertThat(actual, containsInAnyOrder(expected.toArray()));
-
+        // Close the channel and check that no more subscriptions are allowed
         channel.close();
-        final CountDownLatch errorLatch = new CountDownLatch(1);
-        channel.change(sampleInterestAll).subscribe(new Subscriber<Void>() {  // change after close should onError
-            @Override
-            public void onCompleted() {
-                Assert.fail("should not onComplete here");
-            }
 
-            @Override
-            public void onError(Throwable e) {
-                errorLatch.countDown();
-            }
+        testSubscriber = new ExtTestSubscriber<>();
+        channel.change(sampleInterestAll).subscribe(testSubscriber);
 
-            @Override
-            public void onNext(Void aVoid) {
-                Assert.fail("Should onNext here");
-            }
-        });
-
-        assertThat(errorLatch.await(1, TimeUnit.MINUTES), equalTo(true));
-    }
-
-    @Test
-    public void testChangeWithNewInterest() throws Exception {
-        final CountDownLatch streamEndLatch = new CountDownLatch(1);
-        when(serverConnection.incoming())
-                .thenReturn(sampleAddMessagesZuul.cast(Object.class).doOnCompleted(new Action0() {
-                    @Override
-                    public void call() {
-                        streamEndLatch.countDown();
-                    }
-                }));
-
-        final CountDownLatch completionLatch = new CountDownLatch(1);
-        channel.change(sampleInterestZuul).subscribe(new Subscriber<Void>() {
-            @Override
-            public void onCompleted() {
-                completionLatch.countDown();
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                Assert.fail("Should not onError here");
-            }
-
-            @Override
-            public void onNext(Void aVoid) {
-                Assert.fail("Should onNext here");
-            }
-        });
-
-        assertThat(completionLatch.await(1, TimeUnit.MINUTES), equalTo(true));
-        assertThat(streamEndLatch.await(1, TimeUnit.MINUTES), equalTo(true));
-
-        Collection<InstanceInfo> actual = registry.forSnapshot(sampleInterestZuul).toList().toBlocking().first();
-
-        Collection<InstanceInfo> expected = sampleAddMessagesZuul
-                .map(new Func1<AddInstance, InstanceInfo>() {
-                    @Override
-                    public InstanceInfo call(AddInstance addInstance) {
-                        return addInstance.getInstanceInfo();
-                    }
-                }).toList().toBlocking().first();
-
-        assertThat(actual, containsInAnyOrder(expected.toArray()));
-    }
-
-    @Test
-    public void testChangeWithNonIntersectingInterest() throws Exception {
-        final CountDownLatch streamEndLatch = new CountDownLatch(1);
-        when(serverConnection.incoming())
-                .thenReturn(sampleAddMessagesAll.cast(Object.class).doOnCompleted(new Action0() {
-                    @Override
-                    public void call() {
-                        streamEndLatch.countDown();
-                    }
-                }));
-
-        final CountDownLatch completionLatch1 = new CountDownLatch(1);
-        channel.change(sampleInterestZuul).subscribe(new Subscriber<Void>() {
-            @Override
-            public void onCompleted() {
-                completionLatch1.countDown();
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                Assert.fail("Should not onError here");
-            }
-
-            @Override
-            public void onNext(Void aVoid) {
-                Assert.fail("Should onNext here");
-            }
-        });
-
-        final CountDownLatch completionLatch2 = new CountDownLatch(1);
-        channel.change(sampleInterestDiscovery).subscribe(new Subscriber<Void>() {
-            @Override
-            public void onCompleted() {
-                completionLatch2.countDown();
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                Assert.fail("Should not onError here");
-            }
-
-            @Override
-            public void onNext(Void aVoid) {
-                Assert.fail("Should onNext here");
-            }
-        });
-
-        assertThat(completionLatch1.await(1, TimeUnit.MINUTES), equalTo(true));
-        assertThat(completionLatch2.await(1, TimeUnit.MINUTES), equalTo(true));
-        assertThat(streamEndLatch.await(1, TimeUnit.MINUTES), equalTo(true));
-
-        Collection<InstanceInfo> actual = registry.forSnapshot(sampleInterestZuul).toList().toBlocking().first();
-        actual.addAll(registry.forSnapshot(sampleInterestDiscovery).toList().toBlocking().first());
-
-        Collection<InstanceInfo> expected = sampleAddMessagesAll
-                .map(new Func1<AddInstance, InstanceInfo>() {
-                    @Override
-                    public InstanceInfo call(AddInstance addInstance) {
-                        return addInstance.getInstanceInfo();
-                    }
-                }).toList().toBlocking().first();
-
-        assertThat(actual, containsInAnyOrder(expected.toArray()));
-    }
-
-    @Test
-    public void testChangeWithIntersectingInterest() throws Exception {
-        final CountDownLatch streamEndLatch = new CountDownLatch(1);
-        when(serverConnection.incoming())
-                .thenReturn(sampleAddMessagesAll.cast(Object.class).doOnCompleted(new Action0() {
-                    @Override
-                    public void call() {
-                        streamEndLatch.countDown();
-                    }
-                }));
-
-        final CountDownLatch completionLatch1 = new CountDownLatch(1);
-        channel.change(sampleInterestZuul).subscribe(new Subscriber<Void>() {
-            @Override
-            public void onCompleted() {
-                completionLatch1.countDown();
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                Assert.fail("Should not onError here");
-            }
-
-            @Override
-            public void onNext(Void aVoid) {
-                Assert.fail("Should onNext here");
-            }
-        });
-
-        final CountDownLatch completionLatch2 = new CountDownLatch(1);
-        channel.change(new MultipleInterests<>(sampleInterestZuul, sampleInterestDiscovery)).subscribe(new Subscriber<Void>() {
-            @Override
-            public void onCompleted() {
-                completionLatch2.countDown();
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                Assert.fail("Should not onError here");
-            }
-
-            @Override
-            public void onNext(Void aVoid) {
-                Assert.fail("Should onNext here");
-            }
-        });
-
-        assertThat(completionLatch1.await(1, TimeUnit.MINUTES), equalTo(true));
-        assertThat(completionLatch2.await(1, TimeUnit.MINUTES), equalTo(true));
-        assertThat(streamEndLatch.await(1, TimeUnit.MINUTES), equalTo(true));
-
-        // set to clear all dupes
-        Set<InstanceInfo> actual = new HashSet<>(registry.forSnapshot(sampleInterestZuul).toList().toBlocking().first());
-        actual.addAll(registry.forSnapshot(new MultipleInterests<>(sampleInterestZuul, sampleInterestDiscovery)).toList().toBlocking().first());
-
-        Collection<InstanceInfo> expected = sampleAddMessagesAll
-                .map(new Func1<AddInstance, InstanceInfo>() {
-                    @Override
-                    public InstanceInfo call(AddInstance addInstance) {
-                        return addInstance.getInstanceInfo();
-                    }
-                }).toList().toBlocking().first();
-
-        assertThat(actual, containsInAnyOrder(expected.toArray()));
+        testSubscriber.assertOnError();
     }
 
     @Test
     public void testTransportDelete() throws Exception {
         // preload the channel cache and registry with data
-        InstanceInfo original1 = SampleInstanceInfo.DiscoveryServer.builder().build();
-        InstanceInfo original2 = SampleInstanceInfo.ZuulServer.builder().build();
+        InstanceInfo original1 = SampleInstanceInfo.DiscoveryServer.build();
+        InstanceInfo original2 = SampleInstanceInfo.ZuulServer.build();
         AddInstance message1 = new AddInstance(original1);
         AddInstance message2 = new AddInstance(original2);
 
         DeleteInstance message3 = new DeleteInstance(original1.getId());
 
-        final CountDownLatch streamEndLatch = new CountDownLatch(1);
-        when(serverConnection.incoming())
-                .thenReturn(Observable.from(Arrays.asList(message1, message2, message3))
-                        .cast(Object.class).doOnCompleted(new Action0() {
-                            @Override
-                            public void call() {
-                                streamEndLatch.countDown();
-                            }
-                        }));
+        // Subscribe
+        ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
+        channel.change(sampleInterestZuul).subscribe(testSubscriber);
 
-        final CountDownLatch completionLatch = new CountDownLatch(1);
-        channel.change(sampleInterestAll).subscribe(new Subscriber<Void>() {
-            @Override
-            public void onCompleted() {
-                completionLatch.countDown();
-            }
+        testSubscriber.assertOnCompleted();
 
-            @Override
-            public void onError(Throwable e) {
-                Assert.fail("Should not onError here");
-            }
+        // Send change notifications
+        sendInput(Observable.just(message1, message2, message3));
 
+        // As we have here asynchronous processing we may have here either 3 or 1 item.
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> updatesSubscriber = new ExtTestSubscriber<>();
+        registry.forInterest(Interests.forFullRegistry()).subscribe(updatesSubscriber);
+
+        ChangeNotification<InstanceInfo> first = updatesSubscriber.takeNextOrFail();
+        // If first update is add 2, add 1 + delete 1 was compacted
+        if (!first.getData().getId().equals(original2.getId())) {
+            // We expect three updates: add 1, add 2, delete 1
+            assertThat(first, addChangeNotificationOf(original1));
+            assertThat(updatesSubscriber.takeNextOrFail(), addChangeNotificationOf(original1));
+            assertThat(updatesSubscriber.takeNextOrFail(), addChangeNotificationOf(original1));
+        }
+    }
+
+    private void assertForInterestReturns(Interest<InstanceInfo> interest, Observable<AddInstance> addMessages) throws InterruptedException {
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> updatesSubscriber = new ExtTestSubscriber<>();
+        registry.forInterest(interest).subscribe(updatesSubscriber);
+
+        Collection<InstanceInfo> expected = from(addMessages);
+        updatesSubscriber.assertProducesInAnyOrder(expected, new Func1<ChangeNotification<InstanceInfo>, InstanceInfo>() {
             @Override
-            public void onNext(Void aVoid) {
-                Assert.fail("Should onNext here");
+            public InstanceInfo call(ChangeNotification<InstanceInfo> notification) {
+                return notification.getData();
             }
         });
+    }
 
-        assertThat(completionLatch.await(1, TimeUnit.MINUTES), equalTo(true));
-        assertThat(streamEndLatch.await(1, TimeUnit.MINUTES), equalTo(true));
+    private static List<InstanceInfo> from(Observable<AddInstance> observable) {
+        return observable.map(new Func1<AddInstance, InstanceInfo>() {
+            @Override
+            public InstanceInfo call(AddInstance addInstance) {
+                return addInstance.getInstanceInfo();
+            }
+        }).toList().toBlocking().first();
+    }
 
-        Collection<InstanceInfo> actual = registry.forSnapshot(sampleInterestAll).toList().toBlocking().first();
-        assertThat(actual.size(), equalTo(1));
-        InstanceInfo instanceInfo = actual.iterator().next();
-        assertThat(instanceInfo, equalTo(original2));
+    private void sendInput(Observable<? extends InterestSetNotification> updates) {
+        updates.subscribe(new Action1<InterestSetNotification>() {
+            @Override
+            public void call(InterestSetNotification addInstance) {
+                incomingSubject.onNext(addInstance);
+            }
+        });
     }
 }
