@@ -1,52 +1,109 @@
-/*
- * Copyright 2014 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.netflix.eureka2.client.resolver;
 
-import com.netflix.eureka2.client.resolver.ServerResolver.Server;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
+import com.netflix.eureka2.client.resolver.DnsServerResolver.DnsServerResolverBuilder;
+import com.netflix.eureka2.client.resolver.ServerResolver.Server;
+import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.ChangeNotification.Kind;
+import com.netflix.eureka2.interests.ChangeNotificationSource;
+import com.netflix.eureka2.rx.ExtTestSubscriber;
+import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
+import org.junit.Before;
+import org.junit.Test;
+import rx.Observable;
+import rx.schedulers.Schedulers;
+import rx.subjects.PublishSubject;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
- * TODO: The test is using public DNSes, to resolve public domain names.
- * It would be good to have integration tests pool separate from pure unit tests.
- *
  * @author Tomasz Bak
  */
 public class DnsServerResolverTest {
 
-    @Test
-    @Ignore // Because the DNS resolution fails on CloudBees
-    public void testPublicAddressResolution() throws Exception {
-        // Google has a long list of addresses.
-        DnsServerResolver resolver = new DnsServerResolver("google.com", 80);
-        List<ServerResolver.Server> serverEntries = resolver.resolve().take(2).toList().toBlocking().toFuture().get(30, TimeUnit.SECONDS);
-        assertEquals("Expected server list with more than one entry", 2, serverEntries.size());
+    private final ChangeNotificationSource<String> dnsChangeNotificationSource = mock(ChangeNotificationSource.class);
+
+    private DnsServerResolverBuilder resolverBuilder;
+    private final PublishSubject<ChangeNotification<String>> dnsUpdatesSubject = PublishSubject.create();
+
+    @Before
+    public void setUp() throws Exception {
+        resolverBuilder = new DnsServerResolverBuilder() {
+            @Override
+            protected ChangeNotificationSource<String> createDnsChangeNotificationSource() {
+                return dnsChangeNotificationSource;
+            }
+        };
+
+        when(dnsChangeNotificationSource.forInterest(null)).thenReturn(dnsUpdatesSubject);
     }
 
     @Test
-    @Ignore
-    public void testLocalhost() throws Exception {
-        DnsServerResolver resolver = new DnsServerResolver("localhost", 7300);
-        List<Server> serverEntries = resolver.resolve().take(1).toList().toBlocking().toFuture().get(30, TimeUnit.SECONDS);
-        assertEquals("Expected single localhost entry", 1, serverEntries.size());
+    public void testBuilderWithoutDefaults() throws Exception {
+        DnsServerResolver resolver = resolverBuilder
+                .withDomainName("my.domain")
+                .withPort(80)
+                .withIdleTimeout(1000)
+                .withReloadInterval(2000)
+                .withReloadUnit(TimeUnit.MILLISECONDS)
+                .withLoadBalancerBuilder(new DefaultLoadBalancerBuilder<Server>(null))
+                .withScheduler(Schedulers.test())
+                .build();
+        assertThat(resolver, is(notNullValue()));
+    }
+
+    @Test
+    public void testBuilderWithDefaults() throws Exception {
+        DnsServerResolver resolver = resolverBuilder
+                .withDomainName("my.domain")
+                .withPort(80)
+                .build();
+        assertThat(resolver, is(notNullValue()));
+    }
+
+    @Test(timeout = 10000)
+    public void testReturnsDnsChangeUpdates() throws Exception {
+        DnsServerResolver resolver = resolverBuilder
+                .withDomainName("my.domain")
+                .withPort(80)
+                .build();
+        Observable<Server> resolveObservable = resolver.resolve();
+
+        // Push one DNS entry; resolve should get it
+        dnsUpdatesSubject.onNext(new ChangeNotification<String>(Kind.Add, "host1"));
+        assertResolvesFinallyTo(resolveObservable, new Server("host1", 80));
+
+        // Push second DNS entry
+        dnsUpdatesSubject.onNext(new ChangeNotification<String>(Kind.Add, "host2"));
+        assertResolvesFinallyTo(resolveObservable, new Server("host2", 80));
+
+        // Remove first DNS entry
+        dnsUpdatesSubject.onNext(new ChangeNotification<String>(Kind.Delete, "host1"));
+        assertNeverResolvesTo(resolveObservable, new Server("host1", 80));
+    }
+
+    private static void assertResolvesFinallyTo(Observable<Server> resolveObservable, Server expected) {
+        Server actual;
+        do {
+            ExtTestSubscriber<Server> testSubscriber = new ExtTestSubscriber<>();
+            resolveObservable.subscribe(testSubscriber);
+            actual = testSubscriber.takeNext();
+        } while (!actual.equals(expected));
+    }
+
+    private static void assertNeverResolvesTo(Observable<Server> resolveObservable, Server notExpected) {
+        // As we cannot define hard boundaries here, we make a few rounds to be sure ocelli removed our entry.
+        for (int i = 0; i < 10; i++) {
+            ExtTestSubscriber<Server> testSubscriber = new ExtTestSubscriber<>();
+            resolveObservable.subscribe(testSubscriber);
+            assertThat(testSubscriber.takeNext(), is(not(equalTo(notExpected))));
+        }
     }
 }

@@ -18,26 +18,5 @@ dependencies {
     compile project(':eureka-read-server')
     compile project(':eureka-write-server')
     compile project(':eureka-bridge')
-    compile project(':eureka-test-utils')
-    compile "org.hamcrest:hamcrest-library:${hamcrest_version}"
-    compile "org.mockito:mockito-core:${mockito_version}"
-    compile "jline:jline:${jline_version}"
-    compile "junit:junit:${junit_version}"
+    testCompile project(':eureka-test-utils')
 }
-
-test {
-    testClassesDir sourceSets.main.output.classesDir
-    useJUnit {
-        excludeCategories 'com.netflix.eureka2.junit.categories.LongRunningTest'
-    }
-}
-
-task itest(type: Test) {
-    testClassesDir = sourceSets.main.output.classesDir
-    classpath = sourceSets.main.runtimeClasspath
-    useJUnit {
-        includeCategories 'com.netflix.eureka2.junit.categories.IntegrationTest'
-    }
-}
-
-testAll.dependsOn itest

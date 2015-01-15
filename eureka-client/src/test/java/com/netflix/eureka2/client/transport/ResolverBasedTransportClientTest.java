@@ -77,7 +77,7 @@ public class ResolverBasedTransportClientTest {
     }
 
     @Test
-    public void testRibbonLoadBalancer() throws Exception {
+    public void testConnectsToResolvedServer() throws Exception {
 
         final AtomicReference<ServerResolver.Server> expectedServer = new AtomicReference<>(new ServerResolver.Server("localhost", 0));
 

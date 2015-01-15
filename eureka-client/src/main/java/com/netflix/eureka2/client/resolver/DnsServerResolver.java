@@ -1,171 +1,114 @@
-/*
- * Copyright 2014 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.netflix.eureka2.client.resolver;
 
-import com.netflix.eureka2.utils.rx.ResourceObservable;
-import com.netflix.eureka2.utils.rx.ResourceObservable.ResourceLoader;
-import com.netflix.eureka2.utils.rx.ResourceObservable.ResourceLoaderException;
-import com.netflix.eureka2.utils.rx.ResourceObservable.ResourceUpdate;
-import rx.Observable;
-import rx.Scheduler;
-import rx.schedulers.Schedulers;
-
-import javax.naming.NamingEnumeration;
-import javax.naming.NamingException;
-import javax.naming.directory.Attribute;
-import javax.naming.directory.Attributes;
-import javax.naming.directory.DirContext;
-import javax.naming.directory.InitialDirContext;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.ChangeNotification.Kind;
+import com.netflix.eureka2.interests.ChangeNotificationSource;
+import com.netflix.eureka2.interests.host.DnsChangeNotificationSource;
+import netflix.ocelli.LoadBalancerBuilder;
+import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
+import rx.Observable;
+import rx.Scheduler;
+import rx.functions.Func1;
+
 /**
- * Load server list from DNS. Optionally, the list can be refreshed at a specified
- * interval.
- *
  * @author Tomasz Bak
  */
-public class DnsServerResolver implements ServerResolver {
+public class DnsServerResolver extends AbstractServerResolver {
 
-    private static final long DNS_LOOKUP_INTERVAL = 30;
-    private static final long IDLE_TIMEOUT = 300;
+    private final ChangeNotificationSource<String> dnsChangeNotificationSource;
+    private final int port;
 
-    private final String domainName;
-    private final Observable<Server> resolverObservable;
-
-    public DnsServerResolver(String domainName, int port) {
-        this(domainName, port, DNS_LOOKUP_INTERVAL, IDLE_TIMEOUT, TimeUnit.SECONDS, Schedulers.io());
+    public DnsServerResolver(ChangeNotificationSource<String> dnsChangeNotificationSource, int port,
+                             LoadBalancerBuilder<Server> loadBalancerBuilder) {
+        super(loadBalancerBuilder);
+        this.dnsChangeNotificationSource = dnsChangeNotificationSource;
+        this.port = port;
     }
 
-    public DnsServerResolver(String domainName, int port, long reloadInterval, TimeUnit timeUnit) {
-        this(domainName, port, reloadInterval, -1, timeUnit, Schedulers.io());
+    @Override
+    protected Observable<ChangeNotification<Server>> serverUpdates() {
+        return dnsChangeNotificationSource.forInterest(null).map(new Func1<ChangeNotification<String>, ChangeNotification<Server>>() {
+            @Override
+            public ChangeNotification<Server> call(ChangeNotification<String> notification) {
+                // Modify kind not supported
+                switch (notification.getKind()) {
+                    case Add:
+                        return new ChangeNotification<Server>(Kind.Add, new Server(notification.getData(), port));
+                    case Delete:
+                        return new ChangeNotification<Server>(Kind.Delete, new Server(notification.getData(), port));
+                }
+                return null;
+            }
+        });
     }
 
-    public DnsServerResolver(String domainName, int port, long reloadInterval, long idleTimeout, TimeUnit reloadUnit,
-                             Scheduler scheduler) {
-        this.domainName = domainName;
-        if ("localhost".equals(domainName)) {
-            this.resolverObservable = Observable.just(new Server(domainName, port));
-        } else {
-            this.resolverObservable = ResourceObservable.fromResource(new DnsResolverTask(port), reloadInterval,
-                                                                      idleTimeout, reloadUnit, scheduler);
+    public static class DnsServerResolverBuilder {
+        private String domainName;
+        private int port;
+        private long reloadInterval = -1;
+        private long idleTimeout = -1;
+        private TimeUnit reloadUnit = TimeUnit.MILLISECONDS;
+        private LoadBalancerBuilder<Server> loadBalancerBuilder;
+        private Scheduler scheduler;
+
+        public DnsServerResolverBuilder withDomainName(String domainName) {
+            this.domainName = domainName;
+            return this;
         }
-    }
 
-    @Override
-    public Observable<Server> resolve() {
-        return resolverObservable;
-    }
-
-    @Override
-    public void close() {
-        // No-op
-    }
-
-    class DnsResolverTask implements ResourceLoader<Server> {
-
-        private final int port;
-        private boolean succeededOnce;
-
-        public DnsResolverTask(int port) {
+        public DnsServerResolverBuilder withPort(int port) {
             this.port = port;
+            return this;
         }
 
-        @Override
-        public ResourceUpdate<Server> reload(Set<Server> currentSnapshot) {
-            try {
-                Set<Server> newAddresses = resolveEurekaServerDN();
-                succeededOnce = true;
-                return new ResourceUpdate<>(newAddresses, cancellationSet(currentSnapshot, newAddresses));
-            } catch (NamingException e) {
-                if (succeededOnce) {
-                    throw new ResourceLoaderException("DNS failure on subsequent access", true, e);
-                } else {
-                    throw new ResourceLoaderException("Cannot resolve DNS entry on startup", false, e);
-                }
-            }
+        public DnsServerResolverBuilder withReloadInterval(long reloadInterval) {
+            this.reloadInterval = reloadInterval;
+            return this;
         }
 
-        private Set<Server> cancellationSet(Set<Server> currentSnapshot, Set<Server> newAddresses) {
-            Set<Server> cancelled = new HashSet<>();
-            for (Server entry : currentSnapshot) {
-                if (!newAddresses.contains(entry)) {
-                    cancelled.add(entry);
-                }
-            }
-            return cancelled;
+        public DnsServerResolverBuilder withIdleTimeout(long idleTimeout) {
+            this.idleTimeout = idleTimeout;
+            return this;
         }
 
-        private Set<Server> resolveEurekaServerDN() throws NamingException {
-            Hashtable<String, String> env = new Hashtable<String, String>();
-            env.put("java.naming.factory.initial", "com.sun.jndi.dns.DnsContextFactory");
-            DirContext dirContext = new InitialDirContext(env);
-            try {
-                return resolveName(dirContext, domainName);
-            } finally {
-                dirContext.close();
-            }
+        public DnsServerResolverBuilder withReloadUnit(TimeUnit reloadUnit) {
+            this.reloadUnit = reloadUnit;
+            return this;
         }
 
-        private Set<Server> resolveName(DirContext dirContext, String targetDN) throws NamingException {
-            while (true) {
-                Attributes attrs = dirContext.getAttributes(targetDN, new String[]{"A", "CNAME"});
-                Set<Server> addresses = toSetOfServerEntries(attrs, "A");
-                if (!addresses.isEmpty()) {
-                    return addresses;
-                }
-                Set<String> aliases = toSetOfString(attrs, "CNAME");
-                if (aliases != null && !aliases.isEmpty()) {
-                    targetDN = aliases.iterator().next();
-                    continue;
-                }
-                return addresses;
-            }
+        public DnsServerResolverBuilder withLoadBalancerBuilder(LoadBalancerBuilder<Server> loadBalancerBuilder) {
+            this.loadBalancerBuilder = loadBalancerBuilder;
+            return this;
         }
 
-        private Set<String> toSetOfString(Attributes attrs, String attrName) throws NamingException {
-            Attribute attr = attrs.get(attrName);
-            if (attr == null) {
-                return Collections.emptySet();
-            }
-            Set<String> resultSet = new HashSet<>();
-            NamingEnumeration<?> it = attr.getAll();
-            while (it.hasMore()) {
-                Object value = it.next();
-                resultSet.add(value.toString());
-            }
-            return resultSet;
+        public DnsServerResolverBuilder withScheduler(Scheduler scheduler) {
+            this.scheduler = scheduler;
+            return this;
         }
 
-        private Set<Server> toSetOfServerEntries(Attributes attrs, String attrName) throws NamingException {
-            Attribute attr = attrs.get(attrName);
-            if (attr == null) {
-                return Collections.emptySet();
+        public DnsServerResolver build() {
+            if (domainName == null) {
+                throw new IllegalStateException("Domain name not set");
             }
-            Set<Server> resultSet = new HashSet<>();
-            NamingEnumeration<?> it = attr.getAll();
-            while (it.hasMore()) {
-                Object value = it.next();
-                resultSet.add(new Server(value.toString(), port));
+            if (port == 0) {
+                throw new IllegalStateException("Port number not set");
             }
-            return resultSet;
+            if (loadBalancerBuilder == null) {
+                loadBalancerBuilder = new DefaultLoadBalancerBuilder<>(null);
+            }
+            return new DnsServerResolver(createDnsChangeNotificationSource(), port, loadBalancerBuilder);
+        }
+
+        protected ChangeNotificationSource<String> createDnsChangeNotificationSource() {
+            return new DnsChangeNotificationSource(
+                    domainName,
+                    reloadInterval < 0 ? DnsChangeNotificationSource.DNS_LOOKUP_INTERVAL : reloadInterval,
+                    idleTimeout < 0 ? DnsChangeNotificationSource.IDLE_TIMEOUT : idleTimeout,
+                    reloadUnit,
+                    scheduler
+            );
         }
     }
 }
