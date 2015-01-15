@@ -22,13 +22,13 @@ configurations {
 }
 
 dependencies {
-    compile project(':eureka-server')
-    testCompile project(':eureka-test-utils')
+    compile project(':eureka2-server')
+    testCompile project(':eureka2-test-utils')
 }
 
 jar {
     manifest {
-        name = 'eureka-write-server'
+        name = 'eureka2-write-server'
         instruction 'Bundle-Vendor', 'Netflix'
         instruction 'Bundle-DocURL', 'https://github.com/Netflix/eureka'
         instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'

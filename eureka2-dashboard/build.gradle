@@ -17,26 +17,24 @@
 apply plugin: 'osgi'
 apply plugin:'application'
 
-configurations {
-    avroTool
-}
-
 dependencies {
-    compile project(':eureka-client')
-    compile project(':eureka-server')
-    testCompile project(':eureka-test-utils')
+    compile project(':eureka2-client')
+    compile project(':eureka2-server')
+    compile project(':eureka2-contrib:eureka2-karyon-admin')
+    compile ('com.google.code.gson:gson:2.1')
+    testCompile project(':eureka2-test-utils')
 }
 
 jar {
     manifest {
-        name = 'eureka-read-server'
+        name = 'eureka2-dashboard'
         instruction 'Bundle-Vendor', 'Netflix'
         instruction 'Bundle-DocURL', 'https://github.com/Netflix/eureka'
         instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
     }
 }
 
-mainClassName = "com.netflix.eureka2.server.EurekaReadServer"
+mainClassName = "com.netflix.eureka2.EurekaDashboardServer"
 applicationDefaultJvmArgs = ["-Xms2g",
                              "-Xmx4g",
 //                             "-Dcom.sun.management.jmxremote",

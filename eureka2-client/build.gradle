@@ -17,14 +17,14 @@
 apply plugin: 'osgi'
 
 dependencies {
-    compile project(':eureka-core')
+    compile project(':eureka2-core')
     compile "javax.inject:javax.inject:1"
-    testCompile project(':eureka-test-utils')
+    testCompile project(':eureka2-test-utils')
 }
 
 jar {
     manifest {
-        name = 'eureka-client'
+        name = 'eureka2-client'
         instruction 'Bundle-Vendor', 'Netflix'
         instruction 'Bundle-DocURL', 'https://github.com/Netflix/eureka'
         instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'

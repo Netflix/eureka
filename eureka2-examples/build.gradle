@@ -15,8 +15,6 @@
  */
 
 dependencies {
-    compile project(':eureka-read-server')
-    compile project(':eureka-write-server')
-    compile project(':eureka-bridge')
-    compile project(':eureka-testkit')
+    compile project(':eureka2-client')
+    compile "org.slf4j:slf4j-simple:${slf4j_version}"
 }
