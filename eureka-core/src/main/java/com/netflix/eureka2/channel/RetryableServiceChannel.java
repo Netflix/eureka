@@ -141,8 +141,11 @@ public abstract class RetryableServiceChannel<C extends ServiceChannel> extends 
         });
     }
 
+    /**
+     * @Override for specific Retryable service channels if they need to implement more fine grained logic
+     */
     protected boolean recoverableError(Throwable error) {
-        return true;  // FIXME
+        return true;
     }
 
     protected void scheduleRetry() {
