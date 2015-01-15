@@ -14,7 +14,19 @@
  * limitations under the License.
  */
 
+apply plugin: 'osgi'
+
 dependencies {
-    compile project(':eureka-client')
-    compile "org.slf4j:slf4j-simple:${slf4j_version}"
+    compile project(':eureka2-client')
+    compile "com.netflix.karyon2:karyon-admin-web:${karyon_version}"
+    testCompile project(':eureka2-test-utils')
+}
+
+jar {
+    manifest {
+        name = 'eureka2-karyon-admin'
+        instruction 'Bundle-Vendor', 'Netflix'
+        instruction 'Bundle-DocURL', 'https://github.com/Netflix/eureka'
+        instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
+    }
 }

@@ -15,8 +15,8 @@
  */
 
 dependencies {
-    compile project(':eureka-read-server')
-    compile project(':eureka-write-server')
-    compile project(':eureka-bridge')
-    testCompile project(':eureka-test-utils')
+    compile project(':eureka2-read-server')
+    compile project(':eureka2-write-server')
+    compile project(':eureka2-bridge')
+    compile project(':eureka2-testkit')
 }

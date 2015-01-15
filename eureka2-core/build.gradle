@@ -30,13 +30,13 @@ dependencies {
     compile "org.apache.avro:avro:${avro_version}"
     compile "org.apache.commons:commons-compress:${commons_compress_version}"
     compile "com.netflix.servo:servo-core:${servo_version}"
-    testCompile project(':eureka-test-utils')
-    testCompile project(':eureka-testkit')
+    testCompile project(':eureka2-test-utils')
+    testCompile project(':eureka2-testkit')
 }
 
 jar {
     manifest {
-        name = 'eureka-core'
+        name = 'eureka2-core'
         instruction 'Bundle-Vendor', 'Netflix'
         instruction 'Bundle-DocURL', 'https://github.com/Netflix/eureka'
         instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'

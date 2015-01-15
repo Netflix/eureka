@@ -1,15 +1,15 @@
 rootProject.name='eureka' 
-include 'eureka-client',\
-        'eureka-server',\
-        'eureka-read-server',\
-        'eureka-write-server',\
-        'eureka-core',\
-        'eureka-dashboard',\
-        'eureka-bridge',\
-        'eureka-test-utils',\
-        'eureka-integration',\
-        'eureka-contrib:eureka-kafka',\
-        'eureka-contrib:eureka-karyon-admin',\
-        'eureka-testkit',\
-        'eureka-examples'
+include 'eureka2-client',\
+        'eureka2-server',\
+        'eureka2-read-server',\
+        'eureka2-write-server',\
+        'eureka2-core',\
+        'eureka2-dashboard',\
+        'eureka2-bridge',\
+        'eureka2-test-utils',\
+        'eureka2-integration',\
+        'eureka2-contrib:eureka2-kafka',\
+        'eureka2-contrib:eureka2-karyon-admin',\
+        'eureka2-testkit',\
+        'eureka2-examples'
 

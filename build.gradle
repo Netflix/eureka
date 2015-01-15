@@ -34,7 +34,7 @@ subprojects {
     apply plugin: 'nebula.provided-base'
     apply plugin: "jacoco"
 
-    group = "com.netflix.eureka2"
+    group = "com.netflix.eureka"
 
     repositories {
         jcenter()

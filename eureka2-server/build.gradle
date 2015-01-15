@@ -15,33 +15,31 @@
  */
 
 apply plugin: 'osgi'
-apply plugin:'application'
-
-configurations {
-    avroTool
-}
 
 dependencies {
-    compile project(':eureka-write-server')
-    compile "com.netflix.eureka:eureka-client:${eureka_v1_version}"
-    testCompile project(':eureka-test-utils')
+    compile "org.slf4j:slf4j-simple:${slf4j_version}"
+    compile "commons-cli:commons-cli:${commons_cli_version}"
+    compile project(':eureka2-core')
+    compile "com.netflix.governator:governator:${governator_version}"
+    compile "io.reactivex:rxnetty-servo:${rxnetty_version}"
+    compile "com.netflix.karyon2:karyon-governator:${karyon_version}"
+    compile "com.netflix.karyon2:karyon-archaius:${karyon_version}"
+    compile "com.netflix.karyon2:karyon-servo:${karyon_version}"
+
+    // Karyon admin and its dependencies
+    compile("com.netflix.karyon2:karyon-admin-web:${karyon_version}") {
+        exclude module: 'eureka-client'
+    }
+    compile "commons-codec:commons-codec:${commons_codec_version}"
+
+    testCompile project(':eureka2-test-utils')
 }
 
 jar {
     manifest {
-        name = 'eureka-bridge'
+        name = 'eureka2-server'
         instruction 'Bundle-Vendor', 'Netflix'
         instruction 'Bundle-DocURL', 'https://github.com/Netflix/eureka'
         instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
     }
 }
-
-mainClassName = "com.netflix.eureka2.server.EurekaBridgeServer"
-applicationDefaultJvmArgs = ["-Xms2g",
-                             "-Xmx4g",
-//                             "-Dcom.sun.management.jmxremote",
-//                             "-XX:+UnlockCommercialFeatures",
-//                             "-XX:+FlightRecorder",
-//                             "-Dorg.slf4j.simpleLogger.log.io.netty.handler.logging.LoggingHandler=debug",
-//                             "-Dorg.slf4j.simpleLogger.defaultLogLevel=error"
-]

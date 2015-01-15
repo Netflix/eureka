@@ -17,8 +17,8 @@
 apply plugin: 'osgi'
 
 dependencies {
-    compile project(':eureka-server')
-    compile project(':eureka-client')
+    compile project(':eureka2-server')
+    compile project(':eureka2-client')
     compile("org.apache.kafka:kafka_2.9.2:${kafka_version}") {
         exclude module: 'jms'
         exclude module: 'jmxtools'
@@ -26,12 +26,12 @@ dependencies {
         exclude module: 'zookeeper'
     }
 
-    testCompile project(':eureka-test-utils')
+    testCompile project(':eureka2-test-utils')
 }
 
 jar {
     manifest {
-        name = 'eureka-kafka'
+        name = 'eureka2-kafka'
         instruction 'Bundle-Vendor', 'Netflix'
         instruction 'Bundle-DocURL', 'https://github.com/Netflix/eureka'
         instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'

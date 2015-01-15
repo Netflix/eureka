@@ -15,14 +15,14 @@
  */
 
 dependencies {
-    compile project(':eureka-read-server')
-    compile project(':eureka-write-server')
-    compile project(':eureka-bridge')
-    compile project(':eureka-dashboard')
-    compile project(':eureka-contrib:eureka-karyon-admin')
+    compile project(':eureka2-read-server')
+    compile project(':eureka2-write-server')
+    compile project(':eureka2-bridge')
+    compile project(':eureka2-dashboard')
+    compile project(':eureka2-contrib:eureka2-karyon-admin')
     compile "jline:jline:${jline_version}"
     compile "junit:junit:${junit_version}"
-    testCompile project(':eureka-test-utils')
+    testCompile project(':eureka2-test-utils')
 }
 
 task runCluster (dependsOn: [classes], type: JavaExec) {
