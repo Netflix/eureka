@@ -1,17 +1,16 @@
 package com.netflix.eureka2.integration;
 
-import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.rx.RxBlocking;
+import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.testkit.junit.resources.EurekaClientResource;
 import com.netflix.eureka2.testkit.junit.resources.ReadServerResource;
 import com.netflix.eureka2.testkit.junit.resources.WriteServerResource;
-import com.netflix.eureka2.testkit.junit.resources.EurekaClientResource;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -20,9 +19,10 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import rx.observers.TestSubscriber;
 
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.*;
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 /**
  * @author David Liu
@@ -52,23 +52,24 @@ public class ReadWriteClusterIntegrationTest {
     @Test(timeout = 10000)
     public void testReadServerFetchesDataFromWriteServerRegistry() throws Exception {
         // Listen to interest stream updates
-        Iterator<ChangeNotification<InstanceInfo>> notificationIterator =
-                RxBlocking.iteratorFrom(5, TimeUnit.SECONDS, eurekaClient.forInterest(Interests.forApplications(clientInfo.getApp())));
-
-        TestSubscriber<Void> registrationSubscriber = new TestSubscriber<>();
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> notificationSubscriber = new ExtTestSubscriber<>();
+        eurekaClient.forInterest(Interests.forApplications(clientInfo.getApp())).subscribe(notificationSubscriber);
 
         // Register
+        TestSubscriber<Void> registrationSubscriber = new TestSubscriber<>();
+
         eurekaClient.register(clientInfo).subscribe(registrationSubscriber);
         registrationSubscriber.awaitTerminalEvent(5, TimeUnit.SECONDS);
         registrationSubscriber.assertNoErrors();
 
-        assertThat(notificationIterator.next(), is(addChangeNotificationOf(clientInfo)));
+        assertThat(notificationSubscriber.takeNextOrWait(), is(addChangeNotificationOf(clientInfo)));
 
         // Unregister
+        registrationSubscriber = new TestSubscriber<>();
         eurekaClient.unregister(clientInfo).subscribe(registrationSubscriber);
         registrationSubscriber.awaitTerminalEvent(5, TimeUnit.SECONDS);
         registrationSubscriber.assertNoErrors();
 
-        assertThat(notificationIterator.next(), is(deleteChangeNotificationOf(clientInfo)));
+        assertThat(notificationSubscriber.takeNextOrWait(), is(deleteChangeNotificationOf(clientInfo)));
     }
 }

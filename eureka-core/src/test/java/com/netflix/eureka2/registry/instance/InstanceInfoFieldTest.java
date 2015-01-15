@@ -1,10 +1,10 @@
 package com.netflix.eureka2.registry.instance;
 
-import org.junit.Test;
-
 import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.junit.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -20,7 +20,9 @@ public class InstanceInfoFieldTest {
         Field[] allFields = InstanceInfo.class.getDeclaredFields();
         Set<String> expectedFields = new HashSet<String>();
         for (Field field : allFields) {
-            expectedFields.add(field.getName());
+            if (!field.isSynthetic()) {
+                expectedFields.add(field.getName());
+            }
         }
 
         // remove non-settable fields
@@ -35,7 +37,7 @@ public class InstanceInfoFieldTest {
             actualFields.add(Character.toLowerCase(name.charAt(0)) + name.substring(1));
         }
 
-        assertThat(expectedFields.size(), equalTo(actualFields.size()));
-        assertThat(expectedFields, containsInAnyOrder(actualFields.toArray()));
+        assertThat(actualFields.size(), equalTo(expectedFields.size()));
+        assertThat(actualFields, containsInAnyOrder(expectedFields.toArray()));
     }
 }

@@ -18,6 +18,7 @@ package com.netflix.eureka2.client.resolver;
 
 import java.io.File;
 
+import com.netflix.eureka2.client.resolver.DnsServerResolver.DnsServerResolverBuilder;
 import com.netflix.eureka2.client.resolver.EurekaServerResolver.EurekaServerResolverBuilder;
 import com.netflix.eureka2.client.resolver.FileServerResolver.FileServerResolverBuilder;
 import com.netflix.eureka2.client.resolver.ServerResolver.Server;
@@ -36,7 +37,7 @@ public final class ServerResolvers {
     }
 
     public static ServerResolver forDnsName(String dnsName, int port) {
-        return new DnsServerResolver(dnsName, port);
+        return new DnsServerResolverBuilder().withDomainName(dnsName).withPort(port).build();
     }
 
     public static ServerResolver fromWriteServer(ServerResolver writeServerResolver, String readClusterVip) {

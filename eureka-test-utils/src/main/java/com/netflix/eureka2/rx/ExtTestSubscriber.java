@@ -1,5 +1,6 @@
 package com.netflix.eureka2.rx;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -65,6 +66,18 @@ public class ExtTestSubscriber<T> extends Subscriber<T> {
 
     public T takeNext() {
         return available.poll();
+    }
+
+    public List<T> takeNext(int n) {
+        List<T> result = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            T next = takeNext();
+            if (next == null) {
+                break;
+            }
+            result.add(next);
+        }
+        return result;
     }
 
     public T takeNext(long timeout, TimeUnit timeUnit) throws InterruptedException {

@@ -32,6 +32,7 @@ subprojects {
     apply plugin: 'nebula.netflixoss'
     apply plugin: 'groovy'
     apply plugin: 'nebula.provided-base'
+    apply plugin: "jacoco"
 
     group = "com.netflix.eureka2"
 
@@ -82,9 +83,18 @@ subprojects {
     }
 
     test {
+        jacoco {
+            enabled project.hasProperty('jacocoEnabled')
+        }
         useJUnit {
-            excludeCategories 'com.netflix.eureka2.junit.categories.IntegrationTest'
+            excludeCategories 'com.netflix.eureka2.junit.categories.ExternalConnectionTest'
             excludeCategories 'com.netflix.eureka2.junit.categories.LongRunningTest'
+        }
+    }
+
+    task testInt(type: Test) {
+        useJUnit {
+            excludeCategories 'com.netflix.eureka2.junit.categories.ExternalConnectionTest'
         }
     }
 
@@ -93,4 +103,3 @@ subprojects {
         }
     }
 }
-

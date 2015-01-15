@@ -1,5 +1,6 @@
 package com.netflix.eureka2.client.channel;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -30,7 +31,8 @@ import rx.subjects.PublishSubject;
 import rx.subjects.ReplaySubject;
 
 import static com.netflix.eureka2.client.metric.EurekaClientMetricFactory.clientMetrics;
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
+import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -148,21 +150,22 @@ public class InterestChannelImplTest {
 
         testSubscriber.assertOnCompleted();
 
-        // Send change notifications
-        sendInput(Observable.just(message1, message2, message3));
+        // Send to add change notifications
+        incomingSubject.onNext(message1);
+        incomingSubject.onNext(message2);
 
-        // As we have here asynchronous processing we may have here either 3 or 1 item.
-        ExtTestSubscriber<ChangeNotification<InstanceInfo>> updatesSubscriber = new ExtTestSubscriber<>();
-        registry.forInterest(Interests.forFullRegistry()).subscribe(updatesSubscriber);
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> notificationSubscriber = new ExtTestSubscriber<>();
+        registry.forInterest(Interests.forFullRegistry()).subscribe(notificationSubscriber);
 
-        ChangeNotification<InstanceInfo> first = updatesSubscriber.takeNextOrFail();
-        // If first update is add 2, add 1 + delete 1 was compacted
-        if (!first.getData().getId().equals(original2.getId())) {
-            // We expect three updates: add 1, add 2, delete 1
-            assertThat(first, addChangeNotificationOf(original1));
-            assertThat(updatesSubscriber.takeNextOrFail(), addChangeNotificationOf(original1));
-            assertThat(updatesSubscriber.takeNextOrFail(), addChangeNotificationOf(original1));
-        }
+        List<InstanceInfo> added = Arrays.asList(
+                notificationSubscriber.takeNextOrFail().getData(),
+                notificationSubscriber.takeNextOrFail().getData()
+        );
+        assertThat(added, hasItems(original1, original2));
+
+        // Now remove first item
+        incomingSubject.onNext(message3);
+        assertThat(notificationSubscriber.takeNextOrWait(), deleteChangeNotificationOf(original1));
     }
 
     private void assertForInterestReturns(Interest<InstanceInfo> interest, Observable<AddInstance> addMessages) throws InterruptedException {

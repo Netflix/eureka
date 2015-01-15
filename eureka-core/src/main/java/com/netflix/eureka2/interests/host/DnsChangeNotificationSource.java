@@ -49,8 +49,8 @@ import rx.schedulers.Schedulers;
  */
 public class DnsChangeNotificationSource implements ChangeNotificationSource<String> {
 
-    private static final long DNS_LOOKUP_INTERVAL = 30;
-    private static final long IDLE_TIMEOUT = 300;
+    public static final long DNS_LOOKUP_INTERVAL = 30;
+    public static final long IDLE_TIMEOUT = 300;
 
     private final String domainName;
     private final Observable<ChangeNotification<String>> resolverObservable;
@@ -108,7 +108,7 @@ public class DnsChangeNotificationSource implements ChangeNotificationSource<Str
             Set<ChangeNotification<String>> cancelled = new HashSet<>();
             for (ChangeNotification<String> entry : currentSnapshot) {
                 if (!newAddresses.contains(entry)) {
-                    cancelled.add(entry);
+                    cancelled.add(new ChangeNotification<String>(Kind.Delete, entry.getData()));
                 }
             }
             return cancelled;
