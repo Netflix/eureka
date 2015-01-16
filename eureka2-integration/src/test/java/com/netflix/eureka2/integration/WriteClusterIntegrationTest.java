@@ -25,7 +25,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 /**
- * FIXME fix replication
  * @author David Liu
  */
 @Category(IntegrationTest.class)

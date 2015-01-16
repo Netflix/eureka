@@ -20,7 +20,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 /**
- * FIXME getting interest is flaky
  * @author David Liu
  */
 @Category(IntegrationTest.class)
