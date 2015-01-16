@@ -50,15 +50,17 @@ public class EurekaClientResource extends ExternalResource {
     @Override
     protected void before() throws Throwable {
         if (readServerResource == null) {
-            eurekaClient = new EurekaClientBuilder(
-                    writeServerResource.getDiscoveryResolver(),
-                    writeServerResource.getRegistrationResolver()
-            ).withCodec(codec).build();
+            eurekaClient = EurekaClientBuilder.newBuilder()
+                    .withReadServerResolver(writeServerResource.getDiscoveryResolver())
+                    .withWriteServerResolver(writeServerResource.getRegistrationResolver())
+                    .withCodec(codec)
+                    .build();
         } else {
-            eurekaClient = new EurekaClientBuilder(
-                    readServerResource.getDiscoveryResolver(),
-                    writeServerResource.getRegistrationResolver()
-            ).withCodec(codec).build();
+            eurekaClient = EurekaClientBuilder.newBuilder()
+                    .withReadServerResolver(readServerResource.getDiscoveryResolver())
+                    .withWriteServerResolver(writeServerResource.getRegistrationResolver())
+                    .withCodec(codec)
+                    .build();
         }
     }
 

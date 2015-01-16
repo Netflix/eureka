@@ -27,7 +27,7 @@ public class ServerShutdownIntegrationTest {
 
     private static final String SHUTDOWN_CMD = "shutdown\n";
 
-    @Test
+    @Test(timeout = 10000)
     public void testReadServerRemoteShutdownStopsAllServices() throws Exception {
         EurekaServerConfig config = new EurekaServerConfig.EurekaServerConfigBuilder().build();
         final EurekaReadServer server = new EurekaReadServer(config);
@@ -65,7 +65,7 @@ public class ServerShutdownIntegrationTest {
         server.waitTillShutdown();
     }
 
-    @Test
+    @Test(timeout = 10000)
     public void testWriteServerRemoteShutdownStopsAllServices() throws Exception {
         WriteServerConfig config = new WriteServerConfig.WriteServerConfigBuilder().build();
         final EurekaWriteServer server = new EurekaWriteServer(config);

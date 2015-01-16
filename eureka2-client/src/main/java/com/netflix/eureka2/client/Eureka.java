@@ -16,12 +16,13 @@
 
 package com.netflix.eureka2.client;
 
-import com.netflix.eureka2.client.resolver.RetryableServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.client.resolver.WriteServerResolverSet;
 
 /**
+ * TODO: do we still need this entry point or can we just use the builder directly?
+ *
  * An entry point for creating instances of {@link EurekaClient}. A {@link EurekaClient} can be created using the
  * following components:
  *
@@ -52,7 +53,9 @@ public final class Eureka {
      */
     public static EurekaClientBuilder newClientBuilder(final ServerResolver readResolver,
                                                        final ServerResolver writeResolver) {
-        return new EurekaClientBuilder(readResolver, writeResolver);
+        return EurekaClientBuilder.newBuilder()
+                .withReadServerResolver(readResolver)
+                .withWriteServerResolver(writeResolver);
     }
 
     /**
@@ -64,7 +67,9 @@ public final class Eureka {
      * @return A new {@link EurekaClientBuilder}.
      */
     public static EurekaClientBuilder newClientBuilder(final ServerResolver universalResolver) {
-        return newClientBuilder(universalResolver, universalResolver);
+        return EurekaClientBuilder.newBuilder()
+                .withReadServerResolver(universalResolver)
+                .withWriteServerResolver(universalResolver);
     }
 
     /**
@@ -79,7 +84,9 @@ public final class Eureka {
     public static EurekaClientBuilder newClientBuilder(WriteServerResolverSet writeResolverSet, String readServerVip) {
         ServerResolver readResolver = ServerResolvers.fromWriteServer(writeResolverSet.forDiscovery(), readServerVip);
 
-        return newClientBuilder(readResolver, writeResolverSet.forRegistration());
+        return EurekaClientBuilder.newBuilder()
+                .withReadServerResolver(readResolver)
+                .withWriteServerResolver(writeResolverSet.forRegistration());
     }
 
 }

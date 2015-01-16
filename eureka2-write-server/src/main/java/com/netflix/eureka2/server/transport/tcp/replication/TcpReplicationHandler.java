@@ -19,8 +19,9 @@ package com.netflix.eureka2.server.transport.tcp.replication;
 import com.google.inject.Inject;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.server.channel.ReceiverReplicationChannel;
+import com.netflix.eureka2.server.channel.ReceiverReplicationChannelFactory;
 import com.netflix.eureka2.server.channel.ServerChannelFactory;
-import com.netflix.eureka2.server.channel.ServerChannelFactoryImpl;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
@@ -60,7 +61,9 @@ public class TcpReplicationHandler implements ConnectionHandler<Object, Object> 
                 30000, 3,
                 Schedulers.computation()
         );
-        final ServerChannelFactory service = new ServerChannelFactoryImpl(registry, SelfIdentityService, evictionQueue, broker, metricFactory);
-        return service.newReplicationChannel().asLifecycleObservable();
+        final ServerChannelFactory<ReceiverReplicationChannel> channelFactory =
+                new ReceiverReplicationChannelFactory(registry, broker, SelfIdentityService, evictionQueue, metricFactory);
+
+        return channelFactory.newChannel().asLifecycleObservable();
     }
 }

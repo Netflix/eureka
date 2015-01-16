@@ -39,7 +39,11 @@ public class EmbeddedDashboardServer extends EmbeddedEurekaServer<EurekaDashboar
 
     @Override
     public void start() {
-        final EurekaClient eurekaClient = new EurekaClientBuilder(discoveryServerResolver, registrationServerResolver).build();
+        final EurekaClient eurekaClient = EurekaClientBuilder.newBuilder()
+            .withReadServerResolver(discoveryServerResolver)
+            .withWriteServerResolver(registrationServerResolver)
+            .build();
+
         Module[] modules = {
                 new EurekaDashboardModule(config) {
                     @Override

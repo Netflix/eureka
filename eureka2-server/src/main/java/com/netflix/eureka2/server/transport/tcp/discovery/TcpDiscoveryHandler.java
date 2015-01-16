@@ -18,10 +18,11 @@ package com.netflix.eureka2.server.transport.tcp.discovery;
 
 import javax.inject.Inject;
 
+import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.InterestChannelFactory;
-import com.netflix.eureka2.server.channel.InterestChannelFactoryImpl;
+import com.netflix.eureka2.server.channel.ServerChannelFactory;
 import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
@@ -61,16 +62,19 @@ public class TcpDiscoveryHandler implements ConnectionHandler<Object, Object> {
         if (logger.isDebugEnabled()) {
             logger.debug("New TCP discovery client connection");
         }
+
         MessageConnection broker = new HeartBeatConnection(
                 new BaseMessageConnection("discovery", connection, metricFactory.getDiscoveryConnectionMetrics()),
                 HEARTBEAT_INTERVAL_MILLIS, 3,
                 Schedulers.computation()
         );
-        final InterestChannelFactory service = new InterestChannelFactoryImpl(registry, broker, metricFactory);
+        final ServerChannelFactory<InterestChannel> channelFactory
+                = new InterestChannelFactory(registry, broker, metricFactory);
+
         // Since this is a discovery handler which only handles interest subscriptions,
         // the channel is created on connection accept. We subscribe here for the sake
         // of logging only.
-        Observable<Void> lifecycleObservable = service.newInterestChannel().asLifecycleObservable();
+        Observable<Void> lifecycleObservable = channelFactory.newChannel().asLifecycleObservable();
         lifecycleObservable.subscribe(new Subscriber<Void>() {
             @Override
             public void onCompleted() {

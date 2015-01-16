@@ -1,7 +1,8 @@
 package com.netflix.eureka2.client;
 
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
-import com.netflix.eureka2.client.channel.ClientChannelFactoryImpl;
+import com.netflix.eureka2.client.channel.ClientInterestChannel;
+import com.netflix.eureka2.client.channel.InterestChannelFactory;
 import com.netflix.eureka2.client.metric.EurekaClientMetricFactory;
 import com.netflix.eureka2.client.interest.InterestHandler;
 import com.netflix.eureka2.client.interest.InterestHandlerImpl;
@@ -99,15 +100,14 @@ public class EurekaClientTest {
             when(mockConnection.lifecycleObservable()).thenReturn(ReplaySubject.<Void>create());
             when(mockReadTransportClient.connect()).thenReturn(Observable.just(mockConnection));
 
-            ClientChannelFactory clientChannelFactory = new ClientChannelFactoryImpl(
-                    mockWriteTransportClient,
+            ClientChannelFactory<ClientInterestChannel> interestChannelFactory = new InterestChannelFactory(
                     mockReadTransportClient,
                     registry,
                     1000,
                     EurekaClientMetricFactory.clientMetrics()
             );
 
-            InterestHandler interestHandler = new InterestHandlerImpl(registry, clientChannelFactory);
+            InterestHandler interestHandler = new InterestHandlerImpl(registry, interestChannelFactory);
 
             client = new EurekaClientImpl(interestHandler, null);
         }

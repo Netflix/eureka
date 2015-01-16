@@ -17,12 +17,13 @@
 package com.netflix.eureka2.server.transport.tcp.registration;
 
 import com.google.inject.Inject;
+import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.server.channel.RegistrationChannelFactory;
 import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.channel.ServerChannelFactory;
-import com.netflix.eureka2.server.channel.ServerChannelFactoryImpl;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
@@ -60,8 +61,10 @@ public class TcpRegistrationHandler implements ConnectionHandler<Object, Object>
                 HEARTBEAT_INTERVAL_MILLIS, 3,
                 Schedulers.computation()
         );
-        final ServerChannelFactory service = new ServerChannelFactoryImpl(registry, null, evictionQueue, broker, metricFactory);
-        return service.newRegistrationChannel()
+        final ServerChannelFactory<RegistrationChannel> channelFactory
+                = new RegistrationChannelFactory(registry, broker, evictionQueue, metricFactory);
+
+        return channelFactory.newChannel()
                 .asLifecycleObservable(); // Since this is a discovery handler which only handles interest subscriptions,
         // the channel is created on connection accept.
     }

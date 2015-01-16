@@ -41,7 +41,7 @@ public class RegistrationHandlerImplTest {
 
     @Before
     public void setUp() throws Exception {
-        when(channelFactory.newRegistrationChannel()).thenReturn(registrationChannel);
+        when(channelFactory.newChannel()).thenReturn(registrationChannel);
 
         when(registrationChannel.register(any(InstanceInfo.class))).thenReturn(Observable.<Void>empty());
         when(registrationChannel.unregister()).thenReturn(Observable.<Void>empty());
@@ -57,7 +57,7 @@ public class RegistrationHandlerImplTest {
         registrationHandler.register(DISCOVERY_2);
         verify(registrationChannel, times(1)).register(DISCOVERY_1);
 
-        verify(channelFactory, times(2)).newRegistrationChannel();
+        verify(channelFactory, times(2)).newChannel();
     }
 
     @Test

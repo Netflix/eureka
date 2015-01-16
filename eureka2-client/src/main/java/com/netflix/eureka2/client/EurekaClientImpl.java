@@ -28,8 +28,6 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
 
 /**
- * FIXME need to shutdown clientChannelFactory (or it's future version)
- *
  * @author Tomasz Bak
  */
 @Singleton
@@ -71,7 +69,10 @@ public class EurekaClientImpl extends EurekaClient {
 
     @Override
     public void close() {
-        interestHandler.shutdown();
+        if (null != interestHandler) {
+            interestHandler.shutdown();
+        }
+
         if (null != registrationHandler) {
             registrationHandler.shutdown();
         }
