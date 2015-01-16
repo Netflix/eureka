@@ -1,6 +1,7 @@
 package com.netflix.eureka2.server.service;
 
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.utils.rx.RetryStrategyFunc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -43,7 +44,7 @@ public abstract class SelfRegistrationService implements SelfInfoResolver {
                                 });
                     }
                 })
-                .retry(3)   // TODO use a better strategy
+                .retryWhen(new RetryStrategyFunc(500, 3, true))
                 .subscribe();
     }
 

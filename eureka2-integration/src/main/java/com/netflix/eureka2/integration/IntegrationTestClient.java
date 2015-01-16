@@ -5,9 +5,13 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rx.Notification;
+import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
-import rx.observers.SerializedSubscriber;
+import rx.functions.Action1;
+import rx.functions.Func1;
+import rx.functions.Func2;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,11 +47,11 @@ public class IntegrationTestClient {
         this(readClient, writeClient, 15, 300, 10000);
     }
 
-    public IntegrationTestClient(EurekaClient readClient, EurekaClient writeClient, int unregisterPerecentage, int gapWaitMs, int endWaitMs) {
+    public IntegrationTestClient(EurekaClient readClient, EurekaClient writeClient, int unregisterPercentage, int gapWaitMs, int endWaitMs) {
         this.readClient = readClient;
         this.writeClient = writeClient;
 
-        this.unregisterPercentage = unregisterPerecentage;
+        this.unregisterPercentage = unregisterPercentage;
         this.gapWaitMs = gapWaitMs;
         this.endWaitMs = endWaitMs;
 
@@ -65,41 +69,56 @@ public class IntegrationTestClient {
 
         final CountDownLatch expectedEndLatch = new CountDownLatch(1);
         Subscription subscription = readClient.forApplication(appName).subscribe(
-                new SerializedSubscriber<>(
-                        new Subscriber<ChangeNotification<InstanceInfo>>() {
-                            @Override
-                            public void onCompleted() {
-                            }
+                new Subscriber<ChangeNotification<InstanceInfo>>() {
+                    @Override
+                    public void onCompleted() {
+                    }
 
-                            @Override
-                            public void onError(Throwable e) {
-                            }
+                    @Override
+                    public void onError(Throwable e) {
+                    }
 
-                            @Override
-                            public void onNext(ChangeNotification<InstanceInfo> notification) {
-                                actualLifecycle.add(notification);
-                                if (expectedEnd.getData().equals(notification.getData())) {
-                                    expectedEndLatch.countDown();
-                                }
-                            }
-
+                    @Override
+                    public void onNext(ChangeNotification<InstanceInfo> notification) {
+                        actualLifecycle.add(notification);
+                        if (expectedEnd.getData().equals(notification.getData())) {
+                            expectedEndLatch.countDown();
                         }
-                )
+                    }
+                }
         );
 
-        for (ChangeNotification<InstanceInfo> notification : lifecycle) {
-            if (notification.getKind() == ChangeNotification.Kind.Delete) {
-                writeClient.unregister(notification.getData()).retry(3).subscribe();
-            } else {
-                writeClient.register(notification.getData()).retry(3).subscribe();
-            }
-
-            try {
-                Thread.sleep(gapWaitMs);
-            } catch (Exception e) {}
-        }
+        final CountDownLatch registerLatch = new CountDownLatch(lifecycle.size());
+        Observable.from(lifecycle)
+                .zipWith(
+                        Observable.interval(gapWaitMs, TimeUnit.MILLISECONDS),
+                        new Func2<ChangeNotification<InstanceInfo>, Long, ChangeNotification<InstanceInfo>>() {
+                            @Override
+                            public ChangeNotification<InstanceInfo> call(ChangeNotification<InstanceInfo> notification, Long aLong) {
+                                return notification;
+                            }
+                        })
+                .flatMap(new Func1<ChangeNotification<InstanceInfo>, Observable<Void>>() {
+                    @Override
+                    public Observable<Void> call(ChangeNotification<InstanceInfo> notification) {
+                        if (notification.getKind() == ChangeNotification.Kind.Delete) {
+                            return writeClient.unregister(notification.getData()).retry(3);
+                        } else {
+                            return writeClient.register(notification.getData()).retry(3);
+                        }
+                    }
+                })
+                .doOnEach(new Action1<Notification<? super Void>>() {
+                    @Override
+                    public void call(Notification<? super Void> notification) {
+                        registerLatch.countDown();
+                    }
+                })
+                .subscribe();
 
         try {
+            registerLatch.await(lifecycle.size() * gapWaitMs * 2, TimeUnit.MILLISECONDS);
+
             if (!expectedEndLatch.await(endWaitMs, TimeUnit.MILLISECONDS)) {
                 logger.warn("Did not see expected end after 10 seconds");
             }

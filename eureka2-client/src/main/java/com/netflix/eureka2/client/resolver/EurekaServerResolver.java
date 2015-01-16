@@ -30,6 +30,7 @@ import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.NetworkAddress.ProtocolType;
 import com.netflix.eureka2.registry.selector.ServiceSelector;
+import com.netflix.eureka2.utils.rx.RetryStrategyFunc;
 import netflix.ocelli.LoadBalancer;
 import netflix.ocelli.LoadBalancerBuilder;
 import netflix.ocelli.MembershipEvent;
@@ -126,7 +127,7 @@ public class EurekaServerResolver implements ServerResolver {
                         return servers;
                     }
                 })
-                .retry(2)
+                .retryWhen(new RetryStrategyFunc(500, 2, true))
                 .concatWith(Observable.just(Collections.<Server>emptySet()))
                 .take(1);
     }
