@@ -89,6 +89,7 @@ subprojects {
         useJUnit {
             excludeCategories 'com.netflix.eureka2.junit.categories.ExternalConnectionTest'
             excludeCategories 'com.netflix.eureka2.junit.categories.LongRunningTest'
+            excludeCategories 'com.netflix.eureka2.junit.categories.RandomTest'
         }
     }
 

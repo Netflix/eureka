@@ -2,6 +2,7 @@ package com.netflix.eureka2.testkit.junit.resources;
 
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
+import com.netflix.eureka2.client.EurekaClientBuilder;
 import com.netflix.eureka2.client.resolver.WriteServerResolverSet;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment.EurekaDeploymentBuilder;
@@ -42,10 +43,11 @@ public class EurekaDeploymentResource extends ExternalResource {
      */
     public EurekaClient connectToWriteServer(int idx) {
         EmbeddedWriteServer server = eurekaDeployment.getWriteCluster().getServer(idx);
-        return Eureka.newClientBuilder(
-                server.getDiscoveryResolver(),
-                server.getRegistrationResolver()
-        ).withCodec(codec).build();
+        return EurekaClientBuilder.newBuilder()
+                .withReadServerResolver(server.getDiscoveryResolver())
+                .withWriteServerResolver(server.getRegistrationResolver())
+                .withCodec(codec)
+                .build();
     }
 
     /**
@@ -55,30 +57,31 @@ public class EurekaDeploymentResource extends ExternalResource {
      */
     public EurekaClient connectToReadServer(int idx) {
         EmbeddedReadServer server = eurekaDeployment.getReadCluster().getServer(idx);
-        return Eureka.newClientBuilder(
-                server.getDiscoveryResolver(),
-                null
-        ).withCodec(codec).build();
+        return EurekaClientBuilder.discoveryBuilder()
+                .withReadServerResolver(server.getDiscoveryResolver())
+                .withCodec(codec)
+                .build();
     }
 
     /**
      * Create {@link EurekaClient} instance connected to a write cluster.
      */
     public EurekaClient connectToWriteCluster() {
-        return Eureka.newClientBuilder(
-                eurekaDeployment.getWriteCluster().discoveryResolver(),
-                eurekaDeployment.getWriteCluster().registrationResolver()
-        ).withCodec(codec).build();
+        return EurekaClientBuilder.newBuilder()
+                .withReadServerResolver(eurekaDeployment.getWriteCluster().discoveryResolver())
+                .withWriteServerResolver(eurekaDeployment.getWriteCluster().registrationResolver())
+                .withCodec(codec)
+                .build();
     }
 
     /**
      * Create {@link EurekaClient} instance connected to a read cluster.
      */
     public EurekaClient connectToReadCluster() {
-        return Eureka.newClientBuilder(
-                eurekaDeployment.getReadCluster().discoveryResolver(),
-                null
-        ).withCodec(codec).build();
+        return EurekaClientBuilder.discoveryBuilder()
+                .withReadServerResolver(eurekaDeployment.getReadCluster().discoveryResolver())
+                .withCodec(codec)
+                .build();
     }
 
     /**
