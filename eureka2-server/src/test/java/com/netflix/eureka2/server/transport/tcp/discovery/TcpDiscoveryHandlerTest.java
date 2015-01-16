@@ -16,94 +16,80 @@
 
 package com.netflix.eureka2.server.transport.tcp.discovery;
 
+import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.Interest;
+import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.protocol.discovery.AddInstance;
+import com.netflix.eureka2.protocol.discovery.InterestRegistration;
+import com.netflix.eureka2.protocol.discovery.UnregisterInterestSet;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.rx.RxBlocking;
+import com.netflix.eureka2.rx.TestableObservableConnection;
+import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;
+import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import rx.Observable;
+
+import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 /**
  * @author Tomasz Bak
  */
 public class TcpDiscoveryHandlerTest {
-/*
 
-    private final TestableEurekaService eurekaService = new TestableEurekaService();
+    private final SourcedEurekaRegistry<InstanceInfo> registry = mock(SourcedEurekaRegistry.class);
 
-    private final TestableObservableConnection<Object, Object> observableConnection = new TestableObservableConnection<Object, Object>();
+    private TestableObservableConnection<Object, Object> observableConnection;
+    private TcpDiscoveryHandler handler;
 
-    private final TcpDiscoveryHandler discoveryHandler = new TcpDiscoveryHandler(eurekaService);
+    @Before
+    public void setUp() {
+        observableConnection = new TestableObservableConnection<>();
+        handler = spy(new TcpDiscoveryHandler(registry, EurekaServerMetricFactory.serverMetrics()));
+    }
 
-    private final Observable<Void> handleObservable = discoveryHandler.handle(observableConnection);
+    @Test
+    public void testSuccessfulInterestRegistration() {
+        Observable<Void> lifecycle = handler.handle(observableConnection);
 
-    private final RecordingSubscriber<Void> handlerStatus = RecordingSubscriber.subscribeTo(handleObservable);
+        Interest<InstanceInfo> interest = Interests.forFullRegistry();
+        observableConnection.testableChannelRead().onNext(new InterestRegistration(interest));
 
-    @Test(timeout = 10000)
-    public void testInterestRegistrationAndUnregistration() throws Exception {
-        // Register
-        TestableInterestChannel firstChannel = doInterestRegistration();
+        verify(registry, times(1)).forInterest(interest);
+    }
 
-        // Unregister
+    @Test
+    public void testSuccessfulUnregisterInterestCloseInternalChannel() {
+        Observable<Void> lifecycle = handler.handle(observableConnection);
+
         observableConnection.testableChannelRead().onNext(new UnregisterInterestSet());
-        assertTrue("Channel shall be closed by now", RxBlocking.isCompleted(1, TimeUnit.SECONDS, firstChannel.viewClose()));
+        Assert.assertTrue("Channel shall be closed by now", RxBlocking.isCompleted(1, TimeUnit.SECONDS, lifecycle));
 
-        // Register again
-        TestableInterestChannel secondChannel = doInterestRegistration();
-        assertNotEquals("Expected different channel", firstChannel, secondChannel);
+        verify(registry, times(1)).forInterest(Interests.forNone());
     }
 
-    @Test(timeout = 10000)
-    public void testClientDisconnect() throws Exception {
-        // Register
-        TestableInterestChannel interestChannel = doInterestRegistration();
+    @Test
+    public void testSendingNotificationsOnInterestRegistration() {
+        Observable<Void> lifecycle = handler.handle(observableConnection);
 
-        // Simulate client disconnect.
-        handlerStatus.getSubscription().unsubscribe();
-        assertTrue("Channel should be closed by now", RxBlocking.isCompleted(1, TimeUnit.SECONDS, interestChannel.viewClose()));
+        ChangeNotification<InstanceInfo> notification = SampleChangeNotification.DiscoveryAdd.newNotification();
+
+        Interest<InstanceInfo> interest = Interests.forFullRegistry();
+        when(registry.forInterest(interest)).thenReturn(Observable.just(notification));//.concatWith(Observable.<ChangeNotification<InstanceInfo>>never()));
+
+        observableConnection.testableChannelRead().onNext(new InterestRegistration(interest));
+
+        Iterator updatesIterator = RxBlocking.iteratorFrom(5, TimeUnit.SECONDS, observableConnection.testableChannelWrite());
+        Assert.assertEquals(new AddInstance(notification.getData()), updatesIterator.next());
     }
-
-    @Test(timeout = 10000)
-    public void testAddInstanceNotification() throws Exception {
-        TestableInterestChannel interestChannel = doInterestRegistration();
-        sendInterestUpdate(interestChannel, new ChangeNotification<InstanceInfo>(Kind.Add, SampleInstanceInfo.DiscoveryServer.build()));
-    }
-
-    @Test(timeout = 10000)
-    public void testDeleteInstanceNotification() throws Exception {
-        TestableInterestChannel interestChannel = doInterestRegistration();
-        sendInterestUpdate(interestChannel, new ChangeNotification<InstanceInfo>(Kind.Delete, SampleInstanceInfo.DiscoveryServer.build()));
-    }
-
-    @Test(timeout = 10000)
-    public void testModifyInstanceNotification() throws Exception {
-        TestableInterestChannel interestChannel = doInterestRegistration();
-
-        List<Delta> deltas = new ArrayList<Delta>(1);
-        deltas.add(SampleDelta.StatusUp.build());
-
-        sendInterestUpdate(interestChannel, new ModifyNotification<InstanceInfo>(SampleInstanceInfo.DiscoveryServer.build(), deltas));
-    }
-
-    private void sendInterestUpdate(TestableInterestChannel interestChannel, ChangeNotification<InstanceInfo> notification) {
-        Iterator updatesIterator = RxBlocking.iteratorFrom(1, TimeUnit.SECONDS, observableConnection.testableChannelWrite());
-        interestChannel.submitNotification(notification);
-
-        InterestSetNotification expectedMessage = protocolMessageFrom(notification);
-        assertEquals("Unexpected or missing protocol message", expectedMessage, updatesIterator.next());
-    }
-
-    private InterestSetNotification protocolMessageFrom(ChangeNotification<InstanceInfo> notification) {
-        switch (notification.getKind()) {
-            case Add:
-                return new AddInstance(notification.getData());
-            case Delete:
-                return new DeleteInstance(notification.getData().getId());
-            case Modify:
-                return new UpdateInstanceInfo(((ModifyNotification<InstanceInfo>) notification).getDelta().iterator().next());
-        }
-        return null;
-    }
-
-    private TestableInterestChannel doInterestRegistration() throws InterruptedException {
-        observableConnection.testableChannelRead().onNext(new InterestRegistration(SampleInterest.DiscoveryApp.build()));
-        TestableInterestChannel interestChannel = (TestableInterestChannel) eurekaService.viewNewInterestChannels().poll(1, TimeUnit.SECONDS);
-        assertTrue("Active connection expected", !handlerStatus.isDone());
-        assertNotNull("Expected registered channel instance", interestChannel);
-        return interestChannel;
-    }
-*/
 }
