@@ -49,7 +49,7 @@ public class ReadWriteClusterIntegrationTest {
         clientInfo = eurekaClientResource.getClientInfo();
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 20000)
     public void testReadServerFetchesDataFromWriteServerRegistry() throws Exception {
         // Listen to interest stream updates
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> notificationSubscriber = new ExtTestSubscriber<>();
@@ -59,7 +59,7 @@ public class ReadWriteClusterIntegrationTest {
         TestSubscriber<Void> registrationSubscriber = new TestSubscriber<>();
 
         eurekaClient.register(clientInfo).subscribe(registrationSubscriber);
-        registrationSubscriber.awaitTerminalEvent(5, TimeUnit.SECONDS);
+        registrationSubscriber.awaitTerminalEvent(10, TimeUnit.SECONDS);
         registrationSubscriber.assertNoErrors();
 
         assertThat(notificationSubscriber.takeNextOrWait(), is(addChangeNotificationOf(clientInfo)));
