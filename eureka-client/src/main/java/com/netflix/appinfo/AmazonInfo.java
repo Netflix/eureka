@@ -85,17 +85,20 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
             protected String read(InputStream inputStream) throws IOException {
                 BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
                 try {
+                    String toReturn = null;
                     String inputLine;
                     while ((inputLine = br.readLine()) != null) {
                         Matcher matcher = pattern.matcher(inputLine);
-                        if (matcher.find()) {
-                            return matcher.group(1);
+                        if (toReturn == null && matcher.find()) {
+                            toReturn = matcher.group(1);
+                            // don't break here as we want to read the full buffer for a clean connection close
                         }
                     }
+
+                    return toReturn;
                 } finally {
                     br.close();
                 }
-                return null;
             }
         };
 
@@ -122,8 +125,16 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
 
         protected String read(InputStream inputStream) throws IOException {
             BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
+            String toReturn;
             try {
-                return br.readLine();
+                String line = br.readLine();
+                toReturn = line;
+
+                while(line != null) {  // need to read all the buffer for a clean connection close
+                    line = br.readLine();
+                }
+
+                return toReturn;
             } finally {
                 br.close();
             }
@@ -182,10 +193,22 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
                         uc.setConnectTimeout(awsMetaDataConnectTimeout.get());
                         uc.setReadTimeout(awsMetaDataReadTimeout.get());
 
-                        String value = key.read(uc.getInputStream());
-                        if (value != null) {
-                            result.metadata.put(key.getName(), value);
+                        if (uc.getResponseCode() != HttpURLConnection.HTTP_OK ) {  // need to read the error for clean connection close
+                            BufferedReader br = new BufferedReader(new InputStreamReader(uc.getErrorStream()));
+                            try {
+                                while(br.readLine() != null) {
+                                    // do nothing but keep reading the line
+                                }
+                            } finally {
+                                br.close();
+                            }
+                        } else {
+                            String value = key.read(uc.getInputStream());
+                            if (value != null) {
+                                result.metadata.put(key.getName(), value);
+                            }
                         }
+
                         break;
                     } catch (Throwable e) {
                         if (shouldLogAWSMetadataError.get()) {
