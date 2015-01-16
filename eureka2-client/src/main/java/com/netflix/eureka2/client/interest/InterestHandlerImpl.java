@@ -16,6 +16,7 @@ import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Func1;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -31,9 +32,11 @@ public class InterestHandlerImpl implements InterestHandler {
     private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final ClientInterestChannel interestChannel;
 
-    public InterestHandlerImpl(SourcedEurekaRegistry<InstanceInfo> registry, ClientChannelFactory channelFactory) {
+    @Inject
+    public InterestHandlerImpl(SourcedEurekaRegistry<InstanceInfo> registry,
+                               ClientChannelFactory<ClientInterestChannel> channelFactory) {
         this.registry = registry;
-        this.interestChannel = channelFactory.newInterestChannel();
+        this.interestChannel = channelFactory.newChannel();
         this.isShutdown = new AtomicBoolean(false);
     }
 

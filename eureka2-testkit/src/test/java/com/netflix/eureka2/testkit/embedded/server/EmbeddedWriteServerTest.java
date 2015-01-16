@@ -26,10 +26,10 @@ public class EmbeddedWriteServerTest {
 
     @Test(timeout = 10000)
     public void testRegistrationAndDiscoveryServices() throws Exception {
-        EurekaClient eurekaClient = new EurekaClientBuilder(
-                ServerResolvers.just("localhost", writeServerResource.getDiscoveryPort()),
-                ServerResolvers.just("localhost", writeServerResource.getRegistrationPort())
-        ).build();
+        EurekaClient eurekaClient = EurekaClientBuilder.newBuilder()
+                .withReadServerResolver(ServerResolvers.just("localhost", writeServerResource.getDiscoveryPort()))
+                .withWriteServerResolver(ServerResolvers.just("localhost", writeServerResource.getRegistrationPort()))
+                .build();
 
         InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();
         eurekaClient.register(instanceInfo).toBlocking().lastOrDefault(null);

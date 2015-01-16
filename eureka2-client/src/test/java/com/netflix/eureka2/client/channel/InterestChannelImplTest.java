@@ -31,6 +31,7 @@ import rx.subjects.PublishSubject;
 import rx.subjects.ReplaySubject;
 
 import static com.netflix.eureka2.client.metric.EurekaClientMetricFactory.clientMetrics;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertThat;
@@ -150,18 +151,15 @@ public class InterestChannelImplTest {
 
         testSubscriber.assertOnCompleted();
 
-        // Send to add change notifications
-        incomingSubject.onNext(message1);
-        incomingSubject.onNext(message2);
-
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> notificationSubscriber = new ExtTestSubscriber<>();
         registry.forInterest(Interests.forFullRegistry()).subscribe(notificationSubscriber);
 
-        List<InstanceInfo> added = Arrays.asList(
-                notificationSubscriber.takeNextOrFail().getData(),
-                notificationSubscriber.takeNextOrFail().getData()
-        );
-        assertThat(added, hasItems(original1, original2));
+        // Send to add change notifications
+        incomingSubject.onNext(message1);
+        assertThat(notificationSubscriber.takeNextOrWait(), addChangeNotificationOf(original1));
+
+        incomingSubject.onNext(message2);
+        assertThat(notificationSubscriber.takeNextOrWait(), addChangeNotificationOf(original2));
 
         // Now remove first item
         incomingSubject.onNext(message3);

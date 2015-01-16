@@ -22,12 +22,12 @@ public class RegistrationHandlerImpl implements RegistrationHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(RegistrationHandlerImpl.class);
 
-    private final ClientChannelFactory channelFactory;
+    private final ClientChannelFactory<RegistrationChannel> channelFactory;
     private final ConcurrentHashMap<String, RegistrationChannel> instanceIdVsChannel;
     private volatile boolean shutdown;
 
     @Inject
-    public RegistrationHandlerImpl(ClientChannelFactory channelFactory) {
+    public RegistrationHandlerImpl(ClientChannelFactory<RegistrationChannel> channelFactory) {
         this.channelFactory = channelFactory;
         this.instanceIdVsChannel = new ConcurrentHashMap<>();
     }
@@ -38,7 +38,7 @@ public class RegistrationHandlerImpl implements RegistrationHandler {
             return Observable.error(new IllegalStateException("Registration handler is already shutdown."));
         }
 
-        final RegistrationChannel newChannel = channelFactory.newRegistrationChannel();
+        final RegistrationChannel newChannel = channelFactory.newChannel();
         final RegistrationChannel existing = instanceIdVsChannel.putIfAbsent(instanceInfo.getId(), newChannel);
         if (null != existing) {
             return existing.register(instanceInfo); // Be more acceptable to failure in contract adherence from the user.

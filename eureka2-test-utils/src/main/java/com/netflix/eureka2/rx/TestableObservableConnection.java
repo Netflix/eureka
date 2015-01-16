@@ -21,9 +21,11 @@ import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.reactivex.netty.channel.ContentTransformer;
 import io.reactivex.netty.channel.ObservableConnection;
+import io.reactivex.netty.client.ConnectionLifecycleHandler;
 import rx.Observable;
 import rx.Observer;
 import rx.subjects.PublishSubject;
+import rx.subjects.ReplaySubject;
 
 /**
  * This class allow creation of {@link ObservableConnection} which input/output channel can
@@ -35,12 +37,12 @@ public class TestableObservableConnection<I, O> extends ObservableConnection<I, 
 
     private final PublishSubject<I> connectionInputSubject = PublishSubject.create();
 
-    private final PublishSubject<O> connectionOutputSubject = PublishSubject.create();
+    private final ReplaySubject<O> connectionOutputSubject = ReplaySubject.create();
 
     private volatile boolean isClosed;
 
     public TestableObservableConnection() {
-        super(new EmbeddedChannel(), null, null);
+        super(new EmbeddedChannel(new ConnectionLifecycleHandler<>()), null, null);
     }
 
     /*

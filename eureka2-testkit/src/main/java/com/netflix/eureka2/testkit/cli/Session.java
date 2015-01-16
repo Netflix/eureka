@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.channel.ClientChannelFactory.Mode;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
@@ -38,6 +37,8 @@ import rx.Subscriber;
 public class Session {
 
     public enum Status {NotStarted, Initiated, Streaming, Complete, Failed;}
+
+    public enum Mode {Read, Write, ReadWrite}
 
     private static final AtomicInteger sessionIds = new AtomicInteger(0);
 

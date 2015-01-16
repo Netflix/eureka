@@ -39,7 +39,7 @@ public class WriteClusterIntegrationTest {
      * It verifies two cases where one of the nodes came up first (so had no peers first), and the
      * other joined afterwards (so was initialized with one peer already).
      */
-    @Test(timeout = 10000)
+    @Test(timeout = 20000)
     public void testWriteClusterReplicationWorksBothWays() throws Exception {
         EurekaClient clientToFirst = eurekaDeploymentResource.connectToWriteServer(0);
         EurekaClient clientToSecond = eurekaDeploymentResource.connectToWriteServer(1);
@@ -57,7 +57,7 @@ public class WriteClusterIntegrationTest {
 
         // Subscribe to second write server
         Iterator<ChangeNotification<InstanceInfo>> notificationIterator =
-                iteratorFrom(5, TimeUnit.SECONDS, secondClient.forApplication(clientInfo.getApp()));
+                iteratorFrom(10, TimeUnit.SECONDS, secondClient.forApplication(clientInfo.getApp()));
 
         assertThat(notificationIterator.next(), is(addChangeNotificationOf(clientInfo)));
 
