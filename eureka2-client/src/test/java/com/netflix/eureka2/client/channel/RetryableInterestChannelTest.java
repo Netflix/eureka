@@ -85,6 +85,7 @@ public class RetryableInterestChannelTest {
     private SourcedEurekaRegistry<InstanceInfo> delegateRegistry;
     private PreservableEurekaRegistry registry;
     private EvictionQueue evictionQueue;
+    private RetryableInterestChannel.InterestTracker interestTracker;
     private RetryableInterestChannel retryableInterestChannel;
 
     @Before
@@ -112,8 +113,10 @@ public class RetryableInterestChannelTest {
                 .thenReturn(interestChannel1)
                 .thenReturn(interestChannel2);
 
+        interestTracker = new RetryableInterestChannel.InterestTracker();
+
         retryableInterestChannel = new RetryableInterestChannel(
-                channelFactory, registry, RetryableInterestChannel.DEFAULT_INITIAL_DELAY, scheduler);
+                channelFactory, registry, interestTracker, RetryableInterestChannel.DEFAULT_INITIAL_DELAY, scheduler);
 
         when(interestChannel1.associatedRegistry()).thenReturn(registry);
     }
@@ -130,7 +133,7 @@ public class RetryableInterestChannelTest {
         retryableInterestChannel.appendInterest(INTEREST).subscribe();
         verify(interestChannel1, times(1)).appendInterest(INTEREST);
 
-        // Append operation
+        // Remove operation
         retryableInterestChannel.removeInterest(INTEREST).subscribe();
         verify(interestChannel1, times(1)).removeInterest(INTEREST);
     }
@@ -291,5 +294,33 @@ public class RetryableInterestChannelTest {
 
         assertThat(completed.get(), is(false));  // the interest stream should never complete
         assertThat(errored.get(), is(false));  // the interest stream should not error
+    }
+
+    @Test
+    public void testInterestTrackerLifecycle() {
+        // Append operation
+        retryableInterestChannel.appendInterest(INTEREST).subscribe();
+        retryableInterestChannel.appendInterest(INTEREST).subscribe();
+        assertThat(interestTracker.interests.size(), equalTo(1));
+        assertThat(interestTracker.interests.containsKey(INTEREST), is(true));
+        assertThat(interestTracker.interests.get(INTEREST), equalTo(2));
+
+        retryableInterestChannel.appendInterest(INTEREST2).subscribe();
+        assertThat(interestTracker.interests.size(), equalTo(2));
+        assertThat(interestTracker.interests.containsKey(INTEREST2), is(true));
+        assertThat(interestTracker.interests.get(INTEREST2), equalTo(1));
+
+        retryableInterestChannel.removeInterest(INTEREST).subscribe();
+        retryableInterestChannel.appendInterest(INTEREST).subscribe();
+        assertThat(interestTracker.interests.size(), equalTo(2));
+        assertThat(interestTracker.interests.containsKey(INTEREST), is(true));
+        assertThat(interestTracker.interests.get(INTEREST), equalTo(2));
+
+        retryableInterestChannel.removeInterest(INTEREST).subscribe();
+        retryableInterestChannel.removeInterest(INTEREST).subscribe();
+        assertThat(interestTracker.interests.size(), equalTo(1));
+        assertThat(interestTracker.interests.containsKey(INTEREST), is(false));
+        assertThat(interestTracker.interests.containsKey(INTEREST2), is(true));
+        assertThat(interestTracker.interests.get(INTEREST2), equalTo(1));
     }
 }

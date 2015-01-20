@@ -8,13 +8,15 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
 import rx.Subscriber;
-import rx.functions.Action0;
 import rx.functions.Func0;
 import rx.functions.Func1;
 
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
+ * Note that operations (register and unregister) on this registartion channel must be serialized by an external
+ * guarantee (such as using a {@link com.netflix.eureka2.client.channel.RegistrationChannelInvoker}).
+ *
  * @author David Liu
  */
 public class RetryableRegistrationChannel
@@ -38,12 +40,10 @@ public class RetryableRegistrationChannel
         return currentDelegateChannelObservable().switchMap(new Func1<RegistrationChannel, Observable<? extends Void>>() {
             @Override
             public Observable<? extends Void> call(RegistrationChannel registrationChannel) {
-                return registrationChannel.register(instanceInfo).doOnCompleted(new Action0() {
-                    @Override
-                    public void call() {
-                        instanceInfoRef.set(instanceInfo);
-                    }
-                });
+                // eagerly set the stateful reference as we would want to do it regardless of the success or failure
+                // of the actual registration
+                instanceInfoRef.set(instanceInfo);
+                return registrationChannel.register(instanceInfo);
             }
         });
     }
@@ -53,12 +53,10 @@ public class RetryableRegistrationChannel
         return currentDelegateChannelObservable().switchMap(new Func1<RegistrationChannel, Observable<? extends Void>>() {
             @Override
             public Observable<? extends Void> call(RegistrationChannel registrationChannel) {
-                return registrationChannel.unregister().doOnCompleted(new Action0() {
-                    @Override
-                    public void call() {
-                        instanceInfoRef.set(null);
-                    }
-                });
+                // eagerly set the stateful reference as we would want to do it regardless of the success or failure
+                // of the actual unregistration
+                instanceInfoRef.set(null);
+                return registrationChannel.unregister();
             }
         });
     }
