@@ -6,15 +6,17 @@ import java.util.concurrent.TimeUnit;
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
-import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.rx.RxBlocking;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -62,5 +64,16 @@ public class EurekaClientIntegrationTest {
         Iterator<ChangeNotification<InstanceInfo>> notificationIt = RxBlocking.iteratorFrom(5, TimeUnit.HOURS, eurekaClient.forVips(info.getVipAddress()));
 
         assertThat(notificationIt.next(), is(addChangeNotificationOf(info)));
+    }
+
+    @Test
+    @Ignore
+    public void testResolveFromDns() {
+        EurekaClient eurekaClient = Eureka.newClientBuilder(
+                ServerResolvers.forDnsName("cluster.domain.name", 12103),
+                ServerResolvers.forDnsName("cluster.domain.name", 12102)
+        ).build();
+        ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
+        eurekaClient.register(SampleInstanceInfo.CliServer.build()).subscribe(testSubscriber);
     }
 }

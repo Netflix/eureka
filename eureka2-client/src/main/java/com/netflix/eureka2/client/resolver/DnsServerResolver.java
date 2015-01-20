@@ -11,6 +11,7 @@ import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
 import rx.Observable;
 import rx.Scheduler;
 import rx.functions.Func1;
+import rx.schedulers.Schedulers;
 
 /**
  * @author Tomasz Bak
@@ -97,6 +98,9 @@ public class DnsServerResolver extends AbstractServerResolver {
             }
             if (loadBalancerBuilder == null) {
                 loadBalancerBuilder = new DefaultLoadBalancerBuilder<>(null);
+            }
+            if(scheduler == null) {
+                scheduler = Schedulers.computation();
             }
             return new DnsServerResolver(createDnsChangeNotificationSource(), port, loadBalancerBuilder);
         }
