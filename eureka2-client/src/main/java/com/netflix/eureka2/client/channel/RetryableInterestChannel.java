@@ -11,14 +11,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
-import rx.Subscriber;
-import rx.functions.Action0;
 import rx.functions.Func1;
 
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
+ * Note that operations (appendInterest and removeInterest) on this interest channel must be serialized by an external
+ * guarantee (such as using an {@link com.netflix.eureka2.client.channel.InterestChannelInvoker}).
+ *
  * @author Tomasz Bak
  */
 public class RetryableInterestChannel
@@ -41,9 +42,18 @@ public class RetryableInterestChannel
             final SourcedEurekaRegistry<InstanceInfo> registry,
             long retryInitialDelayMs,
             Scheduler scheduler) {
+        this(channelFactory, registry, new InterestTracker(), retryInitialDelayMs, scheduler);
+    }
+
+    /* visible for testing */ RetryableInterestChannel(
+            Func1<SourcedEurekaRegistry<InstanceInfo>, ClientInterestChannel> channelFactory,
+            final SourcedEurekaRegistry<InstanceInfo> registry,
+            InterestTracker interestTracker,
+            long retryInitialDelayMs,
+            Scheduler scheduler) {
         super(channelFactory.call(registry), retryInitialDelayMs, scheduler);
         this.registry = registry;
-        this.interestTracker = new InterestTracker();
+        this.interestTracker = interestTracker;
         this.channelFactory = channelFactory;
     }
 
@@ -62,8 +72,10 @@ public class RetryableInterestChannel
         return currentDelegateChannelObservable().switchMap(new Func1<ClientInterestChannel, Observable<? extends Void>>() {
             @Override
             public Observable<? extends Void> call(ClientInterestChannel clientInterestChannel) {
-                return clientInterestChannel.appendInterest(toAppend)
-                        .doOnCompleted(interestTracker.createAppendInterestAction(toAppend));
+                // eagerly append to the interestTracker as we want to keep track of the append regardless of the
+                // success or failure of the actual call
+                interestTracker.appendInterest(toAppend);
+                return clientInterestChannel.appendInterest(toAppend);
             }
         });
     }
@@ -73,8 +85,10 @@ public class RetryableInterestChannel
         return currentDelegateChannelObservable().switchMap(new Func1<ClientInterestChannel, Observable<? extends Void>>() {
             @Override
             public Observable<? extends Void> call(ClientInterestChannel clientInterestChannel) {
-                return clientInterestChannel.removeInterest(toRemove)
-                        .doOnCompleted(interestTracker.createRemoveInterestAction(toRemove));
+                // eagerly remove from the interestTracker as we want to keep track of the remove regardless of the
+                // success or failure of the actual call
+                interestTracker.removeInterest(toRemove);
+                return clientInterestChannel.removeInterest(toRemove);
             }
         });
     }
@@ -110,50 +124,33 @@ public class RetryableInterestChannel
     /**
      * {@link InterestTracker} keeps a reference counted collection of interests, so in case of channel failure
      * we can silently reconnect and re-subscribe.
+     *
+     * Note that we don't need to deal with concurrency on the counts in the map as the append and remove operations
+     * are serialized by external guarantees.
      */
-    class InterestTracker {
+    static class InterestTracker {
 
         // We use concurrent map here as this map is modified when request acknowledgement completes by a
         // different thread that the one doing the reconnect. Updates are however serialized, as come from the
         // channel event loop.
-        final Map<Interest<InstanceInfo>, Integer> interests = new ConcurrentHashMap<>();
+        final ConcurrentMap<Interest<InstanceInfo>, Integer> interests = new ConcurrentHashMap<>();
 
-        public Action0 createResetAction(final Interest<InstanceInfo> interest) {
-            return new Action0() {
-                @Override
-                public void call() {
-                    interests.put(interest, 1);
-                }
-            };
+        void appendInterest(final Interest<InstanceInfo> interest) {
+            Integer curr = interests.putIfAbsent(interest, 1);
+            if (curr != null) {
+                interests.put(interest, curr + 1);
+            }
         }
 
-        Action0 createAppendInterestAction(final Interest<InstanceInfo> interest) {
-            return new Action0() {
-                @Override
-                public void call() {
-                    if (interests.containsKey(interest)) {
-                        interests.put(interest, interests.get(interest) + 1);
-                    } else {
-                        interests.put(interest, 1);
-                    }
+        void removeInterest(final Interest<InstanceInfo> interest) {
+            Integer curr = interests.get(interest);
+            if (curr != null) {
+                if (curr <= 1) {
+                    interests.remove(interest);
+                } else {
+                    interests.put(interest, curr - 1);
                 }
-            };
-        }
-
-        Action0 createRemoveInterestAction(final Interest<InstanceInfo> interest) {
-            return new Action0() {
-                @Override
-                public void call() {
-                    if (interests.containsKey(interest)) {
-                        int newLevel = interests.get(interest) - 1;
-                        if (newLevel == 0) {
-                            interests.remove(interest);
-                        } else {
-                            interests.put(interest, newLevel);
-                        }
-                    }
-                }
-            };
+            }
         }
 
         void close() {
