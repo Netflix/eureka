@@ -21,10 +21,10 @@ import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.client.resolver.WriteServerResolverSet;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.registry.datacenter.BasicDataCenterInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Builder;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
-import com.netflix.eureka2.registry.datacenter.BasicDataCenterInfo;
 import rx.Subscriber;
 
 /**
@@ -43,11 +43,16 @@ public final class SimpleApp {
             .withDataCenterInfo(BasicDataCenterInfo.fromSystemData())
             .build();
 
-    public static void main(String[] args) throws InterruptedException {
-        System.out.println("Local service info: " + SERVICE_A);
 
-        WriteServerResolverSet writeServerResolverSet = WriteServerResolverSet.just("localhost", 13100, 13101);
-        String readServerVip = "ReadServer";
+    private final WriteServerResolverSet writeServerResolverSet;
+    private final String readServerVip;
+
+    public SimpleApp(String eurekaWriteServer, int registrationPort, int discoveryPort, String readServerVip) {
+        this.writeServerResolverSet = WriteServerResolverSet.just(eurekaWriteServer, registrationPort, discoveryPort);
+        this.readServerVip = readServerVip;
+    }
+
+    public void run() throws InterruptedException {
 
         EurekaClient client = Eureka.newClientBuilder(writeServerResolverSet, readServerVip).build();
 
@@ -90,5 +95,11 @@ public final class SimpleApp {
         // Terminate both clients.
         System.out.println("Shutting down clients");
         client.close();
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        System.out.println("Local service info: " + SERVICE_A);
+        SimpleApp simpleApp = new SimpleApp("localhost", 13100, 13101, "eurekaReadServerVip");
+        simpleApp.run();
     }
 }

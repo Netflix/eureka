@@ -1,14 +1,14 @@
 package com.netflix.eureka2.server.service;
 
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
-
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * @author David Liu
@@ -32,9 +32,15 @@ public class EurekaWriteServerSelfRegistrationService extends SelfRegistrationSe
         super.init();
     }
 
+
     @Override
-    public Observable<Void> report(final InstanceInfo instanceInfo) {
+    public Observable<Void> register(final InstanceInfo instanceInfo) {
         return registry.register(instanceInfo, selfSource).ignoreElements().cast(Void.class);
+    }
+
+    @Override
+    public Observable<Void> unregister(InstanceInfo instanceInfo) {
+        return registry.unregister(instanceInfo, selfSource).ignoreElements().cast(Void.class);
     }
 
     @Override
