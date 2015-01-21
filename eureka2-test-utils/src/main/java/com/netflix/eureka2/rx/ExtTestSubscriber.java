@@ -108,6 +108,11 @@ public class ExtTestSubscriber<T> extends Subscriber<T> {
         assertThat(state.get(), is(equalTo(State.OnError)));
     }
 
+    public void assertOnError(Throwable expected) {
+        assertThat(state.get(), is(equalTo(State.OnError)));
+        assertThat(onErrorResult.get(), is(equalTo(expected)));
+    }
+
     public void assertContainsInAnyOrder(Collection<T> expected) {
         assertContainsInAnyOrder(expected, new Func1<T, T>() {
             @Override

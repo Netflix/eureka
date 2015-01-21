@@ -73,13 +73,6 @@ public abstract class AbstractEurekaServer<C extends EurekaCommonConfig> {
         this.name = null;
     }
 
-    private static class PropertiesInitializer {
-        @Inject
-        private PropertiesInitializer(PropertiesLoader loader) {
-            loader.load();
-        }
-    }
-
     public void start() throws Exception {
         List<BootstrapModule> bootstrapModules = new ArrayList<>();
         bootstrapModules.add(new BootstrapModule() {
@@ -169,6 +162,13 @@ public abstract class AbstractEurekaServer<C extends EurekaCommonConfig> {
         @PreDestroy
         public void shutdown() {
             injectorShutdown.countDown();
+        }
+    }
+
+    private static class PropertiesInitializer {
+        @Inject
+        private PropertiesInitializer(PropertiesLoader loader) {
+            loader.load();
         }
     }
 }
