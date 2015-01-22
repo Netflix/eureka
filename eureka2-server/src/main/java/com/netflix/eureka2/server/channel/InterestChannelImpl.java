@@ -163,7 +163,8 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATES> implemen
                     @Override
                     public void onCompleted() {
                         sendOnCompleteOnTransport(); // On complete of stream.
-                        change(Interests.forNone());  // TODO: needed?
+                        // there is no need to call change(forNone) here as when this onComplete, the channel would
+                        // already be in state Closed, and hence will no longer be accepting change() calls.
                     }
 
                     @Override
