@@ -1,16 +1,14 @@
 package com.netflix.eureka2.client.channel;
 
 import com.netflix.eureka2.channel.AbstractClientChannel;
-import com.netflix.eureka2.client.channel.RegistrationChannelImpl.STATES;
-import com.netflix.eureka2.client.metric.RegistrationChannelMetrics;
-import com.netflix.eureka2.transport.TransportClient;
+import com.netflix.eureka2.channel.RegistrationChannel;
+import com.netflix.eureka2.channel.RegistrationChannel.STATE;
+import com.netflix.eureka2.metric.RegistrationChannelMetrics;
 import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.protocol.registration.Unregister;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.transport.MessageConnection;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.netflix.eureka2.transport.TransportClient;
 import rx.Observable;
 import rx.functions.Func1;
 
@@ -23,30 +21,25 @@ import rx.functions.Func1;
  *
  * @author Nitesh Kant
  */
-public class RegistrationChannelImpl
-        extends AbstractClientChannel<STATES> implements RegistrationChannel {
-
-    private static final Logger logger = LoggerFactory.getLogger(RegistrationChannelImpl.class);
+public class RegistrationChannelImpl extends AbstractClientChannel<STATE> implements RegistrationChannel {
 
     private static final IllegalStateException INSTANCE_NOT_REGISTERED_EXCEPTION =
             new IllegalStateException("Instance is not registered yet.");
 
-    public enum STATES {Idle, Registered, Closed}
-
     private final RegistrationChannelMetrics metrics;
 
     public RegistrationChannelImpl(TransportClient transportClient, RegistrationChannelMetrics metrics) {
-        super(STATES.Idle, transportClient);
+        super(STATE.Idle, transportClient, metrics);
         this.metrics = metrics;
-        metrics.incrementStateCounter(STATES.Idle);
+        metrics.incrementStateCounter(STATE.Idle);
     }
 
     @Override
     public Observable<Void> register(final InstanceInfo instanceInfo) {
-        if (!moveToState(STATES.Idle, STATES.Registered) &&
-            !moveToState(STATES.Registered, STATES.Registered)) {
-            STATES currentState = state.get();
-            if (currentState == STATES.Closed) {
+        if (!moveToState(STATE.Idle, STATE.Registered) &&
+                !moveToState(STATE.Registered, STATE.Registered)) {
+            STATE currentState = state.get();
+            if (currentState == STATE.Closed) {
                 return Observable.error(CHANNEL_CLOSED_EXCEPTION);
             } else {
                 return Observable.error(new IllegalStateException(
@@ -64,11 +57,11 @@ public class RegistrationChannelImpl
 
     @Override
     public Observable<Void> unregister() {
-        if (!moveToState(STATES.Registered, STATES.Closed)) {
-            STATES currentState = state.get();
-            if (currentState == STATES.Idle) {
+        if (!moveToState(STATE.Registered, STATE.Closed)) {
+            STATE currentState = state.get();
+            if (currentState == STATE.Idle) {
                 return Observable.error(INSTANCE_NOT_REGISTERED_EXCEPTION);
-            } else if (currentState == STATES.Closed) {
+            } else if (currentState == STATE.Closed) {
                 return Observable.error(CHANNEL_CLOSED_EXCEPTION);
             } else {
                 return Observable.error(new IllegalStateException(
@@ -86,7 +79,7 @@ public class RegistrationChannelImpl
         });
     }
 
-    protected boolean moveToState(STATES from, STATES to) {
+    protected boolean moveToState(STATE from, STATE to) {
         if (state.compareAndSet(from, to)) {
             if (from != to) {
                 metrics.decrementStateCounter(from);
@@ -99,8 +92,8 @@ public class RegistrationChannelImpl
 
     @Override
     protected void _close() {
-        if (state.get() != STATES.Closed) {
-            moveToState(state.get(), STATES.Closed);
+        if (state.get() != STATE.Closed) {
+            moveToState(state.get(), STATE.Closed);
         }
         super._close();
     }

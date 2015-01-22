@@ -19,6 +19,7 @@ package com.netflix.eureka2.registry.eviction;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Deque;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -103,7 +104,12 @@ public class EvictionQueueImpl implements EvictionQueue {
 
         this.queueSize = new AtomicInteger(0);
 
-        evictionQueueMetrics.setEvictionQueueSizeMonitor(this);
+        evictionQueueMetrics.setEvictionQueueSizeMonitor(new Callable<Integer>() {
+            @Override
+            public Integer call() throws Exception {
+                return size();
+            }
+        });
     }
 
     @Override
@@ -147,6 +153,5 @@ public class EvictionQueueImpl implements EvictionQueue {
     public void shutdown() {
         worker.unsubscribe();
         queue.clear();
-        evictionQueueMetrics.unbindMetrics();
     }
 }

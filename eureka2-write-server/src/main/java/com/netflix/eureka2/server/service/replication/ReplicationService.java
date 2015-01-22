@@ -25,16 +25,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.netflix.eureka2.channel.ReplicationChannel;
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
-import com.netflix.eureka2.server.channel.ReplicationChannel;
 import com.netflix.eureka2.server.channel.ReplicationTransportClient;
 import com.netflix.eureka2.server.channel.RetryableSenderReplicationChannel;
 import com.netflix.eureka2.server.channel.SenderReplicationChannel;
 import com.netflix.eureka2.server.config.WriteServerConfig;
-import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import org.slf4j.Logger;
@@ -160,7 +160,8 @@ public class ReplicationService {
                     @Override
                     public ReplicationChannel call() {
                         return new SenderReplicationChannel(
-                                new ReplicationTransportClient(address, codec, metricFactory.getReplicationServerConnectionMetrics())
+                                new ReplicationTransportClient(address, codec, metricFactory.getReplicationSenderConnectionMetrics()),
+                                null // TODO we need separate metrics for send and receiver; now only receiver is taken care of
                         );
                     }
                 },
@@ -168,5 +169,4 @@ public class ReplicationService {
                 reconnectDelayMillis
         );
     }
-
 }

@@ -1,5 +1,6 @@
 package com.netflix.eureka2.transport;
 
+import com.netflix.eureka2.metric.noop.NoOpMessageConnectionMetrics;
 import com.netflix.eureka2.rx.RxBlocking;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import com.netflix.eureka2.transport.TransportCompatibilityTestSuite.DiscoveryProtocolTest;
@@ -33,8 +34,8 @@ public class EurekaTransportsTest {
 
     private RxServer<Object, Object> server;
 
-    private MessageConnectionMetrics clientMetrics = new MessageConnectionMetrics("client-compatibility");
-    private MessageConnectionMetrics serverMetrics = new MessageConnectionMetrics("server-compatibility");
+    private final MessageConnectionMetrics clientMetrics = NoOpMessageConnectionMetrics.INSTANCE;
+    private final MessageConnectionMetrics serverMetrics = NoOpMessageConnectionMetrics.INSTANCE;
 
     @After
     public void tearDown() throws Exception {

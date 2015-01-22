@@ -1,5 +1,6 @@
 package com.netflix.eureka2.server.channel;
 
+import com.netflix.eureka2.channel.ReplicationChannel;
 import com.netflix.eureka2.channel.RetryableServiceChannel;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;

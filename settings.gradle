@@ -4,6 +4,7 @@ include 'eureka2-client',\
         'eureka2-read-server',\
         'eureka2-write-server',\
         'eureka2-core',\
+        'eureka2-metrics-spectator', \
         'eureka2-dashboard',\
         'eureka2-bridge',\
         'eureka2-test-utils',\
@@ -12,4 +13,3 @@ include 'eureka2-client',\
         'eureka2-ext:eureka2-karyon-admin',\
         'eureka2-testkit',\
         'eureka2-examples'
-

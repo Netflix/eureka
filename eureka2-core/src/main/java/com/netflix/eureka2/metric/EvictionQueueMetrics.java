@@ -18,42 +18,14 @@ package com.netflix.eureka2.metric;
 
 import java.util.concurrent.Callable;
 
-import com.netflix.eureka2.registry.eviction.EvictionQueue;
-import com.netflix.servo.monitor.BasicGauge;
-import com.netflix.servo.monitor.Counter;
-
 /**
  * @author Tomasz Bak
  */
-public class EvictionQueueMetrics extends EurekaMetrics {
+public interface EvictionQueueMetrics {
 
-    private final Counter evictionQueueAddCounter;
-    private final Counter evictionQueueRemoveCounter;
+    void incrementEvictionQueueAddCounter();
 
-    public EvictionQueueMetrics() {
-        super("evictionQueue");
-        evictionQueueAddCounter = newCounter("addedEvictions");
-        evictionQueueRemoveCounter = newCounter("removedEvictions");
-        register(evictionQueueAddCounter);
-        register(evictionQueueRemoveCounter);
-    }
+    void decrementEvictionQueueCounter();
 
-    public void incrementEvictionQueueAddCounter() {
-        evictionQueueAddCounter.increment();
-    }
-
-    public void decrementEvictionQueueCounter() {
-        evictionQueueRemoveCounter.increment();
-    }
-
-    public void setEvictionQueueSizeMonitor(final EvictionQueue evictionQueue) {
-        Callable<Integer> registrySizeCallable = new Callable<Integer>() {
-            @Override
-            public Integer call() throws Exception {
-                return evictionQueue.size();
-            }
-        };
-        BasicGauge<Integer> gauge = new BasicGauge<>(monitorConfig("evictionQueueSize"), registrySizeCallable);
-        register(gauge);
-    }
+    void setEvictionQueueSizeMonitor(Callable<Integer> evictionQueueSizeFun);
 }

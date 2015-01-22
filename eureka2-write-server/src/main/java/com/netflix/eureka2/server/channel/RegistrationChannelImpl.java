@@ -1,16 +1,18 @@
 package com.netflix.eureka2.server.channel;
 
+import java.util.concurrent.atomic.AtomicReference;
+
+import com.netflix.eureka2.channel.RegistrationChannel;
+import com.netflix.eureka2.channel.RegistrationChannel.STATE;
+import com.netflix.eureka2.metric.RegistrationChannelMetrics;
 import com.netflix.eureka2.protocol.EurekaProtocolError;
 import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.protocol.registration.Unregister;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.channel.RegistrationChannelImpl.STATES;
-import com.netflix.eureka2.server.metric.RegistrationChannelMetrics;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
-import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.channel.RegistrationChannel;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,12 +21,10 @@ import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Action1;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 /**
  * @author Nitesh Kant
  */
-public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> implements RegistrationChannel, Sourced {
+public class RegistrationChannelImpl extends AbstractHandlerChannel<STATE> implements RegistrationChannel, Sourced {
 
     private static final Logger logger = LoggerFactory.getLogger(RegistrationChannelImpl.class);
 
@@ -33,16 +33,14 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
     private final Source selfSource;
     private final AtomicReference<InstanceInfo> instanceInfoRef;
 
-    public enum STATES {Idle, Registered, Closed}
-
     public RegistrationChannelImpl(SourcedEurekaRegistry registry,
                                    final EvictionQueue evictionQueue,
                                    MessageConnection transport,
                                    RegistrationChannelMetrics metrics) {
-        super(STATES.Idle, transport, registry);
+        super(STATE.Idle, transport, registry, metrics);
         this.metrics = metrics;
 
-        metrics.incrementStateCounter(STATES.Idle);
+        metrics.incrementStateCounter(STATE.Idle);
 
         selfSource = new Source(Source.Origin.LOCAL);
         instanceInfoRef = new AtomicReference<>();
@@ -129,10 +127,10 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
      */
     @Override
     public Observable<Void> register(final InstanceInfo instanceInfo) {
-        if (!moveToState(STATES.Idle, STATES.Registered) &&
-            !moveToState(STATES.Registered, STATES.Registered)) {
-            STATES currentState = state.get();
-            if (STATES.Closed == currentState) {
+        if (!moveToState(STATE.Idle, STATE.Registered) &&
+                !moveToState(STATE.Registered, STATE.Registered)) {
+            STATE currentState = state.get();
+            if (STATE.Closed == currentState) {
                 // Since channel is already closed and hence the transport, we don't need to send an error on transport.
                 return Observable.error(CHANNEL_CLOSED_EXCEPTION);
             } else {
@@ -191,7 +189,7 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
      */
     @Override
     public Observable<Void> unregister() {
-        STATES currentState = state.getAndSet(STATES.Closed);
+        STATE currentState = state.getAndSet(STATE.Closed);
 
         logger.debug("Unregistering service in registry: {}", instanceInfoRef.get());
 
@@ -235,7 +233,7 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
         }
     }
 
-    protected boolean moveToState(STATES from, STATES to) {
+    protected boolean moveToState(STATE from, STATE to) {
         if (state.compareAndSet(from, to)) {
             if (from != to) {
                 metrics.decrementStateCounter(from);
@@ -248,8 +246,8 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATES> impl
 
     @Override
     protected void _close() {
-        if (state.get() != STATES.Closed) {
-            moveToState(state.get(), STATES.Closed);
+        if (state.get() != STATE.Closed) {
+            moveToState(state.get(), STATE.Closed);
         }
         super._close();
     }

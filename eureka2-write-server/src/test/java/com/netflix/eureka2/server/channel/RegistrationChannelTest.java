@@ -7,7 +7,7 @@ import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.metric.RegistrationChannelMetrics;
+import com.netflix.eureka2.metric.RegistrationChannelMetrics;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.hamcrest.CoreMatchers;
 import org.junit.After;

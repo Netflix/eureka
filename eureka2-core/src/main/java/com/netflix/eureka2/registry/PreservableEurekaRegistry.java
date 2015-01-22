@@ -18,17 +18,18 @@ package com.netflix.eureka2.registry;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
-import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
-import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
 import com.netflix.eureka2.registry.eviction.EvictionItem;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
+import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
 import com.netflix.eureka2.registry.eviction.EvictionStrategy;
+import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,7 +101,12 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
         this.evictionSubscriber = new EvictionSubscriber();
         this.evictionSubscription = evictionQueue.pendingEvictions().subscribe(evictionSubscriber);
 
-        metricFactory.getEurekaServerRegistryMetrics().setSelfPreservationMonitor(this);
+        metricFactory.getEurekaServerRegistryMetrics().setSelfPreservationMonitor(new Callable<Integer>() {
+            @Override
+            public Integer call() throws Exception {
+                return isInSelfPreservation() ? 1 : 0;
+            }
+        });
     }
 
     @Override

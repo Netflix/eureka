@@ -18,100 +18,18 @@ package com.netflix.eureka2.metric;
 
 import java.util.concurrent.Callable;
 
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.registry.PreservableEurekaRegistry;
-import com.netflix.eureka2.registry.Source.Origin;
-import com.netflix.servo.monitor.BasicGauge;
-import com.netflix.servo.monitor.Counter;
-
 /**
  * @author Tomasz Bak
  */
-public class EurekaRegistryMetrics extends EurekaMetrics {
+public interface EurekaRegistryMetrics {
 
-    private final Counter registrationsLocal;
-    private final Counter registrationsReplicated;
-    private final Counter registrationsTotal;
+    void incrementRegistrationCounter(String origin);
 
-    private final Counter updatesLocal;
-    private final Counter updatesReplicated;
-    private final Counter updatesTotal;
+    void incrementUnregistrationCounter(String origin);
 
-    private final Counter unregistrationsLocal;
-    private final Counter unregistrationsReplicated;
-    private final Counter unregistrationsTotal;
+    void incrementUpdateCounter(String origin);
 
-    public EurekaRegistryMetrics() {
-        super("eurekaServerRegistry");
-        registrationsLocal = newCounter("registrationsLocal");
-        registrationsReplicated = newCounter("registrationsReplicated");
-        registrationsTotal = newCounter("registrationsTotal");
+    void setRegistrySizeMonitor(Callable<Integer> registrySizeFun);
 
-        updatesLocal = newCounter("updatesLocal");
-        updatesReplicated = newCounter("updatesReplicated");
-        updatesTotal = newCounter("updatesTotal");
-
-        unregistrationsLocal = newCounter("unregistrationsLocal");
-        unregistrationsReplicated = newCounter("unregistrationsReplicated");
-        unregistrationsTotal = newCounter("unregistrationsTotal");
-    }
-
-    public void incrementRegistrationCounter(Origin origin) {
-        switch (origin) {
-            case LOCAL:
-                registrationsLocal.increment();
-                break;
-            case REPLICATED:
-                registrationsReplicated.increment();
-                break;
-        }
-        registrationsTotal.increment();
-    }
-
-    public void incrementUnregistrationCounter(Origin origin) {
-        switch (origin) {
-            case LOCAL:
-                unregistrationsLocal.increment();
-                break;
-            case REPLICATED:
-                unregistrationsReplicated.increment();
-                break;
-        }
-        unregistrationsTotal.increment();
-    }
-
-    public void incrementUpdateCounter(Origin origin) {
-        switch (origin) {
-            case LOCAL:
-                updatesLocal.increment();
-                break;
-            case REPLICATED:
-                updatesReplicated.increment();
-                break;
-        }
-        updatesTotal.increment();
-    }
-
-    public void setRegistrySizeMonitor(final SourcedEurekaRegistry<InstanceInfo> registry) {
-        Callable<Integer> registrySizeCallable = new Callable<Integer>() {
-            @Override
-            public Integer call() throws Exception {
-                return registry.size();
-            }
-        };
-        BasicGauge<Integer> gauge = new BasicGauge<>(monitorConfig("registrySize"), registrySizeCallable);
-        register(gauge);
-    }
-
-    public void setSelfPreservationMonitor(final PreservableEurekaRegistry registry) {
-        Callable<Integer> selfPreservationCallable = new Callable<Integer>() {
-            @Override
-            public Integer call() throws Exception {
-                return registry.isInSelfPreservation() ? 1 : 0;
-            }
-        };
-        BasicGauge<Integer> gauge = new BasicGauge<>(monitorConfig("selfPreservation"), selfPreservationCallable);
-        register(gauge);
-    }
+    void setSelfPreservationMonitor(Callable<Integer> selfPreservationFun);
 }

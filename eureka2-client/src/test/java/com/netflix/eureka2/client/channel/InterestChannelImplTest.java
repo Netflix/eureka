@@ -1,6 +1,5 @@
 package com.netflix.eureka2.client.channel;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -30,7 +29,7 @@ import rx.functions.Func1;
 import rx.subjects.PublishSubject;
 import rx.subjects.ReplaySubject;
 
-import static com.netflix.eureka2.client.metric.EurekaClientMetricFactory.clientMetrics;
+import static com.netflix.eureka2.metric.client.EurekaClientMetricFactory.clientMetrics;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
 import static org.hamcrest.CoreMatchers.hasItems;

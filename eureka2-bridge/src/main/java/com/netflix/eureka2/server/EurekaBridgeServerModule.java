@@ -3,29 +3,24 @@ package com.netflix.eureka2.server;
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.netflix.eureka2.config.EurekaRegistryConfig;
-import com.netflix.eureka2.metric.MessageConnectionMetrics;
-import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
+import com.netflix.eureka2.metric.server.BridgeServerMetricFactory;
+import com.netflix.eureka2.metric.server.SpectatorBridgeServerMetricFactory;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.server.service.EurekaBridgeServerSelfInfoResolver;
-import com.netflix.eureka2.server.service.EurekaBridgeServerSelfRegistrationService;
-import com.netflix.eureka2.server.service.SelfRegistrationService;
-import com.netflix.eureka2.server.service.SelfInfoResolver;
-import com.netflix.eureka2.server.service.replication.ReplicationService;
-import com.netflix.eureka2.server.config.BridgeServerConfig;
-import com.netflix.eureka2.server.config.EurekaCommonConfig;
-import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.eureka2.server.config.WriteServerConfig;
-import com.netflix.eureka2.server.metric.BridgeChannelMetrics;
-import com.netflix.eureka2.server.metric.BridgeServerMetricFactory;
-import com.netflix.eureka2.server.metric.InterestChannelMetrics;
-import com.netflix.eureka2.server.metric.RegistrationChannelMetrics;
-import com.netflix.eureka2.server.metric.ReplicationChannelMetrics;
-import com.netflix.eureka2.server.registry.EurekaBridgeRegistry;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
 import com.netflix.eureka2.registry.eviction.EvictionStrategy;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
+import com.netflix.eureka2.server.config.BridgeServerConfig;
+import com.netflix.eureka2.server.config.EurekaCommonConfig;
+import com.netflix.eureka2.server.config.EurekaServerConfig;
+import com.netflix.eureka2.server.config.WriteServerConfig;
+import com.netflix.eureka2.server.registry.EurekaBridgeRegistry;
 import com.netflix.eureka2.server.service.BridgeService;
+import com.netflix.eureka2.server.service.EurekaBridgeServerSelfInfoResolver;
+import com.netflix.eureka2.server.service.EurekaBridgeServerSelfRegistrationService;
+import com.netflix.eureka2.server.service.SelfInfoResolver;
+import com.netflix.eureka2.server.service.SelfRegistrationService;
+import com.netflix.eureka2.server.service.replication.ReplicationService;
 import com.netflix.eureka2.server.spi.ExtensionContext;
 import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
@@ -60,8 +55,6 @@ public class EurekaBridgeServerModule extends AbstractModule {
             bind(BridgeServerConfig.class).toInstance(config);
         }
 
-        bind(SerializedTaskInvokerMetrics.class).toInstance(new SerializedTaskInvokerMetrics("registry"));
-
         bind(SourcedEurekaRegistry.class).to(EurekaBridgeRegistry.class);
         bind(EvictionQueue.class).to(EvictionQueueImpl.class).asEagerSingleton();
         bind(EvictionStrategy.class).toProvider(EvictionStrategyProvider.class);
@@ -80,20 +73,6 @@ public class EurekaBridgeServerModule extends AbstractModule {
         bind(ExtensionContext.class).asEagerSingleton();
 
         // Metrics
-        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("registration")).toInstance(new MessageConnectionMetrics("registration"));
-        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("replication")).toInstance(new MessageConnectionMetrics("replication"));
-        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("discovery")).toInstance(new MessageConnectionMetrics("discovery"));
-
-        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("clientRegistration")).toInstance(new MessageConnectionMetrics("clientRegistration"));
-        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("clientDiscovery")).toInstance(new MessageConnectionMetrics("clientDiscovery"));
-        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("clientReplication")).toInstance(new MessageConnectionMetrics("clientReplication"));
-
-        bind(BridgeChannelMetrics.class).annotatedWith(Names.named("bridge")).toInstance(new BridgeChannelMetrics());
-
-        bind(RegistrationChannelMetrics.class).toInstance(new RegistrationChannelMetrics());
-        bind(ReplicationChannelMetrics.class).toInstance(new ReplicationChannelMetrics());
-        bind(InterestChannelMetrics.class).toInstance(new InterestChannelMetrics());
-
-        bind(BridgeServerMetricFactory.class).asEagerSingleton();
+        bind(BridgeServerMetricFactory.class).to(SpectatorBridgeServerMetricFactory.class).asEagerSingleton();
     }
 }

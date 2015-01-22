@@ -36,7 +36,7 @@ import org.mockito.ArgumentCaptor;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
-import static com.netflix.eureka2.server.metric.WriteServerMetricFactory.writeServerMetrics;
+import static com.netflix.eureka2.metric.server.WriteServerMetricFactory.writeServerMetrics;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;

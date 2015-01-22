@@ -1,59 +1,25 @@
 package com.netflix.eureka2.metric;
 
-import javax.inject.Inject;
+import com.netflix.eureka2.metric.noop.NoOpEurekaRegistryMetricFactory;
 
 /**
- * @author David Liu
+ * @author Tomasz Bak
  */
-public class EurekaRegistryMetricFactory {
+public abstract class EurekaRegistryMetricFactory {
 
-    private static EurekaRegistryMetricFactory INSTANCE;
+    public static volatile EurekaRegistryMetricFactory defaultFactory = new NoOpEurekaRegistryMetricFactory();
 
-    private final EurekaRegistryMetrics eurekaServerRegistryMetrics;
-    private final EvictionQueueMetrics evictionQueueMetrics;
-    private final SerializedTaskInvokerMetrics registryTaskInvokerMetrics;
+    public abstract EurekaRegistryMetrics getEurekaServerRegistryMetrics();
 
-    @Inject
-    public EurekaRegistryMetricFactory(
-            EurekaRegistryMetrics eurekaServerRegistryMetrics,
-            EvictionQueueMetrics evictionQueueMetrics,
-            SerializedTaskInvokerMetrics registryTaskInvokerMetrics) {
-        this.eurekaServerRegistryMetrics = eurekaServerRegistryMetrics;
-        this.evictionQueueMetrics = evictionQueueMetrics;
-        this.registryTaskInvokerMetrics = registryTaskInvokerMetrics;
-    }
+    public abstract EvictionQueueMetrics getEvictionQueueMetrics();
 
-    public EurekaRegistryMetrics getEurekaServerRegistryMetrics() {
-        return eurekaServerRegistryMetrics;
-    }
-
-    public EvictionQueueMetrics getEvictionQueueMetrics() {
-        return evictionQueueMetrics;
-    }
-
-    public SerializedTaskInvokerMetrics getRegistryTaskInvokerMetrics() {
-        return registryTaskInvokerMetrics;
-    }
+    public abstract SerializedTaskInvokerMetrics getRegistryTaskInvokerMetrics();
 
     public static EurekaRegistryMetricFactory registryMetrics() {
-        if (INSTANCE == null) {
-            synchronized (EurekaRegistryMetricFactory.class) {
-                EurekaRegistryMetrics eurekaServerRegistryMetrics = new EurekaRegistryMetrics();
-                eurekaServerRegistryMetrics.bindMetrics();
+        return defaultFactory;
+    }
 
-                EvictionQueueMetrics evictionQueueMetrics = new EvictionQueueMetrics();
-                evictionQueueMetrics.bindMetrics();
-
-                SerializedTaskInvokerMetrics registryTaskInvokerMetrics = new SerializedTaskInvokerMetrics("registry");
-                registryTaskInvokerMetrics.bindMetrics();
-
-                INSTANCE = new EurekaRegistryMetricFactory(
-                        eurekaServerRegistryMetrics,
-                        evictionQueueMetrics,
-                        registryTaskInvokerMetrics
-                );
-            }
-        }
-        return INSTANCE;
+    public static void setDefaultFactory(EurekaRegistryMetricFactory newFactory) {
+        defaultFactory = newFactory;
     }
 }

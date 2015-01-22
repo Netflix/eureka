@@ -1,9 +1,9 @@
 package com.netflix.eureka2.client.channel;
 
 import com.netflix.eureka2.channel.RegistrationChannel;
-import com.netflix.eureka2.client.metric.EurekaClientMetricFactory;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.transport.TransportClients;
+import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.transport.TransportClient;
 import rx.functions.Func0;
@@ -32,13 +32,16 @@ public class RegistrationChannelFactory extends ClientChannelFactory<Registratio
 
     @Override
     public RegistrationChannel newChannel() {
-        return new RegistrationChannelInvoker(
-                new RetryableRegistrationChannel(new Func0<RegistrationChannel>() {
+        RetryableRegistrationChannel retryableChannel = new RetryableRegistrationChannel(
+                new Func0<RegistrationChannel>() {
                     @Override
                     public RegistrationChannel call() {
                         return new RegistrationChannelImpl(transport, metricFactory.getRegistrationChannelMetrics());
                     }
-                }, retryInitialDelayMs, Schedulers.computation())
+                }, retryInitialDelayMs, Schedulers.computation());
+        return new RegistrationChannelInvoker(
+                retryableChannel,
+                metricFactory.getSerializedTaskInvokerMetrics(RegistrationChannelInvoker.class)
         );
     }
 

@@ -1,24 +1,28 @@
 package com.netflix.eureka2.client.channel;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 import com.netflix.eureka2.channel.AbstractClientChannel;
-import com.netflix.eureka2.client.channel.InterestChannelImpl.STATES;
-import com.netflix.eureka2.client.metric.InterestChannelMetrics;
-import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.transport.TransportClient;
+import com.netflix.eureka2.channel.InterestChannel;
+import com.netflix.eureka2.channel.InterestChannel.STATE;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.ModifyNotification;
 import com.netflix.eureka2.interests.MultipleInterests;
+import com.netflix.eureka2.metric.InterestChannelMetrics;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.DeleteInstance;
 import com.netflix.eureka2.protocol.discovery.InterestRegistration;
 import com.netflix.eureka2.protocol.discovery.InterestSetNotification;
 import com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo;
+import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.transport.TransportClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -26,10 +30,6 @@ import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.observers.SafeSubscriber;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * An implementation of {@link InterestChannel}. It is mandatory that all operations
@@ -40,8 +40,7 @@ import java.util.Map;
  *
  * @author Nitesh Kant
  */
-public class InterestChannelImpl
-        extends AbstractClientChannel<STATES> implements ClientInterestChannel {
+public class InterestChannelImpl extends AbstractClientChannel<STATE> implements ClientInterestChannel {
 
     private static final Logger logger = LoggerFactory.getLogger(InterestChannelImpl.class);
 
@@ -55,8 +54,6 @@ public class InterestChannelImpl
     protected Observable<ChangeNotification<InstanceInfo>> channelInterestStream;
 
     protected Subscriber<ChangeNotification<InstanceInfo>> channelInterestSubscriber;
-
-    public enum STATES {Idle, Open, Closed}
 
     private final Source selfSource;
     private final InterestChannelMetrics metrics;
@@ -81,11 +78,11 @@ public class InterestChannelImpl
     private final Map<String, InstanceInfo> idVsInstance = new HashMap<>();
 
     public InterestChannelImpl(final SourcedEurekaRegistry<InstanceInfo> registry, TransportClient client, InterestChannelMetrics metrics) {
-        super(STATES.Idle, client);
+        super(STATE.Idle, client, metrics);
         this.selfSource = new Source(Source.Origin.LOCAL);
         this.registry = registry;
         this.metrics = metrics;
-        metrics.incrementStateCounter(STATES.Idle);
+        metrics.incrementStateCounter(STATE.Idle);
         channelInterest = new MultipleInterests<>();  // blank channelInterest to start with
         channelInterestSubscriber = new ChannelInterestSubscriber(registry);
         channelInterestStream = createInterestStream();
@@ -104,7 +101,7 @@ public class InterestChannelImpl
     // channel contract means this will be invoked in serial.
     @Override
     public Observable<Void> change(final Interest<InstanceInfo> newInterest) {
-        if (state.get() == STATES.Closed) {
+        if (state.get() == STATE.Closed) {
             return Observable.error(CHANNEL_CLOSED_EXCEPTION);
         }
 
@@ -121,9 +118,9 @@ public class InterestChannelImpl
         return Observable.create(new Observable.OnSubscribe<Void>() {
             @Override
             public void call(Subscriber<? super Void> subscriber) {
-                if (STATES.Closed == state.get()) {
+                if (STATE.Closed == state.get()) {
                     subscriber.onError(CHANNEL_CLOSED_EXCEPTION);
-                } else if (moveToState(STATES.Idle, STATES.Open)) {
+                } else if (moveToState(STATE.Idle, STATE.Open)) {
                     logger.debug("First time registration: {}", newInterest);
                     channelInterestStream.subscribe(channelInterestSubscriber);
                 } else {
@@ -152,8 +149,8 @@ public class InterestChannelImpl
 
     @Override
     protected void _close() {
-        if (state.get() != STATES.Closed) {
-            moveToState(state.get(), STATES.Closed);
+        if (state.get() != STATE.Closed) {
+            moveToState(state.get(), STATE.Closed);
             idVsInstance.clear();
             super._close();
         }
@@ -270,7 +267,7 @@ public class InterestChannelImpl
         return notification;
     }
 
-    protected boolean moveToState(STATES from, STATES to) {
+    protected boolean moveToState(STATE from, STATE to) {
         if (state.compareAndSet(from, to)) {
             metrics.decrementStateCounter(from);
             metrics.incrementStateCounter(to);

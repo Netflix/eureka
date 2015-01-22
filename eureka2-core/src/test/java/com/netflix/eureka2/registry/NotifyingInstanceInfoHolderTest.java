@@ -1,17 +1,15 @@
 package com.netflix.eureka2.registry;
 
 import com.netflix.eureka2.interests.NotificationsSubject;
-import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.NotifyingInstanceInfoHolder.NotificationTaskInvoker;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import rx.schedulers.Schedulers;
 
-import java.util.UUID;
-
+import static com.netflix.eureka2.metric.client.EurekaClientMetricFactory.clientMetrics;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
@@ -50,7 +48,10 @@ public class NotifyingInstanceInfoHolderTest {
                     return false;
                 }
             };
-            invoker = new NotificationTaskInvoker(SerializedTaskInvokerMetrics.dummyMetrics(), Schedulers.computation());
+            invoker = new NotificationTaskInvoker(
+                    clientMetrics().getSerializedTaskInvokerMetrics(NotificationTaskInvoker.class),
+                    Schedulers.computation()
+            );
             localSource = new Source(Source.Origin.LOCAL);
         }
     };

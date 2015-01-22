@@ -23,7 +23,7 @@ import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
-import com.netflix.eureka2.server.channel.ReplicationChannel;
+import com.netflix.eureka2.channel.ReplicationChannel;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
@@ -31,7 +31,7 @@ import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
 
-import static com.netflix.eureka2.server.metric.WriteServerMetricFactory.*;
+import static com.netflix.eureka2.metric.server.WriteServerMetricFactory.*;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;

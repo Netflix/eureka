@@ -1,6 +1,8 @@
 package com.netflix.eureka2.server.channel;
 
+import com.netflix.eureka2.channel.ReplicationChannel;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
+import com.netflix.eureka2.metric.noop.NoOpReplicationChannelMetrics;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.registry.Source;
@@ -52,8 +54,8 @@ public class RetryableSenderReplicationChannelTest {
     public void setUp() throws Exception {
         when(mockClient.connect()).thenReturn(Observable.just(mockMessageConnection));
 
-        delegateChannel1 = spy(new SenderReplicationChannel(mockClient));
-        delegateChannel2 = spy(new SenderReplicationChannel(mockClient));
+        delegateChannel1 = spy(new SenderReplicationChannel(mockClient, NoOpReplicationChannelMetrics.INSTANCE));
+        delegateChannel2 = spy(new SenderReplicationChannel(mockClient, NoOpReplicationChannelMetrics.INSTANCE));
 
         Func0<ReplicationChannel> channelFactory = new Func0<ReplicationChannel>() {
 

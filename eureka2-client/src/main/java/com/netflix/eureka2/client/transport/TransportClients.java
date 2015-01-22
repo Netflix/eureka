@@ -8,10 +8,12 @@ import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import com.netflix.eureka2.transport.TransportClient;
 
-import static com.netflix.eureka2.client.metric.EurekaClientMetricFactory.clientMetrics;
+import static com.netflix.eureka2.metric.client.EurekaClientMetricFactory.clientMetrics;
 
 /**
  * A factory to create {@link com.netflix.eureka2.transport.TransportClient} instances.
+ *
+ * TODO Do not use default metrics factory. Pass it directly as method argument.
  *
  * @author Nitesh Kant
  */

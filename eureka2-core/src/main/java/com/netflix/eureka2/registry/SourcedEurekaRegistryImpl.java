@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.eureka2.interests.ChangeNotification;
@@ -73,7 +74,12 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
 
     public SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory metricsFactory, Scheduler scheduler) {
         this.metrics = metricsFactory.getEurekaServerRegistryMetrics();
-        this.metrics.setRegistrySizeMonitor(this);
+        this.metrics.setRegistrySizeMonitor(new Callable<Integer>() {
+            @Override
+            public Integer call() throws Exception {
+                return size();
+            }
+        });
 
         invoker = new NotifyingInstanceInfoHolder.NotificationTaskInvoker(
                 metricsFactory.getRegistryTaskInvokerMetrics(),
@@ -119,7 +125,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
             @Override
             public void call(MultiSourcedDataHolder.Status status) {
                 if (status != MultiSourcedDataHolder.Status.AddExpired) {
-                    metrics.incrementRegistrationCounter(source.getOrigin());
+                    metrics.incrementRegistrationCounter(source.getOrigin().name());
                 }
             }
         });
@@ -137,7 +143,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
             @Override
             public void call(MultiSourcedDataHolder.Status status) {
                 if (status != MultiSourcedDataHolder.Status.RemoveExpired) {
-                    metrics.incrementUnregistrationCounter(source.getOrigin());
+                    metrics.incrementUnregistrationCounter(source.getOrigin().name());
                 }
             }
         });
@@ -318,7 +324,6 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     public Observable<Void> shutdown() {
         invoker.shutdown();
         notificationSubject.onCompleted();
-        metrics.unbindMetrics();
         internalStore.clear();
         return indexRegistry.shutdown();
     }
@@ -327,7 +332,6 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     public Observable<Void> shutdown(Throwable cause) {
         invoker.shutdown();
         notificationSubject.onCompleted();
-        metrics.unbindMetrics();
         return indexRegistry.shutdown(cause);
     }
 

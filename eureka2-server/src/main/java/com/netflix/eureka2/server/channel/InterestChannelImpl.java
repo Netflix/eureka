@@ -1,12 +1,15 @@
 package com.netflix.eureka2.server.channel;
 
 import com.netflix.eureka2.channel.InterestChannel;
+import com.netflix.eureka2.channel.InterestChannel.STATE;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.interests.ModifyNotification;
 import com.netflix.eureka2.interests.MultipleInterests;
+import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics;
+import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics.ChannelSubscriptionMonitor;
 import com.netflix.eureka2.protocol.EurekaProtocolError;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.DeleteInstance;
@@ -18,9 +21,6 @@ import com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.channel.InterestChannelImpl.STATES;
-import com.netflix.eureka2.server.metric.InterestChannelMetrics;
-import com.netflix.eureka2.server.metric.InterestChannelMetrics.ChannelSubscriptionMonitor;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,23 +36,21 @@ import rx.functions.Action1;
  *
  * @author Nitesh Kant
  */
-public class InterestChannelImpl extends AbstractHandlerChannel<STATES> implements InterestChannel {
+public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implements InterestChannel {
 
     private static final Logger logger = LoggerFactory.getLogger(InterestChannelImpl.class);
 
     private static final Exception SNAPSHOT_REQUEST_NOT_ALLOWED = new Exception("Snapshot subscription not allowed on active channel");
 
-    public enum STATES {Idle, Open, Closed}
-
-    private final InterestChannelMetrics metrics;
+    private final ServerInterestChannelMetrics metrics;
 
     private final InterestNotificationMultiplexer notificationMultiplexer;
     private final ChannelSubscriptionMonitor channelSubscriptionMonitor;
 
-    public InterestChannelImpl(final SourcedEurekaRegistry<InstanceInfo> registry, final MessageConnection transport, final InterestChannelMetrics metrics) {
-        super(STATES.Idle, transport, registry);
+    public InterestChannelImpl(final SourcedEurekaRegistry<InstanceInfo> registry, final MessageConnection transport, final ServerInterestChannelMetrics metrics) {
+        super(STATE.Idle, transport, registry, metrics);
         this.metrics = metrics;
-        this.metrics.incrementStateCounter(STATES.Idle);
+        this.metrics.incrementStateCounter(STATE.Idle);
         this.notificationMultiplexer = new InterestNotificationMultiplexer(registry);
         this.channelSubscriptionMonitor = new ChannelSubscriptionMonitor(metrics);
 
@@ -67,13 +65,13 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATES> implemen
                 if (message instanceof SnapshotRegistration) {
                     switch (state.get()) {
                         case Idle:
-                            state.set(STATES.Open);
-                            metrics.stateTransition(STATES.Idle, STATES.Open);
+                            state.set(STATE.Open);
+                            metrics.stateTransition(STATE.Idle, STATE.Open);
 
                             sendSnapshot(((SnapshotRegistration) message).getInterests());
 
-                            state.set(STATES.Closed);
-                            metrics.stateTransition(STATES.Idle, STATES.Closed);
+                            state.set(STATE.Closed);
+                            metrics.stateTransition(STATE.Idle, STATE.Closed);
                             break;
                         case Open:
                             sendErrorOnTransport(SNAPSHOT_REQUEST_NOT_ALLOWED);
@@ -138,14 +136,14 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATES> implemen
     public Observable<Void> change(Interest<InstanceInfo> newInterest) {
         logger.debug("Received interest change request {}", newInterest);
 
-        if (STATES.Closed == state.get()) {
+        if (STATE.Closed == state.get()) {
             /**
              * Since channel is already closed and hence the transport, we don't need to send an error on transport.
              */
             return Observable.error(CHANNEL_CLOSED_EXCEPTION);
         }
-        if (state.compareAndSet(STATES.Idle, STATES.Open)) {
-            metrics.stateTransition(STATES.Idle, STATES.Open);
+        if (state.compareAndSet(STATE.Idle, STATE.Open)) {
+            metrics.stateTransition(STATE.Idle, STATE.Open);
             initializeNotificationMultiplexer();
         }
 
@@ -220,10 +218,10 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATES> implemen
 
     @Override
     public void _close() {
-        if (state.compareAndSet(STATES.Open, STATES.Closed)) {
-            state.set(STATES.Closed);
+        if (state.compareAndSet(STATE.Open, STATE.Closed)) {
+            state.set(STATE.Closed);
             channelSubscriptionMonitor.update(Interests.forNone());
-            metrics.stateTransition(STATES.Open, STATES.Closed);
+            metrics.stateTransition(STATE.Open, STATE.Closed);
             notificationMultiplexer.unregister();
             super._close(); // Shutdown the transport
         }
