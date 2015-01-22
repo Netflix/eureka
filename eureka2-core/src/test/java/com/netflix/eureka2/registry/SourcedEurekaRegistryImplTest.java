@@ -45,7 +45,6 @@ public class SourcedEurekaRegistryImplTest {
         @Override
         protected void before() throws Throwable {
             registry = new TestEurekaServerRegistry(testScheduler);
-
         }
 
         @Override

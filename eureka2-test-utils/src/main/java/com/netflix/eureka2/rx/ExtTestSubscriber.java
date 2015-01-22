@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -127,7 +128,7 @@ public class ExtTestSubscriber<T> extends Subscriber<T> {
         while (!left.isEmpty()) {
             R next = mapFun.call(takeNextOrFail());
             if (!left.remove(next)) {
-                fail("Unexpected item found in the stream " + next);
+                fail(formatAnyOrderFailure(next, expected.size(), left));
             }
         }
     }
@@ -154,8 +155,20 @@ public class ExtTestSubscriber<T> extends Subscriber<T> {
         while (!left.isEmpty()) {
             R next = mapFun.call(takeNext(timeout, timeUnit));
             if (!left.remove(next)) {
-                fail("Unexpected item found in the stream " + next);
+                fail(formatAnyOrderFailure(next, expected.size(), left));
             }
         }
+    }
+
+    private static <R> String formatAnyOrderFailure(R found, int total, Set<R> left) {
+        int consumed = total - left.size();
+        StringBuilder sb = new StringBuilder();
+        sb.append("Unexpected item found in the stream: ").append(found).append('\n');
+        sb.append("    consumed already ").append(consumed).append('\n');
+        sb.append("    left items on expected list:");
+        for (R item : left) {
+            sb.append('\n').append(item);
+        }
+        return sb.toString();
     }
 }
