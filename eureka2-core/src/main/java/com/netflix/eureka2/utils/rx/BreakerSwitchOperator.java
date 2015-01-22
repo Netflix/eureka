@@ -16,25 +16,67 @@
 
 package com.netflix.eureka2.utils.rx;
 
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import rx.Observable;
 import rx.Observable.Operator;
 import rx.Subscriber;
-import rx.internal.util.SubscriptionList;
+import rx.subjects.AsyncSubject;
+import rx.subjects.Subject;
 
 /**
  * An operator that allows one tracking subscriptions of all subscribers to a given observable.
+ * When close() is called, this operator should onComplete to all subscribers and unsubscribe from the upstream;
  */
-public class BreakerSwitchOperator implements Operator<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>> {
-    private final SubscriptionList subscriptions = new SubscriptionList();
+public class BreakerSwitchOperator<T> implements Operator<T, T> {
+
+    private final Subject<Void, Void> onCompleteFuture = AsyncSubject.create();
 
     @Override
-    public Subscriber<? super ChangeNotification<InstanceInfo>> call(final Subscriber<? super ChangeNotification<InstanceInfo>> subscriber) {
-        subscriptions.add(subscriber);
-        return subscriber;
+    public Subscriber<? super T> call(final Subscriber<? super T> subscriber) {
+        return new BreakerSwitchSubscriber<>(subscriber, onCompleteFuture);
     }
 
     public void close() {
-        subscriptions.unsubscribe();
+        onCompleteFuture.onCompleted();
+    }
+
+    private static class BreakerSwitchSubscriber<T> extends Subscriber<T> {
+
+        private final Subscriber<T> actual;
+
+        public BreakerSwitchSubscriber(Subscriber<T> actual, Observable<Void> onCompleteFuture) {
+            super(actual);
+
+            this.actual = actual;
+            onCompleteFuture.subscribe(new Subscriber<Void>() {
+                @Override
+                public void onCompleted() {
+                    BreakerSwitchSubscriber.this.unsubscribe();
+                    BreakerSwitchSubscriber.this.onCompleted();
+                }
+
+                @Override
+                public void onError(Throwable e) {
+                }
+
+                @Override
+                public void onNext(Void aVoid) {
+                }
+            });
+        }
+
+        @Override
+        public void onCompleted() {
+            actual.onCompleted();
+        }
+
+        @Override
+        public void onError(Throwable e) {
+            actual.onError(e);
+        }
+
+        @Override
+        public void onNext(T t) {
+            actual.onNext(t);
+        }
     }
 }
