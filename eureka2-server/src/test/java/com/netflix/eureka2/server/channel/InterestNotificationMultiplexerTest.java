@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server.service;
+package com.netflix.eureka2.server.channel;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
@@ -25,7 +25,6 @@ import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.channel.InterestNotificationMultiplexer;
 import com.netflix.eureka2.testkit.data.builder.SampleDelta;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.After;
@@ -34,10 +33,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import rx.observers.TestSubscriber;
 import rx.subjects.ReplaySubject;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 
 import static com.netflix.eureka2.utils.Sets.asSet;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -76,6 +77,7 @@ public class InterestNotificationMultiplexerTest {
         upgradeTo(controller1);
         controller1.publishAdd();
         assertThat(notifications.next(), is(equalTo(controller1.addNotification)));
+        assertThat(controller1.instanceSubject.hasObservers(), is(true));
 
         // Now remove interest for instance 1 and add interest for instance 2
         InstanceController controller2 = new InstanceController(SampleInstanceInfo.ZuulServer.build());
@@ -83,6 +85,8 @@ public class InterestNotificationMultiplexerTest {
         controller1.publishModify();
         controller2.publishAdd();
         assertThat(notifications.next(), is(equalTo(controller2.addNotification)));
+        assertThat(controller1.instanceSubject.hasObservers(), is(false));
+        assertThat(controller2.instanceSubject.hasObservers(), is(true));
     }
 
     @Test(timeout = 10000)
@@ -94,6 +98,8 @@ public class InterestNotificationMultiplexerTest {
         controller2.publishAdd();
         upgradeTo(controller1, controller2);
         assertThat(asSet(notifications.next(), notifications.next()), containsInAnyOrder(controller1.addNotification, controller2.addNotification));
+        assertThat(controller1.instanceSubject.hasObservers(), is(true));
+        assertThat(controller2.instanceSubject.hasObservers(), is(true));
 
         // Now remove interest for instance 1 and add interest for instance 3
         InstanceController controller3 = new InstanceController(SampleInstanceInfo.CliServer.build());
@@ -102,6 +108,33 @@ public class InterestNotificationMultiplexerTest {
         controller2.publishModify();
         controller3.publishAdd();
         assertThat(asSet(notifications.next(), notifications.next()), containsInAnyOrder(controller2.modifyNotification, controller3.addNotification));
+        assertThat(controller1.instanceSubject.hasObservers(), is(false));
+        assertThat(controller2.instanceSubject.hasObservers(), is(true));
+        assertThat(controller3.instanceSubject.hasObservers(), is(true));
+    }
+
+    @Test
+    public void testCloseUnsubcribesAllUpStreamAndOnCompleteDownStream() {
+        TestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new TestSubscriber<>();
+        multiplexer.changeNotifications().subscribe(testSubscriber);
+
+        // Add two instances
+        InstanceController controller1 = new InstanceController(SampleInstanceInfo.DiscoveryServer.build());
+        InstanceController controller2 = new InstanceController(SampleInstanceInfo.ZuulServer.build());
+        controller1.publishAdd();
+        controller2.publishAdd();
+        upgradeTo(controller1, controller2);
+        assertThat(asSet(notifications.next(), notifications.next()), containsInAnyOrder(controller1.addNotification, controller2.addNotification));
+        assertThat(controller1.instanceSubject.hasObservers(), is(true));
+        assertThat(controller2.instanceSubject.hasObservers(), is(true));
+
+        multiplexer.unregister();
+
+        testSubscriber.awaitTerminalEvent(5, TimeUnit.SECONDS);
+        testSubscriber.assertTerminalEvent();
+        testSubscriber.assertNoErrors();
+        assertThat(controller1.instanceSubject.hasObservers(), is(false));
+        assertThat(controller2.instanceSubject.hasObservers(), is(false));
     }
 
     private void upgradeTo(InstanceController... controllers) {
@@ -112,7 +145,7 @@ public class InterestNotificationMultiplexerTest {
             for (int i = 0; i < controllers.length; i++) {
                 interests[i] = controllers[i].interest;
             }
-            multiplexer.update(new MultipleInterests<InstanceInfo>(interests));
+            multiplexer.update(new MultipleInterests<>(interests));
         }
     }
 

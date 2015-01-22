@@ -126,12 +126,12 @@ public class HeartBeatConnection implements MessageConnection {
 
     @Override
     public Observable<Void> onError(Throwable error) {
-        return null;
+        return Observable.error(error);
     }
 
     @Override
     public Observable<Void> onCompleted() {
-        return null;
+        return Observable.empty();
     }
 
     @Override

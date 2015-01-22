@@ -85,7 +85,7 @@ public class InterestNotificationMultiplexer {
     }
 
     private void subscribeToInterest(Interest<InstanceInfo> newInterest) {
-        BreakerSwitchOperator breaker = new BreakerSwitchOperator();
+        BreakerSwitchOperator<ChangeNotification<InstanceInfo>> breaker = new BreakerSwitchOperator<>();
         upgrades.onNext(eurekaRegistry.forInterest(newInterest).lift(breaker));
         subscriptionBreakers.put(newInterest, breaker);
     }
@@ -99,6 +99,7 @@ public class InterestNotificationMultiplexer {
             subject.close();
         }
         subscriptionBreakers.clear();
+        upgrades.onCompleted();
     }
 
     /**
