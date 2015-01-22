@@ -50,15 +50,11 @@ public abstract class SerializedTaskInvoker {
                     task.cancel();
                     metrics.incrementOutputFailure();
                 } finally {
-                    metrics.setQueueSize(queueSize.getAndDecrement());
+                    queueSize.getAndDecrement();
                 }
             }
         }
     };
-
-    protected SerializedTaskInvoker() {
-        this(SerializedTaskInvokerMetrics.dummyMetrics(), Schedulers.computation());
-    }
 
     protected SerializedTaskInvoker(SerializedTaskInvokerMetrics metrics) {
         this(metrics, Schedulers.computation());
@@ -68,6 +64,12 @@ public abstract class SerializedTaskInvoker {
         this.worker = scheduler.createWorker();
         this.queueSize = new AtomicLong(0);
         this.metrics = metrics;
+        metrics.setQueueSizeMonitor(new Callable<Long>() {
+            @Override
+            public Long call() throws Exception {
+                return queueSize.get();
+            }
+        });
     }
 
     protected Observable<Void> submitForAck(final Callable<Observable<Void>> task) {
@@ -112,7 +114,6 @@ public abstract class SerializedTaskInvoker {
         while (!taskQueue.isEmpty()) {
             taskQueue.poll().cancel();
         }
-        metrics.unbindMetrics();
     }
 
     private abstract static class InvokerTask<T, R> {

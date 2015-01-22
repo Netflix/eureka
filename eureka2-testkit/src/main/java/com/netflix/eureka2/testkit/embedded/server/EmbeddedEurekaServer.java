@@ -3,6 +3,8 @@ package com.netflix.eureka2.testkit.embedded.server;
 import javax.inject.Inject;
 import java.util.Properties;
 
+import com.codahale.metrics.JmxReporter;
+import com.codahale.metrics.MetricRegistry;
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.google.inject.Module;
@@ -20,6 +22,9 @@ import com.netflix.governator.guice.LifecycleInjector;
 import com.netflix.governator.guice.LifecycleInjectorBuilder;
 import com.netflix.governator.guice.transformer.OverrideAllDuplicateBindings;
 import com.netflix.governator.lifecycle.LifecycleManager;
+import com.netflix.spectator.api.Clock;
+import com.netflix.spectator.api.ExtendedRegistry;
+import com.netflix.spectator.metrics3.MetricsRegistry;
 import io.reactivex.netty.RxNetty;
 import netflix.adminresources.AdminResourcesContainer;
 import netflix.adminresources.resources.KaryonWebAdminModule;
@@ -28,7 +33,6 @@ import netflix.karyon.health.AlwaysHealthyHealthCheck;
 import netflix.karyon.health.HealthCheckHandler;
 import netflix.karyon.health.HealthCheckInvocationStrategy;
 import netflix.karyon.health.SyncHealthCheckInvocationStrategy;
-import netflix.karyon.servo.KaryonServoModule;
 
 /**
  * @author Tomasz Bak
@@ -76,6 +80,7 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
             bindConfigurationProvider(builder);
             bindDashboard(builder);
         }
+        bindMetricsRegistry(builder);
 
         injector = builder.build().createInjector();
 
@@ -100,7 +105,6 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
 
     private void bindDashboard(LifecycleInjectorBuilder builder) {
         builder.withAdditionalModuleClasses(KaryonWebAdminModule.class);
-        builder.withAdditionalModuleClasses(KaryonServoModule.class);
         builder.withAdditionalModules(new AbstractModule() {
             @Override
             protected void configure() {
@@ -128,6 +132,20 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
                 Builder builder = ArchaiusConfigurationProvider.builder();
                 builder.withOwnershipPolicy(ConfigurationOwnershipPolicies.ownsAll());
                 binder.bindConfigurationProvider().toInstance(builder.build());
+            }
+        });
+    }
+
+    protected void bindMetricsRegistry(LifecycleInjectorBuilder bootstrapBinder) {
+        bootstrapBinder.withAdditionalModules(new AbstractModule() {
+            @Override
+            protected void configure() {
+                MetricRegistry internalRegistry = new MetricRegistry();
+                final JmxReporter reporter = JmxReporter.forRegistry(internalRegistry).build();
+                reporter.start();
+
+                ExtendedRegistry registry = new ExtendedRegistry(new MetricsRegistry(Clock.SYSTEM, internalRegistry));
+                bind(ExtendedRegistry.class).toInstance(registry);
             }
         });
     }

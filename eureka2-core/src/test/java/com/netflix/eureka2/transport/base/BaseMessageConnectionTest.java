@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
+import com.netflix.eureka2.metric.noop.NoOpMessageConnectionMetrics;
 import com.netflix.eureka2.rx.RxBlocking;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.codec.avro.AvroPipelineConfigurator;
@@ -41,8 +42,8 @@ public class BaseMessageConnectionTest {
     volatile MessageConnection serverBroker;
     volatile MessageConnection clientBroker;
 
-    private final MessageConnectionMetrics clientMetrics = new MessageConnectionMetrics("client-compatibility");
-    private final MessageConnectionMetrics serverMetrics = new MessageConnectionMetrics("server-compatibility");
+    private final MessageConnectionMetrics clientMetrics = NoOpMessageConnectionMetrics.INSTANCE;
+    private final MessageConnectionMetrics serverMetrics = NoOpMessageConnectionMetrics.INSTANCE;
 
     @Before
     public void setUp() throws Exception {

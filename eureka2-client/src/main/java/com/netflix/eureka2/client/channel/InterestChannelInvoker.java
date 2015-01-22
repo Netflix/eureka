@@ -3,8 +3,8 @@ package com.netflix.eureka2.client.channel;
 import java.util.concurrent.Callable;
 
 import com.netflix.eureka2.channel.InterestChannel;
+import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -24,13 +24,12 @@ public class InterestChannelInvoker extends SerializedTaskInvoker
 
     private final ClientInterestChannel delegate;
 
-    public InterestChannelInvoker(ClientInterestChannel delegate) {
-        this(delegate, Schedulers.computation());
+    public InterestChannelInvoker(ClientInterestChannel delegate, EurekaClientMetricFactory metricFactory) {
+        this(delegate, metricFactory, Schedulers.computation());
     }
 
-    public InterestChannelInvoker(ClientInterestChannel delegate, Scheduler scheduler) {
-        // TODO: add invoker metrics to the client
-        super(SerializedTaskInvokerMetrics.dummyMetrics(), scheduler);
+    public InterestChannelInvoker(ClientInterestChannel delegate, EurekaClientMetricFactory metricFactory, Scheduler scheduler) {
+        super(metricFactory.getSerializedTaskInvokerMetrics(InterestChannelInvoker.class), scheduler);
         this.delegate = delegate;
     }
 

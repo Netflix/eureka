@@ -1,13 +1,14 @@
 package com.netflix.eureka2.utils;
 
+import java.util.Queue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+import com.netflix.eureka2.metric.noop.NoOpSerializedTaskInvokerMetrics;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
 import rx.Subscriber;
-
-import java.util.Queue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * TODO
@@ -51,9 +52,9 @@ public class SerializedTaskInvokerTest {
         }
     }
 
-
     static class TestInvoker extends SerializedTaskInvoker {
-
+        TestInvoker() {
+            super(NoOpSerializedTaskInvokerMetrics.INSTANCE);
+        }
     }
-
 }

@@ -7,7 +7,7 @@ import com.netflix.eureka2.protocol.discovery.SnapshotComplete;
 import com.netflix.eureka2.protocol.discovery.SnapshotRegistration;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.metric.InterestChannelMetrics;
+import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.junit.Before;
@@ -30,7 +30,7 @@ public class InterestChannelImplTest {
     public static final Interest<InstanceInfo> SNAPSHOT_INTEREST = Interests.forFullRegistry();
 
     private final SourcedEurekaRegistry<InstanceInfo> registry = mock(SourcedEurekaRegistry.class);
-    private final InterestChannelMetrics metrics = mock(InterestChannelMetrics.class);
+    private final ServerInterestChannelMetrics metrics = mock(ServerInterestChannelMetrics.class);
 
     private final MessageConnection connection = mock(MessageConnection.class);
     private final PublishSubject<Object> incomingSubject = PublishSubject.create();

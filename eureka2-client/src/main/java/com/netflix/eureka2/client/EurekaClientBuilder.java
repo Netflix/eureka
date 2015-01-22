@@ -5,7 +5,7 @@ import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.client.channel.ClientInterestChannel;
 import com.netflix.eureka2.client.channel.InterestChannelFactory;
 import com.netflix.eureka2.client.channel.RegistrationChannelFactory;
-import com.netflix.eureka2.client.metric.EurekaClientMetricFactory;
+import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.client.registration.RegistrationHandler;
 import com.netflix.eureka2.client.registration.RegistrationHandlerImpl;
 import com.netflix.eureka2.client.interest.InterestHandler;

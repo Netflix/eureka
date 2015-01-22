@@ -1,6 +1,5 @@
 package com.netflix.eureka2.client.channel;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -30,10 +29,9 @@ import rx.functions.Func1;
 import rx.subjects.PublishSubject;
 import rx.subjects.ReplaySubject;
 
-import static com.netflix.eureka2.client.metric.EurekaClientMetricFactory.clientMetrics;
+import static com.netflix.eureka2.metric.client.EurekaClientMetricFactory.clientMetrics;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
-import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -54,10 +52,10 @@ public class InterestChannelImplTest {
     protected InterestChannelImpl channel;
 
     protected Interest<InstanceInfo> sampleInterestZuul = SampleInterest.ZuulApp.build();
-    protected Observable<AddInstance> sampleAddMessagesZuul = SampleAddInstance.newMessages(SampleAddInstance.ZuulAdd, 10);
+    protected Observable<AddInstance> sampleAddMessagesZuul = SampleAddInstance.newMessages(SampleAddInstance.ZuulAdd, 2);
 
     protected Interest<InstanceInfo> sampleInterestDiscovery = SampleInterest.DiscoveryApp.build();
-    protected Observable<AddInstance> sampleAddMessagesDiscovery = SampleAddInstance.newMessages(SampleAddInstance.DiscoveryAdd, 10);
+    protected Observable<AddInstance> sampleAddMessagesDiscovery = SampleAddInstance.newMessages(SampleAddInstance.DiscoveryAdd, 2);
 
     protected Interest<InstanceInfo> sampleInterestAll = Interests.forFullRegistry();
 

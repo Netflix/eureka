@@ -29,7 +29,6 @@ dependencies {
     compile "com.netflix.ocelli:ocelli-core:${ocelli_version}"
     compile "org.apache.avro:avro:${avro_version}"
     compile "org.apache.commons:commons-compress:${commons_compress_version}"
-    compile "com.netflix.servo:servo-core:${servo_version}"
     testCompile project(':eureka2-test-utils')
     testCompile project(':eureka2-testkit')
 }

@@ -26,7 +26,7 @@ import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rx.RxBlocking;
 import com.netflix.eureka2.rx.TestableObservableConnection;
-import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;
+import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
 import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
 import org.junit.Assert;
 import org.junit.Before;

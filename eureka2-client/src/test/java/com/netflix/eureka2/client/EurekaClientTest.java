@@ -3,7 +3,7 @@ package com.netflix.eureka2.client;
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.client.channel.ClientInterestChannel;
 import com.netflix.eureka2.client.channel.InterestChannelFactory;
-import com.netflix.eureka2.client.metric.EurekaClientMetricFactory;
+import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.client.interest.InterestHandler;
 import com.netflix.eureka2.client.interest.InterestHandlerImpl;
 import com.netflix.eureka2.config.BasicEurekaRegistryConfig;

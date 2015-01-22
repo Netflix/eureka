@@ -19,6 +19,9 @@ import rx.Observable;
  * @author Nitesh Kant
  */
 public interface InterestChannel extends ServiceChannel {
+
+    enum STATE {Idle, Open, Closed}
+
     /**
      * An operation to change the interest set for this channel to a new interest set.
      * When this change is acknowledged, the older interest set is removed and the passed

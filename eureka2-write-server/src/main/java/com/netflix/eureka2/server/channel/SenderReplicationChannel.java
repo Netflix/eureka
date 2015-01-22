@@ -17,12 +17,14 @@
 package com.netflix.eureka2.server.channel;
 
 import com.netflix.eureka2.channel.AbstractClientChannel;
+import com.netflix.eureka2.channel.ReplicationChannel;
+import com.netflix.eureka2.channel.ReplicationChannel.STATE;
+import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
 import com.netflix.eureka2.protocol.replication.RegisterCopy;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.protocol.replication.UnregisterCopy;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.channel.SenderReplicationChannel.STATE;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.TransportClient;
 import rx.Observable;
@@ -35,10 +37,8 @@ public class SenderReplicationChannel extends AbstractClientChannel<STATE> imple
 
     private static final Exception HANDSHAKE_FINISHED_EXCEPTION = new Exception("Handshake already done");
 
-    public enum STATE {Idle, Handshake, Connected, Closed}
-
-    public SenderReplicationChannel(TransportClient client) {
-        super(STATE.Idle, client);
+    public SenderReplicationChannel(TransportClient client, ReplicationChannelMetrics metrics) {
+        super(STATE.Idle, client, metrics);
     }
 
     @Override

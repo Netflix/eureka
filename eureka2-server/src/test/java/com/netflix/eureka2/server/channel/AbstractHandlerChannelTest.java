@@ -1,5 +1,6 @@
 package com.netflix.eureka2.server.channel;
 
+import com.netflix.eureka2.metric.noop.NoOpStateMachineMetrics;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.junit.Assert;
@@ -88,10 +89,11 @@ public class AbstractHandlerChannelTest {
         Assert.assertTrue(onCompletedLatch.await(10, TimeUnit.SECONDS));
     }
 
+    enum TestState { Ok }
 
-    public class TestHandlerChannel extends AbstractHandlerChannel<Enum> {
+    public class TestHandlerChannel extends AbstractHandlerChannel<TestState> {
         protected TestHandlerChannel(MessageConnection transport) {
-            super(null, transport, mock(SourcedEurekaRegistry.class));
+            super(null, transport, mock(SourcedEurekaRegistry.class), new NoOpStateMachineMetrics<TestState>());
         }
     }
 }

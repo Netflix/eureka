@@ -1,78 +1,19 @@
 package com.netflix.eureka2.metric;
 
-import com.netflix.servo.monitor.Counter;
-import com.netflix.servo.monitor.LongGauge;
+import java.util.concurrent.Callable;
 
 /**
  * @author David Liu
  */
-public class SerializedTaskInvokerMetrics extends EurekaMetrics {
+public interface SerializedTaskInvokerMetrics {
 
-    private final Counter inputSuccess;
-    private final Counter inputFailure;
-    private final Counter outputSuccess;
-    private final Counter outputFailure;
+    void incrementInputSuccess();
 
-    private final LongGauge queueSize;
+    void incrementInputFailure();
 
-    private SerializedTaskInvokerMetrics() {
-        super(null);
-        inputSuccess = null;
-        inputFailure = null;
-        outputSuccess = null;
-        outputFailure = null;
-        queueSize = null;
-    }
+    void incrementOutputSuccess();
 
-    public SerializedTaskInvokerMetrics(String name) {
-        super(name);
+    void incrementOutputFailure();
 
-        inputSuccess = newCounter("inputSuccess");
-        inputFailure = newCounter("inputFailure");
-        outputSuccess = newCounter("outputSuccess");
-        outputFailure = newCounter("outputFailure");
-        queueSize = newLongGauge("queueSize");
-
-        register(inputSuccess, inputFailure, outputSuccess, outputFailure, queueSize);
-    }
-
-    public void incrementInputSuccess() {
-        inputSuccess.increment();
-    }
-
-    public void incrementInputFailure() {
-        inputFailure.increment();
-    }
-
-    public void incrementOutputSuccess() {
-        outputSuccess.increment();
-    }
-
-    public void incrementOutputFailure() {
-        outputFailure.increment();
-    }
-
-    public void setQueueSize(long n) {
-        queueSize.set(n);
-    }
-
-
-    // make a dummy metric available for other use cases of the SerializedTaskInvoker that does not
-    // need to register metrics. This is to avoid registering too may metrics if large numbers of invokers
-    // are created.
-    public static SerializedTaskInvokerMetrics dummyMetrics() {
-        return new DevNullMetrics();
-    }
-
-    static class DevNullMetrics extends SerializedTaskInvokerMetrics {
-        public DevNullMetrics() {
-            super();
-        }
-        public void incrementInputSuccess() {}
-        public void incrementInputFailure() {}
-        public void incrementOutputSuccess() {}
-        public void incrementOutputFailure() {}
-        public void setQueueSize(long n) {}
-    }
-
+    void setQueueSizeMonitor(Callable<Long> n);
 }

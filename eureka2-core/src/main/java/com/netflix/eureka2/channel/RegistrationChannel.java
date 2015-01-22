@@ -20,6 +20,8 @@ import rx.Observable;
  */
 public interface RegistrationChannel extends ServiceChannel {
 
+    enum STATE {Idle, Registered, Closed}
+
     /**
      * Register or update the passed instance with eureka.
      *

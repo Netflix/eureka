@@ -19,34 +19,33 @@ package com.netflix.eureka2.server;
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.netflix.eureka2.config.EurekaRegistryConfig;
-import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
+import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
+import com.netflix.eureka2.metric.SpectatorEurekaRegistryMetricFactory;
+import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
+import com.netflix.eureka2.metric.server.SpectatorWriteServerMetricFactory;
+import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
+import com.netflix.eureka2.registry.PreservableEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
-import com.netflix.eureka2.server.audit.AuditServiceController;
-import com.netflix.eureka2.server.config.WriteServerConfig;
-import com.netflix.eureka2.server.metric.InterestChannelMetrics;
-import com.netflix.eureka2.server.config.EurekaCommonConfig;
-import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.eureka2.server.metric.RegistrationChannelMetrics;
-import com.netflix.eureka2.server.metric.ReplicationChannelMetrics;
-import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
-import com.netflix.eureka2.registry.PreservableEurekaRegistry;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
 import com.netflix.eureka2.registry.eviction.EvictionStrategy;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
+import com.netflix.eureka2.server.audit.AuditServiceController;
+import com.netflix.eureka2.server.config.EurekaCommonConfig;
+import com.netflix.eureka2.server.config.EurekaServerConfig;
+import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.service.EurekaWriteServerSelfInfoResolver;
 import com.netflix.eureka2.server.service.EurekaWriteServerSelfRegistrationService;
-import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
+import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.server.service.replication.ReplicationService;
 import com.netflix.eureka2.server.spi.ExtensionContext;
 import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
-import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
-import io.reactivex.netty.servo.ServoEventsListenerFactory;
+import io.reactivex.netty.spectator.SpectatorEventsListenerFactory;
 
 /**
  * @author Tomasz Bak
@@ -75,8 +74,6 @@ public class EurekaWriteServerModule extends AbstractModule {
             bind(WriteServerConfig.class).toInstance(config);
         }
 
-        bind(SerializedTaskInvokerMetrics.class).toInstance(new SerializedTaskInvokerMetrics("registry"));
-
         bind(SourcedEurekaRegistry.class).annotatedWith(Names.named("delegate")).to(SourcedEurekaRegistryImpl.class).asEagerSingleton();
         bind(SourcedEurekaRegistry.class).to(PreservableEurekaRegistry.class).asEagerSingleton();
         bind(EvictionQueue.class).to(EvictionQueueImpl.class).asEagerSingleton();
@@ -86,9 +83,9 @@ public class EurekaWriteServerModule extends AbstractModule {
         bind(SelfInfoResolver.class).to(EurekaWriteServerSelfInfoResolver.class).asEagerSingleton();
         bind(SelfRegistrationService.class).to(EurekaWriteServerSelfRegistrationService.class).asEagerSingleton();
 
-        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("registration")).toInstance(new ServoEventsListenerFactory("registration-rx-client-", "registration-rx-server-"));
-        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new ServoEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
-        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("replication")).toInstance(new ServoEventsListenerFactory("replication-rx-client-", "replication-rx-server-"));
+        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("registration")).toInstance(new SpectatorEventsListenerFactory("registration-rx-client-", "registration-rx-server-"));
+        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new SpectatorEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
+        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("replication")).toInstance(new SpectatorEventsListenerFactory("replication-rx-client-", "replication-rx-server-"));
         bind(TcpRegistrationServer.class).asEagerSingleton();
         bind(TcpDiscoveryServer.class).asEagerSingleton();
         bind(TcpReplicationServer.class).asEagerSingleton();
@@ -98,18 +95,9 @@ public class EurekaWriteServerModule extends AbstractModule {
         bind(ExtensionContext.class).asEagerSingleton();
 
         // Metrics
-        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("registration")).toInstance(new MessageConnectionMetrics("registration"));
-        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("replication")).toInstance(new MessageConnectionMetrics("replication"));
-        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("discovery")).toInstance(new MessageConnectionMetrics("discovery"));
+        bind(EurekaRegistryMetricFactory.class).to(SpectatorEurekaRegistryMetricFactory.class).asEagerSingleton();
 
-//        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("clientRegistration")).toInstance(new MessageConnectionMetrics("clientRegistration"));
-//        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("clientDiscovery")).toInstance(new MessageConnectionMetrics("clientDiscovery"));
-        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("clientReplication")).toInstance(new MessageConnectionMetrics("clientReplication"));
-
-        bind(RegistrationChannelMetrics.class).toInstance(new RegistrationChannelMetrics());
-        bind(ReplicationChannelMetrics.class).toInstance(new ReplicationChannelMetrics());
-        bind(InterestChannelMetrics.class).toInstance(new InterestChannelMetrics());
-
-        bind(WriteServerMetricFactory.class).asEagerSingleton();
+        bind(EurekaServerMetricFactory.class).to(SpectatorWriteServerMetricFactory.class).asEagerSingleton();
+        bind(WriteServerMetricFactory.class).to(SpectatorWriteServerMetricFactory.class).asEagerSingleton();
     }
 }

@@ -2,6 +2,7 @@ package com.netflix.eureka2.server.channel;
 
 import java.util.Collections;
 
+import com.netflix.eureka2.metric.noop.NoOpReplicationChannelMetrics;
 import com.netflix.eureka2.protocol.replication.RegisterCopy;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.protocol.replication.UnregisterCopy;
@@ -37,7 +38,7 @@ public class SenderReplicationChannelTest extends AbstractReplicationChannelTest
         when(connection.lifecycleObservable()).thenReturn(connectionLifeCycle);
         when(connection.incoming()).thenReturn(connectionIncoming);
 
-        replicationChannel = new SenderReplicationChannel(transportClient);
+        replicationChannel = new SenderReplicationChannel(transportClient, NoOpReplicationChannelMetrics.INSTANCE);
     }
 
     @Test

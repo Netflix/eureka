@@ -18,10 +18,10 @@ package com.netflix.eureka2.server.transport.tcp.registration;
 
 import com.google.inject.Inject;
 import com.netflix.eureka2.channel.RegistrationChannel;
+import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.RegistrationChannelFactory;
-import com.netflix.eureka2.server.metric.WriteServerMetricFactory;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.channel.ServerChannelFactory;
 import com.netflix.eureka2.transport.MessageConnection;

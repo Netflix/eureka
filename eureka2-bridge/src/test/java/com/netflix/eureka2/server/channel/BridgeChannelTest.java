@@ -9,12 +9,12 @@ import com.netflix.appinfo.AmazonInfo;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.eureka2.channel.BridgeChannel;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.bridge.InstanceInfoConverter;
 import com.netflix.eureka2.server.bridge.InstanceInfoConverterImpl;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.metric.BridgeChannelMetrics;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Rule;
 import org.junit.Test;
@@ -25,8 +25,15 @@ import org.mockito.runners.MockitoJUnitRunner;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
-import static com.netflix.eureka2.metric.EurekaRegistryMetricFactory.*;
-import static org.mockito.Mockito.*;
+import static com.netflix.eureka2.metric.EurekaRegistryMetricFactory.registryMetrics;
+import static com.netflix.eureka2.metric.server.BridgeServerMetricFactory.bridgeServerMetrics;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author David Liu
@@ -62,7 +69,14 @@ public class BridgeChannelTest {
             registry = spy(new SourcedEurekaRegistryImpl(registryMetrics()));
 
             testScheduler = Schedulers.test();
-            bridgeChannel = new BridgeChannel(registry, mockV1Client, period, SampleInstanceInfo.DiscoveryServer.build(), new BridgeChannelMetrics(), testScheduler);
+            bridgeChannel = new BridgeChannelImpl(
+                    registry,
+                    mockV1Client,
+                    period,
+                    SampleInstanceInfo.DiscoveryServer.build(),
+                    bridgeServerMetrics().getBridgeChannelMetrics(),
+                    testScheduler
+            );
             converter = new InstanceInfoConverterImpl();
 
             when(mockV1Client.getApplications()).thenReturn(mockApplications);

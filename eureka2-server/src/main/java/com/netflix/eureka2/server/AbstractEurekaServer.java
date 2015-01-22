@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
+import com.codahale.metrics.JmxReporter;
+import com.codahale.metrics.MetricRegistry;
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
@@ -33,6 +35,9 @@ import com.netflix.governator.guice.BootstrapModule;
 import com.netflix.governator.guice.LifecycleInjector;
 import com.netflix.governator.lifecycle.LifecycleManager;
 import com.netflix.governator.lifecycle.LifecycleState;
+import com.netflix.spectator.api.Clock;
+import com.netflix.spectator.api.ExtendedRegistry;
+import com.netflix.spectator.metrics3.MetricsRegistry;
 import netflix.adminresources.resources.KaryonWebAdminModule;
 import netflix.karyon.archaius.DefaultPropertiesLoader;
 import netflix.karyon.archaius.PropertiesLoader;
@@ -40,7 +45,6 @@ import netflix.karyon.health.AlwaysHealthyHealthCheck;
 import netflix.karyon.health.HealthCheckHandler;
 import netflix.karyon.health.HealthCheckInvocationStrategy;
 import netflix.karyon.health.SyncHealthCheckInvocationStrategy;
-import netflix.karyon.servo.KaryonServoModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,8 +85,8 @@ public abstract class AbstractEurekaServer<C extends EurekaCommonConfig> {
                 if (config == null) {
                     bindConfigurationProvider(binder);
                 }
+                bindMetricsRegistry(binder);
                 binder.include(KaryonWebAdminModule.class);
-                binder.include(KaryonServoModule.class);
                 binder.include(new AbstractModule() {
                     @Override
                     protected void configure() {
@@ -111,6 +115,20 @@ public abstract class AbstractEurekaServer<C extends EurekaCommonConfig> {
         Builder builder = ArchaiusConfigurationProvider.builder();
         builder.withOwnershipPolicy(ConfigurationOwnershipPolicies.ownsAll());
         bootstrapBinder.bindConfigurationProvider().toInstance(builder.build());
+    }
+
+    protected void bindMetricsRegistry(BootstrapBinder bootstrapBinder) {
+        bootstrapBinder.include(new AbstractModule() {
+            @Override
+            protected void configure() {
+                MetricRegistry internalRegistry = new MetricRegistry();
+                final JmxReporter reporter = JmxReporter.forRegistry(internalRegistry).build();
+                reporter.start();
+
+                ExtendedRegistry registry = new ExtendedRegistry(new MetricsRegistry(Clock.SYSTEM, internalRegistry));
+                bind(ExtendedRegistry.class).toInstance(registry);
+            }
+        });
     }
 
     protected abstract void additionalModules(List<BootstrapModule> suites);

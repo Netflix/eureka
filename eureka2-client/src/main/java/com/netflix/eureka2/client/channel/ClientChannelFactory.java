@@ -2,7 +2,7 @@ package com.netflix.eureka2.client.channel;
 
 import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.ServiceChannel;
-import com.netflix.eureka2.client.metric.EurekaClientMetricFactory;
+import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 
 /**
  * @author David Liu

@@ -56,7 +56,7 @@ public abstract class RetryableServiceChannel<C extends ServiceChannel> extends 
     private long retryDelay;
 
     protected RetryableServiceChannel(C initialDelegate, long retryInitialDelayMs, Scheduler scheduler) {
-        super(STATES.Open);
+        super(STATES.Open, null);
 
         this.currentChannelRef = new AtomicReference<>(initialDelegate);
         this.delegateLifecycleSubscription = new AtomicReference<>(null);

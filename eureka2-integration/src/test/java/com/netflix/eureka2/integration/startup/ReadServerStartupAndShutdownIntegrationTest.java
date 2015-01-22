@@ -30,14 +30,14 @@ public class ReadServerStartupAndShutdownIntegrationTest extends AbstractStartup
 
     public static final String SERVER_NAME = "read-server-startupAndShutdown";
 
-    @Test
+    @Test(timeout = 60000)
     public void testStartsWithFileBasedConfiguration() throws Exception {
         injectConfigurationValuesViaSystemProperties(SERVER_NAME);
         EurekaReadServer server = new EurekaReadServer(SERVER_NAME);
         executeAndVerifyLifecycle(server);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testStartsWithCommandLineParameters() throws Exception {
         EurekaServerConfig config = new EurekaServerConfigBuilder()
                 .withAppName(SERVER_NAME)

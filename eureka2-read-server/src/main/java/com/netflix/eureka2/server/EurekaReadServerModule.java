@@ -19,23 +19,21 @@ package com.netflix.eureka2.server;
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.metric.EurekaClientConnectionMetrics;
-import com.netflix.eureka2.client.metric.EurekaClientRegistryMetrics;
-import com.netflix.eureka2.metric.MessageConnectionMetrics;
-import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
+import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
+import com.netflix.eureka2.metric.client.SpectatorEurekaClientMetricFactory;
+import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
+import com.netflix.eureka2.metric.server.SpectatorEurekaServerMetricFactory;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.eureka2.server.metric.EurekaServerMetricFactory;
-import com.netflix.eureka2.server.metric.InterestChannelMetrics;
 import com.netflix.eureka2.server.registry.EurekaReadServerRegistry;
 import com.netflix.eureka2.server.service.EurekaReadServerSelfInfoResolver;
 import com.netflix.eureka2.server.service.EurekaReadServerSelfRegistrationService;
-import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
+import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
-import io.reactivex.netty.servo.ServoEventsListenerFactory;
+import io.reactivex.netty.spectator.SpectatorEventsListenerFactory;
 
 /**
  * @author Tomasz Bak
@@ -72,27 +70,16 @@ public class EurekaReadServerModule extends AbstractModule {
             bind(EurekaClient.class).toInstance(eurekaClient);
         }
 
-        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new ServoEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
+        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new SpectatorEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
         bind(TcpDiscoveryServer.class).asEagerSingleton();
 
         bind(SelfInfoResolver.class).to(EurekaReadServerSelfInfoResolver.class).asEagerSingleton();
         bind(SelfRegistrationService.class).to(EurekaReadServerSelfRegistrationService.class).asEagerSingleton();
 
-        bind(SerializedTaskInvokerMetrics.class).toInstance(new SerializedTaskInvokerMetrics("registry"));
         bind(SourcedEurekaRegistry.class).to(EurekaReadServerRegistry.class);
 
         // Metrics
-        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("registration")).toInstance(new MessageConnectionMetrics("registration"));
-        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("replication")).toInstance(new MessageConnectionMetrics("replication"));
-        bind(MessageConnectionMetrics.class).annotatedWith(Names.named("discovery")).toInstance(new MessageConnectionMetrics("discovery"));
-
-        bind(EurekaClientConnectionMetrics.class).annotatedWith(Names.named("registration")).toInstance(new EurekaClientConnectionMetrics("registration"));
-        bind(EurekaClientConnectionMetrics.class).annotatedWith(Names.named("discovery")).toInstance(new EurekaClientConnectionMetrics("discovery"));
-        bind(EurekaClientConnectionMetrics.class).annotatedWith(Names.named("replication")).toInstance(new EurekaClientConnectionMetrics("replication"));
-
-        bind(InterestChannelMetrics.class).toInstance(new InterestChannelMetrics());
-
-        bind(EurekaClientRegistryMetrics.class).toInstance(new EurekaClientRegistryMetrics("readServer"));
-        bind(EurekaServerMetricFactory.class).asEagerSingleton();
+        bind(EurekaClientMetricFactory.class).to(SpectatorEurekaClientMetricFactory.class).asEagerSingleton();
+        bind(EurekaServerMetricFactory.class).to(SpectatorEurekaServerMetricFactory.class).asEagerSingleton();
     }
 }

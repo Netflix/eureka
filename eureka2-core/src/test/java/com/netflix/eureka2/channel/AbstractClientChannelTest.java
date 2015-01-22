@@ -1,7 +1,7 @@
 package com.netflix.eureka2.channel;
 
 import com.netflix.eureka2.client.channel.RegistrationChannelImpl;
-import com.netflix.eureka2.client.metric.RegistrationChannelMetrics;
+import com.netflix.eureka2.metric.RegistrationChannelMetrics;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.TransportClient;
 import org.junit.Before;

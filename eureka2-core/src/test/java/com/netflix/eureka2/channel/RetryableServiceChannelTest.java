@@ -19,6 +19,7 @@ package com.netflix.eureka2.channel;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.netflix.eureka2.metric.noop.NoOpStateMachineMetrics;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,13 +31,17 @@ import rx.functions.Func0;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 /**
-* @author David Liu
-*/
+ * @author David Liu
+ */
 public class RetryableServiceChannelTest {
 
     private static final long INITIAL_DELAY = 1000;
@@ -52,6 +57,7 @@ public class RetryableServiceChannelTest {
     public void setUp() throws Exception {
         this.channelFactory = spy(new Func0<TestChannel>() {
             private AtomicInteger delegateChannelIdGenerator = new AtomicInteger(0);
+
             @Override
             public TestChannel call() {
                 return spy(new TestChannel(delegateChannelIdGenerator.getAndIncrement()));
@@ -145,7 +151,7 @@ public class RetryableServiceChannelTest {
         assertThat(retryableChannel.currentDelegateChannel().myId, equalTo(0));
 
         // Advance time by 2*INITIAL_DELAY to trigger the second retry that succeeds
-        scheduler.advanceTimeBy(2*INITIAL_DELAY, TimeUnit.MILLISECONDS);
+        scheduler.advanceTimeBy(2 * INITIAL_DELAY, TimeUnit.MILLISECONDS);
 
         verify(initialDelegate, times(1))._close();
         assertThat(retryableChannel.retryCount.get(), equalTo(2));
@@ -244,12 +250,14 @@ public class RetryableServiceChannelTest {
         }
     }
 
+    enum TestState {Ok}
 
-    class TestChannel extends AbstractServiceChannel<Enum> {
+    class TestChannel extends AbstractServiceChannel<TestState> {
 
         public final int myId;
+
         public TestChannel(int myId) {
-            super(null);
+            super(null, new NoOpStateMachineMetrics<TestState>());
             this.myId = myId;
         }
 

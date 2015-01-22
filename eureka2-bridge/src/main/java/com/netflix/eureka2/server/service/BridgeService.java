@@ -1,20 +1,21 @@
 package com.netflix.eureka2.server.service;
 
-import com.netflix.discovery.DiscoveryClient;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.server.config.BridgeServerConfig;
-import com.netflix.eureka2.server.metric.BridgeServerMetricFactory;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.channel.BridgeChannel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import rx.Subscriber;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.concurrent.atomic.AtomicReference;
+
+import com.netflix.discovery.DiscoveryClient;
+import com.netflix.eureka2.channel.BridgeChannel;
+import com.netflix.eureka2.metric.server.BridgeServerMetricFactory;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.server.channel.BridgeChannelImpl;
+import com.netflix.eureka2.server.config.BridgeServerConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rx.Subscriber;
 
 /**
  * @author David Liu
@@ -63,7 +64,7 @@ public class BridgeService {
             @Override
             public void onNext(InstanceInfo self) {
                 logger.info("Starting bridge service");
-                BridgeChannel channel = new BridgeChannel(
+                BridgeChannel channel = new BridgeChannelImpl(
                         registry,
                         discoveryClient,
                         config.getRefreshRateSec(),

@@ -6,5 +6,5 @@ package com.netflix.eureka2.registry;
  * @author David Liu
  */
 public interface Sourced {
-    public Source getSource();
+    Source getSource();
 }

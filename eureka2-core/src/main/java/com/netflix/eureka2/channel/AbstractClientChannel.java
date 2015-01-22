@@ -1,5 +1,6 @@
 package com.netflix.eureka2.channel;
 
+import com.netflix.eureka2.metric.StateMachineMetrics;
 import com.netflix.eureka2.transport.TransportClient;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.slf4j.Logger;
@@ -13,7 +14,7 @@ import rx.functions.Func1;
  *
  * @author Nitesh Kant
  */
-public abstract class AbstractClientChannel<STATE extends Enum> extends AbstractServiceChannel<STATE> {
+public abstract class AbstractClientChannel<STATE extends Enum<STATE>> extends AbstractServiceChannel<STATE> {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractClientChannel.class);
 
@@ -23,8 +24,8 @@ public abstract class AbstractClientChannel<STATE extends Enum> extends Abstract
 
     private final Observable<MessageConnection> singleConnection;
 
-    protected AbstractClientChannel(final STATE initState, final TransportClient client) {
-        super(initState);
+    protected AbstractClientChannel(final STATE initState, final TransportClient client, StateMachineMetrics<STATE> metrics) {
+        super(initState, metrics);
         this.client = client;
 
         singleConnection = client.connect()

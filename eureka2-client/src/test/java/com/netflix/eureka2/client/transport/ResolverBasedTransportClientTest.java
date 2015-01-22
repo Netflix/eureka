@@ -39,7 +39,7 @@ import rx.functions.Func1;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.netflix.eureka2.client.metric.EurekaClientMetricFactory.clientMetrics;
+import static com.netflix.eureka2.metric.client.EurekaClientMetricFactory.clientMetrics;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;

@@ -2,18 +2,19 @@ package com.netflix.eureka2.server.channel;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.netflix.eureka2.channel.ReplicationChannel;
+import com.netflix.eureka2.channel.ReplicationChannel.STATE;
+import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
 import com.netflix.eureka2.protocol.EurekaProtocolError;
 import com.netflix.eureka2.protocol.replication.RegisterCopy;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.protocol.replication.UnregisterCopy;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.channel.ReceiverReplicationChannel.STATES;
-import com.netflix.eureka2.server.metric.ReplicationChannelMetrics;
-import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.slf4j.Logger;
@@ -27,7 +28,7 @@ import rx.functions.Func1;
  *
  * @author Nitesh Kant
  */
-public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATES> implements ReplicationChannel, Sourced {
+public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATE> implements ReplicationChannel, Sourced {
 
     private static final Logger logger = LoggerFactory.getLogger(ReceiverReplicationChannel.class);
 
@@ -36,13 +37,10 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATES> i
     static final Exception REPLICATION_LOOP_EXCEPTION = new Exception("Self replicating to itself");
 
     private final SelfInfoResolver selfIdentityService;
-    private final ReplicationChannelMetrics metrics;
     private Source replicationSource;
 
     // A loop is detected by comparing hello message source id with local instance id.
     private boolean replicationLoop;
-
-    public enum STATES {Idle, Opened, Closed}
 
     private final ConcurrentHashMap<String, InstanceInfo> instanceInfoById = new ConcurrentHashMap<>();
 
@@ -51,10 +49,8 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATES> i
                                       SourcedEurekaRegistry<InstanceInfo> registry,
                                       final EvictionQueue evictionQueue,
                                       ReplicationChannelMetrics metrics) {
-        super(STATES.Idle, transport, registry);
+        super(STATE.Idle, transport, registry, metrics);
         this.selfIdentityService = selfIdentityService;
-        this.metrics = metrics;
-        this.metrics.incrementStateCounter(STATES.Idle);
 
         subscribeToTransportInput(new Action1<Object>() {
             @Override
@@ -130,10 +126,9 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATES> i
     public Observable<ReplicationHelloReply> hello(final ReplicationHello hello) {
         logger.debug("Replication hello message: {}", hello);
 
-        if (!state.compareAndSet(STATES.Idle, STATES.Opened)) {
-            return Observable.error(state.get() == STATES.Closed ? CHANNEL_CLOSED_EXCEPTION : HANDSHAKE_FINISHED_EXCEPTION);
+        if(!moveToState(STATE.Idle, STATE.Handshake)) {
+            return Observable.error(state.get() == STATE.Closed ? CHANNEL_CLOSED_EXCEPTION : HANDSHAKE_FINISHED_EXCEPTION);
         }
-        metrics.stateTransition(STATES.Idle, STATES.Opened);
 
         replicationSource = new Source(Source.Origin.REPLICATED, hello.getSourceId());
 
@@ -143,6 +138,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATES> i
                 replicationLoop = instanceInfo.getId().equals(hello.getSourceId());
                 ReplicationHelloReply reply = new ReplicationHelloReply(instanceInfo.getId(), false);
                 sendOnTransport(reply);
+                moveToState(STATE.Handshake, STATE.Connected);
                 return Observable.just(reply);
             }
         });
@@ -162,8 +158,8 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATES> i
     public Observable<Void> register(final InstanceInfo instanceInfo) {
         logger.debug("Replicated registry entry: {}", instanceInfo);
 
-        if (STATES.Opened != state.get()) {
-            return Observable.error(state.get() == STATES.Closed ? CHANNEL_CLOSED_EXCEPTION : IDLE_STATE_EXCEPTION);
+        if (STATE.Connected != state.get()) {
+            return Observable.error(state.get() == STATE.Closed ? CHANNEL_CLOSED_EXCEPTION : IDLE_STATE_EXCEPTION);
         }
         if (replicationLoop) {
             return Observable.error(REPLICATION_LOOP_EXCEPTION);
@@ -204,8 +200,8 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATES> i
     public Observable<Void> unregister(final String instanceId) {
         logger.debug("Removing registration entry for instanceId {}", instanceId);
 
-        if (STATES.Opened != state.get()) {
-            return Observable.error(state.get() == STATES.Closed ? CHANNEL_CLOSED_EXCEPTION : IDLE_STATE_EXCEPTION);
+        if (STATE.Connected != state.get()) {
+            return Observable.error(state.get() == STATE.Closed ? CHANNEL_CLOSED_EXCEPTION : IDLE_STATE_EXCEPTION);
         }
         if (replicationLoop) {
             return Observable.error(REPLICATION_LOOP_EXCEPTION);
@@ -237,10 +233,10 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATES> i
 
     @Override
     protected void _close() {
-        if (state.getAndSet(STATES.Closed) == STATES.Closed) {
+        if(state.get() == STATE.Closed) {
             return;
         }
-        metrics.stateTransition(STATES.Opened, STATES.Closed);
+        moveToState(STATE.Closed);
         super._close();
         unregisterAll();
     }
