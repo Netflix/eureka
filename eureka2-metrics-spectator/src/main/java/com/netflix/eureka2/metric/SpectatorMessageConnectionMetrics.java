@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.ExtendedRegistry;
 import com.netflix.spectator.api.Timer;
-import com.netflix.spectator.api.ValueFunction;
 
 
 /**
@@ -48,12 +47,6 @@ public class SpectatorMessageConnectionMetrics extends SpectatorEurekaMetrics im
 
     public SpectatorMessageConnectionMetrics(ExtendedRegistry registry, String context) {
         super(registry, context);
-        newLongGauge("connectedClients", new ValueFunction() {
-            @Override
-            public double apply(Object ref) {
-                return connectedClients.get();
-            }
-        });
         this.connectionTime = newTimer("connectionTime");
         this.totalIncomingMessages = newCounter("incoming.total");
         this.totalOutgoingMessages = newCounter("outgoing.total");
@@ -62,6 +55,8 @@ public class SpectatorMessageConnectionMetrics extends SpectatorEurekaMetrics im
     @Override
     public void incrementConnectedClients() {
         connectedClients.incrementAndGet();
+        registry.gauge("connectedClients", connectedClients.get());
+        totalIncomingMessages.increment();
     }
 
     @Override

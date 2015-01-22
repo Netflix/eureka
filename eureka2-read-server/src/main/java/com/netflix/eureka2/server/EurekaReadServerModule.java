@@ -19,6 +19,8 @@ package com.netflix.eureka2.server;
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.netflix.eureka2.client.EurekaClient;
+import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
+import com.netflix.eureka2.metric.client.SpectatorEurekaClientMetricFactory;
 import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
 import com.netflix.eureka2.metric.server.SpectatorEurekaServerMetricFactory;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
@@ -30,10 +32,8 @@ import com.netflix.eureka2.server.service.EurekaReadServerSelfRegistrationServic
 import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
-import com.netflix.spectator.api.DefaultRegistry;
-import com.netflix.spectator.api.ExtendedRegistry;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
-import io.reactivex.netty.servo.ServoEventsListenerFactory;
+import io.reactivex.netty.spectator.SpectatorEventsListenerFactory;
 
 /**
  * @author Tomasz Bak
@@ -70,7 +70,7 @@ public class EurekaReadServerModule extends AbstractModule {
             bind(EurekaClient.class).toInstance(eurekaClient);
         }
 
-        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new ServoEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
+        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new SpectatorEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
         bind(TcpDiscoveryServer.class).asEagerSingleton();
 
         bind(SelfInfoResolver.class).to(EurekaReadServerSelfInfoResolver.class).asEagerSingleton();
@@ -79,7 +79,7 @@ public class EurekaReadServerModule extends AbstractModule {
         bind(SourcedEurekaRegistry.class).to(EurekaReadServerRegistry.class);
 
         // Metrics
-        ExtendedRegistry metricsRegistry = new ExtendedRegistry(new DefaultRegistry());
-        bind(EurekaServerMetricFactory.class).toInstance(new SpectatorEurekaServerMetricFactory(metricsRegistry));
+        bind(EurekaClientMetricFactory.class).to(SpectatorEurekaClientMetricFactory.class).asEagerSingleton();
+        bind(EurekaServerMetricFactory.class).to(SpectatorEurekaServerMetricFactory.class).asEagerSingleton();
     }
 }

@@ -125,7 +125,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
             @Override
             public void call(MultiSourcedDataHolder.Status status) {
                 if (status != MultiSourcedDataHolder.Status.AddExpired) {
-                    metrics.incrementRegistrationCounter(source.getOrigin().name());
+                    metrics.incrementRegistrationCounter(source.getOrigin());
                 }
             }
         });
@@ -143,7 +143,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
             @Override
             public void call(MultiSourcedDataHolder.Status status) {
                 if (status != MultiSourcedDataHolder.Status.RemoveExpired) {
-                    metrics.incrementUnregistrationCounter(source.getOrigin().name());
+                    metrics.incrementUnregistrationCounter(source.getOrigin());
                 }
             }
         });

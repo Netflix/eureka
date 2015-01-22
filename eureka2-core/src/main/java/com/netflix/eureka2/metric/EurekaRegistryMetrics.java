@@ -18,16 +18,18 @@ package com.netflix.eureka2.metric;
 
 import java.util.concurrent.Callable;
 
+import com.netflix.eureka2.registry.Source.Origin;
+
 /**
  * @author Tomasz Bak
  */
 public interface EurekaRegistryMetrics {
 
-    void incrementRegistrationCounter(String origin);
+    void incrementRegistrationCounter(Origin origin);
 
-    void incrementUnregistrationCounter(String origin);
+    void incrementUnregistrationCounter(Origin origin);
 
-    void incrementUpdateCounter(String origin);
+    void incrementUpdateCounter(Origin origin);
 
     void setRegistrySizeMonitor(Callable<Integer> registrySizeFun);
 

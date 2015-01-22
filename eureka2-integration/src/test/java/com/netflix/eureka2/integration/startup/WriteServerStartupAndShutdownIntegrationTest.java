@@ -30,14 +30,14 @@ public class WriteServerStartupAndShutdownIntegrationTest extends AbstractStartu
 
     public static final String SERVER_NAME = "write-server-startupAndShutdown";
 
-    @Test
+    @Test(timeout = 60000)
     public void testStartsWithFileBasedConfiguration() throws Exception {
         injectConfigurationValuesViaSystemProperties(SERVER_NAME);
         EurekaWriteServer server = new EurekaWriteServer(SERVER_NAME);
         executeAndVerifyLifecycle(server);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testStartsWithCommandLineParameters() throws Exception {
         WriteServerConfig config = new WriteServerConfigBuilder()
                 .withAppName(SERVER_NAME)

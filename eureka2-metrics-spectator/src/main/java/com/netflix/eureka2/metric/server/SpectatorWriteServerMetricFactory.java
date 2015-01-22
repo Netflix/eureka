@@ -1,5 +1,8 @@
 package com.netflix.eureka2.metric.server;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.metric.RegistrationChannelMetrics;
 import com.netflix.eureka2.metric.SpectatorMessageConnectionMetrics;
@@ -9,6 +12,7 @@ import com.netflix.spectator.api.ExtendedRegistry;
 /**
  * @author Tomasz Bak
  */
+@Singleton
 public class SpectatorWriteServerMetricFactory extends WriteServerMetricFactory {
     private final SpectatorMessageConnectionMetrics replicationSenderConnectionMetrics;
     private final SpectatorMessageConnectionMetrics replicationReceiverConnectionMetrics;
@@ -18,6 +22,7 @@ public class SpectatorWriteServerMetricFactory extends WriteServerMetricFactory 
     private final SpectatorReplicationChannelMetrics replicationChannelMetrics;
     private final SpectatorServerInterestChannelMetrics interestChannelMetrics;
 
+    @Inject
     public SpectatorWriteServerMetricFactory(ExtendedRegistry registry) {
         this.replicationSenderConnectionMetrics = new SpectatorMessageConnectionMetrics(registry, "replicationSender");
         this.replicationReceiverConnectionMetrics = new SpectatorMessageConnectionMetrics(registry, "replicationReceiver");

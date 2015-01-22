@@ -44,10 +44,8 @@ import com.netflix.eureka2.server.spi.ExtensionContext;
 import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
-import com.netflix.spectator.api.DefaultRegistry;
-import com.netflix.spectator.api.ExtendedRegistry;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
-import io.reactivex.netty.servo.ServoEventsListenerFactory;
+import io.reactivex.netty.spectator.SpectatorEventsListenerFactory;
 
 /**
  * @author Tomasz Bak
@@ -85,9 +83,9 @@ public class EurekaWriteServerModule extends AbstractModule {
         bind(SelfInfoResolver.class).to(EurekaWriteServerSelfInfoResolver.class).asEagerSingleton();
         bind(SelfRegistrationService.class).to(EurekaWriteServerSelfRegistrationService.class).asEagerSingleton();
 
-        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("registration")).toInstance(new ServoEventsListenerFactory("registration-rx-client-", "registration-rx-server-"));
-        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new ServoEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
-        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("replication")).toInstance(new ServoEventsListenerFactory("replication-rx-client-", "replication-rx-server-"));
+        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("registration")).toInstance(new SpectatorEventsListenerFactory("registration-rx-client-", "registration-rx-server-"));
+        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new SpectatorEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
+        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("replication")).toInstance(new SpectatorEventsListenerFactory("replication-rx-client-", "replication-rx-server-"));
         bind(TcpRegistrationServer.class).asEagerSingleton();
         bind(TcpDiscoveryServer.class).asEagerSingleton();
         bind(TcpReplicationServer.class).asEagerSingleton();
@@ -97,11 +95,9 @@ public class EurekaWriteServerModule extends AbstractModule {
         bind(ExtensionContext.class).asEagerSingleton();
 
         // Metrics
-        ExtendedRegistry metricsRegistry = new ExtendedRegistry(new DefaultRegistry());
-        bind(EurekaRegistryMetricFactory.class).toInstance(new SpectatorEurekaRegistryMetricFactory(metricsRegistry));
+        bind(EurekaRegistryMetricFactory.class).to(SpectatorEurekaRegistryMetricFactory.class).asEagerSingleton();
 
-        SpectatorWriteServerMetricFactory serverMetricFactory = new SpectatorWriteServerMetricFactory(metricsRegistry);
-        bind(EurekaServerMetricFactory.class).toInstance(serverMetricFactory);
-        bind(WriteServerMetricFactory.class).toInstance(serverMetricFactory);
+        bind(EurekaServerMetricFactory.class).to(SpectatorWriteServerMetricFactory.class).asEagerSingleton();
+        bind(WriteServerMetricFactory.class).to(SpectatorWriteServerMetricFactory.class).asEagerSingleton();
     }
 }

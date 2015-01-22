@@ -18,6 +18,7 @@ package com.netflix.eureka2.metric;
 
 import java.util.concurrent.Callable;
 
+import com.netflix.eureka2.registry.Source.Origin;
 import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.ExtendedRegistry;
 import com.netflix.spectator.api.ValueFunction;
@@ -56,12 +57,12 @@ public class SpectatorEurekaRegistryMetrics extends SpectatorEurekaMetrics imple
     }
 
     @Override
-    public void incrementRegistrationCounter(String origin) {
+    public void incrementRegistrationCounter(Origin origin) {
         switch (origin) {
-            case "LOCAL":
+            case LOCAL:
                 registrationsLocal.increment();
                 break;
-            case "REPLICATED":
+            case REPLICATED:
                 registrationsReplicated.increment();
                 break;
         }
@@ -69,12 +70,12 @@ public class SpectatorEurekaRegistryMetrics extends SpectatorEurekaMetrics imple
     }
 
     @Override
-    public void incrementUnregistrationCounter(String origin) {
+    public void incrementUnregistrationCounter(Origin origin) {
         switch (origin) {
-            case "LOCAL":
+            case LOCAL:
                 unregistrationsLocal.increment();
                 break;
-            case "REPLICATED":
+            case REPLICATED:
                 unregistrationsReplicated.increment();
                 break;
         }
@@ -82,12 +83,12 @@ public class SpectatorEurekaRegistryMetrics extends SpectatorEurekaMetrics imple
     }
 
     @Override
-    public void incrementUpdateCounter(String origin) {
+    public void incrementUpdateCounter(Origin origin) {
         switch (origin) {
-            case "LOCAL":
+            case LOCAL:
                 updatesLocal.increment();
                 break;
-            case "REPLICATED":
+            case REPLICATED:
                 updatesReplicated.increment();
                 break;
         }

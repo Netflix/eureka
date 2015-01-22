@@ -267,15 +267,6 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
         return notification;
     }
 
-    protected boolean moveToState(STATE from, STATE to) {
-        if (state.compareAndSet(from, to)) {
-            metrics.decrementStateCounter(from);
-            metrics.incrementStateCounter(to);
-            return true;
-        }
-        return false;
-    }
-
     protected class ChannelInterestSubscriber extends SafeSubscriber<ChangeNotification<InstanceInfo>> {
         public ChannelInterestSubscriber(final SourcedEurekaRegistry<InstanceInfo> registry) {
             super(new Subscriber<ChangeNotification<InstanceInfo>>() {

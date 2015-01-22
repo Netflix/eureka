@@ -17,7 +17,7 @@
 package com.netflix.eureka2.metric.client;
 
 import javax.inject.Inject;
-import javax.inject.Named;
+import javax.inject.Singleton;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.eureka2.metric.InterestChannelMetrics;
@@ -25,6 +25,7 @@ import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.metric.RegistrationChannelMetrics;
 import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.metric.SpectatorInterestChannelMetrics;
+import com.netflix.eureka2.metric.SpectatorMessageConnectionMetrics;
 import com.netflix.eureka2.metric.SpectatorRegistrationChannelMetrics;
 import com.netflix.eureka2.metric.SpectatorSerializedTaskInvokerMetrics;
 import com.netflix.spectator.api.ExtendedRegistry;
@@ -32,6 +33,7 @@ import com.netflix.spectator.api.ExtendedRegistry;
 /**
  * @author Tomasz Bak
  */
+@Singleton
 public class SpectatorEurekaClientMetricFactory extends EurekaClientMetricFactory {
 
     private final ExtendedRegistry registry;
@@ -49,19 +51,13 @@ public class SpectatorEurekaClientMetricFactory extends EurekaClientMetricFactor
     private final ConcurrentHashMap<Class<?>, SerializedTaskInvokerMetrics> serializedTaskInvokerMetricsMap = new ConcurrentHashMap<>();
 
     @Inject
-    public SpectatorEurekaClientMetricFactory(
-            ExtendedRegistry registry,
-            SpectatorEurekaClientRegistryMetrics registryMetrics,
-            @Named("registration") MessageConnectionMetrics registrationServerConnectionMetrics,
-            @Named("discovery") MessageConnectionMetrics discoveryServerConnectionMetrics,
-            SpectatorRegistrationChannelMetrics registrationChannelMetrics,
-            SpectatorInterestChannelMetrics interestChannelMetrics) {
+    public SpectatorEurekaClientMetricFactory(ExtendedRegistry registry) {
         this.registry = registry;
-        this.registryMetrics = registryMetrics;
-        this.registrationServerConnectionMetrics = registrationServerConnectionMetrics;
-        this.discoveryServerConnectionMetrics = discoveryServerConnectionMetrics;
-        this.registrationChannelMetrics = registrationChannelMetrics;
-        this.interestChannelMetrics = interestChannelMetrics;
+        this.registryMetrics = new SpectatorEurekaClientRegistryMetrics(registry, "client");
+        this.registrationServerConnectionMetrics = new SpectatorMessageConnectionMetrics(registry, "registration");
+        this.discoveryServerConnectionMetrics = new SpectatorMessageConnectionMetrics(registry, "discovery");
+        this.registrationChannelMetrics = new SpectatorRegistrationChannelMetrics(registry, "client");
+        this.interestChannelMetrics = new SpectatorInterestChannelMetrics(registry, "client");
     }
 
     @Override
@@ -93,10 +89,11 @@ public class SpectatorEurekaClientMetricFactory extends EurekaClientMetricFactor
     public SerializedTaskInvokerMetrics getSerializedTaskInvokerMetrics(Class<?> invokerClass) {
         SerializedTaskInvokerMetrics invokerMetrics = serializedTaskInvokerMetricsMap.get(invokerClass);
         if (invokerMetrics == null) {
-            invokerMetrics = serializedTaskInvokerMetricsMap.putIfAbsent(
+            serializedTaskInvokerMetricsMap.putIfAbsent(
                     invokerClass,
                     new SpectatorSerializedTaskInvokerMetrics(registry, invokerClass.getSimpleName())
             );
+            return serializedTaskInvokerMetricsMap.get(invokerClass);
         }
         return invokerMetrics;
     }

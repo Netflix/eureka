@@ -21,6 +21,7 @@ apply plugin: 'osgi'
 dependencies {
     compile project(':eureka2-core')
     compile "com.netflix.spectator:spectator-api:${spectator_version}"
+    compile "com.netflix.spectator:spectator-reg-metrics3:${spectator_version}"
     compile "javax.inject:javax.inject:1"
 //    testCompile project(':eureka2-test-utils')
 }

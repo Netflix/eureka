@@ -79,17 +79,6 @@ public class RegistrationChannelImpl extends AbstractClientChannel<STATE> implem
         });
     }
 
-    protected boolean moveToState(STATE from, STATE to) {
-        if (state.compareAndSet(from, to)) {
-            if (from != to) {
-                metrics.decrementStateCounter(from);
-                metrics.incrementStateCounter(to);
-            }
-            return true;
-        }
-        return false;
-    }
-
     @Override
     protected void _close() {
         if (state.get() != STATE.Closed) {
