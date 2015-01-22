@@ -83,10 +83,9 @@ public abstract class AbstractServiceChannel<STATE extends Enum<STATE>> implemen
         return false;
     }
 
-    protected boolean moveToState(STATE to) {
-        if (state.get() == to) {
-            return false;
+    protected void moveToState(STATE to) {
+        if (state.get() != to) {
+            moveToState(state.get(), to);
         }
-        return moveToState(state.get(), to);
     }
 }
