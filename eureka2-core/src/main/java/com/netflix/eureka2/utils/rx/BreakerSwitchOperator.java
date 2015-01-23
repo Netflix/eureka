@@ -22,12 +22,15 @@ import rx.Subscriber;
 import rx.subjects.AsyncSubject;
 import rx.subjects.Subject;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * An operator that allows one tracking subscriptions of all subscribers to a given observable.
  * When close() is called, this operator should onComplete to all subscribers and unsubscribe from the upstream;
  */
 public class BreakerSwitchOperator<T> implements Operator<T, T> {
 
+    private final AtomicBoolean closed = new AtomicBoolean(false);
     private final Subject<Void, Void> onCompleteFuture = AsyncSubject.create();
 
     @Override
@@ -36,7 +39,9 @@ public class BreakerSwitchOperator<T> implements Operator<T, T> {
     }
 
     public void close() {
-        onCompleteFuture.onCompleted();
+        if (closed.compareAndSet(false, true)) {
+            onCompleteFuture.onCompleted();
+        }
     }
 
     private static class BreakerSwitchSubscriber<T> extends Subscriber<T> {
