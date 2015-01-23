@@ -11,6 +11,7 @@ import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import org.junit.rules.ExternalResource;
 
 /**
+ * TODO is this still needed or superseded by EurekaDeploymentResource.connectTo ... ?
  * @author Tomasz Bak
  */
 public class EurekaClientResource extends ExternalResource {

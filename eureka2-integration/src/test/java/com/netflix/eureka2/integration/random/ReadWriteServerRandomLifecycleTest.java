@@ -33,5 +33,8 @@ public class ReadWriteServerRandomLifecycleTest extends AbstractRandomLifecycleT
         List<ChangeNotification<InstanceInfo>> actualLifecycle = testClient.playLifecycle();
 
         assertLifecycles(expectedLifecycle, actualLifecycle);
+
+        readClient.close();
+        writeClient.close();
     }
 }

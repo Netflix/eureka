@@ -33,5 +33,7 @@ public class WriteServerRandomLifecycleTest extends AbstractRandomLifecycleTest 
         List<ChangeNotification<InstanceInfo>> actualLifecycle = testClient.playLifecycle();
 
         assertLifecycles(expectedLifecycle, actualLifecycle);
+
+        eurekaClient.close();
     }
 }
