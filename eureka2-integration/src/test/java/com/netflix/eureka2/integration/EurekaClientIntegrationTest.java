@@ -64,6 +64,8 @@ public class EurekaClientIntegrationTest {
         Iterator<ChangeNotification<InstanceInfo>> notificationIt = RxBlocking.iteratorFrom(5, TimeUnit.HOURS, eurekaClient.forVips(info.getVipAddress()));
 
         assertThat(notificationIt.next(), is(addChangeNotificationOf(info)));
+
+        eurekaClient.close();
     }
 
     @Test

@@ -12,6 +12,7 @@ import com.netflix.eureka2.server.EurekaReadServer;
 import com.netflix.eureka2.server.config.EurekaCommonConfig.ResolverType;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.config.EurekaServerConfig.EurekaServerConfigBuilder;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 

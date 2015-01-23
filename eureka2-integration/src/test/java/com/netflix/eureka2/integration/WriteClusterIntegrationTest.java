@@ -48,6 +48,9 @@ public class WriteClusterIntegrationTest {
 
         // Second <- First
         testWriteClusterReplicationWorksBothWays(clientToSecond, clientToFirst, SampleInstanceInfo.ZuulServer.build());
+
+        clientToFirst.close();
+        clientToSecond.close();
     }
 
     protected void testWriteClusterReplicationWorksBothWays(EurekaClient firstClient, EurekaClient secondClient, InstanceInfo clientInfo) {
@@ -123,5 +126,8 @@ public class WriteClusterIntegrationTest {
         dataSourceClient.register(secondRecord).toBlocking().firstOrDefault(null);
 
         assertThat(notificationIterator.next(), is(addChangeNotificationOf(secondRecord)));
+
+        dataSourceClient.close();
+        subscriberClient.close();
     }
 }
