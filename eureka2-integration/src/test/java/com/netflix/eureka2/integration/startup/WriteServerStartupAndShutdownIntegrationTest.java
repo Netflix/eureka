@@ -31,7 +31,6 @@ public class WriteServerStartupAndShutdownIntegrationTest extends AbstractStartu
 
     public static final String SERVER_NAME = "write-server-startupAndShutdown";
 
-    @Ignore // FIXME
     @Test(timeout = 60000)
     public void testStartsWithFileBasedConfiguration() throws Exception {
         injectConfigurationValuesViaSystemProperties(SERVER_NAME);

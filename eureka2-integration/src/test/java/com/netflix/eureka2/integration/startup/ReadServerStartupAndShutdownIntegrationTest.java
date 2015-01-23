@@ -31,7 +31,6 @@ public class ReadServerStartupAndShutdownIntegrationTest extends AbstractStartup
 
     public static final String SERVER_NAME = "read-server-startupAndShutdown";
 
-    @Ignore // FIXME
     @Test(timeout = 60000)
     public void testStartsWithFileBasedConfiguration() throws Exception {
         injectConfigurationValuesViaSystemProperties(SERVER_NAME);
