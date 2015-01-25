@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.registry;
 
+import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Named;
 import java.util.concurrent.Callable;
@@ -217,8 +218,10 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
 
     }
 
+    @PreDestroy
     @Override
     public Observable<Void> shutdown() {
+        logger.info("Shutting down the preservable registry");
         evictionSubscription.unsubscribe();
         evictionQueue.shutdown();
         return eurekaRegistry.shutdown();

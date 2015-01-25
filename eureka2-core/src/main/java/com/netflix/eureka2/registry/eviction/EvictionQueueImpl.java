@@ -17,7 +17,6 @@
 package com.netflix.eureka2.registry.eviction;
 
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.Deque;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -45,7 +44,6 @@ import rx.schedulers.Schedulers;
 /**
  * @author Tomasz Bak
  */
-@Singleton
 public class EvictionQueueImpl implements EvictionQueue {
 
     private static final Logger logger = LoggerFactory.getLogger(EvictionQueueImpl.class);
@@ -151,6 +149,7 @@ public class EvictionQueueImpl implements EvictionQueue {
 
     @Override
     public void shutdown() {
+        logger.info("Shutting down the eviction queue");
         worker.unsubscribe();
         queue.clear();
     }

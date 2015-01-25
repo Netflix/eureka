@@ -40,7 +40,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATE> im
     private Source replicationSource;
 
     // A loop is detected by comparing hello message source id with local instance id.
-    private boolean replicationLoop;
+    private volatile boolean replicationLoop;
 
     private final ConcurrentHashMap<String, InstanceInfo> instanceInfoById = new ConcurrentHashMap<>();
 

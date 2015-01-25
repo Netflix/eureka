@@ -42,11 +42,18 @@ public abstract class AbstractStartupAndShutdownIntegrationTest {
         System.setProperty("eureka.test.startupAndShutdown.appName", appName);
     }
 
-    protected void sendShutdownCommand() {
+    protected void clearConfigurationValuesViaSystemProperties() {
+        // These properties are resolved in read-server-startupAndShutdown.properties, and
+        // write-server-startupAndShutdown.properties file.
+        System.clearProperty("eureka.test.startupAndShutdown.serverList");
+        System.clearProperty("eureka.test.startupAndShutdown.appName");
+    }
+
+    protected void sendShutdownCommand(final int port) {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                RxNetty.createTcpClient("localhost", 7700).connect().flatMap(new Func1<ObservableConnection<ByteBuf, ByteBuf>, Observable<Void>>() {
+                RxNetty.createTcpClient("localhost", port).connect().flatMap(new Func1<ObservableConnection<ByteBuf, ByteBuf>, Observable<Void>>() {
                     @Override
                     public Observable<Void> call(ObservableConnection<ByteBuf, ByteBuf> connection) {
                         connection.writeStringAndFlush(SHUTDOWN_CMD);
