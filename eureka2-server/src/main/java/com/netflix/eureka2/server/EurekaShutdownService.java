@@ -41,6 +41,7 @@ public class EurekaShutdownService {
     @PostConstruct
     public void start() {
         selfRegistrationService.resolve()
+                .take(1)
                 .doOnNext(new Action1<InstanceInfo>() {
                     @Override
                     public void call(InstanceInfo instanceInfo) {
