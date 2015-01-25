@@ -74,6 +74,7 @@ public abstract class RetryableServiceChannel<C extends ServiceChannel> extends 
      */
     @Override
     protected void _close() {
+        logger.info("Closing the retryable channel: {}", name);
         if (state.get() != STATES.Closed) {
             worker.unsubscribe();
 

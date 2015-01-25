@@ -12,6 +12,8 @@ import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
 
+import javax.annotation.PreDestroy;
+
 /**
  * A self identify service that periodically reports data
  * @author David Liu
@@ -56,7 +58,9 @@ public abstract class SelfRegistrationService implements SelfInfoResolver {
                 .subscribe();
     }
 
+    @PreDestroy
     public void shutdown() {
+        logger.info("Shutting down the self registration service");
         if (subscription != null) {
             subscription.unsubscribe();
         }

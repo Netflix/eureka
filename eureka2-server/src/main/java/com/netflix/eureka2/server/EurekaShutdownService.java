@@ -6,13 +6,16 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import com.google.inject.Injector;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
+import com.netflix.eureka2.utils.rx.NoOpSubscriber;
 import com.netflix.governator.lifecycle.LifecycleManager;
 import netflix.karyon.ShutdownListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.functions.Action0;
+import rx.functions.Action1;
 
 /**
  * @author Tomasz Bak
@@ -37,6 +40,14 @@ public class EurekaShutdownService {
 
     @PostConstruct
     public void start() {
+        selfRegistrationService.resolve()
+                .doOnNext(new Action1<InstanceInfo>() {
+                    @Override
+                    public void call(InstanceInfo instanceInfo) {
+                        logger.info("Instance {} listening for shutdown on port {}", instanceInfo.getId(), port);
+                    }
+                }).subscribe(new NoOpSubscriber<>());  // logging only, so ignore errors by using a no-op subscriber
+
         shutdownListener = new ShutdownListener(port, new Action0() {
             @Override
             public void call() {
