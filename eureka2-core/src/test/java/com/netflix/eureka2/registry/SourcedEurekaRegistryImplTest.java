@@ -2,6 +2,7 @@ package com.netflix.eureka2.registry;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -9,12 +10,16 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
+import com.netflix.eureka2.metric.EurekaRegistryMetrics;
+import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
+import com.netflix.eureka2.registry.Source.Origin;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
+import org.junit.After;
 import org.junit.Assert;
-import org.junit.Rule;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.rules.ExternalResource;
 import rx.Observable;
 import rx.Scheduler;
 import rx.Subscriber;
@@ -24,9 +29,18 @@ import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
-import static com.netflix.eureka2.metric.EurekaRegistryMetricFactory.*;
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 
 /**
@@ -34,24 +48,27 @@ import static org.hamcrest.Matchers.*;
  */
 public class SourcedEurekaRegistryImplTest {
 
+    private final EurekaRegistryMetricFactory registryMetricFactory = mock(EurekaRegistryMetricFactory.class);
+    private final EurekaRegistryMetrics registryMetrics = mock(EurekaRegistryMetrics.class);
+    private final SerializedTaskInvokerMetrics registryTaskInvokerMetrics = mock(SerializedTaskInvokerMetrics.class);
+
     private final TestScheduler testScheduler = Schedulers.test();
     private final Source localSource = new Source(Source.Origin.LOCAL);
+    private final Source replicatedSource = new Source(Source.Origin.REPLICATED);
 
     private TestEurekaServerRegistry registry;
 
-    @Rule
-    public final ExternalResource registryResource = new ExternalResource() {
+    @Before
+    public void setUp() throws Exception {
+        when(registryMetricFactory.getEurekaServerRegistryMetrics()).thenReturn(registryMetrics);
+        when(registryMetricFactory.getRegistryTaskInvokerMetrics()).thenReturn(registryTaskInvokerMetrics);
+        registry = new TestEurekaServerRegistry(registryMetricFactory, testScheduler);
+    }
 
-        @Override
-        protected void before() throws Throwable {
-            registry = new TestEurekaServerRegistry(testScheduler);
-        }
-
-        @Override
-        protected void after() {
-            registry.shutdown();
-        }
-    };
+    @After
+    public void tearDown() throws Exception {
+        registry.shutdown();
+    }
 
     @Test
     public void shouldReturnSnapshotOfInstanceInfos() throws InterruptedException {
@@ -290,21 +307,21 @@ public class SourcedEurekaRegistryImplTest {
         final List<ChangeNotification<InstanceInfo>> notifications = new ArrayList<>();
         registry.forInterest(Interests.forFullRegistry(), Source.matcherFor(Source.Origin.LOCAL))
                 .subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
-                               @Override
-                               public void onCompleted() {
-                                   Assert.fail("should never onComplete");
-                               }
+                    @Override
+                    public void onCompleted() {
+                        Assert.fail("should never onComplete");
+                    }
 
-                               @Override
-                               public void onError(Throwable e) {
-                                   Assert.fail("should never onError");
-                               }
+                    @Override
+                    public void onError(Throwable e) {
+                        Assert.fail("should never onError");
+                    }
 
-                               @Override
-                               public void onNext(ChangeNotification<InstanceInfo> notification) {
-                                   notifications.add(notification);
-                               }
-                           });
+                    @Override
+                    public void onNext(ChangeNotification<InstanceInfo> notification) {
+                        notifications.add(notification);
+                    }
+                });
 
         testScheduler.triggerActions();
 
@@ -393,11 +410,64 @@ public class SourcedEurekaRegistryImplTest {
         testScheduler.triggerActions();
     }
 
+    @Test
+    public void testMetricsCollection() throws Exception {
+        Iterator<InstanceInfo> source = SampleInstanceInfo.collectionOf("test", SampleInstanceInfo.DiscoveryServer.build());
+
+        // Add first entry
+        InstanceInfo first = source.next();
+        registry.register(first, localSource).subscribe();
+        testScheduler.triggerActions();
+
+        verify(registryMetrics, times(1)).incrementRegistrationCounter(Origin.LOCAL);
+        verify(registryMetrics, times(1)).setRegistrySize(1);
+        reset(registryMetrics);
+
+        // Add second entry
+        InstanceInfo second = source.next();
+        registry.register(second, localSource).subscribe();
+        testScheduler.triggerActions();
+
+        verify(registryMetrics, times(1)).incrementRegistrationCounter(Origin.LOCAL);
+        verify(registryMetrics, times(1)).setRegistrySize(2);
+        reset(registryMetrics);
+
+        // Remove second entry
+        registry.unregister(second, localSource);
+        testScheduler.triggerActions();
+
+        verify(registryMetrics, times(1)).incrementUnregistrationCounter(Origin.LOCAL);
+        verify(registryMetrics, times(1)).setRegistrySize(1);
+        reset(registryMetrics);
+
+        // Add first entry from another source
+        registry.register(first, replicatedSource).subscribe();
+        testScheduler.triggerActions();
+
+        verify(registryMetrics, times(1)).incrementRegistrationCounter(Origin.REPLICATED);
+        verify(registryMetrics, never()).setRegistrySize(1);
+        reset(registryMetrics);
+
+        // Remove first copy of first entry
+        registry.unregister(first, localSource).subscribe();
+        testScheduler.triggerActions();
+
+        verify(registryMetrics, times(1)).incrementUnregistrationCounter(Origin.LOCAL);
+        verify(registryMetrics, never()).setRegistrySize(1);
+        reset(registryMetrics);
+
+        // Remove last copy of first entry
+        registry.unregister(first, replicatedSource).subscribe();
+        testScheduler.triggerActions();
+
+        verify(registryMetrics, times(1)).incrementUnregistrationCounter(Origin.REPLICATED);
+        verify(registryMetrics, times(1)).setRegistrySize(0);
+    }
 
     private static class TestEurekaServerRegistry extends SourcedEurekaRegistryImpl {
 
-        TestEurekaServerRegistry(Scheduler testScheduler) {
-            super(registryMetrics(), testScheduler);
+        TestEurekaServerRegistry(EurekaRegistryMetricFactory registryMetricFactory, Scheduler testScheduler) {
+            super(registryMetricFactory, testScheduler);
         }
 
         public ConcurrentHashMap<String, NotifyingInstanceInfoHolder> getInternalStore() {

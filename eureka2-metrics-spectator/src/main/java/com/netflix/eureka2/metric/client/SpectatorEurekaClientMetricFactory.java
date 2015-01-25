@@ -38,8 +38,6 @@ public class SpectatorEurekaClientMetricFactory extends EurekaClientMetricFactor
 
     private final ExtendedRegistry registry;
 
-    private final SpectatorEurekaClientRegistryMetrics registryMetrics;
-
     private final MessageConnectionMetrics registrationServerConnectionMetrics;
 
     private final MessageConnectionMetrics discoveryServerConnectionMetrics;
@@ -53,16 +51,10 @@ public class SpectatorEurekaClientMetricFactory extends EurekaClientMetricFactor
     @Inject
     public SpectatorEurekaClientMetricFactory(ExtendedRegistry registry) {
         this.registry = registry;
-        this.registryMetrics = new SpectatorEurekaClientRegistryMetrics(registry, "client");
         this.registrationServerConnectionMetrics = new SpectatorMessageConnectionMetrics(registry, "registration");
         this.discoveryServerConnectionMetrics = new SpectatorMessageConnectionMetrics(registry, "discovery");
         this.registrationChannelMetrics = new SpectatorRegistrationChannelMetrics(registry, "client");
         this.interestChannelMetrics = new SpectatorInterestChannelMetrics(registry, "client");
-    }
-
-    @Override
-    public EurekaClientRegistryMetrics getRegistryMetrics() {
-        return registryMetrics;
     }
 
     @Override

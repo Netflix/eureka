@@ -16,8 +16,6 @@
 
 package com.netflix.eureka2.metric;
 
-import java.util.concurrent.Callable;
-
 import com.netflix.eureka2.registry.Source.Origin;
 
 /**
@@ -29,9 +27,7 @@ public interface EurekaRegistryMetrics {
 
     void incrementUnregistrationCounter(Origin origin);
 
-    void incrementUpdateCounter(Origin origin);
+    void setRegistrySize(int registrySize);
 
-    void setRegistrySizeMonitor(Callable<Integer> registrySizeFun);
-
-    void setSelfPreservationMonitor(Callable<Integer> selfPreservationFun);
+    void setSelfPreservation(boolean status);
 }

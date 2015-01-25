@@ -10,15 +10,15 @@ public class NoOpMessageConnectionMetrics implements MessageConnectionMetrics {
     public static final NoOpMessageConnectionMetrics INSTANCE = new NoOpMessageConnectionMetrics();
 
     @Override
-    public void incrementConnectedClients() {
+    public void incrementConnectionCounter() {
     }
 
     @Override
-    public void decrementConnectedClients() {
+    public void decrementConnectionCounter() {
     }
 
     @Override
-    public void clientConnectionTime(long start) {
+    public void connectionDuration(long start) {
     }
 
     @Override

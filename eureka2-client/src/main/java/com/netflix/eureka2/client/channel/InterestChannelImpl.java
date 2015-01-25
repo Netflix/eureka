@@ -56,7 +56,6 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
     protected Subscriber<ChangeNotification<InstanceInfo>> channelInterestSubscriber;
 
     private final Source selfSource;
-    private final InterestChannelMetrics metrics;
     protected final SourcedEurekaRegistry<InstanceInfo> registry;
 
     /**
@@ -81,8 +80,6 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
         super(STATE.Idle, client, metrics);
         this.selfSource = new Source(Source.Origin.LOCAL);
         this.registry = registry;
-        this.metrics = metrics;
-        metrics.incrementStateCounter(STATE.Idle);
         channelInterest = new MultipleInterests<>();  // blank channelInterest to start with
         channelInterestSubscriber = new ChannelInterestSubscriber(registry);
         channelInterestStream = createInterestStream();

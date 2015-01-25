@@ -21,8 +21,9 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.metric.EvictionQueueMetrics;
 import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,8 +33,14 @@ import rx.Subscriber;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Tomasz Bak
@@ -44,13 +51,19 @@ public class EvictionQueueImplTest {
 
     private final TestScheduler testScheduler = Schedulers.test();
 
-    private final EvictionQueueImpl evictionQueue = new EvictionQueueImpl(EVICTION_TIMEOUT, EurekaRegistryMetricFactory.registryMetrics(), testScheduler);
+    private final EurekaRegistryMetricFactory registryMetricFactory = mock(EurekaRegistryMetricFactory.class);
+    private final EvictionQueueMetrics evictionQueueMetrics = mock(EvictionQueueMetrics.class);
+
+    private EvictionQueueImpl evictionQueue;
     private final List<EvictionItem> evictedList = new ArrayList<>();
     private final EvictionQueueSubscriber evictionQueueSubscriber = new EvictionQueueSubscriber();
     private final Source localSource = new Source(Source.Origin.LOCAL);
 
     @Before
     public void setUp() throws Exception {
+        when(registryMetricFactory.getEvictionQueueMetrics()).thenReturn(evictionQueueMetrics);
+
+        evictionQueue = new EvictionQueueImpl(EVICTION_TIMEOUT, registryMetricFactory, testScheduler);
         evictionQueue.pendingEvictions().subscribe(evictionQueueSubscriber);
     }
 
@@ -100,6 +113,23 @@ public class EvictionQueueImplTest {
                 .toBlocking().last();
         assertThat(notification.getKind(), is(Kind.OnError));
         assertThat(notification.getThrowable(), instanceOf(IllegalStateException.class));
+    }
+
+    @Test
+    public void testMetrics() throws Exception {
+        // Add an item to the eviction queue
+        InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();
+        evictionQueue.add(instanceInfo, localSource);
+
+        verify(evictionQueueMetrics, times(1)).incrementEvictionQueueAddCounter();
+        verify(evictionQueueMetrics, times(1)).setEvictionQueueSize(1);
+
+        // Consume item from the eviction queue
+        evictionQueueSubscriber.allow(1);
+        testScheduler.advanceTimeBy(EVICTION_TIMEOUT, TimeUnit.MILLISECONDS);
+
+        verify(evictionQueueMetrics, times(1)).decrementEvictionQueueCounter();
+        verify(evictionQueueMetrics, times(1)).setEvictionQueueSize(0);
     }
 
     class EvictionQueueSubscriber extends Subscriber<EvictionItem> {

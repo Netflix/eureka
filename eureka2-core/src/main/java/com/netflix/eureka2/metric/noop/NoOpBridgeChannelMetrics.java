@@ -11,19 +11,19 @@ public class NoOpBridgeChannelMetrics implements BridgeChannelMetrics {
     public static final NoOpBridgeChannelMetrics INSTANCE = new NoOpBridgeChannelMetrics();
 
     @Override
-    public void setTotalCount(long n) {
+    public void setTotalCount(int n) {
     }
 
     @Override
-    public void setRegisterCount(long n) {
+    public void setRegisterCount(int n) {
     }
 
     @Override
-    public void setUpdateCount(long n) {
+    public void setUpdateCount(int n) {
     }
 
     @Override
-    public void setUnregisterCount(long n) {
+    public void setUnregisterCount(int n) {
     }
 
     @Override

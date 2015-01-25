@@ -3,10 +3,12 @@ package com.netflix.eureka2.client.channel;
 import java.util.Collection;
 import java.util.List;
 
+import com.netflix.eureka2.channel.InterestChannel.STATE;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
+import com.netflix.eureka2.metric.InterestChannelMetrics;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.DeleteInstance;
 import com.netflix.eureka2.protocol.discovery.InterestSetNotification;
@@ -29,11 +31,12 @@ import rx.functions.Func1;
 import rx.subjects.PublishSubject;
 import rx.subjects.ReplaySubject;
 
-import static com.netflix.eureka2.metric.client.EurekaClientMetricFactory.clientMetrics;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -48,6 +51,8 @@ public class InterestChannelImplTest {
     protected TransportClient transportClient = mock(TransportClient.class);
 
     protected SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics());
+
+    protected InterestChannelMetrics interestChannelMetrics = mock(InterestChannelMetrics.class);
 
     protected InterestChannelImpl channel;
 
@@ -69,7 +74,7 @@ public class InterestChannelImplTest {
         when(serverConnection.lifecycleObservable()).thenReturn(serverConnectionLifecycle);
         when(transportClient.connect()).thenReturn(Observable.just(serverConnection));
 
-        channel = new InterestChannelImpl(registry, transportClient, clientMetrics().getInterestChannelMetrics());
+        channel = new InterestChannelImpl(registry, transportClient, interestChannelMetrics);
     }
 
     @After
@@ -162,6 +167,20 @@ public class InterestChannelImplTest {
         // Now remove first item
         incomingSubject.onNext(message3);
         assertThat(notificationSubscriber.takeNextOrWait(), deleteChangeNotificationOf(original1));
+    }
+
+    @Test
+    public void testMetrics() throws Exception {
+        // Subscriber to interest subscription, to open the channel
+        ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
+        channel.change(sampleInterestZuul).subscribe(testSubscriber);
+
+        verify(interestChannelMetrics, times(1)).incrementStateCounter(STATE.Open);
+
+        // Shutdown channel
+        channel.close();
+        verify(interestChannelMetrics, times(1)).decrementStateCounter(STATE.Open);
+        verify(interestChannelMetrics, times(1)).incrementStateCounter(STATE.Closed);
     }
 
     private void assertForInterestReturns(Interest<InstanceInfo> interest, Observable<AddInstance> addMessages) throws InterruptedException {

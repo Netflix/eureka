@@ -2,7 +2,8 @@ package com.netflix.eureka2.server.channel;
 
 import java.util.Collections;
 
-import com.netflix.eureka2.metric.noop.NoOpReplicationChannelMetrics;
+import com.netflix.eureka2.channel.ReplicationChannel.STATE;
+import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
 import com.netflix.eureka2.protocol.replication.RegisterCopy;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.protocol.replication.UnregisterCopy;
@@ -31,6 +32,7 @@ public class SenderReplicationChannelTest extends AbstractReplicationChannelTest
 
     private SenderReplicationChannel replicationChannel;
     private final PublishSubject<Object> connectionIncoming = PublishSubject.create();
+    private final ReplicationChannelMetrics channelMetrics = mock(ReplicationChannelMetrics.class);
 
     @Before
     public void setUp() throws Exception {
@@ -38,28 +40,25 @@ public class SenderReplicationChannelTest extends AbstractReplicationChannelTest
         when(connection.lifecycleObservable()).thenReturn(connectionLifeCycle);
         when(connection.incoming()).thenReturn(connectionIncoming);
 
-        replicationChannel = new SenderReplicationChannel(transportClient, NoOpReplicationChannelMetrics.INSTANCE);
+        replicationChannel = new SenderReplicationChannel(transportClient, channelMetrics);
     }
 
     @Test
     public void testHandshake() throws Exception {
-        TestSubscriber<ReplicationHelloReply> replySubscriber = new TestSubscriber<>();
+        // Initialize channel by sending hello
+        TestSubscriber<ReplicationHelloReply> replySubscriber = sendHello();
 
-        // Send hello
-        when(connection.submit(HELLO)).thenReturn(Observable.<Void>empty());
-        replicationChannel.hello(HELLO).subscribe(replySubscriber);
-
-        replySubscriber.assertNoErrors();
+        // Verify interactions
         verify(connection, times(1)).submit(HELLO);
-
-        // Reply with handshake
-        connectionIncoming.onNext(HELLO_REPLY);
-
         replySubscriber.assertReceivedOnNext(Collections.singletonList(HELLO_REPLY));
     }
 
     @Test
     public void testRegistration() throws Exception {
+        // Initialize channel by sending hello
+        sendHello();
+
+        // Test registration
         TestSubscriber<Void> replySubscriber = new TestSubscriber<>();
 
         RegisterCopy message = new RegisterCopy(APP_INFO);
@@ -73,6 +72,10 @@ public class SenderReplicationChannelTest extends AbstractReplicationChannelTest
 
     @Test
     public void testUnregister() throws Exception {
+        // Initialize channel by sending hello
+        sendHello();
+
+        // Test unregistration
         TestSubscriber<Void> replySubscriber = new TestSubscriber<>();
 
         UnregisterCopy message = new UnregisterCopy(APP_INFO.getId());
@@ -82,5 +85,34 @@ public class SenderReplicationChannelTest extends AbstractReplicationChannelTest
         replySubscriber.assertNoErrors();
         replySubscriber.assertTerminalEvent();
         verify(connection, times(1)).submit(message);
+    }
+
+    @Test
+    public void testMetrics() throws Exception {
+        // Idle -> Handshake -> Connected
+        sendHello();
+
+        verify(channelMetrics, times(1)).incrementStateCounter(STATE.Handshake);
+        verify(channelMetrics, times(1)).incrementStateCounter(STATE.Connected);
+
+        // Shutdown channel (Connected -> Closed)
+        replicationChannel.close();
+        verify(channelMetrics, times(1)).decrementStateCounter(STATE.Connected);
+        verify(channelMetrics, times(1)).incrementStateCounter(STATE.Closed);
+    }
+
+    private TestSubscriber<ReplicationHelloReply> sendHello() {
+        TestSubscriber<ReplicationHelloReply> replySubscriber = new TestSubscriber<>();
+
+        // Send hello
+        when(connection.submit(HELLO)).thenReturn(Observable.<Void>empty());
+        replicationChannel.hello(HELLO).subscribe(replySubscriber);
+
+        // Send reply
+        connectionIncoming.onNext(HELLO_REPLY);
+
+        replySubscriber.assertNoErrors();
+
+        return replySubscriber;
     }
 }

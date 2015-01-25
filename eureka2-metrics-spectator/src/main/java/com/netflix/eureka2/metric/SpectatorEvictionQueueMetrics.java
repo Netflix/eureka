@@ -16,11 +16,10 @@
 
 package com.netflix.eureka2.metric;
 
-import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.ExtendedRegistry;
-import com.netflix.spectator.api.ValueFunction;
 
 /**
  * @author Tomasz Bak
@@ -29,11 +28,13 @@ public class SpectatorEvictionQueueMetrics extends SpectatorEurekaMetrics implem
 
     private final Counter evictionQueueAddCounter;
     private final Counter evictionQueueRemoveCounter;
+    private final AtomicInteger evictionQueueSize = new AtomicInteger();
 
     public SpectatorEvictionQueueMetrics(ExtendedRegistry registry) {
         super(registry, "evictionQueue");
         evictionQueueAddCounter = newCounter("addedEvictions");
         evictionQueueRemoveCounter = newCounter("removedEvictions");
+        newGauge("evictionQueueSize", evictionQueueSize);
     }
 
     @Override
@@ -47,16 +48,7 @@ public class SpectatorEvictionQueueMetrics extends SpectatorEurekaMetrics implem
     }
 
     @Override
-    public void setEvictionQueueSizeMonitor(final Callable<Integer> evictionQueueSizeFun) {
-        newLongGauge("evictionQueueSize", new ValueFunction() {
-            @Override
-            public double apply(Object ref) {
-                try {
-                    return evictionQueueSizeFun.call();
-                } catch (Exception e) {
-                    throw new RuntimeException("Unexpected error", e);
-                }
-            }
-        });
+    public void setEvictionQueueSize(int evictionQueueSize) {
+        this.evictionQueueSize.set(evictionQueueSize);
     }
 }

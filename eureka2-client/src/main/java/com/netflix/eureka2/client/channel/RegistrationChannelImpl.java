@@ -26,18 +26,13 @@ public class RegistrationChannelImpl extends AbstractClientChannel<STATE> implem
     private static final IllegalStateException INSTANCE_NOT_REGISTERED_EXCEPTION =
             new IllegalStateException("Instance is not registered yet.");
 
-    private final RegistrationChannelMetrics metrics;
-
     public RegistrationChannelImpl(TransportClient transportClient, RegistrationChannelMetrics metrics) {
         super(STATE.Idle, transportClient, metrics);
-        this.metrics = metrics;
-        metrics.incrementStateCounter(STATE.Idle);
     }
 
     @Override
     public Observable<Void> register(final InstanceInfo instanceInfo) {
-        if (!moveToState(STATE.Idle, STATE.Registered) &&
-                !moveToState(STATE.Registered, STATE.Registered)) {
+        if (!moveToState(STATE.Idle, STATE.Registered) && state.get() != STATE.Registered) {
             STATE currentState = state.get();
             if (currentState == STATE.Closed) {
                 return Observable.error(CHANNEL_CLOSED_EXCEPTION);
@@ -82,8 +77,8 @@ public class RegistrationChannelImpl extends AbstractClientChannel<STATE> implem
     @Override
     protected void _close() {
         if (state.get() != STATE.Closed) {
-            moveToState(state.get(), STATE.Closed);
+            moveToState(STATE.Closed);
+            super._close();
         }
-        super._close();
     }
 }

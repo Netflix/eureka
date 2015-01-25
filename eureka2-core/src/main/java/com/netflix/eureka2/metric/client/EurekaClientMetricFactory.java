@@ -29,8 +29,6 @@ public abstract class EurekaClientMetricFactory {
 
     private static volatile EurekaClientMetricFactory defaultFactory = new NoOpEurekaClientMetricFactory();
 
-    public abstract EurekaClientRegistryMetrics getRegistryMetrics();
-
     public abstract MessageConnectionMetrics getRegistrationServerConnectionMetrics();
 
     public abstract MessageConnectionMetrics getDiscoveryServerConnectionMetrics();

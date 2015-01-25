@@ -16,12 +16,11 @@
 
 package com.netflix.eureka2.metric;
 
-import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.eureka2.registry.Source.Origin;
 import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.ExtendedRegistry;
-import com.netflix.spectator.api.ValueFunction;
 
 
 /**
@@ -29,13 +28,12 @@ import com.netflix.spectator.api.ValueFunction;
  */
 public class SpectatorEurekaRegistryMetrics extends SpectatorEurekaMetrics implements EurekaRegistryMetrics {
 
+    private final AtomicInteger registrySize = new AtomicInteger();
+    private final AtomicInteger selfPreservation = new AtomicInteger();
+
     private final Counter registrationsLocal;
     private final Counter registrationsReplicated;
     private final Counter registrationsTotal;
-
-    private final Counter updatesLocal;
-    private final Counter updatesReplicated;
-    private final Counter updatesTotal;
 
     private final Counter unregistrationsLocal;
     private final Counter unregistrationsReplicated;
@@ -43,13 +41,13 @@ public class SpectatorEurekaRegistryMetrics extends SpectatorEurekaMetrics imple
 
     public SpectatorEurekaRegistryMetrics(ExtendedRegistry registry) {
         super(registry, "eurekaServerRegistry");
+
+        newGauge("registrySize", registrySize);
+        newGauge("selfPreservation", selfPreservation);
+
         registrationsLocal = newCounter("registrationsLocal");
         registrationsReplicated = newCounter("registrationsReplicated");
         registrationsTotal = newCounter("registrationsTotal");
-
-        updatesLocal = newCounter("updatesLocal");
-        updatesReplicated = newCounter("updatesReplicated");
-        updatesTotal = newCounter("updatesTotal");
 
         unregistrationsLocal = newCounter("unregistrationsLocal");
         unregistrationsReplicated = newCounter("unregistrationsReplicated");
@@ -83,43 +81,12 @@ public class SpectatorEurekaRegistryMetrics extends SpectatorEurekaMetrics imple
     }
 
     @Override
-    public void incrementUpdateCounter(Origin origin) {
-        switch (origin) {
-            case LOCAL:
-                updatesLocal.increment();
-                break;
-            case REPLICATED:
-                updatesReplicated.increment();
-                break;
-        }
-        updatesTotal.increment();
+    public void setRegistrySize(int registrySize) {
+        this.registrySize.set(registrySize);
     }
 
     @Override
-    public void setRegistrySizeMonitor(final Callable<Integer> registrySizeFun) {
-        newLongGauge("registrySize", new ValueFunction() {
-            @Override
-            public double apply(Object ref) {
-                try {
-                    return registrySizeFun.call();
-                } catch (Exception e) {
-                    throw new RuntimeException("Unexpected error", e);
-                }
-            }
-        });
-    }
-
-    @Override
-    public void setSelfPreservationMonitor(final Callable<Integer> selfPreservationFun) {
-        newLongGauge("selfPreservation", new ValueFunction() {
-            @Override
-            public double apply(Object ref) {
-                try {
-                    return selfPreservationFun.call();
-                } catch (Exception e) {
-                    throw new RuntimeException("Unexpected error", e);
-                }
-            }
-        });
+    public void setSelfPreservation(boolean status) {
+        selfPreservation.set(status ? 1 : 0);
     }
 }

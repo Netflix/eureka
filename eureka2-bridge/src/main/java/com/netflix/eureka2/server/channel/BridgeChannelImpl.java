@@ -1,22 +1,26 @@
 package com.netflix.eureka2.server.channel;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka2.channel.BridgeChannel;
 import com.netflix.eureka2.channel.BridgeChannel.STATE;
-import com.netflix.eureka2.registry.Sourced;
+import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.metric.server.BridgeChannelMetrics;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.bridge.InstanceInfoConverter;
 import com.netflix.eureka2.server.bridge.InstanceInfoConverterImpl;
-import com.netflix.eureka2.server.bridge.OperatorInstanceInfoFromV1;
-import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.metric.server.BridgeChannelMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rx.Observable;
 import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Action0;
@@ -25,17 +29,12 @@ import rx.schedulers.Schedulers;
 import rx.subjects.ReplaySubject;
 import rx.subjects.Subject;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
 /**
  * A bridge channel that handles changes between snapshots of v1 instanceInfo
  *
  * @author David Liu
  */
-public class BridgeChannelImpl extends AbstractHandlerChannel<STATE> implements BridgeChannel, Sourced {
+public class BridgeChannelImpl extends AbstractHandlerChannel<STATE> implements BridgeChannel {
     private static final Logger logger = LoggerFactory.getLogger(BridgeChannelImpl.class);
 
     private final SourcedEurekaRegistry<InstanceInfo> registry;
@@ -53,9 +52,8 @@ public class BridgeChannelImpl extends AbstractHandlerChannel<STATE> implements 
                              DiscoveryClient discoveryClient,
                              int refreshRateSec,
                              InstanceInfo self,
-                             BridgeChannelMetrics metrics)
-    {
-        this(registry, discoveryClient, refreshRateSec, self, metrics, Schedulers.computation());
+                             BridgeChannelMetrics metrics) {
+        this(registry, discoveryClient, refreshRateSec, self, metrics, Schedulers.io());
     }
 
     public BridgeChannelImpl(SourcedEurekaRegistry<InstanceInfo> registry,
@@ -63,9 +61,8 @@ public class BridgeChannelImpl extends AbstractHandlerChannel<STATE> implements 
                              int refreshRateSec,
                              InstanceInfo self,
                              BridgeChannelMetrics metrics,
-                             Scheduler scheduler)
-    {
-        super(STATE.Opened, null, registry, metrics);
+                             Scheduler scheduler) {
+        super(STATE.Idle, null, registry, metrics);
         this.registry = registry;
         this.discoveryClient = discoveryClient;
         this.refreshRateSec = refreshRateSec;
@@ -86,103 +83,83 @@ public class BridgeChannelImpl extends AbstractHandlerChannel<STATE> implements 
 
     @Override
     public void connect() {
-        worker.schedulePeriodically(new Action0() {
-            @Override
-            public void call() {
-                logger.info("Starting new round of replication from v1 to v2");
-                registry.forSnapshot(Interests.forFullRegistry(), Source.matcherFor(Source.Origin.LOCAL))
-                        .filter(new Func1<InstanceInfo, Boolean>() {  // filter self so it's not take into account
-                            @Override
-                            public Boolean call(InstanceInfo instanceInfo) {
-                                return !instanceInfo.getId().equals(self.getId());
-                            }
-                        })
-                        .toMap(new Func1<InstanceInfo, String>() {
-                            @Override
-                            public String call(InstanceInfo instanceInfo) {
-                                return instanceInfo.getId();
-                            }
-                        })
-                        .subscribe(new Subscriber<Map<String, InstanceInfo>>() {
-                            @Override
-                            public void onCompleted() {
-                            }
+        if (!moveToState(STATE.Idle, STATE.Opened)) {
+            return;
+        }
+        worker.schedulePeriodically(
+                new Action0() {
+                    @Override
+                    public void call() {
+                        loadUpdatesFromV1Registry();
+                    }
+                }, 0, refreshRateSec, TimeUnit.SECONDS);
+    }
 
-                            @Override
-                            public void onError(Throwable e) {
-                                logger.warn("Error generating snapshot of registry", e);
-                            }
+    private void loadUpdatesFromV1Registry() {
+        logger.info("Starting new round of replication from v1 to v2");
+        registry.forSnapshot(Interests.forFullRegistry(), Source.matcherFor(Source.Origin.LOCAL))
+                .filter(new Func1<InstanceInfo, Boolean>() {  // filter self so it's not take into account
+                    @Override
+                    public Boolean call(InstanceInfo instanceInfo) {
+                        return !instanceInfo.getId().equals(self.getId());
+                    }
+                })
+                .toMap(new Func1<InstanceInfo, String>() {
+                    @Override
+                    public String call(InstanceInfo instanceInfo) {
+                        return instanceInfo.getId();
+                    }
+                })
+                .subscribe(new Subscriber<Map<String, InstanceInfo>>() {
+                    @Override
+                    public void onCompleted() {
+                    }
 
-                            @Override
-                            public void onNext(Map<String, InstanceInfo> currentSnapshot) {
-                                diff(currentSnapshot);
-                            }
-                        });
-            }
-        }, 0, refreshRateSec, TimeUnit.SECONDS);
+                    @Override
+                    public void onError(Throwable e) {
+                        logger.warn("Error generating snapshot of registry", e);
+                    }
+
+                    @Override
+                    public void onNext(Map<String, InstanceInfo> currentSnapshot) {
+                        diff(currentSnapshot);
+                    }
+                });
     }
 
     /**
      * Since the bridge registry take no other forms of input other than those from this bridge channel,
      * this snapshot view of the current registry should be static w.r.t. to the channel operation.
      */
-
-    protected void diff(final Map<String, InstanceInfo> currentSnapshot) {
-        final AtomicLong totalCount = new AtomicLong(0);
-        final AtomicLong updateCount = new AtomicLong(0);
-        final AtomicLong registerCount = new AtomicLong(0);
-        final AtomicLong unregisterCount = new AtomicLong(0);
+    private void diff(final Map<String, InstanceInfo> currentSnapshot) {
+        final AtomicInteger totalCount = new AtomicInteger(0);
+        final AtomicInteger updateCount = new AtomicInteger(0);
+        final AtomicInteger registerCount = new AtomicInteger(0);
+        final AtomicInteger unregisterCount = new AtomicInteger(0);
 
         final Map<String, InstanceInfo> newSnapshot = new HashMap<>();
 
-        getV1Stream()
-                .lift(new OperatorInstanceInfoFromV1(converter))
-                .subscribe(new Subscriber<InstanceInfo>() {
-                    @Override
-                    public void onCompleted() {
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        logger.warn("error processing v1 stream", e);
-                        e.printStackTrace();
-                    }
-
-                    @Override
-                    public void onNext(InstanceInfo instanceInfo) {
-                        totalCount.incrementAndGet();
-                        newSnapshot.put(instanceInfo.getId(), instanceInfo);
-                        if (currentSnapshot.containsKey(instanceInfo.getId())) {
-                            InstanceInfo older = currentSnapshot.get(instanceInfo.getId());
-                            if (!older.equals(instanceInfo)) {
-                                registry.register(instanceInfo, selfSource);
-                                updateCount.incrementAndGet();
-                            }
-                        } else {
-                            registry.register(instanceInfo, selfSource);
-                            registerCount.incrementAndGet();
-                        }
-                    }
-                });
+        List<InstanceInfo> latestV1Instances = getLatestV1Instances();
+        for (InstanceInfo instanceInfo : latestV1Instances) {
+            totalCount.incrementAndGet();
+            newSnapshot.put(instanceInfo.getId(), instanceInfo);
+            if (currentSnapshot.containsKey(instanceInfo.getId())) {
+                InstanceInfo older = currentSnapshot.get(instanceInfo.getId());
+                if (!older.equals(instanceInfo)) {
+                    registry.register(instanceInfo, selfSource);
+                    updateCount.incrementAndGet();
+                }
+            } else {
+                registry.register(instanceInfo, selfSource);
+                registerCount.incrementAndGet();
+            }
+        }
 
         currentSnapshot.keySet().removeAll(newSnapshot.keySet());
-        Observable.from(currentSnapshot.values())
-                .subscribe(new Subscriber<InstanceInfo>() {
-                    @Override
-                    public void onCompleted() {
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        logger.warn("error unregistering from v1 stream", e);
-                    }
-
-                    @Override
-                    public void onNext(InstanceInfo instanceInfo) {
-                        registry.unregister(instanceInfo, selfSource);
-                        unregisterCount.incrementAndGet();
-                    }
-                });
+        for (InstanceInfo instanceInfo : currentSnapshot.values()) {
+            registry.unregister(instanceInfo, selfSource);
+            unregisterCount.incrementAndGet();
+        }
 
         logger.info("Finished new round of replication from v1 to v2." +
                         " Total: {}, registers: {}, updates: {}, unregisters: {}",
@@ -193,17 +170,16 @@ public class BridgeChannelImpl extends AbstractHandlerChannel<STATE> implements 
         metrics.setUnregisterCount(unregisterCount.get());
     }
 
-    protected Observable<com.netflix.appinfo.InstanceInfo> getV1Stream() {
+    protected List<InstanceInfo> getLatestV1Instances() {
         Applications applications =
                 new Applications(discoveryClient.getApplications().getRegisteredApplications());
-
-        return Observable.from(applications.getRegisteredApplications())
-                .flatMap(new Func1<Application, Observable<com.netflix.appinfo.InstanceInfo>>() {
-                    @Override
-                    public Observable<com.netflix.appinfo.InstanceInfo> call(Application application) {
-                        return Observable.from(application.getInstances());
-                    }
-                });
+        List<InstanceInfo> v1InstanceInfos = new ArrayList<>();
+        for (Application app : applications.getRegisteredApplications()) {
+            for (com.netflix.appinfo.InstanceInfo v1Instance : app.getInstances()) {
+                v1InstanceInfos.add(converter.fromV1(v1Instance));
+            }
+        }
+        return v1InstanceInfos;
     }
 
     @Override

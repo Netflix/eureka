@@ -7,7 +7,7 @@ import com.netflix.eureka2.registry.Sourced;
  */
 public interface BridgeChannel extends ServiceChannel, Sourced {
 
-    enum STATE {Opened, Closed}
+    enum STATE {Idle, Opened, Closed}
 
     void connect();
 }

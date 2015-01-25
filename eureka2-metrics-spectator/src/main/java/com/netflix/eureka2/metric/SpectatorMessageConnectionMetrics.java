@@ -53,19 +53,19 @@ public class SpectatorMessageConnectionMetrics extends SpectatorEurekaMetrics im
     }
 
     @Override
-    public void incrementConnectedClients() {
+    public void incrementConnectionCounter() {
         connectedClients.incrementAndGet();
         registry.gauge("connectedClients", connectedClients.get());
         totalIncomingMessages.increment();
     }
 
     @Override
-    public void decrementConnectedClients() {
+    public void decrementConnectionCounter() {
         connectedClients.decrementAndGet();
     }
 
     @Override
-    public void clientConnectionTime(long start) {
+    public void connectionDuration(long start) {
         connectionTime.record(System.currentTimeMillis() - start, TimeUnit.MILLISECONDS);
     }
 

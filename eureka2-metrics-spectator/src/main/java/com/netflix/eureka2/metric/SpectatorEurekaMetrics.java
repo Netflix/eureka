@@ -16,10 +16,9 @@
 
 package com.netflix.eureka2.metric;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.ExtendedRegistry;
+import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Timer;
 import com.netflix.spectator.api.ValueFunction;
 
@@ -30,27 +29,34 @@ import com.netflix.spectator.api.ValueFunction;
  */
 public abstract class SpectatorEurekaMetrics {
 
-    enum STATE {Init, Up, Down}
-
     protected final ExtendedRegistry registry;
     private final String id;
-
-    private final AtomicReference<STATE> state = new AtomicReference<>(STATE.Init);
 
     protected SpectatorEurekaMetrics(ExtendedRegistry registry, String id) {
         this.registry = registry;
         this.id = id;
     }
 
-    protected Counter newCounter(String baseName) {
-        return registry.counter(registry.createId(baseName));
+    protected Id newId(String name) {
+        return registry.createId(name)
+                .withTag("id", id)
+                .withTag("class", getClass().getSimpleName());
     }
 
-    protected void newLongGauge(String baseName, ValueFunction valueFunction) {
-        registry.gauge(registry.createId(baseName), 0L, valueFunction);
+    protected Counter newCounter(String name) {
+        return registry.counter(newId(name));
     }
 
-    protected Timer newTimer(String baseName) {
-        return registry.timer(registry.createId(baseName));
+    protected <N extends Number> void newGauge(String name, N number) {
+        registry.gauge(newId(name), number);
     }
+
+    protected void newLongGauge(String name, ValueFunction valueFunction) {
+        registry.gauge(newId(name), 0L, valueFunction);
+    }
+
+    protected Timer newTimer(String name) {
+        return registry.timer(newId(name));
+    }
+
 }

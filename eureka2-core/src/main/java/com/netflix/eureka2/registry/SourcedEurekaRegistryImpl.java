@@ -74,12 +74,6 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
 
     public SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory metricsFactory, Scheduler scheduler) {
         this.metrics = metricsFactory.getEurekaServerRegistryMetrics();
-        this.metrics.setRegistrySizeMonitor(new Callable<Integer>() {
-            @Override
-            public Integer call() throws Exception {
-                return size();
-            }
-        });
 
         invoker = new NotifyingInstanceInfoHolder.NotificationTaskInvoker(
                 metricsFactory.getRegistryTaskInvokerMetrics(),
@@ -93,6 +87,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
             @Override
             public void add(NotifyingInstanceInfoHolder holder) {
                 internalStore.put(holder.getId(), holder);
+                metrics.setRegistrySize(internalStore.size());
             }
 
             @Override
@@ -103,6 +98,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
             @Override
             public void remove(String id) {
                 internalStore.remove(id);
+                metrics.setRegistrySize(internalStore.size());
             }
 
             @Override

@@ -1,17 +1,17 @@
 package com.netflix.eureka2.metric;
 
 
-import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.ExtendedRegistry;
-import com.netflix.spectator.api.ValueFunction;
 
 /**
  * @author David Liu
  */
 public class SpectatorSerializedTaskInvokerMetrics extends SpectatorEurekaMetrics implements SerializedTaskInvokerMetrics {
 
+    private final AtomicInteger queueSize = new AtomicInteger();
     private final Counter inputSuccess;
     private final Counter inputFailure;
     private final Counter outputSuccess;
@@ -20,6 +20,7 @@ public class SpectatorSerializedTaskInvokerMetrics extends SpectatorEurekaMetric
     public SpectatorSerializedTaskInvokerMetrics(ExtendedRegistry registry, String name) {
         super(registry, name);
 
+        newGauge("queueSize", queueSize);
         inputSuccess = newCounter("inputSuccess");
         inputFailure = newCounter("inputFailure");
         outputSuccess = newCounter("outputSuccess");
@@ -47,16 +48,7 @@ public class SpectatorSerializedTaskInvokerMetrics extends SpectatorEurekaMetric
     }
 
     @Override
-    public void setQueueSizeMonitor(final Callable<Long> n) {
-        newLongGauge("queueSize", new ValueFunction() {
-            @Override
-            public double apply(Object ref) {
-                try {
-                    return n.call();
-                } catch (Exception e) {
-                    throw new RuntimeException("Unexpected error", e);
-                }
-            }
-        });
+    public void setQueueSize(int queueSize) {
+        this.queueSize.set(queueSize);
     }
 }

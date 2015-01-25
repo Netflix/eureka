@@ -16,19 +16,13 @@
 
 package com.netflix.eureka2.metric.server;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.eureka2.channel.InterestChannel.STATE;
-import com.netflix.eureka2.interests.ApplicationInterest;
-import com.netflix.eureka2.interests.FullRegistryInterest;
-import com.netflix.eureka2.interests.InstanceInterest;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.MultipleInterests;
-import com.netflix.eureka2.interests.VipInterest;
 import com.netflix.eureka2.metric.AbstractStateMachineMetrics;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.ExtendedRegistry;
 
 /**
@@ -41,75 +35,75 @@ public class SpectatorServerInterestChannelMetrics extends AbstractStateMachineM
      * to eliminate locking, if creating multiple instances of the same counter wouldn't be
      * a problem.
      */
-//    private final Map<InterestKey, LongGauge> subscribedClientsByInterest = new HashMap<>();
-//    private final Map<String, Counter> notificationCountersByApplication = new HashMap<>();
-//
-//    private final LongGauge interestAllCounter;
-//    private final LongGauge totalInstanceInterests;
+    private final Map<InterestKey, AtomicInteger> subscribedClientsByInterest = new HashMap<>();
+    private final Map<String, Counter> notificationCountersByApplication = new HashMap<>();
+
+    private final AtomicInteger interestAllCounter = new AtomicInteger();
+    private final AtomicInteger totalInstanceInterests = new AtomicInteger();
+
     public SpectatorServerInterestChannelMetrics(ExtendedRegistry registry) {
         super(registry, "server", STATE.class);
-//        this.interestAllCounter = newLongGauge("interestAll");
-//        this.totalInstanceInterests = newLongGauge("totalInstanceInterests");
+        newGauge("interestAll", interestAllCounter);
+        newGauge("totalInstanceInterests", totalInstanceInterests);
     }
 
+    @Override
     public void incrementApplicationNotificationCounter(String applicationName) {
-//        getApplicationNotificationCounter(applicationName).increment();
+        getApplicationNotificationCounter(applicationName).increment();
     }
 
+    @Override
     public void incrementSubscriptionCounter(AtomicInterest interestType, String id) {
-//        if (interestType == AtomicInterest.Instance) {
-//            ServoUtils.incrementLongGauge(totalInstanceInterests);
-//        }
-//        if (interestType == AtomicInterest.InterestAll) {
-//            ServoUtils.incrementLongGauge(interestAllCounter);
-//        } else {
-//            ServoUtils.incrementLongGauge(getSubscriptionCounter(new InterestKey(interestType, id)));
-//        }
+        if (interestType == AtomicInterest.Instance) {
+            totalInstanceInterests.incrementAndGet();
+        }
+        if (interestType == AtomicInterest.InterestAll) {
+            interestAllCounter.incrementAndGet();
+        } else {
+            getSubscriptionCounter(new InterestKey(interestType, id)).incrementAndGet();
+        }
     }
 
     public void decrementSubscriptionCounter(AtomicInterest interestType, String id) {
-//        if (interestType == AtomicInterest.Instance) {
-//            ServoUtils.decrementLongGauge(totalInstanceInterests);
-//        }
-//        if (interestType == AtomicInterest.InterestAll) {
-//            ServoUtils.decrementLongGauge(interestAllCounter);
-//        } else {
-//            ServoUtils.decrementLongGauge(getSubscriptionCounter(new InterestKey(interestType, id)));
-//        }
+        if (interestType == AtomicInterest.Instance) {
+            totalInstanceInterests.decrementAndGet();
+        }
+        if (interestType == AtomicInterest.InterestAll) {
+            interestAllCounter.decrementAndGet();
+        } else {
+            getSubscriptionCounter(new InterestKey(interestType, id)).decrementAndGet();
+        }
     }
 
-//    private LongGauge getSubscriptionCounter(InterestKey interestKey) {
-//        LongGauge counter = subscribedClientsByInterest.get(interestKey);
-//        if (counter == null) {
-//            synchronized (subscribedClientsByInterest) {
-//                counter = subscribedClientsByInterest.get(interestKey);
-//                if (counter == null) {
-//                    counter = new LongGauge(monitorConfig("subscriptions." + interestKey.getCounterName()));
-//                    subscribedClientsByInterest.put(interestKey, counter);
-//                    register(counter);
-//                }
-//            }
-//        }
-//        return counter;
-//    }
-//
-//    private Counter getApplicationNotificationCounter(String applicationName) {
-//        String counterName = "notifications." + applicationName;
-//        Counter counter = notificationCountersByApplication.get(counterName);
-//        if (counter == null) {
-//            synchronized (notificationCountersByApplication) {
-//                counter = notificationCountersByApplication.get(counterName);
-//                if (counter == null) {
-//                    counter = new BasicCounter(monitorConfig(counterName));
-//                    notificationCountersByApplication.put(counterName, counter);
-//                    register(counter);
-//                }
-//            }
-//        }
-//        return counter;
-//    }
+    private AtomicInteger getSubscriptionCounter(InterestKey interestKey) {
+        AtomicInteger counter = subscribedClientsByInterest.get(interestKey);
+        if (counter == null) {
+            synchronized (subscribedClientsByInterest) {
+                counter = subscribedClientsByInterest.get(interestKey);
+                if (counter == null) {
+                    counter = new AtomicInteger();
+                    newGauge("subscriptions." + interestKey.getCounterName(), counter);
+                    subscribedClientsByInterest.put(interestKey, counter);
+                }
+            }
+        }
+        return counter;
+    }
 
-
+    private Counter getApplicationNotificationCounter(String applicationName) {
+        String counterName = "notifications." + applicationName;
+        Counter counter = notificationCountersByApplication.get(counterName);
+        if (counter == null) {
+            synchronized (notificationCountersByApplication) {
+                counter = notificationCountersByApplication.get(counterName);
+                if (counter == null) {
+                    counter = newCounter(counterName);
+                    notificationCountersByApplication.put(counterName, counter);
+                }
+            }
+        }
+        return counter;
+    }
 
     private static class InterestKey {
         private final AtomicInterest type;

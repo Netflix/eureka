@@ -1,0 +1,1160 @@
+Inferred version: 2.0.0-SNAPSHOT
+Inferred version: 2.0.0-SNAPSHOT
+Inferred version: 2.0.0-SNAPSHOT
+Inferred version: 2.0.0-SNAPSHOT
+Inferred version: 2.0.0-SNAPSHOT
+Inferred version: 2.0.0-SNAPSHOT
+Inferred version: 2.0.0-SNAPSHOT
+Inferred version: 2.0.0-SNAPSHOT
+Inferred version: 2.0.0-SNAPSHOT
+Inferred version: 2.0.0-SNAPSHOT
+Inferred version: 2.0.0-SNAPSHOT
+Inferred version: 2.0.0-SNAPSHOT
+Inferred version: 2.0.0-SNAPSHOT
+Inferred version: 2.0.0-SNAPSHOT
+Inferred version: 2.0.0-SNAPSHOT
+Publication mavenNebula not found in project :.
+[buildinfo] Properties file path was not found! (Relevant only for builds running on a CI Server)
+None of the specified publications matched for project ':' - nothing to publish.
+:eureka2-server:dependencies
+
+------------------------------------------------------------
+Project :eureka2-server - eureka2-server
+------------------------------------------------------------
+
+archives - Configuration for archive artifacts.
+No dependencies
+
+compile - Compile classpath for source set 'main'.
++--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
++--- project :eureka2-core
+|    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+|    +--- javax.inject:javax.inject:1
+|    +--- io.reactivex:rxjava:1.0.0 -> 1.0.4
+|    +--- io.reactivex:rxnetty:0.4.5-rc.2
+|    |    +--- io.reactivex:rxjava:1.0.4
+|    |    +--- io.netty:netty-codec-http:4.0.21.Final
+|    |    |    +--- io.netty:netty-codec:4.0.21.Final
+|    |    |    |    \--- io.netty:netty-transport:4.0.21.Final
+|    |    |    |         \--- io.netty:netty-buffer:4.0.21.Final
+|    |    |    |              \--- io.netty:netty-common:4.0.21.Final
+|    |    |    \--- io.netty:netty-handler:4.0.21.Final
+|    |    |         +--- io.netty:netty-buffer:4.0.21.Final (*)
+|    |    |         +--- io.netty:netty-transport:4.0.21.Final (*)
+|    |    |         \--- io.netty:netty-codec:4.0.21.Final (*)
+|    |    +--- io.netty:netty-transport-native-epoll:4.0.21.Final
+|    |    |    +--- io.netty:netty-common:4.0.21.Final
+|    |    |    +--- io.netty:netty-buffer:4.0.21.Final (*)
+|    |    |    \--- io.netty:netty-transport:4.0.21.Final (*)
+|    |    \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    +--- com.netflix.ocelli:ocelli-core:0.0.6
+|    |    +--- io.reactivex:rxjava:1.0.0 -> 1.0.4
+|    |    \--- org.slf4j:slf4j-api:1.7.2 -> 1.7.9
+|    +--- org.apache.avro:avro:1.7.7
+|    |    +--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    |    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.13
+|    |    |    \--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    |    +--- com.thoughtworks.paranamer:paranamer:2.3
+|    |    +--- org.xerial.snappy:snappy-java:1.0.5
+|    |    +--- org.apache.commons:commons-compress:1.4.1 -> 1.7
+|    |    |    \--- org.tukaani:xz:1.4
+|    |    \--- org.slf4j:slf4j-api:1.6.4 -> 1.7.9
+|    \--- org.apache.commons:commons-compress:1.7 (*)
++--- project :eureka2-metrics-spectator
+|    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+|    +--- project :eureka2-core (*)
+|    +--- com.netflix.spectator:spectator-api:0.16
+|    |    \--- org.slf4j:slf4j-api:1.7.9
+|    +--- com.netflix.spectator:spectator-reg-metrics3:0.16
+|    |    +--- org.slf4j:slf4j-api:1.7.9
+|    |    +--- io.dropwizard.metrics:metrics-core:3.1.0
+|    |    |    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+|    |    \--- com.netflix.spectator:spectator-api:0.16 (*)
+|    \--- javax.inject:javax.inject:1
++--- org.slf4j:slf4j-simple:1.7.7
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
++--- commons-cli:commons-cli:1.2
++--- com.netflix.governator:governator:1.3.3
+|    +--- com.google.inject.extensions:guice-grapher:3.0
+|    |    +--- com.google.inject.extensions:guice-assistedinject:3.0
+|    |    |    \--- com.google.inject:guice:3.0
+|    |    |         +--- javax.inject:javax.inject:1
+|    |    |         +--- aopalliance:aopalliance:1.0
+|    |    |         \--- org.sonatype.sisu.inject:cglib:2.2.1-v20090111
+|    |    |              \--- asm:asm:3.1
+|    |    +--- com.google.inject.extensions:guice-multibindings:3.0
+|    |    |    \--- com.google.inject:guice:3.0 (*)
+|    |    \--- com.google.inject:guice:3.0 (*)
+|    +--- org.codehaus.jsr166-mirror:jsr166y:1.7.0
+|    +--- com.google.guava:guava:14.0.1
+|    +--- com.google.inject:guice:3.0 (*)
+|    +--- org.apache.xbean:xbean-finder:3.11.1
+|    |    +--- org.apache.xbean:xbean-bundleutils:3.11.1
+|    |    |    \--- org.slf4j:slf4j-api:1.5.11 -> 1.7.9
+|    |    \--- org.slf4j:slf4j-api:1.5.11 -> 1.7.9
+|    +--- asm:asm-all:3.2
+|    +--- com.google.inject.extensions:guice-multibindings:3.0 (*)
+|    +--- org.slf4j:slf4j-api:1.6.3 -> 1.7.9
+|    +--- org.apache.xbean:xbean-bundleutils:3.11.1 (*)
+|    +--- javax.inject:javax.inject:1
+|    +--- com.netflix.archaius:archaius-core:0.5.12 -> 0.6.3
+|    |    +--- com.google.guava:guava:11.0.2 -> 14.0.1
+|    |    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.11 -> 1.9.13 (*)
+|    |    +--- org.slf4j:slf4j-api:1.6.4 -> 1.7.9
+|    |    +--- commons-configuration:commons-configuration:1.8
+|    |    |    +--- commons-lang:commons-lang:2.6
+|    |    |    \--- commons-logging:commons-logging:1.1.1
+|    |    +--- org.codehaus.jackson:jackson-core-asl:1.9.11 -> 1.9.13
+|    |    \--- com.google.code.findbugs:annotations:2.0.0
+|    \--- org.hibernate:hibernate-validator:4.1.0.Final
+|         +--- javax.validation:validation-api:1.0.0.GA
+|         \--- org.slf4j:slf4j-api:1.5.6 -> 1.7.9
++--- io.reactivex:rxnetty-spectator:0.4.5-rc.2
+|    +--- io.reactivex:rxjava:1.0.4
+|    +--- io.reactivex:rxnetty:0.4.5-rc.2 (*)
+|    \--- com.netflix.spectator:spectator-api:0.14.2 -> 0.16 (*)
++--- com.netflix.karyon2:karyon-governator:2.2.00-ALPHA7
+|    +--- com.netflix.karyon2:karyon-core:2.2.00-ALPHA7
+|    |    +--- io.reactivex:rxnetty-contexts:0.4.4
+|    |    |    +--- io.reactivex:rxjava:1.0.1 -> 1.0.4
+|    |    |    \--- io.reactivex:rxnetty:0.4.4 -> 0.4.5-rc.2 (*)
+|    |    \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    +--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    \--- com.netflix.governator:governator:1.3.3 (*)
++--- com.netflix.karyon2:karyon-archaius:2.2.00-ALPHA7
+|    +--- com.netflix.karyon2:karyon-governator:2.2.00-ALPHA7 (*)
+|    +--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    \--- com.netflix.archaius:archaius-core:0.6.3 (*)
++--- com.netflix.karyon2:karyon-admin:2.2.00-ALPHA7
+|    +--- javax.ws.rs:jsr311-api:1.1.1
+|    +--- org.eclipse.jetty:jetty-servlet:7.6.7.v20120910
+|    |    \--- org.eclipse.jetty:jetty-security:7.6.7.v20120910
+|    |         \--- org.eclipse.jetty:jetty-server:7.6.7.v20120910
+|    |              +--- org.eclipse.jetty.orbit:javax.servlet:2.5.0.v201103041518
+|    |              +--- org.eclipse.jetty:jetty-continuation:7.6.7.v20120910
+|    |              \--- org.eclipse.jetty:jetty-http:7.6.7.v20120910
+|    |                   \--- org.eclipse.jetty:jetty-io:7.6.7.v20120910
+|    |                        \--- org.eclipse.jetty:jetty-util:7.6.7.v20120910
+|    +--- com.netflix.karyon2:karyon-core:2.2.00-ALPHA7 (*)
+|    +--- com.netflix.karyon2:karyon-governator:2.2.00-ALPHA7 (*)
+|    +--- com.sun.jersey:jersey-server:1.18.1
+|    |    \--- com.sun.jersey:jersey-core:1.18.1
+|    +--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    +--- com.sun.jersey.contribs:jersey-guice:1.17.1
+|    |    +--- javax.inject:javax.inject:1
+|    |    +--- com.google.inject:guice:3.0 (*)
+|    |    +--- com.google.inject.extensions:guice-servlet:3.0
+|    |    |    \--- com.google.inject:guice:3.0 (*)
+|    |    \--- com.sun.jersey:jersey-servlet:1.17.1 -> 1.18.1
+|    |         \--- com.sun.jersey:jersey-server:1.18.1 (*)
+|    +--- com.sun.jersey:jersey-servlet:1.18.1 (*)
+|    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.11 -> 1.9.13 (*)
+|    +--- com.sun.jersey:jersey-core:1.18.1
+|    +--- org.eclipse.jetty:jetty-server:7.6.7.v20120910 (*)
+|    +--- javax.servlet:servlet-api:2.5
+|    \--- com.google.inject.extensions:guice-servlet:3.0 (*)
++--- com.netflix.karyon2:karyon-admin-web:2.2.00-ALPHA7
+|    +--- org.freemarker:freemarker:2.3.15
+|    +--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    +--- com.google.code.gson:gson:2.1
+|    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.11 -> 1.9.13 (*)
++--- com.netflix.pytheas:pytheas-core:1.22
+|    +--- commons-collections:commons-collections:3.2.1
+|    +--- org.freemarker:freemarker:2.3.15
+|    +--- javax.ws.rs:jsr311-api:1.1.1
+|    +--- com.sun.jersey:jersey-core:1.11 -> 1.18.1
+|    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+|    +--- com.sun.jersey:jersey-json:1.11
+|    |    +--- org.codehaus.jettison:jettison:1.1
+|    |    |    \--- stax:stax-api:1.0.1
+|    |    +--- com.sun.xml.bind:jaxb-impl:2.2.3-1
+|    |    |    \--- javax.xml.bind:jaxb-api:2.2.2
+|    |    |         +--- javax.xml.stream:stax-api:1.0-2
+|    |    |         \--- javax.activation:activation:1.1
+|    |    +--- org.codehaus.jackson:jackson-core-asl:1.9.2 -> 1.9.13
+|    |    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.2 -> 1.9.13 (*)
+|    |    +--- org.codehaus.jackson:jackson-jaxrs:1.9.2
+|    |    |    +--- org.codehaus.jackson:jackson-core-asl:1.9.2 -> 1.9.13
+|    |    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.2 -> 1.9.13 (*)
+|    |    +--- org.codehaus.jackson:jackson-xc:1.9.2
+|    |    |    +--- org.codehaus.jackson:jackson-core-asl:1.9.2 -> 1.9.13
+|    |    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.2 -> 1.9.13 (*)
+|    |    \--- com.sun.jersey:jersey-core:1.11 -> 1.18.1
+|    +--- commons-beanutils:commons-beanutils:1.8.2
+|    |    \--- commons-logging:commons-logging:1.1.1
+|    +--- com.netflix.governator:governator:1.1.1 -> 1.3.3 (*)
+|    +--- com.google.guava:guava:14.0.1
+|    +--- javax.servlet:servlet-api:2.5
+|    +--- com.netflix.archaius:archaius-core:0.5.4 -> 0.6.3 (*)
+|    +--- commons-configuration:commons-configuration:1.8 (*)
+|    +--- com.sun.jersey:jersey-servlet:1.11 -> 1.18.1 (*)
+|    +--- com.github.stephenc.high-scale-lib:high-scale-lib:1.1.2
+|    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.11 -> 1.9.13 (*)
+|    +--- com.sun.jersey.contribs:jersey-guice:1.9.1 -> 1.17.1 (*)
+|    +--- com.sun.jersey:jersey-server:1.11 -> 1.18.1 (*)
+|    +--- org.codehaus.jettison:jettison:1.1 (*)
+|    +--- com.google.inject.extensions:guice-servlet:3.0 (*)
+|    +--- com.google.code.findbugs:annotations:2.0.0
+|    \--- commons-io:commons-io:1.4
++--- commons-codec:commons-codec:1.7
+\--- com.netflix.servo:servo-core:0.8.0
+     +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+     +--- com.netflix.servo:servo-internal:0.8.0
+     |    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+     |    +--- com.google.guava:guava:14.0.1
+     |    \--- com.google.code.findbugs:annotations:2.0.0
+     +--- com.google.guava:guava:14.0.1
+     \--- com.google.code.findbugs:annotations:2.0.0
+
+default - Configuration for default artifacts.
++--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
++--- project :eureka2-core
+|    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+|    +--- javax.inject:javax.inject:1
+|    +--- io.reactivex:rxjava:1.0.0 -> 1.0.4
+|    +--- io.reactivex:rxnetty:0.4.5-rc.2
+|    |    +--- io.reactivex:rxjava:1.0.4
+|    |    +--- io.netty:netty-codec-http:4.0.21.Final
+|    |    |    +--- io.netty:netty-codec:4.0.21.Final
+|    |    |    |    \--- io.netty:netty-transport:4.0.21.Final
+|    |    |    |         \--- io.netty:netty-buffer:4.0.21.Final
+|    |    |    |              \--- io.netty:netty-common:4.0.21.Final
+|    |    |    \--- io.netty:netty-handler:4.0.21.Final
+|    |    |         +--- io.netty:netty-buffer:4.0.21.Final (*)
+|    |    |         +--- io.netty:netty-transport:4.0.21.Final (*)
+|    |    |         \--- io.netty:netty-codec:4.0.21.Final (*)
+|    |    +--- io.netty:netty-transport-native-epoll:4.0.21.Final
+|    |    |    +--- io.netty:netty-common:4.0.21.Final
+|    |    |    +--- io.netty:netty-buffer:4.0.21.Final (*)
+|    |    |    \--- io.netty:netty-transport:4.0.21.Final (*)
+|    |    \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    +--- com.netflix.ocelli:ocelli-core:0.0.6
+|    |    +--- io.reactivex:rxjava:1.0.0 -> 1.0.4
+|    |    \--- org.slf4j:slf4j-api:1.7.2 -> 1.7.9
+|    +--- org.apache.avro:avro:1.7.7
+|    |    +--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    |    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.13
+|    |    |    \--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    |    +--- com.thoughtworks.paranamer:paranamer:2.3
+|    |    +--- org.xerial.snappy:snappy-java:1.0.5
+|    |    +--- org.apache.commons:commons-compress:1.4.1 -> 1.7
+|    |    |    \--- org.tukaani:xz:1.4
+|    |    \--- org.slf4j:slf4j-api:1.6.4 -> 1.7.9
+|    \--- org.apache.commons:commons-compress:1.7 (*)
++--- project :eureka2-metrics-spectator
+|    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+|    +--- project :eureka2-core (*)
+|    +--- com.netflix.spectator:spectator-api:0.16
+|    |    \--- org.slf4j:slf4j-api:1.7.9
+|    +--- com.netflix.spectator:spectator-reg-metrics3:0.16
+|    |    +--- org.slf4j:slf4j-api:1.7.9
+|    |    +--- io.dropwizard.metrics:metrics-core:3.1.0
+|    |    |    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+|    |    \--- com.netflix.spectator:spectator-api:0.16 (*)
+|    \--- javax.inject:javax.inject:1
++--- org.slf4j:slf4j-simple:1.7.7
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
++--- commons-cli:commons-cli:1.2
++--- com.netflix.governator:governator:1.3.3
+|    +--- com.google.inject.extensions:guice-grapher:3.0
+|    |    +--- com.google.inject.extensions:guice-assistedinject:3.0
+|    |    |    \--- com.google.inject:guice:3.0
+|    |    |         +--- javax.inject:javax.inject:1
+|    |    |         +--- aopalliance:aopalliance:1.0
+|    |    |         \--- org.sonatype.sisu.inject:cglib:2.2.1-v20090111
+|    |    |              \--- asm:asm:3.1
+|    |    +--- com.google.inject.extensions:guice-multibindings:3.0
+|    |    |    \--- com.google.inject:guice:3.0 (*)
+|    |    \--- com.google.inject:guice:3.0 (*)
+|    +--- org.codehaus.jsr166-mirror:jsr166y:1.7.0
+|    +--- com.google.guava:guava:14.0.1
+|    +--- com.google.inject:guice:3.0 (*)
+|    +--- org.apache.xbean:xbean-finder:3.11.1
+|    |    +--- org.apache.xbean:xbean-bundleutils:3.11.1
+|    |    |    \--- org.slf4j:slf4j-api:1.5.11 -> 1.7.9
+|    |    \--- org.slf4j:slf4j-api:1.5.11 -> 1.7.9
+|    +--- asm:asm-all:3.2
+|    +--- com.google.inject.extensions:guice-multibindings:3.0 (*)
+|    +--- org.slf4j:slf4j-api:1.6.3 -> 1.7.9
+|    +--- org.apache.xbean:xbean-bundleutils:3.11.1 (*)
+|    +--- javax.inject:javax.inject:1
+|    +--- com.netflix.archaius:archaius-core:0.5.12 -> 0.6.3
+|    |    +--- com.google.guava:guava:11.0.2 -> 14.0.1
+|    |    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.11 -> 1.9.13 (*)
+|    |    +--- org.slf4j:slf4j-api:1.6.4 -> 1.7.9
+|    |    +--- commons-configuration:commons-configuration:1.8
+|    |    |    +--- commons-lang:commons-lang:2.6
+|    |    |    \--- commons-logging:commons-logging:1.1.1
+|    |    +--- org.codehaus.jackson:jackson-core-asl:1.9.11 -> 1.9.13
+|    |    \--- com.google.code.findbugs:annotations:2.0.0
+|    \--- org.hibernate:hibernate-validator:4.1.0.Final
+|         +--- javax.validation:validation-api:1.0.0.GA
+|         \--- org.slf4j:slf4j-api:1.5.6 -> 1.7.9
++--- io.reactivex:rxnetty-spectator:0.4.5-rc.2
+|    +--- io.reactivex:rxjava:1.0.4
+|    +--- io.reactivex:rxnetty:0.4.5-rc.2 (*)
+|    \--- com.netflix.spectator:spectator-api:0.14.2 -> 0.16 (*)
++--- com.netflix.karyon2:karyon-governator:2.2.00-ALPHA7
+|    +--- com.netflix.karyon2:karyon-core:2.2.00-ALPHA7
+|    |    +--- io.reactivex:rxnetty-contexts:0.4.4
+|    |    |    +--- io.reactivex:rxjava:1.0.1 -> 1.0.4
+|    |    |    \--- io.reactivex:rxnetty:0.4.4 -> 0.4.5-rc.2 (*)
+|    |    \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    +--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    \--- com.netflix.governator:governator:1.3.3 (*)
++--- com.netflix.karyon2:karyon-archaius:2.2.00-ALPHA7
+|    +--- com.netflix.karyon2:karyon-governator:2.2.00-ALPHA7 (*)
+|    +--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    \--- com.netflix.archaius:archaius-core:0.6.3 (*)
++--- com.netflix.karyon2:karyon-admin:2.2.00-ALPHA7
+|    +--- javax.ws.rs:jsr311-api:1.1.1
+|    +--- org.eclipse.jetty:jetty-servlet:7.6.7.v20120910
+|    |    \--- org.eclipse.jetty:jetty-security:7.6.7.v20120910
+|    |         \--- org.eclipse.jetty:jetty-server:7.6.7.v20120910
+|    |              +--- org.eclipse.jetty.orbit:javax.servlet:2.5.0.v201103041518
+|    |              +--- org.eclipse.jetty:jetty-continuation:7.6.7.v20120910
+|    |              \--- org.eclipse.jetty:jetty-http:7.6.7.v20120910
+|    |                   \--- org.eclipse.jetty:jetty-io:7.6.7.v20120910
+|    |                        \--- org.eclipse.jetty:jetty-util:7.6.7.v20120910
+|    +--- com.netflix.karyon2:karyon-core:2.2.00-ALPHA7 (*)
+|    +--- com.netflix.karyon2:karyon-governator:2.2.00-ALPHA7 (*)
+|    +--- com.sun.jersey:jersey-server:1.18.1
+|    |    \--- com.sun.jersey:jersey-core:1.18.1
+|    +--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    +--- com.sun.jersey.contribs:jersey-guice:1.17.1
+|    |    +--- javax.inject:javax.inject:1
+|    |    +--- com.google.inject:guice:3.0 (*)
+|    |    +--- com.google.inject.extensions:guice-servlet:3.0
+|    |    |    \--- com.google.inject:guice:3.0 (*)
+|    |    \--- com.sun.jersey:jersey-servlet:1.17.1 -> 1.18.1
+|    |         \--- com.sun.jersey:jersey-server:1.18.1 (*)
+|    +--- com.sun.jersey:jersey-servlet:1.18.1 (*)
+|    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.11 -> 1.9.13 (*)
+|    +--- com.sun.jersey:jersey-core:1.18.1
+|    +--- org.eclipse.jetty:jetty-server:7.6.7.v20120910 (*)
+|    +--- javax.servlet:servlet-api:2.5
+|    \--- com.google.inject.extensions:guice-servlet:3.0 (*)
++--- com.netflix.karyon2:karyon-admin-web:2.2.00-ALPHA7
+|    +--- org.freemarker:freemarker:2.3.15
+|    +--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    +--- com.google.code.gson:gson:2.1
+|    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.11 -> 1.9.13 (*)
++--- com.netflix.pytheas:pytheas-core:1.22
+|    +--- commons-collections:commons-collections:3.2.1
+|    +--- org.freemarker:freemarker:2.3.15
+|    +--- javax.ws.rs:jsr311-api:1.1.1
+|    +--- com.sun.jersey:jersey-core:1.11 -> 1.18.1
+|    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+|    +--- com.sun.jersey:jersey-json:1.11
+|    |    +--- org.codehaus.jettison:jettison:1.1
+|    |    |    \--- stax:stax-api:1.0.1
+|    |    +--- com.sun.xml.bind:jaxb-impl:2.2.3-1
+|    |    |    \--- javax.xml.bind:jaxb-api:2.2.2
+|    |    |         +--- javax.xml.stream:stax-api:1.0-2
+|    |    |         \--- javax.activation:activation:1.1
+|    |    +--- org.codehaus.jackson:jackson-core-asl:1.9.2 -> 1.9.13
+|    |    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.2 -> 1.9.13 (*)
+|    |    +--- org.codehaus.jackson:jackson-jaxrs:1.9.2
+|    |    |    +--- org.codehaus.jackson:jackson-core-asl:1.9.2 -> 1.9.13
+|    |    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.2 -> 1.9.13 (*)
+|    |    +--- org.codehaus.jackson:jackson-xc:1.9.2
+|    |    |    +--- org.codehaus.jackson:jackson-core-asl:1.9.2 -> 1.9.13
+|    |    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.2 -> 1.9.13 (*)
+|    |    \--- com.sun.jersey:jersey-core:1.11 -> 1.18.1
+|    +--- commons-beanutils:commons-beanutils:1.8.2
+|    |    \--- commons-logging:commons-logging:1.1.1
+|    +--- com.netflix.governator:governator:1.1.1 -> 1.3.3 (*)
+|    +--- com.google.guava:guava:14.0.1
+|    +--- javax.servlet:servlet-api:2.5
+|    +--- com.netflix.archaius:archaius-core:0.5.4 -> 0.6.3 (*)
+|    +--- commons-configuration:commons-configuration:1.8 (*)
+|    +--- com.sun.jersey:jersey-servlet:1.11 -> 1.18.1 (*)
+|    +--- com.github.stephenc.high-scale-lib:high-scale-lib:1.1.2
+|    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.11 -> 1.9.13 (*)
+|    +--- com.sun.jersey.contribs:jersey-guice:1.9.1 -> 1.17.1 (*)
+|    +--- com.sun.jersey:jersey-server:1.11 -> 1.18.1 (*)
+|    +--- org.codehaus.jettison:jettison:1.1 (*)
+|    +--- com.google.inject.extensions:guice-servlet:3.0 (*)
+|    +--- com.google.code.findbugs:annotations:2.0.0
+|    \--- commons-io:commons-io:1.4
++--- commons-codec:commons-codec:1.7
+\--- com.netflix.servo:servo-core:0.8.0
+     +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+     +--- com.netflix.servo:servo-internal:0.8.0
+     |    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+     |    +--- com.google.guava:guava:14.0.1
+     |    \--- com.google.code.findbugs:annotations:2.0.0
+     +--- com.google.guava:guava:14.0.1
+     \--- com.google.code.findbugs:annotations:2.0.0
+
+jacocoAgent - The Jacoco agent to use to get coverage data.
+\--- org.jacoco:org.jacoco.agent:0.7.1.201405082137
+
+jacocoAnt - The Jacoco ant tasks to use to get execute Gradle tasks.
+\--- org.jacoco:org.jacoco.ant:0.7.1.201405082137
+     +--- org.jacoco:org.jacoco.core:0.7.1.201405082137
+     |    \--- org.ow2.asm:asm-debug-all:5.0.1
+     +--- org.jacoco:org.jacoco.report:0.7.1.201405082137
+     |    +--- org.jacoco:org.jacoco.core:0.7.1.201405082137 (*)
+     |    \--- org.ow2.asm:asm-debug-all:5.0.1
+     \--- org.jacoco:org.jacoco.agent:0.7.1.201405082137
+
+javadoc
+No dependencies
+
+provided - much like compile, but indicates that you expect the JDK or a container to provide it. It is only available on the compilation classpath, and is not transitive.
+No dependencies
+
+runtime - Runtime classpath for source set 'main'.
++--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
++--- project :eureka2-core
+|    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+|    +--- javax.inject:javax.inject:1
+|    +--- io.reactivex:rxjava:1.0.0 -> 1.0.4
+|    +--- io.reactivex:rxnetty:0.4.5-rc.2
+|    |    +--- io.reactivex:rxjava:1.0.4
+|    |    +--- io.netty:netty-codec-http:4.0.21.Final
+|    |    |    +--- io.netty:netty-codec:4.0.21.Final
+|    |    |    |    \--- io.netty:netty-transport:4.0.21.Final
+|    |    |    |         \--- io.netty:netty-buffer:4.0.21.Final
+|    |    |    |              \--- io.netty:netty-common:4.0.21.Final
+|    |    |    \--- io.netty:netty-handler:4.0.21.Final
+|    |    |         +--- io.netty:netty-buffer:4.0.21.Final (*)
+|    |    |         +--- io.netty:netty-transport:4.0.21.Final (*)
+|    |    |         \--- io.netty:netty-codec:4.0.21.Final (*)
+|    |    +--- io.netty:netty-transport-native-epoll:4.0.21.Final
+|    |    |    +--- io.netty:netty-common:4.0.21.Final
+|    |    |    +--- io.netty:netty-buffer:4.0.21.Final (*)
+|    |    |    \--- io.netty:netty-transport:4.0.21.Final (*)
+|    |    \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    +--- com.netflix.ocelli:ocelli-core:0.0.6
+|    |    +--- io.reactivex:rxjava:1.0.0 -> 1.0.4
+|    |    \--- org.slf4j:slf4j-api:1.7.2 -> 1.7.9
+|    +--- org.apache.avro:avro:1.7.7
+|    |    +--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    |    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.13
+|    |    |    \--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    |    +--- com.thoughtworks.paranamer:paranamer:2.3
+|    |    +--- org.xerial.snappy:snappy-java:1.0.5
+|    |    +--- org.apache.commons:commons-compress:1.4.1 -> 1.7
+|    |    |    \--- org.tukaani:xz:1.4
+|    |    \--- org.slf4j:slf4j-api:1.6.4 -> 1.7.9
+|    \--- org.apache.commons:commons-compress:1.7 (*)
++--- project :eureka2-metrics-spectator
+|    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+|    +--- project :eureka2-core (*)
+|    +--- com.netflix.spectator:spectator-api:0.16
+|    |    \--- org.slf4j:slf4j-api:1.7.9
+|    +--- com.netflix.spectator:spectator-reg-metrics3:0.16
+|    |    +--- org.slf4j:slf4j-api:1.7.9
+|    |    +--- io.dropwizard.metrics:metrics-core:3.1.0
+|    |    |    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+|    |    \--- com.netflix.spectator:spectator-api:0.16 (*)
+|    \--- javax.inject:javax.inject:1
++--- org.slf4j:slf4j-simple:1.7.7
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
++--- commons-cli:commons-cli:1.2
++--- com.netflix.governator:governator:1.3.3
+|    +--- com.google.inject.extensions:guice-grapher:3.0
+|    |    +--- com.google.inject.extensions:guice-assistedinject:3.0
+|    |    |    \--- com.google.inject:guice:3.0
+|    |    |         +--- javax.inject:javax.inject:1
+|    |    |         +--- aopalliance:aopalliance:1.0
+|    |    |         \--- org.sonatype.sisu.inject:cglib:2.2.1-v20090111
+|    |    |              \--- asm:asm:3.1
+|    |    +--- com.google.inject.extensions:guice-multibindings:3.0
+|    |    |    \--- com.google.inject:guice:3.0 (*)
+|    |    \--- com.google.inject:guice:3.0 (*)
+|    +--- org.codehaus.jsr166-mirror:jsr166y:1.7.0
+|    +--- com.google.guava:guava:14.0.1
+|    +--- com.google.inject:guice:3.0 (*)
+|    +--- org.apache.xbean:xbean-finder:3.11.1
+|    |    +--- org.apache.xbean:xbean-bundleutils:3.11.1
+|    |    |    \--- org.slf4j:slf4j-api:1.5.11 -> 1.7.9
+|    |    \--- org.slf4j:slf4j-api:1.5.11 -> 1.7.9
+|    +--- asm:asm-all:3.2
+|    +--- com.google.inject.extensions:guice-multibindings:3.0 (*)
+|    +--- org.slf4j:slf4j-api:1.6.3 -> 1.7.9
+|    +--- org.apache.xbean:xbean-bundleutils:3.11.1 (*)
+|    +--- javax.inject:javax.inject:1
+|    +--- com.netflix.archaius:archaius-core:0.5.12 -> 0.6.3
+|    |    +--- com.google.guava:guava:11.0.2 -> 14.0.1
+|    |    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.11 -> 1.9.13 (*)
+|    |    +--- org.slf4j:slf4j-api:1.6.4 -> 1.7.9
+|    |    +--- commons-configuration:commons-configuration:1.8
+|    |    |    +--- commons-lang:commons-lang:2.6
+|    |    |    \--- commons-logging:commons-logging:1.1.1
+|    |    +--- org.codehaus.jackson:jackson-core-asl:1.9.11 -> 1.9.13
+|    |    \--- com.google.code.findbugs:annotations:2.0.0
+|    \--- org.hibernate:hibernate-validator:4.1.0.Final
+|         +--- javax.validation:validation-api:1.0.0.GA
+|         \--- org.slf4j:slf4j-api:1.5.6 -> 1.7.9
++--- io.reactivex:rxnetty-spectator:0.4.5-rc.2
+|    +--- io.reactivex:rxjava:1.0.4
+|    +--- io.reactivex:rxnetty:0.4.5-rc.2 (*)
+|    \--- com.netflix.spectator:spectator-api:0.14.2 -> 0.16 (*)
++--- com.netflix.karyon2:karyon-governator:2.2.00-ALPHA7
+|    +--- com.netflix.karyon2:karyon-core:2.2.00-ALPHA7
+|    |    +--- io.reactivex:rxnetty-contexts:0.4.4
+|    |    |    +--- io.reactivex:rxjava:1.0.1 -> 1.0.4
+|    |    |    \--- io.reactivex:rxnetty:0.4.4 -> 0.4.5-rc.2 (*)
+|    |    \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    +--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    \--- com.netflix.governator:governator:1.3.3 (*)
++--- com.netflix.karyon2:karyon-archaius:2.2.00-ALPHA7
+|    +--- com.netflix.karyon2:karyon-governator:2.2.00-ALPHA7 (*)
+|    +--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    \--- com.netflix.archaius:archaius-core:0.6.3 (*)
++--- com.netflix.karyon2:karyon-admin:2.2.00-ALPHA7
+|    +--- javax.ws.rs:jsr311-api:1.1.1
+|    +--- org.eclipse.jetty:jetty-servlet:7.6.7.v20120910
+|    |    \--- org.eclipse.jetty:jetty-security:7.6.7.v20120910
+|    |         \--- org.eclipse.jetty:jetty-server:7.6.7.v20120910
+|    |              +--- org.eclipse.jetty.orbit:javax.servlet:2.5.0.v201103041518
+|    |              +--- org.eclipse.jetty:jetty-continuation:7.6.7.v20120910
+|    |              \--- org.eclipse.jetty:jetty-http:7.6.7.v20120910
+|    |                   \--- org.eclipse.jetty:jetty-io:7.6.7.v20120910
+|    |                        \--- org.eclipse.jetty:jetty-util:7.6.7.v20120910
+|    +--- com.netflix.karyon2:karyon-core:2.2.00-ALPHA7 (*)
+|    +--- com.netflix.karyon2:karyon-governator:2.2.00-ALPHA7 (*)
+|    +--- com.sun.jersey:jersey-server:1.18.1
+|    |    \--- com.sun.jersey:jersey-core:1.18.1
+|    +--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    +--- com.sun.jersey.contribs:jersey-guice:1.17.1
+|    |    +--- javax.inject:javax.inject:1
+|    |    +--- com.google.inject:guice:3.0 (*)
+|    |    +--- com.google.inject.extensions:guice-servlet:3.0
+|    |    |    \--- com.google.inject:guice:3.0 (*)
+|    |    \--- com.sun.jersey:jersey-servlet:1.17.1 -> 1.18.1
+|    |         \--- com.sun.jersey:jersey-server:1.18.1 (*)
+|    +--- com.sun.jersey:jersey-servlet:1.18.1 (*)
+|    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.11 -> 1.9.13 (*)
+|    +--- com.sun.jersey:jersey-core:1.18.1
+|    +--- org.eclipse.jetty:jetty-server:7.6.7.v20120910 (*)
+|    +--- javax.servlet:servlet-api:2.5
+|    \--- com.google.inject.extensions:guice-servlet:3.0 (*)
++--- com.netflix.karyon2:karyon-admin-web:2.2.00-ALPHA7
+|    +--- org.freemarker:freemarker:2.3.15
+|    +--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    +--- com.google.code.gson:gson:2.1
+|    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.11 -> 1.9.13 (*)
++--- com.netflix.pytheas:pytheas-core:1.22
+|    +--- commons-collections:commons-collections:3.2.1
+|    +--- org.freemarker:freemarker:2.3.15
+|    +--- javax.ws.rs:jsr311-api:1.1.1
+|    +--- com.sun.jersey:jersey-core:1.11 -> 1.18.1
+|    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+|    +--- com.sun.jersey:jersey-json:1.11
+|    |    +--- org.codehaus.jettison:jettison:1.1
+|    |    |    \--- stax:stax-api:1.0.1
+|    |    +--- com.sun.xml.bind:jaxb-impl:2.2.3-1
+|    |    |    \--- javax.xml.bind:jaxb-api:2.2.2
+|    |    |         +--- javax.xml.stream:stax-api:1.0-2
+|    |    |         \--- javax.activation:activation:1.1
+|    |    +--- org.codehaus.jackson:jackson-core-asl:1.9.2 -> 1.9.13
+|    |    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.2 -> 1.9.13 (*)
+|    |    +--- org.codehaus.jackson:jackson-jaxrs:1.9.2
+|    |    |    +--- org.codehaus.jackson:jackson-core-asl:1.9.2 -> 1.9.13
+|    |    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.2 -> 1.9.13 (*)
+|    |    +--- org.codehaus.jackson:jackson-xc:1.9.2
+|    |    |    +--- org.codehaus.jackson:jackson-core-asl:1.9.2 -> 1.9.13
+|    |    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.2 -> 1.9.13 (*)
+|    |    \--- com.sun.jersey:jersey-core:1.11 -> 1.18.1
+|    +--- commons-beanutils:commons-beanutils:1.8.2
+|    |    \--- commons-logging:commons-logging:1.1.1
+|    +--- com.netflix.governator:governator:1.1.1 -> 1.3.3 (*)
+|    +--- com.google.guava:guava:14.0.1
+|    +--- javax.servlet:servlet-api:2.5
+|    +--- com.netflix.archaius:archaius-core:0.5.4 -> 0.6.3 (*)
+|    +--- commons-configuration:commons-configuration:1.8 (*)
+|    +--- com.sun.jersey:jersey-servlet:1.11 -> 1.18.1 (*)
+|    +--- com.github.stephenc.high-scale-lib:high-scale-lib:1.1.2
+|    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.11 -> 1.9.13 (*)
+|    +--- com.sun.jersey.contribs:jersey-guice:1.9.1 -> 1.17.1 (*)
+|    +--- com.sun.jersey:jersey-server:1.11 -> 1.18.1 (*)
+|    +--- org.codehaus.jettison:jettison:1.1 (*)
+|    +--- com.google.inject.extensions:guice-servlet:3.0 (*)
+|    +--- com.google.code.findbugs:annotations:2.0.0
+|    \--- commons-io:commons-io:1.4
++--- commons-codec:commons-codec:1.7
+\--- com.netflix.servo:servo-core:0.8.0
+     +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+     +--- com.netflix.servo:servo-internal:0.8.0
+     |    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+     |    +--- com.google.guava:guava:14.0.1
+     |    \--- com.google.code.findbugs:annotations:2.0.0
+     +--- com.google.guava:guava:14.0.1
+     \--- com.google.code.findbugs:annotations:2.0.0
+
+sources
+No dependencies
+
+testCompile - Compile classpath for source set 'test'.
++--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
++--- project :eureka2-core
+|    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+|    +--- javax.inject:javax.inject:1
+|    +--- io.reactivex:rxjava:1.0.0 -> 1.0.4
+|    +--- io.reactivex:rxnetty:0.4.5-rc.2
+|    |    +--- io.reactivex:rxjava:1.0.4
+|    |    +--- io.netty:netty-codec-http:4.0.21.Final
+|    |    |    +--- io.netty:netty-codec:4.0.21.Final
+|    |    |    |    \--- io.netty:netty-transport:4.0.21.Final
+|    |    |    |         \--- io.netty:netty-buffer:4.0.21.Final
+|    |    |    |              \--- io.netty:netty-common:4.0.21.Final
+|    |    |    \--- io.netty:netty-handler:4.0.21.Final
+|    |    |         +--- io.netty:netty-buffer:4.0.21.Final (*)
+|    |    |         +--- io.netty:netty-transport:4.0.21.Final (*)
+|    |    |         \--- io.netty:netty-codec:4.0.21.Final (*)
+|    |    +--- io.netty:netty-transport-native-epoll:4.0.21.Final
+|    |    |    +--- io.netty:netty-common:4.0.21.Final
+|    |    |    +--- io.netty:netty-buffer:4.0.21.Final (*)
+|    |    |    \--- io.netty:netty-transport:4.0.21.Final (*)
+|    |    \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    +--- com.netflix.ocelli:ocelli-core:0.0.6
+|    |    +--- io.reactivex:rxjava:1.0.0 -> 1.0.4
+|    |    \--- org.slf4j:slf4j-api:1.7.2 -> 1.7.9
+|    +--- org.apache.avro:avro:1.7.7
+|    |    +--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    |    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.13
+|    |    |    \--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    |    +--- com.thoughtworks.paranamer:paranamer:2.3
+|    |    +--- org.xerial.snappy:snappy-java:1.0.5
+|    |    +--- org.apache.commons:commons-compress:1.4.1 -> 1.7
+|    |    |    \--- org.tukaani:xz:1.4
+|    |    \--- org.slf4j:slf4j-api:1.6.4 -> 1.7.9
+|    \--- org.apache.commons:commons-compress:1.7 (*)
++--- project :eureka2-metrics-spectator
+|    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+|    +--- project :eureka2-core (*)
+|    +--- com.netflix.spectator:spectator-api:0.16
+|    |    \--- org.slf4j:slf4j-api:1.7.9
+|    +--- com.netflix.spectator:spectator-reg-metrics3:0.16
+|    |    +--- org.slf4j:slf4j-api:1.7.9
+|    |    +--- io.dropwizard.metrics:metrics-core:3.1.0
+|    |    |    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+|    |    \--- com.netflix.spectator:spectator-api:0.16 (*)
+|    \--- javax.inject:javax.inject:1
++--- org.slf4j:slf4j-simple:1.7.7
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
++--- commons-cli:commons-cli:1.2
++--- com.netflix.governator:governator:1.3.3
+|    +--- com.google.inject.extensions:guice-grapher:3.0
+|    |    +--- com.google.inject.extensions:guice-assistedinject:3.0
+|    |    |    \--- com.google.inject:guice:3.0
+|    |    |         +--- javax.inject:javax.inject:1
+|    |    |         +--- aopalliance:aopalliance:1.0
+|    |    |         \--- org.sonatype.sisu.inject:cglib:2.2.1-v20090111
+|    |    |              \--- asm:asm:3.1
+|    |    +--- com.google.inject.extensions:guice-multibindings:3.0
+|    |    |    \--- com.google.inject:guice:3.0 (*)
+|    |    \--- com.google.inject:guice:3.0 (*)
+|    +--- org.codehaus.jsr166-mirror:jsr166y:1.7.0
+|    +--- com.google.guava:guava:14.0.1
+|    +--- com.google.inject:guice:3.0 (*)
+|    +--- org.apache.xbean:xbean-finder:3.11.1
+|    |    +--- org.apache.xbean:xbean-bundleutils:3.11.1
+|    |    |    \--- org.slf4j:slf4j-api:1.5.11 -> 1.7.9
+|    |    \--- org.slf4j:slf4j-api:1.5.11 -> 1.7.9
+|    +--- asm:asm-all:3.2
+|    +--- com.google.inject.extensions:guice-multibindings:3.0 (*)
+|    +--- org.slf4j:slf4j-api:1.6.3 -> 1.7.9
+|    +--- org.apache.xbean:xbean-bundleutils:3.11.1 (*)
+|    +--- javax.inject:javax.inject:1
+|    +--- com.netflix.archaius:archaius-core:0.5.12 -> 0.6.3
+|    |    +--- com.google.guava:guava:11.0.2 -> 14.0.1
+|    |    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.11 -> 1.9.13 (*)
+|    |    +--- org.slf4j:slf4j-api:1.6.4 -> 1.7.9
+|    |    +--- commons-configuration:commons-configuration:1.8
+|    |    |    +--- commons-lang:commons-lang:2.6
+|    |    |    \--- commons-logging:commons-logging:1.1.1
+|    |    +--- org.codehaus.jackson:jackson-core-asl:1.9.11 -> 1.9.13
+|    |    \--- com.google.code.findbugs:annotations:2.0.0
+|    \--- org.hibernate:hibernate-validator:4.1.0.Final
+|         +--- javax.validation:validation-api:1.0.0.GA
+|         \--- org.slf4j:slf4j-api:1.5.6 -> 1.7.9
++--- io.reactivex:rxnetty-spectator:0.4.5-rc.2
+|    +--- io.reactivex:rxjava:1.0.4
+|    +--- io.reactivex:rxnetty:0.4.5-rc.2 (*)
+|    \--- com.netflix.spectator:spectator-api:0.14.2 -> 0.16 (*)
++--- com.netflix.karyon2:karyon-governator:2.2.00-ALPHA7
+|    +--- com.netflix.karyon2:karyon-core:2.2.00-ALPHA7
+|    |    +--- io.reactivex:rxnetty-contexts:0.4.4
+|    |    |    +--- io.reactivex:rxjava:1.0.1 -> 1.0.4
+|    |    |    \--- io.reactivex:rxnetty:0.4.4 -> 0.4.5-rc.2 (*)
+|    |    \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    +--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    \--- com.netflix.governator:governator:1.3.3 (*)
++--- com.netflix.karyon2:karyon-archaius:2.2.00-ALPHA7
+|    +--- com.netflix.karyon2:karyon-governator:2.2.00-ALPHA7 (*)
+|    +--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    \--- com.netflix.archaius:archaius-core:0.6.3 (*)
++--- com.netflix.karyon2:karyon-admin:2.2.00-ALPHA7
+|    +--- javax.ws.rs:jsr311-api:1.1.1
+|    +--- org.eclipse.jetty:jetty-servlet:7.6.7.v20120910
+|    |    \--- org.eclipse.jetty:jetty-security:7.6.7.v20120910
+|    |         \--- org.eclipse.jetty:jetty-server:7.6.7.v20120910
+|    |              +--- org.eclipse.jetty.orbit:javax.servlet:2.5.0.v201103041518
+|    |              +--- org.eclipse.jetty:jetty-continuation:7.6.7.v20120910
+|    |              \--- org.eclipse.jetty:jetty-http:7.6.7.v20120910
+|    |                   \--- org.eclipse.jetty:jetty-io:7.6.7.v20120910
+|    |                        \--- org.eclipse.jetty:jetty-util:7.6.7.v20120910
+|    +--- com.netflix.karyon2:karyon-core:2.2.00-ALPHA7 (*)
+|    +--- com.netflix.karyon2:karyon-governator:2.2.00-ALPHA7 (*)
+|    +--- com.sun.jersey:jersey-server:1.18.1
+|    |    \--- com.sun.jersey:jersey-core:1.18.1
+|    +--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    +--- com.sun.jersey.contribs:jersey-guice:1.17.1
+|    |    +--- javax.inject:javax.inject:1
+|    |    +--- com.google.inject:guice:3.0 (*)
+|    |    +--- com.google.inject.extensions:guice-servlet:3.0
+|    |    |    \--- com.google.inject:guice:3.0 (*)
+|    |    \--- com.sun.jersey:jersey-servlet:1.17.1 -> 1.18.1
+|    |         \--- com.sun.jersey:jersey-server:1.18.1 (*)
+|    +--- com.sun.jersey:jersey-servlet:1.18.1 (*)
+|    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.11 -> 1.9.13 (*)
+|    +--- com.sun.jersey:jersey-core:1.18.1
+|    +--- org.eclipse.jetty:jetty-server:7.6.7.v20120910 (*)
+|    +--- javax.servlet:servlet-api:2.5
+|    +--- com.google.inject.extensions:guice-servlet:3.0 (*)
+|    \--- com.netflix.pytheas:pytheas-core:1.22
+|         +--- commons-collections:commons-collections:3.2.1
+|         +--- org.freemarker:freemarker:2.3.15
+|         +--- javax.ws.rs:jsr311-api:1.1.1
+|         +--- com.sun.jersey:jersey-core:1.11 -> 1.18.1
+|         +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+|         +--- com.sun.jersey:jersey-json:1.11
+|         |    +--- org.codehaus.jettison:jettison:1.1 -> 1.2
+|         |    |    \--- stax:stax-api:1.0.1
+|         |    +--- com.sun.xml.bind:jaxb-impl:2.2.3-1
+|         |    |    \--- javax.xml.bind:jaxb-api:2.2.2
+|         |    |         +--- javax.xml.stream:stax-api:1.0-2
+|         |    |         \--- javax.activation:activation:1.1
+|         |    +--- org.codehaus.jackson:jackson-core-asl:1.9.2 -> 1.9.13
+|         |    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.2 -> 1.9.13 (*)
+|         |    +--- org.codehaus.jackson:jackson-jaxrs:1.9.2
+|         |    |    +--- org.codehaus.jackson:jackson-core-asl:1.9.2 -> 1.9.13
+|         |    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.2 -> 1.9.13 (*)
+|         |    +--- org.codehaus.jackson:jackson-xc:1.9.2
+|         |    |    +--- org.codehaus.jackson:jackson-core-asl:1.9.2 -> 1.9.13
+|         |    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.2 -> 1.9.13 (*)
+|         |    \--- com.sun.jersey:jersey-core:1.11 -> 1.18.1
+|         +--- commons-beanutils:commons-beanutils:1.8.2
+|         |    \--- commons-logging:commons-logging:1.1.1
+|         +--- com.netflix.governator:governator:1.1.1 -> 1.3.3 (*)
+|         +--- com.google.guava:guava:14.0.1
+|         +--- javax.servlet:servlet-api:2.5
+|         +--- com.netflix.archaius:archaius-core:0.5.4 -> 0.6.3 (*)
+|         +--- commons-configuration:commons-configuration:1.8 (*)
+|         +--- com.sun.jersey:jersey-servlet:1.11 -> 1.18.1 (*)
+|         +--- com.github.stephenc.high-scale-lib:high-scale-lib:1.1.2
+|         +--- org.codehaus.jackson:jackson-mapper-asl:1.9.11 -> 1.9.13 (*)
+|         +--- com.sun.jersey.contribs:jersey-guice:1.9.1 -> 1.17.1 (*)
+|         +--- com.sun.jersey:jersey-server:1.11 -> 1.18.1 (*)
+|         +--- org.codehaus.jettison:jettison:1.1 -> 1.2 (*)
+|         +--- com.google.inject.extensions:guice-servlet:3.0 (*)
+|         +--- com.google.code.findbugs:annotations:2.0.0
+|         +--- commons-io:commons-io:1.4
+|         \--- com.netflix.eureka:eureka-client:1.1.73 -> 1.1.142
+|              +--- javax.ws.rs:jsr311-api:1.1.1
+|              +--- com.netflix.servo:servo-core:0.7.4 -> 0.8.0
+|              |    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+|              |    +--- com.netflix.servo:servo-internal:0.8.0
+|              |    |    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+|              |    |    +--- com.google.guava:guava:14.0.1
+|              |    |    \--- com.google.code.findbugs:annotations:2.0.0
+|              |    +--- com.google.guava:guava:14.0.1
+|              |    \--- com.google.code.findbugs:annotations:2.0.0
+|              +--- com.thoughtworks.xstream:xstream:1.4.2
+|              |    +--- xmlpull:xmlpull:1.1.3.1
+|              |    \--- xpp3:xpp3_min:1.1.4c
+|              +--- com.sun.jersey:jersey-core:1.11 -> 1.18.1
+|              +--- com.netflix.netflix-commons:netflix-eventbus:0.1.2
+|              |    +--- com.netflix.archaius:archaius-core:0.3.3 -> 0.6.3 (*)
+|              |    +--- org.apache.commons:commons-math:2.2
+|              |    +--- com.netflix.netflix-commons:netflix-infix:0.1.2
+|              |    |    +--- joda-time:joda-time:2.3
+|              |    |    +--- commons-jxpath:commons-jxpath:1.3
+|              |    |    +--- org.antlr:antlr-runtime:3.4
+|              |    |    |    +--- org.antlr:stringtemplate:3.2.1
+|              |    |    |    |    \--- antlr:antlr:2.7.7
+|              |    |    |    \--- antlr:antlr:2.7.7
+|              |    |    +--- com.google.code.gson:gson:2.1
+|              |    |    +--- com.google.guava:guava:14.0.1
+|              |    |    +--- javax.servlet:servlet-api:2.5
+|              |    |    +--- org.slf4j:slf4j-api:1.6.4 -> 1.7.9
+|              |    |    \--- com.google.code.findbugs:annotations:2.0.0
+|              |    +--- org.slf4j:slf4j-api:1.6.4 -> 1.7.9
+|              |    \--- com.netflix.servo:servo-core:0.5.3 -> 0.8.0 (*)
+|              +--- com.netflix.archaius:archaius-core:0.6.0 -> 0.6.3 (*)
+|              +--- com.netflix.ribbon:ribbon-httpclient:0.3.12
+|              |    +--- com.netflix.netflix-commons:netflix-commons-util:0.1.1
+|              |    |    \--- org.slf4j:slf4j-api:1.6.4 -> 1.7.9
+|              |    +--- commons-collections:commons-collections:3.2.1
+|              |    +--- javax.ws.rs:jsr311-api:1.1.1
+|              |    +--- com.sun.jersey:jersey-core:1.11 -> 1.18.1
+|              |    +--- com.netflix.servo:servo-core:0.4.44 -> 0.8.0 (*)
+|              |    +--- com.google.guava:guava:14.0.1
+|              |    +--- org.apache.httpcomponents:httpclient:4.2.1
+|              |    |    +--- org.apache.httpcomponents:httpcore:4.2.1
+|              |    |    +--- commons-logging:commons-logging:1.1.1
+|              |    |    \--- commons-codec:commons-codec:1.6 -> 1.7
+|              |    +--- com.sun.jersey:jersey-client:1.11
+|              |    |    \--- com.sun.jersey:jersey-core:1.11 -> 1.18.1
+|              |    +--- com.netflix.archaius:archaius-core:0.5.12 -> 0.6.3 (*)
+|              |    +--- com.sun.jersey.contribs:jersey-apache-client4:1.11
+|              |    |    +--- org.apache.httpcomponents:httpclient:4.1.1 -> 4.2.1 (*)
+|              |    |    \--- com.sun.jersey:jersey-client:1.11 (*)
+|              |    +--- org.slf4j:slf4j-api:1.6.4 -> 1.7.9
+|              |    \--- com.netflix.ribbon:ribbon-core:0.3.12
+|              |         +--- commons-collections:commons-collections:3.2.1
+|              |         +--- com.netflix.netflix-commons:netflix-commons-util:0.1.1 (*)
+|              |         +--- com.netflix.netflix-commons:netflix-statistics:0.1.1
+|              |         |    +--- org.slf4j:slf4j-api:1.6.4 -> 1.7.9
+|              |         |    \--- com.google.code.findbugs:annotations:2.0.0
+|              |         +--- com.netflix.servo:servo-core:0.4.44 -> 0.8.0 (*)
+|              |         +--- com.netflix.archaius:archaius-core:0.5.12 -> 0.6.3 (*)
+|              |         +--- com.google.guava:guava:14.0.1
+|              |         \--- org.slf4j:slf4j-api:1.6.4 -> 1.7.9
+|              +--- org.apache.httpcomponents:httpclient:4.2.1 (*)
+|              +--- com.sun.jersey:jersey-client:1.11 (*)
+|              +--- com.sun.jersey.contribs:jersey-apache-client4:1.11 (*)
+|              +--- com.netflix.governator:governator:1.2.10 -> 1.3.3 (*)
+|              \--- org.codehaus.jettison:jettison:1.2 (*)
++--- com.netflix.karyon2:karyon-admin-web:2.2.00-ALPHA7
+|    +--- org.freemarker:freemarker:2.3.15
+|    +--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    +--- com.google.code.gson:gson:2.1
+|    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.11 -> 1.9.13 (*)
+|    \--- com.netflix.karyon2:karyon-admin:2.2.00-ALPHA7 (*)
++--- com.netflix.pytheas:pytheas-core:1.22 (*)
++--- commons-codec:commons-codec:1.7
++--- com.netflix.servo:servo-core:0.8.0 (*)
++--- junit:junit:4.12
+|    \--- org.hamcrest:hamcrest-core:1.3
++--- org.hamcrest:hamcrest-library:1.3
+|    \--- org.hamcrest:hamcrest-core:1.3
++--- org.mockito:mockito-core:1.9.5
+|    +--- org.hamcrest:hamcrest-core:1.1 -> 1.3
+|    \--- org.objenesis:objenesis:1.0
+\--- project :eureka2-test-utils
+     +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+     +--- project :eureka2-read-server
+     |    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+     |    +--- project :eureka2-client
+     |    |    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+     |    |    +--- project :eureka2-core (*)
+     |    |    \--- javax.inject:javax.inject:1
+     |    \--- project :eureka2-server (*)
+     +--- project :eureka2-write-server
+     |    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+     |    \--- project :eureka2-server (*)
+     +--- project :eureka2-bridge
+     |    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+     |    +--- project :eureka2-write-server (*)
+     |    \--- com.netflix.eureka:eureka-client:1.1.142 (*)
+     \--- project :eureka2-testkit
+          +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+          +--- project :eureka2-read-server (*)
+          +--- project :eureka2-write-server (*)
+          +--- project :eureka2-bridge (*)
+          +--- project :eureka2-dashboard
+          |    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+          |    +--- project :eureka2-client (*)
+          |    +--- project :eureka2-server (*)
+          |    +--- project :eureka2-ext:eureka2-karyon-admin
+          |    |    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+          |    |    +--- project :eureka2-client (*)
+          |    |    \--- com.netflix.karyon2:karyon-admin-web:2.2.00-ALPHA7 (*)
+          |    \--- com.google.code.gson:gson:2.1
+          +--- project :eureka2-ext:eureka2-karyon-admin (*)
+          +--- jline:jline:2.12
+          \--- junit:junit:4.12 (*)
+
+testRuntime - Runtime classpath for source set 'test'.
++--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
++--- project :eureka2-core
+|    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+|    +--- javax.inject:javax.inject:1
+|    +--- io.reactivex:rxjava:1.0.0 -> 1.0.4
+|    +--- io.reactivex:rxnetty:0.4.5-rc.2
+|    |    +--- io.reactivex:rxjava:1.0.4
+|    |    +--- io.netty:netty-codec-http:4.0.21.Final
+|    |    |    +--- io.netty:netty-codec:4.0.21.Final
+|    |    |    |    \--- io.netty:netty-transport:4.0.21.Final
+|    |    |    |         \--- io.netty:netty-buffer:4.0.21.Final
+|    |    |    |              \--- io.netty:netty-common:4.0.21.Final
+|    |    |    \--- io.netty:netty-handler:4.0.21.Final
+|    |    |         +--- io.netty:netty-buffer:4.0.21.Final (*)
+|    |    |         +--- io.netty:netty-transport:4.0.21.Final (*)
+|    |    |         \--- io.netty:netty-codec:4.0.21.Final (*)
+|    |    +--- io.netty:netty-transport-native-epoll:4.0.21.Final
+|    |    |    +--- io.netty:netty-common:4.0.21.Final
+|    |    |    +--- io.netty:netty-buffer:4.0.21.Final (*)
+|    |    |    \--- io.netty:netty-transport:4.0.21.Final (*)
+|    |    \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    +--- com.netflix.ocelli:ocelli-core:0.0.6
+|    |    +--- io.reactivex:rxjava:1.0.0 -> 1.0.4
+|    |    \--- org.slf4j:slf4j-api:1.7.2 -> 1.7.9
+|    +--- org.apache.avro:avro:1.7.7
+|    |    +--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    |    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.13
+|    |    |    \--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    |    +--- com.thoughtworks.paranamer:paranamer:2.3
+|    |    +--- org.xerial.snappy:snappy-java:1.0.5
+|    |    +--- org.apache.commons:commons-compress:1.4.1 -> 1.7
+|    |    |    \--- org.tukaani:xz:1.4
+|    |    \--- org.slf4j:slf4j-api:1.6.4 -> 1.7.9
+|    \--- org.apache.commons:commons-compress:1.7 (*)
++--- project :eureka2-metrics-spectator
+|    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+|    +--- project :eureka2-core (*)
+|    +--- com.netflix.spectator:spectator-api:0.16
+|    |    \--- org.slf4j:slf4j-api:1.7.9
+|    +--- com.netflix.spectator:spectator-reg-metrics3:0.16
+|    |    +--- org.slf4j:slf4j-api:1.7.9
+|    |    +--- io.dropwizard.metrics:metrics-core:3.1.0
+|    |    |    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+|    |    \--- com.netflix.spectator:spectator-api:0.16 (*)
+|    \--- javax.inject:javax.inject:1
++--- org.slf4j:slf4j-simple:1.7.7
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
++--- commons-cli:commons-cli:1.2
++--- com.netflix.governator:governator:1.3.3
+|    +--- com.google.inject.extensions:guice-grapher:3.0
+|    |    +--- com.google.inject.extensions:guice-assistedinject:3.0
+|    |    |    \--- com.google.inject:guice:3.0
+|    |    |         +--- javax.inject:javax.inject:1
+|    |    |         +--- aopalliance:aopalliance:1.0
+|    |    |         \--- org.sonatype.sisu.inject:cglib:2.2.1-v20090111
+|    |    |              \--- asm:asm:3.1
+|    |    +--- com.google.inject.extensions:guice-multibindings:3.0
+|    |    |    \--- com.google.inject:guice:3.0 (*)
+|    |    \--- com.google.inject:guice:3.0 (*)
+|    +--- org.codehaus.jsr166-mirror:jsr166y:1.7.0
+|    +--- com.google.guava:guava:14.0.1
+|    +--- com.google.inject:guice:3.0 (*)
+|    +--- org.apache.xbean:xbean-finder:3.11.1
+|    |    +--- org.apache.xbean:xbean-bundleutils:3.11.1
+|    |    |    \--- org.slf4j:slf4j-api:1.5.11 -> 1.7.9
+|    |    \--- org.slf4j:slf4j-api:1.5.11 -> 1.7.9
+|    +--- asm:asm-all:3.2
+|    +--- com.google.inject.extensions:guice-multibindings:3.0 (*)
+|    +--- org.slf4j:slf4j-api:1.6.3 -> 1.7.9
+|    +--- org.apache.xbean:xbean-bundleutils:3.11.1 (*)
+|    +--- javax.inject:javax.inject:1
+|    +--- com.netflix.archaius:archaius-core:0.5.12 -> 0.6.3
+|    |    +--- com.google.guava:guava:11.0.2 -> 14.0.1
+|    |    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.11 -> 1.9.13 (*)
+|    |    +--- org.slf4j:slf4j-api:1.6.4 -> 1.7.9
+|    |    +--- commons-configuration:commons-configuration:1.8
+|    |    |    +--- commons-lang:commons-lang:2.6
+|    |    |    \--- commons-logging:commons-logging:1.1.1
+|    |    +--- org.codehaus.jackson:jackson-core-asl:1.9.11 -> 1.9.13
+|    |    \--- com.google.code.findbugs:annotations:2.0.0
+|    \--- org.hibernate:hibernate-validator:4.1.0.Final
+|         +--- javax.validation:validation-api:1.0.0.GA
+|         \--- org.slf4j:slf4j-api:1.5.6 -> 1.7.9
++--- io.reactivex:rxnetty-spectator:0.4.5-rc.2
+|    +--- io.reactivex:rxjava:1.0.4
+|    +--- io.reactivex:rxnetty:0.4.5-rc.2 (*)
+|    \--- com.netflix.spectator:spectator-api:0.14.2 -> 0.16 (*)
++--- com.netflix.karyon2:karyon-governator:2.2.00-ALPHA7
+|    +--- com.netflix.karyon2:karyon-core:2.2.00-ALPHA7
+|    |    +--- io.reactivex:rxnetty-contexts:0.4.4
+|    |    |    +--- io.reactivex:rxjava:1.0.1 -> 1.0.4
+|    |    |    \--- io.reactivex:rxnetty:0.4.4 -> 0.4.5-rc.2 (*)
+|    |    \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    +--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    \--- com.netflix.governator:governator:1.3.3 (*)
++--- com.netflix.karyon2:karyon-archaius:2.2.00-ALPHA7
+|    +--- com.netflix.karyon2:karyon-governator:2.2.00-ALPHA7 (*)
+|    +--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    \--- com.netflix.archaius:archaius-core:0.6.3 (*)
++--- com.netflix.karyon2:karyon-admin:2.2.00-ALPHA7
+|    +--- javax.ws.rs:jsr311-api:1.1.1
+|    +--- org.eclipse.jetty:jetty-servlet:7.6.7.v20120910
+|    |    \--- org.eclipse.jetty:jetty-security:7.6.7.v20120910
+|    |         \--- org.eclipse.jetty:jetty-server:7.6.7.v20120910
+|    |              +--- org.eclipse.jetty.orbit:javax.servlet:2.5.0.v201103041518
+|    |              +--- org.eclipse.jetty:jetty-continuation:7.6.7.v20120910
+|    |              \--- org.eclipse.jetty:jetty-http:7.6.7.v20120910
+|    |                   \--- org.eclipse.jetty:jetty-io:7.6.7.v20120910
+|    |                        \--- org.eclipse.jetty:jetty-util:7.6.7.v20120910
+|    +--- com.netflix.karyon2:karyon-core:2.2.00-ALPHA7 (*)
+|    +--- com.netflix.karyon2:karyon-governator:2.2.00-ALPHA7 (*)
+|    +--- com.sun.jersey:jersey-server:1.18.1
+|    |    \--- com.sun.jersey:jersey-core:1.18.1
+|    +--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    +--- com.sun.jersey.contribs:jersey-guice:1.17.1
+|    |    +--- javax.inject:javax.inject:1
+|    |    +--- com.google.inject:guice:3.0 (*)
+|    |    +--- com.google.inject.extensions:guice-servlet:3.0
+|    |    |    \--- com.google.inject:guice:3.0 (*)
+|    |    \--- com.sun.jersey:jersey-servlet:1.17.1 -> 1.18.1
+|    |         \--- com.sun.jersey:jersey-server:1.18.1 (*)
+|    +--- com.sun.jersey:jersey-servlet:1.18.1 (*)
+|    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.11 -> 1.9.13 (*)
+|    +--- com.sun.jersey:jersey-core:1.18.1
+|    +--- org.eclipse.jetty:jetty-server:7.6.7.v20120910 (*)
+|    +--- javax.servlet:servlet-api:2.5
+|    +--- com.google.inject.extensions:guice-servlet:3.0 (*)
+|    \--- com.netflix.pytheas:pytheas-core:1.22
+|         +--- commons-collections:commons-collections:3.2.1
+|         +--- org.freemarker:freemarker:2.3.15
+|         +--- javax.ws.rs:jsr311-api:1.1.1
+|         +--- com.sun.jersey:jersey-core:1.11 -> 1.18.1
+|         +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+|         +--- com.sun.jersey:jersey-json:1.11
+|         |    +--- org.codehaus.jettison:jettison:1.1 -> 1.2
+|         |    |    \--- stax:stax-api:1.0.1
+|         |    +--- com.sun.xml.bind:jaxb-impl:2.2.3-1
+|         |    |    \--- javax.xml.bind:jaxb-api:2.2.2
+|         |    |         +--- javax.xml.stream:stax-api:1.0-2
+|         |    |         \--- javax.activation:activation:1.1
+|         |    +--- org.codehaus.jackson:jackson-core-asl:1.9.2 -> 1.9.13
+|         |    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.2 -> 1.9.13 (*)
+|         |    +--- org.codehaus.jackson:jackson-jaxrs:1.9.2
+|         |    |    +--- org.codehaus.jackson:jackson-core-asl:1.9.2 -> 1.9.13
+|         |    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.2 -> 1.9.13 (*)
+|         |    +--- org.codehaus.jackson:jackson-xc:1.9.2
+|         |    |    +--- org.codehaus.jackson:jackson-core-asl:1.9.2 -> 1.9.13
+|         |    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.2 -> 1.9.13 (*)
+|         |    \--- com.sun.jersey:jersey-core:1.11 -> 1.18.1
+|         +--- commons-beanutils:commons-beanutils:1.8.2
+|         |    \--- commons-logging:commons-logging:1.1.1
+|         +--- com.netflix.governator:governator:1.1.1 -> 1.3.3 (*)
+|         +--- com.google.guava:guava:14.0.1
+|         +--- javax.servlet:servlet-api:2.5
+|         +--- com.netflix.archaius:archaius-core:0.5.4 -> 0.6.3 (*)
+|         +--- commons-configuration:commons-configuration:1.8 (*)
+|         +--- com.sun.jersey:jersey-servlet:1.11 -> 1.18.1 (*)
+|         +--- com.github.stephenc.high-scale-lib:high-scale-lib:1.1.2
+|         +--- org.codehaus.jackson:jackson-mapper-asl:1.9.11 -> 1.9.13 (*)
+|         +--- com.sun.jersey.contribs:jersey-guice:1.9.1 -> 1.17.1 (*)
+|         +--- com.sun.jersey:jersey-server:1.11 -> 1.18.1 (*)
+|         +--- org.codehaus.jettison:jettison:1.1 -> 1.2 (*)
+|         +--- com.google.inject.extensions:guice-servlet:3.0 (*)
+|         +--- com.google.code.findbugs:annotations:2.0.0
+|         +--- commons-io:commons-io:1.4
+|         \--- com.netflix.eureka:eureka-client:1.1.73 -> 1.1.142
+|              +--- javax.ws.rs:jsr311-api:1.1.1
+|              +--- com.netflix.servo:servo-core:0.7.4 -> 0.8.0
+|              |    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+|              |    +--- com.netflix.servo:servo-internal:0.8.0
+|              |    |    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+|              |    |    +--- com.google.guava:guava:14.0.1
+|              |    |    \--- com.google.code.findbugs:annotations:2.0.0
+|              |    +--- com.google.guava:guava:14.0.1
+|              |    \--- com.google.code.findbugs:annotations:2.0.0
+|              +--- com.thoughtworks.xstream:xstream:1.4.2
+|              |    +--- xmlpull:xmlpull:1.1.3.1
+|              |    \--- xpp3:xpp3_min:1.1.4c
+|              +--- com.sun.jersey:jersey-core:1.11 -> 1.18.1
+|              +--- com.netflix.netflix-commons:netflix-eventbus:0.1.2
+|              |    +--- com.netflix.archaius:archaius-core:0.3.3 -> 0.6.3 (*)
+|              |    +--- org.apache.commons:commons-math:2.2
+|              |    +--- com.netflix.netflix-commons:netflix-infix:0.1.2
+|              |    |    +--- joda-time:joda-time:2.3
+|              |    |    +--- commons-jxpath:commons-jxpath:1.3
+|              |    |    +--- org.antlr:antlr-runtime:3.4
+|              |    |    |    +--- org.antlr:stringtemplate:3.2.1
+|              |    |    |    |    \--- antlr:antlr:2.7.7
+|              |    |    |    \--- antlr:antlr:2.7.7
+|              |    |    +--- com.google.code.gson:gson:2.1
+|              |    |    +--- com.google.guava:guava:14.0.1
+|              |    |    +--- javax.servlet:servlet-api:2.5
+|              |    |    +--- org.slf4j:slf4j-api:1.6.4 -> 1.7.9
+|              |    |    \--- com.google.code.findbugs:annotations:2.0.0
+|              |    +--- org.slf4j:slf4j-api:1.6.4 -> 1.7.9
+|              |    \--- com.netflix.servo:servo-core:0.5.3 -> 0.8.0 (*)
+|              +--- com.netflix.archaius:archaius-core:0.6.0 -> 0.6.3 (*)
+|              +--- com.netflix.ribbon:ribbon-httpclient:0.3.12
+|              |    +--- com.netflix.netflix-commons:netflix-commons-util:0.1.1
+|              |    |    \--- org.slf4j:slf4j-api:1.6.4 -> 1.7.9
+|              |    +--- commons-collections:commons-collections:3.2.1
+|              |    +--- javax.ws.rs:jsr311-api:1.1.1
+|              |    +--- com.sun.jersey:jersey-core:1.11 -> 1.18.1
+|              |    +--- com.netflix.servo:servo-core:0.4.44 -> 0.8.0 (*)
+|              |    +--- com.google.guava:guava:14.0.1
+|              |    +--- org.apache.httpcomponents:httpclient:4.2.1
+|              |    |    +--- org.apache.httpcomponents:httpcore:4.2.1
+|              |    |    +--- commons-logging:commons-logging:1.1.1
+|              |    |    \--- commons-codec:commons-codec:1.6 -> 1.7
+|              |    +--- com.sun.jersey:jersey-client:1.11
+|              |    |    \--- com.sun.jersey:jersey-core:1.11 -> 1.18.1
+|              |    +--- com.netflix.archaius:archaius-core:0.5.12 -> 0.6.3 (*)
+|              |    +--- com.sun.jersey.contribs:jersey-apache-client4:1.11
+|              |    |    +--- org.apache.httpcomponents:httpclient:4.1.1 -> 4.2.1 (*)
+|              |    |    \--- com.sun.jersey:jersey-client:1.11 (*)
+|              |    +--- org.slf4j:slf4j-api:1.6.4 -> 1.7.9
+|              |    \--- com.netflix.ribbon:ribbon-core:0.3.12
+|              |         +--- commons-collections:commons-collections:3.2.1
+|              |         +--- com.netflix.netflix-commons:netflix-commons-util:0.1.1 (*)
+|              |         +--- com.netflix.netflix-commons:netflix-statistics:0.1.1
+|              |         |    +--- org.slf4j:slf4j-api:1.6.4 -> 1.7.9
+|              |         |    \--- com.google.code.findbugs:annotations:2.0.0
+|              |         +--- com.netflix.servo:servo-core:0.4.44 -> 0.8.0 (*)
+|              |         +--- com.netflix.archaius:archaius-core:0.5.12 -> 0.6.3 (*)
+|              |         +--- com.google.guava:guava:14.0.1
+|              |         \--- org.slf4j:slf4j-api:1.6.4 -> 1.7.9
+|              +--- org.apache.httpcomponents:httpclient:4.2.1 (*)
+|              +--- com.sun.jersey:jersey-client:1.11 (*)
+|              +--- com.sun.jersey.contribs:jersey-apache-client4:1.11 (*)
+|              +--- com.netflix.governator:governator:1.2.10 -> 1.3.3 (*)
+|              \--- org.codehaus.jettison:jettison:1.2 (*)
++--- com.netflix.karyon2:karyon-admin-web:2.2.00-ALPHA7
+|    +--- org.freemarker:freemarker:2.3.15
+|    +--- org.slf4j:slf4j-api:1.7.6 -> 1.7.9
+|    +--- com.google.code.gson:gson:2.1
+|    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.11 -> 1.9.13 (*)
+|    \--- com.netflix.karyon2:karyon-admin:2.2.00-ALPHA7 (*)
++--- com.netflix.pytheas:pytheas-core:1.22 (*)
++--- commons-codec:commons-codec:1.7
++--- com.netflix.servo:servo-core:0.8.0 (*)
++--- junit:junit:4.12
+|    \--- org.hamcrest:hamcrest-core:1.3
++--- org.hamcrest:hamcrest-library:1.3
+|    \--- org.hamcrest:hamcrest-core:1.3
++--- org.mockito:mockito-core:1.9.5
+|    +--- org.hamcrest:hamcrest-core:1.1 -> 1.3
+|    \--- org.objenesis:objenesis:1.0
+\--- project :eureka2-test-utils
+     +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+     +--- project :eureka2-read-server
+     |    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+     |    +--- project :eureka2-client
+     |    |    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+     |    |    +--- project :eureka2-core (*)
+     |    |    \--- javax.inject:javax.inject:1
+     |    \--- project :eureka2-server (*)
+     +--- project :eureka2-write-server
+     |    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+     |    \--- project :eureka2-server (*)
+     +--- project :eureka2-bridge
+     |    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+     |    +--- project :eureka2-write-server (*)
+     |    \--- com.netflix.eureka:eureka-client:1.1.142 (*)
+     \--- project :eureka2-testkit
+          +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+          +--- project :eureka2-read-server (*)
+          +--- project :eureka2-write-server (*)
+          +--- project :eureka2-bridge (*)
+          +--- project :eureka2-dashboard
+          |    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+          |    +--- project :eureka2-client (*)
+          |    +--- project :eureka2-server (*)
+          |    +--- project :eureka2-ext:eureka2-karyon-admin
+          |    |    +--- org.slf4j:slf4j-api:1.7.7 -> 1.7.9
+          |    |    +--- project :eureka2-client (*)
+          |    |    \--- com.netflix.karyon2:karyon-admin-web:2.2.00-ALPHA7 (*)
+          |    \--- com.google.code.gson:gson:2.1
+          +--- project :eureka2-ext:eureka2-karyon-admin (*)
+          +--- jline:jline:2.12
+          \--- junit:junit:4.12 (*)
+
+(*) - dependencies omitted (listed previously)
+
+BUILD SUCCESSFUL
+
+Total time: 18.781 secs

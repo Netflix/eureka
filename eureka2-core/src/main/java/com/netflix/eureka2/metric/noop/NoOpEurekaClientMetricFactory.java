@@ -5,17 +5,11 @@ import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.metric.RegistrationChannelMetrics;
 import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
-import com.netflix.eureka2.metric.client.EurekaClientRegistryMetrics;
 
 /**
  * @author Tomasz Bak
  */
 public class NoOpEurekaClientMetricFactory extends EurekaClientMetricFactory {
-
-    @Override
-    public EurekaClientRegistryMetrics getRegistryMetrics() {
-        return NoOpEurekaClientRegistryMetrics.INSTANCE;
-    }
 
     @Override
     public MessageConnectionMetrics getRegistrationServerConnectionMetrics() {

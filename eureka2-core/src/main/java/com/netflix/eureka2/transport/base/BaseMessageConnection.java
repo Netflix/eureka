@@ -16,6 +16,14 @@
 
 package com.netflix.eureka2.transport.base;
 
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.transport.Acknowledgement;
 import com.netflix.eureka2.transport.MessageConnection;
@@ -25,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
 import rx.Scheduler.Worker;
+import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
@@ -32,13 +41,6 @@ import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
 import rx.subjects.ReplaySubject;
 import rx.subjects.Subject;
-
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author Tomasz Bak
@@ -57,6 +59,7 @@ public class BaseMessageConnection implements MessageConnection {
     private final MessageConnectionMetrics metrics;
     private final Worker schedulerWorker;
     private final long startTime;
+    private final AtomicBoolean closed = new AtomicBoolean();
 
     private final PublishSubject<Void> lifecycleSubject = PublishSubject.create();
 
@@ -104,7 +107,7 @@ public class BaseMessageConnection implements MessageConnection {
         installAcknowledgementHandler();
 
         this.startTime = System.currentTimeMillis();
-        metrics.incrementConnectedClients();
+        metrics.incrementConnectionCounter();
     }
 
     private String descriptiveName(String name) {
@@ -174,6 +177,11 @@ public class BaseMessageConnection implements MessageConnection {
             public void call(Object o) {
                 metrics.incrementIncomingMessageCounter(o.getClass(), 1);
             }
+        }).doOnTerminate(new Action0() {
+            @Override
+            public void call() {
+                shutdown();
+            }
         });
     }
 
@@ -189,12 +197,33 @@ public class BaseMessageConnection implements MessageConnection {
 
     @Override
     public void shutdown() {
-        metrics.decrementConnectedClients();
-        metrics.clientConnectionTime(startTime);
+        if (closed.compareAndSet(false, true)) {
+            metrics.decrementConnectionCounter();
+            metrics.connectionDuration(startTime);
 
-        Observable<Void> closeObservable = connection.close();
-        closeObservable.subscribe(lifecycleSubject);
-        schedulerWorker.unsubscribe();
+            Observable<Void> closeObservable = connection.close();
+            closeObservable.subscribe(
+                    new Subscriber<Void>() {
+                        @Override
+                        public void onCompleted() {
+                            lifecycleSubject.onCompleted();
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+                            logger.info("Connection close triggered an error: {}", e.getMessage());
+                            logger.debug("Connection close triggered an error", e);
+                            lifecycleSubject.onCompleted();
+                        }
+
+                        @Override
+                        public void onNext(Void aVoid) {
+
+                        }
+                    }
+            );
+            schedulerWorker.unsubscribe();
+        }
     }
 
     @Override

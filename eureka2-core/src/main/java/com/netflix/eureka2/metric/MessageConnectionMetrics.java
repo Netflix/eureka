@@ -22,11 +22,11 @@ package com.netflix.eureka2.metric;
  * @author Tomasz Bak
  */
 public interface MessageConnectionMetrics {
-    void incrementConnectedClients();
+    void incrementConnectionCounter();
 
-    void decrementConnectedClients();
+    void decrementConnectionCounter();
 
-    void clientConnectionTime(long start);
+    void connectionDuration(long start);
 
     void incrementIncomingMessageCounter(Class<?> aClass, int amount);
 
