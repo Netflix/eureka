@@ -18,7 +18,8 @@ package com.netflix.eureka2.example.client;
 
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.resolver.WriteServerResolverSet;
+import com.netflix.eureka2.client.resolver.ServerResolver;
+import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.datacenter.BasicDataCenterInfo;
@@ -44,17 +45,23 @@ public final class SimpleApp {
             .build();
 
 
-    private final WriteServerResolverSet writeServerResolverSet;
+    private final ServerResolver writeClusterDiscoveryResolver;
+    private final ServerResolver writeClusterRegistrationResolver;
     private final String readServerVip;
 
     public SimpleApp(String eurekaWriteServer, int registrationPort, int discoveryPort, String readServerVip) {
-        this.writeServerResolverSet = WriteServerResolverSet.just(eurekaWriteServer, registrationPort, discoveryPort);
+        this.writeClusterDiscoveryResolver = ServerResolvers.just(eurekaWriteServer, discoveryPort);
+        this.writeClusterRegistrationResolver = ServerResolvers.just(eurekaWriteServer, registrationPort);
         this.readServerVip = readServerVip;
     }
 
     public void run() throws InterruptedException {
 
-        EurekaClient client = Eureka.newClientBuilder(writeServerResolverSet, readServerVip).build();
+        EurekaClient client = Eureka.newClientBuilder(
+                writeClusterDiscoveryResolver,
+                writeClusterRegistrationResolver,
+                readServerVip
+        ).build();
 
         client.forInterest(Interests.forApplications("WriteServer", "ReadServer", "ServiceA")).subscribe(
                 new Subscriber<ChangeNotification<InstanceInfo>>() {
