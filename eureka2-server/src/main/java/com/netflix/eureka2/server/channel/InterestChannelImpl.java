@@ -68,7 +68,7 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
 
                             sendSnapshot(((SnapshotRegistration) message).getInterests());
 
-                            moveToState(STATE.Idle);
+                            moveToState(STATE.Closed);
                             break;
                         case Open:
                             sendErrorOnTransport(SNAPSHOT_REQUEST_NOT_ALLOWED);

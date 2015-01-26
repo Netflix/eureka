@@ -181,6 +181,26 @@ public class BaseMessageConnectionTest {
     }
 
     @Test(timeout = 60000)
+    public void testClosesLocalConnectionOnRemoteServerDisconnect() throws Exception {
+        // Connect to client  input stream and lifecycle which we will examine after server disconnect.
+        TestSubscriber<Object> testSubscriber = new TestSubscriber<>();
+        clientBroker.incoming().subscribe(testSubscriber);
+
+        TestSubscriber<Void> lifecycleSubscriber = new TestSubscriber<>();
+        clientBroker.lifecycleObservable().subscribe(lifecycleSubscriber);
+
+        // Close connection on the remote endpoint
+        serverBroker.shutdown();
+
+        // Verify that client side detected the disconnect, and local shutdown was triggered.
+        testSubscriber.awaitTerminalEvent();
+        testSubscriber.assertNoErrors();
+
+        lifecycleSubscriber.assertTerminalEvent();
+        lifecycleSubscriber.assertNoErrors();
+    }
+
+    @Test(timeout = 60000)
     public void testMetrics() throws Exception {
         // Connection was already setup in setUp method
         verify(clientMetrics, times(1)).incrementConnectionCounter();
