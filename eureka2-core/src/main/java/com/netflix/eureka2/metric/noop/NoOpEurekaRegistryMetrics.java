@@ -1,7 +1,5 @@
 package com.netflix.eureka2.metric.noop;
 
-import java.util.concurrent.Callable;
-
 import com.netflix.eureka2.metric.EurekaRegistryMetrics;
 import com.netflix.eureka2.registry.Source.Origin;
 
@@ -21,14 +19,10 @@ public class NoOpEurekaRegistryMetrics implements EurekaRegistryMetrics {
     }
 
     @Override
-    public void incrementUpdateCounter(Origin origin) {
+    public void setRegistrySize(int registrySize) {
     }
 
     @Override
-    public void setRegistrySizeMonitor(Callable<Integer> registrySizeFun) {
-    }
-
-    @Override
-    public void setSelfPreservationMonitor(Callable<Integer> selfPreservationFun) {
+    public void setSelfPreservation(boolean status) {
     }
 }

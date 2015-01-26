@@ -1,7 +1,5 @@
 package com.netflix.eureka2.metric;
 
-import java.util.concurrent.Callable;
-
 /**
  * @author David Liu
  */
@@ -15,5 +13,5 @@ public interface SerializedTaskInvokerMetrics {
 
     void incrementOutputFailure();
 
-    void setQueueSizeMonitor(Callable<Long> n);
+    void setQueueSize(int queueSize);
 }

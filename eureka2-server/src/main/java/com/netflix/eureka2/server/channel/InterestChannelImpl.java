@@ -50,7 +50,6 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
     public InterestChannelImpl(final SourcedEurekaRegistry<InstanceInfo> registry, final MessageConnection transport, final ServerInterestChannelMetrics metrics) {
         super(STATE.Idle, transport, registry, metrics);
         this.metrics = metrics;
-        this.metrics.incrementStateCounter(STATE.Idle);
         this.notificationMultiplexer = new InterestNotificationMultiplexer(registry);
         this.channelSubscriptionMonitor = new ChannelSubscriptionMonitor(metrics);
 
@@ -65,13 +64,11 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
                 if (message instanceof SnapshotRegistration) {
                     switch (state.get()) {
                         case Idle:
-                            state.set(STATE.Open);
-                            metrics.stateTransition(STATE.Idle, STATE.Open);
+                            moveToState(STATE.Idle, STATE.Open);
 
                             sendSnapshot(((SnapshotRegistration) message).getInterests());
 
-                            state.set(STATE.Closed);
-                            metrics.stateTransition(STATE.Idle, STATE.Closed);
+                            moveToState(STATE.Closed);
                             break;
                         case Open:
                             sendErrorOnTransport(SNAPSHOT_REQUEST_NOT_ALLOWED);
@@ -142,8 +139,7 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
              */
             return Observable.error(CHANNEL_CLOSED_EXCEPTION);
         }
-        if (state.compareAndSet(STATE.Idle, STATE.Open)) {
-            metrics.stateTransition(STATE.Idle, STATE.Open);
+        if (moveToState(STATE.Idle, STATE.Open)) {
             initializeNotificationMultiplexer();
         }
 
@@ -219,10 +215,8 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
 
     @Override
     public void _close() {
-        if (state.compareAndSet(STATE.Open, STATE.Closed)) {
-            state.set(STATE.Closed);
+        if (moveToState(STATE.Open, STATE.Closed)) {
             channelSubscriptionMonitor.update(Interests.forNone());
-            metrics.stateTransition(STATE.Open, STATE.Closed);
             notificationMultiplexer.unregister();
             super._close(); // Shutdown the transport
         }

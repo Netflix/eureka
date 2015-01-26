@@ -19,13 +19,13 @@ package com.netflix.eureka2.registry;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Named;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
+import com.netflix.eureka2.metric.EurekaRegistryMetrics;
 import com.netflix.eureka2.registry.eviction.EvictionItem;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
@@ -54,6 +54,7 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
     private final SourcedEurekaRegistry<InstanceInfo> eurekaRegistry;
     private final EvictionQueue evictionQueue;
     private final EvictionStrategy evictionStrategy;
+    private final EurekaRegistryMetrics metrics;
     private final Subscription evictionSubscription;
     private final EvictionSubscriber evictionSubscriber;
 
@@ -99,15 +100,9 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
         this.eurekaRegistry = eurekaRegistry;
         this.evictionQueue = evictionQueue;
         this.evictionStrategy = evictionStrategy;
+        this.metrics = metricFactory.getEurekaServerRegistryMetrics();
         this.evictionSubscriber = new EvictionSubscriber();
         this.evictionSubscription = evictionQueue.pendingEvictions().subscribe(evictionSubscriber);
-
-        metricFactory.getEurekaServerRegistryMetrics().setSelfPreservationMonitor(new Callable<Integer>() {
-            @Override
-            public Integer call() throws Exception {
-                return isInSelfPreservation() ? 1 : 0;
-            }
-        });
     }
 
     @Override
@@ -240,10 +235,9 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
 
     private void resumeEviction() {
         if (selfPreservation.compareAndSet(true, false)) {
+            metrics.setSelfPreservation(false);
             logger.info("Coming out of self preservation mode");
-            if (allowedToEvict()) {
-                evictionSubscriber.resume();
-            }
+            evictionSubscriber.resume();
         }
     }
 
@@ -277,10 +271,12 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
                         .retry(2)
                         .subscribe();
             } else {
+                // TODO We should not do that, as this resets the timeout for this entry. Once item was provided, we should remove it (no need to be too strict).
                 evictionQueue.add(evictionItem.getInstanceInfo(), evictionItem.getSource());  // add back to the eviction queue
                 logger.info("Not evicting registry entry, adding back to the queue {}/{}",
                         evictionItem.getSource(), evictionItem.getInstanceInfo().getId());
                 selfPreservation.set(true);
+                metrics.setSelfPreservation(true);
                 logger.info("Entering self preservation mode");
             }
         }

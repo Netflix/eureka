@@ -16,8 +16,6 @@
 
 package com.netflix.eureka2.registry;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -25,11 +23,12 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
-import com.netflix.eureka2.registry.instance.Delta;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.metric.EurekaRegistryMetrics;
+import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.registry.eviction.EvictionItem;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.eviction.EvictionStrategy;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.After;
 import org.junit.Before;
@@ -42,9 +41,16 @@ import rx.Producer;
 import rx.Subscriber;
 import rx.subjects.PublishSubject;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Tomasz Bak
@@ -52,10 +58,13 @@ import static org.mockito.Mockito.*;
 @RunWith(MockitoJUnitRunner.class)
 public class PreservableEurekaRegistryTest {
 
+    private final EurekaRegistryMetricFactory registryMetricFactory = mock(EurekaRegistryMetricFactory.class);
+    private final EurekaRegistryMetrics registryMetrics = mock(EurekaRegistryMetrics.class);
+    private final SerializedTaskInvokerMetrics registryTaskInvokerMetrics = mock(SerializedTaskInvokerMetrics.class);
+
     private final SourcedEurekaRegistry<InstanceInfo> baseRegistry = mock(SourcedEurekaRegistry.class);
 
     private static final InstanceInfo DISCOVERY = SampleInstanceInfo.DiscoveryServer.build();
-    private static final Set<Delta<?>> DISCOVERY_DELTAS = new HashSet<>();
     private final Source localSource = new Source(Source.Origin.LOCAL);
     private final Source remoteSource = new Source(Source.Origin.REPLICATED, "test");
 
@@ -81,8 +90,11 @@ public class PreservableEurekaRegistryTest {
 
     @Before
     public void setUp() throws Exception {
+        when(registryMetricFactory.getEurekaServerRegistryMetrics()).thenReturn(registryMetrics);
+        when(registryMetricFactory.getRegistryTaskInvokerMetrics()).thenReturn(registryTaskInvokerMetrics);
+
         when(evictionQueue.pendingEvictions()).thenReturn(evictionItemObservable);
-        preservableRegistry = new PreservableEurekaRegistry(baseRegistry, evictionQueue, evictionStrategy, EurekaRegistryMetricFactory.registryMetrics());
+        preservableRegistry = new PreservableEurekaRegistry(baseRegistry, evictionQueue, evictionStrategy, registryMetricFactory);
     }
 
     @After
@@ -120,12 +132,6 @@ public class PreservableEurekaRegistryTest {
         preservableRegistry.register(DISCOVERY, localSource);
 
         assertThat(requestedEvictedItems.get(), is(equalTo(1L)));
-    }
-
-    private void evict(InstanceInfo instanceInfo, Source source, int allowedToEvict) {
-        when(evictionStrategy.allowedToEvict(anyInt(), anyInt())).thenReturn(allowedToEvict);
-        evictionPublisher.onNext(new EvictionItem(instanceInfo, source, 1));
-        requestedEvictedItems.decrementAndGet();
     }
 
     @Test
@@ -196,6 +202,32 @@ public class PreservableEurekaRegistryTest {
 
         assertFalse(evictionPublisher.hasObservers());
         verify(baseRegistry, times(1)).shutdown();
+    }
+
+    @Test
+    public void testMetrics() throws Exception {
+        // Add one item to the registry
+        when(baseRegistry.register(DISCOVERY, localSource)).thenReturn(Observable.just(true));
+        preservableRegistry.register(DISCOVERY, localSource);
+
+        // Try to evict the item, forcing entering self preservation mode
+        evict(DISCOVERY, remoteSource, 0);
+        verify(registryMetrics, times(1)).setSelfPreservation(true);
+
+        // Now add one more item to the registry, and simulate leaving self preservation mode
+        InstanceInfo secondEntry = SampleInstanceInfo.EurekaWriteServer.build();
+        when(baseRegistry.unregister(DISCOVERY, remoteSource)).thenReturn(Observable.just(true));
+        when(baseRegistry.register(secondEntry, localSource)).thenReturn(Observable.just(true));
+
+        preservableRegistry.register(secondEntry, localSource);
+
+        verify(registryMetrics, times(1)).setSelfPreservation(false);
+    }
+
+    private void evict(InstanceInfo instanceInfo, Source source, int allowedToEvict) {
+        when(evictionStrategy.allowedToEvict(anyInt(), anyInt())).thenReturn(allowedToEvict);
+        evictionPublisher.onNext(new EvictionItem(instanceInfo, source, 1));
+        requestedEvictedItems.decrementAndGet();
     }
 
     private static void assertStatus(Observable<Boolean> actual, Boolean expected) {

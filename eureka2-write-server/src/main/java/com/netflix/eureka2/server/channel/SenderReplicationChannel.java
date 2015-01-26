@@ -35,7 +35,7 @@ import rx.functions.Func1;
  */
 public class SenderReplicationChannel extends AbstractClientChannel<STATE> implements ReplicationChannel {
 
-    private static final Exception HANDSHAKE_FINISHED_EXCEPTION = new Exception("Handshake already done");
+    private static final Exception ILLEGAL_STATE_EXCEPTION = new Exception("Operation illegal in current channel state");
 
     public SenderReplicationChannel(TransportClient client, ReplicationChannelMetrics metrics) {
         super(STATE.Idle, client, metrics);
@@ -43,11 +43,8 @@ public class SenderReplicationChannel extends AbstractClientChannel<STATE> imple
 
     @Override
     public Observable<ReplicationHelloReply> hello(final ReplicationHello hello) {
-        if (state.get() == STATE.Closed) {
-            return Observable.error(CHANNEL_CLOSED_EXCEPTION);
-        }
-        if (!state.compareAndSet(STATE.Idle, STATE.Handshake)) {
-            return Observable.error(HANDSHAKE_FINISHED_EXCEPTION);
+        if (!moveToState(STATE.Idle, STATE.Handshake)) {
+            return invalidStateError();
         }
         return connect().switchMap(new Func1<MessageConnection, Observable<ReplicationHelloReply>>() {
             @Override
@@ -59,6 +56,7 @@ public class SenderReplicationChannel extends AbstractClientChannel<STATE> imple
                                     @Override
                                     public Observable<ReplicationHelloReply> call(Object o) {
                                         if (o instanceof ReplicationHelloReply) {
+                                            moveToState(STATE.Handshake, STATE.Connected);
                                             return Observable.just((ReplicationHelloReply) o);
                                         }
                                         return Observable.error(new Exception("Unexpected message of type " + o.getClass() + " received"));
@@ -71,8 +69,8 @@ public class SenderReplicationChannel extends AbstractClientChannel<STATE> imple
 
     @Override
     public Observable<Void> register(final InstanceInfo instanceInfo) {
-        if (state.get() == STATE.Closed) {
-            return Observable.error(CHANNEL_CLOSED_EXCEPTION);
+        if (state.get() != STATE.Connected) {
+            return invalidStateError();
         }
 
         return connect().switchMap(new Func1<MessageConnection, Observable<Void>>() {
@@ -85,8 +83,8 @@ public class SenderReplicationChannel extends AbstractClientChannel<STATE> imple
 
     @Override
     public Observable<Void> unregister(final String instanceId) {
-        if (state.get() == STATE.Closed) {
-            return Observable.error(CHANNEL_CLOSED_EXCEPTION);
+        if (state.get() != STATE.Connected) {
+            return invalidStateError();
         }
 
         return connect().switchMap(new Func1<MessageConnection, Observable<Void>>() {
@@ -95,5 +93,20 @@ public class SenderReplicationChannel extends AbstractClientChannel<STATE> imple
                 return connection.submit(new UnregisterCopy(instanceId));
             }
         });
+    }
+
+    @Override
+    protected void _close() {
+        if (state.get() != ReplicationChannel.STATE.Closed) {
+            moveToState(state.get(), ReplicationChannel.STATE.Closed);
+            super._close();
+        }
+    }
+
+    protected <T> Observable<T> invalidStateError() {
+        if (state.get() == STATE.Closed) {
+            return Observable.error(CHANNEL_CLOSED_EXCEPTION);
+        }
+        return Observable.error(ILLEGAL_STATE_EXCEPTION);
     }
 }

@@ -1,7 +1,5 @@
 package com.netflix.eureka2.metric.noop;
 
-import java.util.concurrent.Callable;
-
 import com.netflix.eureka2.metric.EvictionQueueMetrics;
 
 /**
@@ -20,6 +18,6 @@ public class NoOpEvictionQueueMetrics implements EvictionQueueMetrics {
     }
 
     @Override
-    public void setEvictionQueueSizeMonitor(Callable<Integer> evictionQueueSizeFun) {
+    public void setEvictionQueueSize(int evictionQueueSize) {
     }
 }

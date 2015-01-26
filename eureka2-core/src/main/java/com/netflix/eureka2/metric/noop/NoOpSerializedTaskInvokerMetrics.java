@@ -1,7 +1,5 @@
 package com.netflix.eureka2.metric.noop;
 
-import java.util.concurrent.Callable;
-
 import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 
 /**
@@ -28,6 +26,6 @@ public class NoOpSerializedTaskInvokerMetrics implements SerializedTaskInvokerMe
     }
 
     @Override
-    public void setQueueSizeMonitor(Callable<Long> n) {
+    public void setQueueSize(int queueSize) {
     }
 }

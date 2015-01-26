@@ -8,11 +8,11 @@ import com.netflix.eureka2.metric.StateMachineMetrics;
  */
 public interface BridgeChannelMetrics extends StateMachineMetrics<STATE> {
 
-    void setTotalCount(long n);
+    void setTotalCount(int n);
 
-    void setRegisterCount(long n);
+    void setRegisterCount(int n);
 
-    void setUpdateCount(long n);
+    void setUpdateCount(int n);
 
-    void setUnregisterCount(long n);
+    void setUnregisterCount(int n);
 }

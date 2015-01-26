@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
-import com.netflix.eureka2.metric.noop.NoOpMessageConnectionMetrics;
+import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.rx.RxBlocking;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.codec.avro.AvroPipelineConfigurator;
@@ -25,10 +25,20 @@ import rx.Notification;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Func1;
+import rx.observers.TestSubscriber;
 
 import static com.netflix.eureka2.rx.RxSniffer.sniff;
 import static com.netflix.eureka2.transport.base.SampleObject.CONTENT;
-import static org.junit.Assert.*;
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 /**
  * @author Tomasz Bak
@@ -42,8 +52,8 @@ public class BaseMessageConnectionTest {
     volatile MessageConnection serverBroker;
     volatile MessageConnection clientBroker;
 
-    private final MessageConnectionMetrics clientMetrics = NoOpMessageConnectionMetrics.INSTANCE;
-    private final MessageConnectionMetrics serverMetrics = NoOpMessageConnectionMetrics.INSTANCE;
+    private final MessageConnectionMetrics clientMetrics = mock(MessageConnectionMetrics.class);
+    private final MessageConnectionMetrics serverMetrics = mock(MessageConnectionMetrics.class);
 
     @Before
     public void setUp() throws Exception {
@@ -168,5 +178,64 @@ public class BaseMessageConnectionTest {
 
         assertEquals(1, serverIncoming.size());
         assertNotNull("expected message on server side", serverIncoming.get(0));
+    }
+
+    @Test(timeout = 60000)
+    public void testClosesLocalConnectionOnRemoteServerDisconnect() throws Exception {
+        // Connect to client  input stream and lifecycle which we will examine after server disconnect.
+        TestSubscriber<Object> testSubscriber = new TestSubscriber<>();
+        clientBroker.incoming().subscribe(testSubscriber);
+
+        TestSubscriber<Void> lifecycleSubscriber = new TestSubscriber<>();
+        clientBroker.lifecycleObservable().subscribe(lifecycleSubscriber);
+
+        // Close connection on the remote endpoint
+        serverBroker.shutdown();
+
+        // Verify that client side detected the disconnect, and local shutdown was triggered.
+        testSubscriber.awaitTerminalEvent();
+        testSubscriber.assertNoErrors();
+
+        lifecycleSubscriber.assertTerminalEvent();
+        lifecycleSubscriber.assertNoErrors();
+    }
+
+    @Test(timeout = 60000)
+    public void testMetrics() throws Exception {
+        // Connection was already setup in setUp method
+        verify(clientMetrics, times(1)).incrementConnectionCounter();
+        verify(serverMetrics, times(1)).incrementConnectionCounter();
+
+        // Send message client -> server
+        ExtTestSubscriber<Object> testSubscriber = new ExtTestSubscriber<>();
+        serverBroker.incoming().subscribe(testSubscriber);
+        clientBroker.submit(CONTENT).subscribe();
+
+        assertThat(testSubscriber.takeNextOrWait(), is(equalTo((Object) CONTENT)));
+
+        verify(clientMetrics, times(1)).incrementOutgoingMessageCounter(CONTENT.getClass(), 1);
+        verify(serverMetrics, times(1)).incrementIncomingMessageCounter(CONTENT.getClass(), 1);
+
+        // Send message server -> client
+        testSubscriber = new ExtTestSubscriber<>();
+        clientBroker.incoming().subscribe(testSubscriber);
+        serverBroker.submit(CONTENT).subscribe();
+
+        assertThat(testSubscriber.takeNextOrWait(), is(equalTo((Object) CONTENT)));
+
+        verify(serverMetrics, times(1)).incrementOutgoingMessageCounter(CONTENT.getClass(), 1);
+        verify(clientMetrics, times(1)).incrementIncomingMessageCounter(CONTENT.getClass(), 1);
+
+        // Close connection
+        clientBroker.shutdown();
+        TestSubscriber<Void> lifecycleSubscriber = new TestSubscriber<>();
+        serverBroker.lifecycleObservable().subscribe(lifecycleSubscriber);
+        lifecycleSubscriber.awaitTerminalEvent();
+
+        verify(clientMetrics, times(1)).decrementConnectionCounter();
+        verify(serverMetrics, times(1)).decrementConnectionCounter();
+
+        verify(clientMetrics, times(1)).connectionDuration(anyLong());
+        verify(serverMetrics, times(1)).connectionDuration(anyLong());
     }
 }

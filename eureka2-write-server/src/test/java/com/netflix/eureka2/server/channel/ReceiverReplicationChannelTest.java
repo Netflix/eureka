@@ -19,14 +19,16 @@ package com.netflix.eureka2.server.channel;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.netflix.eureka2.channel.ReplicationChannel.STATE;
+import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
 import com.netflix.eureka2.protocol.replication.RegisterCopy;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.protocol.replication.UnregisterCopy;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.junit.After;
@@ -36,7 +38,6 @@ import org.mockito.ArgumentCaptor;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
-import static com.netflix.eureka2.metric.server.WriteServerMetricFactory.writeServerMetrics;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -62,6 +63,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
 
     private ReceiverReplicationChannel replicationChannel;
     private final PublishSubject<Object> incomingSubject = PublishSubject.create();
+    private final ReplicationChannelMetrics channelMetrics = mock(ReplicationChannelMetrics.class);
 
     // Argument captors
     private final ArgumentCaptor<InstanceInfo> infoCaptor = ArgumentCaptor.forClass(InstanceInfo.class);
@@ -77,7 +79,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         when(SelfIdentityService.resolve()).thenReturn(Observable.just(RECEIVER_INFO));
 
         replicationChannel = new ReceiverReplicationChannel(transport, SelfIdentityService, registry,
-                evictionQueue, writeServerMetrics().getReplicationChannelMetrics());
+                evictionQueue, channelMetrics);
     }
 
     @After
@@ -156,6 +158,21 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
     @Test
     public void testAddsRecordsToEvictionQueueOnTransportDisconnect() throws Exception {
         verifyAddsRecordsToEvictionQueueOnDisconnect(false);
+    }
+
+    @Test
+    public void testMetrics() throws Exception {
+        // Idle -> Handshake -> Connected
+        ReplicationHello hello = new ReplicationHello(RECEIVER_ID, 0);
+        incomingSubject.onNext(hello);
+
+        verify(channelMetrics, times(1)).incrementStateCounter(STATE.Handshake);
+        verify(channelMetrics, times(1)).incrementStateCounter(STATE.Connected);
+
+        // Shutdown channel (Connected -> Closed)
+        replicationChannel.close();
+        verify(channelMetrics, times(1)).decrementStateCounter(STATE.Connected);
+        verify(channelMetrics, times(1)).incrementStateCounter(STATE.Closed);
     }
 
     @Test

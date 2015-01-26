@@ -76,6 +76,8 @@ public abstract class AbstractServiceChannel<STATE extends Enum<STATE>> implemen
                     metrics.incrementStateCounter(to);
                 } else {
                     metrics.stateTransition(from, to);
+                    metrics.incrementStateCounter(to);
+                    metrics.decrementStateCounter(from);
                 }
             }
             return true;

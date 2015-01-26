@@ -16,8 +16,6 @@
 
 package com.netflix.eureka2.metric;
 
-import java.util.concurrent.Callable;
-
 /**
  * @author Tomasz Bak
  */
@@ -27,5 +25,5 @@ public interface EvictionQueueMetrics {
 
     void decrementEvictionQueueCounter();
 
-    void setEvictionQueueSizeMonitor(Callable<Integer> evictionQueueSizeFun);
+    void setEvictionQueueSize(int evictionQueueSize);
 }

@@ -28,8 +28,6 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATE> imple
 
     private static final Logger logger = LoggerFactory.getLogger(RegistrationChannelImpl.class);
 
-    private final RegistrationChannelMetrics metrics;
-
     private final Source selfSource;
     private final AtomicReference<InstanceInfo> instanceInfoRef;
 
@@ -38,9 +36,6 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATE> imple
                                    MessageConnection transport,
                                    RegistrationChannelMetrics metrics) {
         super(STATE.Idle, transport, registry, metrics);
-        this.metrics = metrics;
-
-        metrics.incrementStateCounter(STATE.Idle);
 
         selfSource = new Source(Source.Origin.LOCAL);
         instanceInfoRef = new AtomicReference<>();

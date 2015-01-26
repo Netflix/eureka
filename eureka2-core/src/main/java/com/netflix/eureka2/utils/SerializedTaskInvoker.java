@@ -4,7 +4,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import org.slf4j.Logger;
@@ -14,7 +14,6 @@ import rx.Scheduler;
 import rx.Scheduler.Worker;
 import rx.Subscriber;
 import rx.functions.Action0;
-import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
@@ -29,7 +28,7 @@ public abstract class SerializedTaskInvoker {
 
     private static final Exception TASK_CANCELLED = new CancellationException("Task cancelled");
 
-    private final AtomicLong queueSize;
+    private final AtomicInteger queueSize;
 
     private final SerializedTaskInvokerMetrics metrics;
     private final Worker worker;
@@ -42,16 +41,14 @@ public abstract class SerializedTaskInvoker {
             executorScheduled.set(false);
             while (!taskQueue.isEmpty()) {
                 InvokerTask<?, ?> task = taskQueue.poll();
-                try {
-                    task.execute();
+                if (task.execute()) {
                     metrics.incrementOutputSuccess();
-                } catch (Exception e) {
-                    logger.error("Task execution failure", e);
+                } else {
                     task.cancel();
                     metrics.incrementOutputFailure();
-                } finally {
-                    queueSize.getAndDecrement();
                 }
+                queueSize.getAndDecrement();
+                metrics.setQueueSize(queueSize.get());
             }
         }
     };
@@ -62,14 +59,8 @@ public abstract class SerializedTaskInvoker {
 
     protected SerializedTaskInvoker(SerializedTaskInvokerMetrics metrics, Scheduler scheduler) {
         this.worker = scheduler.createWorker();
-        this.queueSize = new AtomicLong(0);
+        this.queueSize = new AtomicInteger(0);
         this.metrics = metrics;
-        metrics.setQueueSizeMonitor(new Callable<Long>() {
-            @Override
-            public Long call() throws Exception {
-                return queueSize.get();
-            }
-        });
     }
 
     protected Observable<Void> submitForAck(final Callable<Observable<Void>> task) {
@@ -100,6 +91,7 @@ public abstract class SerializedTaskInvoker {
         if (success) {
             queueSize.incrementAndGet();
             metrics.incrementInputSuccess();
+            metrics.setQueueSize(queueSize.get());
         } else {  // needed? ConcurrentLinkedDeque never returns false for add
             metrics.incrementInputFailure();
         }
@@ -114,6 +106,7 @@ public abstract class SerializedTaskInvoker {
         while (!taskQueue.isEmpty()) {
             taskQueue.poll().cancel();
         }
+        metrics.setQueueSize(0);
     }
 
     private abstract static class InvokerTask<T, R> {
@@ -126,7 +119,7 @@ public abstract class SerializedTaskInvoker {
             this.subscriberForThisTask = subscriberForThisTask;
         }
 
-        protected abstract void execute();
+        protected abstract boolean execute();
 
         protected void cancel() {
             logger.info("Cancelling task {}", this.toString());
@@ -141,26 +134,29 @@ public abstract class SerializedTaskInvoker {
         }
 
         @Override
-        protected void execute() {
+        protected boolean execute() {
             try {
-                actual.call().firstOrDefault(null).ignoreElements()
-                        .doOnError(new Action1<Throwable>() {
-                            @Override
-                            public void call(Throwable e) {
-                                subscriberForThisTask.onError(e);
-                            }
-                        })
-                        .doOnCompleted(new Action0() {
-                            @Override
-                            public void call() {
-                                subscriberForThisTask.onCompleted();
-                            }
-                        })
-                        .subscribe();
+                actual.call().subscribe(new Subscriber<Void>() {
+                    @Override
+                    public void onCompleted() {
+                        subscriberForThisTask.onCompleted();
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        subscriberForThisTask.onError(e);
+                    }
+
+                    @Override
+                    public void onNext(Void aVoid) {
+                    }
+                });
             } catch (Throwable e) {
                 logger.error("Exception invoking the InvokerTaskWithAck task: {}", actual, e);
                 subscriberForThisTask.onError(e);
+                return false;
             }
+            return true;
         }
 
         @Override
@@ -176,14 +172,16 @@ public abstract class SerializedTaskInvoker {
         }
 
         @Override
-        protected void execute() {
+        protected boolean execute() {
             try {
                 subscriberForThisTask.onNext(actual.call());
                 subscriberForThisTask.onCompleted();
             } catch (Throwable e) {
                 logger.error("Exception invoking the InvokerTaskWithResult task.", e);
                 subscriberForThisTask.onError(e);
+                return false;
             }
+            return true;
         }
 
         @Override

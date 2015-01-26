@@ -18,7 +18,6 @@ package com.netflix.eureka2.registry.eviction;
 
 import javax.inject.Inject;
 import java.util.Deque;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,9 +26,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.metric.EvictionQueueMetrics;
 import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -68,6 +67,7 @@ public class EvictionQueueImpl implements EvictionQueue {
                 evictionQuota.decrementAndGet();
 
                 evictionQueueMetrics.decrementEvictionQueueCounter();
+                evictionQueueMetrics.setEvictionQueueSize(queueSize.get());
 
                 logger.debug("Attempting to evict registry entry {}/{}", item.getSource(), item.getInstanceInfo().getId());
                 evictionSubscriber.get().onNext(item);
@@ -101,20 +101,15 @@ public class EvictionQueueImpl implements EvictionQueue {
         this.worker = scheduler.createWorker();
 
         this.queueSize = new AtomicInteger(0);
-
-        evictionQueueMetrics.setEvictionQueueSizeMonitor(new Callable<Integer>() {
-            @Override
-            public Integer call() throws Exception {
-                return size();
-            }
-        });
     }
 
     @Override
     public void add(InstanceInfo instanceInfo, Source source) {
-        evictionQueueMetrics.incrementEvictionQueueAddCounter();
         queue.addLast(new EvictionItem(instanceInfo, source, worker.now() + evictionTimeoutMs));
         queueSize.incrementAndGet();
+
+        evictionQueueMetrics.incrementEvictionQueueAddCounter();
+        evictionQueueMetrics.setEvictionQueueSize(queueSize.get());
     }
 
     @Override
