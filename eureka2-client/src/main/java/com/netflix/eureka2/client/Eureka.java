@@ -17,12 +17,12 @@
 package com.netflix.eureka2.client;
 
 import com.netflix.eureka2.client.resolver.ServerResolver;
+import com.netflix.eureka2.client.resolver.ServerResolver.Server;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
-import com.netflix.eureka2.client.resolver.WriteServerResolverSet;
+import com.netflix.eureka2.transport.EurekaTransports;
+import rx.functions.Func1;
 
 /**
- * TODO: do we still need this entry point or can we just use the builder directly?
- *
  * An entry point for creating instances of {@link EurekaClient}. A {@link EurekaClient} can be created using the
  * following components:
  *
@@ -41,7 +41,8 @@ import com.netflix.eureka2.client.resolver.WriteServerResolverSet;
  */
 public final class Eureka {
 
-    private Eureka() {}
+    private Eureka() {
+    }
 
     /**
      * Creates a new {@link EurekaClientBuilder} using the passed read and write server resolver instances.
@@ -59,34 +60,80 @@ public final class Eureka {
     }
 
     /**
-     * Creates a new {@link EurekaClientBuilder} using the passed resolver instance for both read and write eureka
-     * servers.
+     * Creates a new {@link EurekaClientBuilder} using the passed resolver instance for both discovery and
+     * registration endpoints. {@link ServerResolver} must point to Eureka write cluster exposing services
+     * on a default ports.
      *
      * @param universalResolver A {@link ServerResolver} that is used both for resolving read and write eureka servers.
+     *                          For this resolver, a port number if given is ignored, and a standard port numbers
+     *                          for discovery and registration endpoints are used.
      *
      * @return A new {@link EurekaClientBuilder}.
      */
     public static EurekaClientBuilder newClientBuilder(final ServerResolver universalResolver) {
-        return EurekaClientBuilder.newBuilder()
-                .withReadServerResolver(universalResolver)
-                .withWriteServerResolver(universalResolver);
+        ServerResolver discoveryResolver = ServerResolvers.apply(universalResolver, new Func1<Server, Server>() {
+            @Override
+            public Server call(Server server) {
+                return new Server(server.getHost(), EurekaTransports.DEFAULT_DISCOVERY_PORT);
+            }
+        });
+        ServerResolver registrationResolver = ServerResolvers.apply(universalResolver, new Func1<Server, Server>() {
+            @Override
+            public Server call(Server server) {
+                return new Server(server.getHost(), EurekaTransports.DEFAULT_REGISTRATION_PORT);
+            }
+        });
+        return newClientBuilder(discoveryResolver, registrationResolver);
+    }
+
+    /**
+     * Creates a new {@link EurekaClientBuilder} using the passed resolver instance, that must point to
+     * Eureka write cluster exposing services on a default ports. Eureka read cluster nodes are discovered
+     * in write cluster registry using the provided readServerVip parameter.
+     * The builder is initialized in canonical setup, where ultimately a client registers to a write server,
+     * and subscribes to the registry on a read server.
+     *
+     * @param universalResolver A {@link ServerResolver} that is used both for resolving read and write eureka servers.
+     *                          For this resolver, a port number if given is ignored, and a standard port numbers
+     *                          for discovery and registration endpoints are used.
+     * @param readServerVip Eureka read server vip, used to discover read servers in Eureka registry.
+     *
+     * @return A new {@link EurekaClientBuilder}.
+     */
+    public static EurekaClientBuilder newClientBuilder(final ServerResolver universalResolver, String readServerVip) {
+        ServerResolver discoveryResolver = ServerResolvers.apply(universalResolver, new Func1<Server, Server>() {
+            @Override
+            public Server call(Server server) {
+                return new Server(server.getHost(), EurekaTransports.DEFAULT_DISCOVERY_PORT);
+            }
+        });
+        ServerResolver registrationResolver = ServerResolvers.apply(universalResolver, new Func1<Server, Server>() {
+            @Override
+            public Server call(Server server) {
+                return new Server(server.getHost(), EurekaTransports.DEFAULT_REGISTRATION_PORT);
+            }
+        });
+        return newClientBuilder(discoveryResolver, registrationResolver, readServerVip);
     }
 
     /**
      * Creates a new {@link EurekaClientBuilder} using the passed resolver instance for write, and construct
      * the read resolver from reading write server data.
      *
-     * @param writeResolverSet {@link WriteServerResolverSet} for the write servers.
+     * @param writeClusterDiscoveryResolver a {@link ServerResolver} of discovery endpoint on write cluster
+     * @param writeClusterRegistrationResolver a {@link ServerResolver} of registration endpoint on write cluster
      * @param readServerVip the vip address for the read cluster
      *
      * @return A new {@link EurekaClientBuilder}.
      */
-    public static EurekaClientBuilder newClientBuilder(WriteServerResolverSet writeResolverSet, String readServerVip) {
-        ServerResolver readResolver = ServerResolvers.fromWriteServer(writeResolverSet.forDiscovery(), readServerVip);
+    public static EurekaClientBuilder newClientBuilder(ServerResolver writeClusterDiscoveryResolver,
+                                                       ServerResolver writeClusterRegistrationResolver,
+                                                       String readServerVip) {
+        ServerResolver readResolver = ServerResolvers.fromWriteServer(writeClusterDiscoveryResolver, readServerVip);
 
         return EurekaClientBuilder.newBuilder()
                 .withReadServerResolver(readResolver)
-                .withWriteServerResolver(writeResolverSet.forRegistration());
+                .withWriteServerResolver(writeClusterRegistrationResolver);
     }
 
 }

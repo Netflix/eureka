@@ -25,6 +25,7 @@ import com.netflix.eureka2.client.resolver.ServerResolver.Server;
 import com.netflix.eureka2.interests.Interests;
 import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
 import rx.Observable;
+import rx.functions.Func1;
 
 /**
  * A convenience factory for creating various flavors of {@link ServerResolver}
@@ -72,5 +73,24 @@ public final class ServerResolvers {
 
     public static ServerResolver failoverChainFrom(ServerResolver... resolvers) {
         return new ServerResolverFailoverChain(resolvers);
+    }
+
+    public static ServerResolver apply(final ServerResolver original, final Func1<Server, Server> transformation) {
+        return new ServerResolver() {
+            @Override
+            public Observable<Server> resolve() {
+                return resolve().map(new Func1<Server, Server>() {
+                    @Override
+                    public Server call(Server server) {
+                        return transformation.call(server);
+                    }
+                });
+            }
+
+            @Override
+            public void close() {
+                original.close();
+            }
+        };
     }
 }

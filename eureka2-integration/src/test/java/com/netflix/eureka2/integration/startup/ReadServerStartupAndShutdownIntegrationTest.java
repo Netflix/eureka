@@ -12,7 +12,6 @@ import com.netflix.eureka2.server.EurekaReadServer;
 import com.netflix.eureka2.server.config.EurekaCommonConfig.ResolverType;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.config.EurekaServerConfig.EurekaServerConfigBuilder;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -30,19 +29,16 @@ import static org.junit.Assert.assertThat;
 public class ReadServerStartupAndShutdownIntegrationTest extends AbstractStartupAndShutdownIntegrationTest {
 
     public static final String SERVER_NAME = "read-server-startupAndShutdown";
-
-    @Test(timeout = 60000)
-    public void testStartsWithFileBasedConfiguration() throws Exception {
-        injectConfigurationValuesViaSystemProperties(SERVER_NAME);
-        EurekaReadServer server = new EurekaReadServer(SERVER_NAME);
-        executeAndVerifyLifecycle(server);
-    }
+    public static final int SHUTDOWN_PORT = 7704;  // note that this need to be in sync with what's in the property file
 
     @Test(timeout = 60000)
     public void testStartsWithCommandLineParameters() throws Exception {
         EurekaServerConfig config = new EurekaServerConfigBuilder()
                 .withAppName(SERVER_NAME)
                 .withResolverType(ResolverType.fixed)
+                .withDiscoveryPort(0)  // use ephemeral port
+                .withWebAdminPort(9079)
+                .withShutDownPort(SHUTDOWN_PORT)
                 .withServerList(writeServerList)
                 .build();
         EurekaReadServer server = new EurekaReadServer(config);
@@ -62,7 +58,7 @@ public class ReadServerStartupAndShutdownIntegrationTest extends AbstractStartup
         assertThat(notification.getKind(), is(equalTo(Kind.Add)));
 
         // Shutdown read server
-        sendShutdownCommand();
+        sendShutdownCommand(SHUTDOWN_PORT);
         server.waitTillShutdown();
 
         // Verify that read server registry entry is removed

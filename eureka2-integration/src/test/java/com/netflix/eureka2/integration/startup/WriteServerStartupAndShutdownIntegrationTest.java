@@ -12,7 +12,6 @@ import com.netflix.eureka2.server.EurekaWriteServer;
 import com.netflix.eureka2.server.config.EurekaCommonConfig.ResolverType;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.config.WriteServerConfig.WriteServerConfigBuilder;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -30,26 +29,25 @@ import static org.junit.Assert.assertThat;
 public class WriteServerStartupAndShutdownIntegrationTest extends AbstractStartupAndShutdownIntegrationTest {
 
     public static final String SERVER_NAME = "write-server-startupAndShutdown";
-
-    @Test(timeout = 60000)
-    public void testStartsWithFileBasedConfiguration() throws Exception {
-        injectConfigurationValuesViaSystemProperties(SERVER_NAME);
-        EurekaWriteServer server = new EurekaWriteServer(SERVER_NAME);
-        executeAndVerifyLifecycle(server);
-    }
+    public static final int SHUTDOWN_PORT = 7703;  // note that this need to be in sync with what's in the property file
 
     @Test(timeout = 60000)
     public void testStartsWithCommandLineParameters() throws Exception {
         WriteServerConfig config = new WriteServerConfigBuilder()
                 .withAppName(SERVER_NAME)
                 .withResolverType(ResolverType.fixed)
+                .withRegistrationPort(0)  // use ephemeral ports
+                .withDiscoveryPort(0)
+                .withReplicationPort(0)
+                .withWebAdminPort(9078)
+                .withShutDownPort(SHUTDOWN_PORT)
                 .withServerList(writeServerList)
                 .build();
         EurekaWriteServer server = new EurekaWriteServer(config);
         executeAndVerifyLifecycle(server);
     }
 
-    private void executeAndVerifyLifecycle(EurekaWriteServer server) throws Exception {
+    protected void executeAndVerifyLifecycle(EurekaWriteServer server) throws Exception {
         server.start();
 
         // Subscribe to the other write node and verify that write server connected properly
@@ -62,7 +60,7 @@ public class WriteServerStartupAndShutdownIntegrationTest extends AbstractStartu
         assertThat(notification.getKind(), is(equalTo(Kind.Add)));
 
         // Shutdown write server
-        sendShutdownCommand();
+        sendShutdownCommand(SHUTDOWN_PORT);
         server.waitTillShutdown();
 
         // Verify that write server registry entry is removed
