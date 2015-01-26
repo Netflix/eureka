@@ -3,7 +3,6 @@ package com.netflix.eureka2.testkit.junit.resources;
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.client.EurekaClientBuilder;
-import com.netflix.eureka2.client.resolver.WriteServerResolverSet;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment.EurekaDeploymentBuilder;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
@@ -90,10 +89,8 @@ public class EurekaDeploymentResource extends ExternalResource {
      */
     public EurekaClient connectToEureka() {
         return Eureka.newClientBuilder(
-                WriteServerResolverSet.forResolvers(
-                        eurekaDeployment.getWriteCluster().registrationResolver(),
-                        eurekaDeployment.getWriteCluster().discoveryResolver()
-                ),
+                eurekaDeployment.getWriteCluster().discoveryResolver(),
+                eurekaDeployment.getWriteCluster().registrationResolver(),
                 eurekaDeployment.getReadCluster().getVip()
         ).withCodec(codec).build();
     }
