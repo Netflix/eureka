@@ -18,6 +18,16 @@ buildscript {
     dependencies {
         classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:2.0.1'
     }
+
+    if (project.hasProperty('useMavenLocal')) {
+        repositories {
+            println "Adding mavenLocal()"
+            mavenLocal()
+        }
+        configurations.all {
+            resolutionStrategy.cacheChangingModulesFor 0, 'hours'
+        }
+    }
 }
 
 plugins {
@@ -28,6 +38,23 @@ ext {
     githubProjectName = "eureka"
 }
 
+allprojects {
+    repositories {
+        jcenter()
+    }
+
+    if (project.hasProperty('useMavenLocal')) {
+        repositories {
+            mavenLocal()
+        }
+    }
+    if (project.hasProperty('ossTest')) {
+        repositories {
+            maven { url 'http://oss.jfrog.org/oss-snapshot-local' }
+        }
+    }
+}
+
 subprojects {
     apply plugin: 'nebula.netflixoss'
     apply plugin: 'groovy'
@@ -35,10 +62,6 @@ subprojects {
     apply plugin: "jacoco"
 
     group = "com.netflix.eureka"
-
-    repositories {
-        jcenter()
-    }
 
     /**
      * Exclude from the transitive dependencies all artifacts that we
