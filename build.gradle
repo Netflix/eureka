@@ -41,6 +41,7 @@ ext {
 allprojects {
     repositories {
         jcenter()
+        maven { url 'http://oss.jfrog.org/oss-snapshot-local' } // Make it default until first rc release
     }
 
     if (project.hasProperty('useMavenLocal')) {
