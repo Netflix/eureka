@@ -65,7 +65,7 @@ public class RegistryReplicatorTest {
         replicator.close();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testReplicatesRegistryContent() throws Exception {
         ReplicationHelloReply helloReply = new ReplicationHelloReply(INSTANCE_INFO.getId(), false);
 
@@ -95,7 +95,7 @@ public class RegistryReplicatorTest {
         verify(channel, times(1)).unregister(updateInfo.getId());
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testDisconnectsWhenConnectedToItself() throws Exception {
         ReplicationHelloReply helloReply = new ReplicationHelloReply(SELF_INFO.getId(), false);
 

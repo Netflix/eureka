@@ -65,7 +65,7 @@ public class KafkaAuditServiceTest {
         }
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testServiceLoadBootstrapping() throws Exception {
         ServiceLoader<ExtAbstractModule> loader = ServiceLoader.load(ExtAbstractModule.class);
         boolean matched = false;
@@ -81,7 +81,7 @@ public class KafkaAuditServiceTest {
     /**
      * TODO: move this to integration test package, once we have one
      */
-    @Test
+    @Test(timeout = 60000)
     @Ignore
     public void testSourcePersistence() throws Exception {
         setUpAuditService();

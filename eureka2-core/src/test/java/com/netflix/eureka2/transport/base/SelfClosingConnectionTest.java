@@ -35,7 +35,7 @@ public class SelfClosingConnectionTest {
         selfClosingConnection = new SelfClosingConnection(connectionDelegate, LIFECYCLE_DURATION_SEC, testScheduler);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testSelfTermination() throws Exception {
         TestSubscriber<Void> lifecycleSubscriber = new TestSubscriber<>();
         selfClosingConnection.lifecycleObservable().subscribe(lifecycleSubscriber);

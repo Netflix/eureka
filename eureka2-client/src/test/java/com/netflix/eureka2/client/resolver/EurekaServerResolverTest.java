@@ -52,7 +52,7 @@ public class EurekaServerResolverTest {
         eurekaServerResolver = new EurekaServerResolver(snapshotInterestChannel, SNAPSHOT_INTEREST, EUREKA_SELECTOR, loadBalancerBuilder);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testFetchesSnapshotFromEurekaServer() throws Exception {
         // Inject two item snapshot
         when(snapshotInterestChannel.forSnapshot(SNAPSHOT_INTEREST)).thenReturn(Observable.just(INSTANCE_1, INSTANCE_2));
@@ -66,7 +66,7 @@ public class EurekaServerResolverTest {
         assertThat(result, is(equalTo(expected)));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testRemovesStaleItems() throws Exception {
         // Snapshot with first item
         firstResolveWith(INSTANCE_1);
@@ -78,7 +78,7 @@ public class EurekaServerResolverTest {
         assertResolvesTo(INSTANCE_2);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testFallsBackToStaleContentIfRefreshFails() throws Exception {
         // Snapshot with first item
         firstResolveWith(INSTANCE_1);
@@ -90,14 +90,14 @@ public class EurekaServerResolverTest {
         assertResolvesTo(INSTANCE_1);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testReturnsErrorIfResolveFailedAndNoStaleEntryAvailable() throws Exception {
         Exception error = new Exception("channel error");
         when(snapshotInterestChannel.forSnapshot(SNAPSHOT_INTEREST)).thenReturn(Observable.<InstanceInfo>error(error));
         assertResolveToError();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testFallsBackToStaleContentIfEmptyListReturned() throws Exception {
         // Snapshot with first item
         firstResolveWith(INSTANCE_1);

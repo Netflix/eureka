@@ -67,7 +67,7 @@ public class EvictionQueueImplTest {
         evictionQueue.pendingEvictions().subscribe(evictionQueueSubscriber);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testAddedItemIsEvictedWhenExpires() throws Exception {
         evictionQueueSubscriber.allow(1);
 
@@ -84,7 +84,7 @@ public class EvictionQueueImplTest {
         assertThat(evictedList.get(0).getInstanceInfo(), is(equalTo(instanceInfo)));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testItemsAreNotEvictedIfNotAllowed() throws Exception {
         evictionQueueSubscriber.allow(0);
 
@@ -104,7 +104,7 @@ public class EvictionQueueImplTest {
         assertThat(evictedList.get(0).getInstanceInfo(), is(equalTo(instanceInfo)));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testOnlyOneEvictedQueueSubscriptionAllowed() throws Exception {
         Notification<EvictionItem> notification = evictionQueue
                 .pendingEvictions()
@@ -115,7 +115,7 @@ public class EvictionQueueImplTest {
         assertThat(notification.getThrowable(), instanceOf(IllegalStateException.class));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testMetrics() throws Exception {
         // Add an item to the eviction queue
         InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();

@@ -68,7 +68,7 @@ public class EurekaClientIntegrationTest {
         eurekaClient.close();
     }
 
-    @Test
+    @Test(timeout = 60000)
     @Ignore
     public void testResolveFromDns() {
         EurekaClient eurekaClient = Eureka.newClientBuilder(

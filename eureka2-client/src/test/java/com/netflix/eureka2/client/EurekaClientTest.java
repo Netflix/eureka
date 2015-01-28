@@ -130,7 +130,7 @@ public class EurekaClientTest {
     // interest path tests
     // =======================
 
-    @Test
+    @Test(timeout = 60000)
     public void testForInterestSingleUser() throws Exception {
         final List<ChangeNotification<InstanceInfo>> output = new ArrayList<>();
 
@@ -162,7 +162,7 @@ public class EurekaClientTest {
     }
 
     @Ignore  // FIXME
-    @Test
+    @Test(timeout = 60000)
     public void testForInterestHandleRetryProperly() throws Exception {
         final List<ChangeNotification<InstanceInfo>> output = new ArrayList<>();
 
@@ -201,7 +201,7 @@ public class EurekaClientTest {
         assertThat(output, containsInAnyOrder(allRegistry.toArray()));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testForInterestSameTwoUsers() throws Exception {
         final List<ChangeNotification<InstanceInfo>> output1 = new ArrayList<>();
 
@@ -254,7 +254,7 @@ public class EurekaClientTest {
         assertThat(output2, containsInAnyOrder(allRegistry.toArray()));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testForInterestDifferentTwoUsers() throws Exception {
         final List<ChangeNotification<InstanceInfo>> discoveryOutput = new ArrayList<>();
 
@@ -307,7 +307,7 @@ public class EurekaClientTest {
         assertThat(zuulOutput, containsInAnyOrder(zuulRegistry.toArray()));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testForInterestSecondInterestSupercedeFirst() throws Exception {
         final List<ChangeNotification<InstanceInfo>> discoveryOutput = new ArrayList<>();
 
@@ -368,17 +368,17 @@ public class EurekaClientTest {
         assertThat(compositeOutput, containsInAnyOrder(compositeRegistry.toArray()));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testSoleUserUnsubscribeCancelChannelSubscription() {
 
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testOneUserUnsubscribeRetainChannelSubscription() {
 
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testCloseClientCompleteAllSubscribedUsers() {
 
     }

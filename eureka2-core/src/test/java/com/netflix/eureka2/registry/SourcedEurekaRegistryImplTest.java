@@ -70,7 +70,7 @@ public class SourcedEurekaRegistryImplTest {
         registry.shutdown();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void shouldReturnSnapshotOfInstanceInfos() throws InterruptedException {
         InstanceInfo discovery1 = SampleInstanceInfo.DiscoveryServer.build();
         InstanceInfo discovery2 = SampleInstanceInfo.DiscoveryServer.build();
@@ -107,7 +107,7 @@ public class SourcedEurekaRegistryImplTest {
         }
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void shouldReturnMatchingInstanceInfos() throws InterruptedException {
         InstanceInfo discovery1 = SampleInstanceInfo.DiscoveryServer.build();
         InstanceInfo discovery2 = SampleInstanceInfo.DiscoveryServer.build();
@@ -137,7 +137,7 @@ public class SourcedEurekaRegistryImplTest {
         assertThat(new HashSet<>(returnedIds), containsInAnyOrder(discovery1.getId(), discovery2.getId(), discovery3.getId()));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testRegister() {
         InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
                 .withStatus(InstanceInfo.Status.UP)
@@ -155,7 +155,7 @@ public class SourcedEurekaRegistryImplTest {
         assertThat(snapshot1, equalTo(original));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testRegisterAsUpdate() {
         InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
                 .withStatus(InstanceInfo.Status.UP)
@@ -186,7 +186,7 @@ public class SourcedEurekaRegistryImplTest {
         assertThat(snapshot2, equalTo(newInstanceInfo));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testUnregisterWithCopiesRemaining() {
         InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
                 .withId("sameId")
@@ -219,7 +219,7 @@ public class SourcedEurekaRegistryImplTest {
         assertThat(holder.get(), equalTo(replicated));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testUnregisterLastCopy() {
         InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
                 .withId("sameId")
@@ -243,7 +243,7 @@ public class SourcedEurekaRegistryImplTest {
         assertThat(internalStore.size(), equalTo(0));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testUnregisterLastCopyWithNewRegistration() {
         InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
                 .withId("sameId")
@@ -285,7 +285,7 @@ public class SourcedEurekaRegistryImplTest {
         assertThat(snapshot, equalTo(replicated));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testForInterestWithSourceOnLastCopyDelete() {
         InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
                 .withId("sameId")
@@ -333,7 +333,7 @@ public class SourcedEurekaRegistryImplTest {
         assertThat(notifications.get(1).getData(), equalTo(original));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testRegistryShutdownOnCompleteAllInterestStreams() throws Exception {
         InstanceInfo discovery1 = SampleInstanceInfo.DiscoveryServer.build();
         InstanceInfo discovery2 = SampleInstanceInfo.DiscoveryServer.build();
@@ -410,7 +410,7 @@ public class SourcedEurekaRegistryImplTest {
         testScheduler.triggerActions();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testMetricsCollection() throws Exception {
         Iterator<InstanceInfo> source = SampleInstanceInfo.collectionOf("test", SampleInstanceInfo.DiscoveryServer.build());
 

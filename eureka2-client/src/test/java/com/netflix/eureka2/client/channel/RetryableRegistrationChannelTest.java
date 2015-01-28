@@ -75,7 +75,7 @@ public class RetryableRegistrationChannelTest {
         channel.close();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testForwardsRequestsToDelegate() throws Exception {
         channel.register(INSTANCE_INFO).subscribe();
         verify(delegateChannel1, timeout(1)).register(INSTANCE_INFO);
@@ -88,7 +88,7 @@ public class RetryableRegistrationChannelTest {
         verify(delegateChannel1, timeout(1)).unregister();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testReconnectsWhenChannelFailure() throws Exception {
         // First channel registration
         channel.register(INSTANCE_INFO).subscribe();
@@ -107,7 +107,7 @@ public class RetryableRegistrationChannelTest {
         verify(delegateChannel2, times(1)).unregister();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testReconnectAfterUnregisterDoesNotActivelyReregister() throws Exception {
         // First channel registration
         channel.register(INSTANCE_INFO).subscribe();
@@ -129,7 +129,7 @@ public class RetryableRegistrationChannelTest {
         verify(delegateChannel2, timeout(1)).register(INSTANCE_INFO);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testClosesInternalChannels() throws Exception {
         // First channel registration
         channel.register(INSTANCE_INFO).subscribe();

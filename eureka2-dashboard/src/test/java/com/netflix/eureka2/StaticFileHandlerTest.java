@@ -7,7 +7,7 @@ import static org.junit.Assert.assertTrue;
 
 public class StaticFileHandlerTest {
 
-    @Test
+    @Test(timeout = 60000)
     public void staticResourceCheck() {
         final MainRequestHandler.StaticFileHandler staticFileHandler = new MainRequestHandler.StaticFileHandler();
         assertTrue(staticFileHandler.isStaticResource("/dashboard.html"));

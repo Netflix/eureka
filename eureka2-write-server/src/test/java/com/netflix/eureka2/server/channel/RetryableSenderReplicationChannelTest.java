@@ -95,7 +95,7 @@ public class RetryableSenderReplicationChannelTest {
         channel.close();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testForwardsRequestsToDelegate() throws Exception {
         channel.hello(replicationHello).subscribe();
         verify(delegateChannel1, times(2)).hello(any(ReplicationHello.class));  // 2 times, including the initial at create time
@@ -111,7 +111,7 @@ public class RetryableSenderReplicationChannelTest {
         verify(delegateChannel1, times(1)).unregister(INFO3.getId());
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testReconnectsWhenChannelFailure() throws Exception {
         // channel is already connected and replicating at setUp
 
@@ -133,7 +133,7 @@ public class RetryableSenderReplicationChannelTest {
         verify(delegateChannel1, times(0)).register(INFO3);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testClosesInternalChannels() throws Exception {
         // channel is already connected and replicating at setUp
 

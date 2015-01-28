@@ -38,7 +38,7 @@ public class AbstractHandlerChannelTest {
         channel = spy(new TestHandlerChannel(transport));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testCloseChannelOnSendError() throws Exception {
         when(transport.submit(anyObject())).thenReturn(Observable.<Void>error(new Exception("msg")));
 
@@ -64,7 +64,7 @@ public class AbstractHandlerChannelTest {
         Assert.assertTrue(onCompletedLatch.await(10, TimeUnit.SECONDS));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testCloseChannelWhenSendingErrorOnTransportSuccessfully() throws Exception {
 
         final CountDownLatch onCompletedLatch = new CountDownLatch(1);

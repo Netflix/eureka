@@ -78,7 +78,7 @@ public class RetryableServiceChannelTest {
     }
 
 
-    @Test
+    @Test(timeout = 60000)
     public void testDelegateChannelDisconnectAndReconnects() throws Exception {
         // Terminate current connection via an onComplete
         initialDelegate.lifecycle.onCompleted();
@@ -87,7 +87,7 @@ public class RetryableServiceChannelTest {
         verifySuccessAfterOneRetry();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testDelegateChannelFailureAndReconnects() throws Exception {
         // Terminate current connection via an onError
         initialDelegate.lifecycle.onError(new Exception("msg"));
@@ -96,7 +96,7 @@ public class RetryableServiceChannelTest {
         verifySuccessAfterOneRetry();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testDelegateChannelDisconnectLifecycleUnsubscribed() throws Exception {
         // Terminate current connection via an onError
         initialDelegate.lifecycle.onError(new Exception("msg"));
@@ -111,7 +111,7 @@ public class RetryableServiceChannelTest {
         verifySuccessAfterOneRetry();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testExponentialBackOffOnChannelDisconnect() throws Exception {
         verifyExponentialBackoffUpToMax(new Action0() {
             @Override
@@ -121,7 +121,7 @@ public class RetryableServiceChannelTest {
         });
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testExponentialBackOffOnChannelError() throws Exception {
         verifyExponentialBackoffUpToMax(new Action0() {
             @Override
@@ -131,7 +131,7 @@ public class RetryableServiceChannelTest {
         });
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testRecoversFromReestablishErrors() throws Exception {
         // Terminate current connection via an onError
         initialDelegate.lifecycle.onCompleted();
@@ -160,7 +160,7 @@ public class RetryableServiceChannelTest {
         assertThat(retryableChannel.currentDelegateChannel().myId, equalTo(1));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testShutdownCleansUpResources() throws Exception {
         int originalRetryCounter = retryableChannel.retryCount.get();
 

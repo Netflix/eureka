@@ -44,7 +44,7 @@ public class SnapshotInterestChannelImplTest {
         when(connection.acknowledge()).thenReturn(Observable.<Void>empty());
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testSubscribeHandlesNotificationsAndDisconnects() {
         TestSubscriber<InstanceInfo> testSubscriber = new TestSubscriber<>();
         SnapshotInterestChannelImpl interestChannel = new SnapshotInterestChannelImpl(transportClient);

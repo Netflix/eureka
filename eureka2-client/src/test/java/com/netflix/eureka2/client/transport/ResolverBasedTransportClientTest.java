@@ -76,7 +76,7 @@ public class ResolverBasedTransportClientTest {
         }
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testConnectsToResolvedServer() throws Exception {
 
         final AtomicReference<ServerResolver.Server> expectedServer = new AtomicReference<>(new ServerResolver.Server("localhost", 0));
