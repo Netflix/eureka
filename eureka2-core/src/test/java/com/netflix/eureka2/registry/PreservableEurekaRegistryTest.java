@@ -102,7 +102,7 @@ public class PreservableEurekaRegistryTest {
         preservableRegistry.shutdown();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testRemovesEvictedItemsWhenNotInSelfPreservationMode() throws Exception {
         when(baseRegistry.register(DISCOVERY, localSource)).thenReturn(Observable.just(true));
         preservableRegistry.register(DISCOVERY, localSource);
@@ -115,7 +115,7 @@ public class PreservableEurekaRegistryTest {
         assertThat(requestedEvictedItems.get(), is(equalTo(1L)));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testDoesNotRemoveEvictedItemsWhenInSelfPreservationMode() throws Exception {
         when(baseRegistry.register(DISCOVERY, localSource)).thenReturn(Observable.just(true));
         preservableRegistry.register(DISCOVERY, localSource);
@@ -134,7 +134,7 @@ public class PreservableEurekaRegistryTest {
         assertThat(requestedEvictedItems.get(), is(equalTo(1L)));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testBehavesAsRegularRegistryForNonEvictedItems() throws Exception {
         // Register
         when(baseRegistry.register(DISCOVERY, localSource)).thenReturn(Observable.just(true));
@@ -180,7 +180,7 @@ public class PreservableEurekaRegistryTest {
         assertThat(preservableRegistry.expectedRegistrySize, is(equalTo(0)));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testDelegatesInterestSubscriptions() throws Exception {
         Observable<ChangeNotification<InstanceInfo>> notification1 = Observable.just(new ChangeNotification<>(Kind.Add, DISCOVERY));
         when(baseRegistry.forInterest(Interests.forFullRegistry())).thenReturn(notification1);
@@ -196,7 +196,7 @@ public class PreservableEurekaRegistryTest {
         assertSame(notification3, preservableRegistry.forSnapshot(Interests.forFullRegistry()));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testCleansUpResources() throws Exception {
         preservableRegistry.shutdown();
 
@@ -204,7 +204,7 @@ public class PreservableEurekaRegistryTest {
         verify(baseRegistry, times(1)).shutdown();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testMetrics() throws Exception {
         // Add one item to the registry
         when(baseRegistry.register(DISCOVERY, localSource)).thenReturn(Observable.just(true));

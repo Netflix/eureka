@@ -16,7 +16,7 @@ import static org.junit.Assert.assertThat;
  */
 public class SampleNetworkAddressTest {
 
-    @Test
+    @Test(timeout = 60000)
     public void testGeneratesSubsequentIpAddresses() throws Exception {
         Iterator<NetworkAddress> addressIterator = SampleNetworkAddress.collectionOfIPv4("20", "test.internal", "private");
 

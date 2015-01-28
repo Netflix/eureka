@@ -104,7 +104,7 @@ public class WriteClusterIntegrationTest {
         discoveryClient.close();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testSubscriptionToInterestChannelGetsAllUpdates() throws Exception {
         EurekaClient dataSourceClient = eurekaDeploymentResource.connectToWriteServer(0);
         EurekaClient subscriberClient = eurekaDeploymentResource.connectToWriteServer(0);

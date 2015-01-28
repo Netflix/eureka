@@ -14,7 +14,7 @@ import static org.junit.Assert.assertThat;
  * @author Tomasz Bak
  */
 public class StaticServerResolverTest extends AbstractResolverTest {
-    @Test
+    @Test(timeout = 60000)
     public void testResolvesFromServerList() throws Exception {
         ServerResolver resolver = ServerResolvers.from(SERVER_A, SERVER_B);
 

@@ -124,7 +124,7 @@ public class RetryableInterestChannelTest {
         registry.shutdown();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testForwardsRequestsToDelegate() throws Exception {
         // Append operation
         retryableInterestChannel.appendInterest(INTEREST).subscribe();
@@ -135,7 +135,7 @@ public class RetryableInterestChannelTest {
         verify(interestChannel1, times(1)).removeInterest(INTEREST);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testCleansUpResources() throws Exception {
         retryableInterestChannel.appendInterest(INTEREST).subscribe();
         verify(interestChannel1, times(1)).appendInterest(INTEREST);
@@ -184,7 +184,7 @@ public class RetryableInterestChannelTest {
         assertThat(onNextCount.get(), equalTo(0));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testDelegateFailureSendAllRegistryToEvictionQueue() throws Exception {
         final AtomicBoolean completed = new AtomicBoolean(false);
         final AtomicBoolean errored = new AtomicBoolean(false);

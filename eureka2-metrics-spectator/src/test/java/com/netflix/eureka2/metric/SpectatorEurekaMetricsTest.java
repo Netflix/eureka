@@ -12,7 +12,7 @@ import static org.junit.Assert.assertThat;
  * @author Tomasz Bak
  */
 public class SpectatorEurekaMetricsTest {
-    @Test
+    @Test(timeout = 60000)
     public void testMetricsClassIdIsDerivedFromInterfaceName() throws Exception {
         SpectatorEurekaRegistryMetrics eurekaMetrics = new SpectatorEurekaRegistryMetrics(Spectator.registry());
         Id actualId = eurekaMetrics.newId("testName");

@@ -67,7 +67,7 @@ public class OperatorInstanceInfoFromV1Test {
         }
     };
 
-    @Test
+    @Test(timeout = 60000)
     public void testOperator() {
         InstanceInfo v2Info = Observable.just(sourceV1Info)
                 .lift(new OperatorInstanceInfoFromV1(converter))

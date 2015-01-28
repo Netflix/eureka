@@ -70,7 +70,7 @@ public class ReplicationServiceTest {
         when(selfIdentityService.resolve()).thenReturn(Observable.just(SELF_INFO));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testConnectsToRemotePeers() throws Exception {
         when(peerAddressProvider.get()).thenReturn(Observable.just(new ChangeNotification<InetSocketAddress>(Kind.Add, ADDRESS)));
 
@@ -80,7 +80,7 @@ public class ReplicationServiceTest {
         assertThat(lastAddedAddress, is(equalTo(ADDRESS)));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testDisconnectsFromRemovedServers() throws Exception {
         when(peerAddressProvider.get()).thenReturn(Observable.just(
                 new ChangeNotification<InetSocketAddress>(Kind.Add, ADDRESS),

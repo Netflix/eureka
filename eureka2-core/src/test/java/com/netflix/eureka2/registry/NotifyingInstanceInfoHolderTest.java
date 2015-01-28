@@ -56,7 +56,7 @@ public class NotifyingInstanceInfoHolderTest {
         }
     };
 
-    @Test
+    @Test(timeout = 60000)
     public void testUpdateSameSource() throws Exception {
         InstanceInfo.Builder builder = SampleInstanceInfo.DiscoveryServer.builder();
         InstanceInfo firstInfo = builder
@@ -80,7 +80,7 @@ public class NotifyingInstanceInfoHolderTest {
         assertThat(holder.get(), equalTo(secondInfo));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testUpdateDifferentSources() throws Exception {
         InstanceInfo.Builder builder = SampleInstanceInfo.DiscoveryServer.builder();
         InstanceInfo firstInfo = builder
@@ -119,7 +119,7 @@ public class NotifyingInstanceInfoHolderTest {
         assertThat(holder.get(fooSource), equalTo(thirdInfo));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testRemoveSameSource() throws Exception {
         InstanceInfo.Builder builder = SampleInstanceInfo.DiscoveryServer.builder();
         InstanceInfo firstInfo = builder
@@ -139,7 +139,7 @@ public class NotifyingInstanceInfoHolderTest {
         assertThat(holder.get(localSource), equalTo(null));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testRemoveNonSnapshotCopy() throws Exception {
         InstanceInfo.Builder builder = SampleInstanceInfo.DiscoveryServer.builder();
         InstanceInfo localInfo = builder
@@ -172,7 +172,7 @@ public class NotifyingInstanceInfoHolderTest {
         assertThat(holder.get(fooSource), equalTo(null));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testRemoveSnapshotCopyPromoteAnother() throws Exception {
         InstanceInfo.Builder builder = SampleInstanceInfo.DiscoveryServer.builder();
         InstanceInfo localInfo = builder

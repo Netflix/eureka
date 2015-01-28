@@ -83,7 +83,7 @@ public class InterestChannelImplTest {
         registry.shutdown();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testChangeWithFirstInterest() throws Exception {
         // Subscriber
         ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
@@ -98,7 +98,7 @@ public class InterestChannelImplTest {
         assertForInterestReturns(sampleInterestZuul, sampleAddMessagesZuul);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testChangeWithSubsequentInterest() throws Exception {
         // Subscribe to Zuul, and send Zuul change notifications
         ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
@@ -121,7 +121,7 @@ public class InterestChannelImplTest {
         assertForInterestReturns(sampleInterestDiscovery, sampleAddMessagesDiscovery);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testCleanUpResourcesOnClose() throws Exception {
         // Subscriber
         ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
@@ -138,7 +138,7 @@ public class InterestChannelImplTest {
         testSubscriber.assertOnError();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testTransportDelete() throws Exception {
         // preload the channel cache and registry with data
         InstanceInfo original1 = SampleInstanceInfo.DiscoveryServer.build();
@@ -169,7 +169,7 @@ public class InterestChannelImplTest {
         assertThat(notificationSubscriber.takeNextOrWait(), deleteChangeNotificationOf(original1));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testMetrics() throws Exception {
         // Subscriber to interest subscription, to open the channel
         ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();

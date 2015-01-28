@@ -32,7 +32,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class ObservablesTest {
 
-    @Test
+    @Test(timeout = 60000)
     public void testParallelConcat() throws Exception {
         PublishSubject<Integer> first = PublishSubject.create();
         PublishSubject<Integer> second = PublishSubject.create();

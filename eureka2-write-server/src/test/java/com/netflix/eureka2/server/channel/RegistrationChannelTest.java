@@ -79,7 +79,7 @@ public class RegistrationChannelTest {
         channel.close();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testOperationsAreProcessedInOrder() throws Exception {
         incomingSubject.onNext(new Register(register));
         incomingSubject.onNext(new Register(update1));
@@ -97,7 +97,7 @@ public class RegistrationChannelTest {
         assertThat(captured.get(3).getId(), equalTo(register.getId()));  // the unregister, just check id
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testRegisterOnIdleSuccess() {
         incomingSubject.onNext(new Register(register));
 
@@ -109,7 +109,7 @@ public class RegistrationChannelTest {
         assertThat(captured.get(0), sameInstanceInfoAs(register));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testRegisterOnIdleFail() {
         Exception exception = new Exception("msg");
         when(registry.register(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.<Boolean>error(exception));
@@ -140,7 +140,7 @@ public class RegistrationChannelTest {
      *
      */
 
-    @Test
+    @Test(timeout = 60000)
     public void testUnregisterOnRegisteredSuccess() throws Exception {
         final CountDownLatch completionLatch = new CountDownLatch(1);
         channel.asLifecycleObservable().subscribe(new Subscriber<Void>() {
@@ -176,7 +176,7 @@ public class RegistrationChannelTest {
         Assert.assertTrue(completionLatch.await(10, TimeUnit.SECONDS));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testUnregisterOnRegisteredFail() {
         incomingSubject.onNext(new Register(register));  // need to register first to setup the cache
 
@@ -196,7 +196,7 @@ public class RegistrationChannelTest {
         assertThat(capturedError.get(0), CoreMatchers.equalTo(exception));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testUnregisterOnIdleChannel() throws Exception {
         final CountDownLatch completionLatch = new CountDownLatch(1);
         channel.asLifecycleObservable().subscribe(new Subscriber<Void>() {
@@ -228,7 +228,7 @@ public class RegistrationChannelTest {
         Assert.assertTrue(completionLatch.await(10, TimeUnit.SECONDS));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testReturnErrorOnceClosed() throws Exception {
         channel.close();
 

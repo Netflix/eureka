@@ -33,20 +33,20 @@ public class EmbeddedReadClusterTest {
         };
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testClusterScaleUp() throws Exception {
         readCluster.scaleUpBy(1);
         verify(readServer, times(1)).start();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testClusterScaleDown() throws Exception {
         readCluster.scaleUpBy(1);
         readCluster.scaleDownBy(1);
         verify(readServer, times(1)).shutdown();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testReportContent() throws Exception {
         readCluster.scaleUpByOne();
 

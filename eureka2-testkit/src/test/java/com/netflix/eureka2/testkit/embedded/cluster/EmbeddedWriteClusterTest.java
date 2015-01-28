@@ -43,7 +43,7 @@ public class EmbeddedWriteClusterTest {
         writeCluster.shutdown();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testClusterScaleUp() throws Exception {
         writeCluster.scaleUpBy(1);
 
@@ -71,7 +71,7 @@ public class EmbeddedWriteClusterTest {
         discoveryServerSubscriber.assertReceivedOnNext(singletonList(expectedServer));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testClusterScaleDown() throws Exception {
         writeCluster.scaleUpBy(2);
 
@@ -89,7 +89,7 @@ public class EmbeddedWriteClusterTest {
         assertThat(updates.get(2).getKind(), is(equalTo(Kind.Delete)));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testReportContent() throws Exception {
         writeCluster.scaleUpByOne();
 

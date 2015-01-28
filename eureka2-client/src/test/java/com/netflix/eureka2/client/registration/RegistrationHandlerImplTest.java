@@ -49,7 +49,7 @@ public class RegistrationHandlerImplTest {
         registrationHandler = new RegistrationHandlerImpl(channelFactory);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testRegistersClientsOverDifferentChannel() throws Exception {
         registrationHandler.register(DISCOVERY_1);
         verify(registrationChannel, times(1)).register(DISCOVERY_1);
@@ -60,7 +60,7 @@ public class RegistrationHandlerImplTest {
         verify(channelFactory, times(2)).newChannel();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testSubsequentRegistrationWithChangesIfAlreadyRegistered() throws Exception {
         registrationHandler.register(DISCOVERY_1).subscribe();
         InstanceInfo update = new InstanceInfo.Builder().withInstanceInfo(DISCOVERY_1).withVipAddress("aNewName").build();
@@ -69,7 +69,7 @@ public class RegistrationHandlerImplTest {
         verify(registrationChannel, times(1)).register(update);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testUnregisterReleasesResources() throws Exception {
         // First register
         registrationHandler.register(DISCOVERY_1).subscribe();
@@ -81,7 +81,7 @@ public class RegistrationHandlerImplTest {
         verify(registrationChannel, times(1)).close();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testUnregistersOnShutdown() throws Exception {
         // First register
         registrationHandler.register(DISCOVERY_1).subscribe();

@@ -46,12 +46,12 @@ public class IndexRegistryTest {
         }
     };
 
-    @Test
+    @Test(timeout = 60000)
     public void testForInterest() {
         assertThat(indexRegistry.getView().size(), equalTo(1));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testShutdown() throws Exception {
         final CountDownLatch completionLatch = new CountDownLatch(2);
 

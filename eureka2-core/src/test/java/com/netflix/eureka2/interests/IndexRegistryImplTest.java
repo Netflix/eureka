@@ -27,7 +27,7 @@ public class IndexRegistryImplTest {
 
     private final ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
 
-    @Test
+    @Test(timeout = 60000)
     public void testCleansUpResourcesOnShutdown() throws Exception {
         indexRegistry.forInterest(Interests.forFullRegistry(), dataSource, initStateHolder).subscribe(testSubscriber);
 
@@ -42,7 +42,7 @@ public class IndexRegistryImplTest {
         testSubscriber.assertOnCompleted();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testSendsErrorToSubscribersWhenShutdownWithError() throws Exception {
         indexRegistry.forInterest(Interests.forFullRegistry(), dataSource, initStateHolder).subscribe(testSubscriber);
 

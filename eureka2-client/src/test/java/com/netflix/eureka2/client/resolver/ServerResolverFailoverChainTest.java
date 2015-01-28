@@ -13,7 +13,7 @@ import static org.junit.Assert.assertThat;
  */
 public class ServerResolverFailoverChainTest extends AbstractResolverTest {
 
-    @Test
+    @Test(timeout = 60000)
     public void testFailoverToSecondResolver() throws Exception {
         Server serverA = new Server("hostA", 123);
 

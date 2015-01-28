@@ -18,7 +18,7 @@ public class ChangeNotificationMatcherTest {
     private static final InstanceInfo INFO = SampleInstanceInfo.EurekaWriteServer.build();
     private static final InstanceInfo OTHER_INFO = SampleInstanceInfo.EurekaReadServer.build();
 
-    @Test
+    @Test(timeout = 60000)
     public void testAddNotificationMatcher() throws Exception {
         // Matches same
         boolean result = addChangeNotificationOf(INFO).matches(new ChangeNotification<>(Kind.Add, INFO));
@@ -32,14 +32,14 @@ public class ChangeNotificationMatcherTest {
         assertThat("Add change notification should fail", result, is(false));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testModifyNotificationMatcher() throws Exception {
         // Matches same
         boolean result = modifyChangeNotificationOf(INFO).matches(new ChangeNotification<>(Kind.Modify, INFO));
         assertThat("Modify change notification should match", result, is(true));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testDeleteNotificationMatcher() throws Exception {
         // Matches same
         boolean result = deleteChangeNotificationOf(INFO).matches(new ChangeNotification<>(Kind.Delete, INFO));

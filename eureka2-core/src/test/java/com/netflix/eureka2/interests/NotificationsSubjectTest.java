@@ -52,7 +52,7 @@ public class NotificationsSubjectTest {
         }
     };
 
-    @Test
+    @Test(timeout = 60000)
     public void testNoPause() throws Exception {
         notificationsSubject.onNext(discoveryAdd);
         notificationsSubject.onNext(zuulAdd);
@@ -61,7 +61,7 @@ public class NotificationsSubjectTest {
         assertThat(receivedNotifications, contains(discoveryAdd, zuulAdd)); // Checks the order of notifications.
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testPause() throws Exception {
         notificationsSubject.onNext(discoveryAdd);
         notificationsSubject.onNext(zuulAdd);
@@ -85,7 +85,7 @@ public class NotificationsSubjectTest {
         assertThat(receivedNotifications, contains(zuulAdd)); // Checks the order of notifications.
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testCompleteWhilePaused() throws Exception {
 
         assertThat(notificationsSubject.isPaused(), is(false));
@@ -104,7 +104,7 @@ public class NotificationsSubjectTest {
         assertThat(receivedNotifications, contains(zuulAdd)); // Checks the order of notifications.
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testOnErrorWhilePaused() throws Exception {
 
         assertThat(notificationsSubject.isPaused(), is(false));
@@ -123,7 +123,7 @@ public class NotificationsSubjectTest {
         assertThat(receivedNotifications, contains(zuulAdd)); // Checks the order of notifications.
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testResumeResults() throws Exception {
         assertThat(notificationsSubject.isPaused(), is(false));
         assertThat(notificationsSubject.resume(), is(NotificationsSubject.ResumeResult.NotPaused));

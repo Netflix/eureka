@@ -15,7 +15,7 @@ import static org.hamcrest.Matchers.equalTo;
  */
 public class InstanceInfoFieldTest {
 
-    @Test
+    @Test(timeout = 60000)
     public void shouldHaveSameNumberOfFieldsAsInstanceInfoVariablesWithGetters() throws Exception {
         Field[] allFields = InstanceInfo.class.getDeclaredFields();
         Set<String> expectedFields = new HashSet<String>();

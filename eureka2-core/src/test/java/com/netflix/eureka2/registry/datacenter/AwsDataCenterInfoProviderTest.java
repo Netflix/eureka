@@ -89,7 +89,7 @@ public class AwsDataCenterInfoProviderTest {
         }
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testLoadingOfMetaInfo() throws Exception {
         AwsDataCenterInfoProvider provider = new AwsDataCenterInfoProvider("http://localhost:" + httpServer.getServerPort() + "/latest/meta-data");
         AwsDataCenterInfo resolvedDataCenterInfo = provider.dataCenterInfo().single().toBlocking().toFuture().get(10, TimeUnit.SECONDS);
@@ -97,7 +97,7 @@ public class AwsDataCenterInfoProviderTest {
         assertEquals("Resolved data center info not identical to the reference one", DATA_CENTER_INFO, resolvedDataCenterInfo);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testServerErrorPropagation() throws Exception {
         sendError = true;
         AwsDataCenterInfoProvider provider = new AwsDataCenterInfoProvider("http://localhost:" + httpServer.getServerPort() + "/latest/meta-data");
@@ -107,7 +107,7 @@ public class AwsDataCenterInfoProviderTest {
         assertSame("Expected error notification", Kind.OnError, notification.getKind());
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testConnectionErrorPropagation() throws Exception {
         AwsDataCenterInfoProvider provider = new AwsDataCenterInfoProvider("http://localhost:0" + "/latest/meta-data");
 
