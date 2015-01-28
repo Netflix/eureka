@@ -18,7 +18,7 @@ apply plugin: 'osgi'
 
 dependencies {
     compile project(':eureka2-client')
-    compile "com.netflix.karyon2:karyon-admin-web:${karyon_version}"
+    compile "com.netflix.karyon:karyon2-admin-web:${karyon_version}"
     testCompile project(':eureka2-test-utils')
 }
 
