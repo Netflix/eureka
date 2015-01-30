@@ -79,7 +79,7 @@ public final class ServerResolvers {
         return new ServerResolver() {
             @Override
             public Observable<Server> resolve() {
-                return resolve().map(new Func1<Server, Server>() {
+                return original.resolve().map(new Func1<Server, Server>() {
                     @Override
                     public Server call(Server server) {
                         return transformation.call(server);

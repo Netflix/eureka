@@ -190,7 +190,10 @@ public class EurekaServerResolver implements ServerResolver {
 
         public EurekaServerResolver build() {
             if (serviceSelector == null) {
-                serviceSelector = ServiceSelector.selectBy().serviceLabel(Names.DISCOVERY).protocolType(ProtocolType.IPv4);
+                serviceSelector = ServiceSelector.selectBy()
+                        .serviceLabel(Names.DISCOVERY).protocolType(ProtocolType.IPv4).publicIp(true)
+                        .or()
+                        .serviceLabel(Names.DISCOVERY).protocolType(ProtocolType.IPv4);
             }
             if (loadBalancerBuilder == null) {
                 loadBalancerBuilder = new DefaultLoadBalancerBuilder<>(null);
