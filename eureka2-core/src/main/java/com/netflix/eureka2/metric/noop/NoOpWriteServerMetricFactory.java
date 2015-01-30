@@ -36,11 +36,6 @@ public class NoOpWriteServerMetricFactory extends WriteServerMetricFactory {
     }
 
     @Override
-    public MessageConnectionMetrics getReplicationConnectionMetrics() {
-        return NoOpMessageConnectionMetrics.INSTANCE;
-    }
-
-    @Override
     public MessageConnectionMetrics getDiscoveryConnectionMetrics() {
         return NoOpMessageConnectionMetrics.INSTANCE;
     }

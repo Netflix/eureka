@@ -31,11 +31,6 @@ public class SpectatorEurekaServerMetricFactory extends EurekaServerMetricFactor
     }
 
     @Override
-    public MessageConnectionMetrics getReplicationConnectionMetrics() {
-        return replicationServerConnectionMetrics;
-    }
-
-    @Override
     public MessageConnectionMetrics getDiscoveryConnectionMetrics() {
         return discoveryServerConnectionMetrics;
     }

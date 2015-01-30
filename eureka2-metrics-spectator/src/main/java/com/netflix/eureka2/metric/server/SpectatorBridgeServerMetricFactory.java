@@ -67,11 +67,6 @@ public class SpectatorBridgeServerMetricFactory extends BridgeServerMetricFactor
     }
 
     @Override
-    public MessageConnectionMetrics getReplicationConnectionMetrics() {
-        return replicationReceiverConnectionMetrics;
-    }
-
-    @Override
     public MessageConnectionMetrics getDiscoveryConnectionMetrics() {
         return discoveryConnectionMetrics;
     }
