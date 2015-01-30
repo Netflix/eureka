@@ -15,11 +15,6 @@ public class NoOpEurekaServerMetricFactory extends EurekaServerMetricFactory {
     }
 
     @Override
-    public MessageConnectionMetrics getReplicationConnectionMetrics() {
-        return NoOpMessageConnectionMetrics.INSTANCE;
-    }
-
-    @Override
     public MessageConnectionMetrics getDiscoveryConnectionMetrics() {
         return NoOpMessageConnectionMetrics.INSTANCE;
     }

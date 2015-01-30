@@ -28,8 +28,6 @@ public abstract class EurekaServerMetricFactory {
 
     public abstract MessageConnectionMetrics getRegistrationConnectionMetrics();
 
-    public abstract MessageConnectionMetrics getReplicationConnectionMetrics();
-
     public abstract MessageConnectionMetrics getDiscoveryConnectionMetrics();
 
     public abstract ServerInterestChannelMetrics getInterestChannelMetrics();

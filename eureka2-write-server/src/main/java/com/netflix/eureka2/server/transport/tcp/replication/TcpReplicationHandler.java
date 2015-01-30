@@ -57,7 +57,7 @@ public class TcpReplicationHandler implements ConnectionHandler<Object, Object> 
     @Override
     public Observable<Void> handle(ObservableConnection<Object, Object> connection) {
         MessageConnection broker = new HeartBeatConnection(
-                new BaseMessageConnection("replication", connection, metricFactory.getReplicationConnectionMetrics()),
+                new BaseMessageConnection("replicationReceiver", connection, metricFactory.getReplicationReceiverConnectionMetrics()),
                 30000, 3,
                 Schedulers.computation()
         );
