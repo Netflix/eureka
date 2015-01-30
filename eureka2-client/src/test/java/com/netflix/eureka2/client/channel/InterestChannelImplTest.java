@@ -7,7 +7,6 @@ import com.netflix.eureka2.channel.InterestChannel.STATE;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.InterestChannelMetrics;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.DeleteInstance;
@@ -28,9 +27,12 @@ import org.mockito.Mockito;
 import rx.Observable;
 import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.schedulers.Schedulers;
+import rx.schedulers.TestScheduler;
 import rx.subjects.PublishSubject;
 import rx.subjects.ReplaySubject;
 
+import static com.netflix.eureka2.metric.EurekaRegistryMetricFactory.registryMetrics;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
 import static org.junit.Assert.assertThat;
@@ -44,13 +46,15 @@ import static org.mockito.Mockito.when;
  */
 public class InterestChannelImplTest {
 
+    private final TestScheduler testScheduler = Schedulers.test();
+
     protected MessageConnection serverConnection = mock(MessageConnection.class);
     private final PublishSubject<Object> incomingSubject = PublishSubject.create();
     private final ReplaySubject<Void> serverConnectionLifecycle = ReplaySubject.create();
 
     protected TransportClient transportClient = mock(TransportClient.class);
 
-    protected SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics());
+    protected SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(registryMetrics(), testScheduler);
 
     protected InterestChannelMetrics interestChannelMetrics = mock(InterestChannelMetrics.class);
 
@@ -89,10 +93,12 @@ public class InterestChannelImplTest {
         ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
         channel.change(sampleInterestZuul).subscribe(testSubscriber);
 
+        testScheduler.triggerActions();
         testSubscriber.assertOnCompleted();
 
         // Send subscription data
         sendInput(sampleAddMessagesZuul);
+        testScheduler.triggerActions();
 
         // Now fetch registry content, and verify reply
         assertForInterestReturns(sampleInterestZuul, sampleAddMessagesZuul);
@@ -104,17 +110,21 @@ public class InterestChannelImplTest {
         ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
         channel.change(sampleInterestZuul).subscribe(testSubscriber);
 
+        testScheduler.triggerActions();
         testSubscriber.assertOnCompleted();
 
         sendInput(sampleAddMessagesZuul);
+        testScheduler.triggerActions();
 
         // Subscribe to Discovery, and send Zuul change notifications
         testSubscriber = new ExtTestSubscriber<>();
         channel.change(sampleInterestDiscovery).subscribe(testSubscriber);
 
+        testScheduler.triggerActions();
         testSubscriber.assertOnCompleted();
 
         sendInput(sampleAddMessagesDiscovery);
+        testScheduler.triggerActions();
 
         // Check that the registry contains both sets
         assertForInterestReturns(sampleInterestZuul, sampleAddMessagesZuul);
@@ -127,6 +137,7 @@ public class InterestChannelImplTest {
         ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
         channel.change(sampleInterestZuul).subscribe(testSubscriber);
 
+        testScheduler.triggerActions();
         testSubscriber.assertOnCompleted();
 
         // Close the channel and check that no more subscriptions are allowed
@@ -135,6 +146,7 @@ public class InterestChannelImplTest {
         testSubscriber = new ExtTestSubscriber<>();
         channel.change(sampleInterestAll).subscribe(testSubscriber);
 
+        testScheduler.triggerActions();
         testSubscriber.assertOnError();
     }
 
@@ -152,6 +164,7 @@ public class InterestChannelImplTest {
         ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
         channel.change(sampleInterestZuul).subscribe(testSubscriber);
 
+        testScheduler.triggerActions();
         testSubscriber.assertOnCompleted();
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> notificationSubscriber = new ExtTestSubscriber<>();
@@ -159,13 +172,16 @@ public class InterestChannelImplTest {
 
         // Send to add change notifications
         incomingSubject.onNext(message1);
+        testScheduler.triggerActions();
         assertThat(notificationSubscriber.takeNextOrWait(), addChangeNotificationOf(original1));
 
         incomingSubject.onNext(message2);
+        testScheduler.triggerActions();
         assertThat(notificationSubscriber.takeNextOrWait(), addChangeNotificationOf(original2));
 
         // Now remove first item
         incomingSubject.onNext(message3);
+        testScheduler.triggerActions();
         assertThat(notificationSubscriber.takeNextOrWait(), deleteChangeNotificationOf(original1));
     }
 
@@ -175,10 +191,12 @@ public class InterestChannelImplTest {
         ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
         channel.change(sampleInterestZuul).subscribe(testSubscriber);
 
+        testScheduler.triggerActions();
         verify(interestChannelMetrics, times(1)).incrementStateCounter(STATE.Open);
 
         // Shutdown channel
         channel.close();
+        testScheduler.triggerActions();
         verify(interestChannelMetrics, times(1)).decrementStateCounter(STATE.Open);
         verify(interestChannelMetrics, times(1)).incrementStateCounter(STATE.Closed);
     }
