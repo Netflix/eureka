@@ -18,8 +18,7 @@ import rx.subjects.BehaviorSubject;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Abstract base handler class that provides the following common functionality for implementing clients:
- *
+ * Abstract factory that provides a {@link RetryableConnection} for each newConnection call.
  *
  * @param <CHANNEL> the type of channel to be used
  * @param <OP> the type of op to be applied to the channel
@@ -38,7 +37,8 @@ public abstract class RetryableConnectionFactory<CHANNEL extends ServiceChannel,
 
     /**
      * @param opStream an observable stream of ops for the channel to operate on (i.e. Interest, InstanceInfo)
-     * @return an observable of the lifecycle of this stream. This observable can be retried
+     * @return a {@link RetryableConnection} that contains several observables. This lifecycle observable provided
+     * can be retried on.
      */
     public RetryableConnection<CHANNEL> newConnection(final Observable<OP> opStream) {
         final AsyncSubject<Void> initSubject = AsyncSubject.create();  // subject used to cache init status

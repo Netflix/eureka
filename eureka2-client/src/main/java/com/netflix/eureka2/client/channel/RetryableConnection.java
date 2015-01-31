@@ -4,6 +4,11 @@ import rx.Observable;
 import rx.functions.Action0;
 
 /**
+ * Provides the following:
+ * - channelObservable that emits the latest active channel being used by the connection
+ * - retryableLifecycle that emits onError from the channel. Retries on this will retry on a new channel
+ * - initObservable that onCompletes after the first success and only after the first success
+ *
  * @author David Liu
  */
 public class RetryableConnection<T> {
