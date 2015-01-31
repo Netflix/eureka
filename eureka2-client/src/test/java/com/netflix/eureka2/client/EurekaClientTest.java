@@ -1,11 +1,11 @@
 package com.netflix.eureka2.client;
 
+import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
-import com.netflix.eureka2.client.channel.ClientInterestChannel;
 import com.netflix.eureka2.client.channel.InterestChannelFactory;
+import com.netflix.eureka2.client.interest.InterestHandlerImpl;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.client.interest.InterestHandler;
-import com.netflix.eureka2.client.interest.InterestHandlerImpl;
 import com.netflix.eureka2.config.BasicEurekaRegistryConfig;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
@@ -20,6 +20,7 @@ import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.TransportClient;
+import com.netflix.eureka2.utils.rx.RetryStrategyFunc;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -30,6 +31,9 @@ import org.mockito.runners.MockitoJUnitRunner;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
+import rx.functions.Action1;
+import rx.functions.Func1;
+import rx.functions.Func2;
 import rx.subjects.ReplaySubject;
 
 import java.util.ArrayList;
@@ -37,6 +41,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -100,10 +105,9 @@ public class EurekaClientTest {
             when(mockConnection.lifecycleObservable()).thenReturn(ReplaySubject.<Void>create());
             when(mockReadTransportClient.connect()).thenReturn(Observable.just(mockConnection));
 
-            ClientChannelFactory<ClientInterestChannel> interestChannelFactory = new InterestChannelFactory(
+            ClientChannelFactory<InterestChannel> interestChannelFactory = new InterestChannelFactory(
                     mockReadTransportClient,
                     registry,
-                    1000,
                     EurekaClientMetricFactory.clientMetrics()
             );
 

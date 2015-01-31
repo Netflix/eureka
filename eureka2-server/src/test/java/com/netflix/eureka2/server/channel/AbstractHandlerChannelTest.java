@@ -42,15 +42,15 @@ public class AbstractHandlerChannelTest {
     public void testCloseChannelOnSendError() throws Exception {
         when(transport.submit(anyObject())).thenReturn(Observable.<Void>error(new Exception("msg")));
 
-        final CountDownLatch onCompletedLatch = new CountDownLatch(1);
+        final CountDownLatch onErrorLatch = new CountDownLatch(1);
         channel.asLifecycleObservable().subscribe(new Subscriber<Void>() {
             @Override
             public void onCompleted() {
-                onCompletedLatch.countDown();
             }
 
             @Override
             public void onError(Throwable e) {
+                onErrorLatch.countDown();
             }
 
             @Override
@@ -61,21 +61,21 @@ public class AbstractHandlerChannelTest {
         channel.sendOnTransport("My Message");
 
         verify(channel, times(1)).close();
-        Assert.assertTrue(onCompletedLatch.await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(onErrorLatch.await(10, TimeUnit.SECONDS));
     }
 
     @Test
     public void testCloseChannelWhenSendingErrorOnTransportSuccessfully() throws Exception {
 
-        final CountDownLatch onCompletedLatch = new CountDownLatch(1);
+        final CountDownLatch onErrorLatch = new CountDownLatch(1);
         channel.asLifecycleObservable().subscribe(new Subscriber<Void>() {
             @Override
             public void onCompleted() {
-                onCompletedLatch.countDown();
             }
 
             @Override
             public void onError(Throwable e) {
+                onErrorLatch.countDown();
             }
 
             @Override
@@ -86,7 +86,7 @@ public class AbstractHandlerChannelTest {
         channel.sendErrorOnTransport(new Exception("some error"));
 
         verify(channel, times(1)).close();
-        Assert.assertTrue(onCompletedLatch.await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(onErrorLatch.await(10, TimeUnit.SECONDS));
     }
 
     enum TestState { Ok }

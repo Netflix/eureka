@@ -92,7 +92,7 @@ public abstract class AbstractHandlerChannel<STATE extends Enum<STATE>> extends 
             @Override
             public void onError(Throwable throwable) {
                 logger.warn("Failed to send " + sendType + " on the transport. Closing the channel.", throwable);
-                close();
+                close(throwable);
             }
 
             @Override

@@ -6,6 +6,8 @@ import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
 import com.netflix.eureka2.transport.MessageConnection;
+import rx.Observable;
+import rx.Subscriber;
 
 /**
  * Abstract channel that provides some common basics for server channel factories

@@ -80,7 +80,7 @@ public class RetryableServiceChannelTest {
 
     @Test
     public void testDelegateChannelDisconnectAndReconnects() throws Exception {
-        // Terminate current connection via an onComplete
+        // Terminate current connection via an onCompleted
         initialDelegate.lifecycle.onCompleted();
 
         // Verify that next retry succeeds

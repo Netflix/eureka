@@ -68,7 +68,7 @@ public class BasicDataCenterInfo extends DataCenterInfo {
         if (defaultAddress != null) {
             return defaultAddress;
         }
-        if (addresses == null | addresses.isEmpty()) {
+        if (addresses == null || addresses.isEmpty()) {
             return null;
         }
         NetworkAddress best = null;

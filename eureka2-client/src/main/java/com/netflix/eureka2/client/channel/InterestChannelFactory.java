@@ -1,20 +1,17 @@
 package com.netflix.eureka2.client.channel;
 
+import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.transport.TransportClients;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.registry.PreservableEurekaRegistry;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.transport.TransportClient;
-import rx.functions.Func1;
-import rx.schedulers.Schedulers;
 
 /**
  * @author David Liu
  */
-public class InterestChannelFactory extends ClientChannelFactory<ClientInterestChannel> {
+public class InterestChannelFactory extends ClientChannelFactory<InterestChannel> {
 
     private final PreservableEurekaRegistry eurekaRegistry;
     private final TransportClient transport;
@@ -22,35 +19,22 @@ public class InterestChannelFactory extends ClientChannelFactory<ClientInterestC
     public InterestChannelFactory(ServerResolver resolver,
                                   EurekaTransports.Codec codec,
                                   PreservableEurekaRegistry eurekaRegistry,
-                                  long retryInitialDelayMs,
                                   EurekaClientMetricFactory metricFactory) {
-        this(TransportClients.newTcpDiscoveryClient(resolver, codec),
-                eurekaRegistry,
-                retryInitialDelayMs,
-                metricFactory);
+        this(TransportClients.newTcpDiscoveryClient(resolver, codec), eurekaRegistry, metricFactory);
     }
 
     public InterestChannelFactory(TransportClient transport,
                                   PreservableEurekaRegistry eurekaRegistry,
-                                  long retryInitialDelayMs,
                                   EurekaClientMetricFactory metricFactory) {
-        super(retryInitialDelayMs, metricFactory);
+        super(metricFactory);
         this.eurekaRegistry = eurekaRegistry;
         this.transport = transport;
     }
 
-
     @Override
-    public ClientInterestChannel newChannel() {
-        RetryableInterestChannel retryable = new RetryableInterestChannel(
-                new Func1<SourcedEurekaRegistry<InstanceInfo>, ClientInterestChannel>() {
-                    @Override
-                    public ClientInterestChannel call(SourcedEurekaRegistry<InstanceInfo> registry) {
-                        return new InterestChannelImpl(registry, transport, metricFactory.getInterestChannelMetrics());
-                    }
-                }, eurekaRegistry, retryInitialDelayMs, Schedulers.computation()
-        );
-        return new InterestChannelInvoker(retryable, metricFactory);
+    public InterestChannel newChannel() {
+        InterestChannel baseChannel = new InterestChannelImpl(eurekaRegistry, transport, metricFactory.getInterestChannelMetrics());
+        return new InterestChannelInvoker(baseChannel, metricFactory);
     }
 
     @Override

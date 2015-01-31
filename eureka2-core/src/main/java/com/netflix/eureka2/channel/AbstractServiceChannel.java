@@ -44,6 +44,12 @@ public abstract class AbstractServiceChannel<STATE extends Enum<STATE>> implemen
         lifecycle.onCompleted();
     }
 
+    @Override
+    public final void close(Throwable error) {
+        _close();
+        lifecycle.onError(error);
+    }
+
     protected abstract void _close();
 
     protected <T> void connectInputToLifecycle(Observable<T> inputObservable, final Action1<T> onNext) {
@@ -51,13 +57,11 @@ public abstract class AbstractServiceChannel<STATE extends Enum<STATE>> implemen
             @Override
             public void onCompleted() {
                 close();
-                lifecycle.onCompleted();
             }
 
             @Override
             public void onError(Throwable e) {
-                close();
-                lifecycle.onError(e);
+                close(e);
             }
 
             @Override

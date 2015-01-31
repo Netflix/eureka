@@ -64,6 +64,15 @@ import rx.Observable;
     }
 
     @Override
+    public void close(Throwable error) {
+        try {
+            shutdown();
+        } finally {
+            delegate.close(error);
+        }
+    }
+
+    @Override
     public Observable<Void> asLifecycleObservable() {
         return delegate.asLifecycleObservable();
     }

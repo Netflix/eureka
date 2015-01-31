@@ -15,4 +15,9 @@ public class EurekaBridgeServerSelfRegistrationService extends EurekaWriteServer
     public EurekaBridgeServerSelfRegistrationService(SelfInfoResolver resolver, SourcedEurekaRegistry registry) {
         super(resolver, registry);
     }
+
+    @Override
+    public void cleanUpResources() {
+        // no-op
+    }
 }

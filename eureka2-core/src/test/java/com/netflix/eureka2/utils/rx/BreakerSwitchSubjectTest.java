@@ -5,6 +5,7 @@ import org.junit.Test;
 import rx.Observable;
 import rx.functions.Action0;
 import rx.observers.TestSubscriber;
+import rx.subjects.ReplaySubject;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -12,9 +13,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @author David Liu
  */
-public class BreakerSwitchOperatorTest {
+public class BreakerSwitchSubjectTest {
 
-    private final BreakerSwitchOperator<Object> operator = new BreakerSwitchOperator<>();
+    private final BreakerSwitchSubject<Object> subject = BreakerSwitchSubject.create(ReplaySubject.create());
 
     private final TestSubscriber<Object> testSubscriber1 = new TestSubscriber<>();
     private final TestSubscriber<Object> testSubscriber2 = new TestSubscriber<>();
@@ -23,17 +24,17 @@ public class BreakerSwitchOperatorTest {
     public void testCloseOnCompleteAllSubscribers() throws Exception {
         final AtomicInteger unsubscribeCount = new AtomicInteger();
 
-        Observable<Object> stream = Observable.never().doOnUnsubscribe(new Action0() {
+        Observable<Object> stream = subject.doOnUnsubscribe(new Action0() {
             @Override
             public void call() {
                 unsubscribeCount.incrementAndGet();
             }
-        }).lift(operator);
+        });
 
         stream.subscribe(testSubscriber1);
         stream.subscribe(testSubscriber2);
 
-        operator.close();
+        subject.close();
 
         testSubscriber1.awaitTerminalEvent(5, TimeUnit.SECONDS);
         testSubscriber2.awaitTerminalEvent(5, TimeUnit.SECONDS);
@@ -45,31 +46,5 @@ public class BreakerSwitchOperatorTest {
         testSubscriber2.assertNoErrors();
 
         Assert.assertEquals(2, unsubscribeCount.get());
-    }
-
-    @Test
-    public void testForwardOnCompleteIfStreamOnComplete() {
-        Observable<Object> stream = Observable.empty().lift(operator);
-
-        stream.subscribe(testSubscriber1);
-        stream.subscribe(testSubscriber2);
-
-        testSubscriber1.assertTerminalEvent();
-        testSubscriber1.assertNoErrors();
-        testSubscriber2.assertTerminalEvent();
-        testSubscriber2.assertNoErrors();
-    }
-
-    @Test
-    public void testForwardOnErrorIfStreamOnError() {
-        Observable<Object> stream = Observable.error(new Exception("test error")).lift(operator);
-
-        stream.subscribe(testSubscriber1);
-        stream.subscribe(testSubscriber2);
-
-        testSubscriber1.assertTerminalEvent();
-        Assert.assertEquals(1, testSubscriber1.getOnErrorEvents().size());
-        testSubscriber2.assertTerminalEvent();
-        Assert.assertEquals(1, testSubscriber2.getOnErrorEvents().size());
     }
 }

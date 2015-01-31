@@ -1,15 +1,15 @@
 package com.netflix.eureka2.client;
 
+import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
-import com.netflix.eureka2.client.channel.ClientInterestChannel;
 import com.netflix.eureka2.client.channel.InterestChannelFactory;
 import com.netflix.eureka2.client.channel.RegistrationChannelFactory;
+import com.netflix.eureka2.client.interest.InterestHandlerImpl;
+import com.netflix.eureka2.client.registration.RegistrationHandlerImpl;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.client.registration.RegistrationHandler;
-import com.netflix.eureka2.client.registration.RegistrationHandlerImpl;
 import com.netflix.eureka2.client.interest.InterestHandler;
-import com.netflix.eureka2.client.interest.InterestHandlerImpl;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.BasicEurekaRegistryConfig;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
@@ -95,8 +95,8 @@ public class EurekaClientBuilder {
                 new BasicEurekaRegistryConfig(),
                 registryMetricFactory);
 
-        ClientChannelFactory<ClientInterestChannel> channelFactory
-                = new InterestChannelFactory(readServerResolver, codec, registry, retryDelayMs, metricFactory);
+        ClientChannelFactory<InterestChannel> channelFactory
+                = new InterestChannelFactory(readServerResolver, codec, registry, metricFactory);
 
         return new InterestHandlerImpl(registry, channelFactory);
     }
@@ -107,7 +107,7 @@ public class EurekaClientBuilder {
         }
 
         ClientChannelFactory<RegistrationChannel> channelFactory
-                = new RegistrationChannelFactory(writeServerResolver, codec, retryDelayMs, metricFactory);
+                = new RegistrationChannelFactory(writeServerResolver, codec, metricFactory);
 
         return new RegistrationHandlerImpl(channelFactory);
     }

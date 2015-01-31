@@ -9,14 +9,9 @@ import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
  */
 public abstract class ClientChannelFactory<T extends ServiceChannel> implements ChannelFactory<T> {
 
-    protected final long retryInitialDelayMs;
-
     protected final EurekaClientMetricFactory metricFactory;
 
-    public ClientChannelFactory(long retryInitialDelayMs,
-                                EurekaClientMetricFactory metricFactory) {
-        this.retryInitialDelayMs = retryInitialDelayMs;
+    public ClientChannelFactory(EurekaClientMetricFactory metricFactory) {
         this.metricFactory = metricFactory;
     }
-
 }

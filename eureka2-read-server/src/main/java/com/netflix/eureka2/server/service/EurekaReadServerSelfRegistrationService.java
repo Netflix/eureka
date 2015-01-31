@@ -29,8 +29,8 @@ public class EurekaReadServerSelfRegistrationService extends SelfRegistrationSer
         super.init();
     }
 
-    @PreDestroy
-    public void shutdown() {
+    @Override
+    public void cleanUpResources() {
         eurekaClient.close();
     }
 
