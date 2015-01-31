@@ -38,9 +38,17 @@ public abstract class SpectatorEurekaMetrics {
     }
 
     protected Id newId(String name) {
+        // We use metrics interface as class tag, if one can be found
+        String className = getClass().getSimpleName();
+        for (Class<?> c : getClass().getInterfaces()) {
+            if (c.getSimpleName().endsWith("Metrics")) {
+                className = c.getSimpleName();
+            }
+        }
+
         return registry.createId(name)
                 .withTag("id", id)
-                .withTag("class", getClass().getSimpleName());
+                .withTag("class", className);
     }
 
     protected Counter newCounter(String name) {

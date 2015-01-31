@@ -37,7 +37,7 @@ import static org.junit.Assert.fail;
  */
 public class RxBlockingTest {
 
-    @Test
+    @Test(timeout = 60000)
     public void testFirstFrom() throws Exception {
         PublishSubject<Integer> subject = PublishSubject.create();
 
@@ -52,7 +52,7 @@ public class RxBlockingTest {
         RxBlocking.firstFrom(1, TimeUnit.MICROSECONDS, PublishSubject.<Integer>create()).item();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testFirstFromEach() throws Exception {
         PublishSubject<Integer> subject1 = PublishSubject.create();
         PublishSubject<Integer> subject2 = PublishSubject.create();
@@ -71,7 +71,7 @@ public class RxBlockingTest {
                 PublishSubject.<Integer>create(), PublishSubject.<Integer>create()).item();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testIterator() throws Exception {
         PublishSubject<Integer> subject = PublishSubject.create();
         Iterator<Integer> iterator = RxBlocking.iteratorFrom(1, TimeUnit.SECONDS, subject);
@@ -83,13 +83,13 @@ public class RxBlockingTest {
         assertFalse("Iterator should be closed", iterator.hasNext());
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testVoidObservable() throws Exception {
         Iterator<Object> iterator = RxBlocking.iteratorFrom(1, TimeUnit.SECONDS, Observable.empty());
         assertFalse("Iterator should be closed", iterator.hasNext());
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testIteratorHasNextTimeout() throws Exception {
         PublishSubject<Integer> subject = PublishSubject.create();
         Iterator<Integer> iterator = RxBlocking.iteratorFrom(1, TimeUnit.MILLISECONDS, subject);
@@ -102,7 +102,7 @@ public class RxBlockingTest {
         }
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testIteratorNextTimeout() throws Exception {
         PublishSubject<Integer> subject = PublishSubject.create();
         Iterator<Integer> iterator = RxBlocking.iteratorFrom(1, TimeUnit.MILLISECONDS, subject);

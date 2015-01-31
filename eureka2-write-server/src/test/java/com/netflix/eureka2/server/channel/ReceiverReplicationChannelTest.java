@@ -87,7 +87,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         replicationChannel.close();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testHandlesHello() throws Exception {
         incomingSubject.onNext(HELLO);
 
@@ -98,7 +98,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         assertThat(reply, is(equalTo(HELLO_REPLY)));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testHandlesRegistration() throws Exception {
         handshakeAndRegister(APP_INFO);
 
@@ -107,7 +107,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         verifyInstanceAndSourceCaptures(APP_INFO, SENDER_ID);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testHandlesRegisterThatIsAnUpdate() throws Exception {
         handshakeAndRegister(APP_INFO);
 
@@ -131,7 +131,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         verifyInstanceAndSourceCaptures(infoUpdate, SENDER_ID);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testHandlesUnregister() throws Exception {
         handshakeAndRegister(APP_INFO);
 
@@ -144,7 +144,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         verifyInstanceAndSourceCaptures(APP_INFO, SENDER_ID);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testDetectsReplicationLoop() throws Exception {
         ReplicationHello hello = new ReplicationHello(RECEIVER_ID, 0);
         incomingSubject.onNext(hello);
@@ -155,12 +155,12 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         verify(transport, times(3)).onError(ReceiverReplicationChannel.REPLICATION_LOOP_EXCEPTION);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testAddsRecordsToEvictionQueueOnTransportDisconnect() throws Exception {
         verifyAddsRecordsToEvictionQueueOnDisconnect(false);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testMetrics() throws Exception {
         // Idle -> Handshake -> Connected
         ReplicationHello hello = new ReplicationHello(RECEIVER_ID, 0);
@@ -175,7 +175,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         verify(channelMetrics, times(1)).incrementStateCounter(STATE.Closed);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testAddsRecordsToEvictionQueueOnTransportError() throws Exception {
         verifyAddsRecordsToEvictionQueueOnDisconnect(true);
     }

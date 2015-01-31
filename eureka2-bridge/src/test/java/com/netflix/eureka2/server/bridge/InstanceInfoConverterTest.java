@@ -66,7 +66,7 @@ public class InstanceInfoConverterTest {
         }
     };
 
-    @Test
+    @Test(timeout = 60000)
     public void testV1ToV2() {
         InstanceInfo v2Info = converter.fromV1(sourceV1Info);
 
@@ -101,7 +101,7 @@ public class InstanceInfoConverterTest {
         assertThat(v2.getPrivateAddress().getIpAddress(), equalTo(v1.get(AmazonInfo.MetaDataKey.localIpv4)));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testV2ToV1() {
         // TODO
     }

@@ -19,7 +19,7 @@ import static org.junit.Assert.assertThat;
  */
 @Category(ExternalConnectionTest.class)
 public class DnsChangeNotificationSourceTest {
-    @Test
+    @Test(timeout = 60000)
     public void testPublicAddressResolution() throws Exception {
         // Google has a long list of addresses.
         DnsChangeNotificationSource resolver = new DnsChangeNotificationSource("google.com");
@@ -32,7 +32,7 @@ public class DnsChangeNotificationSourceTest {
         assertThat(testSubscriber.takeNext(30, TimeUnit.SECONDS), is(notNullValue()));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testLocalhost() throws Exception {
         DnsChangeNotificationSource resolver = new DnsChangeNotificationSource("localhost");
 

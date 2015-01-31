@@ -12,7 +12,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(MockitoJUnitRunner.class)
 public class RegistryCacheTest extends RegistryTestBase {
 
-    @Test
+    @Test(timeout = 60000)
     public void checkRegistryCount() {
         RegistryCache registryCache = new RegistryCache(dashboardEurekaClientBuilder);
         final Map<String, InstanceInfo> regCache = registryCache.getCache();

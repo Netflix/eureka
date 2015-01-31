@@ -70,7 +70,7 @@ public class FileServerResolverTest extends AbstractResolverTest {
         }
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testReadingServersFromFile() throws Exception {
         Set<Server> expected = asSet(new Server("serverA", 555),
                 new Server("serverB", 0));

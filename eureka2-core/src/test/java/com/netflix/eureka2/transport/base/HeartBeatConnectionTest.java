@@ -65,7 +65,7 @@ public class HeartBeatConnectionTest {
         when(delegate.submit(Heartbeat.INSTANCE)).thenReturn(Observable.<Void>empty());
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testHeartbeatIsSentPeriodically() throws Exception {
         // Just after first heartbeat should be sent
         scheduler.advanceTimeBy(HEART_BEAT_INTERVAL, TimeUnit.MILLISECONDS);
@@ -73,7 +73,7 @@ public class HeartBeatConnectionTest {
         verify(delegate, times(1)).submit(Heartbeat.INSTANCE);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testConnectionIsClosedIfHeartbeatSentFailed() throws Exception {
         // Advance time to cross tolerance level
         scheduler.advanceTimeBy(HEART_BEAT_INTERVAL * (TOLERANCE + 1), TimeUnit.MILLISECONDS);
@@ -81,7 +81,7 @@ public class HeartBeatConnectionTest {
         verify(delegate, times(1)).shutdown();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testHeartbeatIsReceivedAndCounted() throws Exception {
         // Sent heartbeat
         mockedIncomingStream.onNext(Heartbeat.INSTANCE);
@@ -97,7 +97,7 @@ public class HeartBeatConnectionTest {
         verify(delegate, times(1)).shutdown();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testNonHeartbeatInputMessagesArePassedThrough() throws Exception {
         Iterator<String> input = heartBeatConnection.incoming().cast(String.class).toBlocking().getIterator();
         mockedIncomingStream.onNext(MESSAGE);

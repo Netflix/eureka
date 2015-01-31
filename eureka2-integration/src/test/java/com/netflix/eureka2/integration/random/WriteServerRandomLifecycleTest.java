@@ -23,7 +23,7 @@ public class WriteServerRandomLifecycleTest extends AbstractRandomLifecycleTest 
     @Rule
     public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResource(1, 0);
 
-    @Test
+    @Test(timeout = 60000)
     public void writeServerRandomLifecycleTest() {
         final EurekaClient eurekaClient = eurekaDeploymentResource.connectToWriteServer(0);
 

@@ -58,7 +58,7 @@ public class InterestChannelImplTest {
         channel = new InterestChannelImpl(registry, connection, interestChannelMetrics);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testSnapshotSubscription() throws Exception {
         InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();
         when(registry.forSnapshot(any(Interest.class))).thenReturn(Observable.just(instanceInfo));
@@ -72,12 +72,12 @@ public class InterestChannelImplTest {
         verify(connection, times(1)).submit(SnapshotComplete.INSTANCE);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testMetricsStateMonitoring() throws Exception {
         verifyMetricStateMonitoring(new InterestRegistration(Interests.forFullRegistry()));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testMetricsStateMonitoringForSnapshot() throws Exception {
         verifyMetricStateMonitoring(new SnapshotRegistration(SNAPSHOT_INTEREST));
     }
@@ -93,7 +93,7 @@ public class InterestChannelImplTest {
         verify(interestChannelMetrics, times(1)).incrementStateCounter(STATE.Closed);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testNotificationMetrics() throws Exception {
         // Simulate interest subscription
         incomingSubject.onNext(new InterestRegistration(Interests.forFullRegistry()));
@@ -105,7 +105,7 @@ public class InterestChannelImplTest {
         verify(interestChannelMetrics, times(1)).incrementApplicationNotificationCounter(info.getApp());
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testSubscriptionMetrics() throws Exception {
         // Full interest subscription
         incomingSubject.onNext(new InterestRegistration(Interests.forFullRegistry()));

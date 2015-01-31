@@ -47,6 +47,7 @@ public class SpectatorMessageConnectionMetrics extends SpectatorEurekaMetrics im
 
     public SpectatorMessageConnectionMetrics(ExtendedRegistry registry, String context) {
         super(registry, context);
+        newGauge("connectedClients", connectedClients);
         this.connectionTime = newTimer("connectionTime");
         this.totalIncomingMessages = newCounter("incoming.total");
         this.totalOutgoingMessages = newCounter("outgoing.total");
@@ -55,8 +56,6 @@ public class SpectatorMessageConnectionMetrics extends SpectatorEurekaMetrics im
     @Override
     public void incrementConnectionCounter() {
         connectedClients.incrementAndGet();
-        registry.gauge("connectedClients", connectedClients.get());
-        totalIncomingMessages.increment();
     }
 
     @Override

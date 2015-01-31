@@ -16,7 +16,7 @@ public class InstanceInfoMatcherTest {
 
     private static final InstanceInfo INFO = SampleInstanceInfo.DiscoveryServer.build();
 
-    @Test
+    @Test(timeout = 60000)
     public void testMatchesSameEntity() throws Exception {
         InstanceInfo infoWithOtherVersion = new Builder().withInstanceInfo(INFO).build();
         boolean result = EurekaMatchers.sameInstanceInfoAs(INFO).matches(infoWithOtherVersion);

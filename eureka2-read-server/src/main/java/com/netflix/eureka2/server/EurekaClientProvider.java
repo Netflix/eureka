@@ -22,10 +22,11 @@ import javax.inject.Singleton;
 import com.google.inject.Inject;
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolver.Server;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
+import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
+import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.config.EurekaCommonConfig.ResolverType;
 import com.netflix.eureka2.server.config.EurekaCommonConfig.ServerBootstrap;
@@ -40,11 +41,15 @@ public class EurekaClientProvider implements Provider<EurekaClient> {
 
     private final EurekaServerConfig config;
     private final EurekaClientMetricFactory metricFactory;
+    private final EurekaRegistryMetricFactory registryMetricFactory;
 
     @Inject
-    public EurekaClientProvider(EurekaServerConfig config, EurekaClientMetricFactory metricFactory) {
+    public EurekaClientProvider(EurekaServerConfig config,
+                                EurekaClientMetricFactory metricFactory,
+                                EurekaRegistryMetricFactory registryMetricFactory) {
         this.config = config;
         this.metricFactory = metricFactory;
+        this.registryMetricFactory = registryMetricFactory;
     }
 
     @Override
@@ -67,6 +72,7 @@ public class EurekaClientProvider implements Provider<EurekaClient> {
         return Eureka.newClientBuilder(discoveryResolver, registrationResolver)
                 .withCodec(config.getCodec())
                 .withMetricFactory(metricFactory)
+                .withMetricFactory(registryMetricFactory)
                 .build();
     }
 

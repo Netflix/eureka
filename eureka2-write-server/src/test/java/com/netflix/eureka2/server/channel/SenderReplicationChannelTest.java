@@ -43,7 +43,7 @@ public class SenderReplicationChannelTest extends AbstractReplicationChannelTest
         replicationChannel = new SenderReplicationChannel(transportClient, channelMetrics);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testHandshake() throws Exception {
         // Initialize channel by sending hello
         TestSubscriber<ReplicationHelloReply> replySubscriber = sendHello();
@@ -53,7 +53,7 @@ public class SenderReplicationChannelTest extends AbstractReplicationChannelTest
         replySubscriber.assertReceivedOnNext(Collections.singletonList(HELLO_REPLY));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testRegistration() throws Exception {
         // Initialize channel by sending hello
         sendHello();
@@ -70,7 +70,7 @@ public class SenderReplicationChannelTest extends AbstractReplicationChannelTest
         verify(connection, times(1)).submit(message);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testUnregister() throws Exception {
         // Initialize channel by sending hello
         sendHello();
@@ -87,7 +87,7 @@ public class SenderReplicationChannelTest extends AbstractReplicationChannelTest
         verify(connection, times(1)).submit(message);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testMetrics() throws Exception {
         // Idle -> Handshake -> Connected
         sendHello();

@@ -29,7 +29,7 @@ public class RegistryTableViewTest {
         }
     };
 
-    @Test
+    @Test(timeout = 60000)
     public void checkFilter() {
         final Map<String, InstanceInfo> registryMap = registryCache.get();
         assertTrue(registryMap != null);
@@ -43,7 +43,7 @@ public class RegistryTableViewTest {
         assertTrue(regData.size() == 2);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void checkPaginate() {
         final Map<String, InstanceInfo> registryMap = registryCache.get();
         assertTrue(registryMap != null);
@@ -57,7 +57,7 @@ public class RegistryTableViewTest {
         assertEquals(2, regData.size());
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void checkSorting() {
         final Map<String, InstanceInfo> registryMap = registryCache.get();
         assertTrue(registryMap != null);
@@ -81,7 +81,7 @@ public class RegistryTableViewTest {
         assertEquals("App_1", firstAppId);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void checkFilteredSize() {
         final Map<String, InstanceInfo> registryMap = registryCache.get();
         assertTrue(registryMap != null);

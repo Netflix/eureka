@@ -19,7 +19,7 @@ public class BreakerSwitchOperatorTest {
     private final TestSubscriber<Object> testSubscriber1 = new TestSubscriber<>();
     private final TestSubscriber<Object> testSubscriber2 = new TestSubscriber<>();
 
-    @Test
+    @Test(timeout = 60000)
     public void testCloseOnCompleteAllSubscribers() throws Exception {
         final AtomicInteger unsubscribeCount = new AtomicInteger();
 

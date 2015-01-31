@@ -29,7 +29,7 @@ public class IndexConcurrencyTest {
 
     private static final int NOTIFICATIONS = 10000;
 
-    @Test
+    @Test(timeout = 60000)
     public void testRaceConditionsDoNotHappen() throws Exception {
         PublishSubject<ChangeNotification<InstanceInfo>> dataSource = PublishSubject.create();
 

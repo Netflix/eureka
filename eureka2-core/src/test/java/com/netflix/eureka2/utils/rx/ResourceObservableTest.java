@@ -50,7 +50,7 @@ public class ResourceObservableTest {
     private final Set<String> collector = new HashSet<>();
     private final Set<String> expected = new HashSet<>();
 
-    @Test
+    @Test(timeout = 60000)
     public void testTaskIsScheduledPeriodically() throws Exception {
         subscribe();
 
@@ -79,7 +79,7 @@ public class ResourceObservableTest {
         assertThat(collector, is(equalTo(expected)));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testTaskIsCanceledIfNoSubscriber() throws Exception {
         Subscription subscription = subscribe();
 

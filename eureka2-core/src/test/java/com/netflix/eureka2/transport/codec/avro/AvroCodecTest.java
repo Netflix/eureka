@@ -15,7 +15,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class AvroCodecTest {
 
-    @Test
+    @Test(timeout = 60000)
     public void testEncodeDecode() throws Exception {
         AvroCodec avroCodec = new AvroCodec(SAMPLE_OBJECT_MODEL_SET, rootSchema());
 

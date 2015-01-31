@@ -15,7 +15,7 @@ import static org.junit.Assert.assertThat;
  */
 public class SampleAwsDataCenterInfoTest {
 
-    @Test
+    @Test(timeout = 60000)
     public void testGeneratesSubsequentDataCenterInfos() throws Exception {
         Iterator<AwsDataCenterInfo> iterator =
                 SampleAwsDataCenterInfo.collectionOf("test", SampleAwsDataCenterInfo.UsEast1a.build());

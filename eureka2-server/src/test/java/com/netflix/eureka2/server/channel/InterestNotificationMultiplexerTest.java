@@ -113,7 +113,7 @@ public class InterestNotificationMultiplexerTest {
         assertThat(controller3.instanceSubject.hasObservers(), is(true));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testCloseUnsubcribesAllUpStreamAndOnCompleteDownStream() {
         TestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new TestSubscriber<>();
         multiplexer.changeNotifications().subscribe(testSubscriber);

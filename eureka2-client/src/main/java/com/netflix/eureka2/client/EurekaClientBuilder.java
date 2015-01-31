@@ -34,6 +34,7 @@ public class EurekaClientBuilder {
     private ServerResolver writeServerResolver;
 
     private EurekaClientMetricFactory metricFactory;
+    private EurekaRegistryMetricFactory registryMetricFactory;
 
     private EurekaClientBuilder(boolean doDiscovery, boolean doRegistration) {
         this.doDiscovery = doDiscovery;
@@ -65,6 +66,11 @@ public class EurekaClientBuilder {
         return this;
     }
 
+    public EurekaClientBuilder withMetricFactory(EurekaRegistryMetricFactory registryMetricFactory) {
+        this.registryMetricFactory = registryMetricFactory;
+        return this;
+    }
+
     public EurekaClient build() {
         if (codec == null) {
             codec = DEFAULT_CODEC;
@@ -89,7 +95,9 @@ public class EurekaClientBuilder {
             throw new IllegalArgumentException("Cannot build client for discovery without read server resolver");
         }
 
-        EurekaRegistryMetricFactory registryMetricFactory = EurekaRegistryMetricFactory.registryMetrics();
+        if(registryMetricFactory == null) {
+            registryMetricFactory = EurekaRegistryMetricFactory.registryMetrics();
+        }
         PreservableEurekaRegistry registry = new PreservableEurekaRegistry(
                 new SourcedEurekaRegistryImpl(registryMetricFactory),
                 new BasicEurekaRegistryConfig(),

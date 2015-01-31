@@ -36,7 +36,7 @@ public class AbstractClientChannelTest {
         channel = new RegistrationChannelImpl(transportClient, mock(RegistrationChannelMetrics.class));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testMultipleConnectReturnSameConnection() {
         MessageConnection firstConnection = (MessageConnection) channel.connect().toBlocking().firstOrDefault(null);
         // call again

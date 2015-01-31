@@ -15,7 +15,7 @@ import static org.hamcrest.Matchers.nullValue;
  * @author David Liu
  */
 public class InstanceInfoTest {
-    @Test
+    @Test(timeout = 60000)
     public void testApplyDelta() throws Exception {
         InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();
 
@@ -28,7 +28,7 @@ public class InstanceInfoTest {
         assertThat(afterDelta.getStatus(), equalTo(InstanceInfo.Status.OUT_OF_SERVICE));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testProduceNullDeltasIfMismatchedIds() throws Exception {
         InstanceInfo oldInstanceInfo = SampleInstanceInfo.DiscoveryServer.build();
         InstanceInfo newInstanceInfo = SampleInstanceInfo.ZuulServer.build();  // different id
@@ -37,7 +37,7 @@ public class InstanceInfoTest {
         assertThat(deltas, nullValue());
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testProduceSetOfDeltas() throws Exception {
         InstanceInfo oldInstanceInfo = SampleInstanceInfo.DiscoveryServer.build();
         Thread.sleep(2);  // let time elapse a bit for version timestamp to advance

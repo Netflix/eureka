@@ -45,7 +45,7 @@ public class DnsServerResolverTest {
         when(dnsChangeNotificationSource.forInterest(null)).thenReturn(dnsUpdatesSubject);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testBuilderWithoutDefaults() throws Exception {
         DnsServerResolver resolver = resolverBuilder
                 .withDomainName("my.domain")
@@ -59,7 +59,7 @@ public class DnsServerResolverTest {
         assertThat(resolver, is(notNullValue()));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testBuilderWithDefaults() throws Exception {
         DnsServerResolver resolver = resolverBuilder
                 .withDomainName("my.domain")

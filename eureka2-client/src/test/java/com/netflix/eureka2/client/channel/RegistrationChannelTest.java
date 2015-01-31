@@ -68,7 +68,7 @@ public class RegistrationChannelTest {
         channel.close();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testOperationsAreSubmittedInOrder() {
         channel.register(instanceStarting).subscribe();
         channel.register(instanceUp).subscribe();
@@ -82,7 +82,7 @@ public class RegistrationChannelTest {
         inOrder.verify(messageConnection).submitWithAck(Unregister.INSTANCE);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testReturnErrorForRegisterOnceClosed() throws Exception {
         channel.close();
 
@@ -106,7 +106,7 @@ public class RegistrationChannelTest {
     }
 
 
-    @Test
+    @Test(timeout = 60000)
     public void testReturnErrorForUnregisterOnceClosed() throws Exception {
         channel.close();
 
@@ -129,7 +129,7 @@ public class RegistrationChannelTest {
         assertTrue(onErrorLatch.await(10, TimeUnit.SECONDS));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testMetricsWithUnregister() throws Exception {
         // Subscriber to interest subscription, to open the channel
         ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
@@ -149,7 +149,7 @@ public class RegistrationChannelTest {
         verify(channelMetrics, times(0)).incrementStateCounter(STATE.Closed);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testMetricsWithClosedWhileStillRegistered() throws Exception {
         // Subscriber to interest subscription, to open the channel
         ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();

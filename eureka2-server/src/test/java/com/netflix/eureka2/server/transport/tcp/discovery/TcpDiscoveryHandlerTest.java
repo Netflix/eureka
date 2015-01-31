@@ -62,7 +62,7 @@ public class TcpDiscoveryHandlerTest {
         handler = spy(new TcpDiscoveryHandler(registry, EurekaServerMetricFactory.serverMetrics()));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testSuccessfulInterestRegistration() {
         Observable<Void> lifecycle = handler.handle(observableConnection);
 
@@ -72,7 +72,7 @@ public class TcpDiscoveryHandlerTest {
         verify(registry, times(1)).forInterest(interest);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testSuccessfulUnregisterInterestCloseInternalChannel() {
         Observable<Void> lifecycle = handler.handle(observableConnection);
 
@@ -82,7 +82,7 @@ public class TcpDiscoveryHandlerTest {
         verify(registry, times(1)).forInterest(Interests.forNone());
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testSendingNotificationsOnInterestRegistration() {
         Observable<Void> lifecycle = handler.handle(observableConnection);
 

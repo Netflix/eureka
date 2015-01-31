@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class classTypeAdapterTest {
-    @Test
+    @Test(timeout = 60000)
     public void simpleTypeAdapter() {
         Gson gson = new GsonBuilder().registerTypeAdapter(Class.class, new SimpleGsonClassTypeAdapter()).create();
         Map<String, String> data = new HashMap<>();

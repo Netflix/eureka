@@ -32,7 +32,7 @@ public class SerializedTaskInvokerTest {
         invoker = new TestInvoker();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testSyncTasksExecutedInOrder() {
         invoker.submitForAck(new SyncAckTask(true));
     }
@@ -40,7 +40,7 @@ public class SerializedTaskInvokerTest {
     public void testAsyncTasksExecutedInOrder() {
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testMetrics() throws Exception {
         // Successful task
         TestSubscriber<Void> testSubscriber = new TestSubscriber<>();

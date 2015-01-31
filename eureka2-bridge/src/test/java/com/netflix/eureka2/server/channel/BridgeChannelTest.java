@@ -110,7 +110,7 @@ public class BridgeChannelTest {
         }
     };
 
-    @Test
+    @Test(timeout = 60000)
     public void testAddThenUpdate() {
         when(mockApplications.getRegisteredApplications())
                 .thenReturn(Arrays.asList(app1t0))
@@ -131,7 +131,7 @@ public class BridgeChannelTest {
         verify(registry, never()).unregister(any(InstanceInfo.class), eq(bridgeChannel.getSource()));
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testAddThenRemove() {
         when(mockApplications.getRegisteredApplications())
                 .thenReturn(Arrays.asList(app2t0))
@@ -150,7 +150,7 @@ public class BridgeChannelTest {
         verify(registry, times(1)).unregister(app2t0Info, bridgeChannel.getSource());
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testMetrics() throws Exception {
         when(mockApplications.getRegisteredApplications())
                 .thenReturn(Arrays.asList(app1t0))

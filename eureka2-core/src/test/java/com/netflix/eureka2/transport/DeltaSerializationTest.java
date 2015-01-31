@@ -35,7 +35,7 @@ public class DeltaSerializationTest {
         channel = new EmbeddedChannel(avroCodec);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testDeltaSerializationWithAvro_HashSetInt() throws Exception {
         HashSet<ServicePort> newPorts = SampleServicePort.httpPorts();
         Delta<?> delta = new Delta.Builder()
@@ -46,7 +46,7 @@ public class DeltaSerializationTest {
         doDeltaTest(delta);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testDeltaSerializationWithAvro_HashSetString() throws Exception {
         HashSet<String> newHealthCheckUrls = Sets.asSet("http://foo", "http://bar");
         Delta<?> delta = new Delta.Builder()
@@ -56,7 +56,7 @@ public class DeltaSerializationTest {
         doDeltaTest(delta);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testDeltaSerializationWithAvro_String() throws Exception {
         String newHomepage = "http://something.random.net";
         Delta<?> delta = new Delta.Builder()
@@ -66,7 +66,7 @@ public class DeltaSerializationTest {
         doDeltaTest(delta);
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testDeltaSerializationWithAvro_InstanceStatus() throws Exception {
         InstanceInfo.Status newStatus = InstanceInfo.Status.OUT_OF_SERVICE;
         Delta<?> delta = new Delta.Builder()

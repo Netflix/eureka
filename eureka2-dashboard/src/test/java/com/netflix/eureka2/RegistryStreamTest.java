@@ -13,7 +13,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(MockitoJUnitRunner.class)
 public class RegistryStreamTest extends RegistryTestBase {
 
-    @Test
+    @Test(timeout = 60000)
     public void subscribeToStream() throws InterruptedException {
         RegistryCache registryCache = new RegistryCache(dashboardEurekaClientBuilder);
         RegistryStream registryStream = new RegistryStream(registryCache);

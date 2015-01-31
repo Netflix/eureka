@@ -19,6 +19,8 @@ package com.netflix.eureka2.server;
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.netflix.eureka2.client.EurekaClient;
+import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
+import com.netflix.eureka2.metric.SpectatorEurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.metric.client.SpectatorEurekaClientMetricFactory;
 import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
@@ -78,6 +80,7 @@ public class EurekaReadServerModule extends AbstractModule {
         // Metrics
         bind(EurekaClientMetricFactory.class).to(SpectatorEurekaClientMetricFactory.class).asEagerSingleton();
         bind(EurekaServerMetricFactory.class).to(SpectatorEurekaServerMetricFactory.class).asEagerSingleton();
+        bind(EurekaRegistryMetricFactory.class).to(SpectatorEurekaRegistryMetricFactory.class).asEagerSingleton();
 
         bind(SelfInfoResolver.class).to(EurekaReadServerSelfInfoResolver.class).asEagerSingleton();
         bind(SelfRegistrationService.class).to(EurekaReadServerSelfRegistrationService.class).asEagerSingleton();

@@ -29,7 +29,7 @@ public class SimpleAppIntegrationTest {
         readCluster = eurekaDeploymentResource.getEurekaDeployment().getReadCluster();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testExampleRunsSuccessfully() throws Exception {
         SimpleApp sampleApp = new SimpleApp(
                 "localhost",

@@ -59,11 +59,6 @@ public class SpectatorWriteServerMetricFactory extends WriteServerMetricFactory 
     }
 
     @Override
-    public MessageConnectionMetrics getReplicationConnectionMetrics() {
-        return replicationSenderConnectionMetrics;
-    }
-
-    @Override
     public MessageConnectionMetrics getDiscoveryConnectionMetrics() {
         return discoveryConnectionMetrics;
     }

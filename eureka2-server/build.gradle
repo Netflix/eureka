@@ -26,10 +26,10 @@ dependencies {
     compile "com.netflix.governator:governator:${governator_version}"
     compile("io.reactivex:rxnetty-spectator:${rxnetty_version}")
 
-    compile "com.netflix.karyon2:karyon-governator:${karyon_version}"
-    compile "com.netflix.karyon2:karyon-archaius:${karyon_version}"
+    compile "com.netflix.karyon:karyon2-governator:${karyon_version}"
+    compile "com.netflix.karyon:karyon2-archaius:${karyon_version}"
     // Karyon admin and its dependencies
-    compile("com.netflix.karyon2:karyon-admin-web:${karyon_version}") {
+    compile("com.netflix.karyon:karyon2-admin-web:${karyon_version}") {
         exclude module: 'eureka-client'
     }
     compile "commons-codec:commons-codec:${commons_codec_version}"
