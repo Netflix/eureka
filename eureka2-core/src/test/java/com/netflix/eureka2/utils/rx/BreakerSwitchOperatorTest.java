@@ -46,4 +46,30 @@ public class BreakerSwitchOperatorTest {
 
         Assert.assertEquals(2, unsubscribeCount.get());
     }
+
+    @Test
+    public void testForwardOnCompleteIfStreamOnComplete() {
+        Observable<Object> stream = Observable.empty().lift(operator);
+
+        stream.subscribe(testSubscriber1);
+        stream.subscribe(testSubscriber2);
+
+        testSubscriber1.assertTerminalEvent();
+        testSubscriber1.assertNoErrors();
+        testSubscriber2.assertTerminalEvent();
+        testSubscriber2.assertNoErrors();
+    }
+
+    @Test
+    public void testForwardOnErrorIfStreamOnError() {
+        Observable<Object> stream = Observable.error(new Exception("test error")).lift(operator);
+
+        stream.subscribe(testSubscriber1);
+        stream.subscribe(testSubscriber2);
+
+        testSubscriber1.assertTerminalEvent();
+        Assert.assertEquals(1, testSubscriber1.getOnErrorEvents().size());
+        testSubscriber2.assertTerminalEvent();
+        Assert.assertEquals(1, testSubscriber2.getOnErrorEvents().size());
+    }
 }

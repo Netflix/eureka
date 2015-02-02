@@ -10,6 +10,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.TransportClient;
 import rx.Observable;
+import rx.functions.Action0;
 import rx.functions.Func1;
 
 /**
@@ -45,7 +46,7 @@ public class RegistrationChannelImpl extends AbstractClientChannel<STATE> implem
         return connect().switchMap(new Func1<MessageConnection, Observable<? extends Void>>() {
             @Override
             public Observable<? extends Void> call(MessageConnection connection) {
-                return connection.submitWithAck(new Register(instanceInfo));
+                return sendExpectAckOnConnection(connection, new Register(instanceInfo));
             }
         });
     }
@@ -67,7 +68,7 @@ public class RegistrationChannelImpl extends AbstractClientChannel<STATE> implem
         return connect().switchMap(new Func1<MessageConnection, Observable<? extends Void>>() {
             @Override
             public Observable<? extends Void> call(final MessageConnection connection) {
-                return connection.submitWithAck(Unregister.INSTANCE);
+                return sendExpectAckOnConnection(connection, Unregister.INSTANCE);
                 // we can optimize here by closing the connection when this onComplete, but the registrationHandler
                 // also does this for us so let's not over optimize.
             }

@@ -19,6 +19,7 @@ package com.netflix.eureka2.server.transport.tcp.discovery;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.InterestRegistration;
 import com.netflix.eureka2.protocol.discovery.UnregisterInterestSet;
@@ -36,6 +37,7 @@ import rx.Observable;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -55,6 +57,8 @@ public class TcpDiscoveryHandlerTest {
     @Before
     public void setUp() {
         observableConnection = new TestableObservableConnection<>();
+        when(registry.forInterest(any(Interest.class))).thenReturn(Observable.<ChangeNotification<InstanceInfo>>empty());
+        when(registry.forInterest(any(MultipleInterests.class))).thenReturn(Observable.<ChangeNotification<InstanceInfo>>empty());
         handler = spy(new TcpDiscoveryHandler(registry, EurekaServerMetricFactory.serverMetrics()));
     }
 

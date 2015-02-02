@@ -7,9 +7,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
-import rx.Subscriber;
+import rx.observers.TestSubscriber;
 
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Matchers.any;
@@ -27,6 +26,7 @@ public class AbstractHandlerChannelTest {
 
     private final MessageConnection transport = mock(MessageConnection.class);
     private final Exception transportOnErrorReturn = new Exception();
+    private final TestSubscriber<Void> subscriber = new TestSubscriber<>();
 
     private AbstractHandlerChannel channel;
 
@@ -42,51 +42,26 @@ public class AbstractHandlerChannelTest {
     public void testCloseChannelOnSendError() throws Exception {
         when(transport.submit(anyObject())).thenReturn(Observable.<Void>error(new Exception("msg")));
 
-        final CountDownLatch onCompletedLatch = new CountDownLatch(1);
-        channel.asLifecycleObservable().subscribe(new Subscriber<Void>() {
-            @Override
-            public void onCompleted() {
-                onCompletedLatch.countDown();
-            }
-
-            @Override
-            public void onError(Throwable e) {
-            }
-
-            @Override
-            public void onNext(Void aVoid) {
-            }
-        });
+        channel.asLifecycleObservable().subscribe(subscriber);
 
         channel.sendOnTransport("My Message");
 
         verify(channel, times(1)).close();
-        Assert.assertTrue(onCompletedLatch.await(10, TimeUnit.SECONDS));
+        subscriber.awaitTerminalEvent(10, TimeUnit.SECONDS);
+        Assert.assertEquals(1, subscriber.getOnErrorEvents().size());
     }
 
     @Test(timeout = 60000)
     public void testCloseChannelWhenSendingErrorOnTransportSuccessfully() throws Exception {
 
-        final CountDownLatch onCompletedLatch = new CountDownLatch(1);
-        channel.asLifecycleObservable().subscribe(new Subscriber<Void>() {
-            @Override
-            public void onCompleted() {
-                onCompletedLatch.countDown();
-            }
+        channel.asLifecycleObservable().subscribe(subscriber);
 
-            @Override
-            public void onError(Throwable e) {
-            }
-
-            @Override
-            public void onNext(Void aVoid) {
-            }
-        });
 
         channel.sendErrorOnTransport(new Exception("some error"));
 
         verify(channel, times(1)).close();
-        Assert.assertTrue(onCompletedLatch.await(10, TimeUnit.SECONDS));
+        subscriber.awaitTerminalEvent(10, TimeUnit.SECONDS);
+        Assert.assertEquals(1, subscriber.getOnErrorEvents().size());
     }
 
     enum TestState { Ok }

@@ -92,7 +92,8 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
                     switch (state.get()) {
                         case Idle:
                         case Open:
-                            change(Interests.forNone());
+                            change(Interests.forNone());  // best effort acknowledge back
+                            close();
                             break;
                         case Closed:
                             sendErrorOnTransport(CHANNEL_CLOSED_EXCEPTION);
@@ -139,6 +140,7 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
              */
             return Observable.error(CHANNEL_CLOSED_EXCEPTION);
         }
+
         if (moveToState(STATE.Idle, STATE.Open)) {
             initializeNotificationMultiplexer();
         }

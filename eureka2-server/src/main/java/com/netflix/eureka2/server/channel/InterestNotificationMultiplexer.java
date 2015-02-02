@@ -17,6 +17,7 @@
 package com.netflix.eureka2.server.channel;
 
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.EmptyRegistryInterest;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
@@ -36,6 +37,10 @@ import java.util.Set;
  * we need to merge them properly. For that we use {@link rx.Observable#merge} with atomic observable
  * streams wrapped by {@link BreakerSwitchOperator}, which allows us to close the notification
  * stream during interest upgrades with interest removal.
+ *
+ * Note that the changeNotification stream obtained from the multiplexer will never onComplete regardless
+ * of the onComplete state of the individual upgrade streams. The only way to onComplete is to explicitly
+ * call .unregister() on the multiplexer.
  *
  * @author Tomasz Bak
  */

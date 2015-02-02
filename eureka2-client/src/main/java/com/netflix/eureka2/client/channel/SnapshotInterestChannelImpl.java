@@ -100,6 +100,12 @@ public class SnapshotInterestChannelImpl implements SnapshotInterestChannel {
     }
 
     @Override
+    public void close(Throwable error) {
+        // This is stateless channel. Transport connection is automatically disconnected
+        // when the snapshot stream completes.
+    }
+
+    @Override
     public Observable<Void> asLifecycleObservable() {
         return Observable.never();
     }

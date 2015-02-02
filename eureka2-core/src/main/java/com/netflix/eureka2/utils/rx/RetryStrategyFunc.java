@@ -17,6 +17,15 @@ public class RetryStrategyFunc implements Func1<Observable<? extends Throwable>,
     private final boolean backoffRetry;
 
     /**
+     * Create a retry strategy that retries infinitely with the retryIntervalMillis as the set delay between retries
+     *
+     * @param retryIntervalMillis the initial wait between retries in milliseconds
+     */
+    public RetryStrategyFunc(long retryIntervalMillis) {
+        this(retryIntervalMillis, -1, false);
+    }
+
+    /**
      * @param retryIntervalMillis the initial wait between retries in milliseconds
      * @param totalRetries max number of retries to attempt
      * @param exponentialBackoff boolean to denote whether to use exponential backoff
@@ -29,11 +38,18 @@ public class RetryStrategyFunc implements Func1<Observable<? extends Throwable>,
 
     @Override
     public Observable<Long> call(Observable<? extends Throwable> observable) {
-        return observable.zipWith(Observable.range(1, numRetries), new Func2<Throwable, Integer, Long>() {
+        Observable<Integer> ticker;
+        if (numRetries > 0) {
+            ticker = Observable.range(1, numRetries);
+        } else {
+            ticker = Observable.just(1).repeat();
+        }
+
+        return observable.zipWith(ticker, new Func2<Throwable, Integer, Long>() {
             @Override
             public Long call(Throwable n, Integer i) {
                 if (backoffRetry) {
-                    return i * retryIntervalMillis;
+                    return (long) Math.pow(2, i) * retryIntervalMillis;
                 } else {
                     return retryIntervalMillis;
                 }

@@ -77,14 +77,18 @@ public abstract class SelfRegistrationService implements SelfInfoResolver {
                         public void call(Throwable throwable) {
                             logger.warn("Error during self unregistration process: {}", latestSelfInfo);
                         }
-                    }).materialize().toBlocking().firstOrDefault(null);
+                    }).materialize().toBlocking().firstOrDefault(null);  // FIXME why materialize and block here?
         }
+
+        cleanUpResources();
     }
 
     @Override
     public Observable<InstanceInfo> resolve() {
         return resolver.resolve();
     }
+
+    public abstract void cleanUpResources();
 
     public abstract Observable<Void> register(InstanceInfo instanceInfo);
 

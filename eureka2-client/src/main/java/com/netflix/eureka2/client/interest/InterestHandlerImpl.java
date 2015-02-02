@@ -1,14 +1,16 @@
 package com.netflix.eureka2.client.interest;
 
-import com.netflix.eureka2.client.channel.ClientChannelFactory;
-import com.netflix.eureka2.client.channel.ClientInterestChannel;
-import com.netflix.eureka2.client.channel.InterestChannelImpl;
+import com.netflix.eureka2.channel.ChannelFactory;
+import com.netflix.eureka2.channel.InterestChannel;
+import com.netflix.eureka2.client.channel.RetryableConnection;
+import com.netflix.eureka2.client.channel.RetryableConnectionFactory;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.SourcedChangeNotification;
 import com.netflix.eureka2.interests.SourcedModifyNotification;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.utils.rx.RetryStrategyFunc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -17,33 +19,106 @@ import rx.functions.Action0;
 import rx.functions.Func1;
 
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * Each InterestHandler class contains an interest channel and handles the lifecycle and reconnect of this channel.
+ * At any point in time, this handler will have a single interest channel active, however this channel may not be
+ * the same channel over time as it is refreshed. A retryableConnection is used for this purpose.
+ *
+ * When a client forInterest is invoked, this appends the interest to the stateful interestTracker.
+ * The retryableChannel observable eagerly subscribes to the interest stream from the interestTracker and upgrades
+ * the underlying interest channel when necessary.
+ *
  * @author David Liu
  */
-@Singleton
 public class InterestHandlerImpl implements InterestHandler {
+    private static final Logger logger = LoggerFactory.getLogger(InterestHandlerImpl.class);
 
-    private static final Logger logger = LoggerFactory.getLogger(InterestChannelImpl.class);
+    private static final int DEFAULT_RETRY_WAIT_MILLIS = 500;
 
     private final AtomicBoolean isShutdown;
     private final SourcedEurekaRegistry<InstanceInfo> registry;
-    private final ClientInterestChannel interestChannel;
+    private final InterestTracker interestTracker;
+
+    private final RetryableConnection<InterestChannel> retryableConnection;
 
     @Inject
     public InterestHandlerImpl(SourcedEurekaRegistry<InstanceInfo> registry,
-                               ClientChannelFactory<ClientInterestChannel> channelFactory) {
+                               ChannelFactory<InterestChannel> channelFactory) {
+        this(registry, channelFactory, DEFAULT_RETRY_WAIT_MILLIS);
+    }
+
+    /* visible for testing*/ InterestHandlerImpl(SourcedEurekaRegistry<InstanceInfo> registry,
+                                                 ChannelFactory<InterestChannel> channelFactory,
+                                                 int retryWaitMillis) {
         this.registry = registry;
-        this.interestChannel = channelFactory.newChannel();
+        this.interestTracker = new InterestTracker();
         this.isShutdown = new AtomicBoolean(false);
+
+        RetryableConnectionFactory<InterestChannel, Interest<InstanceInfo>> retryableConnectionFactory
+                = new RetryableConnectionFactory<InterestChannel, Interest<InstanceInfo>>(channelFactory) {
+                    @Override
+                    protected Observable<Void> executeOnChannel(InterestChannel channel, Interest<InstanceInfo> interest) {
+                        return channel.change(interest);
+                    }
+                };
+
+        this.retryableConnection = retryableConnectionFactory.newConnection(interestTracker.interestChangeStream());
+        retryableConnection.getRetryableLifecycle()
+                .retryWhen(new RetryStrategyFunc(retryWaitMillis))
+                .subscribe(new Subscriber<Void>() {
+                    @Override
+                    public void onCompleted() {
+                        logger.info("channel onCompleted");
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                    }
+
+                    @Override
+                    public void onNext(Void aVoid) {
+
+                    }
+                });
     }
 
     /**
-     * TODO: is the conversion necessary? This would affect equals which might be necessary
+     * TODO: make a final decision on:
+     * if channelLifecycle retries enough times and does not succeed, do we indefinitely retry and/or propagate
+     * the error to all the subscribers of forInterests? We could also do this through the registry index.
+     */
+    @Override
+    public Observable<ChangeNotification<InstanceInfo>> forInterest(final Interest<InstanceInfo> interest) {
+        if (isShutdown.get()) {
+            return Observable.error(new IllegalStateException("InterestHandler has shutdown"));
+        }
+
+        Observable<Void> appendInterest = Observable.create(new Observable.OnSubscribe<Void>() {
+            @Override
+            public void call(Subscriber<? super Void> subscriber) {
+                interestTracker.appendInterest(interest);
+                subscriber.onCompleted();
+            }
+        });
+
+        Observable toReturn = appendInterest
+                .cast(ChangeNotification.class)
+                .mergeWith(forInterestFromRegistry(interest))
+                .doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        interestTracker.removeInterest(interest);
+                    }
+                });
+
+        return toReturn;
+    }
+
+    /**
      * Get interest stream from the registry, and additionally convert from sourced notifications to base notifications
-     * if necessary. We don't want to expose "sourced" types to client users.
+     * if necessary. We don't want to expose "sourced" types to client users, hence this convertion
      */
     private Observable<ChangeNotification<InstanceInfo>> forInterestFromRegistry(final Interest<InstanceInfo> interest) {
         return registry.forInterest(interest)
@@ -60,49 +135,12 @@ public class InterestHandlerImpl implements InterestHandler {
                 });
     }
 
-
-    @Override
-    public Observable<ChangeNotification<InstanceInfo>> forInterest(final Interest<InstanceInfo> interest) {
-        final Observable reply = interestChannel.appendInterest(interest)
-                .cast(ChangeNotification.class)
-                .mergeWith(forInterestFromRegistry(interest))
-                .onErrorResumeNext(new Func1<Throwable, Observable<? extends ChangeNotification>>() {
-                    @Override
-                    public Observable<? extends ChangeNotification> call(Throwable throwable) {
-                        if (isShutdown.get()) {
-                            return Observable.empty();
-                        } else {
-                            return Observable.error(throwable);
-                        }
-                    }
-                })
-                .doOnUnsubscribe(new Action0() {
-                    @Override
-                    public void call() {
-                        interestChannel.removeInterest(interest).subscribe(new Subscriber<Void>() {
-                            @Override
-                            public void onCompleted() {
-                            }
-
-                            @Override
-                            public void onError(Throwable e) {
-                                logger.warn("forInterest unsubscribe failed", e);
-                            }
-
-                            @Override
-                            public void onNext(Void aVoid) {
-                            }
-                        });
-                    }
-                });
-
-        return reply;
-    }
-
     @Override
     public void shutdown() {
-        isShutdown.set(true);
-        interestChannel.close();
-        registry.shutdown();
+        if (isShutdown.compareAndSet(false, true)) {
+            logger.info("Shutting down InterestHandler");
+            retryableConnection.close();
+            registry.shutdown();
+        }
     }
 }

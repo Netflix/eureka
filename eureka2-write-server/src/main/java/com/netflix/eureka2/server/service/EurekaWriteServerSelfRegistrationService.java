@@ -32,6 +32,10 @@ public class EurekaWriteServerSelfRegistrationService extends SelfRegistrationSe
         super.init();
     }
 
+    @Override
+    public void cleanUpResources() {
+        // no-op
+    }
 
     @Override
     public Observable<Void> register(final InstanceInfo instanceInfo) {

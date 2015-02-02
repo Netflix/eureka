@@ -21,10 +21,13 @@ import javax.inject.Singleton;
 
 import com.netflix.eureka2.client.registration.RegistrationHandler;
 import com.netflix.eureka2.client.interest.InterestHandler;
+import com.netflix.eureka2.client.registration.RegistrationTracker;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
 
 /**
@@ -33,23 +36,28 @@ import rx.Observable;
 @Singleton
 public class EurekaClientImpl extends EurekaClient {
 
+    private static final Logger logger = LoggerFactory.getLogger(EurekaClientImpl.class);
+
     private final InterestHandler interestHandler;
     private final RegistrationHandler registrationHandler;
+
+    private final RegistrationTracker registrationTracker;  // temp bridge until API change
 
     @Inject
     public EurekaClientImpl(InterestHandler interestHandler, RegistrationHandler registrationHandler) {
         this.interestHandler = interestHandler;
         this.registrationHandler = registrationHandler;
+        this.registrationTracker = new RegistrationTracker(registrationHandler);
     }
 
     @Override
     public Observable<Void> register(InstanceInfo instanceInfo) {
-        return registrationHandler.register(instanceInfo);
+        return registrationTracker.register(instanceInfo);
     }
 
     @Override
     public Observable<Void> unregister(InstanceInfo instanceInfo) {
-        return registrationHandler.unregister(instanceInfo);
+        return registrationTracker.unregister(instanceInfo);
     }
 
     @Override
@@ -69,6 +77,7 @@ public class EurekaClientImpl extends EurekaClient {
 
     @Override
     public void close() {
+        logger.info("Shutting down eureka client");
         if (null != interestHandler) {
             interestHandler.shutdown();
         }

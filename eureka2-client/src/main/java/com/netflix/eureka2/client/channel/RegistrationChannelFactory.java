@@ -6,8 +6,6 @@ import com.netflix.eureka2.client.transport.TransportClients;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.transport.TransportClient;
-import rx.functions.Func0;
-import rx.schedulers.Schedulers;
 
 /**
  * @author David Liu
@@ -18,31 +16,20 @@ public class RegistrationChannelFactory extends ClientChannelFactory<Registratio
 
     public RegistrationChannelFactory(ServerResolver resolver,
                                       EurekaTransports.Codec codec,
-                                      long retryInitialDelayMs,
                                       EurekaClientMetricFactory metricFactory) {
-        this(TransportClients.newTcpRegistrationClient(resolver, codec), retryInitialDelayMs, metricFactory);
+        this(TransportClients.newTcpRegistrationClient(resolver, codec), metricFactory);
     }
 
     public RegistrationChannelFactory(TransportClient transport,
-                                      long retryInitialDelayMs,
                                       EurekaClientMetricFactory metricFactory) {
-        super(retryInitialDelayMs, metricFactory);
+        super(metricFactory);
         this.transport = transport;
     }
 
     @Override
     public RegistrationChannel newChannel() {
-        RetryableRegistrationChannel retryableChannel = new RetryableRegistrationChannel(
-                new Func0<RegistrationChannel>() {
-                    @Override
-                    public RegistrationChannel call() {
-                        return new RegistrationChannelImpl(transport, metricFactory.getRegistrationChannelMetrics());
-                    }
-                }, retryInitialDelayMs, Schedulers.computation());
-        return new RegistrationChannelInvoker(
-                retryableChannel,
-                metricFactory.getSerializedTaskInvokerMetrics(RegistrationChannelInvoker.class)
-        );
+        RegistrationChannel baseChannel = new RegistrationChannelImpl(transport, metricFactory.getRegistrationChannelMetrics());
+        return new RegistrationChannelInvoker(baseChannel, metricFactory.getSerializedTaskInvokerMetrics(RegistrationChannelInvoker.class));
     }
 
     @Override

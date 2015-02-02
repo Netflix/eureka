@@ -5,8 +5,6 @@ import java.util.concurrent.Callable;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.utils.SerializedTaskInvoker;
 import rx.Observable;
@@ -19,16 +17,15 @@ import rx.schedulers.Schedulers;
  *
  * @author Nitesh Kant
  */
-public class InterestChannelInvoker extends SerializedTaskInvoker
-        implements ClientInterestChannel {
+public class InterestChannelInvoker extends SerializedTaskInvoker implements InterestChannel {
 
-    private final ClientInterestChannel delegate;
+    private final InterestChannel delegate;
 
-    public InterestChannelInvoker(ClientInterestChannel delegate, EurekaClientMetricFactory metricFactory) {
+    public InterestChannelInvoker(InterestChannel delegate, EurekaClientMetricFactory metricFactory) {
         this(delegate, metricFactory, Schedulers.computation());
     }
 
-    public InterestChannelInvoker(ClientInterestChannel delegate, EurekaClientMetricFactory metricFactory, Scheduler scheduler) {
+    public InterestChannelInvoker(InterestChannel delegate, EurekaClientMetricFactory metricFactory, Scheduler scheduler) {
         super(metricFactory.getSerializedTaskInvokerMetrics(InterestChannelInvoker.class), scheduler);
         this.delegate = delegate;
     }
@@ -39,6 +36,11 @@ public class InterestChannelInvoker extends SerializedTaskInvoker
             @Override
             public Observable<Void> call() throws Exception {
                 return delegate.change(newInterest);
+            }
+
+            @Override
+            public String toString() {
+                return "change: " + newInterest;
             }
         });
     }
@@ -53,48 +55,16 @@ public class InterestChannelInvoker extends SerializedTaskInvoker
     }
 
     @Override
+    public void close(Throwable error) {
+        try {
+            shutdown();
+        } finally {
+            delegate.close(error);
+        }
+    }
+
+    @Override
     public Observable<Void> asLifecycleObservable() {
         return delegate.asLifecycleObservable();
-    }
-
-    @Override
-    public SourcedEurekaRegistry<InstanceInfo> associatedRegistry() {
-        return delegate.associatedRegistry();
-    }
-
-    @Override
-    public Observable<Void> appendInterest(final Interest<InstanceInfo> toAppend) {
-        return submitForAck(new Callable<Observable<Void>>() {
-            @Override
-            public Observable<Void> call() throws Exception {
-                return delegate.appendInterest(toAppend);
-            }
-
-            @Override
-            public String toString() {
-                return "appendInterest: " + toAppend;
-            }
-        });
-    }
-
-    @Override
-    public Observable<Void> removeInterest(final Interest<InstanceInfo> toRemove) {
-        return submitForAck(new Callable<Observable<Void>>() {
-            @Override
-            public Observable<Void> call() throws Exception {
-                return delegate.removeInterest(toRemove);
-            }
-
-            @Override
-            public String toString() {
-                return "removeInterest: " + toRemove;
-            }
-
-        });
-    }
-
-    @Override
-    public Source getSource() {
-        return delegate.getSource();
     }
 }

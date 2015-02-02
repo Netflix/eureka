@@ -309,7 +309,7 @@ public class SourcedEurekaRegistryImplTest {
                 .subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
                     @Override
                     public void onCompleted() {
-                        Assert.fail("should never onComplete");
+                        Assert.fail("should never onCompleted");
                     }
 
                     @Override

@@ -24,6 +24,11 @@ public interface ServiceChannel {
     void close();
 
     /**
+     * Closes this channel with an error
+     */
+    void close(Throwable error);
+
+    /**
      * Returns an {@link Observable} for the lifecycle of this channel.
      *
      * @return An {@link Observable} for the lifecycle of this channel which completes when the channel closes.

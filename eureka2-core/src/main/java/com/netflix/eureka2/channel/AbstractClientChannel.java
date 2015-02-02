@@ -62,21 +62,29 @@ public abstract class AbstractClientChannel<STATE extends Enum<STATE>> extends A
         return singleConnection;
     }
 
-    protected void sendErrorOnConnection(MessageConnection connection, Throwable throwable) {
+    protected <T> Observable<Void> sendExpectAckOnConnection(MessageConnection connection, T message) {
         if (logger.isDebugEnabled()) {
-            logger.debug("Sending error to the server.", throwable);
+            logger.debug("Sending message to the server: {}", message);
         }
-        subscribeToTransportSend(connection.onError(throwable), "error");
+
+        return subscribeToTransportSend(connection.submitWithAck(message), message.getClass().getSimpleName());
     }
 
-    protected void sendAckOnConnection(MessageConnection connection) {
+    protected Observable<Void> sendErrorOnConnection(MessageConnection connection, Throwable throwable) {
         if (logger.isDebugEnabled()) {
-            logger.debug("Sending acknowledgment to the server.");
+            logger.debug("Sending error to the server: {}", throwable);
         }
-        subscribeToTransportSend(connection.acknowledge(), "acknowledgment");
+        return subscribeToTransportSend(connection.onError(throwable), "error");
     }
 
-    protected void subscribeToTransportSend(Observable<Void> sendResult, final String sendType) {
+    protected Observable<Void> sendAckOnConnection(MessageConnection connection) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Sending acknowledgment to the server");
+        }
+        return subscribeToTransportSend(connection.acknowledge(), "acknowledgment");
+    }
+
+    protected Observable<Void> subscribeToTransportSend(Observable<Void> sendResult, final String sendType) {
         sendResult.subscribe(new Action1<Void>() {
             @Override
             public void call(Void aVoid) {
@@ -86,8 +94,10 @@ public abstract class AbstractClientChannel<STATE extends Enum<STATE>> extends A
             @Override
             public void call(Throwable throwable) {
                 logger.warn("Failed to send " + sendType + " to the server. Closing the channel.", throwable);
-                close();
+                close(throwable);
             }
         });
+
+        return sendResult;
     }
 }
