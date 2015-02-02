@@ -7,6 +7,8 @@ import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.StreamState.Kind;
+import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
@@ -22,6 +24,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -66,6 +69,35 @@ public class EurekaClientIntegrationTest {
         assertThat(notificationIt.next(), is(addChangeNotificationOf(info)));
 
         eurekaClient.close();
+    }
+
+    /**
+     * This test verifies that we properly mark shutdown and live updates in the client's
+     * subscription stream, and that snapshot end is delineated with {@link StreamStateNotification}.
+     */
+    @Test(timeout = 60000)
+    public void testSnapshotNotificationsAreDelineatedFromLiveUpdates() throws Exception {
+        EmbeddedWriteCluster writeCluster = deployment.getWriteCluster();
+        EurekaClient eurekaClient = Eureka.newClientBuilder(
+                writeCluster.discoveryResolver(),
+                writeCluster.registrationResolver()
+        ).build();
+
+        // First register
+        InstanceInfo firstInstance = SampleInstanceInfo.ZuulServer.build();
+        eurekaClient.register(firstInstance).toBlocking().singleOrDefault(null);
+
+        // First subscription comes from empty local cache, but there is one snapshot item on server
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
+        eurekaClient.forVips(firstInstance.getVipAddress()).subscribe(testSubscriber);
+
+        assertThat(testSubscriber.takeNextOrWait(), is(addChangeNotificationOf(firstInstance)));
+
+        // TODO To get snapshot marker we need to have at least one live update; this will be fixed after latest client channel refactoring is merged
+        eurekaClient.unregister(firstInstance).toBlocking().singleOrDefault(null);
+
+        StreamStateNotification<InstanceInfo> stateUpdateNotification = (StreamStateNotification<InstanceInfo>) testSubscriber.takeNextOrWait();
+        assertThat(stateUpdateNotification.getStreamState().getKind(), is(equalTo(Kind.Live)));
     }
 
     @Test(timeout = 60000)

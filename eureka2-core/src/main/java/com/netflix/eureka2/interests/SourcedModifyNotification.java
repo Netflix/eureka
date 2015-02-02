@@ -17,6 +17,11 @@ public class SourcedModifyNotification<T> extends ModifyNotification<T> implemen
         this.source = source;
     }
 
+    public SourcedModifyNotification(T data, Set<Delta<?>> delta, Source source, StreamState<T> streamState) {
+        super(data, delta, streamState);
+        this.source = source;
+    }
+
     public ModifyNotification<T> toBaseNotification() {
         return new ModifyNotification<>(getData(), getDelta());
     }

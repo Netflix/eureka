@@ -16,6 +16,10 @@
 
 package com.netflix.eureka2.server.audit;
 
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
@@ -24,10 +28,6 @@ import com.netflix.eureka2.server.service.SelfInfoResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Subscriber;
-
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * @author Tomasz Bak
@@ -71,7 +71,9 @@ public class AuditServiceController {
             @Override
             public void onNext(ChangeNotification<InstanceInfo> notification) {
                 AuditRecord record = AuditRecords.forChangeNotification(auditServerId, System.currentTimeMillis(), false, notification);
-                auditService.write(record);
+                if (record != null) {
+                    auditService.write(record);
+                }
             }
         });
     }

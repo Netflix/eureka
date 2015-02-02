@@ -37,7 +37,7 @@ public class IndexRegistryTest {
             indexRegistry.forInterest(
                     interest1,
                     NotificationsSubject.<InstanceInfo>create(),
-                    new InstanceInfoInitStateHolder(Collections.<ChangeNotification<InstanceInfo>>emptyIterator()));
+                    new InstanceInfoInitStateHolder(Collections.<ChangeNotification<InstanceInfo>>emptyIterator(), interest1));
         }
 
         @Override
@@ -58,7 +58,7 @@ public class IndexRegistryTest {
         indexRegistry.forInterest(
                 Interests.forFullRegistry(),
                 NotificationsSubject.<InstanceInfo>create(),
-                new InstanceInfoInitStateHolder(Collections.<ChangeNotification<InstanceInfo>>emptyIterator()))
+                new InstanceInfoInitStateHolder(Collections.<ChangeNotification<InstanceInfo>>emptyIterator(), Interests.forFullRegistry()))
                 .subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
                     @Override
                     public void onCompleted() {
@@ -79,7 +79,7 @@ public class IndexRegistryTest {
         indexRegistry.forInterest(
                 interest2,
                 NotificationsSubject.<InstanceInfo>create(),
-                new InstanceInfoInitStateHolder(Collections.<ChangeNotification<InstanceInfo>>emptyIterator()))
+                new InstanceInfoInitStateHolder(Collections.<ChangeNotification<InstanceInfo>>emptyIterator(), interest2))
                 .subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
                     @Override
                     public void onCompleted() {

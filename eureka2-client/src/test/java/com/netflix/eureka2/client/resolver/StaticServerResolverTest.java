@@ -5,7 +5,7 @@ import java.util.Set;
 import com.netflix.eureka2.client.resolver.ServerResolver.Server;
 import org.junit.Test;
 
-import static com.netflix.eureka2.utils.Sets.asSet;
+import static com.netflix.eureka2.utils.ExtCollections.asSet;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;

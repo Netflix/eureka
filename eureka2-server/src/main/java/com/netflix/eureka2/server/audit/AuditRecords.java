@@ -54,6 +54,8 @@ public final class AuditRecords {
                 return forInstanceUpdate(auditServerId, timestamp, userTriggered, modifyNotification.getData(), modifyNotification.getDelta());
             case Delete:
                 return forInstanceDelete(auditServerId, timestamp, userTriggered, changeNotification.getData());
+            case StreamStatus:
+                return null;
         }
         throw new IllegalStateException("unhadled enum value " + changeNotification.getKind());
     }

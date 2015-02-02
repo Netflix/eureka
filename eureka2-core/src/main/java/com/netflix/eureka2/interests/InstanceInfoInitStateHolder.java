@@ -8,6 +8,9 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.netflix.eureka2.utils.ExtCollections.concat;
+import static com.netflix.eureka2.utils.ExtCollections.singletonIterator;
+
 /**
  * An {@link Index.InitStateHolder} implementation for {@link InstanceInfo}.
  * As the cached state is backed by {@link ConcurrentHashMap}, the order of notifications
@@ -19,10 +22,14 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
 
     private static final Logger logger = LoggerFactory.getLogger(InstanceInfoInitStateHolder.class);
 
-     final ConcurrentHashMap<String, ChangeNotification<InstanceInfo>> notificationMap;
+    final ConcurrentHashMap<String, ChangeNotification<InstanceInfo>> notificationMap;
+    private final Interest<InstanceInfo> interest;
+    private final StreamState<InstanceInfo> streamState;
 
-    public InstanceInfoInitStateHolder(Iterator<ChangeNotification<InstanceInfo>> initialRegistry) {
+    public InstanceInfoInitStateHolder(Iterator<ChangeNotification<InstanceInfo>> initialRegistry, Interest<InstanceInfo> interest) {
         super(NotificationsSubject.<InstanceInfo>create());
+        this.interest = interest;
+        this.streamState = new StreamState<InstanceInfo>(StreamState.Kind.Snapshot, interest);
         notificationMap = new ConcurrentHashMap<>();
 
         while (initialRegistry.hasNext()) {
@@ -51,11 +58,19 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
 
     @Override
     protected Iterator<ChangeNotification<InstanceInfo>> _newIterator() {
-        return notificationMap.values().iterator();
+        ChangeNotification<InstanceInfo> stateUpdateNotification = new StreamStateNotification<>(
+                new StreamState<>(
+                        StreamState.Kind.Live,
+                        interest
+                ));
+        return concat(
+                notificationMap.values().iterator(),
+                singletonIterator(stateUpdateNotification)
+        );
     }
 
-    private static ChangeNotification<InstanceInfo> processNext(ChangeNotification<InstanceInfo> current,
-                                                                ChangeNotification<InstanceInfo> update) {
+    private ChangeNotification<InstanceInfo> processNext(ChangeNotification<InstanceInfo> current,
+                                                         ChangeNotification<InstanceInfo> update) {
         switch (update.getKind()) {
             case Add:
                 // Add flushes previous state
@@ -69,7 +84,7 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
                             update
                     );
                 }
-                return new ChangeNotification<>(Kind.Add, update.getData());
+                return new ChangeNotification<>(Kind.Add, update.getData(), streamState);
         }
         return null;
     }

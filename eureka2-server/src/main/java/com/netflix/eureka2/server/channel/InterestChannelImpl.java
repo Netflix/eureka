@@ -8,6 +8,7 @@ import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.interests.ModifyNotification;
 import com.netflix.eureka2.interests.MultipleInterests;
+import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics;
 import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics.ChannelSubscriptionMonitor;
 import com.netflix.eureka2.protocol.EurekaProtocolError;
@@ -16,6 +17,7 @@ import com.netflix.eureka2.protocol.discovery.DeleteInstance;
 import com.netflix.eureka2.protocol.discovery.InterestRegistration;
 import com.netflix.eureka2.protocol.discovery.SnapshotComplete;
 import com.netflix.eureka2.protocol.discovery.SnapshotRegistration;
+import com.netflix.eureka2.protocol.discovery.StreamStateUpdate;
 import com.netflix.eureka2.protocol.discovery.UnregisterInterestSet;
 import com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
@@ -174,7 +176,9 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
     }
 
     protected void handleChangeNotification(ChangeNotification<InstanceInfo> notification) {
-        metrics.incrementApplicationNotificationCounter(notification.getData().getApp());
+        if (!(notification instanceof StreamStateNotification)) {
+            metrics.incrementApplicationNotificationCounter(notification.getData().getApp());
+        }
         Observable<Void> sendResult = sendNotification(notification);
         if (sendResult != null) {
             subscribeToTransportSend(sendResult, "notification");
@@ -208,6 +212,8 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
                     }
                 }
                 return toReturn;
+            case StreamStatus:
+                return transport.submitWithAck(new StreamStateUpdate(((StreamStateNotification)notification).getStreamState()));
         }
         return Observable.error(new IllegalArgumentException("Unknown change notification type: " +
                 notification.getKind()));

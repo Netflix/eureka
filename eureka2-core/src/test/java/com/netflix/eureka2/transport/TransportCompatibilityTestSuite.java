@@ -7,12 +7,15 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.interests.StreamState;
+import com.netflix.eureka2.interests.StreamState.Kind;
 import com.netflix.eureka2.protocol.Heartbeat;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.DeleteInstance;
 import com.netflix.eureka2.protocol.discovery.InterestRegistration;
 import com.netflix.eureka2.protocol.discovery.SnapshotComplete;
 import com.netflix.eureka2.protocol.discovery.SnapshotRegistration;
+import com.netflix.eureka2.protocol.discovery.StreamStateUpdate;
 import com.netflix.eureka2.protocol.discovery.UnregisterInterestSet;
 import com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka2.protocol.registration.Register;
@@ -32,7 +35,7 @@ import com.netflix.eureka2.testkit.data.builder.SampleAwsDataCenterInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleDelta;
 import com.netflix.eureka2.testkit.data.builder.SampleInterest;
 import com.netflix.eureka2.testkit.data.builder.SampleServicePort;
-import com.netflix.eureka2.utils.Sets;
+import com.netflix.eureka2.utils.ExtCollections;
 import rx.Notification;
 import rx.Observable;
 
@@ -179,6 +182,7 @@ public abstract class TransportCompatibilityTestSuite {
             addInstanceTest();
             deleteInstanceTest();
             updateInstanceInfoTest();
+            streamStateUpdateTest();
         }
 
         private void registerInterestSetTest() {
@@ -212,7 +216,7 @@ public abstract class TransportCompatibilityTestSuite {
             runServerToClientWithAck(new UpdateInstanceInfo(SampleDelta.StatusDown.build()));
             runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.HOMEPAGE_URL, "newHomePageURL").build()));
             runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.STATUS_PAGE_URL, "newStatusPageURL").build()));
-            runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.HEALTHCHECK_URLS, Sets.asSet("http://newHealthCheck1", "http://newHealthCheck2")).build()));
+            runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.HEALTHCHECK_URLS, ExtCollections.asSet("http://newHealthCheck1", "http://newHealthCheck2")).build()));
 
             Map<String, String> metaData = new HashMap<>();
             metaData.put("key1", "value1");
@@ -229,6 +233,11 @@ public abstract class TransportCompatibilityTestSuite {
             // Snapshot  subscription
             runClientToServerWithAck(new SnapshotRegistration(Interests.forFullRegistry()));
             runServerToClient(SnapshotComplete.INSTANCE);
+        }
+
+        private void streamStateUpdateTest() {
+            StreamState<InstanceInfo> state = new StreamState<>(Kind.Snapshot, SampleInterest.DiscoveryApp.build());
+            runServerToClientWithAck(new StreamStateUpdate(state));
         }
     }
 }

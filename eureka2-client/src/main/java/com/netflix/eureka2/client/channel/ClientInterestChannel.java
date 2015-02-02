@@ -29,6 +29,12 @@ public interface ClientInterestChannel extends InterestChannel, Sourced {
     SourcedEurekaRegistry<InstanceInfo> associatedRegistry();
 
     /**
+     * Return {@link InterestSubscriptionStatus} instance for observing subscription status
+     * in the given channel.
+     */
+    InterestSubscriptionStatus subscriptionStatusInChannel();
+
+    /**
      * Appends the passed interest to the existing {@link Interest}.
      *
      * @param toAppend Interest to append.

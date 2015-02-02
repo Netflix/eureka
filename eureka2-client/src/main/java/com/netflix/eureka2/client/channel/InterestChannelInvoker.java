@@ -63,6 +63,11 @@ public class InterestChannelInvoker extends SerializedTaskInvoker
     }
 
     @Override
+    public InterestSubscriptionStatus subscriptionStatusInChannel() {
+        return delegate.subscriptionStatusInChannel();
+    }
+
+    @Override
     public Observable<Void> appendInterest(final Interest<InstanceInfo> toAppend) {
         return submitForAck(new Callable<Observable<Void>>() {
             @Override

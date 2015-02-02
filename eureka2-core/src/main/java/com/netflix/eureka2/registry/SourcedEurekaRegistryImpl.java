@@ -21,15 +21,17 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.ChangeNotifications;
 import com.netflix.eureka2.interests.IndexRegistry;
 import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.interests.InstanceInfoInitStateHolder;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.MultipleInterests;
+import com.netflix.eureka2.interests.StreamState;
+import com.netflix.eureka2.interests.StreamState.Kind;
 import com.netflix.eureka2.interests.NotificationsSubject;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.EurekaRegistryMetrics;
@@ -238,7 +240,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
                 return indexRegistry.forCompositeInterest((MultipleInterests) interest, this);
             } else {
                 return indexRegistry.forInterest(interest, notificationSubject,
-                        new InstanceInfoInitStateHolder(getSnapshotForInterest(interest)));
+                        new InstanceInfoInitStateHolder(getSnapshotForInterest(interest), interest));
             }
         } finally {
             notificationSubject.resume();
@@ -311,6 +313,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
                     }
                 });
     }
+
     @Override
     public Observable<? extends MultiSourcedDataHolder<InstanceInfo>> getHolders() {
         return Observable.from(internalStore.values());
@@ -341,11 +344,13 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
 
         private final Interest<InstanceInfo> interest;
         private final Iterator<NotifyingInstanceInfoHolder> delegate;
+        private final StreamState<InstanceInfo> streamState;
         private ChangeNotification<InstanceInfo> next;
 
         private FilteredIterator(Interest<InstanceInfo> interest, Iterator<NotifyingInstanceInfoHolder> delegate) {
             this.interest = interest;
             this.delegate = delegate;
+            this.streamState = new StreamState<InstanceInfo>(Kind.Snapshot, interest);
         }
 
         @Override
@@ -358,7 +363,9 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
                 MultiSourcedDataHolder<InstanceInfo> possibleNext = delegate.next();
                 ChangeNotification<InstanceInfo> notification = possibleNext.getChangeNotification();
                 if (notification != null && interest.matches(notification.getData())) {
-                    next = notification;
+                    // As state includes interest object, we need to make new notification instances
+                    // each time we create a new index.
+                    next = ChangeNotifications.copyWithState(notification, streamState);
                     return true;
                 }
             }

@@ -14,6 +14,11 @@ public class SourcedChangeNotification<T> extends ChangeNotification<T> implemen
         this.source = source;
     }
 
+    public SourcedChangeNotification(Kind kind, T data, Source source, StreamState<T> streamState) {
+        super(kind, data, streamState);
+        this.source = source;
+    }
+
     public ChangeNotification<T> toBaseNotification() {
         return new ChangeNotification<>(getKind(), getData());
     }

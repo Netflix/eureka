@@ -10,12 +10,13 @@ import com.netflix.eureka2.channel.InterestChannel.STATE;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.ModifyNotification;
-import com.netflix.eureka2.interests.MultipleInterests;
+import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.InterestChannelMetrics;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.DeleteInstance;
 import com.netflix.eureka2.protocol.discovery.InterestRegistration;
 import com.netflix.eureka2.protocol.discovery.InterestSetNotification;
+import com.netflix.eureka2.protocol.discovery.StreamStateUpdate;
 import com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
@@ -27,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
-import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.observers.SafeSubscriber;
 
@@ -44,13 +44,10 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
 
     private static final Logger logger = LoggerFactory.getLogger(InterestChannelImpl.class);
 
-    private static final IllegalStateException INTEREST_NOT_REGISTERED_EXCEPTION =
-            new IllegalStateException("No interest is registered on this channel.");
-
     /**
      * Since we assume single threaded access to this channel, no need for concurrency control
      */
-    protected MultipleInterests<InstanceInfo> channelInterest;
+    protected ActiveInterestsTracker activeInterestsTracker;
     protected Observable<ChangeNotification<InstanceInfo>> channelInterestStream;
 
     protected Subscriber<ChangeNotification<InstanceInfo>> channelInterestSubscriber;
@@ -80,7 +77,7 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
         super(STATE.Idle, client, metrics);
         this.selfSource = new Source(Source.Origin.LOCAL);
         this.registry = registry;
-        channelInterest = new MultipleInterests<>();  // blank channelInterest to start with
+        activeInterestsTracker = new ActiveInterestsTracker();
         channelInterestSubscriber = new ChannelInterestSubscriber(registry);
         channelInterestStream = createInterestStream();
     }
@@ -95,6 +92,11 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
         return registry;
     }
 
+    @Override
+    public InterestSubscriptionStatus subscriptionStatusInChannel() {
+        return activeInterestsTracker;
+    }
+
     // channel contract means this will be invoked in serial.
     @Override
     public Observable<Void> change(final Interest<InstanceInfo> newInterest) {
@@ -106,9 +108,7 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
                 .switchMap(new Func1<MessageConnection, Observable<Void>>() {
                     @Override
                     public Observable<Void> call(MessageConnection serverConnection) {
-                        return serverConnection.submitWithAck(new InterestRegistration(newInterest))
-                                .doOnCompleted(new UpdateLocalInterest(newInterest));
-
+                        return serverConnection.submitWithAck(new InterestRegistration(newInterest));
                     }
                 });
 
@@ -130,18 +130,14 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
 
     @Override
     public Observable<Void> appendInterest(Interest<InstanceInfo> toAppend) {
-        if (null == channelInterest) {
-            return Observable.error(INTEREST_NOT_REGISTERED_EXCEPTION);
-        }
-        return change(channelInterest.copyAndAppend(toAppend));
+        activeInterestsTracker.appendInterest(toAppend);
+        return change(activeInterestsTracker.getActiveInterests());
     }
 
     @Override
     public Observable<Void> removeInterest(Interest<InstanceInfo> toRemove) {
-        if (null == channelInterest) {
-            return Observable.error(INTEREST_NOT_REGISTERED_EXCEPTION);
-        }
-        return change(channelInterest.copyAndRemove(toRemove));
+        activeInterestsTracker.removeInterest(toRemove);
+        return change(activeInterestsTracker.getActiveInterests());
     }
 
     @Override
@@ -178,6 +174,8 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
                             changeNotification = updateMessageToChangeNotification((UpdateInstanceInfo) notification);
                         } else if (notification instanceof DeleteInstance) {
                             changeNotification = deleteMessageToChangeNotification((DeleteInstance) notification);
+                        } else if (notification instanceof StreamStateUpdate) {
+                            changeNotification = new StreamStateNotification<>(((StreamStateUpdate) notification).getState());
                         } else {
                             throw new IllegalArgumentException("Unknown message received on the interest channel. Type: "
                                     + message.getClass().getName());
@@ -289,24 +287,14 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
                         case Delete:
                             registry.unregister(notification.getData(), selfSource);
                             break;
+                        case StreamStatus:
+                            activeInterestsTracker.updateState((StreamStateNotification<InstanceInfo>) notification);
+                            break;
                         default:
                             logger.error("Unrecognized notification kind");
                     }
                 }
             });
-        }
-    }
-
-    private class UpdateLocalInterest implements Action0 {
-        private final Interest<InstanceInfo> interest;
-
-        public UpdateLocalInterest(Interest<InstanceInfo> interest) {
-            this.interest = interest;
-        }
-
-        @Override
-        public void call() {
-            channelInterest = new MultipleInterests<>(interest);
         }
     }
 }

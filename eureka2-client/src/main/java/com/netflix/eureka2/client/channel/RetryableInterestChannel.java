@@ -58,6 +58,11 @@ public class RetryableInterestChannel
     }
 
     @Override
+    public InterestSubscriptionStatus subscriptionStatusInChannel() {
+        return currentDelegateChannel().subscriptionStatusInChannel();
+    }
+
+    @Override
     public Observable<Void> appendInterest(final Interest<InstanceInfo> toAppend) {
         return currentDelegateChannelObservable().switchMap(new Func1<ClientInterestChannel, Observable<? extends Void>>() {
             @Override

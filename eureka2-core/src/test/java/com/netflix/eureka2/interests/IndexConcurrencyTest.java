@@ -34,7 +34,7 @@ public class IndexConcurrencyTest {
         PublishSubject<ChangeNotification<InstanceInfo>> dataSource = PublishSubject.create();
 
         InstanceInfoInitStateHolder initStateHolder = new InstanceInfoInitStateHolder(
-                Collections.<ChangeNotification<InstanceInfo>>emptyIterator());
+                Collections.<ChangeNotification<InstanceInfo>>emptyIterator(), Interests.forFullRegistry());
 
         Index<InstanceInfo> index = Index.forInterest(Interests.forFullRegistry(), dataSource, initStateHolder);
 

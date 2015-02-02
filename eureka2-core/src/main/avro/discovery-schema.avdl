@@ -20,6 +20,26 @@ protocol DiscoveryProtocol {
         string instanceId;
     }
 
+    @namespace("com.netflix.eureka2.interests.StreamState$")
+    enum Kind {
+        Snapshot, Live
+    }
+
+    @namespace("com.netflix.eureka2.interests")
+    record StreamState {
+        com.netflix.eureka2.interests.StreamState$.Kind kind;
+        union {
+            com.netflix.eureka2.interests.ApplicationInterest,
+            com.netflix.eureka2.interests.FullRegistryInterest,
+            com.netflix.eureka2.interests.VipInterest,
+            com.netflix.eureka2.interests.InstanceInterest
+        } interest;
+    }
+
+    record StreamStateUpdate {
+        com.netflix.eureka2.interests.StreamState state;
+    }
+
     @namespace("com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$")
     record StringDeltaDTO {
         string id;
@@ -110,6 +130,7 @@ protocol DiscoveryProtocol {
         union {
             AddInstance,
             DeleteInstance,
+            StreamStateUpdate,
             UpdateInstanceInfo,
             InterestRegistration,
             UnregisterInterestSet,
