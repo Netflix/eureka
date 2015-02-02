@@ -5,6 +5,8 @@ import com.netflix.eureka2.utils.rx.NoOpSubscriber;
 import rx.Observable;
 import rx.Subscriber;
 import rx.subjects.BehaviorSubject;
+import rx.subjects.SerializedSubject;
+import rx.subjects.Subject;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -79,12 +81,12 @@ public class RegistrationTracker {
 
     class RegistrationBridge {
 
-        private final BehaviorSubject<InstanceInfo> subject;
+        private final Subject<InstanceInfo, InstanceInfo> subject;
         private final RegistrationResponse response;
         private final Subscriber<Void> subscriber;
 
         protected RegistrationBridge(BehaviorSubject<InstanceInfo> subject) {
-            this.subject = subject;
+            this.subject = new SerializedSubject<>(subject);
             this.response = handler.register(subject.asObservable());
             this.subscriber = new NoOpSubscriber<>();
 
