@@ -88,7 +88,7 @@ public abstract class RetryableConnectionFactory<CHANNEL extends ServiceChannel,
                         return channel.asLifecycleObservable();
                     }
                 })
-                .flatMap(new Func1<Observable<Void>, Observable<Void>>() {
+                .flatMap(new Func1<Observable<Void>, Observable<Void>>() {  // flatmap from Ob<Ob<Void> to Ob<Void>
                     @Override
                     public Observable<Void> call(Observable<Void> observable) {
                         return observable;
