@@ -16,15 +16,15 @@ public abstract class TestChannel<T extends ServiceChannel, E> implements Servic
 
     protected final T delegate;
 
-    public TestChannel(T delegate) {
-        this(delegate, null);
-    }
-
     public TestChannel(T delegate, Integer id) {
         this.delegate = delegate;
         this.id = id;
         this.operations = new ConcurrentLinkedQueue<>();
         this.closeCalled = false;
+    }
+
+    public T getDelegate() {
+        return delegate;
     }
 
     @Override

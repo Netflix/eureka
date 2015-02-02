@@ -33,4 +33,12 @@ public class TestChannelFactory<T extends ServiceChannel> implements ChannelFact
     public List<T> getAllChannels() {
         return new ArrayList<>(channels);
     }
+
+    public T getLatestChannel() {
+        List<T> allChannels = getAllChannels();
+        if (allChannels == null || allChannels.isEmpty()) {
+            return null;
+        }
+        return allChannels.get(allChannels.size()-1);
+    }
 }
