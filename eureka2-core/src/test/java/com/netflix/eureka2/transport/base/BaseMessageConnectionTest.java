@@ -27,7 +27,6 @@ import rx.Subscriber;
 import rx.functions.Func1;
 import rx.observers.TestSubscriber;
 
-import static com.netflix.eureka2.rx.RxSniffer.sniff;
 import static com.netflix.eureka2.transport.base.SampleObject.CONTENT;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -116,7 +115,8 @@ public class BaseMessageConnectionTest {
     public void testSubmitUserContentWithAck() throws Exception {
         Iterator serverIncoming = serverBroker.incoming().toBlocking().getIterator();
 
-        Observable<Void> ackObservable = sniff("ack", clientBroker.submitWithAck(CONTENT));
+        Observable<Void> ackObservable = clientBroker.submitWithAck(CONTENT);
+        ackObservable.subscribe();
 
         assertTrue("No message received", serverIncoming.hasNext());
         SampleObject receivedMessage = (SampleObject) serverIncoming.next();
