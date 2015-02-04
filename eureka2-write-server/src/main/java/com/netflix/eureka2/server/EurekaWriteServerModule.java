@@ -66,6 +66,7 @@ public class EurekaWriteServerModule extends AbstractModule {
     public void configure() {
         if (config == null) {
             bind(WriteServerConfig.class).asEagerSingleton();
+            bind(EurekaCommonConfig.class).to(WriteServerConfig.class);
             bind(EurekaRegistryConfig.class).to(WriteServerConfig.class);
         } else {
             bind(EurekaRegistryConfig.class).toInstance(config);

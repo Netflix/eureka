@@ -7,7 +7,7 @@ import javax.inject.Singleton;
 
 import com.google.inject.Injector;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.config.EurekaServerConfig;
+import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.utils.rx.NoOpSubscriber;
 import com.netflix.governator.lifecycle.LifecycleManager;
@@ -32,22 +32,18 @@ public class EurekaShutdownService {
     private ShutdownListener shutdownListener;
 
     @Inject
-    public EurekaShutdownService(EurekaServerConfig config, Injector injector) {
+    public EurekaShutdownService(EurekaCommonConfig config, Injector injector) {
         this.lifecycleManager = injector.getInstance(LifecycleManager.class);
         this.selfRegistrationService = injector.getInstance(SelfRegistrationService.class);
         this.port = config.getShutDownPort();
     }
 
+    public int getShutdownPort() {
+        return shutdownListener.getShutdownPort();
+    }
+
     @PostConstruct
     public void start() {
-        selfRegistrationService.resolve()
-                .take(1)
-                .doOnNext(new Action1<InstanceInfo>() {
-                    @Override
-                    public void call(InstanceInfo instanceInfo) {
-                        logger.info("Instance {} listening for shutdown on port {}", instanceInfo.getId(), port);
-                    }
-                }).subscribe(new NoOpSubscriber<>());  // logging only, so ignore errors by using a no-op subscriber
 
         shutdownListener = new ShutdownListener(port, new Action0() {
             @Override
@@ -62,6 +58,15 @@ public class EurekaShutdownService {
             }
         });
         shutdownListener.start();
+
+        selfRegistrationService.resolve()
+                .take(1)
+                .doOnNext(new Action1<InstanceInfo>() {
+                    @Override
+                    public void call(InstanceInfo instanceInfo) {
+                        logger.info("Instance {} listening for shutdown on port {}", instanceInfo.getId(), getShutdownPort());
+                    }
+                }).subscribe(new NoOpSubscriber<>());  // logging only, so ignore errors by using a no-op subscriber
     }
 
     @PreDestroy
@@ -79,5 +84,4 @@ public class EurekaShutdownService {
             }
         }
     }
-
 }

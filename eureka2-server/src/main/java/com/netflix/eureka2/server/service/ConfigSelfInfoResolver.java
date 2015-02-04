@@ -1,15 +1,15 @@
 package com.netflix.eureka2.server.service;
 
+import java.util.HashSet;
+import java.util.UUID;
+
 import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.selector.AddressSelector;
-import com.netflix.eureka2.server.config.EurekaServerConfig;
+import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import rx.Observable;
 import rx.functions.Func1;
-
-import java.util.HashSet;
-import java.util.UUID;
 
 /**
  * A self info resolver that auto resolves datacenter info and then resolves config information into an instance info.
@@ -19,9 +19,9 @@ import java.util.UUID;
 public class ConfigSelfInfoResolver extends ChainableSelfInfoResolver {
 
     private final String instanceUUID;
-    private final EurekaServerConfig config;
+    private final EurekaCommonConfig config;
 
-    public ConfigSelfInfoResolver(EurekaServerConfig config) {
+    public ConfigSelfInfoResolver(EurekaCommonConfig config) {
         this.config = config;
         this.instanceUUID = UUID.randomUUID().toString();
     }

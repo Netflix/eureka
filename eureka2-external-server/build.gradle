@@ -18,27 +18,16 @@ apply plugin: 'osgi'
 apply plugin:'application'
 
 dependencies {
-    compile project(':eureka2-external-server')
-    compile project(':eureka2-ext:eureka2-karyon-admin')
-    compile ('com.google.code.gson:gson:2.1')
+    compile project(':eureka2-client')
+    compile project(':eureka2-server')
     testCompile project(':eureka2-test-utils')
 }
 
 jar {
     manifest {
-        name = 'eureka2-dashboard'
+        name = 'eureka2-external-server'
         instruction 'Bundle-Vendor', 'Netflix'
         instruction 'Bundle-DocURL', 'https://github.com/Netflix/eureka'
         instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
     }
 }
-
-mainClassName = "com.netflix.eureka2.EurekaDashboardServer"
-applicationDefaultJvmArgs = ["-Xms2g",
-                             "-Xmx4g",
-//                             "-Dcom.sun.management.jmxremote",
-//                             "-XX:+UnlockCommercialFeatures",
-//                             "-XX:+FlightRecorder",
-//                             "-Dorg.slf4j.simpleLogger.log.io.netty.handler.logging.LoggingHandler=debug",
-//                             "-Dorg.slf4j.simpleLogger.defaultLogLevel=error"
-]

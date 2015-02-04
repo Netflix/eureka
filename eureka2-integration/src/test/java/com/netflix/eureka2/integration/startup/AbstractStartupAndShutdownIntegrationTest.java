@@ -1,5 +1,14 @@
 package com.netflix.eureka2.integration.startup;
 
+import com.netflix.config.ConfigurationManager;
+import com.netflix.eureka2.client.EurekaClient;
+import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.ChangeNotification.Kind;
+import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.server.AbstractEurekaServer;
+import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
 import io.netty.buffer.ByteBuf;
@@ -13,10 +22,14 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Func1;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
 /**
  * @author Tomasz Bak
  */
-public abstract class AbstractStartupAndShutdownIntegrationTest {
+public abstract class AbstractStartupAndShutdownIntegrationTest<C extends EurekaCommonConfig, S extends AbstractEurekaServer<C>> {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractStartupAndShutdownIntegrationTest.class);
 
@@ -35,18 +48,37 @@ public abstract class AbstractStartupAndShutdownIntegrationTest {
         };
     }
 
-    protected void injectConfigurationValuesViaSystemProperties(String appName) {
-        // These properties are resolved in read-server-startupAndShutdown.properties, and
-        // write-server-startupAndShutdown.properties file.
-        System.setProperty("eureka.test.startupAndShutdown.serverList", writeServerList[0]);
-        System.setProperty("eureka.test.startupAndShutdown.appName", appName);
+    protected void verifyThatStartsWithFileBasedConfiguration(String serverName, S server) throws Exception {
+        injectConfigurationValuesViaSystemProperties(serverName);
+        executeAndVerifyLifecycle(server, serverName);
     }
 
-    protected void clearConfigurationValuesViaSystemProperties() {
-        // These properties are resolved in read-server-startupAndShutdown.properties, and
+    protected void injectConfigurationValuesViaSystemProperties(String appName) {
+        // These properties are resolved in {write|read|dashboard|bridge}-server-startupAndShutdown.properties, and
         // write-server-startupAndShutdown.properties file.
-        System.clearProperty("eureka.test.startupAndShutdown.serverList");
-        System.clearProperty("eureka.test.startupAndShutdown.appName");
+        ConfigurationManager.getConfigInstance().setProperty("eureka.test.startupAndShutdown.serverList", writeServerList[0]);
+        ConfigurationManager.getConfigInstance().setProperty("eureka.test.startupAndShutdown.appName", appName);
+    }
+
+    protected void executeAndVerifyLifecycle(S server, String applicationName) throws Exception {
+        server.start();
+
+        // Subscribe to write cluster and verify that read server connected properly
+        EurekaClient eurekaClient = eurekaDeploymentResource.connectToWriteCluster();
+
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
+        eurekaClient.forInterest(Interests.forApplications(applicationName)).subscribe(testSubscriber);
+
+        ChangeNotification<InstanceInfo> notification = testSubscriber.takeNextOrWait();
+        assertThat(notification.getKind(), is(equalTo(Kind.Add)));
+
+        // Shutdown read server
+        sendShutdownCommand(server.getShutdownPort());
+        server.waitTillShutdown();
+
+        // Verify that read server registry entry is removed
+        notification = testSubscriber.takeNextOrWait();
+        assertThat(notification.getKind(), is(equalTo(Kind.Delete)));
     }
 
     protected void sendShutdownCommand(final int port) {

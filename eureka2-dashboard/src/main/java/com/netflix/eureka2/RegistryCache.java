@@ -23,8 +23,8 @@ public class RegistryCache {
     private Map<String, InstanceInfo> cache = new ConcurrentHashMap<>();
 
     @Inject
-    public RegistryCache(DashboardEurekaClientBuilder dashboardEurekaClientBuilder) {
-        eurekaClient = dashboardEurekaClientBuilder.getEurekaClient();
+    public RegistryCache(EurekaClient eurekaClient) {
+        this.eurekaClient = eurekaClient;
         subscribeToEurekaStream();
     }
 
