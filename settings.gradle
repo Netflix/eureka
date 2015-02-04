@@ -1,6 +1,7 @@
 rootProject.name='eureka' 
 include 'eureka2-client',\
         'eureka2-server',\
+        'eureka2-external-server',\
         'eureka2-read-server',\
         'eureka2-write-server',\
         'eureka2-core',\

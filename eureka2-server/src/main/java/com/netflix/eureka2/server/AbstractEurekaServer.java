@@ -26,6 +26,7 @@ import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.MetricRegistry;
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
+import com.netflix.config.ConfigurationManager;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.governator.configuration.ArchaiusConfigurationProvider;
 import com.netflix.governator.configuration.ArchaiusConfigurationProvider.Builder;
@@ -77,6 +78,14 @@ public abstract class AbstractEurekaServer<C extends EurekaCommonConfig> {
         this.name = null;
     }
 
+    public int getShutdownPort() {
+        EurekaShutdownService shutdownService = injector.getInstance(EurekaShutdownService.class);
+        if (shutdownService != null) {
+            return shutdownService.getShutdownPort();
+        }
+        return -1;
+    }
+
     public void start() throws Exception {
         List<BootstrapModule> bootstrapModules = new ArrayList<>();
         bootstrapModules.add(new BootstrapModule() {
@@ -84,6 +93,10 @@ public abstract class AbstractEurekaServer<C extends EurekaCommonConfig> {
             public void configure(BootstrapBinder binder) {
                 if (config == null) {
                     bindConfigurationProvider(binder);
+                } else {
+                    // WebAdmin resource uses Archaius singleton
+                    ConfigurationManager.getConfigInstance().setProperty(
+                            "netflix.platform.admin.resources.port", Integer.toString(config.getWebAdminPort()));
                 }
                 bindMetricsRegistry(binder);
                 binder.include(KaryonWebAdminModule.class);

@@ -15,7 +15,7 @@ public class RegistryStreamTest extends RegistryTestBase {
 
     @Test(timeout = 60000)
     public void subscribeToStream() throws InterruptedException {
-        RegistryCache registryCache = new RegistryCache(dashboardEurekaClientBuilder);
+        RegistryCache registryCache = new RegistryCache(eurekaClient);
         RegistryStream registryStream = new RegistryStream(registryCache);
 
         final CountDownLatch latch = new CountDownLatch(1);

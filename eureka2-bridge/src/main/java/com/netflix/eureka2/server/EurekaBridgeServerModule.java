@@ -51,6 +51,7 @@ public class EurekaBridgeServerModule extends AbstractModule {
     public void configure() {
         if (config == null) {
             bind(BridgeServerConfig.class).asEagerSingleton();
+            bind(EurekaCommonConfig.class).to(BridgeServerConfig.class);
             bind(EurekaRegistryConfig.class).to(BridgeServerConfig.class);
         } else {
             bind(EurekaRegistryConfig.class).toInstance(config);

@@ -1,5 +1,9 @@
 package com.netflix.eureka2;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import java.net.SocketAddress;
+
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.netflix.eureka2.config.EurekaDashboardConfig;
@@ -13,10 +17,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Func1;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import java.net.SocketAddress;
 
 
 @Singleton
@@ -47,8 +47,6 @@ public class WebSocketServer {
                 return connection.getInput().flatMap(new Func1<WebSocketFrame, Observable<Void>>() {
                     @Override
                     public Observable<Void> call(WebSocketFrame wsFrame) {
-                        final SocketAddress socketAddress = connection.getChannel().remoteAddress();
-
                         if (wsFrame instanceof TextWebSocketFrame) {
                             TextWebSocketFrame textFrame = (TextWebSocketFrame) wsFrame;
                             logger.info("Got ws-message: " + textFrame.text());
@@ -68,6 +66,10 @@ public class WebSocketServer {
         }).build().start();
 
         logger.info("Starting WebSocket server on port {}...", server.getServerPort());
+    }
+
+    public int serverPort() {
+        return server == null ? -1 : server.getServerPort();
     }
 
     @PreDestroy
