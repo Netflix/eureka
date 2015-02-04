@@ -32,11 +32,10 @@ import com.netflix.eureka2.testkit.data.builder.SampleAwsDataCenterInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleDelta;
 import com.netflix.eureka2.testkit.data.builder.SampleInterest;
 import com.netflix.eureka2.testkit.data.builder.SampleServicePort;
-import com.netflix.eureka2.utils.Sets;
+import com.netflix.eureka2.utils.ExtCollections;
 import rx.Notification;
 import rx.Observable;
 
-import static com.netflix.eureka2.rx.RxSniffer.sniff;
 import static com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo.DiscoveryServer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -59,7 +58,7 @@ public abstract class TransportCompatibilityTestSuite {
     }
 
     public <T> void runClientToServer(T content) {
-        sniff("submit", clientBroker.submit(content));
+        clientBroker.submit(content);
         T receivedMsg = (T) serverIterator.next();
         assertEquals(content, receivedMsg);
     }
@@ -69,7 +68,7 @@ public abstract class TransportCompatibilityTestSuite {
     }
 
     public <T> void runServerToClient(T content) {
-        sniff("submit", serverBroker.submit(content));
+        serverBroker.submit(content);
         T receivedMsg = (T) clientIterator.next();
         assertEquals(content, receivedMsg);
     }
@@ -79,7 +78,7 @@ public abstract class TransportCompatibilityTestSuite {
     }
 
     private <T> void runWithAck(MessageConnection source, MessageConnection dest, Iterator<Object> destIt, T content) {
-        Observable<Void> ack = sniff("ack", source.submitWithAck(content));
+        Observable<Void> ack = source.submitWithAck(content);
         Iterator<Notification<Void>> ackIterator = ack.materialize().toBlocking().getIterator();
 
         T receivedMsg = (T) destIt.next();
@@ -212,7 +211,7 @@ public abstract class TransportCompatibilityTestSuite {
             runServerToClientWithAck(new UpdateInstanceInfo(SampleDelta.StatusDown.build()));
             runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.HOMEPAGE_URL, "newHomePageURL").build()));
             runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.STATUS_PAGE_URL, "newStatusPageURL").build()));
-            runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.HEALTHCHECK_URLS, Sets.asSet("http://newHealthCheck1", "http://newHealthCheck2")).build()));
+            runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.HEALTHCHECK_URLS, ExtCollections.asSet("http://newHealthCheck1", "http://newHealthCheck2")).build()));
 
             Map<String, String> metaData = new HashMap<>();
             metaData.put("key1", "value1");

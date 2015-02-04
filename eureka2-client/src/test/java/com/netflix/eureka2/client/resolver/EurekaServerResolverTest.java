@@ -13,7 +13,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.NetworkAddress.ProtocolType;
 import com.netflix.eureka2.registry.selector.ServiceSelector;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
-import com.netflix.eureka2.utils.Sets;
+import com.netflix.eureka2.utils.ExtCollections;
 import netflix.ocelli.LoadBalancerBuilder;
 import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
 import org.junit.Before;
@@ -61,8 +61,8 @@ public class EurekaServerResolverTest {
         Server firstServer = eurekaServerResolver.resolve().toBlocking().firstOrDefault(null);
         Server secondServer = eurekaServerResolver.resolve().toBlocking().firstOrDefault(null);
 
-        Set<Server> expected = Sets.asSet(toServer(INSTANCE_1), toServer(INSTANCE_2));
-        Set<Server> result = Sets.asSet(firstServer, secondServer);
+        Set<Server> expected = ExtCollections.asSet(toServer(INSTANCE_1), toServer(INSTANCE_2));
+        Set<Server> result = ExtCollections.asSet(firstServer, secondServer);
         assertThat(result, is(equalTo(expected)));
     }
 

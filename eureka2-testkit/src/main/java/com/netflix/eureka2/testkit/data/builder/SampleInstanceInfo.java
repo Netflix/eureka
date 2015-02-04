@@ -12,7 +12,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import com.netflix.eureka2.registry.instance.NetworkAddress;
 import com.netflix.eureka2.registry.instance.ServicePort;
 import com.netflix.eureka2.registry.datacenter.AwsDataCenterInfo;
-import com.netflix.eureka2.utils.Sets;
+import com.netflix.eureka2.utils.ExtCollections;
 
 /**
  * @author Tomasz Bak
@@ -49,7 +49,7 @@ public enum SampleInstanceInfo {
         @Override
         public Builder builder() {
             Builder builder = templateFor(this.name());
-            builder.withPorts(Sets.asSet(
+            builder.withPorts(ExtCollections.asSet(
                     SampleServicePort.EurekaDiscoveryPort.build()
             ));
             return builder;
@@ -79,7 +79,7 @@ public enum SampleInstanceInfo {
                 .withAsg("asg#" + name)
                 .withHealthCheckUrls(healthCheckUrls)
                 .withHomePageUrl("http://eureka/home/" + name)
-                .withPorts(Sets.asSet(new ServicePort(7200, false), new ServicePort(7210, true)))
+                .withPorts(ExtCollections.asSet(new ServicePort(7200, false), new ServicePort(7210, true)))
                 .withSecureVipAddress("vipSecure#" + name)
                 .withStatus(Status.UP)
                 .withStatusPageUrl("http://eureka/status/" + name)
@@ -91,7 +91,7 @@ public enum SampleInstanceInfo {
 
     protected Builder eurekaWriteTemplate(int idx) {
         Builder builder = templateFor(this.name() + '#' + idx);
-        builder.withPorts(Sets.asSet(
+        builder.withPorts(ExtCollections.asSet(
                 SampleServicePort.EurekaRegistrationPort.build(),
                 SampleServicePort.EurekaDiscoveryPort.build(),
                 SampleServicePort.EurekaReplicationPort.build()

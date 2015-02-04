@@ -4,7 +4,7 @@ import java.util.HashSet;
 
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleServicePort;
-import com.netflix.eureka2.utils.Sets;
+import com.netflix.eureka2.utils.ExtCollections;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
@@ -49,7 +49,7 @@ public class DeltaTest {
 
     @Test(timeout = 60000)
     public void testSettingFieldOnInstanceInfo_HashSetString() throws Exception {
-        HashSet<String> newHealthCheckUrls = Sets.asSet("http://foo", "http://bar");
+        HashSet<String> newHealthCheckUrls = ExtCollections.asSet("http://foo", "http://bar");
         Delta<?> delta = new Delta.Builder()
                 .withId(original.getId())
                 .withDelta(InstanceInfoField.HEALTHCHECK_URLS, newHealthCheckUrls)
