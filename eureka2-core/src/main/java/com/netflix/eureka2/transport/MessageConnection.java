@@ -99,6 +99,11 @@ public interface MessageConnection {
     void shutdown();
 
     /**
+     * Close a connection in error.
+     */
+    void shutdown(Throwable e);
+
+    /**
      * Message broker status observable.
      */
     Observable<Void> lifecycleObservable();

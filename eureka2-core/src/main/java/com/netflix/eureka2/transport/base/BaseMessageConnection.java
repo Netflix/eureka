@@ -197,7 +197,17 @@ public class BaseMessageConnection implements MessageConnection {
 
     @Override
     public void shutdown() {
-        if (closed.compareAndSet(false, true)) {
+        doShutdown(null);
+    }
+
+    @Override
+    public void shutdown(final Throwable e) {
+        doShutdown(e);
+    }
+
+    private void doShutdown(final Throwable throwable) {
+        boolean wasClosed = closed.getAndSet(true);
+        if (!wasClosed) {
             metrics.decrementConnectionCounter();
             metrics.connectionDuration(startTime);
 
@@ -206,14 +216,14 @@ public class BaseMessageConnection implements MessageConnection {
                     new Subscriber<Void>() {
                         @Override
                         public void onCompleted() {
-                            lifecycleSubject.onCompleted();
+                            terminateLifecycle(throwable);
                         }
 
                         @Override
                         public void onError(Throwable e) {
                             logger.info("Connection close triggered an error: {}", e.getMessage());
                             logger.debug("Connection close triggered an error", e);
-                            lifecycleSubject.onCompleted();
+                            terminateLifecycle(e);
                         }
 
                         @Override
@@ -223,6 +233,14 @@ public class BaseMessageConnection implements MessageConnection {
                     }
             );
             schedulerWorker.unsubscribe();
+        }
+    }
+
+    private void terminateLifecycle(Throwable e) {
+        if (e == null) {
+            lifecycleSubject.onCompleted();
+        } else {
+            lifecycleSubject.onError(e);
         }
     }
 

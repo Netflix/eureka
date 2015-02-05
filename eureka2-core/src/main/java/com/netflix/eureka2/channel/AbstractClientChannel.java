@@ -36,6 +36,7 @@ public abstract class AbstractClientChannel<STATE extends Enum<STATE>> extends A
                         if (connectionIfConnected == null) {
                             connectionIfConnected = serverConnection;
                         }
+                        subscribeToConnectionLifecycle(connectionIfConnected);
                         return connectionIfConnected;
                     }
                 })
@@ -51,6 +52,10 @@ public abstract class AbstractClientChannel<STATE extends Enum<STATE>> extends A
         if (null != connectionIfConnected) {
             connectionIfConnected.shutdown();
         }
+    }
+
+    private void subscribeToConnectionLifecycle(MessageConnection connection) {
+        connection.lifecycleObservable().subscribe(lifecycle);
     }
 
     /**
