@@ -66,8 +66,14 @@ public abstract class AbstractClientChannel<STATE extends Enum<STATE>> extends A
         if (logger.isDebugEnabled()) {
             logger.debug("Sending message to the server: {}", message);
         }
-
         return subscribeToTransportSend(connection.submitWithAck(message), message.getClass().getSimpleName());
+    }
+
+    protected <T> Observable<Void> sendOnConnection(MessageConnection connection, T message) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Sending message to the server: {}", message);
+        }
+        return subscribeToTransportSend(connection.submit(message), message.getClass().getSimpleName());
     }
 
     protected Observable<Void> sendErrorOnConnection(MessageConnection connection, Throwable throwable) {

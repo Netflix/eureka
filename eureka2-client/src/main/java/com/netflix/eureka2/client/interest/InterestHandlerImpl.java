@@ -2,8 +2,8 @@ package com.netflix.eureka2.client.interest;
 
 import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.InterestChannel;
-import com.netflix.eureka2.client.channel.RetryableConnection;
-import com.netflix.eureka2.client.channel.RetryableConnectionFactory;
+import com.netflix.eureka2.connection.RetryableConnection;
+import com.netflix.eureka2.connection.RetryableConnectionFactory;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.SourcedChangeNotification;
@@ -17,6 +17,7 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Func1;
+import rx.functions.Func2;
 
 import javax.inject.Inject;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,15 +57,19 @@ public class InterestHandlerImpl implements InterestHandler {
         this.interestTracker = new InterestTracker();
         this.isShutdown = new AtomicBoolean(false);
 
-        RetryableConnectionFactory<InterestChannel, Interest<InstanceInfo>> retryableConnectionFactory
-                = new RetryableConnectionFactory<InterestChannel, Interest<InstanceInfo>>(channelFactory) {
-                    @Override
-                    protected Observable<Void> executeOnChannel(InterestChannel channel, Interest<InstanceInfo> interest) {
-                        return channel.change(interest);
-                    }
-                };
 
-        this.retryableConnection = retryableConnectionFactory.newConnection(interestTracker.interestChangeStream());
+        RetryableConnectionFactory<InterestChannel> retryableConnectionFactory
+                = new RetryableConnectionFactory<>(channelFactory);
+
+        this.retryableConnection = retryableConnectionFactory.unaryConnection(
+                interestTracker.interestChangeStream(),
+                new Func2<InterestChannel, Interest<InstanceInfo>, Observable<Void>>() {
+                    @Override
+                    public Observable<Void> call(InterestChannel interestChannel, Interest<InstanceInfo> interest) {
+                        return interestChannel.change(interest);
+                    }
+                });
+
         retryableConnection.getRetryableLifecycle()
                 .retryWhen(new RetryStrategyFunc(retryWaitMillis))
                 .subscribe(new Subscriber<Void>() {

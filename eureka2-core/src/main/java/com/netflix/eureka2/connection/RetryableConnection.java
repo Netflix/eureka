@@ -1,4 +1,4 @@
-package com.netflix.eureka2.client.channel;
+package com.netflix.eureka2.connection;
 
 import rx.Observable;
 import rx.functions.Action0;

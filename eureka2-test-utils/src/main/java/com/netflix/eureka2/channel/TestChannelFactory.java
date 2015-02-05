@@ -41,4 +41,16 @@ public class TestChannelFactory<T extends ServiceChannel> implements ChannelFact
         }
         return allChannels.get(allChannels.size()-1);
     }
+
+    // poll and wait until the number of channels are created or the timeout is reached
+    public boolean awaitChannels(int channelCount, int timeoutMillis) throws Exception {
+        long timeoutTime = System.currentTimeMillis() + timeoutMillis;
+        while(System.currentTimeMillis() < timeoutTime) {
+            if (channels.size() == channelCount) {
+                return true;
+            }
+            Thread.sleep(20);
+        }
+        return false;
+    }
 }
