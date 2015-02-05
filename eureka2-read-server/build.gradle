@@ -17,13 +17,8 @@
 apply plugin: 'osgi'
 apply plugin:'application'
 
-configurations {
-    avroTool
-}
-
 dependencies {
-    compile project(':eureka2-client')
-    compile project(':eureka2-server')
+    compile project(':eureka2-external-server')
     testCompile project(':eureka2-test-utils')
 }
 

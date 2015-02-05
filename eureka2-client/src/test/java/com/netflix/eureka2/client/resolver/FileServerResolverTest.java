@@ -19,20 +19,18 @@ package com.netflix.eureka2.client.resolver;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.client.resolver.FileServerResolver.FileServerResolverBuilder;
 import com.netflix.eureka2.client.resolver.ServerResolver.Server;
-import com.netflix.eureka2.rx.RxBlocking;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
-import static com.netflix.eureka2.utils.Sets.asSet;
+import static com.netflix.eureka2.utils.ExtCollections.asSet;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;

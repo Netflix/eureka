@@ -40,7 +40,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-import static com.netflix.eureka2.utils.Sets.asSet;
+import static com.netflix.eureka2.utils.ExtCollections.asSet;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;

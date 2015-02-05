@@ -30,7 +30,6 @@ import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.config.EurekaCommonConfig.ResolverType;
 import com.netflix.eureka2.server.config.EurekaCommonConfig.ServerBootstrap;
-import com.netflix.eureka2.server.config.EurekaServerConfig;
 import rx.functions.Func1;
 
 /**
@@ -39,12 +38,12 @@ import rx.functions.Func1;
 @Singleton
 public class EurekaClientProvider implements Provider<EurekaClient> {
 
-    private final EurekaServerConfig config;
+    private final EurekaCommonConfig config;
     private final EurekaClientMetricFactory metricFactory;
     private final EurekaRegistryMetricFactory registryMetricFactory;
 
     @Inject
-    public EurekaClientProvider(EurekaServerConfig config,
+    public EurekaClientProvider(EurekaCommonConfig config,
                                 EurekaClientMetricFactory metricFactory,
                                 EurekaRegistryMetricFactory registryMetricFactory) {
         this.config = config;

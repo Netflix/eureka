@@ -21,7 +21,7 @@ import java.util.HashSet;
 import com.netflix.eureka2.Names;
 import com.netflix.eureka2.registry.instance.ServicePort;
 import com.netflix.eureka2.transport.EurekaTransports;
-import com.netflix.eureka2.utils.Sets;
+import com.netflix.eureka2.utils.ExtCollections;
 
 /**
  * @author Tomasz Bak
@@ -62,6 +62,6 @@ public enum SampleServicePort {
     public abstract ServicePort build();
 
     public static HashSet<ServicePort> httpPorts() {
-        return Sets.asSet(HttpPort.build(), HttpsPort.build());
+        return ExtCollections.asSet(HttpPort.build(), HttpsPort.build());
     }
 }

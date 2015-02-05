@@ -1,27 +1,27 @@
 package com.netflix.eureka2;
 
+import java.util.Arrays;
+import java.util.List;
+
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.datacenter.AwsDataCenterInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
 import org.junit.Before;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import rx.Observable;
 
-import java.util.Arrays;
-import java.util.List;
-
 import static org.mockito.Mockito.when;
 
 public class RegistryTestBase {
+
     public static final String ZUUL = "zuul";
+
     @Mock
     protected EurekaClient eurekaClient;
-    @Mock
-    protected DashboardEurekaClientBuilder dashboardEurekaClientBuilder;
 
     private InstanceInfo instance(String app, int instId) {
         final AwsDataCenterInfo awsDataCenterInfo = new AwsDataCenterInfo.Builder().withInstanceId("Inst-" + instId).build();
@@ -46,7 +46,5 @@ public class RegistryTestBase {
     public void init() {
         MockitoAnnotations.initMocks(this);
         when(eurekaClient.forInterest(Interests.forFullRegistry())).thenReturn(buildMockEurekaRegistryObservable());
-        when(dashboardEurekaClientBuilder.getEurekaClient()).thenReturn(eurekaClient);
     }
-
 }

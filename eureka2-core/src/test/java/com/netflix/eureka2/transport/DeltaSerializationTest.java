@@ -9,7 +9,7 @@ import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleServicePort;
 import com.netflix.eureka2.transport.codec.avro.AvroCodec;
 import com.netflix.eureka2.transport.utils.AvroUtils;
-import com.netflix.eureka2.utils.Sets;
+import com.netflix.eureka2.utils.ExtCollections;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.apache.avro.Schema;
 import org.junit.Before;
@@ -48,7 +48,7 @@ public class DeltaSerializationTest {
 
     @Test(timeout = 60000)
     public void testDeltaSerializationWithAvro_HashSetString() throws Exception {
-        HashSet<String> newHealthCheckUrls = Sets.asSet("http://foo", "http://bar");
+        HashSet<String> newHealthCheckUrls = ExtCollections.asSet("http://foo", "http://bar");
         Delta<?> delta = new Delta.Builder()
                 .withId(instanceInfo.getId())
                 .withDelta(InstanceInfoField.HEALTHCHECK_URLS, newHealthCheckUrls)

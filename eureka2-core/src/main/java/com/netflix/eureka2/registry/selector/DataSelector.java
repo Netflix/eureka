@@ -167,11 +167,11 @@ public class DataSelector<T, S extends DataSelector<T, S>> {
 
         private boolean matches(T candidate, List<Criteria<T, ?>> criterias) {
             for (Criteria<T, ?> criteria : criterias) {
-                if (criteria.matches(candidate)) {
-                    return true;
+                if (!criteria.matches(candidate)) {
+                    return false;
                 }
             }
-            return false;
+            return true;
         }
     }
 

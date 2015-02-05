@@ -26,7 +26,7 @@ import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.utils.Sets;
+import com.netflix.eureka2.utils.ExtCollections;
 import rx.Subscriber;
 
 /**
@@ -65,7 +65,7 @@ public class Session {
     }
 
     public boolean expectedRegistrationStatus(Status... expected) {
-        if (Sets.asSet(expected).contains(registrationStatus)) {
+        if (ExtCollections.asSet(expected).contains(registrationStatus)) {
             return true;
         }
         switch (registrationStatus) {
