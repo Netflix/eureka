@@ -19,6 +19,7 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import rx.Observable;
 import rx.Subscriber;
+import rx.subjects.ReplaySubject;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.anyObject;
@@ -54,8 +55,10 @@ public class RegistrationChannelTest {
         instanceUp = seed.withStatus(InstanceInfo.Status.UP).build();
         instanceDown = seed.withStatus(InstanceInfo.Status.DOWN).build();
 
+        final ReplaySubject<Void> connectionLifecycle = ReplaySubject.create();
         messageConnection = mock(MessageConnection.class);
         when(messageConnection.submitWithAck(anyObject())).thenReturn(Observable.<Void>empty());
+        when(messageConnection.lifecycleObservable()).thenReturn(connectionLifecycle);
 
         transportClient = mock(TransportClient.class);
         when(transportClient.connect()).thenReturn(Observable.just(messageConnection));

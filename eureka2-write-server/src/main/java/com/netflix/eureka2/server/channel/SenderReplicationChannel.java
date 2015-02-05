@@ -49,7 +49,7 @@ public class SenderReplicationChannel extends AbstractClientChannel<STATE> imple
         return connect().switchMap(new Func1<MessageConnection, Observable<ReplicationHelloReply>>() {
             @Override
             public Observable<ReplicationHelloReply> call(final MessageConnection connection) {
-                return connection.submit(hello)
+                return sendOnConnection(connection, hello)
                         .cast(ReplicationHelloReply.class)
                         .concatWith(
                                 connection.incoming().flatMap(new Func1<Object, Observable<ReplicationHelloReply>>() {
@@ -76,7 +76,7 @@ public class SenderReplicationChannel extends AbstractClientChannel<STATE> imple
         return connect().switchMap(new Func1<MessageConnection, Observable<Void>>() {
             @Override
             public Observable<Void> call(MessageConnection connection) {
-                return connection.submit(new RegisterCopy(instanceInfo));
+                return sendOnConnection(connection, new RegisterCopy(instanceInfo));
             }
         });
     }
@@ -90,15 +90,15 @@ public class SenderReplicationChannel extends AbstractClientChannel<STATE> imple
         return connect().switchMap(new Func1<MessageConnection, Observable<Void>>() {
             @Override
             public Observable<Void> call(MessageConnection connection) {
-                return connection.submit(new UnregisterCopy(instanceId));
+                return sendOnConnection(connection, new UnregisterCopy(instanceId));
             }
         });
     }
 
     @Override
     protected void _close() {
-        if (state.get() != ReplicationChannel.STATE.Closed) {
-            moveToState(state.get(), ReplicationChannel.STATE.Closed);
+        if (state.get() != STATE.Closed) {
+            moveToState(STATE.Closed);
             super._close();
         }
     }

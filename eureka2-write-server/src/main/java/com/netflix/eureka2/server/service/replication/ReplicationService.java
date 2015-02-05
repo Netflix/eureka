@@ -25,15 +25,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.netflix.eureka2.channel.ReplicationChannel;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
-import com.netflix.eureka2.server.channel.ReplicationTransportClient;
-import com.netflix.eureka2.server.channel.RetryableSenderReplicationChannel;
-import com.netflix.eureka2.server.channel.SenderReplicationChannel;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
@@ -42,7 +38,6 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
-import rx.functions.Func0;
 import rx.functions.Func1;
 
 /**
@@ -55,8 +50,6 @@ public class ReplicationService {
 
     private static final Logger logger = LoggerFactory.getLogger(ReplicationService.class);
 
-    private final long reconnectDelayMillis;
-
     private final AtomicReference<STATE> state = new AtomicReference<>(STATE.Idle);
     private final SourcedEurekaRegistry<InstanceInfo> eurekaRegistry;
     private final SelfInfoResolver selfInfoResolver;
@@ -64,9 +57,9 @@ public class ReplicationService {
     private final WriteServerMetricFactory metricFactory;
     private final Codec codec;
 
-    private InstanceInfo ownInstanceInfo;
+    protected final Map<InetSocketAddress, ReplicationHandler> addressVsHandler;
 
-    private final Map<InetSocketAddress, ReplicationChannel> channelsByAddress = new HashMap<>();
+    private InstanceInfo ownInstanceInfo;
     private Subscription resolverSubscription;
 
     @Inject
@@ -80,7 +73,7 @@ public class ReplicationService {
         this.peerAddressesProvider = peerAddressesProvider;
         this.metricFactory = metricFactory;
         this.codec = config.getCodec();
-        this.reconnectDelayMillis = config.getReplicationReconnectDelayMillis();
+        this.addressVsHandler = new HashMap<>();
     }
 
     @PostConstruct
@@ -128,45 +121,37 @@ public class ReplicationService {
     }
 
     private void addServer(final InetSocketAddress address) {
-        if (!channelsByAddress.containsKey(address)) {
+        if (state.get() == STATE.Closed) {
+            logger.info("Not adding server as the service is already shutdown");
+            return;
+        }
+
+        if (!addressVsHandler.containsKey(address)) {
             logger.debug("Adding replication channel to server {}", address);
-            channelsByAddress.put(address, createRetryableSenderReplicationChannel(address));
+
+            ReplicationHandler handler = new ReplicationHandlerImpl(address, codec, eurekaRegistry, ownInstanceInfo, metricFactory);
+            addressVsHandler.put(address, handler);
+            handler.startReplication();
         }
     }
 
     private void removeServer(InetSocketAddress address) {
-        ReplicationChannel channel = channelsByAddress.get(address);
-        if (channel != null) {
-            channel.close();
-            channelsByAddress.remove(address);
+        ReplicationHandler handler = addressVsHandler.remove(address);
+        if (handler != null) {
+            handler.shutdown();
         }
     }
 
     @PreDestroy
     public void close() {
         logger.info("Closing replication service");
-        if (!state.compareAndSet(STATE.Connected, STATE.Closed)) {
-            return;
+        STATE prev = state.getAndSet(STATE.Closed);
+        if (STATE.Connected == prev) {  // only need to perform shutdown if was previously connected
+            resolverSubscription.unsubscribe();
+            for (ReplicationHandler handler : addressVsHandler.values()) {
+                handler.shutdown();
+            }
+            addressVsHandler.clear();
         }
-        resolverSubscription.unsubscribe();
-        for (ReplicationChannel channel : channelsByAddress.values()) {
-            channel.close();
-        }
-    }
-
-    /* Visible for testing */ ReplicationChannel createRetryableSenderReplicationChannel(final InetSocketAddress address) {
-        return new RetryableSenderReplicationChannel(
-                new Func0<ReplicationChannel>() {
-                    @Override
-                    public ReplicationChannel call() {
-                        return new SenderReplicationChannel(
-                                new ReplicationTransportClient(address, codec, metricFactory.getReplicationSenderConnectionMetrics()),
-                                null // TODO we need separate metrics for send and receiver; now only receiver is taken care of
-                        );
-                    }
-                },
-                new RegistryReplicator(ownInstanceInfo.getId(), eurekaRegistry),
-                reconnectDelayMillis
-        );
     }
 }

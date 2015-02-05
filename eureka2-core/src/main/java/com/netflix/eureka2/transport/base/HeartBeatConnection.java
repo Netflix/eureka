@@ -141,6 +141,12 @@ public class HeartBeatConnection implements MessageConnection {
     }
 
     @Override
+    public void shutdown(Throwable e) {
+        heartbeatSenderReceiver.unsubscribe();
+        delegate.shutdown(e);
+    }
+
+    @Override
     public Observable<Void> lifecycleObservable() {
         return delegate.lifecycleObservable();
     }

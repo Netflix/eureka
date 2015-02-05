@@ -90,8 +90,17 @@ public abstract class AbstractServiceChannel<STATE extends Enum<STATE>> implemen
     }
 
     protected void moveToState(STATE to) {
-        if (state.get() != to) {
-            moveToState(state.get(), to);
+        STATE from = state.getAndSet(to);
+        if (metrics != null) {
+            // We do not track initState (==idle), only subsequent states that
+            // happen when a connection is established.
+            if (from == initState) {
+                metrics.incrementStateCounter(to);
+            } else {
+                metrics.stateTransition(from, to);
+                metrics.incrementStateCounter(to);
+                metrics.decrementStateCounter(from);
+            }
         }
     }
 }

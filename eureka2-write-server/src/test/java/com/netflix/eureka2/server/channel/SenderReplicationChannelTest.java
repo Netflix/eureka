@@ -22,8 +22,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * @author Tomasz Bak
- */
+* @author Tomasz Bak
+*/
 public class SenderReplicationChannelTest extends AbstractReplicationChannelTest {
 
     private final TransportClient transportClient = mock(TransportClient.class);

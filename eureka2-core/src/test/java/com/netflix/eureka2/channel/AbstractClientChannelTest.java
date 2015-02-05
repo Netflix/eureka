@@ -6,7 +6,11 @@ import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.TransportClient;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import rx.Observable;
+import rx.observers.TestSubscriber;
+import rx.subjects.ReplaySubject;
 
 import java.util.Arrays;
 import java.util.List;
@@ -19,6 +23,8 @@ import static org.mockito.Mockito.*;
  */
 public class AbstractClientChannelTest {
 
+    private TestSubscriber<Void> testSubscriber;
+
     private MessageConnection messageConnection1;
     private MessageConnection messageConnection2;
 
@@ -26,8 +32,30 @@ public class AbstractClientChannelTest {
 
     @Before
     public void setUp() {
+        final ReplaySubject<Void> connection1Lifecycle = ReplaySubject.create();
+        final ReplaySubject<Void> connection2Lifecycle = ReplaySubject.create();
+
+        testSubscriber = new TestSubscriber<>();
+
         messageConnection1 = mock(MessageConnection.class);
         messageConnection2 = mock(MessageConnection.class);
+        when(messageConnection1.lifecycleObservable()).thenReturn(connection1Lifecycle);
+        when(messageConnection2.lifecycleObservable()).thenReturn(connection2Lifecycle);
+        doAnswer(new Answer<Void>() {
+            @Override
+            public Void answer(InvocationOnMock invocation) throws Throwable {
+                connection1Lifecycle.onCompleted();
+                return null;
+            }
+        }).when(messageConnection1).shutdown();
+        doAnswer(new Answer<Void>() {
+            @Override
+            public Void answer(InvocationOnMock invocation) throws Throwable {
+                connection1Lifecycle.onError(new Exception("test: error"));
+                return null;
+            }
+        }).when(messageConnection1).shutdown(any(Throwable.class));
+
         List<MessageConnection> messageConnections = Arrays.asList(messageConnection1, messageConnection2);
 
         TransportClient transportClient = mock(TransportClient.class);
@@ -46,5 +74,23 @@ public class AbstractClientChannelTest {
         assertEquals(messageConnection1, secondConnection);
         assertNotEquals(messageConnection2, firstConnection);
         assertNotEquals(messageConnection2, secondConnection);
+    }
+
+    @Test
+    public void testOnCompleteOfUnderlyingConnectionOnCompleteChannel() {
+        MessageConnection connection = (MessageConnection) channel.connect().toBlocking().firstOrDefault(null);
+        channel.asLifecycleObservable().subscribe(testSubscriber);
+        connection.shutdown();
+        testSubscriber.assertTerminalEvent();
+        testSubscriber.assertNoErrors();
+    }
+
+    @Test
+    public void testOnErrorOfUnderlyingConnectionOnErrorChannel() {
+        MessageConnection connection = (MessageConnection) channel.connect().toBlocking().firstOrDefault(null);
+        channel.asLifecycleObservable().subscribe(testSubscriber);
+        connection.shutdown(new Exception("test: exception"));
+        testSubscriber.assertTerminalEvent();
+        assertEquals(1, testSubscriber.getOnErrorEvents().size());
     }
 }

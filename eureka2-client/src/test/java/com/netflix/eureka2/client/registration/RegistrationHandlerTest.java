@@ -171,7 +171,7 @@ public class RegistrationHandlerTest {
         assertThat(testChannel0.operations.size(), is(1));
         assertThat(testChannel0.operations.toArray(), equalTo(infos.subList(0, 1).toArray()));
 
-        Thread.sleep(RETRY_WAIT_MILLIS + 10);  // wait out the retry period configured for .retryWhen()
+        factory.awaitChannels(2, RETRY_WAIT_MILLIS + 500);  // wait out the retry period configured for .retryWhen()
 
         // send the next info
         registrationSubject.onNext(infos.get(1));
@@ -241,7 +241,7 @@ public class RegistrationHandlerTest {
         assertThat(testChannel0.operations.size(), is(1));
         assertThat(testChannel0.operations.toArray(), equalTo(infos.subList(0, 1).toArray()));
 
-        Thread.sleep(failTimeMillis + RETRY_WAIT_MILLIS + 10);  // wait out the retry period configured for .retryWhen()
+        factory.awaitChannels(2, failTimeMillis + RETRY_WAIT_MILLIS + 10);  // wait out the retry period configured for .retryWhen()
 
         assertThat(factory.getAllChannels().size(), is(2));
 
@@ -359,7 +359,7 @@ public class RegistrationHandlerTest {
 
 
     private static RegistrationChannel newAlwaysSuccessChannel(Integer id) {
-        MessageConnection messageConnection = mock(MessageConnection.class);
+        MessageConnection messageConnection = newMockMessageConnection();
         when(messageConnection.submitWithAck(anyObject())).thenReturn(Observable.<Void>empty());
 
         TransportClient transportClient = mock(TransportClient.class);
@@ -371,7 +371,7 @@ public class RegistrationHandlerTest {
     }
 
     private static RegistrationChannel newAlwaysFailChannel(Integer id) {
-        MessageConnection messageConnection = mock(MessageConnection.class);
+        MessageConnection messageConnection = newMockMessageConnection();
         when(messageConnection.submitWithAck(anyObject())).thenReturn(Observable.<Void>error(new Exception("test: registration error")));
 
         TransportClient transportClient = mock(TransportClient.class);
@@ -383,7 +383,7 @@ public class RegistrationHandlerTest {
     }
 
     private static RegistrationChannel newTimedFailChannel(Integer id, int failAfterMillis) {
-        MessageConnection messageConnection = mock(MessageConnection.class);
+        MessageConnection messageConnection = newMockMessageConnection();
         when(messageConnection.submitWithAck(anyObject())).thenReturn(Observable.<Void>empty());
 
         TransportClient transportClient = mock(TransportClient.class);
@@ -407,5 +407,12 @@ public class RegistrationHandlerTest {
         });
 
         return new TestRegistrationChannel(channel, id);
+    }
+
+    private static MessageConnection newMockMessageConnection() {
+        final ReplaySubject<Void> lifecycleSubject = ReplaySubject.create();
+        MessageConnection messageConnection = mock(MessageConnection.class);
+        when(messageConnection.lifecycleObservable()).thenReturn(lifecycleSubject);
+        return messageConnection;
     }
 }
