@@ -65,7 +65,7 @@ public class ReplicationHandlerImpl implements ReplicationHandler {
         final RetryableConnectionFactory<ReplicationChannel> connectionFactory =
                 new RetryableConnectionFactory<>(channelFactory);
 
-        connection = connectionFactory.nullaryConnection(new Func1<ReplicationChannel, Observable<Void>>() {
+        connection = connectionFactory.zeroOpConnection(new Func1<ReplicationChannel, Observable<Void>>() {
             @Override
             public Observable<Void> call(final ReplicationChannel replicationChannel) {
                 return replicationChannel.hello(new ReplicationHello(ownInstanceId, registry.size()))

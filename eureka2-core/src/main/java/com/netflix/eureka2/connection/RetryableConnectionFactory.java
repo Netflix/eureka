@@ -19,7 +19,7 @@ import rx.subjects.Subject;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Abstract factory that provides a {@link RetryableConnection} for each unaryConnection call.
+ * Abstract factory that provides a {@link RetryableConnection}.
  *
  * @param <CHANNEL> the type of channel to be used
  *
@@ -36,12 +36,14 @@ public class RetryableConnectionFactory<CHANNEL extends ServiceChannel> {
     }
 
     /**
-     * @param executeOnChannel a func1 that describes a nullary call for the channel
+     * Create a retryable connection that wraps around channels that executes with zero operands
+     *
+     * @param executeOnChannel a func1 that describes a zero op call for the channel
      * @return a {@link RetryableConnection} that contains several observables. This lifecycle observable provided
      * can be retried on.
      */
-    public RetryableConnection<CHANNEL> nullaryConnection(final Func1<CHANNEL, Observable<Void>> executeOnChannel) {
-        return unaryConnection(Observable.just(1).mergeWith(Observable.<Integer>never()), new Func2<CHANNEL, Integer, Observable<Void>>() {
+    public RetryableConnection<CHANNEL> zeroOpConnection(final Func1<CHANNEL, Observable<Void>> executeOnChannel) {
+        return singleOpConnection(Observable.just(1).mergeWith(Observable.<Integer>never()), new Func2<CHANNEL, Integer, Observable<Void>>() {
             @Override
             public Observable<Void> call(CHANNEL channel, Integer integer) {
                 return executeOnChannel.call(channel);
@@ -50,13 +52,15 @@ public class RetryableConnectionFactory<CHANNEL extends ServiceChannel> {
     }
 
     /**
+     * Create a retryable connection that wraps around channels that executes on single operands
+     *
      * @param opStream an observable stream of ops for the channel to operate on (i.e. Interest, InstanceInfo)
      * @param executeOnChannel a func2 that describes the call for the channel on the operations
      * @param <OP> the type of op to be applied to the channel
      * @return a {@link RetryableConnection} that contains several observables. This lifecycle observable provided
      * can be retried on.
      */
-    public <OP> RetryableConnection<CHANNEL> unaryConnection(final Observable<OP> opStream, final Func2<CHANNEL, OP, Observable<Void>> executeOnChannel) {
+    public <OP> RetryableConnection<CHANNEL> singleOpConnection(final Observable<OP> opStream, final Func2<CHANNEL, OP, Observable<Void>> executeOnChannel) {
         final AsyncSubject<Void> initSubject = AsyncSubject.create();  // subject used to cache init status
 
         final BreakerSwitchSubject<OP> opSubject = BreakerSwitchSubject.create(BehaviorSubject.<OP>create());

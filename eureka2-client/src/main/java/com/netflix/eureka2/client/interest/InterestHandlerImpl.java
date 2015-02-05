@@ -61,7 +61,7 @@ public class InterestHandlerImpl implements InterestHandler {
         RetryableConnectionFactory<InterestChannel> retryableConnectionFactory
                 = new RetryableConnectionFactory<>(channelFactory);
 
-        this.retryableConnection = retryableConnectionFactory.unaryConnection(
+        this.retryableConnection = retryableConnectionFactory.singleOpConnection(
                 interestTracker.interestChangeStream(),
                 new Func2<InterestChannel, Interest<InstanceInfo>, Observable<Void>>() {
                     @Override

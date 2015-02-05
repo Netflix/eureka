@@ -58,7 +58,7 @@ public class RetryableConnectionFactoryTest {
      */
     @Test
     public void testHappyCase() throws Exception {
-        RetryableConnection<TestFailableChannel> retryableConnection = handler.unaryConnection(opStream, new TestConnectionFunc2());
+        RetryableConnection<TestFailableChannel> retryableConnection = handler.singleOpConnection(opStream, new TestConnectionFunc2());
 
         retryableConnection.getRetryableLifecycle().subscribe(testSubscriber);
         retryableConnection.getInitObservable().subscribe(initSubscriber);
@@ -96,7 +96,7 @@ public class RetryableConnectionFactoryTest {
      */
     @Test
     public void testClose() {
-        RetryableConnection<TestFailableChannel> retryableConnection = handler.unaryConnection(opStream, new TestConnectionFunc2());
+        RetryableConnection<TestFailableChannel> retryableConnection = handler.singleOpConnection(opStream, new TestConnectionFunc2());
 
         retryableConnection.getRetryableLifecycle().subscribe(testSubscriber);
         retryableConnection.getInitObservable().subscribe(initSubscriber);
@@ -131,7 +131,7 @@ public class RetryableConnectionFactoryTest {
      */
     @Test
     public void testConnectionLifecycleOnCompleted() {
-        RetryableConnection<TestFailableChannel> retryableConnection = handler.unaryConnection(opStream, new TestConnectionFunc2());
+        RetryableConnection<TestFailableChannel> retryableConnection = handler.singleOpConnection(opStream, new TestConnectionFunc2());
 
         retryableConnection.getRetryableLifecycle().subscribe(testSubscriber);
         retryableConnection.getInitObservable().subscribe(initSubscriber);
@@ -189,7 +189,7 @@ public class RetryableConnectionFactoryTest {
         factory = new TestChannelFactory<>(innerFactory);
 
         handler = new RetryableConnectionFactory<>(factory);
-        RetryableConnection<TestFailableChannel> retryableConnection = handler.unaryConnection(opStream, new TestConnectionFunc2());
+        RetryableConnection<TestFailableChannel> retryableConnection = handler.singleOpConnection(opStream, new TestConnectionFunc2());
 
         final AtomicInteger opCount = new AtomicInteger(0);
         Observable<Void> connectionWithRetry = retryableConnection.getRetryableLifecycle()
@@ -257,7 +257,7 @@ public class RetryableConnectionFactoryTest {
         factory = new TestChannelFactory<>(innerFactory);
 
         handler = new RetryableConnectionFactory<>(factory);
-        RetryableConnection<TestFailableChannel> retryableConnection = handler.unaryConnection(opStream, new TestConnectionFunc2());
+        RetryableConnection<TestFailableChannel> retryableConnection = handler.singleOpConnection(opStream, new TestConnectionFunc2());
 
         final AtomicInteger opCount = new AtomicInteger(0);
         Observable<Void> connectionWithRetry = retryableConnection.getRetryableLifecycle()
@@ -328,7 +328,7 @@ public class RetryableConnectionFactoryTest {
 
         handler = new RetryableConnectionFactory<>(factory);
         final AtomicInteger opCount = new AtomicInteger(0);
-        RetryableConnection<TestFailableChannel> retryableConnection = handler.nullaryConnection(new TestConnectionFunc1(opCount));
+        RetryableConnection<TestFailableChannel> retryableConnection = handler.zeroOpConnection(new TestConnectionFunc1(opCount));
 
         Observable<Void> connectionWithRetry = retryableConnection.getRetryableLifecycle()
                 .doOnUnsubscribe(new Action0() {

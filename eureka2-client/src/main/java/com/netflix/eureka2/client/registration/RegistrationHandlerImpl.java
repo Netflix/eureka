@@ -43,7 +43,7 @@ public class RegistrationHandlerImpl implements RegistrationHandler {
     @Override
     public RegistrationResponse register(Observable<InstanceInfo> instanceInfoStream) {
         final RetryableConnection<RegistrationChannel> retryableConnection
-                = retryableConnectionFactory.unaryConnection(
+                = retryableConnectionFactory.singleOpConnection(
                 instanceInfoStream.distinctUntilChanged(),
                 new Func2<RegistrationChannel, InstanceInfo, Observable<Void>>() {
                     @Override
