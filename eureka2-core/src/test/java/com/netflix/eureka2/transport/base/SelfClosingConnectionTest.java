@@ -54,6 +54,6 @@ public class SelfClosingConnectionTest {
         // Now force timeout
         testScheduler.advanceTimeBy(LIFECYCLE_DURATION_SEC, TimeUnit.SECONDS);
 
-        verify(connectionDelegate, times(1)).shutdown();
+        verify(connectionDelegate, times(1)).shutdown(any(Throwable.class));
     }
 }

@@ -29,6 +29,7 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
+import rx.subjects.ReplaySubject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -336,7 +337,7 @@ public class ReplicationHandlerTest {
 
 
     private static TestSenderReplicationChannel newAlwaysSuccessChannel(Integer id) {
-        MessageConnection messageConnection = mock(MessageConnection.class);
+        MessageConnection messageConnection = newMockMessageConnection();
         when(messageConnection.submit(anyObject())).thenReturn(Observable.<Void>empty());
         when(messageConnection.incoming()).thenReturn(Observable.<Object>just(HELLO_REPLY));
 
@@ -349,7 +350,7 @@ public class ReplicationHandlerTest {
     }
 
     private static TestSenderReplicationChannel newFailAtHelloChannel(Integer id) {
-        MessageConnection messageConnection = mock(MessageConnection.class);
+        MessageConnection messageConnection = newMockMessageConnection();
         when(messageConnection.submit(anyObject())).thenReturn(Observable.<Void>empty());
         when(messageConnection.incoming()).thenReturn(Observable.error(new Exception("test: hello reply error")));
 
@@ -362,7 +363,7 @@ public class ReplicationHandlerTest {
     }
 
     private static TestSenderReplicationChannel newFailAtReplicateChannel(Integer id) {
-        MessageConnection messageConnection = mock(MessageConnection.class);
+        MessageConnection messageConnection = newMockMessageConnection();
         when(messageConnection.submit(any(ReplicationHello.class))).thenReturn(Observable.<Void>empty());
         when(messageConnection.submit(any(RegisterCopy.class))).thenReturn(Observable.<Void>error(new Exception("test: register error")));
         when(messageConnection.submit(any(UnregisterCopy.class))).thenReturn(Observable.<Void>error(new Exception("test: unregister error")));
@@ -377,7 +378,7 @@ public class ReplicationHandlerTest {
     }
 
     private static TestSenderReplicationChannel newTimedFailChannel(Integer id, int failAfterMillis) {
-        MessageConnection messageConnection = mock(MessageConnection.class);
+        MessageConnection messageConnection = newMockMessageConnection();
         when(messageConnection.submit(anyObject())).thenReturn(Observable.<Void>empty());
         when(messageConnection.incoming()).thenReturn(Observable.<Object>just(HELLO_REPLY));
 
@@ -402,5 +403,12 @@ public class ReplicationHandlerTest {
         });
 
         return new TestSenderReplicationChannel(channel, id);
+    }
+
+    private static MessageConnection newMockMessageConnection() {
+        final ReplaySubject<Void> lifecycleSubject = ReplaySubject.create();
+        MessageConnection messageConnection = mock(MessageConnection.class);
+        when(messageConnection.lifecycleObservable()).thenReturn(lifecycleSubject);
+        return messageConnection;
     }
 }
