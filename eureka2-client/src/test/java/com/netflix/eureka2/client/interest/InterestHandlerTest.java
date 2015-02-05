@@ -34,6 +34,7 @@ import rx.Subscriber;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
+import rx.subjects.ReplaySubject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,6 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.any;
@@ -85,6 +87,8 @@ public class InterestHandlerTest {
     @Before
     public void setUp() {
         messageConnection = mock(MessageConnection.class);
+        final ReplaySubject<Void> lifecycleSubject = ReplaySubject.create();
+        when(messageConnection.lifecycleObservable()).thenReturn(lifecycleSubject);
         when(messageConnection.submitWithAck(anyObject())).thenReturn(Observable.<Void>empty());
         when(messageConnection.incoming()).thenReturn(Observable.never());
 
@@ -287,6 +291,109 @@ public class InterestHandlerTest {
         discoverySubscriber.assertOnCompleted();
         zuulSubscriber.assertOnCompleted();
     }
+
+    @Test(timeout = 60000)
+    public void testForInterestSameTwoUsers() throws Exception {
+        when(mockFactory.newChannel()).then(new Answer<InterestChannel>() {
+            @Override
+            public InterestChannel answer(InvocationOnMock invocation) throws Throwable {
+                return newAlwaysSuccessChannel(channelId.getAndIncrement());
+            }
+        });
+
+        handler = new InterestHandlerImpl(registry, factory, RETRY_WAIT_MILLIS);
+
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber1 = new ExtTestSubscriber<>();
+        handler.forInterest(discoveryInterest).subscribe(extTestSubscriber1);
+
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber2 = new ExtTestSubscriber<>();
+        handler.forInterest(discoveryInterest).subscribe(extTestSubscriber2);
+
+        final List<InstanceInfo> discoveryOutput1 = new ArrayList<>();
+        final List<InstanceInfo> discoveryOutput2 = new ArrayList<>();
+
+        for (ChangeNotification<InstanceInfo> notification : extTestSubscriber1.takeNext(3, 500, TimeUnit.MILLISECONDS)) {
+            discoveryOutput1.add(notification.getData());
+        }
+
+        for (ChangeNotification<InstanceInfo> notification : extTestSubscriber2.takeNext(3, 500, TimeUnit.MILLISECONDS)) {
+            discoveryOutput2.add(notification.getData());
+        }
+
+        assertThat(discoveryOutput1, containsInAnyOrder(discoveryInfos.toArray()));
+        assertThat(discoveryOutput2, containsInAnyOrder(discoveryInfos.toArray()));
+    }
+
+    @Test(timeout = 60000)
+    public void testForInterestDifferentTwoUsers() throws Exception {
+        when(mockFactory.newChannel()).then(new Answer<InterestChannel>() {
+            @Override
+            public InterestChannel answer(InvocationOnMock invocation) throws Throwable {
+                return newAlwaysSuccessChannel(channelId.getAndIncrement());
+            }
+        });
+
+        handler = new InterestHandlerImpl(registry, factory, RETRY_WAIT_MILLIS);
+
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber1 = new ExtTestSubscriber<>();
+        handler.forInterest(discoveryInterest).subscribe(extTestSubscriber1);
+
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber2 = new ExtTestSubscriber<>();
+        handler.forInterest(zuulInterest).subscribe(extTestSubscriber2);
+
+        final List<InstanceInfo> discoveryOutput = new ArrayList<>();
+        final List<InstanceInfo> zuulOutput = new ArrayList<>();
+
+        for (ChangeNotification<InstanceInfo> notification : extTestSubscriber1.takeNext(3, 500, TimeUnit.MILLISECONDS)) {
+            discoveryOutput.add(notification.getData());
+        }
+
+        for (ChangeNotification<InstanceInfo> notification : extTestSubscriber2.takeNext(3, 500, TimeUnit.MILLISECONDS)) {
+            zuulOutput.add(notification.getData());
+        }
+
+        assertThat(discoveryOutput, containsInAnyOrder(discoveryInfos.toArray()));
+        assertThat(zuulOutput, containsInAnyOrder(zuulInfos.toArray()));
+    }
+
+    @Test(timeout = 60000)
+    public void testForInterestSecondInterestSupercedeFirst() throws Exception {
+        when(mockFactory.newChannel()).then(new Answer<InterestChannel>() {
+            @Override
+            public InterestChannel answer(InvocationOnMock invocation) throws Throwable {
+                return newAlwaysSuccessChannel(channelId.getAndIncrement());
+            }
+        });
+
+        handler = new InterestHandlerImpl(registry, factory, RETRY_WAIT_MILLIS);
+
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber1 = new ExtTestSubscriber<>();
+        handler.forInterest(discoveryInterest).subscribe(extTestSubscriber1);
+
+        // don't use all registry interest as it is a special singleton
+        Interest<InstanceInfo> compositeInterest = new MultipleInterests<>(discoveryInterest, zuulInterest);
+
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber2 = new ExtTestSubscriber<>();
+        handler.forInterest(compositeInterest).subscribe(extTestSubscriber2);
+
+        final List<InstanceInfo> discoveryOutput = new ArrayList<>();
+        final List<InstanceInfo> compositeOutput = new ArrayList<>();
+
+        for (ChangeNotification<InstanceInfo> notification : extTestSubscriber1.takeNext(3, 500, TimeUnit.MILLISECONDS)) {
+            discoveryOutput.add(notification.getData());
+        }
+
+        for (ChangeNotification<InstanceInfo> notification : extTestSubscriber2.takeNext(6, 500, TimeUnit.MILLISECONDS)) {
+            compositeOutput.add(notification.getData());
+        }
+
+        assertThat(discoveryOutput, containsInAnyOrder(discoveryInfos.toArray()));
+
+        List<InstanceInfo> compositeExpected = new ArrayList<>(discoveryInfos);
+        compositeExpected.addAll(zuulInfos);
+        assertThat(compositeOutput, containsInAnyOrder(compositeExpected.toArray()));
+    }
+
 
     private InterestChannel newAlwaysSuccessChannel(Integer id) {
         InterestChannel channel = spy(new InterestChannelImpl(registry, transportClient, mock(InterestChannelMetrics.class)));

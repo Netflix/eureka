@@ -19,8 +19,7 @@ import rx.subjects.Subject;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Abstract factory that provides a {@link RetryableConnection}.
- *
+ * Factory that provides a {@link RetryableConnection}.
  * @param <CHANNEL> the type of channel to be used
  *
  * @author David Liu
