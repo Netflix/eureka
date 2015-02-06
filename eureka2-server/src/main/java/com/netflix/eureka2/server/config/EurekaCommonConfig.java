@@ -1,6 +1,11 @@
 package com.netflix.eureka2.server.config;
 
+import com.netflix.eureka2.config.ConfigNameStrings.*;
+import com.netflix.eureka2.config.EurekaRegistryConfig;
+import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
+import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
+import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider.StrategyType;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import com.netflix.governator.annotations.Configuration;
 
@@ -9,18 +14,20 @@ import com.netflix.governator.annotations.Configuration;
  *
  * @author David Liu
  */
-public abstract class EurekaCommonConfig {
+public abstract class EurekaCommonConfig implements EurekaTransportConfig, EurekaRegistryConfig {
 
     public enum ResolverType {fixed, dns}
+
+    private static final long DEFAULT_CONNECTION_AUTO_TIMEOUT_MS = 30*60*1000;
+    private static final String DEFAULT_CODEC = "Avro";
+
+    public static final long DEFAULT_EVICTION_TIMEOUT = 30000;
 
     @Configuration("eureka.common.writeCluster.resolverType")
     protected String resolverType = ResolverType.fixed.name();
 
     @Configuration("eureka.common.writeCluster.serverList")
     protected String[] serverList = {"localhost:12102:12103:12104"};
-
-    @Configuration("eureka.services.transport.codec")
-    protected String codec = Codec.Avro.name();
 
     // instance info configs
     @Configuration("eureka.instanceInfo.appName")
@@ -38,6 +45,23 @@ public abstract class EurekaCommonConfig {
     @Configuration("netflix.platform.admin.resources.port")
     protected int webAdminPort = 8077;
 
+    // transport configs
+    @Configuration(Transport.connectionAutoTimeoutMsName)
+    protected long connectionAutoTimeoutMs = DEFAULT_CONNECTION_AUTO_TIMEOUT_MS;
+
+    @Configuration(Transport.codecName)
+    protected String codec = DEFAULT_CODEC;
+
+    // registry configs
+    @Configuration(Registry.evictionTimeoutMsName)
+    protected long evictionTimeoutMs = DEFAULT_EVICTION_TIMEOUT;
+
+    @Configuration(Registry.evictionStrategyTypeName)
+    protected String evictionStrategyType = EvictionStrategyProvider.StrategyType.PercentageDrop.name();
+
+    @Configuration(Registry.evictionStrategyValueName)
+    protected String evictionStrategyValue = "20";
+
 
     // For property injection
     protected EurekaCommonConfig() {
@@ -46,21 +70,29 @@ public abstract class EurekaCommonConfig {
     protected EurekaCommonConfig(
             ResolverType resolverType,
             String[] serverList,
-            Codec codec,
             String appName,
             String vipAddress,
             LocalDataCenterInfo.DataCenterType dataCenterType,
             Integer shutDownPort,
-            Integer webAdminPort
+            Integer webAdminPort,
+            Long connectionAutoTimeoutMs,
+            Codec codec,
+            Long evictionTimeoutMs,
+            StrategyType evictionStrategyType,
+            String evictionStrategyValue
     ) {
         this.resolverType = resolverType == null ? this.resolverType : resolverType.name();
         this.serverList = serverList == null ? this.serverList : serverList;
-        this.codec = codec == null ? this.codec : codec.name();
         this.appName = appName == null ? this.appName : appName;
         this.vipAddress = vipAddress == null ? this.vipAddress : vipAddress;
         this.dataCenterType = dataCenterType == null ? this.dataCenterType : dataCenterType.name();
         this.shutDownPort = shutDownPort == null ? this.shutDownPort : shutDownPort;
         this.webAdminPort = webAdminPort == null ? this.webAdminPort : webAdminPort;
+        this.connectionAutoTimeoutMs = connectionAutoTimeoutMs == null ? this.connectionAutoTimeoutMs : connectionAutoTimeoutMs;
+        this.codec = codec == null ? this.codec : codec.name();
+        this.evictionTimeoutMs = evictionTimeoutMs == null ? this.evictionTimeoutMs : evictionTimeoutMs;
+        this.evictionStrategyType = evictionStrategyType == null ? this.evictionStrategyType : evictionStrategyType.name();
+        this.evictionStrategyValue = evictionStrategyValue == null ? this.evictionStrategyValue : evictionStrategyValue;
     }
 
     public String[] getServerList() {
@@ -95,6 +127,20 @@ public abstract class EurekaCommonConfig {
         return result;
     }
 
+    public int getWebAdminPort() {
+        return webAdminPort;
+    }
+
+    public int getShutDownPort() {
+        return shutDownPort;
+    }
+
+    @Override
+    public long getConnectionAutoTimeoutMs() {
+        return connectionAutoTimeoutMs;
+    }
+
+    @Override
     public Codec getCodec() {
         Codec result;
         try {
@@ -105,24 +151,45 @@ public abstract class EurekaCommonConfig {
         return result;
     }
 
-    public int getWebAdminPort() {
-        return webAdminPort;
+    @Override
+    public long getEvictionTimeoutMs() {
+        return evictionTimeoutMs;
     }
 
-    public int getShutDownPort() {
-        return shutDownPort;
+    @Override
+    public EvictionStrategyProvider.StrategyType getEvictionStrategyType() {
+        EvictionStrategyProvider.StrategyType type;
+        try {
+            type = EvictionStrategyProvider.StrategyType.valueOf(evictionStrategyType);
+        } catch (Exception e) {
+            type = EvictionStrategyProvider.StrategyType.PercentageDrop;
+        }
+
+        return type;
     }
+
+    @Override
+    public String getEvictionStrategyValue() {
+        return evictionStrategyValue;
+    }
+
 
     // builder
     public abstract static class EurekaCommonConfigBuilder<C extends EurekaCommonConfig, B extends EurekaCommonConfigBuilder<C, B>> {
         protected ResolverType resolverType;
         protected String[] serverList;
-        protected Codec codec;
         protected String appName;
         protected String vipAddress;
         protected LocalDataCenterInfo.DataCenterType dataCenterType;
         protected Integer shutDownPort;
         protected Integer webAdminPort;
+
+        protected Long connectionAutoTimeoutMs;
+        protected Codec codec;
+
+        protected Long evictionTimeoutMs;
+        protected EvictionStrategyProvider.StrategyType evictionStrategyType;
+        protected String evictionStrategyValue;
 
         public B withResolverType(ResolverType resolverType) {
             this.resolverType = resolverType;
@@ -136,11 +203,6 @@ public abstract class EurekaCommonConfig {
 
         public B withServerList(String[] serverList) {
             this.serverList = serverList;
-            return self();
-        }
-
-        public B withCodec(Codec codec) {
-            this.codec = codec;
             return self();
         }
 
@@ -166,6 +228,31 @@ public abstract class EurekaCommonConfig {
 
         public B withWebAdminPort(int webAdminPort) {
             this.webAdminPort = webAdminPort;
+            return self();
+        }
+
+        public B withConnectionAutoTimeoutMs(long connectionAutoTimeoutMs) {
+            this.connectionAutoTimeoutMs = connectionAutoTimeoutMs;
+            return self();
+        }
+
+        public B withCodec(Codec codec) {
+            this.codec = codec;
+            return self();
+        }
+
+        public B withEvictionTimeout(long evictionTimeoutMs) {
+            this.evictionTimeoutMs = evictionTimeoutMs;
+            return self();
+        }
+
+        public B withEvictionStrategyType(EvictionStrategyProvider.StrategyType strategyType) {
+            this.evictionStrategyType = strategyType;
+            return self();
+        }
+
+        public B withEvictionStrategyValue(String strategyValue) {
+            this.evictionStrategyValue = strategyValue;
             return self();
         }
 

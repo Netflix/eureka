@@ -1,6 +1,7 @@
 package com.netflix.eureka2.server.config;
 
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
+import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider.StrategyType;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import com.netflix.governator.annotations.Configuration;
@@ -24,15 +25,20 @@ public class EurekaServerConfig extends EurekaCommonConfig {
     protected EurekaServerConfig(
             ResolverType resolverType,
             String[] serverList,
-            Codec codec,
             String appName,
             String vipAddress,
             DataCenterType dataCenterType,
             Integer shutDownPort,
             Integer webAdminPort,
-            Integer discoveryPort
+            Integer discoveryPort,
+            Long connectionAutoTimeoutMs,
+            Codec codec,
+            Long evictionTimeoutMs,
+            StrategyType evictionStrategyType,
+            String evictionStrategyValue
     ) {
-        super(resolverType, serverList, codec, appName, vipAddress, dataCenterType, shutDownPort, webAdminPort);
+        super(resolverType, serverList, appName, vipAddress, dataCenterType, shutDownPort, webAdminPort,
+                connectionAutoTimeoutMs, codec, evictionTimeoutMs, evictionStrategyType, evictionStrategyValue);
         this.discoveryPort = discoveryPort == null ? this.discoveryPort : discoveryPort;
     }
 
@@ -53,13 +59,17 @@ public class EurekaServerConfig extends EurekaCommonConfig {
             return new EurekaServerConfig(
                     resolverType,
                     serverList,
-                    codec,
                     appName,
                     vipAddress,
                     dataCenterType,
                     shutDownPort,
                     webAdminPort,
-                    discoveryPort
+                    discoveryPort,
+                    connectionAutoTimeoutMs,
+                    codec,
+                    evictionTimeoutMs,
+                    evictionStrategyType,
+                    evictionStrategyValue
             );
         }
     }

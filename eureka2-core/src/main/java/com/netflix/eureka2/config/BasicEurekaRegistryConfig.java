@@ -2,6 +2,8 @@ package com.netflix.eureka2.config;
 
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider.StrategyType;
 
+import static com.netflix.eureka2.config.ConfigNameStrings.Registry.*;
+
 /**
  * basic eureka registry config that reads properties from System.properties if available,
  * but also allows programmatic overrides and provides some defaults.
@@ -13,9 +15,9 @@ public class BasicEurekaRegistryConfig implements EurekaRegistryConfig {
     private static final String EVICTION_STRATEGY_TYPE = StrategyType.PercentageDrop.name();
     private static final String EVICTION_STRATEGY_VALUE = "20";
 
-    private String evictionTimeoutMs = System.getProperty("eureka.registry.evictionTimeoutMs", EVICTION_TIMEOUT_MS);
-    private String evictionStrategyType = System.getProperty("eureka.registry.evictionStrategy.type", EVICTION_STRATEGY_TYPE);
-    private String evictionStrategyValue = System.getProperty("eureka.registry.evictionStrategy.value", EVICTION_STRATEGY_VALUE);
+    private String evictionTimeoutMs = System.getProperty(evictionTimeoutMsName, EVICTION_TIMEOUT_MS);
+    private String evictionStrategyType = System.getProperty(evictionStrategyTypeName, EVICTION_STRATEGY_TYPE);
+    private String evictionStrategyValue = System.getProperty(evictionStrategyValueName, EVICTION_STRATEGY_VALUE);
 
     public BasicEurekaRegistryConfig() {
         this(null, null, null);
