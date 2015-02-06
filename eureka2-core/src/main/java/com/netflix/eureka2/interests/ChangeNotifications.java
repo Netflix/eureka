@@ -21,13 +21,19 @@ import java.util.List;
 
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import rx.Observable;
+import rx.functions.Func1;
 
 /**
+ * Collection of transformation functions operating on {@link ChangeNotification} data.
+ *
  * @author Tomasz Bak
  */
-public class ChangeNotifications {
+public final class ChangeNotifications {
 
-    public <T> Observable<ChangeNotification<T>> from(T... values) {
+    private ChangeNotifications() {
+    }
+
+    public static <T> Observable<ChangeNotification<T>> from(T... values) {
         if (values == null || values.length == 0) {
             return Observable.empty();
         }
@@ -36,5 +42,14 @@ public class ChangeNotifications {
             notifications.add(new ChangeNotification<T>(Kind.Add, value));
         }
         return Observable.from(notifications);
+    }
+
+    public static Func1<ChangeNotification<?>, Boolean> batchMarkerFilter() {
+        return new Func1<ChangeNotification<?>, Boolean>() {
+            @Override
+            public Boolean call(ChangeNotification<?> notification) {
+                return notification.isDataNotification();
+            }
+        };
     }
 }

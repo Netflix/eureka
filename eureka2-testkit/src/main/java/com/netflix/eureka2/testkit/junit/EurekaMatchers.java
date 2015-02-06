@@ -1,8 +1,12 @@
 package com.netflix.eureka2.testkit.junit;
 
+import java.util.List;
+
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.testkit.junit.matchers.ChangeNotificationBatchMatcher;
+import com.netflix.eureka2.testkit.junit.matchers.ChangeNotificationKindMatcher;
 import com.netflix.eureka2.testkit.junit.matchers.ChangeNotificationMatcher;
 import com.netflix.eureka2.testkit.junit.matchers.InstanceInfoMatcher;
 import org.hamcrest.Matcher;
@@ -29,5 +33,13 @@ public final class EurekaMatchers {
 
     public static Matcher<ChangeNotification<InstanceInfo>> deleteChangeNotificationOf(InstanceInfo expectedValue) {
         return new ChangeNotificationMatcher(Kind.Delete, expectedValue);
+    }
+
+    public static Matcher<ChangeNotification<InstanceInfo>> stateChangeNotification() {
+        return new ChangeNotificationKindMatcher(Kind.Buffer, Kind.FinishBuffering);
+    }
+
+    public static <T> Matcher<List<ChangeNotification<T>>> changeNotificationBatchOf(List<ChangeNotification<T>> dataNotifications) {
+        return new ChangeNotificationBatchMatcher<T>(dataNotifications);
     }
 }

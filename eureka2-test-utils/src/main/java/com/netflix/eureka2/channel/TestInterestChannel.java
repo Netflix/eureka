@@ -1,5 +1,6 @@
 package com.netflix.eureka2.channel;
 
+import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
@@ -16,5 +17,10 @@ public class TestInterestChannel extends TestChannel<InterestChannel, Interest<I
     public Observable<Void> change(Interest<InstanceInfo> newInterest) {
         operations.add(newInterest);
         return delegate.change(newInterest);
+    }
+
+    @Override
+    public Observable<ChangeNotification<InstanceInfo>> changeNotifications() {
+        return delegate.changeNotifications();
     }
 }

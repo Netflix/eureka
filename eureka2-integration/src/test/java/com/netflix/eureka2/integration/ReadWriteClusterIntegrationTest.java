@@ -17,6 +17,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import rx.observers.TestSubscriber;
 
+import static com.netflix.eureka2.interests.ChangeNotifications.batchMarkerFilter;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -49,7 +50,9 @@ public class ReadWriteClusterIntegrationTest {
     public void testReadServerFetchesDataFromWriteServerRegistry() throws Exception {
         // Listen to interest stream updates
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> notificationSubscriber = new ExtTestSubscriber<>();
-        eurekaClient.forInterest(Interests.forApplications(registeringInfo.getApp())).subscribe(notificationSubscriber);
+        eurekaClient.forInterest(Interests.forApplications(registeringInfo.getApp()))
+                .filter(batchMarkerFilter())
+                .subscribe(notificationSubscriber);
 
         // Register
         TestSubscriber<Void> registrationSubscriber = new TestSubscriber<>();

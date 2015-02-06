@@ -32,6 +32,7 @@ import rx.schedulers.TestScheduler;
 import rx.subjects.PublishSubject;
 import rx.subjects.ReplaySubject;
 
+import static com.netflix.eureka2.interests.ChangeNotifications.batchMarkerFilter;
 import static com.netflix.eureka2.metric.EurekaRegistryMetricFactory.registryMetrics;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
@@ -168,7 +169,7 @@ public class InterestChannelImplTest {
         testSubscriber.assertOnCompleted();
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> notificationSubscriber = new ExtTestSubscriber<>();
-        registry.forInterest(Interests.forFullRegistry()).subscribe(notificationSubscriber);
+        registry.forInterest(Interests.forFullRegistry()).filter(batchMarkerFilter()).subscribe(notificationSubscriber);
 
         // Send to add change notifications
         incomingSubject.onNext(message1);
@@ -187,7 +188,7 @@ public class InterestChannelImplTest {
 
     @Test(timeout = 60000)
     public void testMetrics() throws Exception {
-        // Subscriber to interest subscription, to open the channel
+        // Subscribe to interest subscription, to open the channel
         ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
         channel.change(sampleInterestZuul).subscribe(testSubscriber);
 

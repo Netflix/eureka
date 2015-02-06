@@ -31,7 +31,6 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import rx.Observable;
 import rx.Subscriber;
-import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
@@ -41,6 +40,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.netflix.eureka2.interests.ChangeNotifications.batchMarkerFilter;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Matchers.anyObject;
@@ -53,7 +53,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author David Liu
  */
-public class InterestHandlerTest {
+public class InterestHandlerImplTest {
 
     private static final int RETRY_WAIT_MILLIS = 10;
     private final int failAfterMillis = 10;
@@ -148,13 +148,8 @@ public class InterestHandlerTest {
                 SampleChangeNotification.DiscoveryAdd.newNotification(discoveryInfos.get(2))
         );
 
-        handler.forInterest(discoveryInterest).subscribe(discoverySubscriber);
-        discoverySubscriber.assertProducesInAnyOrder(expectedDiscovery, new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
-            @Override
-            public ChangeNotification<InstanceInfo> call(ChangeNotification<InstanceInfo> notification) {
-                return notification;
-            }
-        }, 30, TimeUnit.SECONDS);
+        handler.forInterest(discoveryInterest).filter(batchMarkerFilter()).subscribe(discoverySubscriber);
+        discoverySubscriber.assertProducesInAnyOrder(expectedDiscovery);
 
         assertThat(factory.getAllChannels().size(), is(1));
         TestInterestChannel channel0 = (TestInterestChannel) factory.getAllChannels().get(0);
@@ -170,13 +165,8 @@ public class InterestHandlerTest {
                 SampleChangeNotification.ZuulAdd.newNotification(zuulInfos.get(2))
         );
 
-        handler.forInterest(zuulInterest).subscribe(zuulSubscriber);
-        zuulSubscriber.assertProducesInAnyOrder(expectedZuul, new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
-            @Override
-            public ChangeNotification<InstanceInfo> call(ChangeNotification<InstanceInfo> notification) {
-                return notification;
-            }
-        }, 30, TimeUnit.SECONDS);
+        handler.forInterest(zuulInterest).filter(batchMarkerFilter()).subscribe(zuulSubscriber);
+        zuulSubscriber.assertProducesInAnyOrder(expectedZuul);
 
         assertThat(factory.getAllChannels().size(), is(1));
         channel0 = (TestInterestChannel) factory.getAllChannels().get(0);
@@ -228,13 +218,8 @@ public class InterestHandlerTest {
                 SampleChangeNotification.DiscoveryAdd.newNotification(discoveryInfos.get(2))
         );
 
-        handler.forInterest(discoveryInterest).subscribe(discoverySubscriber);
-        discoverySubscriber.assertProducesInAnyOrder(expected, new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
-            @Override
-            public ChangeNotification<InstanceInfo> call(ChangeNotification<InstanceInfo> notification) {
-                return notification;
-            }
-        }, 30, TimeUnit.SECONDS);
+        handler.forInterest(discoveryInterest).filter(batchMarkerFilter()).subscribe(discoverySubscriber);
+        discoverySubscriber.assertProducesInAnyOrder(expected);
 
         assertThat(factory.getAllChannels().size(), is(2));
 

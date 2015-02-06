@@ -10,12 +10,13 @@ import com.netflix.eureka2.channel.InterestChannel.STATE;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.ModifyNotification;
-import com.netflix.eureka2.interests.MultipleInterests;
+import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.InterestChannelMetrics;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.DeleteInstance;
 import com.netflix.eureka2.protocol.discovery.InterestRegistration;
 import com.netflix.eureka2.protocol.discovery.InterestSetNotification;
+import com.netflix.eureka2.protocol.discovery.StreamStateUpdate;
 import com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Sourced;
@@ -44,9 +45,6 @@ import rx.observers.SafeSubscriber;
 public class InterestChannelImpl extends AbstractClientChannel<STATE> implements InterestChannel, Sourced {
 
     private static final Logger logger = LoggerFactory.getLogger(InterestChannelImpl.class);
-
-    private static final IllegalStateException INTEREST_NOT_REGISTERED_EXCEPTION =
-            new IllegalStateException("No interest is registered on this channel.");
 
     /**
      * Since we assume single threaded access to this channel, no need for concurrency control
@@ -122,6 +120,11 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
     }
 
     @Override
+    public Observable<ChangeNotification<InstanceInfo>> changeNotifications() {
+        return channelInterestStream;
+    }
+
+    @Override
     protected void _close() {
         if (state.get() != STATE.Closed) {
             moveToState(state.get(), STATE.Closed);
@@ -155,6 +158,8 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
                             changeNotification = updateMessageToChangeNotification((UpdateInstanceInfo) notification);
                         } else if (notification instanceof DeleteInstance) {
                             changeNotification = deleteMessageToChangeNotification((DeleteInstance) notification);
+                        } else if (notification instanceof StreamStateUpdate) {
+                            changeNotification = streamStateUpdateToStreamStateNotification((StreamStateUpdate) notification);
                         } else {
                             throw new IllegalArgumentException("Unknown message received on the interest channel. Type: "
                                     + message.getClass().getName());
@@ -168,9 +173,14 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
                     public Boolean call(ChangeNotification<InstanceInfo> notification) {
                         return null != notification;
                     }
+                }).doOnTerminate(new Action0() {
+                    @Override
+                    public void call() {
+                        System.out.println("DONE");
+                    }
                 });
             }
-        });
+        }).share();
     }
 
     /**
@@ -241,6 +251,16 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
         return notification;
     }
 
+    private ChangeNotification<InstanceInfo> streamStateUpdateToStreamStateNotification(StreamStateUpdate notification) {
+        switch (notification.getState()) {
+            case Buffer:
+                return StreamStateNotification.bufferNotification(notification.getInterest());
+            case FinishBuffering:
+                return StreamStateNotification.finishBufferingNotification(notification.getInterest());
+        }
+        throw new IllegalStateException("Unexpected state " + notification.getState());
+    }
+
     protected class ChannelInterestSubscriber extends SafeSubscriber<ChangeNotification<InstanceInfo>> {
         public ChannelInterestSubscriber(final SourcedEurekaRegistry<InstanceInfo> registry) {
             super(new Subscriber<ChangeNotification<InstanceInfo>>() {
@@ -265,6 +285,10 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
                             break;
                         case Delete:
                             registry.unregister(notification.getData(), selfSource);
+                            break;
+                        case Buffer:
+                        case FinishBuffering:
+                            // No-op
                             break;
                         default:
                             logger.error("Unrecognized notification kind");

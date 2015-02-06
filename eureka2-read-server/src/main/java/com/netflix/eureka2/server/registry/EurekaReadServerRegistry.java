@@ -20,6 +20,7 @@ import com.google.inject.Inject;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
+import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.registry.MultiSourcedDataHolder;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
@@ -27,6 +28,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.channel.ServiceChannel;
 import rx.Observable;
+import rx.functions.Func1;
 
 /**
  * Registry implemented on top of eureka-client. It does not story anything, just
@@ -81,8 +83,19 @@ public class EurekaReadServerRegistry implements SourcedEurekaRegistry<InstanceI
     }
 
     @Override
-    public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest) {
-        return eurekaClient.forInterest(interest);
+    public Observable<ChangeNotification<InstanceInfo>> forInterest(final Interest<InstanceInfo> interest) {
+        return eurekaClient.forInterest(interest).map(new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
+            @Override
+            public ChangeNotification<InstanceInfo> call(ChangeNotification<InstanceInfo> notification) {
+                switch (notification.getKind()) {
+                    case Buffer:
+                        return StreamStateNotification.bufferNotification(interest);
+                    case FinishBuffering:
+                        return StreamStateNotification.finishBufferingNotification(interest);
+                }
+                return notification;
+            }
+        });
     }
 
     @Override

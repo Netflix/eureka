@@ -238,7 +238,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
                 return indexRegistry.forCompositeInterest((MultipleInterests) interest, this);
             } else {
                 return indexRegistry.forInterest(interest, notificationSubject,
-                        new InstanceInfoInitStateHolder(getSnapshotForInterest(interest)));
+                        new InstanceInfoInitStateHolder(getSnapshotForInterest(interest), interest));
             }
         } finally {
             notificationSubject.resume();

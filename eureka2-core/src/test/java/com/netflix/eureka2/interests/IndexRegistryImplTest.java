@@ -23,7 +23,7 @@ public class IndexRegistryImplTest {
     private final PublishSubject<ChangeNotification<InstanceInfo>> dataSource = PublishSubject.create();
 
     private final InitStateHolder<InstanceInfo> initStateHolder =
-            new InstanceInfoInitStateHolder(Collections.<ChangeNotification<InstanceInfo>>emptyIterator());
+            new InstanceInfoInitStateHolder(Collections.<ChangeNotification<InstanceInfo>>emptyIterator(), Interests.forFullRegistry());
 
     private final ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
 

@@ -13,6 +13,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import static com.netflix.eureka2.interests.ChangeNotifications.batchMarkerFilter;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.modifyChangeNotificationOf;
@@ -43,7 +44,7 @@ public class WriteServerIntegrationTest {
 
         // Subscribe to second write server
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
-        discoveryClient.forApplication(infos.get(0).getApp()).subscribe(testSubscriber);
+        discoveryClient.forApplication(infos.get(0).getApp()).filter(batchMarkerFilter()).subscribe(testSubscriber);
 
         // We need to block, otherwise if we shot all of them in one row, they may be
         // compacted in the index.

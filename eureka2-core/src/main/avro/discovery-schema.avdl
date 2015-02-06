@@ -74,6 +74,21 @@ protocol DiscoveryProtocol {
         } deltaDTO;
     }
 
+    @namespace("com.netflix.eureka2.protocol.discovery.StreamStateUpdate$")
+    enum BufferingState {
+        Buffer, FinishBuffering
+    }
+
+    record StreamStateUpdate {
+        com.netflix.eureka2.protocol.discovery.StreamStateUpdate$.BufferingState state;
+        union {
+            com.netflix.eureka2.interests.ApplicationInterest,
+            com.netflix.eureka2.interests.FullRegistryInterest,
+            com.netflix.eureka2.interests.VipInterest,
+            com.netflix.eureka2.interests.InstanceInterest
+        } interest;
+    }
+
     record InterestRegistration {
         @java-class("[Lcom.netflix.eureka2.interests.Interest;")
         array<
@@ -111,6 +126,7 @@ protocol DiscoveryProtocol {
             AddInstance,
             DeleteInstance,
             UpdateInstanceInfo,
+            StreamStateUpdate,
             InterestRegistration,
             UnregisterInterestSet,
             com.netflix.eureka2.transport.Acknowledgement,

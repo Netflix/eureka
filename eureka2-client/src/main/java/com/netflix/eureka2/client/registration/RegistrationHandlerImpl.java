@@ -26,7 +26,7 @@ public class RegistrationHandlerImpl implements RegistrationHandler {
 
     private static final int DEFAULT_RETRY_WAIT_MILLIS = 500;
 
-    private final RetryableConnectionFactory<RegistrationChannel, InstanceInfo> retryableConnectionFactory;
+    private final RetryableConnectionFactory<RegistrationChannel, InstanceInfo, Void> retryableConnectionFactory;
     private final int retryWaitMillis;
 
     @Inject
@@ -35,10 +35,15 @@ public class RegistrationHandlerImpl implements RegistrationHandler {
     }
 
     /*visible for testing*/ RegistrationHandlerImpl(ChannelFactory<RegistrationChannel> channelFactory, int retryWaitMillis) {
-        this.retryableConnectionFactory = new RetryableConnectionFactory<RegistrationChannel, InstanceInfo>(channelFactory) {
+        this.retryableConnectionFactory = new RetryableConnectionFactory<RegistrationChannel, InstanceInfo, Void>(channelFactory) {
             @Override
             protected Observable<Void> executeOnChannel(RegistrationChannel channel, InstanceInfo instanceInfo) {
                 return channel.register(instanceInfo);
+            }
+
+            @Override
+            protected Observable<Void> connectToChannelInput(RegistrationChannel channel) {
+                return Observable.empty();
             }
         };
         this.retryWaitMillis = retryWaitMillis;
@@ -46,7 +51,7 @@ public class RegistrationHandlerImpl implements RegistrationHandler {
 
     @Override
     public RegistrationResponse register(Observable<InstanceInfo> instanceInfoStream) {
-        final RetryableConnection<RegistrationChannel> retryableConnection
+        final RetryableConnection<RegistrationChannel, Void> retryableConnection
                 = retryableConnectionFactory.newConnection(instanceInfoStream.distinctUntilChanged());
 
         Observable<Void> initObservable = retryableConnection.getInitObservable();

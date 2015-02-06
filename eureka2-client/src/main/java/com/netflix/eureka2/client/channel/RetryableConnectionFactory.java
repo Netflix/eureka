@@ -1,5 +1,7 @@
 package com.netflix.eureka2.client.channel;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.ServiceChannel;
 import com.netflix.eureka2.utils.rx.BreakerSwitchSubject;
@@ -15,8 +17,6 @@ import rx.functions.Func2;
 import rx.subjects.AsyncSubject;
 import rx.subjects.BehaviorSubject;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 /**
  * Abstract factory that provides a {@link RetryableConnection} for each newConnection call.
  *
@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author David Liu
  */
-public abstract class RetryableConnectionFactory<CHANNEL extends ServiceChannel, OP> {
+public abstract class RetryableConnectionFactory<CHANNEL extends ServiceChannel, OP, INPUT> {
 
     private static final Logger logger = LoggerFactory.getLogger(RetryableConnectionFactory.class);
 
@@ -40,7 +40,7 @@ public abstract class RetryableConnectionFactory<CHANNEL extends ServiceChannel,
      * @return a {@link RetryableConnection} that contains several observables. This lifecycle observable provided
      * can be retried on.
      */
-    public RetryableConnection<CHANNEL> newConnection(final Observable<OP> opStream) {
+    public RetryableConnection<CHANNEL, INPUT> newConnection(final Observable<OP> opStream) {
         final AsyncSubject<Void> initSubject = AsyncSubject.create();  // subject used to cache init status
 
         final BreakerSwitchSubject<OP> opSubject = BreakerSwitchSubject.create(BehaviorSubject.<OP>create());
@@ -104,8 +104,25 @@ public abstract class RetryableConnectionFactory<CHANNEL extends ServiceChannel,
                     }
                 });
 
+        Observable<INPUT> channelInputObservable = channelObservable.flatMap(new Func1<CHANNEL, Observable<INPUT>>() {
+            @Override
+            public Observable<INPUT> call(CHANNEL channel) {
+                return connectToChannelInput(channel)
+                        // We ignore error from the channel, as we want to continue streaming data
+                        // from the next channel that will re-established.
+                        .onErrorResumeNext(new Func1<Throwable, Observable<? extends INPUT>>() {
+                            @Override
+                            public Observable<INPUT> call(Throwable throwable) {
+                                logger.info("Closing input channel observable as underlying channel has closed with an error");
+                                return Observable.empty();
+                            }
+                        });
+            }
+        });
+
         return new RetryableConnection<>(
                 channelSubject.asObservable(),
+                channelInputObservable,
                 lifecycle.asObservable(),
                 initSubject.asObservable(),
                 new Action0() {  // Why not perform this shutdown on an unsubscribe on the lifecycle?
@@ -125,4 +142,6 @@ public abstract class RetryableConnectionFactory<CHANNEL extends ServiceChannel,
     }
 
     protected abstract Observable<Void> executeOnChannel(CHANNEL channel, OP op);
+
+    protected abstract Observable<INPUT> connectToChannelInput(CHANNEL channel);
 }

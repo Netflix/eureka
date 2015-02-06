@@ -16,7 +16,9 @@ import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import rx.Observable;
 
+import static com.netflix.eureka2.interests.ChangeNotifications.batchMarkerFilter;
 import static com.netflix.eureka2.rx.RxBlocking.iteratorFrom;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
@@ -58,8 +60,8 @@ public class WriteClusterIntegrationTest {
         firstClient.register(clientInfo).toBlocking().firstOrDefault(null);
 
         // Subscribe to second write server
-        Iterator<ChangeNotification<InstanceInfo>> notificationIterator =
-                iteratorFrom(10, TimeUnit.SECONDS, secondClient.forApplication(clientInfo.getApp()));
+        Observable<ChangeNotification<InstanceInfo>> notifications = secondClient.forApplication(clientInfo.getApp()).filter(batchMarkerFilter());
+        Iterator<ChangeNotification<InstanceInfo>> notificationIterator = iteratorFrom(10, TimeUnit.SECONDS, notifications);
 
         assertThat(notificationIterator.next(), is(addChangeNotificationOf(clientInfo)));
 
@@ -74,7 +76,7 @@ public class WriteClusterIntegrationTest {
         final EurekaClient registrationClient = eurekaDeploymentResource.connectToWriteServer(0);
         final EurekaClient discoveryClient = eurekaDeploymentResource.connectToWriteServer(1);
 
-        InstanceInfo.Builder seedBuilder = new InstanceInfo.Builder().withId("id").withApp("app");
+        InstanceInfo.Builder seedBuilder = new InstanceInfo.Builder().withId("id123").withApp("app");
         List<InstanceInfo> infos = Arrays.asList(
                 seedBuilder.withAppGroup("AAA").build(),
                 seedBuilder.withAppGroup("BBB").build(),
@@ -83,7 +85,7 @@ public class WriteClusterIntegrationTest {
 
         // Subscribe to second write server
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
-        discoveryClient.forApplication(infos.get(0).getApp()).subscribe(testSubscriber);
+        discoveryClient.forApplication(infos.get(0).getApp()).filter(batchMarkerFilter()).subscribe(testSubscriber);
 
         // We need to wait for notification after each registry update, to avoid compaction
         // on the way.
@@ -116,8 +118,9 @@ public class WriteClusterIntegrationTest {
         dataSourceClient.register(firstRecord).toBlocking().firstOrDefault(null);
 
         // Subscribe to get current registry content
-        Iterator<ChangeNotification<InstanceInfo>> notificationIterator =
-                iteratorFrom(5, TimeUnit.SECONDS, subscriberClient.forInterest(Interests.forApplications(firstRecord.getApp())));
+        Observable<ChangeNotification<InstanceInfo>> notifications =
+                subscriberClient.forInterest(Interests.forApplications(firstRecord.getApp())).filter(batchMarkerFilter());
+        Iterator<ChangeNotification<InstanceInfo>> notificationIterator = iteratorFrom(5, TimeUnit.SECONDS, notifications);
 
         assertThat(notificationIterator.next(), is(addChangeNotificationOf(firstRecord)));
 
