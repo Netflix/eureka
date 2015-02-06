@@ -1,4 +1,10 @@
-package com.netflix.eureka2.client.channel;
+package com.netflix.eureka2.connection;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.eureka2.channel.AbstractServiceChannel;
 import com.netflix.eureka2.channel.ChannelFactory;
@@ -11,29 +17,34 @@ import org.junit.Test;
 import rx.Observable;
 import rx.functions.Action0;
 import rx.functions.Func1;
+import rx.functions.Func2;
 import rx.observers.TestSubscriber;
 import rx.subjects.ReplaySubject;
 import rx.subjects.Subject;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 
 /**
  * @author David Liu
  */
 public class RetryableConnectionFactoryTest {
 
+    private static final Func1<TestFailableChannel, Observable<Void>> FAILABLE_CHANNEL_INPUT_FUN =
+            new Func1<TestFailableChannel, Observable<Void>>() {
+                @Override
+                public Observable<Void> call(TestFailableChannel testChannel) {
+                    return Observable.empty();
+                }
+            };
+
     private Subject<TestOp, TestOp> opSubject;
     private Observable<TestOp> opStream;
     private FailableChannelFactory innerFactory;
     private TestChannelFactory<TestFailableChannel> factory;
-    private TestConnectionFactory handler;
+    private RetryableConnectionFactory<TestFailableChannel> handler;
     private TestSubscriber<Void> testSubscriber;
     private TestSubscriber<Void> initSubscriber;
 
@@ -43,7 +54,7 @@ public class RetryableConnectionFactoryTest {
         opStream = opSubject.asObservable().distinctUntilChanged();
         innerFactory = new FailableChannelFactory();
         factory = new TestChannelFactory<>(innerFactory);
-        handler = new TestConnectionFactory(factory);
+        handler = new RetryableConnectionFactory<>(factory);
         testSubscriber = new TestSubscriber<>();
         initSubscriber = new TestSubscriber<>();
     }
@@ -57,7 +68,7 @@ public class RetryableConnectionFactoryTest {
      */
     @Test
     public void testHappyCase() throws Exception {
-        RetryableConnection<TestFailableChannel, Void> retryableConnection = handler.newConnection(opStream);
+        RetryableConnection<TestFailableChannel, Void> retryableConnection = handler.singleOpConnection(opStream, new TestConnectionFunc2(), FAILABLE_CHANNEL_INPUT_FUN);
 
         retryableConnection.getRetryableLifecycle().subscribe(testSubscriber);
         retryableConnection.getInitObservable().subscribe(initSubscriber);
@@ -95,7 +106,7 @@ public class RetryableConnectionFactoryTest {
      */
     @Test
     public void testClose() {
-        RetryableConnection<TestFailableChannel, Void> retryableConnection = handler.newConnection(opStream);
+        RetryableConnection<TestFailableChannel, Void> retryableConnection = handler.singleOpConnection(opStream, new TestConnectionFunc2(), FAILABLE_CHANNEL_INPUT_FUN);
 
         retryableConnection.getRetryableLifecycle().subscribe(testSubscriber);
         retryableConnection.getInitObservable().subscribe(initSubscriber);
@@ -130,7 +141,7 @@ public class RetryableConnectionFactoryTest {
      */
     @Test
     public void testConnectionLifecycleOnCompleted() {
-        RetryableConnection<TestFailableChannel, Void> retryableConnection = handler.newConnection(opStream);
+        RetryableConnection<TestFailableChannel, Void> retryableConnection = handler.singleOpConnection(opStream, new TestConnectionFunc2(), FAILABLE_CHANNEL_INPUT_FUN);
 
         retryableConnection.getRetryableLifecycle().subscribe(testSubscriber);
         retryableConnection.getInitObservable().subscribe(initSubscriber);
@@ -187,8 +198,8 @@ public class RetryableConnectionFactoryTest {
         });
         factory = new TestChannelFactory<>(innerFactory);
 
-        handler = new TestConnectionFactory(factory);
-        RetryableConnection<TestFailableChannel, Void> retryableConnection = handler.newConnection(opStream);
+        handler = new RetryableConnectionFactory<>(factory);
+        RetryableConnection<TestFailableChannel, Void> retryableConnection = handler.singleOpConnection(opStream, new TestConnectionFunc2(), FAILABLE_CHANNEL_INPUT_FUN);
 
         final AtomicInteger opCount = new AtomicInteger(0);
         Observable<Void> connectionWithRetry = retryableConnection.getRetryableLifecycle()
@@ -255,8 +266,8 @@ public class RetryableConnectionFactoryTest {
         });
         factory = new TestChannelFactory<>(innerFactory);
 
-        handler = new TestConnectionFactory(factory);
-        RetryableConnection<TestFailableChannel, Void> retryableConnection = handler.newConnection(opStream);
+        handler = new RetryableConnectionFactory<>(factory);
+        RetryableConnection<TestFailableChannel, Void> retryableConnection = handler.singleOpConnection(opStream, new TestConnectionFunc2(), FAILABLE_CHANNEL_INPUT_FUN);
 
         final AtomicInteger opCount = new AtomicInteger(0);
         Observable<Void> connectionWithRetry = retryableConnection.getRetryableLifecycle()
@@ -309,6 +320,65 @@ public class RetryableConnectionFactoryTest {
         }
     }
 
+    // since the nullary connection reuses the same constructs as the unary connection, just this test should suffice
+    @Test
+    public void testNullaryConnectionLifecycleOnErrorRetryInitialFail() {
+        innerFactory = new FailableChannelFactory(new Func1<TestOp, Boolean>() {
+            @Override
+            public Boolean call(TestOp testOp) {
+                switch (testOp.id) {
+                    case 0:
+                        return true;  // fail
+                    default:
+                        return false;
+                }
+            }
+        });
+        factory = new TestChannelFactory<>(innerFactory);
+
+        handler = new RetryableConnectionFactory<>(factory);
+        final AtomicInteger opCount = new AtomicInteger(0);
+        RetryableConnection<TestFailableChannel, Void> retryableConnection = handler.zeroOpConnection(new TestConnectionFunc1(opCount));
+
+        Observable<Void> connectionWithRetry = retryableConnection.getRetryableLifecycle()
+                .doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {  // do this at unsubscribe time as a retry action triggers unsubscribe -> (re)subscribe
+                        opCount.getAndIncrement();
+                    }
+                })
+                .retry(3);
+
+        connectionWithRetry.subscribe(testSubscriber);
+        retryableConnection.getInitObservable().subscribe(initSubscriber);
+
+        initSubscriber.assertTerminalEvent();
+        initSubscriber.assertNoErrors();
+
+        assertThat(factory.getAllChannels().size(), is(2));
+        WorkAndResult result;
+
+        TestFailableChannel channel0 = factory.getAllChannels().get(0);
+
+        assertThat(channel0.id, is(0));
+        assertThat(channel0.getDelegate().getResults().size(), is(1));
+        result = channel0.getDelegate().getResults().get(0);
+        assertThat(result.op.id, is(0));
+        assertThat(result.result, is(WorkAndResult.Result.onError));
+
+        TestFailableChannel channel1 = factory.getAllChannels().get(1);
+
+        assertThat(channel1.id, is(1));
+        assertThat(channel1.getDelegate().getResults().size(), is(1));
+        result = channel1.getDelegate().getResults().get(0);
+        assertThat(result.op.id, is(1));
+        assertThat(result.result, is(WorkAndResult.Result.onCompleted));
+
+        retryableConnection.close();
+        for (TestFailableChannel c : factory.getAllChannels()) {
+            assertThat(c.getDelegate().isClosed(), is(true));
+        }
+    }
 
     //
     // some test constructs
@@ -328,12 +398,15 @@ public class RetryableConnectionFactoryTest {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof TestOp)) return false;
+            if (this == o)
+                return true;
+            if (!(o instanceof TestOp))
+                return false;
 
             TestOp testOp = (TestOp) o;
 
-            if (id != testOp.id) return false;
+            if (id != testOp.id)
+                return false;
 
             return true;
         }
@@ -369,14 +442,17 @@ public class RetryableConnectionFactoryTest {
         public TestFailableChannel(FailableChannel delegate, Integer id) {
             super(delegate, id);
         }
+
         @Override
         public Observable<Void> doWork(TestOp op) {
             return delegate.doWork(op);
         }
+
         @Override
         public boolean isClosed() {
             return delegate.isClosed();
         }
+
         @Override
         public List<WorkAndResult> getResults() {
             return delegate.getResults();
@@ -385,12 +461,16 @@ public class RetryableConnectionFactoryTest {
 
     interface FailableChannel extends ServiceChannel {
         public Observable<Void> doWork(TestOp op);
+
         public boolean isClosed();
+
         public List<WorkAndResult> getResults();
     }
 
     static class FailableChannelImpl extends AbstractServiceChannel<FailableChannelImpl.SimpleState> implements FailableChannel {
-        public enum SimpleState {SimpleState};
+        public enum SimpleState {SimpleState}
+
+        ;
 
         public final AtomicBoolean closed = new AtomicBoolean(false);
         public final ConcurrentLinkedQueue<WorkAndResult> results = new ConcurrentLinkedQueue<>();
@@ -471,20 +551,24 @@ public class RetryableConnectionFactoryTest {
         }
     }
 
-    static class TestConnectionFactory extends RetryableConnectionFactory<TestFailableChannel, TestOp, Void> {
-
-        public TestConnectionFactory(ChannelFactory<TestFailableChannel> channelFactory) {
-            super(channelFactory);
-        }
-
+    static class TestConnectionFunc2 implements Func2<TestFailableChannel, TestOp, Observable<Void>> {
         @Override
-        protected Observable<Void> executeOnChannel(TestFailableChannel channel, TestOp state) {
-            return channel.getDelegate().doWork(state);
-        }
-
-        @Override
-        protected Observable<Void> connectToChannelInput(TestFailableChannel channel) {
-            return Observable.empty();
+        public Observable<Void> call(TestFailableChannel testFailableChannel, TestOp testOp) {
+            return testFailableChannel.doWork(testOp);
         }
     }
+
+    static class TestConnectionFunc1 implements Func1<TestFailableChannel, Observable<Void>> {
+        private final AtomicInteger opId;
+
+        public TestConnectionFunc1(AtomicInteger opId) {
+            this.opId = opId;
+        }
+
+        @Override
+        public Observable<Void> call(TestFailableChannel testFailableChannel) {
+            return testFailableChannel.doWork(new TestOp(opId.get()));
+        }
+    }
+
 }

@@ -1,35 +1,38 @@
 /*
- * Copyright 2014 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+* Copyright 2014 Netflix, Inc.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 
 package com.netflix.eureka2.server.service.replication;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
-import com.netflix.eureka2.channel.ReplicationChannel;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
+import rx.subjects.ReplaySubject;
 
 import static com.netflix.eureka2.metric.server.WriteServerMetricFactory.*;
 import static org.hamcrest.CoreMatchers.*;
@@ -37,59 +40,100 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 /**
- * @author Tomasz Bak
- */
+* @author Tomasz Bak
+*/
 public class ReplicationServiceTest {
 
     private static final InstanceInfo SELF_INFO = SampleInstanceInfo.DiscoveryServer.build();
 
-    private static final InetSocketAddress ADDRESS = new InetSocketAddress("host1", 123);
+    private static final InetSocketAddress ADDRESS1 = new InetSocketAddress("host1", 123);
+    private static final InetSocketAddress ADDRESS2 = new InetSocketAddress("host2", 456);
+    private static final InetSocketAddress ADDRESS3 = new InetSocketAddress("host3", 789);
 
     private final WriteServerConfig config = WriteServerConfig.writeBuilder().build();
     private final SourcedEurekaRegistry<InstanceInfo> eurekaRegistry = mock(SourcedEurekaRegistry.class);
     private final SelfInfoResolver selfIdentityService = mock(SelfInfoResolver.class);
-
     private final ReplicationPeerAddressesProvider peerAddressProvider = mock(ReplicationPeerAddressesProvider.class);
 
-    private final ReplicationChannel replicationChannel = mock(ReplicationChannel.class);
+    private final ReplaySubject<ChangeNotification<InetSocketAddress>> peerAddressSubject = ReplaySubject.create();
 
     private ReplicationService replicationService;
 
-    private InetSocketAddress lastAddedAddress;
-
     @Before
     public void setUp() throws Exception {
-        replicationService = new ReplicationService(config, eurekaRegistry, selfIdentityService, peerAddressProvider, writeServerMetrics()) {
-            @Override
-            ReplicationChannel createRetryableSenderReplicationChannel(InetSocketAddress address) {
-                lastAddedAddress = address;
-                return replicationChannel;
-            }
-        };
-
+        replicationService = new ReplicationService(config, eurekaRegistry, selfIdentityService, peerAddressProvider, writeServerMetrics());
         when(selfIdentityService.resolve()).thenReturn(Observable.just(SELF_INFO));
+        when(peerAddressProvider.get()).thenReturn(peerAddressSubject.asObservable());
     }
 
     @Test(timeout = 60000)
     public void testConnectsToRemotePeers() throws Exception {
-        when(peerAddressProvider.get()).thenReturn(Observable.just(new ChangeNotification<InetSocketAddress>(Kind.Add, ADDRESS)));
+        Map<InetSocketAddress, ReplicationHandler> addressVsHandler = replicationService.addressVsHandler;
+        assertThat(addressVsHandler.size(), is(0));
 
         // Connect to trigger replication process
         replicationService.connect();
+        assertThat(addressVsHandler.size(), is(0));
 
-        assertThat(lastAddedAddress, is(equalTo(ADDRESS)));
+        peerAddressSubject.onNext(new ChangeNotification<>(Kind.Add, ADDRESS1));
+        assertThat(addressVsHandler.size(), is(1));
+        assertThat(addressVsHandler.keySet().iterator().next(), is(equalTo(ADDRESS1)));
     }
 
     @Test(timeout = 60000)
     public void testDisconnectsFromRemovedServers() throws Exception {
-        when(peerAddressProvider.get()).thenReturn(Observable.just(
-                new ChangeNotification<InetSocketAddress>(Kind.Add, ADDRESS),
-                new ChangeNotification<InetSocketAddress>(Kind.Delete, ADDRESS)
-        ));
+        Map<InetSocketAddress, ReplicationHandler> addressVsHandler = replicationService.addressVsHandler;
+        assertThat(addressVsHandler.size(), is(0));
 
         // Connect to trigger replication process
         replicationService.connect();
+        assertThat(addressVsHandler.size(), is(0));
 
-        verify(replicationChannel, times(1)).close();
+        peerAddressSubject.onNext(new ChangeNotification<>(Kind.Add, ADDRESS1));
+        assertThat(addressVsHandler.size(), is(1));
+        Map.Entry<InetSocketAddress, ReplicationHandler> entry = addressVsHandler.entrySet().iterator().next();
+        assertThat(entry.getKey(), is(equalTo(ADDRESS1)));
+
+        // hotswap the handler with a spy of itself so we can check shutdown
+        ReplicationHandler spyHandler = spy(entry.getValue());
+        addressVsHandler.put(entry.getKey(), spyHandler);
+
+        peerAddressSubject.onNext(new ChangeNotification<>(Kind.Delete, ADDRESS1));
+        assertThat(addressVsHandler.size(), is(0));
+
+        verify(spyHandler, times(1)).shutdown();
+    }
+
+    @Test(timeout = 60000)
+    public void testShutdownCleanUpResources() {
+        Map<InetSocketAddress, ReplicationHandler> addressVsHandler = replicationService.addressVsHandler;
+        assertThat(addressVsHandler.size(), is(0));
+
+        // Connect to trigger replication process
+        replicationService.connect();
+        assertThat(addressVsHandler.size(), is(0));
+
+        peerAddressSubject.onNext(new ChangeNotification<>(Kind.Add, ADDRESS1));
+        peerAddressSubject.onNext(new ChangeNotification<>(Kind.Add, ADDRESS2));
+        assertThat(addressVsHandler.size(), is(2));
+
+        // hotswap all of the handlers with spies so we can check shutdown
+        List<ReplicationHandler> spies = new ArrayList<>();
+        for (Map.Entry<InetSocketAddress, ReplicationHandler> entry : replicationService.addressVsHandler.entrySet()) {
+            ReplicationHandler spyHandler = spy(entry.getValue());
+            spies.add(spyHandler);
+            addressVsHandler.put(entry.getKey(), spyHandler);
+        }
+
+        replicationService.close();
+
+        assertThat(addressVsHandler.size(), is(0));
+        for(ReplicationHandler spyHandler : spies) {
+            verify(spyHandler, times(1)).shutdown();
+        }
+
+        // try to send more servers after close and verify they are not added to the map
+        peerAddressSubject.onNext(new ChangeNotification<>(Kind.Add, ADDRESS3));
+        assertThat(addressVsHandler.size(), is(0));
     }
 }

@@ -2,8 +2,8 @@ package com.netflix.eureka2.client.registration;
 
 import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.RegistrationChannel;
-import com.netflix.eureka2.client.channel.RetryableConnectionFactory;
-import com.netflix.eureka2.client.channel.RetryableConnection;
+import com.netflix.eureka2.connection.RetryableConnectionFactory;
+import com.netflix.eureka2.connection.RetryableConnection;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.utils.rx.NoOpSubscriber;
 import com.netflix.eureka2.utils.rx.RetryStrategyFunc;
@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Action0;
 import rx.functions.Func1;
+import rx.functions.Func2;
 
 import javax.inject.Inject;
 
@@ -26,7 +27,7 @@ public class RegistrationHandlerImpl implements RegistrationHandler {
 
     private static final int DEFAULT_RETRY_WAIT_MILLIS = 500;
 
-    private final RetryableConnectionFactory<RegistrationChannel, InstanceInfo, Void> retryableConnectionFactory;
+    private final RetryableConnectionFactory<RegistrationChannel> retryableConnectionFactory;
     private final int retryWaitMillis;
 
     @Inject
@@ -35,24 +36,31 @@ public class RegistrationHandlerImpl implements RegistrationHandler {
     }
 
     /*visible for testing*/ RegistrationHandlerImpl(ChannelFactory<RegistrationChannel> channelFactory, int retryWaitMillis) {
-        this.retryableConnectionFactory = new RetryableConnectionFactory<RegistrationChannel, InstanceInfo, Void>(channelFactory) {
-            @Override
-            protected Observable<Void> executeOnChannel(RegistrationChannel channel, InstanceInfo instanceInfo) {
-                return channel.register(instanceInfo);
-            }
-
-            @Override
-            protected Observable<Void> connectToChannelInput(RegistrationChannel channel) {
-                return Observable.empty();
-            }
-        };
+        this.retryableConnectionFactory = new RetryableConnectionFactory<>(channelFactory);
         this.retryWaitMillis = retryWaitMillis;
     }
 
     @Override
     public RegistrationResponse register(Observable<InstanceInfo> instanceInfoStream) {
+        Observable<InstanceInfo> opStream = instanceInfoStream.distinctUntilChanged();
+        Func2<RegistrationChannel, InstanceInfo, Observable<Void>> executeOnChannel = new Func2<RegistrationChannel, InstanceInfo, Observable<Void>>() {
+            @Override
+            public Observable<Void> call(RegistrationChannel channel, InstanceInfo instanceInfo) {
+                return channel.register(instanceInfo);
+            }
+        };
+        Func1<RegistrationChannel, Observable<Void>> connectToInputChannel = new Func1<RegistrationChannel, Observable<Void>>() {
+            @Override
+            public Observable<Void> call(RegistrationChannel registrationChannel) {
+                return Observable.empty();
+            }
+        };
         final RetryableConnection<RegistrationChannel, Void> retryableConnection
-                = retryableConnectionFactory.newConnection(instanceInfoStream.distinctUntilChanged());
+                = retryableConnectionFactory.singleOpConnection(
+                opStream,
+                executeOnChannel,
+                connectToInputChannel
+        );
 
         Observable<Void> initObservable = retryableConnection.getInitObservable();
 

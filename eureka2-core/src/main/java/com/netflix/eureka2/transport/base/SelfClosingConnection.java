@@ -21,12 +21,13 @@ public class SelfClosingConnection implements MessageConnection {
     private static final Logger logger = LoggerFactory.getLogger(SelfClosingConnection.class);
 
     private static final long DEFAULT_LIFECYCLE_DURATION_SECONDS = 30 * 60 * 1000;  // TODO: property-fy
+    private static final SelfClosingException CLOSING_EXCEPTION = new SelfClosingException("Connection self-closing");
 
     private final Action0 selfTerminateTask = new Action0() {
         @Override
         public void call() {
             logger.info("Shutting down the connection after {} seconds", lifecycleDurationMs);
-            SelfClosingConnection.this.shutdown();
+            SelfClosingConnection.this.shutdown(CLOSING_EXCEPTION);
         }
     };
 
@@ -99,7 +100,20 @@ public class SelfClosingConnection implements MessageConnection {
     }
 
     @Override
+    public void shutdown(Throwable e) {
+        terminationWorker.unsubscribe();
+        delegate.shutdown(e);
+    }
+
+    @Override
     public Observable<Void> lifecycleObservable() {
         return delegate.lifecycleObservable();
+    }
+
+
+    public static class SelfClosingException extends Exception {
+        public SelfClosingException(String msg) {
+            super(msg);
+        }
     }
 }

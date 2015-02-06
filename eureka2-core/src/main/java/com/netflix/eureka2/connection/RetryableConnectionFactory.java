@@ -1,4 +1,4 @@
-package com.netflix.eureka2.client.channel;
+package com.netflix.eureka2.connection;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -16,48 +16,68 @@ import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.subjects.AsyncSubject;
 import rx.subjects.BehaviorSubject;
+import rx.subjects.Subject;
 
 /**
- * Abstract factory that provides a {@link RetryableConnection} for each newConnection call.
- *
+ * Factory that provides a {@link RetryableConnection}.
  * @param <CHANNEL> the type of channel to be used
- * @param <OP> the type of op to be applied to the channel
  *
  * @author David Liu
  */
-public abstract class RetryableConnectionFactory<CHANNEL extends ServiceChannel, OP, INPUT> {
+public class RetryableConnectionFactory<CHANNEL extends ServiceChannel> {
 
     private static final Logger logger = LoggerFactory.getLogger(RetryableConnectionFactory.class);
 
-    private final ChannelFactory<CHANNEL> channelFactory;
+    protected final ChannelFactory<CHANNEL> channelFactory;
 
     public RetryableConnectionFactory(final ChannelFactory<CHANNEL> channelFactory) {
         this.channelFactory = channelFactory;
     }
 
     /**
-     * @param opStream an observable stream of ops for the channel to operate on (i.e. Interest, InstanceInfo)
+     * Create a retryable connection that wraps around channels that executes with zero operands.
+     * It is assumed also that the channel does not produce any data.
+     *
+     * @param executeOnChannel a func1 that describes a zero op call for the channel
      * @return a {@link RetryableConnection} that contains several observables. This lifecycle observable provided
      * can be retried on.
      */
-    public RetryableConnection<CHANNEL, INPUT> newConnection(final Observable<OP> opStream) {
+    public RetryableConnection<CHANNEL, Void> zeroOpConnection(final Func1<CHANNEL, Observable<Void>> executeOnChannel) {
+        Observable<Integer> opStream = Observable.just(1).mergeWith(Observable.<Integer>never());
+        Func2<CHANNEL, Integer, Observable<Void>> adaptedExecute = new Func2<CHANNEL, Integer, Observable<Void>>() {
+            @Override
+            public Observable<Void> call(CHANNEL channel, Integer integer) {
+                return executeOnChannel.call(channel);
+            }
+        };
+        Func1<CHANNEL, Observable<Void>> connectToInputChannel = new Func1<CHANNEL, Observable<Void>>() {
+            @Override
+            public Observable<Void> call(CHANNEL channel) {
+                return Observable.empty();
+            }
+        };
+        return singleOpConnection(opStream, adaptedExecute, connectToInputChannel);
+    }
+
+    /**
+     * Create a retryable connection that wraps around channels that executes on single operands
+     *
+     * @param opStream an observable stream of ops for the channel to operate on (i.e. Interest, InstanceInfo)
+     * @param executeOnChannel a func2 that describes the call for the channel on the operations
+     * @param <OP> the type of op to be applied to the channel
+     * @return a {@link RetryableConnection} that contains several observables. This lifecycle observable provided
+     * can be retried on.
+     */
+    public <OP, INPUT> RetryableConnection<CHANNEL, INPUT> singleOpConnection(
+            final Observable<OP> opStream,
+            final Func2<CHANNEL, OP, Observable<Void>> executeOnChannel,
+            final Func1<CHANNEL, Observable<INPUT>> connectToInputChannel) {
         final AsyncSubject<Void> initSubject = AsyncSubject.create();  // subject used to cache init status
 
         final BreakerSwitchSubject<OP> opSubject = BreakerSwitchSubject.create(BehaviorSubject.<OP>create());
         final BreakerSwitchSubject<CHANNEL> channelSubject = BreakerSwitchSubject.create(BehaviorSubject.<CHANNEL>create());
 
-        final Observable<CHANNEL> channelObservable = channelSubject.asObservable()
-                .scan(new Func2<CHANNEL, CHANNEL, CHANNEL>() {
-                    @Override
-                    public CHANNEL call(CHANNEL prev, CHANNEL curr) {
-                        if (prev != null) {
-                            logger.info("Closing old channel {}", prev);
-                            prev.close();
-                        }
-                        return curr;
-                    }
-                });
-        channelObservable.subscribe(new NoOpSubscriber<CHANNEL>());  // eagerly start the cleanup scan
+        final Observable<CHANNEL> channelObservable = channelObservableWithCleanUp(channelSubject);
 
         final AtomicBoolean opStreamConnected = new AtomicBoolean(false);
         final AtomicBoolean initialConnect = new AtomicBoolean(true);
@@ -67,7 +87,7 @@ public abstract class RetryableConnectionFactory<CHANNEL extends ServiceChannel,
                     @Override
                     public Observable<Void> call(final CHANNEL channel, OP op) {
                         logger.debug("executing on channel {} op {}", channel.toString(), op.toString());
-                        executeOnChannel(channel, op).subscribe(new Subscriber<Void>() {
+                        executeOnChannel.call(channel, op).subscribe(new Subscriber<Void>() {
                             @Override
                             public void onCompleted() {
                                 if (initialConnect.compareAndSet(true, false)) {
@@ -107,7 +127,7 @@ public abstract class RetryableConnectionFactory<CHANNEL extends ServiceChannel,
         Observable<INPUT> channelInputObservable = channelObservable.flatMap(new Func1<CHANNEL, Observable<INPUT>>() {
             @Override
             public Observable<INPUT> call(CHANNEL channel) {
-                return connectToChannelInput(channel)
+                return connectToInputChannel.call(channel)
                         // We ignore error from the channel, as we want to continue streaming data
                         // from the next channel that will re-established.
                         .onErrorResumeNext(new Func1<Throwable, Observable<? extends INPUT>>() {
@@ -141,7 +161,23 @@ public abstract class RetryableConnectionFactory<CHANNEL extends ServiceChannel,
         );
     }
 
-    protected abstract Observable<Void> executeOnChannel(CHANNEL channel, OP op);
+    /**
+     * @return a channel observable that does clean up of the previous channel every time a new channel is created
+     */
+    protected Observable<CHANNEL> channelObservableWithCleanUp(Subject<CHANNEL, CHANNEL> channelSubject) {
+        final Observable<CHANNEL> channelObservable = channelSubject.asObservable()
+                .scan(new Func2<CHANNEL, CHANNEL, CHANNEL>() {
+                    @Override
+                    public CHANNEL call(CHANNEL prev, CHANNEL curr) {
+                        if (prev != null) {
+                            logger.info("Closing old channel {}", prev);
+                            prev.close();
+                        }
+                        return curr;
+                    }
+                });
+        channelObservable.subscribe(new NoOpSubscriber<CHANNEL>());  // eagerly start the cleanup scan
 
-    protected abstract Observable<INPUT> connectToChannelInput(CHANNEL channel);
+        return channelObservable;
+    }
 }

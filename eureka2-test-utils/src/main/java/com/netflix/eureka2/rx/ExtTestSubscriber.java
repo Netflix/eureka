@@ -69,11 +69,29 @@ public class ExtTestSubscriber<T> extends Subscriber<T> {
         return available.poll();
     }
 
-    public List<T> takeNext(int n) {
+    public List<T> takeNext(int n) throws IllegalStateException {
         List<T> result = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
             T next = takeNext();
             if (next == null) {
+                if (result.size() != n) {
+                    throw new IllegalStateException("Did not receive the required number of items: " + n + ", only received: " + result.size());
+                }
+                break;
+            }
+            result.add(next);
+        }
+        return result;
+    }
+
+    public List<T> takeNext(int n, long timeout, TimeUnit timeUnit) throws InterruptedException, IllegalStateException {
+        List<T> result = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            T next = takeNext(timeout, timeUnit);
+            if (next == null) {
+                if (result.size() != n) {
+                    throw new IllegalStateException("Did not receive the required number of items: " + n + ", only received: " + result.size());
+                }
                 break;
             }
             result.add(next);

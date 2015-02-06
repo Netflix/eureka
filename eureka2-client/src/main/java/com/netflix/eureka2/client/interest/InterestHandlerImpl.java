@@ -5,8 +5,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.InterestChannel;
-import com.netflix.eureka2.client.channel.RetryableConnection;
-import com.netflix.eureka2.client.channel.RetryableConnectionFactory;
+import com.netflix.eureka2.connection.RetryableConnection;
+import com.netflix.eureka2.connection.RetryableConnectionFactory;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.SourcedChangeNotification;
@@ -24,6 +24,7 @@ import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.observables.ConnectableObservable;
 import rx.subjects.PublishSubject;
+import rx.functions.Func2;
 
 /**
  * Each InterestHandler class contains an interest channel and handles the lifecycle and reconnect of this channel.
@@ -62,20 +63,26 @@ public class InterestHandlerImpl implements InterestHandler {
         this.interestTracker = new InterestTracker();
         this.isShutdown = new AtomicBoolean(false);
 
-        RetryableConnectionFactory<InterestChannel, Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> retryableConnectionFactory
-                = new RetryableConnectionFactory<InterestChannel, Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>(channelFactory) {
-            @Override
-            protected Observable<Void> executeOnChannel(InterestChannel channel, Interest<InstanceInfo> interest) {
-                return channel.change(interest);
-            }
 
+        RetryableConnectionFactory<InterestChannel> retryableConnectionFactory
+                = new RetryableConnectionFactory<>(channelFactory);
+
+        Observable<Interest<InstanceInfo>> opStream = interestTracker.interestChangeStream();
+        Func2<InterestChannel, Interest<InstanceInfo>, Observable<Void>> executeOnChannel = new Func2<InterestChannel, Interest<InstanceInfo>, Observable<Void>>() {
             @Override
-            protected Observable<ChangeNotification<InstanceInfo>> connectToChannelInput(InterestChannel channel) {
-                return channel.changeNotifications();
+            public Observable<Void> call(InterestChannel interestChannel, Interest<InstanceInfo> interest) {
+                return interestChannel.change(interest);
             }
         };
 
-        this.retryableConnection = retryableConnectionFactory.newConnection(interestTracker.interestChangeStream());
+        Func1<InterestChannel, Observable<ChangeNotification<InstanceInfo>>> connectToInputChannel = new Func1<InterestChannel, Observable<ChangeNotification<InstanceInfo>>>() {
+            @Override
+            public Observable<ChangeNotification<InstanceInfo>> call(InterestChannel interestChannel) {
+                return interestChannel.changeNotifications();
+            }
+        };
+        this.retryableConnection = retryableConnectionFactory.singleOpConnection(opStream, executeOnChannel, connectToInputChannel);
+
         retryableConnection.getRetryableLifecycle()
                 .retryWhen(new RetryStrategyFunc(retryWaitMillis))
                 .subscribe(new Subscriber<Void>() {
