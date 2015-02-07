@@ -3,6 +3,7 @@ package com.netflix.eureka2.client.channel;
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.transport.TransportClients;
+import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.transport.TransportClient;
@@ -14,10 +15,10 @@ public class RegistrationChannelFactory extends ClientChannelFactory<Registratio
 
     private final TransportClient transport;
 
-    public RegistrationChannelFactory(ServerResolver resolver,
-                                      EurekaTransports.Codec codec,
+    public RegistrationChannelFactory(EurekaTransportConfig config,
+                                      ServerResolver resolver,
                                       EurekaClientMetricFactory metricFactory) {
-        this(TransportClients.newTcpRegistrationClient(resolver, codec), metricFactory);
+        this(TransportClients.newTcpRegistrationClient(config, resolver), metricFactory);
     }
 
     public RegistrationChannelFactory(TransportClient transport,

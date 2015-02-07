@@ -32,7 +32,6 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
-import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -51,11 +50,11 @@ public class ReplicationService {
     private static final Logger logger = LoggerFactory.getLogger(ReplicationService.class);
 
     private final AtomicReference<STATE> state = new AtomicReference<>(STATE.Idle);
+    private final WriteServerConfig config;
     private final SourcedEurekaRegistry<InstanceInfo> eurekaRegistry;
     private final SelfInfoResolver selfInfoResolver;
     private final ReplicationPeerAddressesProvider peerAddressesProvider;
     private final WriteServerMetricFactory metricFactory;
-    private final Codec codec;
 
     protected final Map<InetSocketAddress, ReplicationHandler> addressVsHandler;
 
@@ -68,11 +67,11 @@ public class ReplicationService {
                               SelfInfoResolver selfInfoResolver,
                               ReplicationPeerAddressesProvider peerAddressesProvider,
                               WriteServerMetricFactory metricFactory) {
+        this.config = config;
         this.eurekaRegistry = eurekaRegistry;
         this.selfInfoResolver = selfInfoResolver;
         this.peerAddressesProvider = peerAddressesProvider;
         this.metricFactory = metricFactory;
-        this.codec = config.getCodec();
         this.addressVsHandler = new HashMap<>();
     }
 
@@ -129,7 +128,7 @@ public class ReplicationService {
         if (!addressVsHandler.containsKey(address)) {
             logger.debug("Adding replication channel to server {}", address);
 
-            ReplicationHandler handler = new ReplicationHandlerImpl(address, codec, eurekaRegistry, ownInstanceInfo, metricFactory);
+            ReplicationHandler handler = new ReplicationHandlerImpl(config, address, eurekaRegistry, ownInstanceInfo, metricFactory);
             addressVsHandler.put(address, handler);
             handler.startReplication();
         }

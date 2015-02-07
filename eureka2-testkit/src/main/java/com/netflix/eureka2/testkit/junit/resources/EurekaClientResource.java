@@ -2,12 +2,13 @@ package com.netflix.eureka2.testkit.junit.resources;
 
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.client.EurekaClientBuilder;
+import com.netflix.eureka2.config.BasicEurekaTransportConfig;
+import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Builder;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import com.netflix.eureka2.testkit.data.builder.SampleAwsDataCenterInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleServicePort;
-import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import org.junit.rules.ExternalResource;
 
 /**
@@ -16,9 +17,9 @@ import org.junit.rules.ExternalResource;
  */
 public class EurekaClientResource extends ExternalResource {
 
+    private final EurekaTransportConfig transportConfig;
     private final WriteServerResource writeServerResource;
     private final ReadServerResource readServerResource;
-    private final Codec codec;
     private final InstanceInfo clientInfo;
 
     private EurekaClient eurekaClient;
@@ -29,14 +30,14 @@ public class EurekaClientResource extends ExternalResource {
 
     public EurekaClientResource(String name, WriteServerResource writeServerResource,
                                 ReadServerResource readServerResource) {
-        this(name, writeServerResource, readServerResource, Codec.Avro);
+        this(name, writeServerResource, readServerResource, new BasicEurekaTransportConfig());
     }
 
     public EurekaClientResource(String name, WriteServerResource writeServerResource,
-                                ReadServerResource readServerResource, Codec codec) {
+                                ReadServerResource readServerResource, EurekaTransportConfig transportConfig) {
         this.writeServerResource = writeServerResource;
         this.readServerResource = readServerResource;
-        this.codec = codec;
+        this.transportConfig = transportConfig;
         this.clientInfo = buildClientInfo(name);
     }
 
@@ -54,13 +55,13 @@ public class EurekaClientResource extends ExternalResource {
             eurekaClient = EurekaClientBuilder.newBuilder()
                     .withReadServerResolver(writeServerResource.getDiscoveryResolver())
                     .withWriteServerResolver(writeServerResource.getRegistrationResolver())
-                    .withCodec(codec)
+                    .withTransportConfig(transportConfig)
                     .build();
         } else {
             eurekaClient = EurekaClientBuilder.newBuilder()
                     .withReadServerResolver(readServerResource.getDiscoveryResolver())
                     .withWriteServerResolver(writeServerResource.getRegistrationResolver())
-                    .withCodec(codec)
+                    .withTransportConfig(transportConfig)
                     .build();
         }
     }

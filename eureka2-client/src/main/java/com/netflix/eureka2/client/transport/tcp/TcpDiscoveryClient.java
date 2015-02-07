@@ -18,6 +18,7 @@ package com.netflix.eureka2.client.transport.tcp;
 
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.transport.ResolverBasedTransportClient;
+import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.transport.TransportClient;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
@@ -36,8 +37,8 @@ public class TcpDiscoveryClient extends ResolverBasedTransportClient {
             HeartBeatConnection.DEFAULT_HEARTBEAT_INTERVAL_MILLIS
     );
 
-    public TcpDiscoveryClient(ServerResolver resolver, EurekaTransports.Codec codec, MessageConnectionMetrics metrics) {
-        super(resolver, EurekaTransports.discoveryPipeline(codec), metrics);
+    public TcpDiscoveryClient(EurekaTransportConfig config, ServerResolver resolver, MessageConnectionMetrics metrics) {
+        super(config, resolver, EurekaTransports.discoveryPipeline(config.getCodec()), metrics);
     }
 
     @Override

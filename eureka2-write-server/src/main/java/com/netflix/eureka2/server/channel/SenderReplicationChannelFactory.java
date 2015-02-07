@@ -2,8 +2,8 @@ package com.netflix.eureka2.server.channel;
 
 import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.ReplicationChannel;
+import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
-import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.transport.TransportClient;
 
 import java.net.InetSocketAddress;
@@ -15,10 +15,10 @@ public class SenderReplicationChannelFactory implements ChannelFactory<Replicati
 
     private final TransportClient client;
 
-    public SenderReplicationChannelFactory(InetSocketAddress address,
-                                           EurekaTransports.Codec codec,
+    public SenderReplicationChannelFactory(EurekaTransportConfig config,
+                                           InetSocketAddress address,
                                            WriteServerMetricFactory metricFactory) {
-        this.client = new ReplicationTransportClient(address, codec, metricFactory.getReplicationSenderConnectionMetrics());
+        this.client = new ReplicationTransportClient(config, address, metricFactory.getReplicationSenderConnectionMetrics());
     }
 
     @Override

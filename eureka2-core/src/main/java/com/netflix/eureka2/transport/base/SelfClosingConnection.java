@@ -20,7 +20,6 @@ public class SelfClosingConnection implements MessageConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(SelfClosingConnection.class);
 
-    private static final long DEFAULT_LIFECYCLE_DURATION_SECONDS = 30 * 60 * 1000;  // TODO: property-fy
     private static final SelfClosingException CLOSING_EXCEPTION = new SelfClosingException("Connection self-closing");
 
     private final Action0 selfTerminateTask = new Action0() {
@@ -34,10 +33,6 @@ public class SelfClosingConnection implements MessageConnection {
     private final MessageConnection delegate;
     private final Worker terminationWorker;
     private final long lifecycleDurationMs;
-
-    public SelfClosingConnection(MessageConnection delegate) {
-        this(delegate, DEFAULT_LIFECYCLE_DURATION_SECONDS, Schedulers.computation());
-    }
 
     public SelfClosingConnection(MessageConnection delegate, long lifecycleDurationMs) {
         this(delegate, lifecycleDurationMs, Schedulers.computation());

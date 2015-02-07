@@ -19,20 +19,20 @@ package com.netflix.eureka2.testkit.cli;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.netflix.eureka2.transport.EurekaTransports.Codec;
+import com.netflix.eureka2.config.EurekaTransportConfig;
 
 /**
  * @author Tomasz Bak
  */
 public class Context {
 
-    private final Codec codec;
+    private final EurekaTransportConfig transportConfig;
     private final Map<Integer, Session> sessionMap = new HashMap<>();
 
     private Session activeSession;
 
-    public Context(Codec codec) {
-        this.codec = codec;
+    public Context(EurekaTransportConfig transportConfig) {
+        this.transportConfig = transportConfig;
     }
 
     public Session createSession() {
@@ -41,8 +41,8 @@ public class Context {
         return activeSession;
     }
 
-    public Codec getCodec() {
-        return codec;
+    public EurekaTransportConfig getTransportConfig() {
+        return transportConfig;
     }
 
     public Session getActiveSession() {

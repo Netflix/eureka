@@ -16,9 +16,9 @@
 
 package com.netflix.eureka2.server.channel;
 
+import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.transport.TransportClient;
 import com.netflix.eureka2.transport.EurekaTransports;
-import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
@@ -45,15 +45,19 @@ public class ReplicationTransportClient implements TransportClient {
 
     private static final Logger logger = LoggerFactory.getLogger(ReplicationTransportClient.class);
 
+    private final EurekaTransportConfig config;
     private final InetSocketAddress address;
     private final RxClient<Object, Object> rxClient;
     private final MessageConnectionMetrics metrics;
 
-    public ReplicationTransportClient(InetSocketAddress address, Codec codec, MessageConnectionMetrics metrics) {
+    public ReplicationTransportClient(EurekaTransportConfig config,
+                                      InetSocketAddress address,
+                                      MessageConnectionMetrics metrics) {
+        this.config = config;
         this.address = address;
         this.metrics = metrics;
         this.rxClient = RxNetty.newTcpClientBuilder(address.getHostName(), address.getPort())
-                .pipelineConfigurator(EurekaTransports.replicationPipeline(codec))
+                .pipelineConfigurator(EurekaTransports.replicationPipeline(config.getCodec()))
                 .build();
     }
 
@@ -68,7 +72,7 @@ public class ReplicationTransportClient implements TransportClient {
                             new HeartBeatConnection(
                                     new BaseMessageConnection("replicationClient", connection, metrics), 30000, 3, Schedulers.computation()
                             ),
-                            -1  // TODO: configure to not self terminate for now, re-evaluate later
+                            config.getConnectionAutoTimeoutMs()
                         );
                     }
                 })

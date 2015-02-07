@@ -9,28 +9,41 @@ import static com.netflix.eureka2.config.ConfigNameStrings.Transport.*;
  */
 public class BasicEurekaTransportConfig implements EurekaTransportConfig {
 
-    private static final String CONNECTION_AUTO_TIMEOUT_MS = String.valueOf(30*60*1000);
-    private static final String DEFAULT_CODEC = "Avro";
+    public static final String CONNECTION_AUTO_TIMEOUT_MS = String.valueOf(30*60*1000);
+    public static final String DEFAULT_CODEC = "Avro";
 
-    private String connectionAutoTimeoutMs = System.getProperty(connectionAutoTimeoutMsName, CONNECTION_AUTO_TIMEOUT_MS);
-    private String codec = System.getProperty(codecName, DEFAULT_CODEC);
+    private Long connectionAutoTimeoutMs = Long.parseLong(
+            System.getProperty(connectionAutoTimeoutMsName, CONNECTION_AUTO_TIMEOUT_MS)
+    );
+    private EurekaTransports.Codec codec = EurekaTransports.Codec.valueOf(
+            System.getProperty(codecName, DEFAULT_CODEC)
+    );
 
     public BasicEurekaTransportConfig() {
         this(null, null);
     }
 
-    public BasicEurekaTransportConfig(Long connectionAutoTimeoutMs, EurekaTransports.Codec codec) {
-        this.connectionAutoTimeoutMs = connectionAutoTimeoutMs == null ? this.connectionAutoTimeoutMs : connectionAutoTimeoutMs.toString();
-        this.codec = codec == null ? this.codec : codec.name();
+    public BasicEurekaTransportConfig(Long connectionAutoTimeoutMs) {
+        this(connectionAutoTimeoutMs, null);
     }
+
+    public BasicEurekaTransportConfig(EurekaTransports.Codec codec) {
+        this(null, codec);
+    }
+
+    public BasicEurekaTransportConfig(Long connectionAutoTimeoutMs, EurekaTransports.Codec codec) {
+        this.connectionAutoTimeoutMs = connectionAutoTimeoutMs == null ? this.connectionAutoTimeoutMs : connectionAutoTimeoutMs;
+        this.codec = codec == null ? this.codec : codec;
+    }
+
     @Override
     public long getConnectionAutoTimeoutMs() {
-        return Long.parseLong(connectionAutoTimeoutMs);
+        return connectionAutoTimeoutMs;
     }
 
     @Override
     public EurekaTransports.Codec getCodec() {
-        return EurekaTransports.Codec.valueOf(codec);
+        return codec;
     }
 
     @Override

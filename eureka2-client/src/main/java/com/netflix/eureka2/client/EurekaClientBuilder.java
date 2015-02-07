@@ -7,6 +7,9 @@ import com.netflix.eureka2.client.channel.InterestChannelFactory;
 import com.netflix.eureka2.client.channel.RegistrationChannelFactory;
 import com.netflix.eureka2.client.interest.InterestHandlerImpl;
 import com.netflix.eureka2.client.registration.RegistrationHandlerImpl;
+import com.netflix.eureka2.config.BasicEurekaTransportConfig;
+import com.netflix.eureka2.config.EurekaRegistryConfig;
+import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.client.registration.RegistrationHandler;
 import com.netflix.eureka2.client.interest.InterestHandler;
@@ -15,23 +18,23 @@ import com.netflix.eureka2.config.BasicEurekaRegistryConfig;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.registry.PreservableEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
-import com.netflix.eureka2.transport.EurekaTransports;
 
 /**
  * @author David Liu
  */
 public class EurekaClientBuilder {
 
-    public static final EurekaTransports.Codec DEFAULT_CODEC = EurekaTransports.Codec.Avro;
     public static final long DEFAULT_RETRY_DELAY_MS = 5000;
 
     private final boolean doDiscovery;
     private final boolean doRegistration;
 
-    private EurekaTransports.Codec codec;
     private Long retryDelayMs;
     private ServerResolver readServerResolver;
     private ServerResolver writeServerResolver;
+
+    private EurekaTransportConfig transportConfig;
+    private EurekaRegistryConfig registryConfig;
 
     private EurekaClientMetricFactory metricFactory;
     private EurekaRegistryMetricFactory registryMetricFactory;
@@ -39,11 +42,6 @@ public class EurekaClientBuilder {
     private EurekaClientBuilder(boolean doDiscovery, boolean doRegistration) {
         this.doDiscovery = doDiscovery;
         this.doRegistration = doRegistration;
-    }
-
-    public EurekaClientBuilder withCodec(EurekaTransports.Codec codec) {
-        this.codec = codec;
-        return this;
     }
 
     public EurekaClientBuilder withRetryDelayMs(long retryDelayMs) {
@@ -71,17 +69,31 @@ public class EurekaClientBuilder {
         return this;
     }
 
-    public EurekaClient build() {
-        if (codec == null) {
-            codec = DEFAULT_CODEC;
-        }
+    public EurekaClientBuilder withTransportConfig(EurekaTransportConfig transportConfig) {
+        this.transportConfig = transportConfig;
+        return this;
+    }
 
+    public EurekaClientBuilder withRegistryConfig(EurekaRegistryConfig registryConfig) {
+        this.registryConfig = registryConfig;
+        return this;
+    }
+
+    public EurekaClient build() {
         if (retryDelayMs == null) {
             retryDelayMs = DEFAULT_RETRY_DELAY_MS;
         }
 
         if (metricFactory == null) {
             metricFactory = EurekaClientMetricFactory.clientMetrics();
+        }
+
+        if (registryConfig == null) {
+            registryConfig = new BasicEurekaRegistryConfig();
+        }
+
+        if (transportConfig == null) {
+            transportConfig = new BasicEurekaTransportConfig();
         }
 
         InterestHandler interestHandler = doDiscovery ? buildInterestHandler() : null;
@@ -98,13 +110,14 @@ public class EurekaClientBuilder {
         if(registryMetricFactory == null) {
             registryMetricFactory = EurekaRegistryMetricFactory.registryMetrics();
         }
+
         PreservableEurekaRegistry registry = new PreservableEurekaRegistry(
                 new SourcedEurekaRegistryImpl(registryMetricFactory),
-                new BasicEurekaRegistryConfig(),
+                registryConfig,
                 registryMetricFactory);
 
         ClientChannelFactory<InterestChannel> channelFactory
-                = new InterestChannelFactory(readServerResolver, codec, registry, metricFactory);
+                = new InterestChannelFactory(transportConfig, readServerResolver, registry, metricFactory);
 
         return new InterestHandlerImpl(registry, channelFactory);
     }
@@ -115,7 +128,7 @@ public class EurekaClientBuilder {
         }
 
         ClientChannelFactory<RegistrationChannel> channelFactory
-                = new RegistrationChannelFactory(writeServerResolver, codec, metricFactory);
+                = new RegistrationChannelFactory(transportConfig, writeServerResolver, metricFactory);
 
         return new RegistrationHandlerImpl(channelFactory);
     }

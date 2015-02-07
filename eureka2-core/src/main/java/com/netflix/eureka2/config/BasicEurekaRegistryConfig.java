@@ -11,12 +11,16 @@ import static com.netflix.eureka2.config.ConfigNameStrings.Registry.*;
  */
 public class BasicEurekaRegistryConfig implements EurekaRegistryConfig {
 
-    private static final String EVICTION_TIMEOUT_MS = "30000";
-    private static final String EVICTION_STRATEGY_TYPE = StrategyType.PercentageDrop.name();
-    private static final String EVICTION_STRATEGY_VALUE = "20";
+    public static final String EVICTION_TIMEOUT_MS = "30000";
+    public static final String EVICTION_STRATEGY_TYPE = StrategyType.PercentageDrop.name();
+    public static final String EVICTION_STRATEGY_VALUE = "20";
 
-    private String evictionTimeoutMs = System.getProperty(evictionTimeoutMsName, EVICTION_TIMEOUT_MS);
-    private String evictionStrategyType = System.getProperty(evictionStrategyTypeName, EVICTION_STRATEGY_TYPE);
+    private Long evictionTimeoutMs = Long.parseLong(
+            System.getProperty(evictionTimeoutMsName, EVICTION_TIMEOUT_MS)
+    );
+    private StrategyType evictionStrategyType = StrategyType.valueOf(
+            System.getProperty(evictionStrategyTypeName, EVICTION_STRATEGY_TYPE)
+    );
     private String evictionStrategyValue = System.getProperty(evictionStrategyValueName, EVICTION_STRATEGY_VALUE);
 
     public BasicEurekaRegistryConfig() {
@@ -24,19 +28,19 @@ public class BasicEurekaRegistryConfig implements EurekaRegistryConfig {
     }
 
     public BasicEurekaRegistryConfig(Long evictionTimeoutMs, StrategyType evictionStrategyType, String evictionStrategyValue) {
-        this.evictionTimeoutMs = evictionTimeoutMs == null ? this.evictionTimeoutMs : evictionTimeoutMs.toString();
-        this.evictionStrategyType = evictionStrategyType == null ? this.evictionStrategyType : evictionStrategyType.name();
+        this.evictionTimeoutMs = evictionTimeoutMs == null ? this.evictionTimeoutMs : evictionTimeoutMs;
+        this.evictionStrategyType = evictionStrategyType == null ? this.evictionStrategyType : evictionStrategyType;
         this.evictionStrategyValue = evictionStrategyValue == null ? this.evictionStrategyValue : evictionStrategyValue;
     }
 
     @Override
     public long getEvictionTimeoutMs() {
-        return Long.parseLong(evictionTimeoutMs);
+        return evictionTimeoutMs;
     }
 
     @Override
     public StrategyType getEvictionStrategyType() {
-        return StrategyType.valueOf(evictionStrategyType);
+        return evictionStrategyType;
     }
 
     @Override

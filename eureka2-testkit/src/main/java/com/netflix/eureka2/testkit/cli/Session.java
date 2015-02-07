@@ -95,14 +95,14 @@ public class Session {
 
     public void connectToRegister(String host, int port) {
         eurekaClient = Eureka.newClientBuilder(ServerResolvers.just(host, port))
-                .withCodec(context.getCodec())
+                .withTransportConfig(context.getTransportConfig())
                 .build();
         mode = Mode.Write;
     }
 
     public void connectToRead(String host, int port) {
         eurekaClient = Eureka.newClientBuilder(ServerResolvers.just(host, port))
-                .withCodec(context.getCodec())
+                .withTransportConfig(context.getTransportConfig())
                 .build();
         mode = Mode.Read;
     }
@@ -111,7 +111,7 @@ public class Session {
         eurekaClient = Eureka.newClientBuilder(
                 ServerResolvers.fromWriteServer(ServerResolvers.just(host, discoveryPort), readClusterVip),
                 ServerResolvers.just(host, registrationPort)
-        ).withCodec(context.getCodec()).build();
+        ).withTransportConfig(context.getTransportConfig()).build();
         mode = Mode.ReadWrite;
     }
 

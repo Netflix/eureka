@@ -27,6 +27,8 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.netflix.eureka2.config.BasicEurekaTransportConfig;
+import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.testkit.cli.command.CloseCommand;
 import com.netflix.eureka2.testkit.cli.command.ConnectCommand;
 import com.netflix.eureka2.testkit.cli.command.InterestCommand;
@@ -81,8 +83,8 @@ public class EurekaCLI {
     private final ConsoleReader consoleReader;
     private final TreeMap<String, String> aliasMap = new TreeMap<>();
 
-    public EurekaCLI(Codec codec) throws IOException {
-        this.context = new Context(codec);
+    public EurekaCLI(EurekaTransportConfig transportConfig) throws IOException {
+        this.context = new Context(transportConfig);
         Terminal terminal = TerminalFactory.create();
         terminal.setEchoEnabled(false);
         consoleReader = new ConsoleReader(System.in, System.out, terminal);
@@ -255,7 +257,8 @@ public class EurekaCLI {
                 System.err.println("ERROR: invalid command line parameters; expected none or '-c <codec_name>");
                 System.exit(-1);
         }
-        new EurekaCLI(codec).readExecutePrintLoop();
+        EurekaTransportConfig transportConfig = new BasicEurekaTransportConfig(codec);
+        new EurekaCLI(transportConfig).readExecutePrintLoop();
     }
 
     class HelpCommand extends Command {

@@ -3,11 +3,12 @@ package com.netflix.eureka2.testkit.junit.resources;
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.client.EurekaClientBuilder;
+import com.netflix.eureka2.config.BasicEurekaTransportConfig;
+import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment.EurekaDeploymentBuilder;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
-import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import org.junit.rules.ExternalResource;
 
 /**
@@ -17,18 +18,18 @@ public class EurekaDeploymentResource extends ExternalResource {
 
     private final int writeClusterSize;
     private final int readClusterSize;
-    private final Codec codec;
+    private final EurekaTransportConfig transportConfig;
 
     private EurekaDeployment eurekaDeployment;
 
     public EurekaDeploymentResource(int writeClusterSize, int readClusterSize) {
-        this(writeClusterSize, readClusterSize, Codec.Avro);
+        this(writeClusterSize, readClusterSize, new BasicEurekaTransportConfig());
     }
 
-    public EurekaDeploymentResource(int writeClusterSize, int readClusterSize, Codec codec) {
+    public EurekaDeploymentResource(int writeClusterSize, int readClusterSize, EurekaTransportConfig transportConfig) {
         this.writeClusterSize = writeClusterSize;
         this.readClusterSize = readClusterSize;
-        this.codec = codec;
+        this.transportConfig = transportConfig;
     }
 
     public EurekaDeployment getEurekaDeployment() {
@@ -45,7 +46,7 @@ public class EurekaDeploymentResource extends ExternalResource {
         return EurekaClientBuilder.newBuilder()
                 .withReadServerResolver(server.getDiscoveryResolver())
                 .withWriteServerResolver(server.getRegistrationResolver())
-                .withCodec(codec)
+                .withTransportConfig(transportConfig)
                 .build();
     }
 
@@ -58,7 +59,7 @@ public class EurekaDeploymentResource extends ExternalResource {
         EmbeddedReadServer server = eurekaDeployment.getReadCluster().getServer(idx);
         return EurekaClientBuilder.discoveryBuilder()
                 .withReadServerResolver(server.getDiscoveryResolver())
-                .withCodec(codec)
+                .withTransportConfig(transportConfig)
                 .build();
     }
 
@@ -69,7 +70,7 @@ public class EurekaDeploymentResource extends ExternalResource {
         return EurekaClientBuilder.newBuilder()
                 .withReadServerResolver(eurekaDeployment.getWriteCluster().discoveryResolver())
                 .withWriteServerResolver(eurekaDeployment.getWriteCluster().registrationResolver())
-                .withCodec(codec)
+                .withTransportConfig(transportConfig)
                 .build();
     }
 
@@ -79,7 +80,7 @@ public class EurekaDeploymentResource extends ExternalResource {
     public EurekaClient connectToReadCluster() {
         return EurekaClientBuilder.discoveryBuilder()
                 .withReadServerResolver(eurekaDeployment.getReadCluster().discoveryResolver())
-                .withCodec(codec)
+                .withTransportConfig(transportConfig)
                 .build();
     }
 
@@ -92,7 +93,8 @@ public class EurekaDeploymentResource extends ExternalResource {
                 eurekaDeployment.getWriteCluster().discoveryResolver(),
                 eurekaDeployment.getWriteCluster().registrationResolver(),
                 eurekaDeployment.getReadCluster().getVip()
-        ).withCodec(codec).build();
+        ).withTransportConfig(transportConfig)
+                .build();
     }
 
     @Override
@@ -101,7 +103,7 @@ public class EurekaDeploymentResource extends ExternalResource {
                 .withWriteClusterSize(writeClusterSize)
                 .withReadClusterSize(readClusterSize)
                 .withEphemeralPorts(true)
-                .withCodec(codec)
+                .withTransportConfig(transportConfig)
                 .build();
     }
 
