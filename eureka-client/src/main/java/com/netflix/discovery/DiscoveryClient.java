@@ -48,6 +48,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,11 +57,13 @@ import javax.annotation.PreDestroy;
 import javax.naming.directory.DirContext;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimerTask;
@@ -541,7 +544,7 @@ public class DiscoveryClient implements LookupService {
                     + virtualHostname);
         }
         Applications apps = this.localRegionApps.get();
-        int index = (int) (apps.getNextIndex(virtualHostname.toUpperCase(),
+        int index = (int) (apps.getNextIndex(virtualHostname.toUpperCase(Locale.ROOT),
                 secure).incrementAndGet() % instanceInfoList.size());
         return instanceInfoList.get(index);
     }

@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -32,6 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.discovery.InstanceRegionChecker;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,7 +109,7 @@ public class Applications {
      *            the <em>application</em> to be added.
      */
     public void addApplication(Application app) {
-        appNameApplicationMap.put(app.getName().toUpperCase(), app);
+        appNameApplicationMap.put(app.getName().toUpperCase(Locale.ROOT), app);
         addInstancesToVIPMaps(app);
         applications.add(app);
     }
@@ -134,7 +136,7 @@ public class Applications {
      *         name.
      */
     public Application getRegisteredApplications(String appName) {
-        return appNameApplicationMap.get(appName.toUpperCase());
+        return appNameApplicationMap.get(appName.toUpperCase(Locale.ROOT));
     }
 
     /**
@@ -146,7 +148,8 @@ public class Applications {
      * @return list of <em>instances</em>.
      */
     public List<InstanceInfo> getInstancesByVirtualHostName(String virtualHostName) {
-        AtomicReference<List<InstanceInfo>> ref = this.shuffleVirtualHostNameMap.get(virtualHostName.toUpperCase());
+	AtomicReference<List<InstanceInfo>> ref = this.shuffleVirtualHostNameMap
+		.get(virtualHostName.toUpperCase(Locale.ROOT));
         if (ref == null || ref.get() == null) {
             return new ArrayList<InstanceInfo>();
         } else {
@@ -165,7 +168,7 @@ public class Applications {
      */
     public List<InstanceInfo> getInstancesBySecureVirtualHostName(String secureVirtualHostName) {
         AtomicReference<List<InstanceInfo>> ref = this.shuffledSecureVirtualHostNameMap
-                .get(secureVirtualHostName.toUpperCase());
+                .get(secureVirtualHostName.toUpperCase(Locale.ROOT));
         if (ref == null || ref.get() == null) {
             return new ArrayList<InstanceInfo>();
         } else {
@@ -480,7 +483,7 @@ public class Applications {
         if (vipAddresses != null) {
             String[] vipAddressArray = vipAddresses.split(",");
             for (String vipAddress : vipAddressArray) {
-                String vipName = vipAddress.toUpperCase();
+                String vipName = vipAddress.toUpperCase(Locale.ROOT);
                 AbstractQueue<InstanceInfo> instanceInfoList = vipMap.get(vipName);
                 if (instanceInfoList == null) {
                     instanceInfoList = new ConcurrentLinkedQueue<InstanceInfo>();
