@@ -28,17 +28,18 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.ProvidedBy;
 import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
 import com.netflix.config.DynamicPropertyFactory;
+import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.converters.Auto;
 import com.netflix.discovery.provider.Serializer;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 
 /**
- * The class that holds information required for registration with
- * <tt>Eureka Server</tt> and to be discovered by other components.
+ * The class that holds information required for registration with <tt>Eureka Server</tt> and to be discovered by other
+ * components.
  * <p>
- * <code>@Auto</code> annotated fields are serialized as is; Other fields are
- * serialized as specified by the <code>@Serializer</code>.
+ * <code>@Auto</code> annotated fields are serialized as is; Other fields are serialized as specified by the
+ * <code>@Serializer</code>.
  * </p>
  *
  * @author Karthik Ranganathan, Greg Kim
@@ -56,7 +57,8 @@ public class InstanceInfo {
     public static final int DEFAULT_COUNTRY_ID = 1; // US
 
     private volatile String appName;
-    @Auto private volatile String appGroupName;
+    @Auto
+    private volatile String appGroupName;
 
     private volatile String ipAddr;
     private volatile String sid = "na";
@@ -122,7 +124,8 @@ public class InstanceInfo {
      *
      * shallow copy constructor.
      *
-     * @param ii The object to copy
+     * @param ii
+     *            The object to copy
      */
     public InstanceInfo(InstanceInfo ii) {
         this.appName = ii.appName;
@@ -179,8 +182,6 @@ public class InstanceInfo {
 
         this.version = ii.version;
     }
-
-
 
     public enum InstanceStatus {
         UP, // Ready to receive traffic
@@ -257,8 +258,7 @@ public class InstanceInfo {
         }
 
         /**
-         * Set the application name of the instance.This is mostly used in
-         * querying of instances.
+         * Set the application name of the instance.This is mostly used in querying of instances.
          *
          * @param appName
          *            the application name.
@@ -283,9 +283,8 @@ public class InstanceInfo {
         }
 
         /**
-         * Sets the fully qualified hostname of this running instance.This is
-         * mostly used in constructing the {@link java.net.URL} for communicating with
-         * the instance.
+         * Sets the fully qualified hostname of this running instance.This is mostly used in constructing the
+         * {@link java.net.URL} for communicating with the instance.
          *
          * @param hostName
          *            the host name of the instance.
@@ -297,14 +296,13 @@ public class InstanceInfo {
             if ((existingHostName != null)
                     && !(hostName.equals(existingHostName))) {
                 refreshStatusPageUrl().refreshHealthCheckUrl()
-                .refreshVIPAddress().refreshSecureVIPAddress();
+                        .refreshVIPAddress().refreshSecureVIPAddress();
             }
             return this;
         }
 
         /**
-         * Sets the status of the instances.If the status is UP, that is when
-         * the instance is ready to service requests.
+         * Sets the status of the instances.If the status is UP, that is when the instance is ready to service requests.
          *
          * @param status
          *            the {@link InstanceStatus} of the instance.
@@ -316,9 +314,8 @@ public class InstanceInfo {
         }
 
         /**
-         * Sets the status overridden by some other external process.This is
-         * mostly used in putting an instance out of service to block traffic to
-         * it.
+         * Sets the status overridden by some other external process.This is mostly used in putting an instance out of
+         * service to block traffic to it.
          *
          * @param status
          *            the overridden {@link InstanceStatus} of the instance.
@@ -403,17 +400,14 @@ public class InstanceInfo {
         }
 
         /**
-         * Sets the absolute home page {@link java.net.URL} for this instance. The users
-         * can provide the <code>homePageUrlPath</code> if the home page resides
-         * in the same instance talking to discovery, else in the cases where
-         * the instance is a proxy for some other server, it can provide the
-         * full {@link java.net.URL}. If the full {@link java.net.URL} is provided it takes
-         * precedence.
+         * Sets the absolute home page {@link java.net.URL} for this instance. The users can provide the
+         * <code>homePageUrlPath</code> if the home page resides in the same instance talking to discovery, else in the
+         * cases where the instance is a proxy for some other server, it can provide the full {@link java.net.URL}. If
+         * the full {@link java.net.URL} is provided it takes precedence.
          *
          * <p>
-         * The full {@link java.net.URL} should follow the format
-         * http://${netflix.appinfo.hostname}:7001/ where the value
-         * ${netflix.appinfo.hostname} is replaced at runtime.
+         * The full {@link java.net.URL} should follow the format http://${netflix.appinfo.hostname}:7001/ where the
+         * value ${netflix.appinfo.hostname} is replaced at runtime.
          * </p>
          *
          * @param relativeUrl
@@ -430,23 +424,20 @@ public class InstanceInfo {
                         hostNameInterpolationExpression, result.hostName);
             } else if (relativeUrl != null) {
                 result.homePageUrl = HTTP_PROTOCOL + result.hostName + COLON
-                + result.port + relativeUrl;
+                        + result.port + relativeUrl;
             }
             return this;
         }
 
         /**
-         * Sets the absolute status page {@link java.net.URL} for this instance. The
-         * users can provide the <code>statusPageUrlPath</code> if the status
-         * page resides in the same instance talking to discovery, else in the
-         * cases where the instance is a proxy for some other server, it can
-         * provide the full {@link java.net.URL}. If the full {@link java.net.URL} is provided it
-         * takes precedence.
+         * Sets the absolute status page {@link java.net.URL} for this instance. The users can provide the
+         * <code>statusPageUrlPath</code> if the status page resides in the same instance talking to discovery, else in
+         * the cases where the instance is a proxy for some other server, it can provide the full {@link java.net.URL}.
+         * If the full {@link java.net.URL} is provided it takes precedence.
          *
          * <p>
-         * The full {@link java.net.URL} should follow the format
-         * http://${netflix.appinfo.hostname}:7001/Status where the value
-         * ${netflix.appinfo.hostname} is replaced at runtime.
+         * The full {@link java.net.URL} should follow the format http://${netflix.appinfo.hostname}:7001/Status where
+         * the value ${netflix.appinfo.hostname} is replaced at runtime.
          * </p>
          *
          * @param relativeUrl
@@ -464,28 +455,25 @@ public class InstanceInfo {
                         hostNameInterpolationExpression, result.hostName);
             } else if (relativeUrl != null) {
                 result.statusPageUrl = HTTP_PROTOCOL + result.hostName + COLON
-                + result.port + relativeUrl;
+                        + result.port + relativeUrl;
             }
             return this;
         }
 
         /**
-         * Sets the absolute health check {@link java.net.URL} for this instance for both
-         * secure and non-secure communication The users can provide the
-         * <code>healthCheckUrlPath</code> if the healthcheck page resides in
-         * the same instance talking to discovery, else in the cases where the
-         * instance is a proxy for some other server, it can provide the full
-         * {@link java.net.URL}. If the full {@link java.net.URL} is provided it takes precedence.
+         * Sets the absolute health check {@link java.net.URL} for this instance for both secure and non-secure
+         * communication The users can provide the <code>healthCheckUrlPath</code> if the healthcheck page resides in
+         * the same instance talking to discovery, else in the cases where the instance is a proxy for some other
+         * server, it can provide the full {@link java.net.URL}. If the full {@link java.net.URL} is provided it takes
+         * precedence.
          *
          * <p>
-         * The full {@link java.net.URL} should follow the format
-         * http://${netflix.appinfo.hostname}:7001/healthcheck where the value
-         * ${netflix.appinfo.hostname} is replaced at runtime.
+         * The full {@link java.net.URL} should follow the format http://${netflix.appinfo.hostname}:7001/healthcheck
+         * where the value ${netflix.appinfo.hostname} is replaced at runtime.
          * </p>
          *
          * @param relativeUrl
-         *            - The {@link java.net.URL} path for healthcheck page for this
-         *            instance.
+         *            - The {@link java.net.URL} path for healthcheck page for this instance.
          * @param explicitUrl
          *            - The full {@link java.net.URL} for the healthcheck page.
          * @param secureExplicitUrl
@@ -503,7 +491,7 @@ public class InstanceInfo {
                         hostNameInterpolationExpression, result.hostName);
             } else if (result.isUnsecurePortEnabled) {
                 result.healthCheckUrl = HTTP_PROTOCOL + result.hostName + COLON
-                + result.port + relativeUrl;
+                        + result.port + relativeUrl;
             }
 
             if (secureExplicitUrl != null) {
@@ -511,16 +499,15 @@ public class InstanceInfo {
                         hostNameInterpolationExpression, result.hostName);
             } else if (result.isSecurePortEnabled) {
                 result.secureHealthCheckUrl = HTTPS_PROTOCOL + result.hostName
-                + COLON + result.securePort + relativeUrl;
+                        + COLON + result.securePort + relativeUrl;
             }
             return this;
         }
 
         /**
-         * Sets the Virtual Internet Protocol address for this instance. The
-         * address should follow the format <code><hostname:port></code> This
-         * address needs to be resolved into a real address for communicating
-         * with this instance.
+         * Sets the Virtual Internet Protocol address for this instance. The address should follow the format
+         * <code><hostname:port></code> This address needs to be resolved into a real address for communicating with
+         * this instance.
          *
          * @param vipAddress
          *            - The Virtual Internet Protocol address of this instance.
@@ -533,10 +520,8 @@ public class InstanceInfo {
         }
 
         /**
-         * Sets the Secure Virtual Internet Protocol address for this instance.
-         * The address should follow the format <hostname:port> This address
-         * needs to be resolved into a real address for communicating with this
-         * instance.
+         * Sets the Secure Virtual Internet Protocol address for this instance. The address should follow the format
+         * <hostname:port> This address needs to be resolved into a real address for communicating with this instance.
          *
          * @param secureVIPAddress
          *            the secure VIP address of the instance.
@@ -553,8 +538,7 @@ public class InstanceInfo {
          * Sets the datacenter information.
          *
          * @param datacenter
-         *            the datacenter information for where this instance is
-         *            running.
+         *            the datacenter information for where this instance is running.
          * @return the {@link InstanceInfo} builder.
          */
         public Builder setDataCenterInfo(DataCenterInfo datacenter) {
@@ -568,8 +552,9 @@ public class InstanceInfo {
          * @param info
          *            the lease information for this instance.
          */
-        public void setLeaseInfo(LeaseInfo info) {
+        public Builder setLeaseInfo(LeaseInfo info) {
             result.leaseInfo = info;
+            return this;
         }
 
         /**
@@ -610,8 +595,7 @@ public class InstanceInfo {
         /**
          * Build the {@link InstanceInfo} object.
          *
-         * @return the {@link InstanceInfo} that was built based on the
-         *         information supplied.
+         * @return the {@link InstanceInfo} that was built based on the information supplied.
          */
         public InstanceInfo build() {
             if (!isInitialized()) {
@@ -660,8 +644,8 @@ public class InstanceInfo {
         }
 
         public Builder setNamespace(String namespace) {
-                this.namespace = namespace;
-                return this;
+            this.namespace = namespace;
+            return this;
         }
     }
 
@@ -743,8 +727,7 @@ public class InstanceInfo {
     /**
      * Returns the overridden status if any of the instance.
      *
-     * @return the status indicating whether an external process has changed the
-     *         status.
+     * @return the status indicating whether an external process has changed the status.
      */
     public InstanceStatus getOverriddenStatus() {
         return overriddenstatus;
@@ -817,11 +800,9 @@ public class InstanceInfo {
     }
 
     /**
-     * Returns the time elapsed since epoch since the instance status has been
-     * last updated.
+     * Returns the time elapsed since epoch since the instance status has been last updated.
      *
-     * @return the time elapsed since epoch since the instance has been last
-     *         updated.
+     * @return the time elapsed since epoch since the instance has been last updated.
      */
     public long getLastUpdatedTimestamp() {
         return lastUpdatedTimestamp;
@@ -853,12 +834,10 @@ public class InstanceInfo {
     }
 
     /**
-     * Gets the absolute URLs for the health check page for both secure and
-     * non-secure protocols. If the port is not enabled then the URL is
-     * excluded.
+     * Gets the absolute URLs for the health check page for both secure and non-secure protocols. If the port is not
+     * enabled then the URL is excluded.
      *
-     * @return A Set containing the string representation of health check urls
-     *         for secure and non secure protocols
+     * @return A Set containing the string representation of health check urls for secure and non secure protocols
      */
     public Set<String> getHealthCheckUrls() {
         Set<String> healthCheckUrlSet = new LinkedHashSet<String>();
@@ -872,8 +851,7 @@ public class InstanceInfo {
     }
 
     /**
-     * Gets the Virtual Internet Protocol address for this instance. Defaults to
-     * hostname if not specified.
+     * Gets the Virtual Internet Protocol address for this instance. Defaults to hostname if not specified.
      *
      * @return - The Virtual Internet Protocol address
      */
@@ -882,8 +860,7 @@ public class InstanceInfo {
     }
 
     /**
-     * Get the Secure Virtual Internet Protocol address for this instance.
-     * Defaults to hostname if not specified.
+     * Get the Secure Virtual Internet Protocol address for this instance. Defaults to hostname if not specified.
      *
      * @return - The Secure Virtual Internet Protocol address.
      */
@@ -936,8 +913,8 @@ public class InstanceInfo {
     }
 
     /**
-     * Sets the overridden status for this instance.Normally set by an external
-     * process to disable instance from taking traffic.
+     * Sets the overridden status for this instance.Normally set by an external process to disable instance from taking
+     * traffic.
      *
      * @param status
      *            overridden status for this instance.
@@ -949,8 +926,8 @@ public class InstanceInfo {
     }
 
     /**
-     * Returns whether any state changed so that {@link DiscoveryClient} can
-     * check whether to retransmit info or not on the next heartbeat.
+     * Returns whether any state changed so that {@link DiscoveryClient} can check whether to retransmit info or not on
+     * the next heartbeat.
      *
      * @return true if the {@link InstanceInfo} is dirty, false otherwise.
      */
@@ -959,8 +936,8 @@ public class InstanceInfo {
     }
 
     /**
-     * Sets the dirty flag so that the instance information can be carried to
-     * the discovery server on the next heartbeat.
+     * Sets the dirty flag so that the instance information can be carried to the discovery server on the next
+     * heartbeat.
      *
      * @param b
      *            - true if dirty, false otherwise.
@@ -971,10 +948,8 @@ public class InstanceInfo {
     }
 
     /**
-     * Sets a flag if this instance is the same as the discovery server that is
-     * return the instances. This flag is used by the discovery clients to
-     * identity the discovery server which is coordinating/returning the
-     * information.
+     * Sets a flag if this instance is the same as the discovery server that is return the instances. This flag is used
+     * by the discovery clients to identity the discovery server which is coordinating/returning the information.
      */
     public void setIsCoordinatingDiscoveryServer() {
         String instanceId = getId();
@@ -990,17 +965,15 @@ public class InstanceInfo {
     /**
      * Finds if this instance is the coordinating discovery server.
      *
-     * @return - true, if this instance is the coordinating discovery server,
-     *         false otherwise.
+     * @return - true, if this instance is the coordinating discovery server, false otherwise.
      */
     public Boolean isCoordinatingDiscoveryServer() {
         return isCoordinatingDiscoveryServer;
     }
 
     /**
-     * Returns the type of action done on the instance in the server.Primarily
-     * used for updating deltas in the {@link com.netflix.discovery.DiscoveryClient}
-     * instance.
+     * Returns the type of action done on the instance in the server.Primarily used for updating deltas in the
+     * {@link com.netflix.discovery.DiscoveryClient} instance.
      *
      * @return action type done on the instance.
      */
@@ -1045,8 +1018,7 @@ public class InstanceInfo {
     }
 
     /**
-     * Register application specific metadata to be sent to the discovery
-     * server.
+     * Register application specific metadata to be sent to the discovery server.
      *
      * @param runtimeMetadata
      *            Map containing key/value pairs.
@@ -1058,13 +1030,11 @@ public class InstanceInfo {
     }
 
     /**
-     * Convert <code>VIPAddress</code> by substituting environment variables if
-     * necessary.
+     * Convert <code>VIPAddress</code> by substituting environment variables if necessary.
      *
      * @param vipAddressMacro
      *            the macro for which the interpolation needs to be made.
-     * @return a string representing the final <code>VIPAddress</code> after
-     *         substitution.
+     * @return a string representing the final <code>VIPAddress</code> after substitution.
      */
     private static String resolveDeploymentContextBasedVipAddresses(
             String vipAddressMacro) {
@@ -1078,7 +1048,7 @@ public class InstanceInfo {
         while (matcher.find()) {
             String key = matcher.group(1);
             String value = DynamicPropertyFactory.getInstance()
-            .getStringProperty(key, "").get();
+                    .getStringProperty(key, "").get();
 
             logger.debug("att:" + matcher.group());
             logger.debug(", att key:" + key);
