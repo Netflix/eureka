@@ -16,6 +16,7 @@
 package com.netflix.appinfo;
 
 import java.util.LinkedHashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -266,7 +267,7 @@ public class InstanceInfo {
          */
         public Builder setAppName(String appName) {
             if (appName != null) {
-                result.appName = appName.toUpperCase();
+                result.appName = appName.toUpperCase(Locale.ROOT);
             } else {
                 result.appName = null;
             }
@@ -275,7 +276,7 @@ public class InstanceInfo {
 
         public Builder setAppGroupName(String appGroupName) {
             if (appGroupName != null) {
-                result.appGroupName = appGroupName.toUpperCase();
+                result.appGroupName = appGroupName.toUpperCase(Locale.ROOT);
             } else {
                 result.appGroupName = null;
             }
