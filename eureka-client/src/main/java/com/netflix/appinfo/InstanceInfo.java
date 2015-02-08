@@ -568,8 +568,9 @@ public class InstanceInfo {
          * @param info
          *            the lease information for this instance.
          */
-        public void setLeaseInfo(LeaseInfo info) {
+        public Builder setLeaseInfo(LeaseInfo info) {
             result.leaseInfo = info;
+            return this;
         }
 
         /**
