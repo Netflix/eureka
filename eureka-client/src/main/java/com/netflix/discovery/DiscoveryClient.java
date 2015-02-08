@@ -1722,7 +1722,7 @@ public class DiscoveryClient implements LookupService {
 
                 fetchRegistry(remoteRegionsModified);
 
-                if (logger.isInfoEnabled()) {
+                if (logger.isDebugEnabled()) {
                     StringBuilder allAppsHashCodes = new StringBuilder();
                     allAppsHashCodes.append("Local region apps hashcode: ");
                     allAppsHashCodes.append(localRegionApps.get().getAppsHashCode());
