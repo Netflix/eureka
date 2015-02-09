@@ -1,7 +1,7 @@
 package com.netflix.eureka2.server.config;
 
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
-import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
+import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider.StrategyType;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.governator.annotations.Configuration;
 
@@ -22,38 +22,40 @@ public class BridgeServerConfig extends WriteServerConfig {
             // common server configs
             ResolverType resolverType,
             String[] serverList,
-            EurekaTransports.Codec codec,
             String appName,
             String vipAddress,
             LocalDataCenterInfo.DataCenterType dataCenterType,
             Integer shutDownPort,
             Integer webAdminPort,
+            Integer discoveryPort,
+            Long connectionAutoTimeoutMs,
+            EurekaTransports.Codec codec,
+            Long evictionTimeoutMs,
+            StrategyType evictionStrategyType,
+            String evictionStrategyValue,
             Integer registrationPort,
             Integer replicationPort,
-            Integer discoveryPort,
             Long replicationReconnectDelayMillis,
-            Long evictionTimeoutMs,
-            EvictionStrategyProvider.StrategyType evictionStrategyType,
-            String evictionStrategyValue,
             // bridge server configs
             Integer refreshRateSec
     ) {
         super(
                 resolverType,
                 serverList,
-                codec,
                 appName,
                 vipAddress,
                 dataCenterType,
                 shutDownPort,
                 webAdminPort,
-                registrationPort,
-                replicationPort,
                 discoveryPort,
-                replicationReconnectDelayMillis,
+                connectionAutoTimeoutMs,
+                codec,
                 evictionTimeoutMs,
                 evictionStrategyType,
-                evictionStrategyValue
+                evictionStrategyValue,
+                registrationPort,
+                replicationPort,
+                replicationReconnectDelayMillis
         );
 
         this.refreshRateSec = refreshRateSec == null ? this.refreshRateSec : refreshRateSec;
@@ -85,19 +87,20 @@ public class BridgeServerConfig extends WriteServerConfig {
             return new BridgeServerConfig(
                     resolverType,
                     serverList,
-                    codec,
                     appName,
                     vipAddress,
                     dataCenterType,
                     shutDownPort,
                     webAdminPort,
-                    registrationPort,
-                    replicationPort,
                     discoveryPort,
-                    replicationReconnectDelayMillis,
+                    connectionAutoTimeoutMs,
+                    codec,
                     evictionTimeoutMs,
                     evictionStrategyType,
                     evictionStrategyValue,
+                    registrationPort,
+                    replicationPort,
+                    replicationReconnectDelayMillis,
                     // bridge server configs
                     refreshRateSec
             );

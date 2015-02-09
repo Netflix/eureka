@@ -32,7 +32,8 @@ public class EmbeddedReadServer extends EmbeddedEurekaServer<EurekaServerConfig,
     @Override
     public void start() {
         final EurekaClient eurekaClient = Eureka.newClientBuilder(discoveryResolver, registrationResolver)
-                .withCodec(config.getCodec()).build();
+                .withTransportConfig(config)
+                .build();
         Module[] modules = {
                 new EurekaReadServerModule(config, eurekaClient)
         };

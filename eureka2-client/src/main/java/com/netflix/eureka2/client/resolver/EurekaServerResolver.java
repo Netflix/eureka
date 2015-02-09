@@ -26,6 +26,8 @@ import com.netflix.eureka2.client.channel.SnapshotInterestChannel;
 import com.netflix.eureka2.client.channel.SnapshotInterestChannelImpl;
 import com.netflix.eureka2.client.transport.TransportClients;
 import com.netflix.eureka2.client.transport.tcp.TcpDiscoveryClient;
+import com.netflix.eureka2.config.BasicEurekaTransportConfig;
+import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.NetworkAddress.ProtocolType;
@@ -163,10 +165,16 @@ public class EurekaServerResolver implements ServerResolver {
 
     public static class EurekaServerResolverBuilder {
 
+        private EurekaTransportConfig transportConfig;
         private ServerResolver bootstrapResolver;
         private Interest<InstanceInfo> readServerInterest;
         private LoadBalancerBuilder<Server> loadBalancerBuilder;
         private ServiceSelector serviceSelector;
+
+        public EurekaServerResolverBuilder withTransportConfig(EurekaTransportConfig transportConfig) {
+            this.transportConfig = transportConfig;
+            return this;
+        }
 
         public EurekaServerResolverBuilder withBootstrapResolver(ServerResolver bootstrapResolver) {
             this.bootstrapResolver = bootstrapResolver;
@@ -201,8 +209,12 @@ public class EurekaServerResolver implements ServerResolver {
             if (bootstrapResolver == null) {
                 throw new IllegalStateException("BootstrapResolver property not set");
             }
+            if (transportConfig == null) {
+                transportConfig = new BasicEurekaTransportConfig.Builder().build();
+            }
 
-            TcpDiscoveryClient transportClient = (TcpDiscoveryClient) TransportClients.newTcpDiscoveryClient(bootstrapResolver);
+            TcpDiscoveryClient transportClient =
+                    (TcpDiscoveryClient) TransportClients.newTcpDiscoveryClient(transportConfig, bootstrapResolver);
             SnapshotInterestChannel snapshotInterestChannel = new SnapshotInterestChannelImpl(transportClient);
             return new EurekaServerResolver(snapshotInterestChannel, readServerInterest, serviceSelector, loadBalancerBuilder);
         }

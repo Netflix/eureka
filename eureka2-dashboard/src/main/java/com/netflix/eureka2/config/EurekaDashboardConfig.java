@@ -17,6 +17,7 @@
 package com.netflix.eureka2.config;
 
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
+import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider.StrategyType;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.governator.annotations.Configuration;
@@ -44,12 +45,16 @@ public class EurekaDashboardConfig extends EurekaCommonConfig {
             // common configs
             ResolverType resolverType,
             String[] serverList,
-            EurekaTransports.Codec codec,
             String appName,
             String vipAddress,
             LocalDataCenterInfo.DataCenterType dataCenterType,
             Integer shutDownPort,
             Integer webAdminPort,
+            Long connectionAutoTimeoutMs,
+            EurekaTransports.Codec codec,
+            Long evictionTimeoutMs,
+            StrategyType evictionStrategyType,
+            String evictionStrategyValue,
             // dashboard server configs
             Integer dashboardPort,
             Integer webSocketPort
@@ -57,12 +62,16 @@ public class EurekaDashboardConfig extends EurekaCommonConfig {
         super(
                 resolverType,
                 serverList,
-                codec,
                 appName,
                 vipAddress,
                 dataCenterType,
                 shutDownPort,
-                webAdminPort
+                webAdminPort,
+                connectionAutoTimeoutMs,
+                codec,
+                evictionTimeoutMs,
+                evictionStrategyType,
+                evictionStrategyValue
         );
 
         this.dashboardPort = dashboardPort == null ? this.dashboardPort : dashboardPort;
@@ -105,12 +114,16 @@ public class EurekaDashboardConfig extends EurekaCommonConfig {
             return new EurekaDashboardConfig(
                     resolverType,
                     serverList,
-                    codec,
                     appName,
                     vipAddress,
                     dataCenterType,
                     shutDownPort,
                     webAdminPort,
+                    connectionAutoTimeoutMs,
+                    codec,
+                    evictionTimeoutMs,
+                    evictionStrategyType,
+                    evictionStrategyValue,
                     // dashboard server configs
                     dashboardPort,
                     webSocketPort
