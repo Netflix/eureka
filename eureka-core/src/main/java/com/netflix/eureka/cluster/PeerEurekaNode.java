@@ -401,6 +401,45 @@ public class PeerEurekaNode {
     }
 
     /**
+     * Delete instance status override.
+     *
+     * @param appName
+     *            the application name of the instance.
+     * @param id
+     *            the unique identifier of the instance.
+     * @param info
+     *            the instance information of the instance.
+     */
+    public void deleteStatusOverride(final String appName, final String id, final InstanceInfo info) {
+        boolean success = statusBatcher.process(new ReplicationTask(appName, id, Action.DeleteStatusOverride) {
+            @Override
+            public int execute() {
+                CurrentRequestVersion.set(Version.V2);
+                ClientResponse response = null;
+                try {
+                    String urlPath = "apps/" + appName + '/' + id + "/status";
+                    response = jerseyApacheClient
+                            .resource(serviceUrl)
+                            .path(urlPath)
+                            .queryParam("lastDirtyTimestamp", info.getLastDirtyTimestamp().toString())
+                            .header(HEADER_REPLICATION, "true")
+                            .delete(ClientResponse.class);
+                    return response.getStatus();
+                } finally {
+                    if (response != null) {
+                        response.close();
+                    }
+                }
+            }
+        });
+        if (!success) {
+            logger.error("Cannot find space in the replication pool for "
+                    + this.serviceUrl
+                    + ". Check the network connectivity or the traffic");
+        }
+    }
+
+    /**
      * Get the service Url of the peer eureka node.
      *
      * @return the service Url of the peer eureka node.

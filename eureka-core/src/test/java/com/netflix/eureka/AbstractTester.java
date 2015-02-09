@@ -41,8 +41,8 @@ public class AbstractTester {
     public static final String LOCAL_REGION_INSTANCE_1_HOSTNAME = "blahloc";
     public static final String LOCAL_REGION_INSTANCE_2_HOSTNAME = "blahloc2";
     protected final List<Pair<String, String>> registeredApps = new ArrayList<Pair<String, String>>();
-    private final Map<String, Application> remoteRegionApps = new HashMap<String, Application>();
-    private final Map<String, Application> remoteRegionAppsDelta = new HashMap<String, Application>();
+    protected final Map<String, Application> remoteRegionApps = new HashMap<String, Application>();
+    protected final Map<String, Application> remoteRegionAppsDelta = new HashMap<String, Application>();
     protected MockRemoteEurekaServer mockRemoteEurekaServer;
     protected PeerAwareInstanceRegistry registry;
     protected DiscoveryClient client;
@@ -108,11 +108,12 @@ public class AbstractTester {
 
     @After
     public void tearDown() throws Exception {
-        mockRemoteEurekaServer.stop();
         for (Pair<String, String> registeredApp : registeredApps) {
             System.out.println("Canceling application: " + registeredApp.first() + " from local registry.");
             registry.cancel(registeredApp.first(), registeredApp.second(), false);
         }
+        registry.shutdown();
+        mockRemoteEurekaServer.stop();
         remoteRegionApps.clear();
         remoteRegionAppsDelta.clear();
         ConfigurationManager.getConfigInstance().clearProperty("eureka.remoteRegionUrls");

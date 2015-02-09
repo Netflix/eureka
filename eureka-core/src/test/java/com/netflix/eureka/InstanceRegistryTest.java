@@ -1,13 +1,19 @@
 package com.netflix.eureka;
 
+import java.util.List;
+
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.Pair;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.List;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertThat;
 
 /**
  * @author Nitesh Kant
@@ -51,10 +57,10 @@ public class InstanceRegistryTest extends AbstractTester {
         }
         Assert.assertNotNull("Did not find local registry app in delta.", locaApplication);
         Assert.assertEquals("Local registry app instance count in delta not as expected.", 1,
-                            locaApplication.getInstances().size());
+                locaApplication.getInstances().size());
         Assert.assertNotNull("Did not find remote registry app in delta", remApplication);
         Assert.assertEquals("Remote registry app instance count  in delta not as expected.", 1,
-                            remApplication.getInstances().size());
+                remApplication.getInstances().size());
     }
 
     @Test
@@ -69,11 +75,12 @@ public class InstanceRegistryTest extends AbstractTester {
 
     private void waitForDeltaToBeRetrieved() throws InterruptedException {
         int count = 0;
-        while (count < 3 && !mockRemoteEurekaServer.isSentDelta()) {
-            System.out.println("Sleeping for 10 seconds to let the remote registry fetch delta. Attempt: " + count);
-            Thread.sleep(10 * 1000);
-            System.out.println("Done sleeping for 10 seconds to let the remote registry fetch delta");
+        System.out.println("Sleeping up to 30 seconds to let the remote registry fetch delta.");
+        while (count++ < 30 && !mockRemoteEurekaServer.isSentDelta()) {
+            Thread.sleep(1000);
         }
+        // Wait a second more to be sure the delta was processed
+        Thread.sleep(1000);
     }
 
     @Test
@@ -108,11 +115,43 @@ public class InstanceRegistryTest extends AbstractTester {
         }
         Assert.assertNotNull("Did not find local registry app", locaApplication);
         Assert.assertEquals("Local registry app instance count not as expected.", 1,
-                            locaApplication.getInstances().size());
+                locaApplication.getInstances().size());
         Assert.assertNotNull("Did not find remote registry app", remApplication);
         Assert.assertEquals("Remote registry app instance count not as expected.", 2,
-                            remApplication.getInstances().size());
+                remApplication.getInstances().size());
 
+    }
+
+    @Test
+    public void testStatusOverrideSetAndRemoval() throws Exception {
+        // Regular registration first
+        InstanceInfo myInstance = createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME);
+        registerInstanceLocally(myInstance);
+        verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.UP);
+
+        // Override status
+        boolean statusResult = registry.statusUpdate(LOCAL_REGION_APP_NAME, myInstance.getId(), InstanceStatus.OUT_OF_SERVICE, "0", false);
+        assertThat("Couldn't override instance status", statusResult, is(true));
+        verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.OUT_OF_SERVICE);
+
+        // Register again with status UP (this is what health check is doing)
+        registry.register(createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME), 10000000, false);
+        verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.OUT_OF_SERVICE);
+
+        // Now remove override
+        statusResult = registry.deleteStatusOverride(LOCAL_REGION_APP_NAME, myInstance.getId(), "0", false);
+        assertThat("Couldn't remove status override", statusResult, is(true));
+        verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.UNKNOWN);
+
+        // Register again with status UP (this is what health check is doing)
+        registry.register(createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME), 10000000, false);
+        verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.UP);
+    }
+
+    private void verifyLocalInstanceStatus(String id, InstanceStatus status) {
+        InstanceInfo instanceInfo = registry.getApplication(LOCAL_REGION_APP_NAME).getByInstanceId(id);
+        assertThat("InstanceInfo with id " + id + " not found", instanceInfo, is(notNullValue()));
+        assertThat("Invalid InstanceInfo state", instanceInfo.getStatus(), is(equalTo(status)));
     }
 
     private void registerInstanceLocally(InstanceInfo remoteInstance) {

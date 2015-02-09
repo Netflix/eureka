@@ -101,7 +101,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
             "Eureka-PeerNodesUpdater", true);
 
     public enum Action {
-        Heartbeat, Register, Cancel, StatusUpdate;
+        Heartbeat, Register, Cancel, StatusUpdate, DeleteStatusOverride;
 
         private com.netflix.servo.monitor.Timer timer = Monitors.newTimer(this
                 .name());
@@ -503,6 +503,17 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
         return false;
     }
 
+    @Override
+    public boolean deleteStatusOverride(String appName, String id,
+                                        String lastDirtyTimestamp,
+                                        boolean isReplication) {
+        if (super.deleteStatusOverride(appName, id, lastDirtyTimestamp, isReplication)) {
+            replicateToPeers(Action.DeleteStatusOverride, appName, id, null, null, isReplication);
+            return true;
+        }
+        return false;
+    }
+
     /**
      * Replicate the <em>ASG status</em> updates to peer eureka nodes. If this
      * event is a replication from other nodes, then it is not replicated to
@@ -801,7 +812,10 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                 infoFromRegistry = getInstanceByAppAndId(appName, id, false);
                 node.statusUpdate(appName, id, newStatus, infoFromRegistry);
                 break;
-
+            case DeleteStatusOverride:
+                infoFromRegistry = getInstanceByAppAndId(appName, id, false);
+                node.deleteStatusOverride(appName, id, infoFromRegistry);
+                break;
             }
         } catch (Throwable t) {
             logger.error(

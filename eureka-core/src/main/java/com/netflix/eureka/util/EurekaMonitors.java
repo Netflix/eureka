@@ -59,6 +59,7 @@ public enum EurekaMonitors {
     REGISTER("registerCounter", "Number of total registers seen since startup"),
     EXPIRED("expiredCounter", "Number of total expired leases since startup"),
     STATUS_UPDATE("statusUpdateCounter", "Number of total admin status updates since startup"),
+    STATUS_OVERRIDE_DELETE("statusOverrideDeleteCounter", "Number of status override removals"),
     CANCEL_NOT_FOUND("cancelNotFoundCounter", "Number of total cancel requests on non-existing instance since startup"),
     RENEW_NOT_FOUND("renewNotFoundexpiredCounter", "Number of total renew on non-existing instance since startup"),
     REJECTED_REPLICATIONS("numOfRejectedReplications", "Number of replications rejected because of full queue"),

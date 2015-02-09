@@ -16,18 +16,6 @@
 
 package com.netflix.eureka;
 
-import static com.netflix.eureka.util.EurekaMonitors.CANCEL;
-import static com.netflix.eureka.util.EurekaMonitors.CANCEL_NOT_FOUND;
-import static com.netflix.eureka.util.EurekaMonitors.EXPIRED;
-import static com.netflix.eureka.util.EurekaMonitors.GET_ALL_CACHE_MISS;
-import static com.netflix.eureka.util.EurekaMonitors.GET_ALL_CACHE_MISS_DELTA;
-import static com.netflix.eureka.util.EurekaMonitors.GET_ALL_WITH_REMOTE_REGIONS_CACHE_MISS;
-import static com.netflix.eureka.util.EurekaMonitors.GET_ALL_WITH_REMOTE_REGIONS_CACHE_MISS_DELTA;
-import static com.netflix.eureka.util.EurekaMonitors.REGISTER;
-import static com.netflix.eureka.util.EurekaMonitors.RENEW;
-import static com.netflix.eureka.util.EurekaMonitors.RENEW_NOT_FOUND;
-import static com.netflix.eureka.util.EurekaMonitors.STATUS_UPDATE;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -69,6 +57,8 @@ import com.netflix.eureka.resources.ResponseCache;
 import com.netflix.eureka.util.AwsAsgUtil;
 import com.netflix.eureka.util.MeasuredRate;
 import com.netflix.servo.annotations.DataSourceType;
+
+import static com.netflix.eureka.util.EurekaMonitors.*;
 
 /**
  * Handles all registry requests from eureka clients.
@@ -440,6 +430,64 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                         info.setStatusWithoutDirty(newStatus);
                     } else {
                         info.setStatus(newStatus);
+                    }
+                    info.setActionType(ActionType.MODIFIED);
+                    recentlyChangedQueue
+                            .add(new RecentlyChangedItem(lease));
+                    info.setLastUpdatedTimestamp();
+                    invalidateCache(appName, info.getVIPAddress(), info.getSecureVipAddress());
+                }
+                return true;
+            }
+        } finally {
+            read.unlock();
+        }
+    }
+
+    /**
+     * Removes status override for a give instance.
+     *
+     * @param appName
+     *            the application name of the instance.
+     * @param id
+     *            the unique identifier of the instance.
+     * @param lastDirtyTimestamp
+     *            last timestamp when this instance information was updated.
+     * @param isReplication
+     *            true if this is a replication event from other nodes, false
+     *            otherwise.
+     * @return true if the status was successfully updated, false otherwise.
+     */
+    public boolean deleteStatusOverride(String appName, String id,
+                                        String lastDirtyTimestamp,
+                                        boolean isReplication) {
+        try {
+            read.lock();
+            STATUS_OVERRIDE_DELETE.increment(isReplication);
+            Map<String, Lease<InstanceInfo>> gMap = registry.get(appName);
+            Lease<InstanceInfo> lease = null;
+            if (gMap != null) {
+                lease = gMap.get(id);
+            }
+            if (lease == null) {
+                return false;
+            } else {
+                lease.renew();
+                InstanceInfo info = lease.getHolder();
+                InstanceStatus currentOverride = overriddenInstanceStatusMap.remove(id);
+                if(currentOverride != null && info != null) {
+                    info.setOverriddenStatus(InstanceStatus.UNKNOWN);
+                    info.setStatus(InstanceStatus.UNKNOWN);
+                    long replicaDirtyTimestamp = 0;
+                    if (lastDirtyTimestamp != null) {
+                        replicaDirtyTimestamp = Long
+                                .valueOf(lastDirtyTimestamp);
+                    }
+                    // If the replication's dirty timestamp is more than the
+                    // existing one, just update
+                    // it to the replica's.
+                    if (replicaDirtyTimestamp > info.getLastDirtyTimestamp()) {
+                        info.setLastDirtyTimestamp(replicaDirtyTimestamp);
                     }
                     info.setActionType(ActionType.MODIFIED);
                     recentlyChangedQueue

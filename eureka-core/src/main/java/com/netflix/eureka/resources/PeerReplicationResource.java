@@ -102,6 +102,12 @@ public class PeerReplicationResource {
 
                     singleResponseBuilder = new PeerEurekaNode.ReplicationInstanceResponse.Builder()
                     .setStatusCode(response.getStatus());
+                } else if (instanceInfo.getAction() == Action.DeleteStatusOverride) {
+                    response = resource.deleteStatusUpdate(REPLICATION,
+                            instanceInfo.getLastDirtyTimestamp().toString());
+
+                    singleResponseBuilder = new PeerEurekaNode.ReplicationInstanceResponse.Builder()
+                    .setStatusCode(response.getStatus());
                 } else if (instanceInfo.getAction() == Action.Cancel) {
                     response = resource.cancelLease(REPLICATION);
 
