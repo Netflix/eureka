@@ -94,7 +94,8 @@ public class ResolverBasedTransportClientTest {
         };
 
         ResolverBasedTransportClient transportClient =
-                new TcpRegistrationClient(new BasicEurekaTransportConfig(Codec.Json), resolver,
+                new TcpRegistrationClient(new BasicEurekaTransportConfig.Builder().withCodec(Codec.Json).build(),
+                                          resolver,
                                           clientMetrics().getRegistrationServerConnectionMetrics());
 
         // Single, non-existent server - should fail on it

@@ -1,6 +1,6 @@
 package com.netflix.eureka2.server.config;
 
-import com.netflix.eureka2.config.ConfigNameStrings.*;
+import com.netflix.eureka2.config.ConfigurationNames.*;
 import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
@@ -46,20 +46,20 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
     protected int webAdminPort = 8077;
 
     // transport configs
-    @Configuration(Transport.connectionAutoTimeoutMsName)
+    @Configuration(TransportNames.connectionAutoTimeoutMsName)
     protected long connectionAutoTimeoutMs = DEFAULT_CONNECTION_AUTO_TIMEOUT_MS;
 
-    @Configuration(Transport.codecName)
+    @Configuration(TransportNames.codecName)
     protected String codec = DEFAULT_CODEC;
 
     // registry configs
-    @Configuration(Registry.evictionTimeoutMsName)
+    @Configuration(RegistryNames.evictionTimeoutMsName)
     protected long evictionTimeoutMs = DEFAULT_EVICTION_TIMEOUT;
 
-    @Configuration(Registry.evictionStrategyTypeName)
+    @Configuration(RegistryNames.evictionStrategyTypeName)
     protected String evictionStrategyType = EvictionStrategyProvider.StrategyType.PercentageDrop.name();
 
-    @Configuration(Registry.evictionStrategyValueName)
+    @Configuration(RegistryNames.evictionStrategyValueName)
     protected String evictionStrategyValue = "20";
 
 

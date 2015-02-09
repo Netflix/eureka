@@ -30,7 +30,7 @@ public class EurekaClientResource extends ExternalResource {
 
     public EurekaClientResource(String name, WriteServerResource writeServerResource,
                                 ReadServerResource readServerResource) {
-        this(name, writeServerResource, readServerResource, new BasicEurekaTransportConfig());
+        this(name, writeServerResource, readServerResource, new BasicEurekaTransportConfig.Builder().build());
     }
 
     public EurekaClientResource(String name, WriteServerResource writeServerResource,

@@ -2,38 +2,22 @@ package com.netflix.eureka2.config;
 
 import com.netflix.eureka2.transport.EurekaTransports;
 
-import static com.netflix.eureka2.config.ConfigNameStrings.Transport.*;
+import static com.netflix.eureka2.config.ConfigurationNames.TransportNames.*;
 
 /**
  * @author David Liu
  */
 public class BasicEurekaTransportConfig implements EurekaTransportConfig {
 
-    public static final String CONNECTION_AUTO_TIMEOUT_MS = String.valueOf(30*60*1000);
-    public static final String DEFAULT_CODEC = "Avro";
+    public static final long CONNECTION_AUTO_TIMEOUT_MS = 30*60*1000;
+    public static final EurekaTransports.Codec DEFAULT_CODEC = EurekaTransports.Codec.Avro;
 
-    private Long connectionAutoTimeoutMs = Long.parseLong(
-            System.getProperty(connectionAutoTimeoutMsName, CONNECTION_AUTO_TIMEOUT_MS)
-    );
-    private EurekaTransports.Codec codec = EurekaTransports.Codec.valueOf(
-            System.getProperty(codecName, DEFAULT_CODEC)
-    );
+    private final Long connectionAutoTimeoutMs;
+    private final EurekaTransports.Codec codec;
 
-    public BasicEurekaTransportConfig() {
-        this(null, null);
-    }
-
-    public BasicEurekaTransportConfig(Long connectionAutoTimeoutMs) {
-        this(connectionAutoTimeoutMs, null);
-    }
-
-    public BasicEurekaTransportConfig(EurekaTransports.Codec codec) {
-        this(null, codec);
-    }
-
-    public BasicEurekaTransportConfig(Long connectionAutoTimeoutMs, EurekaTransports.Codec codec) {
-        this.connectionAutoTimeoutMs = connectionAutoTimeoutMs == null ? this.connectionAutoTimeoutMs : connectionAutoTimeoutMs;
-        this.codec = codec == null ? this.codec : codec;
+    private BasicEurekaTransportConfig(Long connectionAutoTimeoutMs, EurekaTransports.Codec codec) {
+        this.connectionAutoTimeoutMs = connectionAutoTimeoutMs;
+        this.codec = codec;
     }
 
     @Override
@@ -53,4 +37,27 @@ public class BasicEurekaTransportConfig implements EurekaTransportConfig {
                 ", codec='" + codec + '\'' +
                 '}';
     }
+
+
+    public static class Builder {
+        private Long connectionAutoTimeoutMs = SystemConfigLoader
+                .getFromSystemPropertySafe(connectionAutoTimeoutMsName, CONNECTION_AUTO_TIMEOUT_MS);
+        private EurekaTransports.Codec codec = SystemConfigLoader
+                .getFromSystemPropertySafe(codecName, DEFAULT_CODEC);
+
+        public Builder withConnectionAutoTimeoutMs(Long connectionAutoTimeoutMs) {
+            this.connectionAutoTimeoutMs = connectionAutoTimeoutMs;
+            return this;
+        }
+
+        public Builder withCodec(EurekaTransports.Codec codec) {
+            this.codec = codec;
+            return this;
+        }
+
+        public BasicEurekaTransportConfig build() {
+            return new BasicEurekaTransportConfig(connectionAutoTimeoutMs, codec);
+        }
+    }
+
 }

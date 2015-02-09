@@ -129,7 +129,7 @@ public class EurekaDeployment {
 
         public EurekaDeployment build() {
             if (transportConfig == null) {
-                transportConfig = new BasicEurekaTransportConfig();
+                transportConfig = new BasicEurekaTransportConfig.Builder().build();
             }
             EmbeddedWriteCluster writeCluster = new EmbeddedWriteCluster(extensionsEnabled, adminUIEnabled, ephemeralPorts, transportConfig.getCodec());
             writeCluster.scaleUpBy(writeClusterSize);

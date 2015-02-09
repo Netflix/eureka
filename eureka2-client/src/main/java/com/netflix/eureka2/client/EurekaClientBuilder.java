@@ -89,11 +89,11 @@ public class EurekaClientBuilder {
         }
 
         if (registryConfig == null) {
-            registryConfig = new BasicEurekaRegistryConfig();
+            registryConfig = new BasicEurekaRegistryConfig.Builder().build();
         }
 
         if (transportConfig == null) {
-            transportConfig = new BasicEurekaTransportConfig();
+            transportConfig = new BasicEurekaTransportConfig.Builder().build();
         }
 
         InterestHandler interestHandler = doDiscovery ? buildInterestHandler() : null;

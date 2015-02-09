@@ -5,17 +5,17 @@ package com.netflix.eureka2.config;
  *
  * @author David Liu
  */
-public final class ConfigNameStrings {
+public final class ConfigurationNames {
     private static final String EUREKA_PREFIX = "eurekas.";
 
-    public final class Transport {
+    public final class TransportNames {
         private static final String PREFIX = "transport.";
 
         public static final String connectionAutoTimeoutMsName = EUREKA_PREFIX + PREFIX + "connectionAutoTimeoutMs";
         public static final String codecName = EUREKA_PREFIX + PREFIX + "codec";
     }
 
-    public final class Registry {
+    public final class RegistryNames {
         private static final String PREFIX = "registry.";
 
         public static final String evictionTimeoutMsName = EUREKA_PREFIX + PREFIX + "evictionTimeoutMs";

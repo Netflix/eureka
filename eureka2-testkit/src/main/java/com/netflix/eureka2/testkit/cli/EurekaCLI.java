@@ -257,7 +257,7 @@ public class EurekaCLI {
                 System.err.println("ERROR: invalid command line parameters; expected none or '-c <codec_name>");
                 System.exit(-1);
         }
-        EurekaTransportConfig transportConfig = new BasicEurekaTransportConfig(codec);
+        EurekaTransportConfig transportConfig = new BasicEurekaTransportConfig.Builder().withCodec(codec).build();
         new EurekaCLI(transportConfig).readExecutePrintLoop();
     }
 

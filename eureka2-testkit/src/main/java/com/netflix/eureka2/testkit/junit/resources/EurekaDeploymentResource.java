@@ -23,7 +23,7 @@ public class EurekaDeploymentResource extends ExternalResource {
     private EurekaDeployment eurekaDeployment;
 
     public EurekaDeploymentResource(int writeClusterSize, int readClusterSize) {
-        this(writeClusterSize, readClusterSize, new BasicEurekaTransportConfig());
+        this(writeClusterSize, readClusterSize, new BasicEurekaTransportConfig.Builder().build());
     }
 
     public EurekaDeploymentResource(int writeClusterSize, int readClusterSize, EurekaTransportConfig transportConfig) {

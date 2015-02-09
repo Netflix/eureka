@@ -210,7 +210,7 @@ public class EurekaServerResolver implements ServerResolver {
                 throw new IllegalStateException("BootstrapResolver property not set");
             }
             if (transportConfig == null) {
-                transportConfig = new BasicEurekaTransportConfig();
+                transportConfig = new BasicEurekaTransportConfig.Builder().build();
             }
 
             TcpDiscoveryClient transportClient =
