@@ -1,12 +1,18 @@
 package com.netflix.appinfo;
 
+import com.netflix.appinfo.InstanceInfo.Builder;
+import com.netflix.appinfo.InstanceInfo.PortType;
 import com.netflix.config.ConcurrentCompositeConfiguration;
 import com.netflix.config.ConfigurationManager;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
+import static com.netflix.appinfo.InstanceInfo.Builder.newBuilder;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertThat;
 
 /**
  * Created by jzarfoss on 2/12/14.
@@ -21,24 +27,25 @@ public class InstanceInfoTest {
     // contrived test to check copy constructor and verify behavior of builder for InstanceInfo
 
     @Test
-    public void testCopyConstructor(){
+    public void testCopyConstructor() {
 
-        DataCenterInfo myDCI = new DataCenterInfo(){
+        DataCenterInfo myDCI = new DataCenterInfo() {
 
-            public DataCenterInfo.Name getName(){return DataCenterInfo.Name.MyOwn;}
+            public DataCenterInfo.Name getName() {
+                return DataCenterInfo.Name.MyOwn;
+            }
 
         };
 
 
-        InstanceInfo smallII1 = InstanceInfo.Builder.newBuilder().setAppName("test").setDataCenterInfo(myDCI).build();
+        InstanceInfo smallII1 = newBuilder().setAppName("test").setDataCenterInfo(myDCI).build();
         InstanceInfo smallII2 = new InstanceInfo(smallII1);
 
         assertNotSame(smallII1, smallII2);
         Assert.assertEquals(smallII1, smallII2);
 
 
-
-        InstanceInfo fullII1 = InstanceInfo.Builder.newBuilder().setMetadata(null)
+        InstanceInfo fullII1 = newBuilder().setMetadata(null)
                 .setOverriddenStatus(InstanceInfo.InstanceStatus.UNKNOWN)
                 .setHostName("localhost")
                 .setSecureVIPAddress("testSecureVIP:22")
@@ -61,17 +68,38 @@ public class InstanceInfoTest {
     public void testAppGroupNameSystemProp() throws Exception {
         String appGroup = "testAppGroupSystemProp";
         ((ConcurrentCompositeConfiguration) ConfigurationManager.getConfigInstance()).setOverrideProperty("NETFLIX_APP_GROUP",
-                                                                                                          appGroup);
+                appGroup);
         MyDataCenterInstanceConfig config = new MyDataCenterInstanceConfig();
-        Assert.assertEquals("Unexpected app group name" , appGroup, config.getAppGroupName());
+        Assert.assertEquals("Unexpected app group name", appGroup, config.getAppGroupName());
     }
 
     @Test
     public void testAppGroupName() throws Exception {
         String appGroup = "testAppGroup";
         ((ConcurrentCompositeConfiguration) ConfigurationManager.getConfigInstance()).setOverrideProperty("eureka.appGroup",
-                                                                                                          appGroup);
+                appGroup);
         MyDataCenterInstanceConfig config = new MyDataCenterInstanceConfig();
-        Assert.assertEquals("Unexpected app group name" , appGroup, config.getAppGroupName());
+        Assert.assertEquals("Unexpected app group name", appGroup, config.getAppGroupName());
+    }
+
+    @Test
+    public void testHealthCheckSetContainsValidUrlEntries() throws Exception {
+        Builder builder = newBuilder()
+                .setAppName("test")
+                .setNamespace("eureka.")
+                .setHostName("localhost")
+                .setPort(80)
+                .setSecurePort(443)
+                .enablePort(PortType.SECURE, true);
+
+        // No health check URLs
+        InstanceInfo noHealtcheckInstanceInfo = builder.build();
+        assertThat(noHealtcheckInstanceInfo.getHealthCheckUrls().size(), is(equalTo(0)));
+
+        // Now when health check is defined
+        InstanceInfo instanceInfo = builder
+                .setHealthCheckUrls("/healthcheck", "http://${eureka.hostname}/healthcheck", "https://${eureka.hostname}/healthcheck")
+                .build();
+        assertThat(instanceInfo.getHealthCheckUrls().size(), is(equalTo(2)));
     }
 }
