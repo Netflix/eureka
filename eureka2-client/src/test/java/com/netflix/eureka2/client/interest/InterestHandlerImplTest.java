@@ -14,24 +14,32 @@ import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.InterestChannelMetrics;
+import com.netflix.eureka2.registry.PreservableEurekaRegistry;
 import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
+import com.netflix.eureka2.registry.eviction.EvictionQueue;
+import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
+import com.netflix.eureka2.registry.eviction.PercentageDropEvictionStrategy;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInterest;
+import com.netflix.eureka2.testkit.junit.EurekaMatchers;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.TransportClient;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import rx.Observable;
 import rx.Subscriber;
+import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 import rx.subjects.ReplaySubject;
@@ -44,14 +52,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.netflix.eureka2.interests.ChangeNotifications.batchMarkerFilter;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.argThat;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author David Liu
@@ -59,10 +64,9 @@ import static org.mockito.Mockito.when;
 public class InterestHandlerImplTest {
 
     private static final int RETRY_WAIT_MILLIS = 10;
-    private final int failAfterMillis = 10;
+    private static final long EVICTION_TIMEOUT_MS = 30*1000;
+    private static final int EVICTION_ALLOWED_PERCENTAGE_DROP_THRESHOLD = 50;//%
     private final AtomicInteger channelId = new AtomicInteger(0);
-
-    private MessageConnection messageConnection;
 
     private TransportClient transportClient;
 
@@ -75,7 +79,9 @@ public class InterestHandlerImplTest {
     private List<InstanceInfo> allInfos;
 
     private TestScheduler registryScheduler;
-    private SourcedEurekaRegistry<InstanceInfo> registry;
+    private TestScheduler evictionScheduler;
+    private PreservableEurekaRegistry registry;
+    private EvictionQueue evictionQueue;
 
     private ChannelFactory<InterestChannel> mockFactory;
     private TestChannelFactory<InterestChannel> factory;
@@ -87,7 +93,7 @@ public class InterestHandlerImplTest {
 
     @Before
     public void setUp() {
-        messageConnection = mock(MessageConnection.class);
+        MessageConnection messageConnection = mock(MessageConnection.class);
         final ReplaySubject<Void> lifecycleSubject = ReplaySubject.create();
         when(messageConnection.lifecycleObservable()).thenReturn(lifecycleSubject);
         when(messageConnection.submitWithAck(anyObject())).thenReturn(Observable.<Void>empty());
@@ -116,7 +122,17 @@ public class InterestHandlerImplTest {
         allInfos.addAll(zuulInfos);
 
         registryScheduler = Schedulers.test();
-        registry = new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics(), registryScheduler);
+        evictionScheduler = Schedulers.test();
+        evictionQueue = spy(new EvictionQueueImpl(EVICTION_TIMEOUT_MS, EurekaRegistryMetricFactory.registryMetrics(), evictionScheduler));
+
+        SourcedEurekaRegistry<InstanceInfo> delegateRegistry
+                = new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics(), registryScheduler);
+        registry = spy(new PreservableEurekaRegistry(
+                delegateRegistry,
+                        evictionQueue,
+                        new PercentageDropEvictionStrategy(EVICTION_ALLOWED_PERCENTAGE_DROP_THRESHOLD),
+                        EurekaRegistryMetricFactory.registryMetrics()));
+
         mockFactory = mock(InterestChannelFactory.class);
         factory = new TestChannelFactory<>(mockFactory);
 
@@ -380,13 +396,100 @@ public class InterestHandlerImplTest {
         assertThat(compositeOutput, containsInAnyOrder(compositeExpected.toArray()));
     }
 
+    @Test
+    public void testNewChannelCreationEvictAllOlderSourcedRegistryData() throws Exception {
+        when(mockFactory.newChannel()).then(new Answer<InterestChannel>() {
+            @Override
+            public InterestChannel answer(InvocationOnMock invocation) throws Throwable {
+                if (channelId.get() == 0) {
+                    return newSendingInterestFailChannel(channelId.getAndIncrement());
+                }
+                return newAlwaysSuccessChannel(channelId.getAndIncrement());
+            }
+        });
 
-    private InterestChannel newAlwaysSuccessChannel(Integer id) {
-        InterestChannel channel = spy(new InterestChannelImpl(registry, transportClient, mock(InterestChannelMetrics.class)));
+        handler = new InterestHandlerImpl(registry, factory, RETRY_WAIT_MILLIS);
+
+        List<ChangeNotification<InstanceInfo>> expected = Arrays.asList(
+                SampleChangeNotification.DiscoveryAdd.newNotification(discoveryInfos.get(0)),
+                SampleChangeNotification.DiscoveryAdd.newNotification(discoveryInfos.get(1)),
+                SampleChangeNotification.DiscoveryAdd.newNotification(discoveryInfos.get(2))
+        );
+
+        ArgumentCaptor<InstanceInfo> infoCaptor = ArgumentCaptor.forClass(InstanceInfo.class);
+        ArgumentCaptor<Source> sourceCaptor = ArgumentCaptor.forClass(Source.class);
+
+        handler.forInterest(discoveryInterest).filter(batchMarkerFilter()).subscribe(discoverySubscriber);
+
+        discoverySubscriber.assertProducesInAnyOrder(expected, new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
+            @Override
+            public ChangeNotification<InstanceInfo> call(ChangeNotification<InstanceInfo> notification) {
+                return notification;
+            }
+        }, 10, TimeUnit.SECONDS);
+
+        assertThat(factory.getAllChannels().size(), is(2));
+
+        TestInterestChannel channel0 = (TestInterestChannel) factory.getAllChannels().get(0);
+        assertThat(channel0.id, is(0));
+        assertThat(channel0.operations.size(), is(1));
+        assertThat(channel0.closeCalled, is(true));
+        assertThat(matchInterests(channel0.operations.iterator().next(), discoveryInterest), is(true));
+
+        TestInterestChannel channel1 = (TestInterestChannel) factory.getAllChannels().get(1);
+        assertThat(channel1.id, is(1));
+        assertThat(channel1.operations.size(), is(1));
+        assertThat(channel1.closeCalled, is(false));
+        assertThat(matchInterests(channel1.operations.iterator().next(), discoveryInterest), is(true));
+
+        assertThat(evictionQueue.size(), is(2));  // 2 stuck in queue (because we have not yet advanced the evictionQueue scheduler
+
+        verify(evictionQueue, times(2)).add(infoCaptor.capture(), sourceCaptor.capture());
+
+        assertThat(infoCaptor.getAllValues(), containsInAnyOrder(discoveryInfos.subList(0, 2).toArray()));
+        Source channel0Source = channel0.getSource();
+        assertThat(sourceCaptor.getAllValues().get(0), is(channel0Source));
+        assertThat(sourceCaptor.getAllValues().get(1), is(channel0Source));
+        assertThat(sourceCaptor.getAllValues().size(), is(2));
+
+        evictionScheduler.advanceTimeBy(EVICTION_TIMEOUT_MS + 1, TimeUnit.MILLISECONDS);
+        registryScheduler.advanceTimeBy(EVICTION_TIMEOUT_MS + 1, TimeUnit.MILLISECONDS);  // need to advance the registry scheduler to execute the unregisters from eviction
+
+        evictionScheduler.advanceTimeBy(EVICTION_TIMEOUT_MS + 1, TimeUnit.MILLISECONDS);
+        registryScheduler.advanceTimeBy(EVICTION_TIMEOUT_MS + 1, TimeUnit.MILLISECONDS);
+
+        assertThat(evictionQueue.size(), is(0));  // all gone
+
+        // verify that a new subscriber can subscribe and see latest changes
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> newSubscriber = new ExtTestSubscriber<>();
+        handler.forInterest(discoveryInterest).filter(batchMarkerFilter()).subscribe(newSubscriber);
+
+        newSubscriber.assertProducesInAnyOrder(expected, new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
+            @Override
+            public ChangeNotification<InstanceInfo> call(ChangeNotification<InstanceInfo> notification) {
+                return notification;
+            }
+        }, 10, TimeUnit.SECONDS);
+
+        InstanceInfo update = new InstanceInfo.Builder().withInstanceInfo(discoveryInfos.get(0))
+                .withStatus(InstanceInfo.Status.OUT_OF_SERVICE)
+                .build();
+
+        registry.register(update, channel1.getSource()).subscribe();
+        registryScheduler.triggerActions();
+
+        assertThat(newSubscriber.takeNext(1, 5, TimeUnit.SECONDS).get(0), EurekaMatchers.modifyChangeNotificationOf(update));
+    }
+
+
+    // -----------------------------------------------------------------------------
+
+    private TestInterestChannel newAlwaysSuccessChannel(Integer id) {
+        final InterestChannel channel = spy(new InterestChannelImpl(registry, transportClient, mock(InterestChannelMetrics.class)));
         when(channel.change(argThat(new InterestMatcher(discoveryInterest)))).thenAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
-                registerAll(discoveryInfos);
+                registerAll(discoveryInfos, ((Sourced)channel).getSource());
                 return Observable.empty();
             }
         });
@@ -394,7 +497,7 @@ public class InterestHandlerImplTest {
         when(channel.change(argThat(new InterestMatcher(zuulInterest)))).thenAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
-                registerAll(zuulInfos);
+                registerAll(zuulInfos, ((Sourced)channel).getSource());
                 return Observable.empty();
             }
         });
@@ -402,7 +505,7 @@ public class InterestHandlerImplTest {
         when(channel.change(argThat(new InterestMatcher(allInterest)))).thenAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
-                registerAll(allInfos);
+                registerAll(allInfos, ((Sourced)channel).getSource());
                 return Observable.empty();
             }
         });
@@ -410,7 +513,7 @@ public class InterestHandlerImplTest {
         when(channel.change(argThat(new InterestMatcher(Interests.forFullRegistry())))).thenAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
-                registerAll(allInfos);
+                registerAll(allInfos, ((Sourced)channel).getSource());
                 return Observable.empty();
             }
         });
@@ -418,7 +521,7 @@ public class InterestHandlerImplTest {
         return new TestInterestChannel(channel, id);
     }
 
-    private InterestChannel newAlwaysFailChannel(Integer id) {
+    private TestInterestChannel newAlwaysFailChannel(Integer id) {
         InterestChannel channel = spy(new InterestChannelImpl(registry, transportClient, mock(InterestChannelMetrics.class)));
         when(channel.change(any(Interest.class))).thenReturn(Observable.<Void>error(new Exception("test: operation error")));
         when(channel.change(any(MultipleInterests.class))).thenReturn(Observable.<Void>error(new Exception("test: operation error")));
@@ -426,16 +529,17 @@ public class InterestHandlerImplTest {
         return new TestInterestChannel(channel, id);
     }
 
-    private InterestChannel newSendingInterestFailChannel(Integer id) {
+    private TestInterestChannel newSendingInterestFailChannel(Integer id) {
         final InterestChannel channel = spy(new InterestChannelImpl(registry, transportClient, mock(InterestChannelMetrics.class)));
         when(channel.change(argThat(new InterestMatcher(discoveryInterest)))).thenAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
-                registerAll(discoveryInfos.subList(0, 1));
+                registerAll(discoveryInfos.subList(0, 2), ((Sourced)channel).getSource());
                 return Observable.empty();
             }
         });
 
+        int failAfterMillis = 10;
         Observable.empty().delay(failAfterMillis, TimeUnit.MILLISECONDS).subscribe(new Subscriber<Object>() {
             @Override
             public void onCompleted() {
@@ -454,8 +558,7 @@ public class InterestHandlerImplTest {
         return new TestInterestChannel(channel, id);
     }
 
-    private void registerAll(List<InstanceInfo> infos) {
-        Source source = new Source(Source.Origin.LOCAL);
+    private void registerAll(List<InstanceInfo> infos, Source source) {
         for (InstanceInfo info : infos) {
             registry.register(info, source).subscribe();
             registryScheduler.triggerActions();
@@ -486,4 +589,6 @@ public class InterestHandlerImplTest {
             return false;
         }
     }
+
 }
+

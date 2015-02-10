@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.eureka2.interests.ChangeNotification;
@@ -34,6 +33,7 @@ import com.netflix.eureka2.interests.NotificationsSubject;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.EurekaRegistryMetrics;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.utils.rx.NoOpSubscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -262,55 +262,33 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     }
 
     @Override
-    public Observable<Long> evictAll() {
+    public Observable<Long> evictAllExcept(final Source toRetain) {
         return getHolders()
-                .switchMap(new Func1<MultiSourcedDataHolder<InstanceInfo>, Observable<MultiSourcedDataHolder.Status>>() {
+                .doOnNext(new Action1<MultiSourcedDataHolder<InstanceInfo>>() {
                     @Override
-                    public Observable<MultiSourcedDataHolder.Status> call(MultiSourcedDataHolder<InstanceInfo> holder) {
+                    public void call(MultiSourcedDataHolder<InstanceInfo> holder) {
                         for (Source source : holder.getAllSources()) {
-                            holder.remove(source);
+                            if (!source.equals(toRetain)) {
+                                holder.remove(source).subscribe(new NoOpSubscriber<MultiSourcedDataHolder.Status>());
+                            }
                         }
-                        return null;
                     }
                 })
                 .countLong()
                 .doOnError(new Action1<Throwable>() {
                     @Override
                     public void call(Throwable throwable) {
-                        logger.error("Error evicting registry", throwable);
+                        logger.error("Error evicting registry while retaining source {}", toRetain, throwable);
                     }
                 })
                 .doOnCompleted(new Action0() {
                     @Override
                     public void call() {
-                        logger.info("Completed evicting registry");
+                        logger.info("Completed evicting registry while retaining source {}", toRetain);
                     }
                 });
     }
 
-    @Override
-    public Observable<Long> evictAll(final Source source) {
-        return getHolders()
-                .switchMap(new Func1<MultiSourcedDataHolder<InstanceInfo>, Observable<MultiSourcedDataHolder.Status>>() {
-                    @Override
-                    public Observable<MultiSourcedDataHolder.Status> call(MultiSourcedDataHolder<InstanceInfo> holder) {
-                        return holder.remove(source);
-                    }
-                })
-                .countLong()
-                .doOnError(new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable throwable) {
-                        logger.error("Error evicting registry for source {}", source, throwable);
-                    }
-                })
-                .doOnCompleted(new Action0() {
-                    @Override
-                    public void call() {
-                        logger.info("Completed evicting registry for source {}", source);
-                    }
-                });
-    }
     @Override
     public Observable<? extends MultiSourcedDataHolder<InstanceInfo>> getHolders() {
         return Observable.from(internalStore.values());

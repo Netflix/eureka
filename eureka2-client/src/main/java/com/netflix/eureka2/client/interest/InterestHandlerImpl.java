@@ -11,6 +11,8 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.SourcedChangeNotification;
 import com.netflix.eureka2.interests.SourcedModifyNotification;
+import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.utils.rx.NoOpSubscriber;
@@ -56,7 +58,7 @@ public class InterestHandlerImpl implements InterestHandler {
         this(registry, channelFactory, DEFAULT_RETRY_WAIT_MILLIS);
     }
 
-    /* visible for testing*/ InterestHandlerImpl(SourcedEurekaRegistry<InstanceInfo> registry,
+    /* visible for testing*/ InterestHandlerImpl(final SourcedEurekaRegistry<InstanceInfo> registry,
                                                  ChannelFactory<InterestChannel> channelFactory,
                                                  int retryWaitMillis) {
         this.registry = registry;
@@ -83,6 +85,36 @@ public class InterestHandlerImpl implements InterestHandler {
         };
         this.retryableConnection = retryableConnectionFactory.singleOpConnection(opStream, executeOnChannel, connectToInputChannel);
 
+        // subscribe to the base interest channels to do cleanup on every channel refresh.
+        retryableConnection.getChannelObservable()
+                .flatMap(new Func1<InterestChannel, Observable<Long>>() {
+                    @Override
+                    public Observable<Long> call(InterestChannel interestChannel) {
+                        if (interestChannel instanceof Sourced) {
+                            Source toRetain = ((Sourced) interestChannel).getSource();
+                            return registry.evictAllExcept(toRetain);
+                        }
+                       return Observable.empty();
+                    }
+                })
+                .subscribe(new Subscriber<Long>() {
+                    @Override
+                    public void onCompleted() {
+                        logger.info("Completed one round of eviction due to a new interestChannel creation");
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        logger.warn("OnError in one round of eviction due to a new interestChannel creation");
+                    }
+
+                    @Override
+                    public void onNext(Long aLong) {
+                        logger.info("Evicted {} instances in one round of eviction due to a new interestChannel creation", aLong);
+                    }
+                });
+
+        // subscribe to the lifecycle to initiate the interest subscription
         retryableConnection.getRetryableLifecycle()
                 .retryWhen(new RetryStrategyFunc(retryWaitMillis))
                 .subscribe(new Subscriber<Void>() {

@@ -39,7 +39,6 @@ import rx.Subscriber;
 import rx.Subscription;
 import rx.functions.Action0;
 import rx.functions.Action1;
-import rx.functions.Func1;
 
 /**
  * {@link com.netflix.eureka2.registry.SourcedEurekaRegistry} implementation that cooperates with eviction queue
@@ -157,60 +156,31 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
      * Evict by sending to the evictionQueue instead of directly.
      */
     @Override
-    public Observable<Long> evictAll(final Source source) {
+    public Observable<Long> evictAllExcept(final Source toRetain) {
         return eurekaRegistry.getHolders()
-                .map(new Func1<MultiSourcedDataHolder<InstanceInfo>, Void>() {
+                .doOnNext(new Action1<MultiSourcedDataHolder<InstanceInfo>>() {
                     @Override
-                    public Void call(MultiSourcedDataHolder<InstanceInfo> holder) {
-                        evictionQueue.add(holder.get(source), source);
-                        return null;
-                    }
-                })
-                .doOnError(new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable throwable) {
-                        logger.error("Error evicting registry for source {}", source, throwable);
-                    }
-                })
-                .doOnCompleted(new Action0() {
-                    @Override
-                    public void call() {
-                        logger.info("Completed evicting registry for source {}", source);
-                    }
-                })
-                .countLong();
-
-    }
-
-    /**
-     * Evict by sending to the evictionQueue instead of directly.
-     */
-    @Override
-    public Observable<Long> evictAll() {
-        return eurekaRegistry.getHolders()
-                .map(new Func1<MultiSourcedDataHolder<InstanceInfo>, Void>() {
-                    @Override
-                    public Void call(MultiSourcedDataHolder<InstanceInfo> holder) {
+                    public void call(MultiSourcedDataHolder<InstanceInfo> holder) {
                         for (Source source : holder.getAllSources()) {
-                            evictionQueue.add(holder.get(source), source);
+                            if (!source.equals(toRetain)) {
+                                evictionQueue.add(holder.get(source), source);
+                            }
                         }
-                        return null;
                     }
                 })
+                .countLong()
                 .doOnError(new Action1<Throwable>() {
                     @Override
                     public void call(Throwable throwable) {
-                        logger.error("Error evicting registry", throwable);
+                        logger.error("Error adding items to eviction queue", throwable);
                     }
                 })
                 .doOnCompleted(new Action0() {
                     @Override
                     public void call() {
-                        logger.info("Completed evicting registry");
+                        logger.info("Completed adding items to eviction queue");
                     }
-                })
-                .countLong();
-
+                });
     }
 
     @PreDestroy
