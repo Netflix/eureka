@@ -70,7 +70,8 @@ public class ReplicationTransportClient implements TransportClient {
                     public MessageConnection call(ObservableConnection<Object, Object> connection) {
                         return new SelfClosingConnection(
                             new HeartBeatConnection(
-                                    new BaseMessageConnection("replicationClient", connection, metrics), 30000, 3, Schedulers.computation()
+                                    new BaseMessageConnection("replicationClient", connection, metrics),
+                                    config.getHeartbeatIntervalMs(), 3, Schedulers.computation()
                             ),
                             config.getConnectionAutoTimeoutMs()
                         );

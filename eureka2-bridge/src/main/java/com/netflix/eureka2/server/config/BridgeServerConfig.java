@@ -10,9 +10,10 @@ import com.netflix.governator.annotations.Configuration;
  */
 public class BridgeServerConfig extends WriteServerConfig {
 
-    @Configuration("eureka.services.bridge.refreshRateSec")
-    private int refreshRateSec = 30;
+    public static final int DEFAULT_REFRESH_INTERVAL_SEC = 30;
 
+    @Configuration("eureka.services.bridge.refreshRateSec")
+    private int refreshRateSec = DEFAULT_REFRESH_INTERVAL_SEC;
 
     // For property injection
     protected BridgeServerConfig() {
@@ -25,19 +26,20 @@ public class BridgeServerConfig extends WriteServerConfig {
             String appName,
             String vipAddress,
             LocalDataCenterInfo.DataCenterType dataCenterType,
-            Integer shutDownPort,
-            Integer webAdminPort,
-            Integer discoveryPort,
-            Long connectionAutoTimeoutMs,
+            int shutDownPort,
+            int webAdminPort,
+            int discoveryPort,
+            long heartbeatIntervalMs,
+            long connectionAutoTimeoutMs,
             EurekaTransports.Codec codec,
-            Long evictionTimeoutMs,
+            long evictionTimeoutMs,
             StrategyType evictionStrategyType,
             String evictionStrategyValue,
-            Integer registrationPort,
-            Integer replicationPort,
-            Long replicationReconnectDelayMillis,
+            int registrationPort,
+            int replicationPort,
+            long replicationReconnectDelayMillis,
             // bridge server configs
-            Integer refreshRateSec
+            int refreshRateSec
     ) {
         super(
                 resolverType,
@@ -48,6 +50,7 @@ public class BridgeServerConfig extends WriteServerConfig {
                 shutDownPort,
                 webAdminPort,
                 discoveryPort,
+                heartbeatIntervalMs,
                 connectionAutoTimeoutMs,
                 codec,
                 evictionTimeoutMs,
@@ -58,7 +61,7 @@ public class BridgeServerConfig extends WriteServerConfig {
                 replicationReconnectDelayMillis
         );
 
-        this.refreshRateSec = refreshRateSec == null ? this.refreshRateSec : refreshRateSec;
+        this.refreshRateSec = refreshRateSec;
     }
 
     public int getRefreshRateSec() {
@@ -74,7 +77,7 @@ public class BridgeServerConfig extends WriteServerConfig {
     public static class BridgeServerConfigBuilder
             extends WriteServerConfig.AbstractWriteServerConfigBuilder<BridgeServerConfig, BridgeServerConfigBuilder> {
 
-        protected Integer refreshRateSec;
+        protected int refreshRateSec = DEFAULT_REFRESH_INTERVAL_SEC;
 
         protected BridgeServerConfigBuilder() {}
 
@@ -93,6 +96,7 @@ public class BridgeServerConfig extends WriteServerConfig {
                     shutDownPort,
                     webAdminPort,
                     discoveryPort,
+                    heartbeatIntervalMs,
                     connectionAutoTimeoutMs,
                     codec,
                     evictionTimeoutMs,

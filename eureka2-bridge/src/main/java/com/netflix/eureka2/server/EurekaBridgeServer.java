@@ -2,6 +2,8 @@ package com.netflix.eureka2.server;
 
 import java.util.List;
 
+import com.google.inject.AbstractModule;
+import com.netflix.discovery.DiscoveryClient;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
 import com.netflix.eureka2.server.spi.ExtensionLoader;
 import com.netflix.governator.guice.BootstrapBinder;
@@ -28,10 +30,25 @@ public class EurekaBridgeServer extends AbstractEurekaServer<BridgeServerConfig>
         bootstrapModules.add(new BootstrapModule() {
             @Override
             public void configure(BootstrapBinder binder) {
+                binder.include(createEureka1ClientModule());
                 binder.include(new EurekaBridgeServerModule(config));
             }
         });
         bootstrapModules.add(new ExtensionLoader().asBootstrapModule());
+    }
+
+    /**
+     * Default implementation is driven solely by configuration properties.
+     * We allow it to be overridden for testing purpose to more tightly
+     * control the client.
+     */
+    protected AbstractModule createEureka1ClientModule() {
+        return new AbstractModule() {
+            @Override
+            protected void configure() {
+                bind(DiscoveryClient.class).asEagerSingleton();
+            }
+        };
     }
 
     public static void main(String[] args) {

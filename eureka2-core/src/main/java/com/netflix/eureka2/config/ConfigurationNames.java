@@ -11,6 +11,7 @@ public final class ConfigurationNames {
     public final class TransportNames {
         private static final String PREFIX = "transport.";
 
+        public static final String heartbeatIntervalMsName = EUREKA_PREFIX + PREFIX + "heartbeatIntervalMs";
         public static final String connectionAutoTimeoutMsName = EUREKA_PREFIX + PREFIX + "connectionAutoTimeoutMs";
         public static final String codecName = EUREKA_PREFIX + PREFIX + "codec";
     }

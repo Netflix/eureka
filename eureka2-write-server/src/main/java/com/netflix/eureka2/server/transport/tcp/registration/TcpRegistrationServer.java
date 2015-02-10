@@ -56,7 +56,7 @@ public class TcpRegistrationServer extends AbstractTcpServer<WriteServerConfig, 
     public void start() {
         server = RxNetty.newTcpServerBuilder(
                 config.getRegistrationPort(),
-                new TcpRegistrationHandler(eurekaRegistry, evictionQueue, metricFactory))
+                new TcpRegistrationHandler(config, eurekaRegistry, evictionQueue, metricFactory))
                 .pipelineConfigurator(EurekaTransports.registrationPipeline(config.getCodec()))
                 .withMetricEventsListenerFactory(servoEventsListenerFactory)
                 .build()

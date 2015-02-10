@@ -29,6 +29,7 @@ import com.netflix.eureka2.client.transport.tcp.TcpDiscoveryClient;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.interests.Interest;
+import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.NetworkAddress.ProtocolType;
 import com.netflix.eureka2.registry.selector.ServiceSelector;
@@ -170,6 +171,7 @@ public class EurekaServerResolver implements ServerResolver {
         private Interest<InstanceInfo> readServerInterest;
         private LoadBalancerBuilder<Server> loadBalancerBuilder;
         private ServiceSelector serviceSelector;
+        private EurekaClientMetricFactory metricFactory;
 
         public EurekaServerResolverBuilder withTransportConfig(EurekaTransportConfig transportConfig) {
             this.transportConfig = transportConfig;
@@ -196,6 +198,11 @@ public class EurekaServerResolver implements ServerResolver {
             return this;
         }
 
+        public EurekaServerResolverBuilder withMetricFactory(EurekaClientMetricFactory metricFactory) {
+            this.metricFactory = metricFactory;
+            return this;
+        }
+
         public EurekaServerResolver build() {
             if (serviceSelector == null) {
                 serviceSelector = ServiceSelector.selectBy()
@@ -212,9 +219,12 @@ public class EurekaServerResolver implements ServerResolver {
             if (transportConfig == null) {
                 transportConfig = new BasicEurekaTransportConfig.Builder().build();
             }
+            if(metricFactory == null) {
+                metricFactory = EurekaClientMetricFactory.clientMetrics();
+            }
 
             TcpDiscoveryClient transportClient =
-                    (TcpDiscoveryClient) TransportClients.newTcpDiscoveryClient(transportConfig, bootstrapResolver);
+                    (TcpDiscoveryClient) TransportClients.newTcpDiscoveryClient(transportConfig, bootstrapResolver,metricFactory);
             SnapshotInterestChannel snapshotInterestChannel = new SnapshotInterestChannelImpl(transportClient);
             return new EurekaServerResolver(snapshotInterestChannel, readServerInterest, serviceSelector, loadBalancerBuilder);
         }

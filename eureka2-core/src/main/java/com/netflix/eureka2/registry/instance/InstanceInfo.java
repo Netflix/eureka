@@ -28,7 +28,6 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 /**
- * TODO: merge this and Delta into an abstract superclass that deal with id and version?
  * JavaBean for InstanceInfo.
  * @author David Liu
  */

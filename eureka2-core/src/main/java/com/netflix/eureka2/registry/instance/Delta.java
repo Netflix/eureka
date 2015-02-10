@@ -88,7 +88,6 @@ public class Delta<ValueType> {
                 '}';
     }
 
-    //TODO (nkant): Is this builder required?
     public static final class Builder {
         private String id;
         Delta<?> delta;
@@ -98,10 +97,6 @@ public class Delta<ValueType> {
 
         public Builder withId(String id) {
             this.id = id;
-            return this;
-        }
-
-        public Builder withVersion(Long version) {
             return this;
         }
 
@@ -118,7 +113,6 @@ public class Delta<ValueType> {
             if (delta.id == null || delta.field == null) {  // null data.value is ok
                 throw new IllegalStateException("Incomplete delta information");
             }
-
             return delta;
         }
     }
