@@ -1,6 +1,7 @@
 package com.netflix.eureka2.server.config;
 
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
+import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider.StrategyType;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import com.netflix.governator.annotations.Configuration;
@@ -14,7 +15,7 @@ import com.netflix.governator.annotations.Configuration;
 public class EurekaServerConfig extends EurekaCommonConfig {
 
     @Configuration("eureka.services.discovery.port")  // all servers support read by default
-    protected Integer discoveryPort = EurekaTransports.DEFAULT_DISCOVERY_PORT;
+    protected int discoveryPort = EurekaTransports.DEFAULT_DISCOVERY_PORT;
 
 
     // For property injection
@@ -24,16 +25,23 @@ public class EurekaServerConfig extends EurekaCommonConfig {
     protected EurekaServerConfig(
             ResolverType resolverType,
             String[] serverList,
-            Codec codec,
             String appName,
             String vipAddress,
             DataCenterType dataCenterType,
-            Integer shutDownPort,
-            Integer webAdminPort,
-            Integer discoveryPort
+            int shutDownPort,
+            int webAdminPort,
+            int discoveryPort,
+            long heartbeatIntervalMs,
+            long connectionAutoTimeoutMs,
+            Codec codec,
+            long evictionTimeoutMs,
+            StrategyType evictionStrategyType,
+            String evictionStrategyValue
     ) {
-        super(resolverType, serverList, codec, appName, vipAddress, dataCenterType, shutDownPort, webAdminPort);
-        this.discoveryPort = discoveryPort == null ? this.discoveryPort : discoveryPort;
+        super(resolverType, serverList, appName, vipAddress, dataCenterType, shutDownPort, webAdminPort,
+                heartbeatIntervalMs, connectionAutoTimeoutMs, codec,
+                evictionTimeoutMs, evictionStrategyType, evictionStrategyValue);
+        this.discoveryPort = discoveryPort;
     }
 
     public int getDiscoveryPort() {
@@ -53,13 +61,18 @@ public class EurekaServerConfig extends EurekaCommonConfig {
             return new EurekaServerConfig(
                     resolverType,
                     serverList,
-                    codec,
                     appName,
                     vipAddress,
                     dataCenterType,
                     shutDownPort,
                     webAdminPort,
-                    discoveryPort
+                    discoveryPort,
+                    heartbeatIntervalMs,
+                    connectionAutoTimeoutMs,
+                    codec,
+                    evictionTimeoutMs,
+                    evictionStrategyType,
+                    evictionStrategyValue
             );
         }
     }
@@ -67,7 +80,7 @@ public class EurekaServerConfig extends EurekaCommonConfig {
     // builder
     public abstract static class AbstractEurekaServerConfigBuilder<C extends EurekaServerConfig, B extends AbstractEurekaServerConfigBuilder<C, B>>
             extends EurekaCommonConfigBuilder<C, B> {
-        protected Integer discoveryPort;
+        protected int discoveryPort = EurekaTransports.DEFAULT_DISCOVERY_PORT;
 
         protected AbstractEurekaServerConfigBuilder() {
         }

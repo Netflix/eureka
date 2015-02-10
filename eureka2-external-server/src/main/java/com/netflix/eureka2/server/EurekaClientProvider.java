@@ -69,7 +69,6 @@ public class EurekaClientProvider implements Provider<EurekaClient> {
                 }
         );
         return Eureka.newClientBuilder(discoveryResolver, registrationResolver)
-                .withCodec(config.getCodec())
                 .withMetricFactory(metricFactory)
                 .withMetricFactory(registryMetricFactory)
                 .build();

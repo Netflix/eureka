@@ -24,6 +24,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.InterestChannelFactory;
 import com.netflix.eureka2.server.channel.ServerChannelFactory;
 import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
+import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
@@ -42,17 +43,15 @@ public class TcpDiscoveryHandler implements ConnectionHandler<Object, Object> {
 
     private static final Logger logger = LoggerFactory.getLogger(TcpDiscoveryHandler.class);
 
-    // FIXME add an override from sys property for now
-    private static final long HEARTBEAT_INTERVAL_MILLIS = Long.getLong(
-            "eureka2.discovery.heartbeat.intervalMillis",
-            HeartBeatConnection.DEFAULT_HEARTBEAT_INTERVAL_MILLIS
-    );
-
+    private final EurekaCommonConfig config;
     private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final EurekaServerMetricFactory metricFactory;
 
     @Inject
-    public TcpDiscoveryHandler(SourcedEurekaRegistry registry, EurekaServerMetricFactory metricFactory) {
+    public TcpDiscoveryHandler(EurekaCommonConfig config,
+                               SourcedEurekaRegistry registry,
+                               EurekaServerMetricFactory metricFactory) {
+        this.config = config;
         this.registry = registry;
         this.metricFactory = metricFactory;
     }
@@ -65,7 +64,7 @@ public class TcpDiscoveryHandler implements ConnectionHandler<Object, Object> {
 
         MessageConnection broker = new HeartBeatConnection(
                 new BaseMessageConnection("discovery", connection, metricFactory.getDiscoveryConnectionMetrics()),
-                HEARTBEAT_INTERVAL_MILLIS, 3,
+                config.getHeartbeatIntervalMs(), 3,
                 Schedulers.computation()
         );
         final ServerChannelFactory<InterestChannel> channelFactory

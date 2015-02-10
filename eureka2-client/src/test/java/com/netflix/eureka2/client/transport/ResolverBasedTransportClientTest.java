@@ -18,6 +18,7 @@ package com.netflix.eureka2.client.transport;
 
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.transport.tcp.TcpRegistrationClient;
+import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.rx.RxBlocking;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
@@ -93,7 +94,8 @@ public class ResolverBasedTransportClientTest {
         };
 
         ResolverBasedTransportClient transportClient =
-                new TcpRegistrationClient(resolver, Codec.Json,
+                new TcpRegistrationClient(new BasicEurekaTransportConfig.Builder().withCodec(Codec.Json).build(),
+                                          resolver,
                                           clientMetrics().getRegistrationServerConnectionMetrics());
 
         // Single, non-existent server - should fail on it

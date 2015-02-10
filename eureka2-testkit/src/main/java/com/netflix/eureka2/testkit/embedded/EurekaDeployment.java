@@ -2,12 +2,13 @@ package com.netflix.eureka2.testkit.embedded;
 
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
+import com.netflix.eureka2.config.BasicEurekaTransportConfig;
+import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedReadCluster;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedBridgeServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedDashboardServer;
 import com.netflix.eureka2.testkit.embedded.view.ClusterViewHttpServer;
-import com.netflix.eureka2.transport.EurekaTransports.Codec;
 
 /**
  * @author Tomasz Bak
@@ -71,6 +72,7 @@ public class EurekaDeployment {
 
     public static class EurekaDeploymentBuilder {
 
+        private EurekaTransportConfig transportConfig;
         private int writeClusterSize;
         private int readClusterSize;
         private boolean ephemeralPorts;
@@ -79,7 +81,6 @@ public class EurekaDeployment {
         private boolean adminUIEnabled;
         private boolean extensionsEnabled;
         private boolean viewEnabled;
-        private Codec codec;
 
         public EurekaDeploymentBuilder withWriteClusterSize(int size) {
             writeClusterSize = size;
@@ -96,8 +97,8 @@ public class EurekaDeployment {
             return this;
         }
 
-        public EurekaDeploymentBuilder withCodec(Codec codec) {
-            this.codec = codec;
+        public EurekaDeploymentBuilder withTransportConfig(EurekaTransportConfig transportConfig) {
+            this.transportConfig = transportConfig;
             return this;
         }
 
@@ -127,16 +128,19 @@ public class EurekaDeployment {
         }
 
         public EurekaDeployment build() {
-            EmbeddedWriteCluster writeCluster = new EmbeddedWriteCluster(extensionsEnabled, adminUIEnabled, ephemeralPorts, codec);
+            if (transportConfig == null) {
+                transportConfig = new BasicEurekaTransportConfig.Builder().build();
+            }
+            EmbeddedWriteCluster writeCluster = new EmbeddedWriteCluster(extensionsEnabled, adminUIEnabled, ephemeralPorts, transportConfig.getCodec());
             writeCluster.scaleUpBy(writeClusterSize);
 
             EmbeddedReadCluster readCluster = new EmbeddedReadCluster(writeCluster.registrationResolver(),
-                    writeCluster.discoveryResolver(), extensionsEnabled, adminUIEnabled, ephemeralPorts, codec);
+                    writeCluster.discoveryResolver(), extensionsEnabled, adminUIEnabled, ephemeralPorts, transportConfig.getCodec());
             readCluster.scaleUpBy(readClusterSize);
 
             EmbeddedBridgeServer bridgeServer = null;
             if (bridgeEnabled) {
-                bridgeServer = EmbeddedBridgeServer.newBridge(writeCluster.replicationPeers(), extensionsEnabled, adminUIEnabled, codec);
+                bridgeServer = EmbeddedBridgeServer.newBridge(writeCluster.replicationPeers(), extensionsEnabled, adminUIEnabled, transportConfig.getCodec());
                 bridgeServer.start();
             }
             EmbeddedDashboardServer dashboardServer = null;

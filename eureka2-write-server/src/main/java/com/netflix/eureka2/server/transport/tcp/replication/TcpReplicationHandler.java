@@ -24,6 +24,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.ReceiverReplicationChannel;
 import com.netflix.eureka2.server.channel.ReceiverReplicationChannelFactory;
 import com.netflix.eureka2.server.channel.ServerChannelFactory;
+import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
@@ -38,16 +39,19 @@ import rx.schedulers.Schedulers;
  */
 public class TcpReplicationHandler implements ConnectionHandler<Object, Object> {
 
+    private final WriteServerConfig config;
     private final SelfInfoResolver SelfIdentityService;
     private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final EvictionQueue evictionQueue;
     private final WriteServerMetricFactory metricFactory;
 
     @Inject
-    public TcpReplicationHandler(SelfInfoResolver SelfIdentityService,
+    public TcpReplicationHandler(WriteServerConfig config,
+                                 SelfInfoResolver SelfIdentityService,
                                  SourcedEurekaRegistry registry,
                                  EvictionQueue evictionQueue,
                                  WriteServerMetricFactory metricFactory) {
+        this.config = config;
         this.SelfIdentityService = SelfIdentityService;
         this.registry = registry;
         this.evictionQueue = evictionQueue;
@@ -58,7 +62,7 @@ public class TcpReplicationHandler implements ConnectionHandler<Object, Object> 
     public Observable<Void> handle(ObservableConnection<Object, Object> connection) {
         MessageConnection broker = new HeartBeatConnection(
                 new BaseMessageConnection("replicationReceiver", connection, metricFactory.getReplicationReceiverConnectionMetrics()),
-                30000, 3,
+                config.getHeartbeatIntervalMs(), 3,
                 Schedulers.computation()
         );
         final ServerChannelFactory<ReceiverReplicationChannel> channelFactory =

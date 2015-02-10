@@ -1,7 +1,7 @@
 package com.netflix.eureka2.server.config;
 
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
-import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
+import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider.StrategyType;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.governator.annotations.Configuration;
 
@@ -10,9 +10,10 @@ import com.netflix.governator.annotations.Configuration;
  */
 public class BridgeServerConfig extends WriteServerConfig {
 
-    @Configuration("eureka.services.bridge.refreshRateSec")
-    private int refreshRateSec = 30;
+    public static final int DEFAULT_REFRESH_INTERVAL_SEC = 30;
 
+    @Configuration("eureka.services.bridge.refreshRateSec")
+    private int refreshRateSec = DEFAULT_REFRESH_INTERVAL_SEC;
 
     // For property injection
     protected BridgeServerConfig() {
@@ -22,41 +23,45 @@ public class BridgeServerConfig extends WriteServerConfig {
             // common server configs
             ResolverType resolverType,
             String[] serverList,
-            EurekaTransports.Codec codec,
             String appName,
             String vipAddress,
             LocalDataCenterInfo.DataCenterType dataCenterType,
-            Integer shutDownPort,
-            Integer webAdminPort,
-            Integer registrationPort,
-            Integer replicationPort,
-            Integer discoveryPort,
-            Long replicationReconnectDelayMillis,
-            Long evictionTimeoutMs,
-            EvictionStrategyProvider.StrategyType evictionStrategyType,
+            int shutDownPort,
+            int webAdminPort,
+            int discoveryPort,
+            long heartbeatIntervalMs,
+            long connectionAutoTimeoutMs,
+            EurekaTransports.Codec codec,
+            long evictionTimeoutMs,
+            StrategyType evictionStrategyType,
             String evictionStrategyValue,
+            int registrationPort,
+            int replicationPort,
+            long replicationReconnectDelayMillis,
             // bridge server configs
-            Integer refreshRateSec
+            int refreshRateSec
     ) {
         super(
                 resolverType,
                 serverList,
-                codec,
                 appName,
                 vipAddress,
                 dataCenterType,
                 shutDownPort,
                 webAdminPort,
-                registrationPort,
-                replicationPort,
                 discoveryPort,
-                replicationReconnectDelayMillis,
+                heartbeatIntervalMs,
+                connectionAutoTimeoutMs,
+                codec,
                 evictionTimeoutMs,
                 evictionStrategyType,
-                evictionStrategyValue
+                evictionStrategyValue,
+                registrationPort,
+                replicationPort,
+                replicationReconnectDelayMillis
         );
 
-        this.refreshRateSec = refreshRateSec == null ? this.refreshRateSec : refreshRateSec;
+        this.refreshRateSec = refreshRateSec;
     }
 
     public int getRefreshRateSec() {
@@ -72,7 +77,7 @@ public class BridgeServerConfig extends WriteServerConfig {
     public static class BridgeServerConfigBuilder
             extends WriteServerConfig.AbstractWriteServerConfigBuilder<BridgeServerConfig, BridgeServerConfigBuilder> {
 
-        protected Integer refreshRateSec;
+        protected int refreshRateSec = DEFAULT_REFRESH_INTERVAL_SEC;
 
         protected BridgeServerConfigBuilder() {}
 
@@ -85,19 +90,21 @@ public class BridgeServerConfig extends WriteServerConfig {
             return new BridgeServerConfig(
                     resolverType,
                     serverList,
-                    codec,
                     appName,
                     vipAddress,
                     dataCenterType,
                     shutDownPort,
                     webAdminPort,
-                    registrationPort,
-                    replicationPort,
                     discoveryPort,
-                    replicationReconnectDelayMillis,
+                    heartbeatIntervalMs,
+                    connectionAutoTimeoutMs,
+                    codec,
                     evictionTimeoutMs,
                     evictionStrategyType,
                     evictionStrategyValue,
+                    registrationPort,
+                    replicationPort,
+                    replicationReconnectDelayMillis,
                     // bridge server configs
                     refreshRateSec
             );

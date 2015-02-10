@@ -24,6 +24,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.RegistrationChannelFactory;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.channel.ServerChannelFactory;
+import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
@@ -37,18 +38,17 @@ import rx.schedulers.Schedulers;
  */
 public class TcpRegistrationHandler implements ConnectionHandler<Object, Object> {
 
-    // FIXME add an override from sys property for now
-    private static final long HEARTBEAT_INTERVAL_MILLIS = Long.getLong(
-            "eureka2.registration.heartbeat.intervalMillis",
-            HeartBeatConnection.DEFAULT_HEARTBEAT_INTERVAL_MILLIS
-    );
-
+    private final WriteServerConfig config;
     private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final EvictionQueue evictionQueue;
     private final WriteServerMetricFactory metricFactory;
 
     @Inject
-    public TcpRegistrationHandler(SourcedEurekaRegistry registry, EvictionQueue evictionQueue, WriteServerMetricFactory metricFactory) {
+    public TcpRegistrationHandler(WriteServerConfig config,
+                                  SourcedEurekaRegistry registry,
+                                  EvictionQueue evictionQueue,
+                                  WriteServerMetricFactory metricFactory) {
+        this.config = config;
         this.registry = registry;
         this.evictionQueue = evictionQueue;
         this.metricFactory = metricFactory;
@@ -58,7 +58,7 @@ public class TcpRegistrationHandler implements ConnectionHandler<Object, Object>
     public Observable<Void> handle(ObservableConnection<Object, Object> connection) {
         MessageConnection broker = new HeartBeatConnection(
                 new BaseMessageConnection("registration", connection, metricFactory.getRegistrationConnectionMetrics()),
-                HEARTBEAT_INTERVAL_MILLIS, 3,
+                config.getHeartbeatIntervalMs(), 3,
                 Schedulers.computation()
         );
         final ServerChannelFactory<RegistrationChannel> channelFactory

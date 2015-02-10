@@ -16,9 +16,7 @@
 
 package com.netflix.eureka2.server.config;
 
-import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
-import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider.StrategyType;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
@@ -27,9 +25,8 @@ import com.netflix.governator.annotations.Configuration;
 /**
  * @author Tomasz Bak
  */
-public class WriteServerConfig extends EurekaServerConfig implements EurekaRegistryConfig {
+public class WriteServerConfig extends EurekaServerConfig {
 
-    public static final long DEFAULT_EVICTION_TIMEOUT = 30000;
     public static final long DEFAULT_REPLICATION_RECONNECT_DELAY_MILLIS = 30000;
 
     @Configuration("eureka.services.registration.port")
@@ -42,35 +39,37 @@ public class WriteServerConfig extends EurekaServerConfig implements EurekaRegis
     @Configuration("eureka.services.replication.reconnectDelayMillis")
     protected long replicationReconnectDelayMillis = DEFAULT_REPLICATION_RECONNECT_DELAY_MILLIS;
 
-    // registry configs
-    @Configuration("eureka.registry.evictionTimeoutMs")
-    protected long evictionTimeoutMs = DEFAULT_EVICTION_TIMEOUT;
-
-    @Configuration("eureka.registry.evictionStrategy.type")
-    protected String evictionStrategyType = EvictionStrategyProvider.StrategyType.PercentageDrop.name();
-
-    @Configuration("eureka.registry.evictionStrategy.value")
-    protected String evictionStrategyValue = "20";
-
 
     // For property injection
     protected WriteServerConfig() {
     }
 
-    public WriteServerConfig(ResolverType resolverType, String[] serverList, Codec codec, String appName,
-                             String vipAddress, DataCenterType dataCenterType, Integer shutDownPort,
-                             Integer webAdminPort, Integer registrationPort, Integer replicationPort,
-                             Integer discoveryPort, Long replicationReconnectDelayMillis, Long evictionTimeoutMs,
-                             StrategyType evictionStrategyType, String evictionStrategyValue) {
-        super(resolverType, serverList, codec, appName, vipAddress, dataCenterType, shutDownPort, webAdminPort, discoveryPort);
+    public WriteServerConfig(
+            ResolverType resolverType,
+            String[] serverList,
+            String appName,
+            String vipAddress,
+            DataCenterType dataCenterType,
+            int shutDownPort,
+            int webAdminPort,
+            int discoveryPort,
+            long heartbeatIntervalMs,
+            long connectionAutoTimeoutMs,
+            Codec codec,
+            long evictionTimeoutMs,
+            StrategyType evictionStrategyType,
+            String evictionStrategyValue,
+            // write server configs
+            int registrationPort,
+            int replicationPort,
+            long replicationReconnectDelayMillis
+    ) {
+        super(resolverType, serverList, appName, vipAddress, dataCenterType, shutDownPort, webAdminPort, discoveryPort,
+                heartbeatIntervalMs, connectionAutoTimeoutMs, codec, evictionTimeoutMs, evictionStrategyType, evictionStrategyValue);
 
-        this.registrationPort = registrationPort == null ? this.registrationPort : registrationPort;
-        this.replicationPort = replicationPort == null ? this.replicationPort : replicationPort;
-
-        this.replicationReconnectDelayMillis = replicationReconnectDelayMillis == null ? this.replicationReconnectDelayMillis : replicationReconnectDelayMillis;
-        this.evictionTimeoutMs = evictionTimeoutMs == null ? this.evictionTimeoutMs : evictionTimeoutMs;
-        this.evictionStrategyType = evictionStrategyType == null ? this.evictionStrategyType : evictionStrategyType.name();
-        this.evictionStrategyValue = evictionStrategyValue == null ? this.evictionStrategyValue : evictionStrategyValue;
+        this.registrationPort = registrationPort;
+        this.replicationPort = replicationPort;
+        this.replicationReconnectDelayMillis = replicationReconnectDelayMillis;
     }
 
     public int getRegistrationPort() {
@@ -83,28 +82,6 @@ public class WriteServerConfig extends EurekaServerConfig implements EurekaRegis
 
     public long getReplicationReconnectDelayMillis() {
         return replicationReconnectDelayMillis;
-    }
-
-    @Override
-    public long getEvictionTimeoutMs() {
-        return evictionTimeoutMs;
-    }
-
-    @Override
-    public EvictionStrategyProvider.StrategyType getEvictionStrategyType() {
-        EvictionStrategyProvider.StrategyType type;
-        try {
-            type = EvictionStrategyProvider.StrategyType.valueOf(evictionStrategyType);
-        } catch (Exception e) {
-            type = EvictionStrategyProvider.StrategyType.PercentageDrop;
-        }
-
-        return type;
-    }
-
-    @Override
-    public String getEvictionStrategyValue() {
-        return evictionStrategyValue;
     }
 
     public static WriteServerConfigBuilder writeBuilder() {
@@ -120,19 +97,22 @@ public class WriteServerConfig extends EurekaServerConfig implements EurekaRegis
             return new WriteServerConfig(
                     resolverType,
                     serverList,
-                    codec,
                     appName,
                     vipAddress,
                     dataCenterType,
                     shutDownPort,
                     webAdminPort,
-                    registrationPort,
-                    replicationPort,
                     discoveryPort,
-                    replicationReconnectDelayMillis,
+                    heartbeatIntervalMs,
+                    connectionAutoTimeoutMs,
+                    codec,
                     evictionTimeoutMs,
                     evictionStrategyType,
-                    evictionStrategyValue
+                    evictionStrategyValue,
+                    // write server configs
+                    registrationPort,
+                    replicationPort,
+                    replicationReconnectDelayMillis
             );
         }
     }
@@ -140,12 +120,9 @@ public class WriteServerConfig extends EurekaServerConfig implements EurekaRegis
     // builder
     public abstract static class AbstractWriteServerConfigBuilder<C extends WriteServerConfig, B extends AbstractWriteServerConfigBuilder<C, B>>
             extends AbstractEurekaServerConfigBuilder<C, B> {
-        protected Integer registrationPort;
-        protected Integer replicationPort;
-        protected Long replicationReconnectDelayMillis;
-        protected Long evictionTimeoutMs;
-        protected EvictionStrategyProvider.StrategyType evictionStrategyType;
-        protected String evictionStrategyValue;
+        protected int registrationPort = EurekaTransports.DEFAULT_REGISTRATION_PORT;
+        protected int replicationPort = EurekaTransports.DEFAULT_REPLICATION_PORT;
+        protected long replicationReconnectDelayMillis = DEFAULT_REPLICATION_RECONNECT_DELAY_MILLIS;
 
         protected AbstractWriteServerConfigBuilder() {
         }
@@ -162,21 +139,6 @@ public class WriteServerConfig extends EurekaServerConfig implements EurekaRegis
 
         public B withReplicationRetryMillis(long replicationReconnectDelayMillis) {
             this.replicationReconnectDelayMillis = replicationReconnectDelayMillis;
-            return self();
-        }
-
-        public B withEvictionTimeout(long evictionTimeoutMs) {
-            this.evictionTimeoutMs = evictionTimeoutMs;
-            return self();
-        }
-
-        public B withEvictionStrategyType(EvictionStrategyProvider.StrategyType strategyType) {
-            this.evictionStrategyType = strategyType;
-            return self();
-        }
-
-        public B withEvictionStrategyValue(String strategyValue) {
-            this.evictionStrategyValue = strategyValue;
             return self();
         }
     }

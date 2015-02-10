@@ -233,13 +233,15 @@ public class InstanceInfoField<T> {
 
     private final Name fieldName;
     private final Accessor<T> accessor;
+
+    // Type arguments are required by serialization framework (Avro).
+    // The need for this field should be evaluated if serialization mechanism is changed.
     private final Type valueType;
 
     private InstanceInfoField(Name fieldName, Accessor<T> accessor) {
         this.fieldName = fieldName;
         this.accessor = accessor;
 
-        //TODO: remove once/if we no longer need avro
         valueType = ((ParameterizedType) accessor.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[0];
     }
 

@@ -2,6 +2,7 @@ package com.netflix.eureka2.client.transport;
 
 import com.netflix.eureka2.client.resolver.RetryableServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolver;
+import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.TransportClient;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
@@ -29,22 +30,21 @@ public abstract class ResolverBasedTransportClient implements TransportClient {
 
     private static final Logger logger = LoggerFactory.getLogger(ResolverBasedTransportClient.class);
 
+    private final EurekaTransportConfig config;
     private final ServerResolver resolver;
     private final PipelineConfigurator<Object, Object> pipelineConfigurator;
     private final MessageConnectionMetrics metrics;
-    private ConcurrentHashMap<ServerResolver.Server, RxClient<Object, Object>> clients;
+    private final ConcurrentHashMap<ServerResolver.Server, RxClient<Object, Object>> clients;
 
-    protected ResolverBasedTransportClient(ServerResolver resolver,
+    protected ResolverBasedTransportClient(EurekaTransportConfig config,
+                                           ServerResolver resolver,
                                            PipelineConfigurator<Object, Object> pipelineConfigurator,
                                            MessageConnectionMetrics metrics) {
+        this.config = config;
         this.resolver = new RetryableServerResolver(resolver);
         this.pipelineConfigurator = pipelineConfigurator;
         this.metrics = metrics;
         clients = new ConcurrentHashMap<>();
-    }
-
-    public long getHeartbeatIntervalMillis() {
-        return HeartBeatConnection.DEFAULT_HEARTBEAT_INTERVAL_MILLIS;
     }
 
     @Override
@@ -77,9 +77,9 @@ public abstract class ResolverBasedTransportClient implements TransportClient {
                                         return new SelfClosingConnection(
                                                 new HeartBeatConnection(
                                                         new BaseMessageConnection("client", conn, metrics),
-                                                            getHeartbeatIntervalMillis(), 3, Schedulers.computation()
+                                                            config.getHeartbeatIntervalMs(), 3, Schedulers.computation()
                                                 ),
-                                                -1  // TODO: re-enable after fix interestChannel retries
+                                                config.getConnectionAutoTimeoutMs()
                                         );
                                     }
                                 });
