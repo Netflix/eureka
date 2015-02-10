@@ -505,9 +505,10 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
 
     @Override
     public boolean deleteStatusOverride(String appName, String id,
+                                        InstanceStatus newStatus,
                                         String lastDirtyTimestamp,
                                         boolean isReplication) {
-        if (super.deleteStatusOverride(appName, id, lastDirtyTimestamp, isReplication)) {
+        if (super.deleteStatusOverride(appName, id, newStatus, lastDirtyTimestamp, isReplication)) {
             replicateToPeers(Action.DeleteStatusOverride, appName, id, null, null, isReplication);
             return true;
         }

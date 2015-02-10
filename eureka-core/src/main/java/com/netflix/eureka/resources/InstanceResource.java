@@ -209,10 +209,12 @@ public class InstanceResource {
     @Path("status")
     public Response deleteStatusUpdate(
             @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication,
+            @QueryParam("value") String newStatusValue,
             @QueryParam("lastDirtyTimestamp") String lastDirtyTimestamp) {
         try {
+            InstanceStatus newStatus = newStatusValue == null ? InstanceStatus.UNKNOWN : InstanceStatus.valueOf(newStatusValue);
             boolean isSuccess = registry.deleteStatusOverride(app.getName(), id,
-                    lastDirtyTimestamp, "true".equals(isReplication));
+                    newStatus, lastDirtyTimestamp, "true".equals(isReplication));
 
             if (isSuccess) {
                 logger.info("Status override removed: " + app.getName() + " - " + id);

@@ -451,6 +451,8 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      *            the application name of the instance.
      * @param id
      *            the unique identifier of the instance.
+     * @param newStatus
+     *            the new {@link InstanceStatus}.
      * @param lastDirtyTimestamp
      *            last timestamp when this instance information was updated.
      * @param isReplication
@@ -459,6 +461,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
      * @return true if the status was successfully updated, false otherwise.
      */
     public boolean deleteStatusOverride(String appName, String id,
+                                        InstanceStatus newStatus,
                                         String lastDirtyTimestamp,
                                         boolean isReplication) {
         try {
@@ -477,7 +480,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                 InstanceStatus currentOverride = overriddenInstanceStatusMap.remove(id);
                 if(currentOverride != null && info != null) {
                     info.setOverriddenStatus(InstanceStatus.UNKNOWN);
-                    info.setStatus(InstanceStatus.UNKNOWN);
+                    info.setStatus(newStatus);
                     long replicaDirtyTimestamp = 0;
                     if (lastDirtyTimestamp != null) {
                         replicaDirtyTimestamp = Long

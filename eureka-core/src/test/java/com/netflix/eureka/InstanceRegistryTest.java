@@ -139,9 +139,9 @@ public class InstanceRegistryTest extends AbstractTester {
         verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.OUT_OF_SERVICE);
 
         // Now remove override
-        statusResult = registry.deleteStatusOverride(LOCAL_REGION_APP_NAME, myInstance.getId(), "0", false);
+        statusResult = registry.deleteStatusOverride(LOCAL_REGION_APP_NAME, myInstance.getId(), InstanceStatus.DOWN, "0", false);
         assertThat("Couldn't remove status override", statusResult, is(true));
-        verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.UNKNOWN);
+        verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.DOWN);
 
         // Register again with status UP (this is what health check is doing)
         registry.register(createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME), 10000000, false);

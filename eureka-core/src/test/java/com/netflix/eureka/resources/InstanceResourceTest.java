@@ -34,9 +34,23 @@ public class InstanceResourceTest extends AbstractTester {
         assertThat(testInstanceInfo.getStatus(), is(equalTo(InstanceStatus.OUT_OF_SERVICE)));
 
         // Remove the override
-        Response response = instanceResource.deleteStatusUpdate("false", "0");
+        Response response = instanceResource.deleteStatusUpdate("false", null, "0");
         assertThat(response.getStatus(), is(equalTo(200)));
 
         assertThat(testInstanceInfo.getStatus(), is(equalTo(InstanceStatus.UNKNOWN)));
+    }
+
+    @Test
+    public void testStatusOverrideDeleteIsAppliedToRegistryAndProvidedStatusIsSet() throws Exception {
+        // Override instance status
+        registry.register(testInstanceInfo, false);
+        registry.statusUpdate(testInstanceInfo.getAppName(), testInstanceInfo.getId(), InstanceStatus.OUT_OF_SERVICE, "0", false);
+        assertThat(testInstanceInfo.getStatus(), is(equalTo(InstanceStatus.OUT_OF_SERVICE)));
+
+        // Remove the override
+        Response response = instanceResource.deleteStatusUpdate("false", "DOWN", "0");
+        assertThat(response.getStatus(), is(equalTo(200)));
+
+        assertThat(testInstanceInfo.getStatus(), is(equalTo(InstanceStatus.DOWN)));
     }
 }
