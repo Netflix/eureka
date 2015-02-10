@@ -6,6 +6,7 @@ import com.netflix.eureka2.transport.MessageConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.Subscriber;
 import rx.functions.Action1;
 import rx.functions.Func1;
 
@@ -55,7 +56,22 @@ public abstract class AbstractClientChannel<STATE extends Enum<STATE>> extends A
     }
 
     private void subscribeToConnectionLifecycle(MessageConnection connection) {
-        connection.lifecycleObservable().subscribe(lifecycle);
+        connection.lifecycleObservable().subscribe(new Subscriber<Void>() {
+            @Override
+            public void onCompleted() {
+                AbstractClientChannel.this.close();
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                AbstractClientChannel.this.close(e);
+            }
+
+            @Override
+            public void onNext(Void aVoid) {
+                // no-op
+            }
+        });
     }
 
     /**
