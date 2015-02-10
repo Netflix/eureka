@@ -91,13 +91,8 @@ public class EurekaReadServerRegistry implements SourcedEurekaRegistry<InstanceI
     }
 
     @Override
-    public Observable<Long> evictAll(Source source) {
-        throw new UnsupportedOperationException("evictAll not supported by EurekaReadServerRegistry");
-    }
-
-    @Override
-    public Observable<Long> evictAll() {
-        throw new UnsupportedOperationException("evictAll not supported by EurekaReadServerRegistry");
+    public Observable<Long> evictAllExcept(Source source) {
+        throw new UnsupportedOperationException("evictAllExcept not supported by EurekaReadServerRegistry");
     }
 
     @Override

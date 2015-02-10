@@ -48,16 +48,10 @@ public interface SourcedEurekaRegistry<T> {
     Observable<ChangeNotification<T>> forInterest(Interest<T> interest, Source.Matcher sourceMatcher);
 
     /**
-     * Evict all registry info with the given source
+     * Evict all registry info for all sources except the single specified source
      * @return an observable of long denoting the number of holder items touched for the eviction
      */
-    Observable<Long> evictAll(Source source);
-
-    /**
-     * Evict all registry info for all sources
-     * @return an observable of long denoting the number of holder items touched for the eviction
-     */
-    Observable<Long> evictAll();
+    Observable<Long> evictAllExcept(Source source);
 
     Observable<? extends MultiSourcedDataHolder<T>> getHolders();
 
