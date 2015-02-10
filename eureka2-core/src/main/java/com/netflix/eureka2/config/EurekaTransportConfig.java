@@ -7,7 +7,9 @@ import com.netflix.eureka2.transport.EurekaTransports;
  */
 public interface EurekaTransportConfig {
 
-    public long getConnectionAutoTimeoutMs();
+    long getHeartbeatIntervalMs();
 
-    public EurekaTransports.Codec getCodec();
+    long getConnectionAutoTimeoutMs();
+
+    EurekaTransports.Codec getCodec();
 }

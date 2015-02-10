@@ -5,7 +5,6 @@ import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.transport.TransportClients;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
-import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.transport.TransportClient;
 
 /**
@@ -18,7 +17,7 @@ public class RegistrationChannelFactory extends ClientChannelFactory<Registratio
     public RegistrationChannelFactory(EurekaTransportConfig config,
                                       ServerResolver resolver,
                                       EurekaClientMetricFactory metricFactory) {
-        this(TransportClients.newTcpRegistrationClient(config, resolver), metricFactory);
+        this(TransportClients.newTcpRegistrationClient(config, resolver, metricFactory), metricFactory);
     }
 
     public RegistrationChannelFactory(TransportClient transport,

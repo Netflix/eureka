@@ -34,7 +34,7 @@ public abstract class ResolverBasedTransportClient implements TransportClient {
     private final ServerResolver resolver;
     private final PipelineConfigurator<Object, Object> pipelineConfigurator;
     private final MessageConnectionMetrics metrics;
-    private ConcurrentHashMap<ServerResolver.Server, RxClient<Object, Object>> clients;
+    private final ConcurrentHashMap<ServerResolver.Server, RxClient<Object, Object>> clients;
 
     protected ResolverBasedTransportClient(EurekaTransportConfig config,
                                            ServerResolver resolver,
@@ -45,10 +45,6 @@ public abstract class ResolverBasedTransportClient implements TransportClient {
         this.pipelineConfigurator = pipelineConfigurator;
         this.metrics = metrics;
         clients = new ConcurrentHashMap<>();
-    }
-
-    public long getHeartbeatIntervalMillis() {
-        return HeartBeatConnection.DEFAULT_HEARTBEAT_INTERVAL_MILLIS;
     }
 
     @Override
@@ -81,7 +77,7 @@ public abstract class ResolverBasedTransportClient implements TransportClient {
                                         return new SelfClosingConnection(
                                                 new HeartBeatConnection(
                                                         new BaseMessageConnection("client", conn, metrics),
-                                                            getHeartbeatIntervalMillis(), 3, Schedulers.computation()
+                                                            config.getHeartbeatIntervalMs(), 3, Schedulers.computation()
                                                 ),
                                                 config.getConnectionAutoTimeoutMs()
                                         );

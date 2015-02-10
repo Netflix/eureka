@@ -23,6 +23,7 @@ import com.netflix.eureka2.client.resolver.EurekaServerResolver.EurekaServerReso
 import com.netflix.eureka2.client.resolver.FileServerResolver.FileServerResolverBuilder;
 import com.netflix.eureka2.client.resolver.ServerResolver.Server;
 import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
 import rx.Observable;
 import rx.functions.Func1;
@@ -42,9 +43,16 @@ public final class ServerResolvers {
     }
 
     public static ServerResolver fromWriteServer(ServerResolver writeServerResolver, String readClusterVip) {
+        return fromWriteServer(writeServerResolver, readClusterVip, EurekaClientMetricFactory.clientMetrics());
+    }
+
+    public static ServerResolver fromWriteServer(ServerResolver writeServerResolver,
+                                                 String readClusterVip,
+                                                 EurekaClientMetricFactory metricFactory) {
         return new EurekaServerResolverBuilder()
                 .withBootstrapResolver(writeServerResolver)
                 .withReadServerInterest(Interests.forVips(readClusterVip))
+                .withMetricFactory(metricFactory)
                 .build();
     }
 

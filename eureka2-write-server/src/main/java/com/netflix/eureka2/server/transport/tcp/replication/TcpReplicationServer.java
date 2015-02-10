@@ -41,18 +41,18 @@ public class TcpReplicationServer extends AbstractTcpServer<WriteServerConfig, W
 
     private static final Logger logger = LoggerFactory.getLogger(TcpReplicationServer.class);
 
-    private final SelfInfoResolver SelfIdentityService;
+    private final SelfInfoResolver selfIdentityService;
     private final EvictionQueue evictionQueue;
 
     @Inject
     public TcpReplicationServer(WriteServerConfig config,
                                 SourcedEurekaRegistry eurekaRegistry,
-                                SelfInfoResolver SelfIdentityService,
+                                SelfInfoResolver selfIdentityService,
                                 EvictionQueue evictionQueue,
                                 @Named("replication") MetricEventsListenerFactory servoEventsListenerFactory,
                                 WriteServerMetricFactory metricFactory) {
         super(eurekaRegistry, servoEventsListenerFactory, config, metricFactory);
-        this.SelfIdentityService = SelfIdentityService;
+        this.selfIdentityService = selfIdentityService;
         this.evictionQueue = evictionQueue;
     }
 
@@ -60,7 +60,7 @@ public class TcpReplicationServer extends AbstractTcpServer<WriteServerConfig, W
     public void start() {
         server = RxNetty.newTcpServerBuilder(
                 config.getReplicationPort(),
-                new TcpReplicationHandler(SelfIdentityService, eurekaRegistry, evictionQueue, metricFactory))
+                new TcpReplicationHandler(config, selfIdentityService, eurekaRegistry, evictionQueue, metricFactory))
                 .pipelineConfigurator(EurekaTransports.replicationPipeline(config.getCodec()))
                 .withMetricEventsListenerFactory(servoEventsListenerFactory)
                 .build()

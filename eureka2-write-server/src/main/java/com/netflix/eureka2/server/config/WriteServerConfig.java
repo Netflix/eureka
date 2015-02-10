@@ -50,26 +50,26 @@ public class WriteServerConfig extends EurekaServerConfig {
             String appName,
             String vipAddress,
             DataCenterType dataCenterType,
-            Integer shutDownPort,
-            Integer webAdminPort,
-            Integer discoveryPort,
-            Long connectionAutoTimeoutMs,
+            int shutDownPort,
+            int webAdminPort,
+            int discoveryPort,
+            long heartbeatIntervalMs,
+            long connectionAutoTimeoutMs,
             Codec codec,
-            Long evictionTimeoutMs,
+            long evictionTimeoutMs,
             StrategyType evictionStrategyType,
             String evictionStrategyValue,
             // write server configs
-            Integer registrationPort,
-            Integer replicationPort,
-            Long replicationReconnectDelayMillis
+            int registrationPort,
+            int replicationPort,
+            long replicationReconnectDelayMillis
     ) {
         super(resolverType, serverList, appName, vipAddress, dataCenterType, shutDownPort, webAdminPort, discoveryPort,
-                connectionAutoTimeoutMs, codec, evictionTimeoutMs, evictionStrategyType, evictionStrategyValue);
+                heartbeatIntervalMs, connectionAutoTimeoutMs, codec, evictionTimeoutMs, evictionStrategyType, evictionStrategyValue);
 
-        this.registrationPort = registrationPort == null ? this.registrationPort : registrationPort;
-        this.replicationPort = replicationPort == null ? this.replicationPort : replicationPort;
-
-        this.replicationReconnectDelayMillis = replicationReconnectDelayMillis == null ? this.replicationReconnectDelayMillis : replicationReconnectDelayMillis;
+        this.registrationPort = registrationPort;
+        this.replicationPort = replicationPort;
+        this.replicationReconnectDelayMillis = replicationReconnectDelayMillis;
     }
 
     public int getRegistrationPort() {
@@ -103,6 +103,7 @@ public class WriteServerConfig extends EurekaServerConfig {
                     shutDownPort,
                     webAdminPort,
                     discoveryPort,
+                    heartbeatIntervalMs,
                     connectionAutoTimeoutMs,
                     codec,
                     evictionTimeoutMs,
@@ -119,9 +120,9 @@ public class WriteServerConfig extends EurekaServerConfig {
     // builder
     public abstract static class AbstractWriteServerConfigBuilder<C extends WriteServerConfig, B extends AbstractWriteServerConfigBuilder<C, B>>
             extends AbstractEurekaServerConfigBuilder<C, B> {
-        protected Integer registrationPort;
-        protected Integer replicationPort;
-        protected Long replicationReconnectDelayMillis;
+        protected int registrationPort = EurekaTransports.DEFAULT_REGISTRATION_PORT;
+        protected int replicationPort = EurekaTransports.DEFAULT_REPLICATION_PORT;
+        protected long replicationReconnectDelayMillis = DEFAULT_REPLICATION_RECONNECT_DELAY_MILLIS;
 
         protected AbstractWriteServerConfigBuilder() {
         }

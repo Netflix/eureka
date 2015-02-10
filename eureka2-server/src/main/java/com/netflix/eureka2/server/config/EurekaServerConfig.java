@@ -15,7 +15,7 @@ import com.netflix.governator.annotations.Configuration;
 public class EurekaServerConfig extends EurekaCommonConfig {
 
     @Configuration("eureka.services.discovery.port")  // all servers support read by default
-    protected Integer discoveryPort = EurekaTransports.DEFAULT_DISCOVERY_PORT;
+    protected int discoveryPort = EurekaTransports.DEFAULT_DISCOVERY_PORT;
 
 
     // For property injection
@@ -28,18 +28,20 @@ public class EurekaServerConfig extends EurekaCommonConfig {
             String appName,
             String vipAddress,
             DataCenterType dataCenterType,
-            Integer shutDownPort,
-            Integer webAdminPort,
-            Integer discoveryPort,
-            Long connectionAutoTimeoutMs,
+            int shutDownPort,
+            int webAdminPort,
+            int discoveryPort,
+            long heartbeatIntervalMs,
+            long connectionAutoTimeoutMs,
             Codec codec,
-            Long evictionTimeoutMs,
+            long evictionTimeoutMs,
             StrategyType evictionStrategyType,
             String evictionStrategyValue
     ) {
         super(resolverType, serverList, appName, vipAddress, dataCenterType, shutDownPort, webAdminPort,
-                connectionAutoTimeoutMs, codec, evictionTimeoutMs, evictionStrategyType, evictionStrategyValue);
-        this.discoveryPort = discoveryPort == null ? this.discoveryPort : discoveryPort;
+                heartbeatIntervalMs, connectionAutoTimeoutMs, codec,
+                evictionTimeoutMs, evictionStrategyType, evictionStrategyValue);
+        this.discoveryPort = discoveryPort;
     }
 
     public int getDiscoveryPort() {
@@ -65,6 +67,7 @@ public class EurekaServerConfig extends EurekaCommonConfig {
                     shutDownPort,
                     webAdminPort,
                     discoveryPort,
+                    heartbeatIntervalMs,
                     connectionAutoTimeoutMs,
                     codec,
                     evictionTimeoutMs,
@@ -77,7 +80,7 @@ public class EurekaServerConfig extends EurekaCommonConfig {
     // builder
     public abstract static class AbstractEurekaServerConfigBuilder<C extends EurekaServerConfig, B extends AbstractEurekaServerConfigBuilder<C, B>>
             extends EurekaCommonConfigBuilder<C, B> {
-        protected Integer discoveryPort;
+        protected int discoveryPort = EurekaTransports.DEFAULT_DISCOVERY_PORT;
 
         protected AbstractEurekaServerConfigBuilder() {
         }

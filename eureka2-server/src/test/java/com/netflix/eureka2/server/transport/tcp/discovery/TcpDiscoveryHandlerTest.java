@@ -28,6 +28,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rx.RxBlocking;
 import com.netflix.eureka2.rx.TestableObservableConnection;
 import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
+import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
 import org.junit.Assert;
 import org.junit.Before;
@@ -53,13 +54,14 @@ public class TcpDiscoveryHandlerTest {
 
     private TestableObservableConnection<Object, Object> observableConnection;
     private TcpDiscoveryHandler handler;
+    private final EurekaServerConfig config = EurekaServerConfig.baseBuilder().build();
 
     @Before
     public void setUp() {
         observableConnection = new TestableObservableConnection<>();
         when(registry.forInterest(any(Interest.class))).thenReturn(Observable.<ChangeNotification<InstanceInfo>>empty());
         when(registry.forInterest(any(MultipleInterests.class))).thenReturn(Observable.<ChangeNotification<InstanceInfo>>empty());
-        handler = spy(new TcpDiscoveryHandler(registry, EurekaServerMetricFactory.serverMetrics()));
+        handler = spy(new TcpDiscoveryHandler(config, registry, EurekaServerMetricFactory.serverMetrics()));
     }
 
     @Test(timeout = 60000)

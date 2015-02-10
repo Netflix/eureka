@@ -19,10 +19,9 @@ package com.netflix.eureka2.client.transport.tcp;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.transport.ResolverBasedTransportClient;
 import com.netflix.eureka2.config.EurekaTransportConfig;
-import com.netflix.eureka2.transport.TransportClient;
-import com.netflix.eureka2.transport.EurekaTransports;
-import com.netflix.eureka2.transport.base.HeartBeatConnection;
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
+import com.netflix.eureka2.transport.EurekaTransports;
+import com.netflix.eureka2.transport.TransportClient;
 
 /**
  * A {@link TransportClient} implementation for TCP based connections.
@@ -30,19 +29,7 @@ import com.netflix.eureka2.metric.MessageConnectionMetrics;
  * @author Tomasz Bak
  */
 public class TcpRegistrationClient extends ResolverBasedTransportClient {
-
-    // FIXME add an override from sys property for now
-    private static final long HEARTBEAT_INTERVAL_MILLIS = Long.getLong(
-            "eureka2.registration.heartbeat.intervalMillis",
-            HeartBeatConnection.DEFAULT_HEARTBEAT_INTERVAL_MILLIS
-    );
-
     public TcpRegistrationClient(EurekaTransportConfig config, ServerResolver resolver, MessageConnectionMetrics metrics) {
         super(config, resolver, EurekaTransports.registrationPipeline(config.getCodec()), metrics);
-    }
-
-    @Override
-    public long getHeartbeatIntervalMillis() {
-        return HEARTBEAT_INTERVAL_MILLIS;
     }
 }

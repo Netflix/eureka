@@ -48,16 +48,17 @@ public class EurekaDashboardConfig extends EurekaCommonConfig {
             String appName,
             String vipAddress,
             LocalDataCenterInfo.DataCenterType dataCenterType,
-            Integer shutDownPort,
-            Integer webAdminPort,
-            Long connectionAutoTimeoutMs,
+            int shutDownPort,
+            int webAdminPort,
+            long heartbeatIntervalMs,
+            long connectionAutoTimeoutMs,
             EurekaTransports.Codec codec,
-            Long evictionTimeoutMs,
+            long evictionTimeoutMs,
             StrategyType evictionStrategyType,
             String evictionStrategyValue,
             // dashboard server configs
-            Integer dashboardPort,
-            Integer webSocketPort
+            int dashboardPort,
+            int webSocketPort
     ) {
         super(
                 resolverType,
@@ -67,6 +68,7 @@ public class EurekaDashboardConfig extends EurekaCommonConfig {
                 dataCenterType,
                 shutDownPort,
                 webAdminPort,
+                heartbeatIntervalMs,
                 connectionAutoTimeoutMs,
                 codec,
                 evictionTimeoutMs,
@@ -74,8 +76,8 @@ public class EurekaDashboardConfig extends EurekaCommonConfig {
                 evictionStrategyValue
         );
 
-        this.dashboardPort = dashboardPort == null ? this.dashboardPort : dashboardPort;
-        this.webSocketPort = webSocketPort == null ? this.webSocketPort : webSocketPort;
+        this.dashboardPort = dashboardPort;
+        this.webSocketPort = webSocketPort;
     }
 
     public int getDashboardPort() {
@@ -95,8 +97,8 @@ public class EurekaDashboardConfig extends EurekaCommonConfig {
     public static class EurekaDashboardConfigBuilder
             extends EurekaCommonConfigBuilder<EurekaDashboardConfig, EurekaDashboardConfigBuilder> {
 
-        protected Integer dashboardPort;
-        protected Integer webSocketPort;
+        protected int dashboardPort = DEFAULT_DASHBOARD_PORT;
+        protected int webSocketPort = DEFAULT_WEBSOCKET_PORT;
 
         protected EurekaDashboardConfigBuilder() {}
 
@@ -119,6 +121,7 @@ public class EurekaDashboardConfig extends EurekaCommonConfig {
                     dataCenterType,
                     shutDownPort,
                     webAdminPort,
+                    heartbeatIntervalMs,
                     connectionAutoTimeoutMs,
                     codec,
                     evictionTimeoutMs,
