@@ -4,6 +4,7 @@ plugins {
 
 ext {
     githubProjectName = 'eureka'
+    servletVersion='2.5'
     jerseyVersion='1.11'
     governatorVersion='1.2.10'
     archaiusVersion='0.6.0'
