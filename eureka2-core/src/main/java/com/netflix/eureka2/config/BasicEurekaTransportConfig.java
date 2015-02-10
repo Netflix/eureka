@@ -2,22 +2,34 @@ package com.netflix.eureka2.config;
 
 import com.netflix.eureka2.transport.EurekaTransports;
 
-import static com.netflix.eureka2.config.ConfigurationNames.TransportNames.*;
+import static com.netflix.eureka2.config.ConfigurationNames.TransportNames.codecName;
+import static com.netflix.eureka2.config.ConfigurationNames.TransportNames.connectionAutoTimeoutMsName;
+import static com.netflix.eureka2.config.ConfigurationNames.TransportNames.heartbeatIntervalMsName;
 
 /**
  * @author David Liu
  */
 public class BasicEurekaTransportConfig implements EurekaTransportConfig {
 
-    public static final long CONNECTION_AUTO_TIMEOUT_MS = 30*60*1000;
+    public static final long HEARTBEAT_INTERVAL_MS = 30 * 1000;
+    public static final long CONNECTION_AUTO_TIMEOUT_MS = 30 * 60 * 1000;
     public static final EurekaTransports.Codec DEFAULT_CODEC = EurekaTransports.Codec.Avro;
 
-    private final Long connectionAutoTimeoutMs;
+    private final long heartbeatIntervalMs;
+    private final long connectionAutoTimeoutMs;
     private final EurekaTransports.Codec codec;
 
-    private BasicEurekaTransportConfig(Long connectionAutoTimeoutMs, EurekaTransports.Codec codec) {
+    private BasicEurekaTransportConfig(long heartbeatIntervalMs,
+                                       long connectionAutoTimeoutMs,
+                                       EurekaTransports.Codec codec) {
+        this.heartbeatIntervalMs = heartbeatIntervalMs;
         this.connectionAutoTimeoutMs = connectionAutoTimeoutMs;
         this.codec = codec;
+    }
+
+    @Override
+    public long getHeartbeatIntervalMs() {
+        return heartbeatIntervalMs;
     }
 
     @Override
@@ -33,19 +45,26 @@ public class BasicEurekaTransportConfig implements EurekaTransportConfig {
     @Override
     public String toString() {
         return "BasicEurekaTransportConfig{" +
-                "connectionAutoTimeoutMs='" + connectionAutoTimeoutMs + '\'' +
-                ", codec='" + codec + '\'' +
+                "heartbeatIntervalMs=" + heartbeatIntervalMs +
+                ", connectionAutoTimeoutMs=" + connectionAutoTimeoutMs +
+                ", codec=" + codec +
                 '}';
     }
 
-
     public static class Builder {
-        private Long connectionAutoTimeoutMs = SystemConfigLoader
+        private long heartbeatIntervalMs = SystemConfigLoader
+                .getFromSystemPropertySafe(heartbeatIntervalMsName, HEARTBEAT_INTERVAL_MS);
+        private long connectionAutoTimeoutMs = SystemConfigLoader
                 .getFromSystemPropertySafe(connectionAutoTimeoutMsName, CONNECTION_AUTO_TIMEOUT_MS);
         private EurekaTransports.Codec codec = SystemConfigLoader
                 .getFromSystemPropertySafe(codecName, DEFAULT_CODEC);
 
-        public Builder withConnectionAutoTimeoutMs(Long connectionAutoTimeoutMs) {
+        public Builder withHeartbeatIntervalMs(long heartbeatIntervalMs) {
+            this.heartbeatIntervalMs = heartbeatIntervalMs;
+            return this;
+        }
+
+        public Builder withConnectionAutoTimeoutMs(long connectionAutoTimeoutMs) {
             this.connectionAutoTimeoutMs = connectionAutoTimeoutMs;
             return this;
         }
@@ -56,8 +75,7 @@ public class BasicEurekaTransportConfig implements EurekaTransportConfig {
         }
 
         public BasicEurekaTransportConfig build() {
-            return new BasicEurekaTransportConfig(connectionAutoTimeoutMs, codec);
+            return new BasicEurekaTransportConfig(heartbeatIntervalMs, connectionAutoTimeoutMs, codec);
         }
     }
-
 }

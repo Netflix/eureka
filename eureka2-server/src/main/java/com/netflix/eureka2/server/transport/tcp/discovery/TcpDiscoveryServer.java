@@ -54,7 +54,7 @@ public class TcpDiscoveryServer extends AbstractTcpServer {
     public void start() {
         server = RxNetty.newTcpServerBuilder(
                 config.getDiscoveryPort(),
-                new TcpDiscoveryHandler(eurekaRegistry, metricFactory))
+                new TcpDiscoveryHandler(config, eurekaRegistry, metricFactory))
                 .pipelineConfigurator(EurekaTransports.discoveryPipeline(config.getCodec()))
                 .withMetricEventsListenerFactory(servoEventsListenerFactory)
                 .build()

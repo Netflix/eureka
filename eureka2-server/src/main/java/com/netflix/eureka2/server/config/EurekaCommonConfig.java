@@ -18,8 +18,13 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
 
     public enum ResolverType {fixed, dns}
 
-    private static final long DEFAULT_CONNECTION_AUTO_TIMEOUT_MS = 30*60*1000;
-    private static final String DEFAULT_CODEC = "Avro";
+    public static final int DEFAULT_SHUTDOWN_PORT = 7700;
+    public static final int DEFAULT_ADMIN_PORT = 8077;
+
+    public static final long DEFAULT_HEARTBEAT_INTERVAL_MS = 30 * 1000;
+    public static final long DEFAULT_CONNECTION_AUTO_TIMEOUT_MS = 30*60*1000;
+
+    public static final String DEFAULT_CODEC = "Avro";
 
     public static final long DEFAULT_EVICTION_TIMEOUT = 30000;
 
@@ -40,12 +45,15 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
     protected String dataCenterType = LocalDataCenterInfo.DataCenterType.Basic.name();
 
     @Configuration("eureka.services.shutdown.port")
-    protected int shutDownPort = 7700;
+    protected int shutDownPort = DEFAULT_SHUTDOWN_PORT;
 
     @Configuration("netflix.platform.admin.resources.port")
-    protected int webAdminPort = 8077;
+    protected int webAdminPort = DEFAULT_ADMIN_PORT;
 
     // transport configs
+    @Configuration(TransportNames.heartbeatIntervalMsName)
+    private long heartbeatIntervalMs = DEFAULT_HEARTBEAT_INTERVAL_MS;
+
     @Configuration(TransportNames.connectionAutoTimeoutMsName)
     protected long connectionAutoTimeoutMs = DEFAULT_CONNECTION_AUTO_TIMEOUT_MS;
 
@@ -73,11 +81,12 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
             String appName,
             String vipAddress,
             LocalDataCenterInfo.DataCenterType dataCenterType,
-            Integer shutDownPort,
-            Integer webAdminPort,
-            Long connectionAutoTimeoutMs,
+            int shutDownPort,
+            int webAdminPort,
+            long heartbeatIntervalMs,
+            long connectionAutoTimeoutMs,
             Codec codec,
-            Long evictionTimeoutMs,
+            long evictionTimeoutMs,
             StrategyType evictionStrategyType,
             String evictionStrategyValue
     ) {
@@ -86,11 +95,12 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
         this.appName = appName == null ? this.appName : appName;
         this.vipAddress = vipAddress == null ? this.vipAddress : vipAddress;
         this.dataCenterType = dataCenterType == null ? this.dataCenterType : dataCenterType.name();
-        this.shutDownPort = shutDownPort == null ? this.shutDownPort : shutDownPort;
-        this.webAdminPort = webAdminPort == null ? this.webAdminPort : webAdminPort;
-        this.connectionAutoTimeoutMs = connectionAutoTimeoutMs == null ? this.connectionAutoTimeoutMs : connectionAutoTimeoutMs;
+        this.shutDownPort = shutDownPort;
+        this.webAdminPort = webAdminPort;
+        this.heartbeatIntervalMs = heartbeatIntervalMs;
+        this.connectionAutoTimeoutMs = connectionAutoTimeoutMs;
         this.codec = codec == null ? this.codec : codec.name();
-        this.evictionTimeoutMs = evictionTimeoutMs == null ? this.evictionTimeoutMs : evictionTimeoutMs;
+        this.evictionTimeoutMs = evictionTimeoutMs;
         this.evictionStrategyType = evictionStrategyType == null ? this.evictionStrategyType : evictionStrategyType.name();
         this.evictionStrategyValue = evictionStrategyValue == null ? this.evictionStrategyValue : evictionStrategyValue;
     }
@@ -133,6 +143,11 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
 
     public int getShutDownPort() {
         return shutDownPort;
+    }
+
+    @Override
+    public long getHeartbeatIntervalMs() {
+        return heartbeatIntervalMs;
     }
 
     @Override
@@ -181,13 +196,14 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
         protected String appName;
         protected String vipAddress;
         protected LocalDataCenterInfo.DataCenterType dataCenterType;
-        protected Integer shutDownPort;
-        protected Integer webAdminPort;
+        protected int shutDownPort = DEFAULT_SHUTDOWN_PORT;
+        protected int webAdminPort = DEFAULT_ADMIN_PORT;
 
-        protected Long connectionAutoTimeoutMs;
-        protected Codec codec;
+        protected long heartbeatIntervalMs = DEFAULT_HEARTBEAT_INTERVAL_MS;
+        protected long connectionAutoTimeoutMs = DEFAULT_CONNECTION_AUTO_TIMEOUT_MS;
+        protected Codec codec = Codec.Avro;
 
-        protected Long evictionTimeoutMs;
+        protected long evictionTimeoutMs;
         protected EvictionStrategyProvider.StrategyType evictionStrategyType;
         protected String evictionStrategyValue;
 
@@ -228,6 +244,11 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
 
         public B withWebAdminPort(int webAdminPort) {
             this.webAdminPort = webAdminPort;
+            return self();
+        }
+
+        public B withHeartbeatIntervalMs(long heartbeatIntervalMs) {
+            this.heartbeatIntervalMs = heartbeatIntervalMs;
             return self();
         }
 
