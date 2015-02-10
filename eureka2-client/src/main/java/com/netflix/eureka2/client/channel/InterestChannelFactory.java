@@ -6,7 +6,6 @@ import com.netflix.eureka2.client.transport.TransportClients;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.registry.PreservableEurekaRegistry;
-import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.transport.TransportClient;
 
 /**
@@ -21,7 +20,7 @@ public class InterestChannelFactory extends ClientChannelFactory<InterestChannel
                                   ServerResolver resolver,
                                   PreservableEurekaRegistry eurekaRegistry,
                                   EurekaClientMetricFactory metricFactory) {
-        this(TransportClients.newTcpDiscoveryClient(config, resolver), eurekaRegistry, metricFactory);
+        this(TransportClients.newTcpDiscoveryClient(config, resolver, metricFactory), eurekaRegistry, metricFactory);
     }
 
     public InterestChannelFactory(TransportClient transport,
