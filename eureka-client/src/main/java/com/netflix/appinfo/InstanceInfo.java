@@ -864,10 +864,10 @@ public class InstanceInfo {
      */
     public Set<String> getHealthCheckUrls() {
         Set<String> healthCheckUrlSet = new LinkedHashSet<String>();
-        if (this.isUnsecurePortEnabled) {
+        if (this.isUnsecurePortEnabled && healthCheckUrl != null && !healthCheckUrl.isEmpty()) {
             healthCheckUrlSet.add(healthCheckUrl);
         }
-        if (this.isSecurePortEnabled) {
+        if (this.isSecurePortEnabled && secureHealthCheckUrl != null && !secureHealthCheckUrl.isEmpty()) {
             healthCheckUrlSet.add(secureHealthCheckUrl);
         }
         return healthCheckUrlSet;

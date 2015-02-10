@@ -56,15 +56,19 @@ public class InstanceResource {
     private static final Logger logger = LoggerFactory
             .getLogger(InstanceResource.class);
 
-    private final PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry
-            .getInstance();
+    private final PeerAwareInstanceRegistry registry;
 
     String id;
     ApplicationResource app;
 
-    public InstanceResource(ApplicationResource app, String id) {
-        this.id = id;
+    /* For testing */ InstanceResource(ApplicationResource app, String id, PeerAwareInstanceRegistry registry) {
         this.app = app;
+        this.id = id;
+        this.registry = registry;
+    }
+
+    public InstanceResource(ApplicationResource app, String id) {
+        this(app, id, PeerAwareInstanceRegistry.getInstance());
     }
 
     /**
@@ -185,6 +189,42 @@ public class InstanceResource {
         } catch (Throwable e) {
             logger.error("Error updating instance {} for status {}", id,
                     newStatus);
+            return Response.serverError().build();
+        }
+    }
+
+    /**
+     * Removes status override for an instance, set with
+     * {@link #statusUpdate(String, String, String)}.
+     *
+     * @param isReplication
+     *            a header parameter containing information whether this is
+     *            replicated from other nodes.
+     * @param lastDirtyTimestamp
+     *            last timestamp when this instance information was updated.
+     * @return response indicating whether the operation was a success or
+     *         failure.
+     */
+    @DELETE
+    @Path("status")
+    public Response deleteStatusUpdate(
+            @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication,
+            @QueryParam("value") String newStatusValue,
+            @QueryParam("lastDirtyTimestamp") String lastDirtyTimestamp) {
+        try {
+            InstanceStatus newStatus = newStatusValue == null ? InstanceStatus.UNKNOWN : InstanceStatus.valueOf(newStatusValue);
+            boolean isSuccess = registry.deleteStatusOverride(app.getName(), id,
+                    newStatus, lastDirtyTimestamp, "true".equals(isReplication));
+
+            if (isSuccess) {
+                logger.info("Status override removed: " + app.getName() + " - " + id);
+                return Response.ok().build();
+            } else {
+                logger.warn("Unable to remove status override: " + app.getName() + " - " + id);
+                return Response.status(Status.NOT_ACCEPTABLE).build();
+            }
+        } catch (Throwable e) {
+            logger.error("Error removing instance's {} status override", id);
             return Response.serverError().build();
         }
     }
