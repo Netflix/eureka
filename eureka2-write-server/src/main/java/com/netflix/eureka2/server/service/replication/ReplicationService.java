@@ -86,8 +86,8 @@ public class ReplicationService {
             throw new IllegalStateException("ReplicationService already closed");
         }
 
-        resolverSubscription = selfInfoResolver.resolve()
-                .flatMap(new Func1<InstanceInfo, Observable<ChangeNotification<InetSocketAddress>>>() {
+        resolverSubscription = selfInfoResolver.resolve().take(1)
+                .switchMap(new Func1<InstanceInfo, Observable<ChangeNotification<InetSocketAddress>>>() {
                     @Override
                     public Observable<ChangeNotification<InetSocketAddress>> call(InstanceInfo instanceInfo) {
                         ownInstanceInfo = instanceInfo;

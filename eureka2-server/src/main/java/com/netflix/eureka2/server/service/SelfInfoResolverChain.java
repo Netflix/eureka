@@ -12,29 +12,26 @@ import java.util.List;
  */
 public class SelfInfoResolverChain extends ChainableSelfInfoResolver {
 
-    private final ChainableSelfInfoResolver[] resolvers;
-
     public SelfInfoResolverChain(ChainableSelfInfoResolver... resolvers) {
-        this.resolvers = resolvers;
+        super(Observable.combineLatest(getObservableList(resolvers), new FuncN<InstanceInfo.Builder>() {
+                    @Override
+                    public InstanceInfo.Builder call(Object... args) {
+                        InstanceInfo.Builder seed = new InstanceInfo.Builder();
+                        for (Object obj : args) {
+                            InstanceInfo.Builder builder = (InstanceInfo.Builder) obj;
+                            seed.withBuilder(new InstanceInfo.Builder().withBuilder(builder));  // clone at each step
+                        }
+                        return seed;
+                    }
+                })
+        );
     }
 
-    @Override
-    protected Observable<InstanceInfo.Builder> resolveMutable() {
+    protected static List<Observable<InstanceInfo.Builder>> getObservableList(ChainableSelfInfoResolver... resolvers) {
         List<Observable<InstanceInfo.Builder>> observableList = new ArrayList<>();
         for (ChainableSelfInfoResolver resolver : resolvers) {
             observableList.add(resolver.resolveMutable());
         }
-
-        return Observable.combineLatest(observableList, new FuncN<InstanceInfo.Builder>() {
-            @Override
-            public InstanceInfo.Builder call(Object... args) {
-                InstanceInfo.Builder seed = new InstanceInfo.Builder();
-                for (Object obj : args) {
-                    InstanceInfo.Builder builder = (InstanceInfo.Builder) obj;
-                    seed.withBuilder(new InstanceInfo.Builder().withBuilder(builder));  // clone at each step
-                }
-                return seed;
-            }
-        });
+        return observableList;
     }
 }
