@@ -591,7 +591,7 @@ public class DiscoveryClient implements LookupService {
         if (!clientConfig.shouldRegisterWithEureka()) {
             return false;
         } else if ((myInfo != null)
-                && (myInfo.getDataCenterInfo()
+                && (myInfo.getDataCenterInfo().getName()
                         .equals(DataCenterInfo.Name.Amazon))) {
             return true;
         }
@@ -1630,7 +1630,7 @@ public class DiscoveryClient implements LookupService {
                 // Pass in the appinfo again since
                 if ((discoveryServer != null)
                         && (Name.Amazon.equals(discoveryServer
-                                .getDataCenterInfo()))) {
+                                .getDataCenterInfo().getName()))) {
                     String amiId = ((AmazonInfo) discoveryServer
                             .getDataCenterInfo()).get(MetaDataKey.amiId);
                     if (discoveryServerAMIId == null) {
