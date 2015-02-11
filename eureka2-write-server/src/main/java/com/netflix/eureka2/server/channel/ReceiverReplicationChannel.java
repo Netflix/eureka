@@ -132,7 +132,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATE> im
 
         replicationSource = new Source(Source.Origin.REPLICATED, hello.getSourceId());
 
-        return selfIdentityService.resolve().flatMap(new Func1<InstanceInfo, Observable<ReplicationHelloReply>>() {
+        return selfIdentityService.resolve().take(1).flatMap(new Func1<InstanceInfo, Observable<ReplicationHelloReply>>() {
             @Override
             public Observable<ReplicationHelloReply> call(InstanceInfo instanceInfo) {
                 replicationLoop = instanceInfo.getId().equals(hello.getSourceId());

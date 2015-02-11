@@ -6,6 +6,8 @@ import com.netflix.eureka2.registry.instance.ServicePort;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
 import rx.Observable;
+import rx.Subscriber;
+import rx.functions.Func1;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -17,33 +19,33 @@ import java.util.HashSet;
 @Singleton
 public class EurekaReadServerSelfInfoResolver implements SelfInfoResolver {
 
-    private SelfInfoResolverChain resolverChain;
+    private final SelfInfoResolver delegate;
 
     @Inject
     public EurekaReadServerSelfInfoResolver(final EurekaServerConfig config, final TcpDiscoveryServer discoveryServer) {
 
-        resolverChain = new SelfInfoResolverChain(
+        SelfInfoResolverChain resolverChain = new SelfInfoResolverChain(
                 new ConfigSelfInfoResolver(config),
-                new ChainableSelfInfoResolver() {  // read server specific resolver
-                    @Override
-                    protected Observable<InstanceInfo.Builder> resolveMutable() {
-                        HashSet<ServicePort> ports = new HashSet<>();
-                        ports.add(new ServicePort(Names.DISCOVERY, discoveryServer.serverPort(), false));
-
-                        return Observable.just(new InstanceInfo.Builder().withPorts(ports));
-                    }
-                },
-                new ChainableSelfInfoResolver() {  // TODO override with more meaningful health check
-                    @Override
-                    protected Observable<InstanceInfo.Builder> resolveMutable() {
-                        return Observable.just(new InstanceInfo.Builder().withStatus(InstanceInfo.Status.UP));
-                    }
-                }
+                // read server specific resolver
+                new ChainableSelfInfoResolver(Observable.just(new HashSet<ServicePort>())
+                        .map(new Func1<HashSet<ServicePort>, InstanceInfo.Builder>() {
+                            @Override
+                            public InstanceInfo.Builder call(HashSet<ServicePort> ports) {
+                                ports.add(new ServicePort(Names.DISCOVERY, discoveryServer.serverPort(), false));
+                                return new InstanceInfo.Builder().withPorts(ports);
+                            }
+                        })
+                ),
+                new PeriodicDataCenterInfoResolver(config),
+                // TODO override with more meaningful health check
+                new ChainableSelfInfoResolver(Observable.just(new InstanceInfo.Builder().withStatus(InstanceInfo.Status.UP)))
         );
+
+        delegate = new CachingSelfInfoResolver(resolverChain);
     }
 
     @Override
     public Observable<InstanceInfo> resolve() {
-        return resolverChain.resolve();
+        return delegate.resolve();
     }
 }
