@@ -127,15 +127,22 @@ public class DnsChangeNotificationSource implements ChangeNotificationSource<Str
 
         private Set<ChangeNotification<String>> resolveName(DirContext dirContext, String targetDN) throws NamingException {
             while (true) {
-                Attributes attrs = dirContext.getAttributes(targetDN, new String[]{"A", "CNAME"});
+                Attributes attrs = dirContext.getAttributes(targetDN, new String[]{"A", "CNAME", "TXT"});
+                // handle A records
                 Set<ChangeNotification<String>> addresses = toSetOfServerEntries(attrs, "A");
                 if (!addresses.isEmpty()) {
                     return addresses;
                 }
+                // handle CNAME
                 Set<String> aliases = toSetOfString(attrs, "CNAME");
                 if (aliases != null && !aliases.isEmpty()) {
                     targetDN = aliases.iterator().next();
                     continue;
+                }
+                // handle TXT (assuming a list of hostnames as txt records)
+                addresses = toSetOfServerEntries(attrs, "TXT");
+                if (!addresses.isEmpty()) {
+                    return addresses;
                 }
                 return addresses;
             }
@@ -164,7 +171,7 @@ public class DnsChangeNotificationSource implements ChangeNotificationSource<Str
             NamingEnumeration<?> it = attr.getAll();
             while (it.hasMore()) {
                 Object value = it.next();
-                resultSet.add(new ChangeNotification<>(Kind.Add, (String) value));
+                resultSet.add(new ChangeNotification<>(Kind.Add, String.valueOf(value)));
             }
             return resultSet;
         }
