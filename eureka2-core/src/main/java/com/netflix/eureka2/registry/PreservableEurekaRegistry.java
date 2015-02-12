@@ -200,7 +200,7 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
     }
 
     private boolean allowedToEvict() {
-        return evictionStrategy.allowedToEvict(expectedRegistrySize, eurekaRegistry.size()) > 0;
+        return evictionStrategy.allowedToEvict(expectedRegistrySize, eurekaRegistry.size()) >= 0;
     }
 
     private void resumeEviction() {
@@ -234,7 +234,6 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
                         public void call() {
                             logger.info("Successfully evicted registry entry {}/{}",
                                     evictionItem.getSource(), evictionItem.getInstanceInfo().getId());
-                            resume();
                         }
                     })
                     .retry(2)
