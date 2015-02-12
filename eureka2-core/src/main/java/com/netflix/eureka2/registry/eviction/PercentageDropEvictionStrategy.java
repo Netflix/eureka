@@ -31,7 +31,6 @@ public class PercentageDropEvictionStrategy implements EvictionStrategy {
     public int allowedToEvict(int expectedRegistrySize, int actualRegistrySize) {
         int maxAllowed = (int) (dropRatio * expectedRegistrySize);
         int currentDif = expectedRegistrySize - actualRegistrySize;
-        int delta = maxAllowed - currentDif;
-        return delta <= 0 ? 0 : delta;
+        return maxAllowed - currentDif;
     }
 }

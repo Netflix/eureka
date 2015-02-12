@@ -199,6 +199,10 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
         return eurekaRegistry.shutdown(cause);
     }
 
+    /**
+     * FIXME eviction strategies need a rethink
+     * >= 0 as when both sizes are equal, we still allow eviction to happen as they may be stale copies
+     */
     private boolean allowedToEvict() {
         return evictionStrategy.allowedToEvict(expectedRegistrySize, eurekaRegistry.size()) >= 0;
     }
