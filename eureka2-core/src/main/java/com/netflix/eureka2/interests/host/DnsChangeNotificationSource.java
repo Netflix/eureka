@@ -129,25 +129,29 @@ public class DnsChangeNotificationSource implements ChangeNotificationSource<Str
             while (true) {
                 Attributes attrs = dirContext.getAttributes(targetDN, new String[]{"A", "CNAME", "TXT"});
                 // handle A records
-                Set<ChangeNotification<String>> addresses = toSetOfServerEntries(attrs, "A");
+                Set<ChangeNotification<String>> addresses = new HashSet<>();
+                addresses.addAll(toSetOfServerEntries(attrs, "A"));
                 if (!addresses.isEmpty()) {
                     return addresses;
                 }
                 // handle CNAME
                 Set<String> aliases = toSetOfString(attrs, "CNAME");
-                if (aliases != null && !aliases.isEmpty()) {
+                if (!aliases.isEmpty()) {
                     targetDN = aliases.iterator().next();
                     continue;
                 }
                 // handle TXT (assuming a list of hostnames as txt records)
-                addresses = toSetOfServerEntries(attrs, "TXT");
-                if (!addresses.isEmpty()) {
-                    return addresses;
+                aliases = toSetOfString(attrs, "TXT");
+                for (String alias : aliases) {
+                    Set<ChangeNotification<String>> subsetAddresses = resolveName(dirContext, alias);
+                    addresses.addAll(subsetAddresses);
                 }
+
                 return addresses;
             }
         }
 
+        // will never return null
         private Set<String> toSetOfString(Attributes attrs, String attrName) throws NamingException {
             Attribute attr = attrs.get(attrName);
             if (attr == null) {
@@ -162,6 +166,7 @@ public class DnsChangeNotificationSource implements ChangeNotificationSource<Str
             return resultSet;
         }
 
+        // will never return null
         private Set<ChangeNotification<String>> toSetOfServerEntries(Attributes attrs, String attrName) throws NamingException {
             Attribute attr = attrs.get(attrName);
             if (attr == null) {
