@@ -16,26 +16,17 @@ public class SelfInfoResolverChainTest {
 
     @Test(timeout = 30000)
     public void testChaining() throws Exception {
-        ChainableSelfInfoResolver one = new ChainableSelfInfoResolver() {
-            @Override
-            protected Observable<InstanceInfo.Builder> resolveMutable() {
-                return Observable.just(new InstanceInfo.Builder().withId("id").withApp("appName"));
-            }
-        };
+        ChainableSelfInfoResolver one = new ChainableSelfInfoResolver(
+                Observable.just(new InstanceInfo.Builder().withId("id").withApp("appName"))
+        );
 
-        ChainableSelfInfoResolver two = new ChainableSelfInfoResolver() {
-            @Override
-            protected Observable<InstanceInfo.Builder> resolveMutable() {
-                return Observable.just(new InstanceInfo.Builder().withStatus(InstanceInfo.Status.STARTING));
-            }
-        };
+        ChainableSelfInfoResolver two = new ChainableSelfInfoResolver(
+                Observable.just(new InstanceInfo.Builder().withStatus(InstanceInfo.Status.STARTING))
+        );
 
-        ChainableSelfInfoResolver three = new ChainableSelfInfoResolver() {
-            @Override
-            protected Observable<InstanceInfo.Builder> resolveMutable() {
-                return Observable.just(new InstanceInfo.Builder().withStatus(InstanceInfo.Status.UP));
-            }
-        };
+        ChainableSelfInfoResolver three = new ChainableSelfInfoResolver(
+                Observable.just(new InstanceInfo.Builder().withStatus(InstanceInfo.Status.UP))
+        );
 
         SelfInfoResolverChain chain = new SelfInfoResolverChain(one, two, three);
 
@@ -49,32 +40,23 @@ public class SelfInfoResolverChainTest {
 
     @Test(timeout = 30000)
     public void testLastObservableCompletesBeforeMiddle() {
-        ChainableSelfInfoResolver one = new ChainableSelfInfoResolver() {
-            @Override
-            protected Observable<InstanceInfo.Builder> resolveMutable() {
-                return Observable.just(new InstanceInfo.Builder().withId("id").withApp("appName"));
-            }
-        };
+        ChainableSelfInfoResolver one = new ChainableSelfInfoResolver(
+                Observable.just(new InstanceInfo.Builder().withId("id").withApp("appName"))
+        );
 
-        ChainableSelfInfoResolver two = new ChainableSelfInfoResolver() {
-            @Override
-            protected Observable<InstanceInfo.Builder> resolveMutable() {
-                return Observable.from(
+        ChainableSelfInfoResolver two = new ChainableSelfInfoResolver(
+                Observable.from(
                         Arrays.asList(
                                 new InstanceInfo.Builder().withStatus(InstanceInfo.Status.STARTING),
                                 new InstanceInfo.Builder().withStatus(InstanceInfo.Status.UP),
                                 new InstanceInfo.Builder().withStatus(InstanceInfo.Status.DOWN)
                         )
-                ).delay(500, TimeUnit.MILLISECONDS);  // delay this stream a bit so that we definitely get 3 distinct emits
-            }
-        };
+                ).delay(500, TimeUnit.MILLISECONDS)  // delay this stream a bit so that we definitely get 3 distinct emits
+            );
 
-        ChainableSelfInfoResolver three = new ChainableSelfInfoResolver() {
-            @Override
-            protected Observable<InstanceInfo.Builder> resolveMutable() {
-                return Observable.just(new InstanceInfo.Builder().withVipAddress("vip"));
-            }
-        };
+        ChainableSelfInfoResolver three = new ChainableSelfInfoResolver(
+                Observable.just(new InstanceInfo.Builder().withVipAddress("vip"))
+        );
 
         SelfInfoResolverChain chain = new SelfInfoResolverChain(one, two, three);
 
@@ -104,31 +86,22 @@ public class SelfInfoResolverChainTest {
 
     @Test(timeout = 30000)
     public void testMiddleObservableCompletesBeforeLast() throws Exception {
-        ChainableSelfInfoResolver one = new ChainableSelfInfoResolver() {
-            @Override
-            protected Observable<InstanceInfo.Builder> resolveMutable() {
-                return Observable.just(new InstanceInfo.Builder().withId("id").withApp("appName"));
-            }
-        };
+        ChainableSelfInfoResolver one = new ChainableSelfInfoResolver(
+                Observable.just(new InstanceInfo.Builder().withId("id").withApp("appName"))
+        );
 
-        ChainableSelfInfoResolver two = new ChainableSelfInfoResolver() {
-            @Override
-            protected Observable<InstanceInfo.Builder> resolveMutable() {
-                return Observable.just(new InstanceInfo.Builder().withStatus(InstanceInfo.Status.STARTING));
-            }
-        };
+        ChainableSelfInfoResolver two = new ChainableSelfInfoResolver(
+                Observable.just(new InstanceInfo.Builder().withStatus(InstanceInfo.Status.STARTING))
+        );
 
-        ChainableSelfInfoResolver three = new ChainableSelfInfoResolver() {
-            @Override
-            protected Observable<InstanceInfo.Builder> resolveMutable() {
-                return Observable.from(
+        ChainableSelfInfoResolver three = new ChainableSelfInfoResolver(
+                Observable.from(
                         Arrays.asList(
                                 new InstanceInfo.Builder().withStatus(InstanceInfo.Status.UP),
                                 new InstanceInfo.Builder().withStatus(InstanceInfo.Status.DOWN)
                         )
-                ).delay(500, TimeUnit.MILLISECONDS);  // delay this stream a bit so that we definitely get 3 distinct emits
-            }
-        };
+                ).delay(500, TimeUnit.MILLISECONDS)  // delay this stream a bit so that we definitely get 3 distinct emits
+        );
 
         SelfInfoResolverChain chain = new SelfInfoResolverChain(one, two, three);
 

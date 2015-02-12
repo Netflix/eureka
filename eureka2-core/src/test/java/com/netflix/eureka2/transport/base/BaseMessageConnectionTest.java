@@ -181,7 +181,7 @@ public class BaseMessageConnectionTest {
     }
 
     @Test(timeout = 60000)
-    public void testClosesLocalConnectionOnRemoteServerDisconnect() throws Exception {
+    public void testClosesLocalConnectionOnRemoteServerDisconnectWithError() throws Exception {
         // Connect to client  input stream and lifecycle which we will examine after server disconnect.
         TestSubscriber<Object> testSubscriber = new TestSubscriber<>();
         clientBroker.incoming().subscribe(testSubscriber);
@@ -197,7 +197,7 @@ public class BaseMessageConnectionTest {
         testSubscriber.assertNoErrors();
 
         lifecycleSubscriber.assertTerminalEvent();
-        lifecycleSubscriber.assertNoErrors();
+        assertThat(lifecycleSubscriber.getOnErrorEvents().size(), is(1));
     }
 
     @Test(timeout = 60000)

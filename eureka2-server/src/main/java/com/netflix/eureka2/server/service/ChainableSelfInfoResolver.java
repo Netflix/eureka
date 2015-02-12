@@ -7,7 +7,13 @@ import rx.functions.Func1;
 /**
  * @author David Liu
  */
-public abstract class ChainableSelfInfoResolver implements SelfInfoResolver {
+public class ChainableSelfInfoResolver implements SelfInfoResolver {
+
+    private final Observable<InstanceInfo.Builder> resultObservable;
+
+    public ChainableSelfInfoResolver(Observable<InstanceInfo.Builder> resolverObservable) {
+        resultObservable = resolverObservable;
+    }
 
     @Override
     public Observable<InstanceInfo> resolve() {
@@ -19,5 +25,7 @@ public abstract class ChainableSelfInfoResolver implements SelfInfoResolver {
         });
     }
 
-    protected abstract Observable<InstanceInfo.Builder> resolveMutable();
+    protected Observable<InstanceInfo.Builder> resolveMutable() {
+        return resultObservable.share();
+    }
 }

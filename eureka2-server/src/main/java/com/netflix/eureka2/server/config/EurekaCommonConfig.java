@@ -28,6 +28,8 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
 
     public static final long DEFAULT_EVICTION_TIMEOUT = 30000;
 
+    public static final int DEFAULT_DATACENTER_RESOLVE_INTERVAL_SEC = 30;
+
     @Configuration("eureka.common.writeCluster.resolverType")
     protected String resolverType = ResolverType.fixed.name();
 
@@ -43,6 +45,9 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
 
     @Configuration("eureka.dataCenterInfo.type")
     protected String dataCenterType = LocalDataCenterInfo.DataCenterType.Basic.name();
+
+    @Configuration("eureka.dataCenterInfo.resolveIntervalSec")
+    protected int dataCenterResolveIntervalSec = DEFAULT_DATACENTER_RESOLVE_INTERVAL_SEC;
 
     @Configuration("eureka.services.shutdown.port")
     protected int shutDownPort = DEFAULT_SHUTDOWN_PORT;
@@ -81,6 +86,7 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
             String appName,
             String vipAddress,
             LocalDataCenterInfo.DataCenterType dataCenterType,
+            int dataCenterResolveIntervalSec,
             int shutDownPort,
             int webAdminPort,
             long heartbeatIntervalMs,
@@ -95,6 +101,7 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
         this.appName = appName == null ? this.appName : appName;
         this.vipAddress = vipAddress == null ? this.vipAddress : vipAddress;
         this.dataCenterType = dataCenterType == null ? this.dataCenterType : dataCenterType.name();
+        this.dataCenterResolveIntervalSec = dataCenterResolveIntervalSec;
         this.shutDownPort = shutDownPort;
         this.webAdminPort = webAdminPort;
         this.heartbeatIntervalMs = heartbeatIntervalMs;
@@ -135,6 +142,10 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
             result = LocalDataCenterInfo.DataCenterType.Basic;
         }
         return result;
+    }
+
+    public long getDataCenterResolveIntervalSec() {
+        return dataCenterResolveIntervalSec;
     }
 
     public int getWebAdminPort() {
@@ -196,6 +207,7 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
         protected String appName;
         protected String vipAddress;
         protected LocalDataCenterInfo.DataCenterType dataCenterType;
+        protected int dataCenterResolveIntervalSec = DEFAULT_DATACENTER_RESOLVE_INTERVAL_SEC;
         protected int shutDownPort = DEFAULT_SHUTDOWN_PORT;
         protected int webAdminPort = DEFAULT_ADMIN_PORT;
 
@@ -234,6 +246,11 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
 
         public B withDataCenterType(LocalDataCenterInfo.DataCenterType dataCenterType) {
             this.dataCenterType = dataCenterType;
+            return self();
+        }
+
+        public B withDataCenterResolveIntervalSec(int dataCenterResolveIntervalSec) {
+            this.dataCenterResolveIntervalSec = dataCenterResolveIntervalSec;
             return self();
         }
 

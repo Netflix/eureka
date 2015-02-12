@@ -37,6 +37,7 @@ public abstract class SelfRegistrationService implements SelfInfoResolver {
                 .switchMap(new Func1<InstanceInfo, Observable<? extends Void>>() {
                     @Override
                     public Observable<Void> call(final InstanceInfo instanceInfo) {
+                        logger.info("SelfInfo has changed. Latest info is {}", instanceInfo);
                         latestSelfInfo.set(instanceInfo);
 
                         return register(instanceInfo)

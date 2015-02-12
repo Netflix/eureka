@@ -8,7 +8,6 @@ import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.selector.AddressSelector;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
-import rx.Observable;
 import rx.functions.Func1;
 
 /**
@@ -18,21 +17,12 @@ import rx.functions.Func1;
  */
 public class ConfigSelfInfoResolver extends ChainableSelfInfoResolver {
 
-    private final String instanceUUID;
-    private final EurekaCommonConfig config;
-
-    public ConfigSelfInfoResolver(EurekaCommonConfig config) {
-        this.config = config;
-        this.instanceUUID = UUID.randomUUID().toString();
-    }
-
-    @Override
-    protected Observable<InstanceInfo.Builder> resolveMutable() {
-        return resolveDataCenterInfo()
+    public ConfigSelfInfoResolver(final EurekaCommonConfig config) {
+        super(LocalDataCenterInfo.forDataCenterType(config.getMyDataCenterType())
                 .map(new Func1<DataCenterInfo, InstanceInfo.Builder>() {
                     @Override
                     public InstanceInfo.Builder call(DataCenterInfo dataCenterInfo) {
-                        final String instanceId = config.getAppName() + '#' + instanceUUID;
+                        final String instanceId = config.getAppName() + '#' + UUID.randomUUID().toString();;
 
                         String address = AddressSelector.selectBy().publicIp(true).or().any().returnNameOrIp(dataCenterInfo.getAddresses());
                         HashSet<String> healthCheckUrls = new HashSet<>();
@@ -46,10 +36,7 @@ public class ConfigSelfInfoResolver extends ChainableSelfInfoResolver {
                                 .withDataCenterInfo(dataCenterInfo)
                                 .withStatus(InstanceInfo.Status.STARTING);
                     }
-                });
-    }
-
-    private Observable<? extends DataCenterInfo> resolveDataCenterInfo() {
-        return LocalDataCenterInfo.forDataCenterType(config.getMyDataCenterType());
+                })
+        );
     }
 }
