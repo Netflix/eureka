@@ -51,6 +51,7 @@ public class BaseMessageConnection implements MessageConnection {
 
     private static final Pattern NETTY_CHANNEL_NAME_RE = Pattern.compile("\\[.*=>\\s*(.*)\\]");
 
+    private static final Exception CONNECTION_INPUT_ONCOMPLETE_EXCEPTION = new IllegalStateException("connection input onCompleted");
     private static final Exception ACKNOWLEDGEMENT_TIMEOUT_EXCEPTION = new TimeoutException("acknowledgement timeout");
     private static final Exception UNEXPECTED_ACKNOWLEDGEMENT_EXCEPTION = new IllegalStateException("received acknowledgment while non expected");
 
@@ -180,10 +181,11 @@ public class BaseMessageConnection implements MessageConnection {
         }).doOnTerminate(new Action0() {
             @Override
             public void call() {
-                shutdown();
+                // always close with an exception here as the underlying connection never onError
+                shutdown(CONNECTION_INPUT_ONCOMPLETE_EXCEPTION);
             }
         });
-    }
+   }
 
     @Override
     public Observable<Void> onError(Throwable error) {
