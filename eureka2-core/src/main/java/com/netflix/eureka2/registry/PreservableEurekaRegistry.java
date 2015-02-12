@@ -228,23 +228,20 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
 
         @Override
         public void onNext(final EvictionItem evictionItem) {
+            eurekaRegistry.unregister(evictionItem.getInstanceInfo(), evictionItem.getSource())
+                    .doOnCompleted(new Action0() {
+                        @Override
+                        public void call() {
+                            logger.info("Successfully evicted registry entry {}/{}",
+                                    evictionItem.getSource(), evictionItem.getInstanceInfo().getId());
+                            resume();
+                        }
+                    })
+                    .retry(2)
+                    .subscribe();
             if (allowedToEvict()) {
-                eurekaRegistry.unregister(evictionItem.getInstanceInfo(), evictionItem.getSource())
-                        .doOnCompleted(new Action0() {
-                            @Override
-                            public void call() {
-                                logger.info("Successfully evicted registry entry {}/{}",
-                                        evictionItem.getSource(), evictionItem.getInstanceInfo().getId());
-                                resume();
-                            }
-                        })
-                        .retry(2)
-                        .subscribe();
+                resume();
             } else {
-                // TODO We should not do that, as this resets the timeout for this entry. Once item was provided, we should remove it (no need to be too strict).
-                evictionQueue.add(evictionItem.getInstanceInfo(), evictionItem.getSource());  // add back to the eviction queue
-                logger.info("Not evicting registry entry, adding back to the queue {}/{}",
-                        evictionItem.getSource(), evictionItem.getInstanceInfo().getId());
                 selfPreservation.set(true);
                 metrics.setSelfPreservation(true);
                 logger.info("Entering self preservation mode");
