@@ -7,10 +7,12 @@ import java.util.Map;
 import com.netflix.eureka2.channel.AbstractClientChannel;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.channel.InterestChannel.STATE;
+import com.netflix.eureka2.client.interest.BatchingRegistry;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.ModifyNotification;
 import com.netflix.eureka2.interests.StreamStateNotification;
+import com.netflix.eureka2.interests.StreamStateNotification.BufferingState;
 import com.netflix.eureka2.metric.InterestChannelMetrics;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.DeleteInstance;
@@ -45,6 +47,7 @@ import rx.observers.SafeSubscriber;
 public class InterestChannelImpl extends AbstractClientChannel<STATE> implements InterestChannel, Sourced {
 
     private static final Logger logger = LoggerFactory.getLogger(InterestChannelImpl.class);
+    private final BatchingRegistry<InstanceInfo> remoteBatchingRegistry;
 
     /**
      * Since we assume single threaded access to this channel, no need for concurrency control
@@ -74,8 +77,12 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
      */
     private final Map<String, InstanceInfo> idVsInstance = new HashMap<>();
 
-    public InterestChannelImpl(final SourcedEurekaRegistry<InstanceInfo> registry, TransportClient client, InterestChannelMetrics metrics) {
+    public InterestChannelImpl(final SourcedEurekaRegistry<InstanceInfo> registry,
+                               BatchingRegistry<InstanceInfo> remoteBatchingRegistry,
+                               TransportClient client,
+                               InterestChannelMetrics metrics) {
         super(STATE.Idle, client, metrics);
+        this.remoteBatchingRegistry = remoteBatchingRegistry;
         this.selfSource = new Source(Source.Origin.LOCAL);
         this.registry = registry;
         channelInterestSubscriber = new ChannelInterestSubscriber(registry);
@@ -99,7 +106,6 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
                     @Override
                     public Observable<Void> call(MessageConnection serverConnection) {
                         return sendExpectAckOnConnection(serverConnection, new InterestRegistration(newInterest));
-
                     }
                 });
 
@@ -111,17 +117,14 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
                 } else if (moveToState(STATE.Idle, STATE.Open)) {
                     logger.debug("First time registration: {}", newInterest);
                     channelInterestStream.subscribe(channelInterestSubscriber);
+                    remoteBatchingRegistry.subscribe(channelInterestStream);
                 } else {
                     logger.debug("Channel changes: {}", newInterest);
                 }
+                remoteBatchingRegistry.retainAll(newInterest);
                 subscriber.onCompleted();
             }
         }).concatWith(serverRequest);
-    }
-
-    @Override
-    public Observable<ChangeNotification<InstanceInfo>> changeNotifications() {
-        return channelInterestStream;
     }
 
     @Override
@@ -252,13 +255,11 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
     }
 
     private ChangeNotification<InstanceInfo> streamStateUpdateToStreamStateNotification(StreamStateUpdate notification) {
-        switch (notification.getState()) {
-            case Buffer:
-                return StreamStateNotification.bufferNotification(notification.getInterest());
-            case FinishBuffering:
-                return StreamStateNotification.finishBufferingNotification(notification.getInterest());
+        BufferingState state = notification.getState();
+        if (state == BufferingState.Buffer || state == BufferingState.FinishBuffering) {
+            return new StreamStateNotification<InstanceInfo>(state, notification.getInterest());
         }
-        throw new IllegalStateException("Unexpected state " + notification.getState());
+        throw new IllegalStateException("Unexpected state " + state);
     }
 
     protected class ChannelInterestSubscriber extends SafeSubscriber<ChangeNotification<InstanceInfo>> {
@@ -286,8 +287,7 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
                         case Delete:
                             registry.unregister(notification.getData(), selfSource);
                             break;
-                        case Buffer:
-                        case FinishBuffering:
+                        case BufferingSentinel:
                             // No-op
                             break;
                         default:

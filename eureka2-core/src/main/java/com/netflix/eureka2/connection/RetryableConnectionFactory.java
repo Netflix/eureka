@@ -42,7 +42,7 @@ public class RetryableConnectionFactory<CHANNEL extends ServiceChannel> {
      * @return a {@link RetryableConnection} that contains several observables. This lifecycle observable provided
      * can be retried on.
      */
-    public RetryableConnection<CHANNEL, Void> zeroOpConnection(final Func1<CHANNEL, Observable<Void>> executeOnChannel) {
+    public RetryableConnection<CHANNEL> zeroOpConnection(final Func1<CHANNEL, Observable<Void>> executeOnChannel) {
         Observable<Integer> opStream = Observable.just(1).mergeWith(Observable.<Integer>never());
         Func2<CHANNEL, Integer, Observable<Void>> adaptedExecute = new Func2<CHANNEL, Integer, Observable<Void>>() {
             @Override
@@ -50,28 +50,21 @@ public class RetryableConnectionFactory<CHANNEL extends ServiceChannel> {
                 return executeOnChannel.call(channel);
             }
         };
-        Func1<CHANNEL, Observable<Void>> connectToInputChannel = new Func1<CHANNEL, Observable<Void>>() {
-            @Override
-            public Observable<Void> call(CHANNEL channel) {
-                return Observable.empty();
-            }
-        };
-        return singleOpConnection(opStream, adaptedExecute, connectToInputChannel);
+        return singleOpConnection(opStream, adaptedExecute);
     }
 
     /**
      * Create a retryable connection that wraps around channels that executes on single operands
      *
+     * @param <OP> the type of op to be applied to the channel
      * @param opStream an observable stream of ops for the channel to operate on (i.e. Interest, InstanceInfo)
      * @param executeOnChannel a func2 that describes the call for the channel on the operations
-     * @param <OP> the type of op to be applied to the channel
      * @return a {@link RetryableConnection} that contains several observables. This lifecycle observable provided
      * can be retried on.
      */
-    public <OP, INPUT> RetryableConnection<CHANNEL, INPUT> singleOpConnection(
+    public <OP> RetryableConnection<CHANNEL> singleOpConnection(
             final Observable<OP> opStream,
-            final Func2<CHANNEL, OP, Observable<Void>> executeOnChannel,
-            final Func1<CHANNEL, Observable<INPUT>> connectToInputChannel) {
+            final Func2<CHANNEL, OP, Observable<Void>> executeOnChannel) {
         final AsyncSubject<Void> initSubject = AsyncSubject.create();  // subject used to cache init status
 
         final BreakerSwitchSubject<OP> opSubject = BreakerSwitchSubject.create(BehaviorSubject.<OP>create());
@@ -124,25 +117,8 @@ public class RetryableConnectionFactory<CHANNEL extends ServiceChannel> {
                     }
                 });
 
-        Observable<INPUT> channelInputObservable = channelObservable.flatMap(new Func1<CHANNEL, Observable<INPUT>>() {
-            @Override
-            public Observable<INPUT> call(CHANNEL channel) {
-                return connectToInputChannel.call(channel)
-                        // We ignore error from the channel, as we want to continue streaming data
-                        // from the next channel that will re-established.
-                        .onErrorResumeNext(new Func1<Throwable, Observable<? extends INPUT>>() {
-                            @Override
-                            public Observable<INPUT> call(Throwable throwable) {
-                                logger.info("Closing input channel observable as underlying channel has closed with an error");
-                                return Observable.empty();
-                            }
-                        });
-            }
-        });
-
         return new RetryableConnection<>(
                 channelSubject.asObservable(),
-                channelInputObservable,
                 lifecycle.asObservable(),
                 initSubject.asObservable(),
                 new Action0() {  // Why not perform this shutdown on an unsubscribe on the lifecycle?

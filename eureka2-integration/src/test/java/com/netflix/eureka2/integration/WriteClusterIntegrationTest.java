@@ -20,7 +20,9 @@ import rx.Observable;
 
 import static com.netflix.eureka2.interests.ChangeNotifications.batchMarkerFilter;
 import static com.netflix.eureka2.rx.RxBlocking.iteratorFrom;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotification;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.bufferingChangeNotification;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.modifyChangeNotificationOf;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -132,5 +134,17 @@ public class WriteClusterIntegrationTest {
 
         dataSourceClient.close();
         subscriberClient.close();
+    }
+
+    @Test
+    public void testWriteServerReturnsAvailableContentAsOneBatch() throws Exception {
+        EurekaClient subscriberClient = eurekaDeploymentResource.connectToWriteServer(0);
+
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
+        subscriberClient.forInterest(Interests.forFullRegistry()).subscribe(testSubscriber);
+
+        assertThat(testSubscriber.takeNextOrWait(), is(addChangeNotification()));
+        assertThat(testSubscriber.takeNextOrWait(), is(addChangeNotification()));
+        assertThat(testSubscriber.takeNextOrWait(), is(bufferingChangeNotification()));
     }
 }

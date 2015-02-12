@@ -1,5 +1,7 @@
 package com.netflix.eureka2.interests;
 
+import static com.netflix.eureka2.utils.Asserts.assertNonNull;
+
 /**
  * Change notification type, used internally only, that carries information about
  * which atomic interest subscription the state notification belongs to.
@@ -7,11 +9,24 @@ package com.netflix.eureka2.interests;
  * @author Tomasz Bak
  */
 public class StreamStateNotification<T> extends ChangeNotification<T> {
+
+    public enum BufferingState {Unknown, Buffer, FinishBuffering}
+
+    private final BufferingState bufferingState;
     private final Interest<T> interest;
 
-    protected StreamStateNotification(Kind kind, Interest<T> interest) {
-        super(kind, null);
+    public StreamStateNotification(BufferingState bufferingState, Interest<T> interest) {
+        super(Kind.BufferingSentinel, null);
+
+        assertNonNull(bufferingState, "batchingState");
+        assertNonNull(interest, "interest");
+
+        this.bufferingState = bufferingState;
         this.interest = interest;
+    }
+
+    public BufferingState getBufferingState() {
+        return bufferingState;
     }
 
     public Interest<T> getInterest() {
@@ -29,7 +44,9 @@ public class StreamStateNotification<T> extends ChangeNotification<T> {
 
         StreamStateNotification that = (StreamStateNotification) o;
 
-        if (interest != null ? !interest.equals(that.interest) : that.interest != null)
+        if (bufferingState != that.bufferingState)
+            return false;
+        if (!interest.equals(that.interest))
             return false;
 
         return true;
@@ -38,23 +55,24 @@ public class StreamStateNotification<T> extends ChangeNotification<T> {
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + (interest != null ? interest.hashCode() : 0);
+        result = 31 * result + bufferingState.hashCode();
+        result = 31 * result + interest.hashCode();
         return result;
     }
 
     @Override
     public String toString() {
         return "StreamStateNotification{" +
-                "kind=" + getKind() +
+                "batchingState=" + bufferingState +
                 ", interest=" + interest +
                 '}';
     }
 
     public static <T> StreamStateNotification<T> bufferNotification(Interest<T> interest) {
-        return new StreamStateNotification<>(Kind.Buffer, interest);
+        return new StreamStateNotification<>(BufferingState.Buffer, interest);
     }
 
     public static <T> StreamStateNotification<T> finishBufferingNotification(Interest<T> interest) {
-        return new StreamStateNotification<>(Kind.FinishBuffering, interest);
+        return new StreamStateNotification<>(BufferingState.FinishBuffering, interest);
     }
 }

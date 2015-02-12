@@ -19,6 +19,8 @@ package com.netflix.eureka2.server;
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.netflix.eureka2.config.EurekaRegistryConfig;
+import com.netflix.eureka2.interests.IndexRegistry;
+import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.SpectatorEurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
@@ -75,6 +77,7 @@ public class EurekaWriteServerModule extends AbstractModule {
             bind(WriteServerConfig.class).toInstance(config);
         }
 
+        bind(IndexRegistry.class).to(IndexRegistryImpl.class).asEagerSingleton();
         bind(SourcedEurekaRegistry.class).annotatedWith(Names.named("delegate")).to(SourcedEurekaRegistryImpl.class).asEagerSingleton();
         bind(SourcedEurekaRegistry.class).to(PreservableEurekaRegistry.class).asEagerSingleton();
         bind(EvictionQueue.class).to(EvictionQueueImpl.class).asEagerSingleton();

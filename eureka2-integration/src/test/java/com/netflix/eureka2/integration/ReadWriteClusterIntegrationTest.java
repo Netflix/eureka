@@ -2,6 +2,7 @@ package com.netflix.eureka2.integration;
 
 import java.util.concurrent.TimeUnit;
 
+import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
@@ -30,13 +31,17 @@ import static org.hamcrest.Matchers.is;
 public class ReadWriteClusterIntegrationTest {
 
     @Rule
-    public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResource(3, 6);
+    public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResource(1, 1);
 
     private EurekaClient eurekaClient;
     private InstanceInfo registeringInfo;
 
     @Before
     public void setup() {
+        eurekaClient = Eureka.newClientBuilder(
+                eurekaDeploymentResource.getEurekaDeployment().getReadCluster().discoveryResolver(),
+                eurekaDeploymentResource.getEurekaDeployment().getWriteCluster().registrationResolver()
+        ).build();
         eurekaClient = eurekaDeploymentResource.connectToEureka();
         registeringInfo = SampleInstanceInfo.CliServer.build();
     }

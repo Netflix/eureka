@@ -155,11 +155,6 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
         return toReturn;
     }
 
-    @Override
-    public Observable<ChangeNotification<InstanceInfo>> changeNotifications() {
-        throw new IllegalStateException("Operation not supported on the server");
-    }
-
     private void initializeNotificationMultiplexer() {
         notificationMultiplexer.changeNotifications().subscribe(
                 new Subscriber<ChangeNotification<InstanceInfo>>() {
@@ -219,8 +214,7 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
                     }
                 }
                 return toReturn;
-            case Buffer:
-            case FinishBuffering:
+            case BufferingSentinel:
                 return transport.submitWithAck(new StreamStateUpdate((StreamStateNotification<InstanceInfo>) notification));
         }
         return Observable.error(new IllegalArgumentException("Unknown change notification type: " +

@@ -49,17 +49,9 @@ public class RegistrationHandlerImpl implements RegistrationHandler {
                 return channel.register(instanceInfo);
             }
         };
-        Func1<RegistrationChannel, Observable<Void>> connectToInputChannel = new Func1<RegistrationChannel, Observable<Void>>() {
-            @Override
-            public Observable<Void> call(RegistrationChannel registrationChannel) {
-                return Observable.empty();
-            }
-        };
-        final RetryableConnection<RegistrationChannel, Void> retryableConnection
-                = retryableConnectionFactory.singleOpConnection(
+        final RetryableConnection<RegistrationChannel> retryableConnection = retryableConnectionFactory.singleOpConnection(
                 opStream,
-                executeOnChannel,
-                connectToInputChannel
+                executeOnChannel
         );
 
         Observable<Void> initObservable = retryableConnection.getInitObservable();

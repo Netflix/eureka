@@ -67,12 +67,21 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     private final EurekaRegistryMetrics metrics;
     private final NotifyingInstanceInfoHolder.NotificationTaskInvoker invoker;
 
-    @Inject
     public SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory metricsFactory) {
-        this(metricsFactory, Schedulers.computation());
+        this(metricsFactory, new IndexRegistryImpl<InstanceInfo>(), Schedulers.computation());
     }
 
     public SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory metricsFactory, Scheduler scheduler) {
+        this(metricsFactory, new IndexRegistryImpl<InstanceInfo>(), scheduler);
+    }
+
+    @Inject
+    public SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory metricsFactory, IndexRegistry indexRegistry) {
+        this(metricsFactory, indexRegistry, Schedulers.computation());
+    }
+
+    public SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory metricsFactory, IndexRegistry<InstanceInfo> indexRegistry, Scheduler scheduler) {
+        this.indexRegistry = indexRegistry;
         this.metrics = metricsFactory.getEurekaServerRegistryMetrics();
 
         invoker = new NotifyingInstanceInfoHolder.NotificationTaskInvoker(
@@ -80,7 +89,6 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
                 scheduler);
 
         internalStore = new ConcurrentHashMap<>();
-        indexRegistry = new IndexRegistryImpl<>();
         notificationSubject = NotificationsSubject.create();
 
         internalStoreAccessor = new MultiSourcedDataHolder.HolderStoreAccessor<NotifyingInstanceInfoHolder>() {

@@ -9,23 +9,17 @@ import com.netflix.eureka2.connection.RetryableConnection;
 import com.netflix.eureka2.connection.RetryableConnectionFactory;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.SourcedChangeNotification;
-import com.netflix.eureka2.interests.SourcedModifyNotification;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.utils.rx.NoOpSubscriber;
 import com.netflix.eureka2.utils.rx.RetryStrategyFunc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
-import rx.Observable.OnSubscribe;
 import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Func1;
-import rx.observables.ConnectableObservable;
-import rx.subjects.PublishSubject;
 import rx.functions.Func2;
 
 /**
@@ -48,9 +42,7 @@ public class InterestHandlerImpl implements InterestHandler {
     private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final InterestTracker interestTracker;
 
-    private final RetryableConnection<InterestChannel, ChangeNotification<InstanceInfo>> retryableConnection;
-    private final Observable<Boolean> channelStateChangeObservable;
-    private final BatchingTracker channelBatchingTracker;
+    private final RetryableConnection<InterestChannel> retryableConnection;
 
     @Inject
     public InterestHandlerImpl(SourcedEurekaRegistry<InstanceInfo> registry,
@@ -77,13 +69,7 @@ public class InterestHandlerImpl implements InterestHandler {
             }
         };
 
-        Func1<InterestChannel, Observable<ChangeNotification<InstanceInfo>>> connectToInputChannel = new Func1<InterestChannel, Observable<ChangeNotification<InstanceInfo>>>() {
-            @Override
-            public Observable<ChangeNotification<InstanceInfo>> call(InterestChannel interestChannel) {
-                return interestChannel.changeNotifications();
-            }
-        };
-        this.retryableConnection = retryableConnectionFactory.singleOpConnection(opStream, executeOnChannel, connectToInputChannel);
+        this.retryableConnection = retryableConnectionFactory.singleOpConnection(opStream, executeOnChannel);
 
         // subscribe to the base interest channels to do cleanup on every channel refresh.
         retryableConnection.getChannelObservable()
@@ -94,7 +80,7 @@ public class InterestHandlerImpl implements InterestHandler {
                             Source toRetain = ((Sourced) interestChannel).getSource();
                             return registry.evictAllExcept(toRetain);
                         }
-                       return Observable.empty();
+                        return Observable.empty();
                     }
                 })
                 .subscribe(new Subscriber<Long>() {
@@ -133,13 +119,6 @@ public class InterestHandlerImpl implements InterestHandler {
 
                     }
                 });
-
-        this.channelBatchingTracker = new BatchingTracker();
-        channelBatchingTracker.subscribeForCleanup(interestTracker.interestChangeStream());
-
-        this.channelStateChangeObservable = retryableConnection.getChannelInputObservable()
-                .map(channelBatchingTracker.markerUpdateFun()).share();
-        channelStateChangeObservable.subscribe(new NoOpSubscriber<>());
     }
 
     /**
@@ -163,7 +142,7 @@ public class InterestHandlerImpl implements InterestHandler {
 
         Observable toReturn = appendInterest
                 .cast(ChangeNotification.class)
-                .mergeWith(forInterestFromRegistry(interest))
+                .mergeWith(registry.forInterest(interest))
                 .doOnUnsubscribe(new Action0() {
                     @Override
                     public void call() {
@@ -172,57 +151,6 @@ public class InterestHandlerImpl implements InterestHandler {
                 });
 
         return toReturn;
-    }
-
-    /**
-     * Get interest stream from the registry, and additionally convert from sourced notifications to base notifications
-     * if necessary. We don't want to expose "sourced" types to client users, hence this convertion
-     */
-    private Observable<ChangeNotification<InstanceInfo>> forInterestFromRegistry(final Interest<InstanceInfo> interest) {
-        return Observable.create(new OnSubscribe<ChangeNotification<InstanceInfo>>() {
-            @Override
-            public void call(Subscriber<? super ChangeNotification<InstanceInfo>> subscriber) {
-                ConnectableObservable<ChangeNotification<InstanceInfo>> notifications = registry.forInterest(interest).publish();
-
-                BatchingTracker registryBatchingTracker = new BatchingTracker();
-                Observable<Boolean> registryStateChangeObservable = notifications.map(registryBatchingTracker.markerUpdateFun());
-
-                // Batching is defined by merge of batch hint from the registry and the channel
-                // As we connect to the hot channel stream stream, we send one item first to enforce channel batching state
-                // evaluation for this subscribing client.
-                Observable<ChangeNotification<InstanceInfo>> batchingNotifications = BatchingTracker.combine(
-                        Observable.just(Boolean.TRUE).concatWith(channelStateChangeObservable).map(channelBatchingTracker.batchingFun(interest)),
-                        registryStateChangeObservable.map(registryBatchingTracker.batchingFun(interest))
-                );
-
-                // Plain data change notification stream
-                Observable<ChangeNotification<InstanceInfo>> dataNotifications = notifications
-                        .filter(new Func1<ChangeNotification<InstanceInfo>, Boolean>() {
-                            @Override
-                            public Boolean call(ChangeNotification<InstanceInfo> notification) {
-                                return notification.isDataNotification();
-                            }
-                        }).map(new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
-                            @Override
-                            public ChangeNotification<InstanceInfo> call(ChangeNotification<InstanceInfo> notification) {
-                                if (notification instanceof SourcedChangeNotification) {
-                                    return ((SourcedChangeNotification<InstanceInfo>) notification).toBaseNotification();
-                                }
-                                if (notification instanceof SourcedModifyNotification) {
-                                    return ((SourcedModifyNotification<InstanceInfo>) notification).toBaseNotification();
-                                }
-                                return notification;
-                            }
-                        });
-
-                PublishSubject<ChangeNotification<InstanceInfo>> resultSubject = PublishSubject.create();
-                resultSubject.subscribe(subscriber);
-
-                batchingNotifications.subscribe(resultSubject);
-                dataNotifications.subscribe(resultSubject);
-                notifications.connect();
-            }
-        });
     }
 
     @Override

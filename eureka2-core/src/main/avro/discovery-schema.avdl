@@ -74,13 +74,13 @@ protocol DiscoveryProtocol {
         } deltaDTO;
     }
 
-    @namespace("com.netflix.eureka2.protocol.discovery.StreamStateUpdate$")
+    @namespace("com.netflix.eureka2.interests.StreamStateNotification$")
     enum BufferingState {
-        Buffer, FinishBuffering
+        Unknown, Buffer, FinishBuffering
     }
 
     record StreamStateUpdate {
-        com.netflix.eureka2.protocol.discovery.StreamStateUpdate$.BufferingState state;
+        com.netflix.eureka2.interests.StreamStateNotification$.BufferingState state;
         union {
             com.netflix.eureka2.interests.ApplicationInterest,
             com.netflix.eureka2.interests.FullRegistryInterest,

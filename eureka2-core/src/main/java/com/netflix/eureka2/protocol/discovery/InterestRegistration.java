@@ -17,6 +17,7 @@
 package com.netflix.eureka2.protocol.discovery;
 
 import com.netflix.eureka2.interests.Interest;
+import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 
@@ -51,6 +52,9 @@ public class InterestRegistration {
     }
 
     public Interest<InstanceInfo> toComposite() {
+        if(interests.length == 0) {
+            return Interests.forNone();
+        }
         if (interests.length > 1) {
             return new MultipleInterests<InstanceInfo>(interests);
         }

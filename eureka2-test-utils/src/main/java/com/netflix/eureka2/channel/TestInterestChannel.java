@@ -1,6 +1,5 @@
 package com.netflix.eureka2.channel;
 
-import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Sourced;
@@ -27,10 +26,5 @@ public class TestInterestChannel extends TestChannel<InterestChannel, Interest<I
             return ((Sourced) delegate).getSource();
         }
         return null;
-    }
-
-    @Override
-    public Observable<ChangeNotification<InstanceInfo>> changeNotifications() {
-        return delegate.changeNotifications();
     }
 }

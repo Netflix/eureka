@@ -7,7 +7,7 @@ package com.netflix.eureka2.interests;
  */
 public class ChangeNotification<T> {
 
-    public enum Kind {Add, Delete, Modify, Buffer, FinishBuffering}
+    public enum Kind {Add, Delete, Modify, BufferingSentinel}
 
     private final Kind kind;
     private final T data;

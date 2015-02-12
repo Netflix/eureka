@@ -12,20 +12,17 @@ import rx.functions.Action0;
  *
  * @author David Liu
  */
-public class RetryableConnection<CHANNEL, INPUT> {
+public class RetryableConnection<CHANNEL> {
     private final Observable<CHANNEL> channelObservable;
-    private final Observable<INPUT> channelInputObservable;
     private final Observable<Void> retryableLifecycle;
     private final Observable<Void> initObservable;
     private final Action0 shutdownHook;
 
     public RetryableConnection(Observable<CHANNEL> channelObservable,
-                               Observable<INPUT> channelInputObservable,
                                Observable<Void> retryableLifecycle,
                                Observable<Void> initObservable,
                                Action0 shutdownHook) {
         this.channelObservable = channelObservable;
-        this.channelInputObservable = channelInputObservable;
         this.retryableLifecycle = retryableLifecycle;
         this.initObservable = initObservable;
         this.shutdownHook = shutdownHook;
@@ -33,10 +30,6 @@ public class RetryableConnection<CHANNEL, INPUT> {
 
     public Observable<CHANNEL> getChannelObservable() {
         return channelObservable;
-    }
-
-    public Observable<INPUT> getChannelInputObservable() {
-        return channelInputObservable;
     }
 
     public Observable<Void> getRetryableLifecycle() {

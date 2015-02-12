@@ -2,14 +2,13 @@ package com.netflix.eureka2.protocol.discovery;
 
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.StreamStateNotification;
+import com.netflix.eureka2.interests.StreamStateNotification.BufferingState;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 
 /**
  * @author Tomasz Bak
  */
 public class StreamStateUpdate implements InterestSetNotification {
-
-    public enum BufferingState {Buffer, FinishBuffering}
 
     private final BufferingState state;
     private final Interest<InstanceInfo> interest;
@@ -21,16 +20,7 @@ public class StreamStateUpdate implements InterestSetNotification {
     }
 
     public StreamStateUpdate(StreamStateNotification<InstanceInfo> stateNotification) {
-        switch (stateNotification.getKind()) {
-            case Buffer:
-                this.state = BufferingState.Buffer;
-                break;
-            case FinishBuffering:
-                this.state = BufferingState.FinishBuffering;
-                break;
-            default:
-                throw new IllegalStateException("Unexpected ChangeNotification.Kind " + stateNotification.getKind());
-        }
+        this.state = stateNotification.getBufferingState();
         this.interest = stateNotification.getInterest();
     }
 

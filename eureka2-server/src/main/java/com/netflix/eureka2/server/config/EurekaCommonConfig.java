@@ -203,7 +203,7 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
         protected long connectionAutoTimeoutMs = DEFAULT_CONNECTION_AUTO_TIMEOUT_MS;
         protected Codec codec = Codec.Avro;
 
-        protected long evictionTimeoutMs;
+        protected long evictionTimeoutMs = DEFAULT_EVICTION_TIMEOUT;
         protected EvictionStrategyProvider.StrategyType evictionStrategyType;
         protected String evictionStrategyValue;
 

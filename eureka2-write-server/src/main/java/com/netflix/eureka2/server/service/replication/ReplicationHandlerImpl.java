@@ -14,7 +14,6 @@ import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.SenderReplicationChannelFactory;
 import com.netflix.eureka2.server.config.WriteServerConfig;
-import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.utils.rx.RetryStrategyFunc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +38,7 @@ public class ReplicationHandlerImpl implements ReplicationHandler {
     private final ChannelFactory<ReplicationChannel> channelFactory;
     private final int retryWaitMillis;
     private final SourcedEurekaRegistry<InstanceInfo> registry;
-    private final RetryableConnection<ReplicationChannel, Void> connection;
+    private final RetryableConnection<ReplicationChannel> connection;
     private final Subscriber<Void> replicationSubscriber;
     private final AtomicReference<STATE> stateRef;
 

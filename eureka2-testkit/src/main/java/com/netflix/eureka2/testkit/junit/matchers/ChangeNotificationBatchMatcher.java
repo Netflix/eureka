@@ -39,14 +39,14 @@ public class ChangeNotificationBatchMatcher<T> extends BaseMatcher<List<ChangeNo
         List<ChangeNotification<T>> actual = (List<ChangeNotification<T>>) item;
 
         // Verify there is buffer notification
-        if (actual.isEmpty() || actual.get(0).getKind() != Kind.Buffer) {
+        if (actual.isEmpty() || actual.get(0).getKind() != Kind.BufferingSentinel) {
             errorType = ErrorType.NoBuffer;
             return false;
         }
 
         // Verify there is finish buffering notification
         ChangeNotification<T> lastItem = actual.get(actual.size() - 1);
-        if (actual.size() == 1 || lastItem.getKind() != Kind.FinishBuffering) {
+        if (actual.size() == 1 || lastItem.getKind() != Kind.BufferingSentinel) {
             errorType = ErrorType.NoFinishBuffering;
             return false;
         }
@@ -77,7 +77,7 @@ public class ChangeNotificationBatchMatcher<T> extends BaseMatcher<List<ChangeNo
                 dataMatcher.describeTo(description);
                 break;
             case NoFinishBuffering:
-                description.appendText("Kind.FinishBuffering ChangeNotification expected as a last item");
+                description.appendText("Kind.BufferingSentinel ChangeNotification expected as a last item");
                 break;
         }
     }

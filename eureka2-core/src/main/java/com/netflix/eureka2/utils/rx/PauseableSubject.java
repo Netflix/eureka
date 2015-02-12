@@ -1,4 +1,4 @@
-package com.netflix.eureka2.interests;
+package com.netflix.eureka2.utils.rx;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -12,33 +12,31 @@ import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 
 /**
- * TODO This class has been moved to utils.rx package, where no longer assumes ChangeNotification type. This version must be removed.
- *
- * A special {@link Subject} implementation for {@link ChangeNotification}s. This has the capability to optionally
+ * A special {@link Subject} implementation that has the capability to optionally
  * start/stop caching on demand, i.e. publish of data to the subscribers will be paused after calling the method
  * {@link #pause()} and the same can be resumed after calling the method {@link #resume()}
  *
  * @author Nitesh Kant
  */
-public class NotificationsSubject<T> extends Subject<ChangeNotification<T>, ChangeNotification<T>> {
+public class PauseableSubject<T> extends Subject<T, T> {
 
     public enum ResumeResult {NotPaused, DuplicateResume, Resumed}
 
     private enum ResumeState {NotPaused, Resuming, Error}
 
-    private static final Logger logger = LoggerFactory.getLogger(NotificationsSubject.class);
+    private static final Logger logger = LoggerFactory.getLogger(PauseableSubject.class);
 
     private final AtomicInteger resumeState = new AtomicInteger(ResumeState.NotPaused.ordinal());
 
-    private AtomicBoolean paused;
-    private final Subject<ChangeNotification<T>, ChangeNotification<T>> notificationSubject;
+    private final AtomicBoolean paused;
+    private final Subject<T, T> notificationSubject;
     private final NotificationsSubjectSubscriber subscriber;
-    private final ConcurrentLinkedQueue<ChangeNotification<T>> notificationsWhenPaused; // TODO: See if this should be bounded.
+    private final ConcurrentLinkedQueue<T> notificationsWhenPaused; // TODO: See if this should be bounded.
     private volatile boolean completedWhenPaused;
     private volatile Throwable errorWhenPaused;
 
-    protected NotificationsSubject(OnSubscribe<ChangeNotification<T>> onSubscribe,
-                                   Subject<ChangeNotification<T>, ChangeNotification<T>> notificationSubject) {
+    protected PauseableSubject(OnSubscribe<T> onSubscribe,
+                               Subject<T, T> notificationSubject) {
         super(onSubscribe);
         subscriber = new NotificationsSubjectSubscriber();
         this.notificationSubject = notificationSubject;
@@ -46,11 +44,11 @@ public class NotificationsSubject<T> extends Subject<ChangeNotification<T>, Chan
         paused = new AtomicBoolean();
     }
 
-    public static <T> NotificationsSubject<T> create() {
-        final Subject<ChangeNotification<T>, ChangeNotification<T>> notificationSubject = PublishSubject.create();
-        return new NotificationsSubject<T>(new OnSubscribe<ChangeNotification<T>>() {
+    public static <T> PauseableSubject<T> create() {
+        final Subject<T, T> notificationSubject = PublishSubject.create();
+        return new PauseableSubject<T>(new OnSubscribe<T>() {
             @Override
-            public void call(Subscriber<? super ChangeNotification<T>> subscriber) {
+            public void call(Subscriber<? super T> subscriber) {
                 notificationSubject.subscribe(subscriber);
             }
         }, notificationSubject);
@@ -108,7 +106,7 @@ public class NotificationsSubject<T> extends Subject<ChangeNotification<T>, Chan
      * We can optimize it later by introducing FSM for state management.
      */
     private void drainBuffer() {
-        ChangeNotification<T> nextPolled;
+        T nextPolled;
         while ((nextPolled = notificationsWhenPaused.poll()) != null) {
             notificationSubject.onNext(nextPolled);
         }
@@ -125,18 +123,18 @@ public class NotificationsSubject<T> extends Subject<ChangeNotification<T>, Chan
     }
 
     @Override
-    public void onNext(ChangeNotification<T> notification) {
-        subscriber.onNext(notification);
+    public void onNext(T next) {
+        subscriber.onNext(next);
     }
 
     /**
-     * This makes sure that the {@link NotificationsSubject} follows Rx contracts i.e.
+     * This makes sure that the {@link PauseableSubject} follows Rx contracts i.e.
      * it does not honor onNext() after termination and onNext() error causes onError().
      */
-    private class NotificationsSubjectSubscriber extends SafeSubscriber<ChangeNotification<T>> {
+    private class NotificationsSubjectSubscriber extends SafeSubscriber<T> {
 
         public NotificationsSubjectSubscriber() {
-            super(new Subscriber<ChangeNotification<T>>() {
+            super(new Subscriber<T>() {
                 @Override
                 public void onCompleted() {
                     if (paused.get()) {
@@ -156,7 +154,7 @@ public class NotificationsSubject<T> extends Subject<ChangeNotification<T>, Chan
                 }
 
                 @Override
-                public void onNext(ChangeNotification<T> notification) {
+                public void onNext(T notification) {
                     if (paused.get()) {
                         notificationsWhenPaused.add(notification);
                     } else {

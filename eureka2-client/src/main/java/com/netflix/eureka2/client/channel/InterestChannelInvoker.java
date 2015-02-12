@@ -3,9 +3,8 @@ package com.netflix.eureka2.client.channel;
 import java.util.concurrent.Callable;
 
 import com.netflix.eureka2.channel.InterestChannel;
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.interests.Interest;
+import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.utils.SerializedTaskInvoker;
 import rx.Observable;
@@ -44,11 +43,6 @@ public class InterestChannelInvoker extends SerializedTaskInvoker implements Int
                 return "change: " + newInterest;
             }
         });
-    }
-
-    @Override
-    public Observable<ChangeNotification<InstanceInfo>> changeNotifications() {
-        return delegate.changeNotifications();
     }
 
     @Override

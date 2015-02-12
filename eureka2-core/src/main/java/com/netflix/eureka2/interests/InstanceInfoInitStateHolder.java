@@ -1,11 +1,11 @@
 package com.netflix.eureka2.interests;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
+import com.netflix.eureka2.interests.StreamStateNotification.BufferingState;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,8 +30,8 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
 
     public InstanceInfoInitStateHolder(Iterator<ChangeNotification<InstanceInfo>> initialRegistry, Interest<InstanceInfo> interest) {
         super(NotificationsSubject.<InstanceInfo>create());
-        this.bufferNotificaton = StreamStateNotification.bufferNotification(interest);
-        this.finishBufferingNotificaton = StreamStateNotification.finishBufferingNotification(interest);
+        this.bufferNotificaton = new StreamStateNotification<>(BufferingState.Buffer, interest);
+        this.finishBufferingNotificaton = new StreamStateNotification<>(BufferingState.FinishBuffering, interest);
         notificationMap = new ConcurrentHashMap<>();
 
         while (initialRegistry.hasNext()) {
@@ -60,7 +60,7 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
 
     @Override
     protected Iterator<ChangeNotification<InstanceInfo>> _newIterator() {
-        if(notificationMap.isEmpty()) {
+        if (notificationMap.isEmpty()) {
             return Collections.emptyIterator();
         }
         return concat(

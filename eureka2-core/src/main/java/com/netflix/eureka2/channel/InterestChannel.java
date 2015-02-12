@@ -36,13 +36,4 @@ public interface InterestChannel extends ServiceChannel {
      * @return An acknowledgment for this change.
      */
     Observable<Void> change(Interest<InstanceInfo> newInterest);
-
-    /**
-     * Observable of change notification data sent over the channel.
-     *
-     * @return observable that returns {@link ChangeNotification} objects passed through the channel.
-     *         If the channel is closed gracefully, this observable completes with onCompleted.
-     *         If the channel is closed with an error, the error is propagated to subscribed clients.
-     */
-    Observable<ChangeNotification<InstanceInfo>> changeNotifications();
 }
