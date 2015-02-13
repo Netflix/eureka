@@ -5,7 +5,7 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
-import com.netflix.eureka2.interests.StreamStateNotification.BufferingState;
+import com.netflix.eureka2.interests.StreamStateNotification.BufferState;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,13 +25,13 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
     private static final Logger logger = LoggerFactory.getLogger(InstanceInfoInitStateHolder.class);
 
     private final ConcurrentHashMap<String, ChangeNotification<InstanceInfo>> notificationMap;
-    private final ChangeNotification<InstanceInfo> bufferNotificaton;
-    private final ChangeNotification<InstanceInfo> finishBufferingNotificaton;
+    private final ChangeNotification<InstanceInfo> bufferStartNotificaton;
+    private final ChangeNotification<InstanceInfo> bufferEndNotificaton;
 
     public InstanceInfoInitStateHolder(Iterator<ChangeNotification<InstanceInfo>> initialRegistry, Interest<InstanceInfo> interest) {
         super(NotificationsSubject.<InstanceInfo>create());
-        this.bufferNotificaton = new StreamStateNotification<>(BufferingState.Buffer, interest);
-        this.finishBufferingNotificaton = new StreamStateNotification<>(BufferingState.FinishBuffering, interest);
+        this.bufferStartNotificaton = new StreamStateNotification<>(BufferState.BufferStart, interest);
+        this.bufferEndNotificaton = new StreamStateNotification<>(BufferState.BufferEnd, interest);
         notificationMap = new ConcurrentHashMap<>();
 
         while (initialRegistry.hasNext()) {
@@ -64,9 +64,9 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
             return Collections.emptyIterator();
         }
         return concat(
-                singletonIterator(bufferNotificaton),
+                singletonIterator(bufferStartNotificaton),
                 notificationMap.values().iterator(),
-                singletonIterator(finishBufferingNotificaton)
+                singletonIterator(bufferEndNotificaton)
         );
     }
 

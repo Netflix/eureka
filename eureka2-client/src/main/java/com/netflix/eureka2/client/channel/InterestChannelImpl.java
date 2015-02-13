@@ -12,7 +12,7 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.ModifyNotification;
 import com.netflix.eureka2.interests.StreamStateNotification;
-import com.netflix.eureka2.interests.StreamStateNotification.BufferingState;
+import com.netflix.eureka2.interests.StreamStateNotification.BufferState;
 import com.netflix.eureka2.metric.InterestChannelMetrics;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.DeleteInstance;
@@ -31,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
-import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.observers.SafeSubscriber;
 
@@ -117,7 +116,7 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
                 } else if (moveToState(STATE.Idle, STATE.Open)) {
                     logger.debug("First time registration: {}", newInterest);
                     channelInterestStream.subscribe(channelInterestSubscriber);
-                    remoteBatchingRegistry.subscribe(channelInterestStream);
+                    remoteBatchingRegistry.connectTo(channelInterestStream);
                 } else {
                     logger.debug("Channel changes: {}", newInterest);
                 }
@@ -175,11 +174,6 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
                     @Override
                     public Boolean call(ChangeNotification<InstanceInfo> notification) {
                         return null != notification;
-                    }
-                }).doOnTerminate(new Action0() {
-                    @Override
-                    public void call() {
-                        System.out.println("DONE");
                     }
                 });
             }
@@ -255,8 +249,8 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
     }
 
     private ChangeNotification<InstanceInfo> streamStateUpdateToStreamStateNotification(StreamStateUpdate notification) {
-        BufferingState state = notification.getState();
-        if (state == BufferingState.Buffer || state == BufferingState.FinishBuffering) {
+        BufferState state = notification.getState();
+        if (state == BufferState.BufferStart || state == BufferState.BufferEnd) {
             return new StreamStateNotification<InstanceInfo>(state, notification.getInterest());
         }
         throw new IllegalStateException("Unexpected state " + state);
@@ -287,7 +281,7 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
                         case Delete:
                             registry.unregister(notification.getData(), selfSource);
                             break;
-                        case BufferingSentinel:
+                        case BufferSentinel:
                             // No-op
                             break;
                         default:

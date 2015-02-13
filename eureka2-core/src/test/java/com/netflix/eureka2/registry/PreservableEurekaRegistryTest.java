@@ -122,8 +122,8 @@ public class PreservableEurekaRegistryTest {
 
         when(baseRegistry.unregister(DISCOVERY, remoteSource)).thenReturn(Observable.just(true));
         // Now evict item, and check that nothing is requested
-        evict(DISCOVERY, remoteSource, 0);
-        verify(baseRegistry, times(0)).unregister(DISCOVERY, remoteSource);
+        evict(DISCOVERY, remoteSource, -1);
+        verify(baseRegistry, times(1)).unregister(DISCOVERY, remoteSource);
 
         assertThat(requestedEvictedItems.get(), is(equalTo(0L)));
 
@@ -207,11 +207,12 @@ public class PreservableEurekaRegistryTest {
     @Test(timeout = 60000)
     public void testMetrics() throws Exception {
         // Add one item to the registry
-        when(baseRegistry.register(DISCOVERY, localSource)).thenReturn(Observable.just(true));
-        preservableRegistry.register(DISCOVERY, localSource);
+        when(baseRegistry.register(DISCOVERY, remoteSource)).thenReturn(Observable.just(true));
+        when(baseRegistry.unregister(DISCOVERY, remoteSource)).thenReturn(Observable.just(true));
+        preservableRegistry.register(DISCOVERY, remoteSource);
 
-        // Try to evict the item, forcing entering self preservation mode
-        evict(DISCOVERY, remoteSource, 0);
+        // Try to evict the items, forcing entering self preservation mode
+        evict(DISCOVERY, remoteSource, -1);
         verify(registryMetrics, times(1)).setSelfPreservation(true);
 
         // Now add one more item to the registry, and simulate leaving self preservation mode

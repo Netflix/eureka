@@ -47,7 +47,7 @@ public class EurekaServerResolverTest {
     private static final ChangeNotification<InstanceInfo> ADD_INSTANCE_1 = new ChangeNotification<>(ChangeNotification.Kind.Add, INSTANCE_1);
     private static final ChangeNotification<InstanceInfo> DELETE_INSTANCE_1 = new ChangeNotification<>(ChangeNotification.Kind.Delete, INSTANCE_1);
     private static final ChangeNotification<InstanceInfo> ADD_INSTANCE_2 = new ChangeNotification<>(ChangeNotification.Kind.Add, INSTANCE_2);
-    private static final ChangeNotification<InstanceInfo> BUFFERING_SENTINEL = ChangeNotification.bufferingSentinel();
+    private static final ChangeNotification<InstanceInfo> BUFFERING_SENTINEL = ChangeNotification.bufferSentinel();
 
     private final EurekaClientBuilder eurekaClientBuilder = mock(EurekaClientBuilder.class);
     private final EurekaClient eurekaClient = mock(EurekaClient.class);
@@ -81,7 +81,7 @@ public class EurekaServerResolverTest {
         firstResolveWith(INSTANCE_1);
 
         // Delete instance1 and add instance 2.
-        when(eurekaClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(Observable.just(DELETE_INSTANCE_1, ADD_INSTANCE_2, ChangeNotification.<InstanceInfo>bufferingSentinel()));
+        when(eurekaClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(Observable.just(DELETE_INSTANCE_1, ADD_INSTANCE_2, ChangeNotification.<InstanceInfo>bufferSentinel()));
 
         assertResolvesTo(INSTANCE_2);
         assertResolvesTo(INSTANCE_2);
@@ -110,7 +110,7 @@ public class EurekaServerResolverTest {
         when(eurekaClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(
                 Observable.just(
                         new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Add, instance),
-                        ChangeNotification.<InstanceInfo>bufferingSentinel()
+                        ChangeNotification.<InstanceInfo>bufferSentinel()
                 )
         );
         assertResolvesTo(instance);

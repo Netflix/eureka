@@ -18,7 +18,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
  */
 public class ChangeNotificationBatchMatcher<T> extends BaseMatcher<List<ChangeNotification<T>>> {
 
-    enum ErrorType {NoError, InvalidArgument, NoBuffer, NotMatchingData, NoFinishBuffering}
+    enum ErrorType {NoError, InvalidArgument, NoBufferStart, NotMatchingData, NoBufferEnd}
 
     private final List<ChangeNotification<T>> expectedData;
     private Object actualObject;
@@ -39,15 +39,15 @@ public class ChangeNotificationBatchMatcher<T> extends BaseMatcher<List<ChangeNo
         List<ChangeNotification<T>> actual = (List<ChangeNotification<T>>) item;
 
         // Verify there is buffer notification
-        if (actual.isEmpty() || actual.get(0).getKind() != Kind.BufferingSentinel) {
-            errorType = ErrorType.NoBuffer;
+        if (actual.isEmpty() || actual.get(0).getKind() != Kind.BufferSentinel) {
+            errorType = ErrorType.NoBufferStart;
             return false;
         }
 
         // Verify there is finish buffering notification
         ChangeNotification<T> lastItem = actual.get(actual.size() - 1);
-        if (actual.size() == 1 || lastItem.getKind() != Kind.BufferingSentinel) {
-            errorType = ErrorType.NoFinishBuffering;
+        if (actual.size() == 1 || lastItem.getKind() != Kind.BufferSentinel) {
+            errorType = ErrorType.NoBufferEnd;
             return false;
         }
 
@@ -70,14 +70,14 @@ public class ChangeNotificationBatchMatcher<T> extends BaseMatcher<List<ChangeNo
             case InvalidArgument:
                 description.appendText("Unexpected type " + actualObject.getClass());
                 break;
-            case NoBuffer:
-                description.appendText("Kind.Buffer ChangeNotification expected as a first item");
+            case NoBufferStart:
+                description.appendText("Kind.BufferStart ChangeNotification expected as a first item");
                 break;
             case NotMatchingData:
                 dataMatcher.describeTo(description);
                 break;
-            case NoFinishBuffering:
-                description.appendText("Kind.BufferingSentinel ChangeNotification expected as a last item");
+            case NoBufferEnd:
+                description.appendText("Kind.BufferSentinel ChangeNotification expected as a last item");
                 break;
         }
     }

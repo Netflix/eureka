@@ -40,7 +40,7 @@ public final class EurekaMatchers {
     }
 
     public static Matcher<ChangeNotification<InstanceInfo>> bufferingChangeNotification() {
-        return new ChangeNotificationKindMatcher(Kind.BufferingSentinel);
+        return new ChangeNotificationKindMatcher(Kind.BufferSentinel);
     }
 
     public static <T> Matcher<List<ChangeNotification<T>>> changeNotificationBatchOf(List<ChangeNotification<T>> dataNotifications) {

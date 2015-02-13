@@ -36,7 +36,7 @@ public final class ChangeNotificationFunctions {
                     @Override
                     public List<ChangeNotification<T>> call(ChangeNotification<T> notification) {
                         List<ChangeNotification<T>> buffer = bufferRef.get();
-                        if (notification.getKind() == Kind.BufferingSentinel) {
+                        if (notification.getKind() == Kind.BufferSentinel) {
                             bufferRef.set(null);
                             return buffer;
                         }

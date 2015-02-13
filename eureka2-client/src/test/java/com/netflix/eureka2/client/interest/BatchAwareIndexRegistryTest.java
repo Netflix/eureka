@@ -17,6 +17,7 @@ import rx.subjects.PublishSubject;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -46,7 +47,7 @@ public class BatchAwareIndexRegistryTest {
 
     @Before
     public void setUp() throws Exception {
-        remoteBatchingRegistry.subscribe(remoteBatchingHintsSubject);
+        remoteBatchingRegistry.connectTo(remoteBatchingHintsSubject);
 
         when(delegateIndexRegistry.forInterest(any(Interest.class), any(Observable.class), any(InitStateHolder.class)))
                 .thenReturn(notificationSubject);
@@ -128,38 +129,73 @@ public class BatchAwareIndexRegistryTest {
     public void testCompositeWithColdCacheAndDataInChannel() throws Exception {
         indexRegistry.forInterest(INTEREST_AB, null, null).subscribe(testSubscriber);
 
-        notificationSubject.onNext(StreamStateNotification.bufferNotification(INTEREST_AB));
+        notificationSubject.onNext(StreamStateNotification.bufferStartNotification(INTEREST_AB));
 
         sendRemoteBatch(ATOMIC_INTEREST_A, DATA_NOTIFICATION, DATA_NOTIFICATION);
         verifyReceivedBatch(DATA_NOTIFICATION, DATA_NOTIFICATION);
 
         sendRemoteBatch(ATOMIC_INTEREST_A, DATA_NOTIFICATION, DATA_NOTIFICATION);
         verifyReceivedBatch(DATA_NOTIFICATION, DATA_NOTIFICATION);
+    }
+
+    /**
+     * Generate BufferStart hints at the same time from two sources. There are two items in
+     * cache, and two on the server.
+     * <p>
+     * Expected behavior: single batch with four elements
+     */
+    @Test
+    public void testOverlappingBufferHintsFromCacheAndChannel() throws Exception {
+        indexRegistry.forInterest(ATOMIC_INTEREST_A, null, null).subscribe(testSubscriber);
+
+        // Mark BatchStart
+        notificationSubject.onNext(StreamStateNotification.bufferStartNotification(ATOMIC_INTEREST_A));
+        remoteBatchingHintsSubject.onNext(StreamStateNotification.bufferStartNotification(ATOMIC_INTEREST_A));
+
+        // Send data from cache followed by BufferEnd marker
+        sendData(DATA_NOTIFICATION, DATA_NOTIFICATION);
+        notificationSubject.onNext(StreamStateNotification.bufferEndNotification(ATOMIC_INTEREST_A));
+
+        verifyReceivedData(DATA_NOTIFICATION, DATA_NOTIFICATION);
+        assertThat(testSubscriber.takeNext(), is(nullValue())); // Check sentinel was not sent
+
+        // Send data from server followed by BufferEnd marker
+        sendData(DATA_NOTIFICATION, DATA_NOTIFICATION);
+        remoteBatchingHintsSubject.onNext(StreamStateNotification.bufferEndNotification(ATOMIC_INTEREST_A));
+
+        verifyReceivedData(DATA_NOTIFICATION, DATA_NOTIFICATION);
+        remoteBatchingHintsSubject.onNext(StreamStateNotification.bufferEndNotification(ATOMIC_INTEREST_A));
     }
 
     @SafeVarargs
     private final void sendLocalBatch(Interest<InstanceInfo> interest, ChangeNotification<InstanceInfo>... dataNotifications) {
-        notificationSubject.onNext(StreamStateNotification.bufferNotification(interest));
+        notificationSubject.onNext(StreamStateNotification.bufferStartNotification(interest));
+        sendData(dataNotifications);
+        notificationSubject.onNext(StreamStateNotification.bufferEndNotification(interest));
+    }
+
+    private void sendData(ChangeNotification<InstanceInfo>... dataNotifications) {
         for (ChangeNotification<InstanceInfo> n : dataNotifications) {
             notificationSubject.onNext(n);
         }
-        notificationSubject.onNext(StreamStateNotification.finishBufferingNotification(interest));
     }
 
     @SafeVarargs
     private final void sendRemoteBatch(Interest<InstanceInfo> interest, ChangeNotification<InstanceInfo>... dataNotifications) {
-        remoteBatchingHintsSubject.onNext(StreamStateNotification.bufferNotification(interest));
-        for (ChangeNotification<InstanceInfo> n : dataNotifications) {
-            notificationSubject.onNext(n);
-        }
-        remoteBatchingHintsSubject.onNext(StreamStateNotification.finishBufferingNotification(interest));
+        remoteBatchingHintsSubject.onNext(StreamStateNotification.bufferStartNotification(interest));
+        sendData(dataNotifications);
+        remoteBatchingHintsSubject.onNext(StreamStateNotification.bufferEndNotification(interest));
     }
 
     @SafeVarargs
     private final void verifyReceivedBatch(ChangeNotification<InstanceInfo>... dataNotifications) {
+        verifyReceivedData(dataNotifications);
+        assertThat(testSubscriber.takeNextOrFail().getKind(), is(equalTo(Kind.BufferSentinel)));
+    }
+
+    private void verifyReceivedData(ChangeNotification<InstanceInfo>... dataNotifications) {
         for (ChangeNotification<InstanceInfo> n : dataNotifications) {
             assertThat(testSubscriber.takeNextOrFail(), is(equalTo(n)));
         }
-        assertThat(testSubscriber.takeNextOrFail().getKind(), is(equalTo(Kind.BufferingSentinel)));
     }
 }

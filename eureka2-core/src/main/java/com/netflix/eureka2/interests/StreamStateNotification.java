@@ -10,23 +10,23 @@ import static com.netflix.eureka2.utils.Asserts.assertNonNull;
  */
 public class StreamStateNotification<T> extends ChangeNotification<T> {
 
-    public enum BufferingState {Unknown, Buffer, FinishBuffering}
+    public enum BufferState {Unknown, BufferStart, BufferEnd}
 
-    private final BufferingState bufferingState;
+    private final BufferState bufferState;
     private final Interest<T> interest;
 
-    public StreamStateNotification(BufferingState bufferingState, Interest<T> interest) {
-        super(Kind.BufferingSentinel, null);
+    public StreamStateNotification(BufferState bufferState, Interest<T> interest) {
+        super(Kind.BufferSentinel, null);
 
-        assertNonNull(bufferingState, "batchingState");
+        assertNonNull(bufferState, "batchingState");
         assertNonNull(interest, "interest");
 
-        this.bufferingState = bufferingState;
+        this.bufferState = bufferState;
         this.interest = interest;
     }
 
-    public BufferingState getBufferingState() {
-        return bufferingState;
+    public BufferState getBufferState() {
+        return bufferState;
     }
 
     public Interest<T> getInterest() {
@@ -44,7 +44,7 @@ public class StreamStateNotification<T> extends ChangeNotification<T> {
 
         StreamStateNotification that = (StreamStateNotification) o;
 
-        if (bufferingState != that.bufferingState)
+        if (bufferState != that.bufferState)
             return false;
         if (!interest.equals(that.interest))
             return false;
@@ -55,7 +55,7 @@ public class StreamStateNotification<T> extends ChangeNotification<T> {
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + bufferingState.hashCode();
+        result = 31 * result + bufferState.hashCode();
         result = 31 * result + interest.hashCode();
         return result;
     }
@@ -63,16 +63,16 @@ public class StreamStateNotification<T> extends ChangeNotification<T> {
     @Override
     public String toString() {
         return "StreamStateNotification{" +
-                "batchingState=" + bufferingState +
+                "batchingState=" + bufferState +
                 ", interest=" + interest +
                 '}';
     }
 
-    public static <T> StreamStateNotification<T> bufferNotification(Interest<T> interest) {
-        return new StreamStateNotification<>(BufferingState.Buffer, interest);
+    public static <T> StreamStateNotification<T> bufferStartNotification(Interest<T> interest) {
+        return new StreamStateNotification<>(BufferState.BufferStart, interest);
     }
 
-    public static <T> StreamStateNotification<T> finishBufferingNotification(Interest<T> interest) {
-        return new StreamStateNotification<>(BufferingState.FinishBuffering, interest);
+    public static <T> StreamStateNotification<T> bufferEndNotification(Interest<T> interest) {
+        return new StreamStateNotification<>(BufferState.BufferEnd, interest);
     }
 }

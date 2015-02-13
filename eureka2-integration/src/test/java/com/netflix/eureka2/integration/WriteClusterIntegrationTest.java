@@ -18,7 +18,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import rx.Observable;
 
-import static com.netflix.eureka2.interests.ChangeNotifications.batchMarkerFilter;
+import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
 import static com.netflix.eureka2.rx.RxBlocking.iteratorFrom;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotification;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
@@ -62,7 +62,7 @@ public class WriteClusterIntegrationTest {
         firstClient.register(clientInfo).toBlocking().firstOrDefault(null);
 
         // Subscribe to second write server
-        Observable<ChangeNotification<InstanceInfo>> notifications = secondClient.forApplication(clientInfo.getApp()).filter(batchMarkerFilter());
+        Observable<ChangeNotification<InstanceInfo>> notifications = secondClient.forApplication(clientInfo.getApp()).filter(dataOnlyFilter());
         Iterator<ChangeNotification<InstanceInfo>> notificationIterator = iteratorFrom(10, TimeUnit.SECONDS, notifications);
 
         assertThat(notificationIterator.next(), is(addChangeNotificationOf(clientInfo)));
@@ -87,7 +87,7 @@ public class WriteClusterIntegrationTest {
 
         // Subscribe to second write server
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
-        discoveryClient.forApplication(infos.get(0).getApp()).filter(batchMarkerFilter()).subscribe(testSubscriber);
+        discoveryClient.forApplication(infos.get(0).getApp()).filter(dataOnlyFilter()).subscribe(testSubscriber);
 
         // We need to wait for notification after each registry update, to avoid compaction
         // on the way.
@@ -121,7 +121,7 @@ public class WriteClusterIntegrationTest {
 
         // Subscribe to get current registry content
         Observable<ChangeNotification<InstanceInfo>> notifications =
-                subscriberClient.forInterest(Interests.forApplications(firstRecord.getApp())).filter(batchMarkerFilter());
+                subscriberClient.forInterest(Interests.forApplications(firstRecord.getApp())).filter(dataOnlyFilter());
         Iterator<ChangeNotification<InstanceInfo>> notificationIterator = iteratorFrom(5, TimeUnit.SECONDS, notifications);
 
         assertThat(notificationIterator.next(), is(addChangeNotificationOf(firstRecord)));

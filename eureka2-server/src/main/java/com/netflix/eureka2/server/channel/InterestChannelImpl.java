@@ -168,7 +168,7 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
                     }
                 }
                 return toReturn;
-            case BufferingSentinel:
+            case BufferSentinel:
                 return transport.submitWithAck(new StreamStateUpdate((StreamStateNotification<InstanceInfo>) notification));
         }
         return Observable.error(new IllegalArgumentException("Unknown change notification type: " +

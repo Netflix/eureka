@@ -39,16 +39,16 @@ public class ChangeNotificationFunctionsTest {
         // Emit batch of two
         notificationSubject.onNext(ADD_A);
         notificationSubject.onNext(ADD_B);
-        notificationSubject.onNext(ChangeNotification.<String>bufferingSentinel());
+        notificationSubject.onNext(ChangeNotification.<String>bufferSentinel());
         assertThat(testSubscriber.takeNext().size(), is(equalTo(2)));
 
         // Emit batch of 1
         notificationSubject.onNext(ADD_C);
-        notificationSubject.onNext(ChangeNotification.<String>bufferingSentinel());
+        notificationSubject.onNext(ChangeNotification.<String>bufferSentinel());
         assertThat(testSubscriber.takeNext().size(), is(equalTo(1)));
 
         // Ensure empty batches are not emitted
-        notificationSubject.onNext(ChangeNotification.<String>bufferingSentinel());
+        notificationSubject.onNext(ChangeNotification.<String>bufferSentinel());
         assertThat(testSubscriber.takeNext(), is(nullValue()));
     }
 

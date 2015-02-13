@@ -34,6 +34,7 @@ import static org.mockito.Mockito.when;
 public class InterestChannelImplTest {
 
     public static final Interest<InstanceInfo> CLIENT_INTEREST = Interests.forFullRegistry();
+    public static final Interest<InstanceInfo> SNAPSHOT_INTEREST = Interests.forFullRegistry();
 
     private final SourcedEurekaRegistry<InstanceInfo> registry = mock(SourcedEurekaRegistry.class);
     private final ServerInterestChannelMetrics interestChannelMetrics = mock(ServerInterestChannelMetrics.class);
@@ -64,13 +65,13 @@ public class InterestChannelImplTest {
 
         // Trigger buffer state change notification
         StreamStateNotification<InstanceInfo> stateNotification =
-                StreamStateNotification.bufferNotification(CLIENT_INTEREST);
+                StreamStateNotification.bufferStartNotification(CLIENT_INTEREST);
 
         notificationSubject.onNext(stateNotification);
         verify(connection, times(1)).submitWithAck(new StreamStateUpdate(stateNotification));
 
-        // Trigger finishBuffering state change notification
-        stateNotification = StreamStateNotification.finishBufferingNotification(CLIENT_INTEREST);
+        // Trigger BufferEnd state change notification
+         stateNotification = StreamStateNotification.bufferEndNotification(CLIENT_INTEREST);
 
         notificationSubject.onNext(stateNotification);
         verify(connection, times(1)).submitWithAck(new StreamStateUpdate(stateNotification));

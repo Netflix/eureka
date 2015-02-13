@@ -462,8 +462,6 @@ public class RetryableConnectionFactoryTest {
     static class FailableChannelImpl extends AbstractServiceChannel<FailableChannelImpl.SimpleState> implements FailableChannel {
         public enum SimpleState {SimpleState}
 
-        ;
-
         public final AtomicBoolean closed = new AtomicBoolean(false);
         public final ConcurrentLinkedQueue<WorkAndResult> results = new ConcurrentLinkedQueue<>();
 

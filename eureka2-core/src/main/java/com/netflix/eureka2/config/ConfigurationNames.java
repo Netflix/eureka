@@ -6,7 +6,7 @@ package com.netflix.eureka2.config;
  * @author David Liu
  */
 public final class ConfigurationNames {
-    private static final String EUREKA_PREFIX = "eurekas.";
+    private static final String EUREKA_PREFIX = "eureka.";
 
     public final class TransportNames {
         private static final String PREFIX = "transport.";
