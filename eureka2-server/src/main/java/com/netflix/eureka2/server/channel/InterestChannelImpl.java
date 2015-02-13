@@ -3,11 +3,9 @@ package com.netflix.eureka2.server.channel;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.channel.InterestChannel.STATE;
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.interests.ModifyNotification;
-import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics;
 import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics.ChannelSubscriptionMonitor;
@@ -15,8 +13,6 @@ import com.netflix.eureka2.protocol.EurekaProtocolError;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.DeleteInstance;
 import com.netflix.eureka2.protocol.discovery.InterestRegistration;
-import com.netflix.eureka2.protocol.discovery.SnapshotComplete;
-import com.netflix.eureka2.protocol.discovery.SnapshotRegistration;
 import com.netflix.eureka2.protocol.discovery.StreamStateUpdate;
 import com.netflix.eureka2.protocol.discovery.UnregisterInterestSet;
 import com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo;
@@ -42,8 +38,6 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
 
     private static final Logger logger = LoggerFactory.getLogger(InterestChannelImpl.class);
 
-    private static final Exception SNAPSHOT_REQUEST_NOT_ALLOWED = new Exception("Snapshot subscription not allowed on active channel");
-
     private final ServerInterestChannelMetrics metrics;
 
     private final InterestNotificationMultiplexer notificationMultiplexer;
@@ -63,23 +57,7 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
                  * invocation), we do not need to worry about thread safety here and hence we can safely do a
                  * isRegistered -> register kind of actions without worrying about race conditions.
                  */
-                if (message instanceof SnapshotRegistration) {
-                    switch (state.get()) {
-                        case Idle:
-                            moveToState(STATE.Idle, STATE.Open);
-
-                            sendSnapshot(((SnapshotRegistration) message).getInterests());
-
-                            moveToState(STATE.Closed);
-                            break;
-                        case Open:
-                            sendErrorOnTransport(SNAPSHOT_REQUEST_NOT_ALLOWED);
-                            break;
-                        case Closed:
-                            sendErrorOnTransport(CHANNEL_CLOSED_EXCEPTION);
-                            break;
-                    }
-                } else if (message instanceof InterestRegistration) {
+                if (message instanceof InterestRegistration) {
                     Interest<InstanceInfo> interest = ((InterestRegistration) message).toComposite();
                     switch (state.get()) {
                         case Idle:
@@ -104,30 +82,6 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
                 } else {
                     sendErrorOnTransport(new EurekaProtocolError("Unexpected message " + message));
                 }
-            }
-        });
-    }
-
-    private void sendSnapshot(Interest<InstanceInfo>[] interests) {
-        Observable<Void> toReturn = transport.acknowledge();
-        subscribeToTransportSend(toReturn, "acknowledgment(SnapshotRegistration)");
-
-        registry.forSnapshot(new MultipleInterests<InstanceInfo>(interests)).subscribe(new Subscriber<InstanceInfo>() {
-            @Override
-            public void onCompleted() {
-                logger.debug("Snapshot stream from registry completed. Sending SnapshotComplete to the client");
-                Observable<Void> sendResult = transport.submit(SnapshotComplete.INSTANCE);
-                subscribeToTransportSend(sendResult, "snapshotCompleted");
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                logger.error("Snapshot subscription stream terminated due to an error", e);
-            }
-
-            @Override
-            public void onNext(InstanceInfo instanceInfo) {
-                handleChangeNotification(new ChangeNotification<InstanceInfo>(Kind.Add, instanceInfo));
             }
         });
     }
@@ -178,7 +132,7 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
     }
 
     protected void handleChangeNotification(ChangeNotification<InstanceInfo> notification) {
-        if(notification.isDataNotification()) {
+        if (notification.isDataNotification()) {
             metrics.incrementApplicationNotificationCounter(notification.getData().getApp());
         }
         Observable<Void> sendResult = sendNotification(notification);
