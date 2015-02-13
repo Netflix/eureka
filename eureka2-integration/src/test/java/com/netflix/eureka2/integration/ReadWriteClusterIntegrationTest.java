@@ -2,6 +2,7 @@ package com.netflix.eureka2.integration;
 
 import java.util.concurrent.TimeUnit;
 
+import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
@@ -17,6 +18,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import rx.observers.TestSubscriber;
 
+import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -36,6 +38,10 @@ public class ReadWriteClusterIntegrationTest {
 
     @Before
     public void setup() {
+        eurekaClient = Eureka.newClientBuilder(
+                eurekaDeploymentResource.getEurekaDeployment().getReadCluster().discoveryResolver(),
+                eurekaDeploymentResource.getEurekaDeployment().getWriteCluster().registrationResolver()
+        ).build();
         eurekaClient = eurekaDeploymentResource.connectToEureka();
         registeringInfo = SampleInstanceInfo.CliServer.build();
     }
@@ -49,7 +55,9 @@ public class ReadWriteClusterIntegrationTest {
     public void testReadServerFetchesDataFromWriteServerRegistry() throws Exception {
         // Listen to interest stream updates
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> notificationSubscriber = new ExtTestSubscriber<>();
-        eurekaClient.forInterest(Interests.forApplications(registeringInfo.getApp())).subscribe(notificationSubscriber);
+        eurekaClient.forInterest(Interests.forApplications(registeringInfo.getApp()))
+                .filter(dataOnlyFilter())
+                .subscribe(notificationSubscriber);
 
         // Register
         TestSubscriber<Void> registrationSubscriber = new TestSubscriber<>();

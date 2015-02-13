@@ -17,7 +17,6 @@
 package com.netflix.eureka2.server.channel;
 
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.EmptyRegistryInterest;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;

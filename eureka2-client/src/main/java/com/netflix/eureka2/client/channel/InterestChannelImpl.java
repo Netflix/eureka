@@ -7,15 +7,18 @@ import java.util.Map;
 import com.netflix.eureka2.channel.AbstractClientChannel;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.channel.InterestChannel.STATE;
+import com.netflix.eureka2.client.interest.BatchingRegistry;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.ModifyNotification;
-import com.netflix.eureka2.interests.MultipleInterests;
+import com.netflix.eureka2.interests.StreamStateNotification;
+import com.netflix.eureka2.interests.StreamStateNotification.BufferState;
 import com.netflix.eureka2.metric.InterestChannelMetrics;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.DeleteInstance;
 import com.netflix.eureka2.protocol.discovery.InterestRegistration;
 import com.netflix.eureka2.protocol.discovery.InterestSetNotification;
+import com.netflix.eureka2.protocol.discovery.StreamStateUpdate;
 import com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Sourced;
@@ -28,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
-import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.observers.SafeSubscriber;
 
@@ -44,9 +46,7 @@ import rx.observers.SafeSubscriber;
 public class InterestChannelImpl extends AbstractClientChannel<STATE> implements InterestChannel, Sourced {
 
     private static final Logger logger = LoggerFactory.getLogger(InterestChannelImpl.class);
-
-    private static final IllegalStateException INTEREST_NOT_REGISTERED_EXCEPTION =
-            new IllegalStateException("No interest is registered on this channel.");
+    private final BatchingRegistry<InstanceInfo> remoteBatchingRegistry;
 
     /**
      * Since we assume single threaded access to this channel, no need for concurrency control
@@ -76,8 +76,12 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
      */
     private final Map<String, InstanceInfo> idVsInstance = new HashMap<>();
 
-    public InterestChannelImpl(final SourcedEurekaRegistry<InstanceInfo> registry, TransportClient client, InterestChannelMetrics metrics) {
+    public InterestChannelImpl(final SourcedEurekaRegistry<InstanceInfo> registry,
+                               BatchingRegistry<InstanceInfo> remoteBatchingRegistry,
+                               TransportClient client,
+                               InterestChannelMetrics metrics) {
         super(STATE.Idle, client, metrics);
+        this.remoteBatchingRegistry = remoteBatchingRegistry;
         this.selfSource = new Source(Source.Origin.LOCAL);
         this.registry = registry;
         channelInterestSubscriber = new ChannelInterestSubscriber(registry);
@@ -101,7 +105,6 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
                     @Override
                     public Observable<Void> call(MessageConnection serverConnection) {
                         return sendExpectAckOnConnection(serverConnection, new InterestRegistration(newInterest));
-
                     }
                 });
 
@@ -113,9 +116,11 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
                 } else if (moveToState(STATE.Idle, STATE.Open)) {
                     logger.debug("First time registration: {}", newInterest);
                     channelInterestStream.subscribe(channelInterestSubscriber);
+                    remoteBatchingRegistry.connectTo(channelInterestStream);
                 } else {
                     logger.debug("Channel changes: {}", newInterest);
                 }
+                remoteBatchingRegistry.retainAll(newInterest);
                 subscriber.onCompleted();
             }
         }).concatWith(serverRequest);
@@ -155,6 +160,8 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
                             changeNotification = updateMessageToChangeNotification((UpdateInstanceInfo) notification);
                         } else if (notification instanceof DeleteInstance) {
                             changeNotification = deleteMessageToChangeNotification((DeleteInstance) notification);
+                        } else if (notification instanceof StreamStateUpdate) {
+                            changeNotification = streamStateUpdateToStreamStateNotification((StreamStateUpdate) notification);
                         } else {
                             throw new IllegalArgumentException("Unknown message received on the interest channel. Type: "
                                     + message.getClass().getName());
@@ -170,7 +177,7 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
                     }
                 });
             }
-        });
+        }).share();
     }
 
     /**
@@ -241,6 +248,14 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
         return notification;
     }
 
+    private ChangeNotification<InstanceInfo> streamStateUpdateToStreamStateNotification(StreamStateUpdate notification) {
+        BufferState state = notification.getState();
+        if (state == BufferState.BufferStart || state == BufferState.BufferEnd) {
+            return new StreamStateNotification<InstanceInfo>(state, notification.getInterest());
+        }
+        throw new IllegalStateException("Unexpected state " + state);
+    }
+
     protected class ChannelInterestSubscriber extends SafeSubscriber<ChangeNotification<InstanceInfo>> {
         public ChannelInterestSubscriber(final SourcedEurekaRegistry<InstanceInfo> registry) {
             super(new Subscriber<ChangeNotification<InstanceInfo>>() {
@@ -265,6 +280,9 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
                             break;
                         case Delete:
                             registry.unregister(notification.getData(), selfSource);
+                            break;
+                        case BufferSentinel:
+                            // No-op
                             break;
                         default:
                             logger.error("Unrecognized notification kind");

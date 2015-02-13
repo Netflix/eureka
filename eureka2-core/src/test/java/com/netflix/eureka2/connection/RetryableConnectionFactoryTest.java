@@ -1,5 +1,11 @@
 package com.netflix.eureka2.connection;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import com.netflix.eureka2.channel.AbstractServiceChannel;
 import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.ServiceChannel;
@@ -16,14 +22,10 @@ import rx.observers.TestSubscriber;
 import rx.subjects.ReplaySubject;
 import rx.subjects.Subject;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 
 /**
  * @author David Liu
@@ -388,12 +390,15 @@ public class RetryableConnectionFactoryTest {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof TestOp)) return false;
+            if (this == o)
+                return true;
+            if (!(o instanceof TestOp))
+                return false;
 
             TestOp testOp = (TestOp) o;
 
-            if (id != testOp.id) return false;
+            if (id != testOp.id)
+                return false;
 
             return true;
         }
@@ -429,14 +434,17 @@ public class RetryableConnectionFactoryTest {
         public TestFailableChannel(FailableChannel delegate, Integer id) {
             super(delegate, id);
         }
+
         @Override
         public Observable<Void> doWork(TestOp op) {
             return delegate.doWork(op);
         }
+
         @Override
         public boolean isClosed() {
             return delegate.isClosed();
         }
+
         @Override
         public List<WorkAndResult> getResults() {
             return delegate.getResults();
@@ -445,12 +453,14 @@ public class RetryableConnectionFactoryTest {
 
     interface FailableChannel extends ServiceChannel {
         public Observable<Void> doWork(TestOp op);
+
         public boolean isClosed();
+
         public List<WorkAndResult> getResults();
     }
 
     static class FailableChannelImpl extends AbstractServiceChannel<FailableChannelImpl.SimpleState> implements FailableChannel {
-        public enum SimpleState {SimpleState};
+        public enum SimpleState {SimpleState}
 
         public final AtomicBoolean closed = new AtomicBoolean(false);
         public final ConcurrentLinkedQueue<WorkAndResult> results = new ConcurrentLinkedQueue<>();

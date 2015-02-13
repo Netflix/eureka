@@ -70,8 +70,10 @@ public class AuditServiceController {
 
             @Override
             public void onNext(ChangeNotification<InstanceInfo> notification) {
-                AuditRecord record = AuditRecords.forChangeNotification(auditServerId, System.currentTimeMillis(), false, notification);
-                auditService.write(record);
+                if(notification.isDataNotification()) {
+                    AuditRecord record = AuditRecords.forChangeNotification(auditServerId, System.currentTimeMillis(), false, notification);
+                    auditService.write(record);
+                }
             }
         });
     }

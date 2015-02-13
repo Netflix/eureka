@@ -42,15 +42,16 @@ public class RegistrationHandlerImpl implements RegistrationHandler {
 
     @Override
     public RegistrationResponse register(Observable<InstanceInfo> instanceInfoStream) {
-        final RetryableConnection<RegistrationChannel> retryableConnection
-                = retryableConnectionFactory.singleOpConnection(
-                instanceInfoStream.distinctUntilChanged(),
-                new Func2<RegistrationChannel, InstanceInfo, Observable<Void>>() {
-                    @Override
-                    public Observable<Void> call(RegistrationChannel channel, InstanceInfo instanceInfo) {
-                        return channel.register(instanceInfo);
-                    }
-                }
+        Observable<InstanceInfo> opStream = instanceInfoStream.distinctUntilChanged();
+        Func2<RegistrationChannel, InstanceInfo, Observable<Void>> executeOnChannel = new Func2<RegistrationChannel, InstanceInfo, Observable<Void>>() {
+            @Override
+            public Observable<Void> call(RegistrationChannel channel, InstanceInfo instanceInfo) {
+                return channel.register(instanceInfo);
+            }
+        };
+        final RetryableConnection<RegistrationChannel> retryableConnection = retryableConnectionFactory.singleOpConnection(
+                opStream,
+                executeOnChannel
         );
 
         Observable<Void> initObservable = retryableConnection.getInitObservable();

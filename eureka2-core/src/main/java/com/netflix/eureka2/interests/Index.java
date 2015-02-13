@@ -157,7 +157,7 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
      *
      * @param <T> Type of data that this holds.
      */
-    protected static abstract class InitStateHolder<T> extends Subscriber<ChangeNotification<T>>
+    public abstract static class InitStateHolder<T> extends Subscriber<ChangeNotification<T>>
             implements Iterable<ChangeNotification<T>> {
 
         protected final Iterator<ChangeNotification<T>> EMPTY_ITERATOR = new Iterator<ChangeNotification<T>>() {

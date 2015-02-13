@@ -67,12 +67,21 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     private final EurekaRegistryMetrics metrics;
     private final NotifyingInstanceInfoHolder.NotificationTaskInvoker invoker;
 
-    @Inject
     public SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory metricsFactory) {
-        this(metricsFactory, Schedulers.computation());
+        this(new IndexRegistryImpl<InstanceInfo>(), metricsFactory, Schedulers.computation());
     }
 
     public SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory metricsFactory, Scheduler scheduler) {
+        this(new IndexRegistryImpl<InstanceInfo>(), metricsFactory, scheduler);
+    }
+
+    @Inject
+    public SourcedEurekaRegistryImpl(IndexRegistry indexRegistry, EurekaRegistryMetricFactory metricsFactory) {
+        this(indexRegistry, metricsFactory, Schedulers.computation());
+    }
+
+    public SourcedEurekaRegistryImpl(IndexRegistry<InstanceInfo> indexRegistry, EurekaRegistryMetricFactory metricsFactory, Scheduler scheduler) {
+        this.indexRegistry = indexRegistry;
         this.metrics = metricsFactory.getEurekaServerRegistryMetrics();
 
         invoker = new NotifyingInstanceInfoHolder.NotificationTaskInvoker(
@@ -80,7 +89,6 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
                 scheduler);
 
         internalStore = new ConcurrentHashMap<>();
-        indexRegistry = new IndexRegistryImpl<>();
         notificationSubject = NotificationsSubject.create();
 
         internalStoreAccessor = new MultiSourcedDataHolder.HolderStoreAccessor<NotifyingInstanceInfoHolder>() {
@@ -238,7 +246,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
                 return indexRegistry.forCompositeInterest((MultipleInterests) interest, this);
             } else {
                 return indexRegistry.forInterest(interest, notificationSubject,
-                        new InstanceInfoInitStateHolder(getSnapshotForInterest(interest)));
+                        new InstanceInfoInitStateHolder(getSnapshotForInterest(interest), interest));
             }
         } finally {
             notificationSubject.resume();

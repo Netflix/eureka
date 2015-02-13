@@ -1,5 +1,7 @@
 package com.netflix.eureka2.connection;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.ServiceChannel;
 import com.netflix.eureka2.utils.rx.BreakerSwitchSubject;
@@ -15,8 +17,6 @@ import rx.functions.Func2;
 import rx.subjects.AsyncSubject;
 import rx.subjects.BehaviorSubject;
 import rx.subjects.Subject;
-
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Factory that provides a {@link RetryableConnection}.
@@ -35,31 +35,36 @@ public class RetryableConnectionFactory<CHANNEL extends ServiceChannel> {
     }
 
     /**
-     * Create a retryable connection that wraps around channels that executes with zero operands
+     * Create a retryable connection that wraps around channels that executes with zero operands.
+     * It is assumed also that the channel does not produce any data.
      *
      * @param executeOnChannel a func1 that describes a zero op call for the channel
      * @return a {@link RetryableConnection} that contains several observables. This lifecycle observable provided
      * can be retried on.
      */
     public RetryableConnection<CHANNEL> zeroOpConnection(final Func1<CHANNEL, Observable<Void>> executeOnChannel) {
-        return singleOpConnection(Observable.just(1).mergeWith(Observable.<Integer>never()), new Func2<CHANNEL, Integer, Observable<Void>>() {
+        Observable<Integer> opStream = Observable.just(1).mergeWith(Observable.<Integer>never());
+        Func2<CHANNEL, Integer, Observable<Void>> adaptedExecute = new Func2<CHANNEL, Integer, Observable<Void>>() {
             @Override
             public Observable<Void> call(CHANNEL channel, Integer integer) {
                 return executeOnChannel.call(channel);
             }
-        });
+        };
+        return singleOpConnection(opStream, adaptedExecute);
     }
 
     /**
      * Create a retryable connection that wraps around channels that executes on single operands
      *
+     * @param <OP> the type of op to be applied to the channel
      * @param opStream an observable stream of ops for the channel to operate on (i.e. Interest, InstanceInfo)
      * @param executeOnChannel a func2 that describes the call for the channel on the operations
-     * @param <OP> the type of op to be applied to the channel
      * @return a {@link RetryableConnection} that contains several observables. This lifecycle observable provided
      * can be retried on.
      */
-    public <OP> RetryableConnection<CHANNEL> singleOpConnection(final Observable<OP> opStream, final Func2<CHANNEL, OP, Observable<Void>> executeOnChannel) {
+    public <OP> RetryableConnection<CHANNEL> singleOpConnection(
+            final Observable<OP> opStream,
+            final Func2<CHANNEL, OP, Observable<Void>> executeOnChannel) {
         final AsyncSubject<Void> initSubject = AsyncSubject.create();  // subject used to cache init status
 
         final BreakerSwitchSubject<OP> opSubject = BreakerSwitchSubject.create(BehaviorSubject.<OP>create());

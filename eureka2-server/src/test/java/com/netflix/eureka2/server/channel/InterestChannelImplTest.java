@@ -6,12 +6,14 @@ import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interest.Operator;
 import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics;
 import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics.AtomicInterest;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.InterestRegistration;
 import com.netflix.eureka2.protocol.discovery.SnapshotComplete;
 import com.netflix.eureka2.protocol.discovery.SnapshotRegistration;
+import com.netflix.eureka2.protocol.discovery.StreamStateUpdate;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
@@ -34,6 +36,7 @@ import static org.mockito.Mockito.when;
  */
 public class InterestChannelImplTest {
 
+    public static final Interest<InstanceInfo> CLIENT_INTEREST = Interests.forFullRegistry();
     public static final Interest<InstanceInfo> SNAPSHOT_INTEREST = Interests.forFullRegistry();
 
     private final SourcedEurekaRegistry<InstanceInfo> registry = mock(SourcedEurekaRegistry.class);
@@ -56,6 +59,25 @@ public class InterestChannelImplTest {
         when(registry.forInterest(any(Interest.class))).thenReturn(notificationSubject);
 
         channel = new InterestChannelImpl(registry, connection, interestChannelMetrics);
+    }
+
+    @Test
+    public void testStreamStateNotificationsAreSentToClients() throws Exception {
+        // Send interest subscription first
+        incomingSubject.onNext(new InterestRegistration(CLIENT_INTEREST));
+
+        // Trigger buffer state change notification
+        StreamStateNotification<InstanceInfo> stateNotification =
+                StreamStateNotification.bufferStartNotification(CLIENT_INTEREST);
+
+        notificationSubject.onNext(stateNotification);
+        verify(connection, times(1)).submitWithAck(new StreamStateUpdate(stateNotification));
+
+        // Trigger BufferEnd state change notification
+         stateNotification = StreamStateNotification.bufferEndNotification(CLIENT_INTEREST);
+
+        notificationSubject.onNext(stateNotification);
+        verify(connection, times(1)).submitWithAck(new StreamStateUpdate(stateNotification));
     }
 
     @Test(timeout = 60000)

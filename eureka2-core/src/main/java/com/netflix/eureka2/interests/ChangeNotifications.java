@@ -21,13 +21,35 @@ import java.util.List;
 
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import rx.Observable;
+import rx.functions.Func1;
 
 /**
+ * Collection of transformation functions operating on {@link ChangeNotification} data.
+ *
  * @author Tomasz Bak
  */
-public class ChangeNotifications {
+public final class ChangeNotifications {
 
-    public <T> Observable<ChangeNotification<T>> from(T... values) {
+    private static final Func1<ChangeNotification<?>, Boolean> DATA_ONLY_FILTER_FUNC =
+            new Func1<ChangeNotification<?>, Boolean>() {
+                @Override
+                public Boolean call(ChangeNotification<?> notification) {
+                    return notification.isDataNotification();
+                }
+            };
+
+    private static final Func1<ChangeNotification<?>, Boolean> STREAM_STATE_FILTER_FUNC =
+            new Func1<ChangeNotification<?>, Boolean>() {
+                @Override
+                public Boolean call(ChangeNotification<?> notification) {
+                    return notification instanceof StreamStateNotification;
+                }
+            };
+
+    private ChangeNotifications() {
+    }
+
+    public static <T> Observable<ChangeNotification<T>> from(T... values) {
         if (values == null || values.length == 0) {
             return Observable.empty();
         }
@@ -36,5 +58,13 @@ public class ChangeNotifications {
             notifications.add(new ChangeNotification<T>(Kind.Add, value));
         }
         return Observable.from(notifications);
+    }
+
+    public static Func1<ChangeNotification<?>, Boolean> dataOnlyFilter() {
+        return DATA_ONLY_FILTER_FUNC;
+    }
+
+    public static Func1<ChangeNotification<?>, Boolean> streamStateFilter() {
+        return STREAM_STATE_FILTER_FUNC;
     }
 }

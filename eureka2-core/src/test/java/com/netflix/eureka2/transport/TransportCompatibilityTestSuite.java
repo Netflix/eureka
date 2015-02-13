@@ -7,12 +7,14 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.protocol.Heartbeat;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.DeleteInstance;
 import com.netflix.eureka2.protocol.discovery.InterestRegistration;
 import com.netflix.eureka2.protocol.discovery.SnapshotComplete;
 import com.netflix.eureka2.protocol.discovery.SnapshotRegistration;
+import com.netflix.eureka2.protocol.discovery.StreamStateUpdate;
 import com.netflix.eureka2.protocol.discovery.UnregisterInterestSet;
 import com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka2.protocol.registration.Register;
@@ -178,6 +180,7 @@ public abstract class TransportCompatibilityTestSuite {
             addInstanceTest();
             deleteInstanceTest();
             updateInstanceInfoTest();
+            streamStateUpdateTest();
         }
 
         private void registerInterestSetTest() {
@@ -228,6 +231,11 @@ public abstract class TransportCompatibilityTestSuite {
             // Snapshot  subscription
             runClientToServerWithAck(new SnapshotRegistration(Interests.forFullRegistry()));
             runServerToClient(SnapshotComplete.INSTANCE);
+        }
+
+        private void streamStateUpdateTest() {
+            runServerToClientWithAck(new StreamStateUpdate(StreamStateNotification.bufferStartNotification(Interests.forFullRegistry())));
+            runServerToClientWithAck(new StreamStateUpdate(StreamStateNotification.bufferEndNotification(Interests.forFullRegistry())));
         }
     }
 }

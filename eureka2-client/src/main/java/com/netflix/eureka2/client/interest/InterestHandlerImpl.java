@@ -1,13 +1,14 @@
 package com.netflix.eureka2.client.interest;
 
+import javax.inject.Inject;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.connection.RetryableConnection;
 import com.netflix.eureka2.connection.RetryableConnectionFactory;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.SourcedChangeNotification;
-import com.netflix.eureka2.interests.SourcedModifyNotification;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
@@ -20,9 +21,6 @@ import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.functions.Func2;
-
-import javax.inject.Inject;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Each InterestHandler class contains an interest channel and handles the lifecycle and reconnect of this channel.
@@ -63,14 +61,15 @@ public class InterestHandlerImpl implements InterestHandler {
         RetryableConnectionFactory<InterestChannel> retryableConnectionFactory
                 = new RetryableConnectionFactory<>(channelFactory);
 
-        this.retryableConnection = retryableConnectionFactory.singleOpConnection(
-                interestTracker.interestChangeStream(),
-                new Func2<InterestChannel, Interest<InstanceInfo>, Observable<Void>>() {
-                    @Override
-                    public Observable<Void> call(InterestChannel interestChannel, Interest<InstanceInfo> interest) {
-                        return interestChannel.change(interest);
-                    }
-                });
+        Observable<Interest<InstanceInfo>> opStream = interestTracker.interestChangeStream();
+        Func2<InterestChannel, Interest<InstanceInfo>, Observable<Void>> executeOnChannel = new Func2<InterestChannel, Interest<InstanceInfo>, Observable<Void>>() {
+            @Override
+            public Observable<Void> call(InterestChannel interestChannel, Interest<InstanceInfo> interest) {
+                return interestChannel.change(interest);
+            }
+        };
+
+        this.retryableConnection = retryableConnectionFactory.singleOpConnection(opStream, executeOnChannel);
 
         // subscribe to the base interest channels to do cleanup on every channel refresh.
         retryableConnection.getChannelObservable()
@@ -81,7 +80,7 @@ public class InterestHandlerImpl implements InterestHandler {
                             Source toRetain = ((Sourced) interestChannel).getSource();
                             return registry.evictAllExcept(toRetain);
                         }
-                       return Observable.empty();
+                        return Observable.empty();
                     }
                 })
                 .subscribe(new Subscriber<Long>() {
@@ -112,6 +111,7 @@ public class InterestHandlerImpl implements InterestHandler {
 
                     @Override
                     public void onError(Throwable e) {
+                        logger.error("Lifecycle closed with an error");
                     }
 
                     @Override
@@ -142,7 +142,7 @@ public class InterestHandlerImpl implements InterestHandler {
 
         Observable toReturn = appendInterest
                 .cast(ChangeNotification.class)
-                .mergeWith(forInterestFromRegistry(interest))
+                .mergeWith(registry.forInterest(interest))
                 .doOnUnsubscribe(new Action0() {
                     @Override
                     public void call() {
@@ -151,25 +151,6 @@ public class InterestHandlerImpl implements InterestHandler {
                 });
 
         return toReturn;
-    }
-
-    /**
-     * Get interest stream from the registry, and additionally convert from sourced notifications to base notifications
-     * if necessary. We don't want to expose "sourced" types to client users, hence this convertion
-     */
-    private Observable<ChangeNotification<InstanceInfo>> forInterestFromRegistry(final Interest<InstanceInfo> interest) {
-        return registry.forInterest(interest)
-                .map(new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
-                    @Override
-                    public ChangeNotification<InstanceInfo> call(ChangeNotification<InstanceInfo> notification) {
-                        if (notification instanceof SourcedChangeNotification) {
-                            return ((SourcedChangeNotification<InstanceInfo>) notification).toBaseNotification();
-                        } else if (notification instanceof SourcedModifyNotification) {
-                            return ((SourcedModifyNotification<InstanceInfo>) notification).toBaseNotification();
-                        }
-                        return notification;
-                    }
-                });
     }
 
     @Override

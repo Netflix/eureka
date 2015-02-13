@@ -20,16 +20,24 @@ public class ChangeNotificationMatcher extends BaseMatcher<ChangeNotification<In
         this.expectedValue = expectedValue;
     }
 
+    public ChangeNotificationMatcher(Kind kind) {
+        this.notificationKind = kind;
+        this.expectedValue = null;
+    }
+
     @Override
     public boolean matches(Object item) {
         if (!(item instanceof ChangeNotification)) {
             return false;
         }
-        if (!(((ChangeNotification<?>) item).getData() instanceof InstanceInfo)) {
-            return false;
-        }
         ChangeNotification<InstanceInfo> actualNotif = (ChangeNotification<InstanceInfo>) item;
         if (actualNotif.getKind() != notificationKind) {
+            return false;
+        }
+        if (expectedValue == null) {
+            return true;
+        }
+        if (!(((ChangeNotification<?>) item).getData() instanceof InstanceInfo)) {
             return false;
         }
 

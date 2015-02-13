@@ -8,18 +8,22 @@ import org.junit.rules.ExternalResource;
 import rx.Subscriber;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 
 /**
  * TODO: clean up naming with RegistryIndexTest?:)
  * @author David Liu
  */
 public class IndexRegistryTest {
+
+    private static final Iterator<ChangeNotification<InstanceInfo>> EMPTY_CHANGE_NOTIFICATION_IT = Collections.emptyIterator();
 
     private Interest<InstanceInfo> interest1;
     private Interest<InstanceInfo> interest2;
@@ -37,7 +41,7 @@ public class IndexRegistryTest {
             indexRegistry.forInterest(
                     interest1,
                     NotificationsSubject.<InstanceInfo>create(),
-                    new InstanceInfoInitStateHolder(Collections.<ChangeNotification<InstanceInfo>>emptyIterator()));
+                    new InstanceInfoInitStateHolder(EMPTY_CHANGE_NOTIFICATION_IT, Interests.forFullRegistry()));
         }
 
         @Override
@@ -58,7 +62,7 @@ public class IndexRegistryTest {
         indexRegistry.forInterest(
                 Interests.forFullRegistry(),
                 NotificationsSubject.<InstanceInfo>create(),
-                new InstanceInfoInitStateHolder(Collections.<ChangeNotification<InstanceInfo>>emptyIterator()))
+                new InstanceInfoInitStateHolder(EMPTY_CHANGE_NOTIFICATION_IT, Interests.forFullRegistry()))
                 .subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
                     @Override
                     public void onCompleted() {
@@ -72,14 +76,14 @@ public class IndexRegistryTest {
 
                     @Override
                     public void onNext(ChangeNotification<InstanceInfo> notification) {
-                        Assert.fail("Should not be here");
+                        assertThat(notification.isDataNotification(), is(false));
                     }
                 });
 
         indexRegistry.forInterest(
                 interest2,
                 NotificationsSubject.<InstanceInfo>create(),
-                new InstanceInfoInitStateHolder(Collections.<ChangeNotification<InstanceInfo>>emptyIterator()))
+                new InstanceInfoInitStateHolder(EMPTY_CHANGE_NOTIFICATION_IT, interest2))
                 .subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
                     @Override
                     public void onCompleted() {
@@ -93,7 +97,7 @@ public class IndexRegistryTest {
 
                     @Override
                     public void onNext(ChangeNotification<InstanceInfo> notification) {
-                        Assert.fail("Should not be here");
+                        assertThat(notification.isDataNotification(), is(false));
                     }
                 });
 

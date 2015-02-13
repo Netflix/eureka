@@ -1,12 +1,17 @@
 package com.netflix.eureka2.interests;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
+import com.netflix.eureka2.interests.StreamStateNotification.BufferState;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static com.netflix.eureka2.utils.ExtCollections.concat;
+import static com.netflix.eureka2.utils.ExtCollections.singletonIterator;
 
 /**
  * An {@link Index.InitStateHolder} implementation for {@link InstanceInfo}.
@@ -19,10 +24,14 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
 
     private static final Logger logger = LoggerFactory.getLogger(InstanceInfoInitStateHolder.class);
 
-     final ConcurrentHashMap<String, ChangeNotification<InstanceInfo>> notificationMap;
+    private final ConcurrentHashMap<String, ChangeNotification<InstanceInfo>> notificationMap;
+    private final ChangeNotification<InstanceInfo> bufferStartNotificaton;
+    private final ChangeNotification<InstanceInfo> bufferEndNotificaton;
 
-    public InstanceInfoInitStateHolder(Iterator<ChangeNotification<InstanceInfo>> initialRegistry) {
+    public InstanceInfoInitStateHolder(Iterator<ChangeNotification<InstanceInfo>> initialRegistry, Interest<InstanceInfo> interest) {
         super(NotificationsSubject.<InstanceInfo>create());
+        this.bufferStartNotificaton = new StreamStateNotification<>(BufferState.BufferStart, interest);
+        this.bufferEndNotificaton = new StreamStateNotification<>(BufferState.BufferEnd, interest);
         notificationMap = new ConcurrentHashMap<>();
 
         while (initialRegistry.hasNext()) {
@@ -51,7 +60,14 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
 
     @Override
     protected Iterator<ChangeNotification<InstanceInfo>> _newIterator() {
-        return notificationMap.values().iterator();
+        if (notificationMap.isEmpty()) {
+            return Collections.emptyIterator();
+        }
+        return concat(
+                singletonIterator(bufferStartNotificaton),
+                notificationMap.values().iterator(),
+                singletonIterator(bufferEndNotificaton)
+        );
     }
 
     private static ChangeNotification<InstanceInfo> processNext(ChangeNotification<InstanceInfo> current,

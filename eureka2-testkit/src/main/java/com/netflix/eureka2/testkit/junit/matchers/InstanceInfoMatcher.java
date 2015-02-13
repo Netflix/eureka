@@ -5,6 +5,9 @@ import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 
 /**
+ * Originally, this matcher was dealing with different version number of the same
+ * {@link InstanceInfo} objects. Now it does plain comparison, and can be removed.
+ *
  * @author Tomasz Bak
  */
 public class InstanceInfoMatcher extends BaseMatcher<InstanceInfo> {

@@ -22,10 +22,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
+import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.utils.ExtCollections;
 import rx.Subscriber;
 
@@ -101,7 +103,9 @@ public class Session {
     }
 
     public void connectToRead(String host, int port) {
-        eurekaClient = Eureka.newClientBuilder(ServerResolvers.just(host, port))
+        // TODO There is no way now to create just subscribing client, so we create default resolver for registration
+        ServerResolver writeResolver = ServerResolvers.just("localhost", EurekaTransports.DEFAULT_REGISTRATION_PORT);
+        eurekaClient = Eureka.newClientBuilder(ServerResolvers.just(host, port), writeResolver)
                 .withTransportConfig(context.getTransportConfig())
                 .build();
         mode = Mode.Read;
@@ -124,7 +128,7 @@ public class Session {
     }
 
     public void register(final InstanceInfo instanceInfo) {
-        if(mode == Mode.Read) {
+        if (mode == Mode.Read) {
             System.err.println("ERROR: subscription-only session");
             return;
         }
@@ -154,7 +158,7 @@ public class Session {
     }
 
     public void update(final InstanceInfo newInfo) {
-        if(mode == Mode.Read) {
+        if (mode == Mode.Read) {
             System.err.println("ERROR: subscription-only session");
             return;
         }
@@ -181,7 +185,7 @@ public class Session {
     }
 
     public void unregister() {
-        if(mode == Mode.Read) {
+        if (mode == Mode.Read) {
             System.err.println("ERROR: subscription-only session");
             return;
         }
@@ -208,7 +212,7 @@ public class Session {
     }
 
     public void forInterest(Interest<InstanceInfo> interest) {
-        if(mode == Mode.Write) {
+        if (mode == Mode.Write) {
             System.err.println("ERROR: registration-only session");
             return;
         }

@@ -4,14 +4,21 @@ import java.util.Collection;
 import java.util.List;
 
 import com.netflix.eureka2.channel.InterestChannel.STATE;
+import com.netflix.eureka2.client.interest.BatchAwareIndexRegistry;
+import com.netflix.eureka2.client.interest.BatchingRegistry;
+import com.netflix.eureka2.client.interest.BatchingRegistryImpl;
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.IndexRegistry;
+import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.InterestChannelMetrics;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.DeleteInstance;
 import com.netflix.eureka2.protocol.discovery.InterestSetNotification;
 import com.netflix.eureka2.protocol.discovery.SampleAddInstance;
+import com.netflix.eureka2.protocol.discovery.StreamStateUpdate;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -32,9 +39,12 @@ import rx.schedulers.TestScheduler;
 import rx.subjects.PublishSubject;
 import rx.subjects.ReplaySubject;
 
+import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
 import static com.netflix.eureka2.metric.EurekaRegistryMetricFactory.registryMetrics;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.bufferingChangeNotification;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -54,7 +64,9 @@ public class InterestChannelImplTest {
 
     protected TransportClient transportClient = mock(TransportClient.class);
 
-    protected SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(registryMetrics(), testScheduler);
+    protected BatchingRegistry<InstanceInfo> remoteBatchingRegistry = new BatchingRegistryImpl<>();
+    protected IndexRegistry<InstanceInfo> indexRegistry = new BatchAwareIndexRegistry<>(new IndexRegistryImpl<InstanceInfo>(), remoteBatchingRegistry);
+    protected SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(indexRegistry, registryMetrics(), testScheduler);
 
     protected InterestChannelMetrics interestChannelMetrics = mock(InterestChannelMetrics.class);
 
@@ -78,7 +90,7 @@ public class InterestChannelImplTest {
         when(serverConnection.lifecycleObservable()).thenReturn(serverConnectionLifecycle);
         when(transportClient.connect()).thenReturn(Observable.just(serverConnection));
 
-        channel = new InterestChannelImpl(registry, transportClient, interestChannelMetrics);
+        channel = new InterestChannelImpl(registry, remoteBatchingRegistry, transportClient, interestChannelMetrics);
     }
 
     @After
@@ -168,7 +180,7 @@ public class InterestChannelImplTest {
         testSubscriber.assertOnCompleted();
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> notificationSubscriber = new ExtTestSubscriber<>();
-        registry.forInterest(Interests.forFullRegistry()).subscribe(notificationSubscriber);
+        registry.forInterest(Interests.forFullRegistry()).filter(dataOnlyFilter()).subscribe(notificationSubscriber);
 
         // Send to add change notifications
         incomingSubject.onNext(message1);
@@ -185,9 +197,40 @@ public class InterestChannelImplTest {
         assertThat(notificationSubscriber.takeNextOrWait(), deleteChangeNotificationOf(original1));
     }
 
+    @Test
+    public void testBufferingHintsPropagation() throws Exception {
+        InstanceInfo original1 = SampleInstanceInfo.DiscoveryServer.build();
+        InstanceInfo original2 = SampleInstanceInfo.DiscoveryServer.build();
+        AddInstance message1 = new AddInstance(original1);
+        AddInstance message2 = new AddInstance(original2);
+        Interest<InstanceInfo> interest = Interests.forVips(original1.getVipAddress());
+
+        // Subscribe first
+        ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
+        channel.change(interest).subscribe(testSubscriber);
+
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> notificationSubscriber = new ExtTestSubscriber<>();
+        registry.forInterest(interest).subscribe(notificationSubscriber);
+
+        // Issue batch of data
+        incomingSubject.onNext(new StreamStateUpdate(StreamStateNotification.bufferStartNotification(interest)));
+
+        incomingSubject.onNext(message1);
+        testScheduler.triggerActions();
+        incomingSubject.onNext(message2);
+        testScheduler.triggerActions();
+
+        incomingSubject.onNext(new StreamStateUpdate(StreamStateNotification.bufferEndNotification(interest)));
+
+        // We should have got <original 1> <original 2> <buffering sentinel> from registry
+        assertThat(notificationSubscriber.takeNextOrFail(), is(addChangeNotificationOf(original1)));
+        assertThat(notificationSubscriber.takeNextOrFail(), is(addChangeNotificationOf(original2)));
+        assertThat(notificationSubscriber.takeNextOrFail(), is(bufferingChangeNotification()));
+    }
+
     @Test(timeout = 60000)
     public void testMetrics() throws Exception {
-        // Subscriber to interest subscription, to open the channel
+        // Subscribe to interest subscription, to open the channel
         ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
         channel.change(sampleInterestZuul).subscribe(testSubscriber);
 

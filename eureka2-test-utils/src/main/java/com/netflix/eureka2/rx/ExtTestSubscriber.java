@@ -107,6 +107,18 @@ public class ExtTestSubscriber<T> extends Subscriber<T> {
         return available.poll(24, TimeUnit.HOURS);
     }
 
+    public List<T> takeNextOrWait(int n) throws InterruptedException {
+        List<T> result = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            T next = takeNextOrWait();
+            if (next == null) {
+                break;
+            }
+            result.add(next);
+        }
+        return result;
+    }
+
     public T takeNextOrFail() {
         T next = available.poll();
         if (next == null) {
@@ -172,7 +184,7 @@ public class ExtTestSubscriber<T> extends Subscriber<T> {
         HashSet<R> left = new HashSet<>(expected);
         while (!left.isEmpty()) {
             R next = mapFun.call(takeNext(timeout, timeUnit));
-            if (!left.remove(next)) {
+            if (next != null && !left.remove(next)) {
                 fail(formatAnyOrderFailure(next, expected.size(), left));
             }
         }

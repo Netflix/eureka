@@ -1,5 +1,11 @@
 package com.netflix.eureka2.client.interest;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.channel.TestChannelFactory;
@@ -8,6 +14,8 @@ import com.netflix.eureka2.client.channel.InterestChannelFactory;
 import com.netflix.eureka2.client.channel.InterestChannelImpl;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.FullRegistryInterest;
+import com.netflix.eureka2.interests.IndexRegistry;
+import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.interests.MultipleInterests;
@@ -43,26 +51,26 @@ import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 import rx.subjects.ReplaySubject;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.argThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author David Liu
  */
-public class InterestHandlerTest {
+public class InterestHandlerImplTest {
 
     private static final int RETRY_WAIT_MILLIS = 10;
-    private static final long EVICTION_TIMEOUT_MS = 30*1000;
+    private static final long EVICTION_TIMEOUT_MS = 30 * 1000;
     private static final int EVICTION_ALLOWED_PERCENTAGE_DROP_THRESHOLD = 50;//%
     private final AtomicInteger channelId = new AtomicInteger(0);
 
@@ -123,13 +131,17 @@ public class InterestHandlerTest {
         evictionScheduler = Schedulers.test();
         evictionQueue = spy(new EvictionQueueImpl(EVICTION_TIMEOUT_MS, EurekaRegistryMetricFactory.registryMetrics(), evictionScheduler));
 
-        SourcedEurekaRegistry<InstanceInfo> delegateRegistry
-                = new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics(), registryScheduler);
+        BatchingRegistry<InstanceInfo> remoteBatchingRegistry = new BatchingRegistryImpl<>();
+        IndexRegistry<InstanceInfo> indexRegistry = new BatchAwareIndexRegistry<>(new IndexRegistryImpl<InstanceInfo>(), remoteBatchingRegistry);
+        SourcedEurekaRegistry<InstanceInfo> delegateRegistry = new SourcedEurekaRegistryImpl(
+                indexRegistry, EurekaRegistryMetricFactory.registryMetrics(),
+                registryScheduler
+        );
         registry = spy(new PreservableEurekaRegistry(
                 delegateRegistry,
-                        evictionQueue,
-                        new PercentageDropEvictionStrategy(EVICTION_ALLOWED_PERCENTAGE_DROP_THRESHOLD),
-                        EurekaRegistryMetricFactory.registryMetrics()));
+                evictionQueue,
+                new PercentageDropEvictionStrategy(EVICTION_ALLOWED_PERCENTAGE_DROP_THRESHOLD),
+                EurekaRegistryMetricFactory.registryMetrics()));
 
         mockFactory = mock(InterestChannelFactory.class);
         factory = new TestChannelFactory<>(mockFactory);
@@ -167,13 +179,8 @@ public class InterestHandlerTest {
                 SampleChangeNotification.DiscoveryAdd.newNotification(discoveryInfos.get(2))
         );
 
-        handler.forInterest(discoveryInterest).subscribe(discoverySubscriber);
-        discoverySubscriber.assertProducesInAnyOrder(expectedDiscovery, new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
-            @Override
-            public ChangeNotification<InstanceInfo> call(ChangeNotification<InstanceInfo> notification) {
-                return notification;
-            }
-        }, 30, TimeUnit.SECONDS);
+        handler.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(discoverySubscriber);
+        discoverySubscriber.assertProducesInAnyOrder(expectedDiscovery);
 
         assertThat(factory.getAllChannels().size(), is(1));
         TestInterestChannel channel0 = (TestInterestChannel) factory.getAllChannels().get(0);
@@ -189,13 +196,8 @@ public class InterestHandlerTest {
                 SampleChangeNotification.ZuulAdd.newNotification(zuulInfos.get(2))
         );
 
-        handler.forInterest(zuulInterest).subscribe(zuulSubscriber);
-        zuulSubscriber.assertProducesInAnyOrder(expectedZuul, new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
-            @Override
-            public ChangeNotification<InstanceInfo> call(ChangeNotification<InstanceInfo> notification) {
-                return notification;
-            }
-        }, 30, TimeUnit.SECONDS);
+        handler.forInterest(zuulInterest).filter(dataOnlyFilter()).subscribe(zuulSubscriber);
+        zuulSubscriber.assertProducesInAnyOrder(expectedZuul);
 
         assertThat(factory.getAllChannels().size(), is(1));
         channel0 = (TestInterestChannel) factory.getAllChannels().get(0);
@@ -247,13 +249,8 @@ public class InterestHandlerTest {
                 SampleChangeNotification.DiscoveryAdd.newNotification(discoveryInfos.get(2))
         );
 
-        handler.forInterest(discoveryInterest).subscribe(discoverySubscriber);
-        discoverySubscriber.assertProducesInAnyOrder(expected, new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
-            @Override
-            public ChangeNotification<InstanceInfo> call(ChangeNotification<InstanceInfo> notification) {
-                return notification;
-            }
-        }, 30, TimeUnit.SECONDS);
+        handler.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(discoverySubscriber);
+        discoverySubscriber.assertProducesInAnyOrder(expected);
 
         assertThat(factory.getAllChannels().size(), is(2));
 
@@ -319,10 +316,10 @@ public class InterestHandlerTest {
         handler = new InterestHandlerImpl(registry, factory, RETRY_WAIT_MILLIS);
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber1 = new ExtTestSubscriber<>();
-        handler.forInterest(discoveryInterest).subscribe(extTestSubscriber1);
+        handler.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber1);
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber2 = new ExtTestSubscriber<>();
-        handler.forInterest(discoveryInterest).subscribe(extTestSubscriber2);
+        handler.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber2);
 
         final List<InstanceInfo> discoveryOutput1 = new ArrayList<>();
         final List<InstanceInfo> discoveryOutput2 = new ArrayList<>();
@@ -351,10 +348,10 @@ public class InterestHandlerTest {
         handler = new InterestHandlerImpl(registry, factory, RETRY_WAIT_MILLIS);
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber1 = new ExtTestSubscriber<>();
-        handler.forInterest(discoveryInterest).subscribe(extTestSubscriber1);
+        handler.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber1);
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber2 = new ExtTestSubscriber<>();
-        handler.forInterest(zuulInterest).subscribe(extTestSubscriber2);
+        handler.forInterest(zuulInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber2);
 
         final List<InstanceInfo> discoveryOutput = new ArrayList<>();
         final List<InstanceInfo> zuulOutput = new ArrayList<>();
@@ -383,13 +380,13 @@ public class InterestHandlerTest {
         handler = new InterestHandlerImpl(registry, factory, RETRY_WAIT_MILLIS);
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber1 = new ExtTestSubscriber<>();
-        handler.forInterest(discoveryInterest).subscribe(extTestSubscriber1);
+        handler.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber1);
 
         // don't use all registry interest as it is a special singleton
         Interest<InstanceInfo> compositeInterest = new MultipleInterests<>(discoveryInterest, zuulInterest);
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber2 = new ExtTestSubscriber<>();
-        handler.forInterest(compositeInterest).subscribe(extTestSubscriber2);
+        handler.forInterest(compositeInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber2);
 
         final List<InstanceInfo> discoveryOutput = new ArrayList<>();
         final List<InstanceInfo> compositeOutput = new ArrayList<>();
@@ -432,7 +429,7 @@ public class InterestHandlerTest {
         ArgumentCaptor<InstanceInfo> infoCaptor = ArgumentCaptor.forClass(InstanceInfo.class);
         ArgumentCaptor<Source> sourceCaptor = ArgumentCaptor.forClass(Source.class);
 
-        handler.forInterest(discoveryInterest).subscribe(discoverySubscriber);
+        handler.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(discoverySubscriber);
 
         discoverySubscriber.assertProducesInAnyOrder(expected, new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
             @Override
@@ -475,7 +472,7 @@ public class InterestHandlerTest {
 
         // verify that a new subscriber can subscribe and see latest changes
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> newSubscriber = new ExtTestSubscriber<>();
-        handler.forInterest(discoveryInterest).subscribe(newSubscriber);
+        handler.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(newSubscriber);
 
         newSubscriber.assertProducesInAnyOrder(expected, new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
             @Override
@@ -497,12 +494,17 @@ public class InterestHandlerTest {
 
     // -----------------------------------------------------------------------------
 
+    private InterestChannel createInterestChannel() {
+        BatchingRegistry<InstanceInfo> remoteBatchingRegistry = new BatchingRegistryImpl<>();
+        return spy(new InterestChannelImpl(registry, remoteBatchingRegistry, transportClient, mock(InterestChannelMetrics.class)));
+    }
+
     private TestInterestChannel newAlwaysSuccessChannel(Integer id) {
-        final InterestChannel channel = spy(new InterestChannelImpl(registry, transportClient, mock(InterestChannelMetrics.class)));
+        final InterestChannel channel = createInterestChannel();
         when(channel.change(argThat(new InterestMatcher(discoveryInterest)))).thenAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
-                registerAll(discoveryInfos, ((Sourced)channel).getSource());
+                registerAll(discoveryInfos, ((Sourced) channel).getSource());
                 return Observable.empty();
             }
         });
@@ -510,7 +512,7 @@ public class InterestHandlerTest {
         when(channel.change(argThat(new InterestMatcher(zuulInterest)))).thenAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
-                registerAll(zuulInfos, ((Sourced)channel).getSource());
+                registerAll(zuulInfos, ((Sourced) channel).getSource());
                 return Observable.empty();
             }
         });
@@ -518,7 +520,7 @@ public class InterestHandlerTest {
         when(channel.change(argThat(new InterestMatcher(allInterest)))).thenAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
-                registerAll(allInfos, ((Sourced)channel).getSource());
+                registerAll(allInfos, ((Sourced) channel).getSource());
                 return Observable.empty();
             }
         });
@@ -526,7 +528,7 @@ public class InterestHandlerTest {
         when(channel.change(argThat(new InterestMatcher(Interests.forFullRegistry())))).thenAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
-                registerAll(allInfos, ((Sourced)channel).getSource());
+                registerAll(allInfos, ((Sourced) channel).getSource());
                 return Observable.empty();
             }
         });
@@ -535,7 +537,7 @@ public class InterestHandlerTest {
     }
 
     private TestInterestChannel newAlwaysFailChannel(Integer id) {
-        InterestChannel channel = spy(new InterestChannelImpl(registry, transportClient, mock(InterestChannelMetrics.class)));
+        final InterestChannel channel = createInterestChannel();
         when(channel.change(any(Interest.class))).thenReturn(Observable.<Void>error(new Exception("test: operation error")));
         when(channel.change(any(MultipleInterests.class))).thenReturn(Observable.<Void>error(new Exception("test: operation error")));
 
@@ -543,11 +545,11 @@ public class InterestHandlerTest {
     }
 
     private TestInterestChannel newSendingInterestFailChannel(Integer id) {
-        final InterestChannel channel = spy(new InterestChannelImpl(registry, transportClient, mock(InterestChannelMetrics.class)));
+        final InterestChannel channel = createInterestChannel();
         when(channel.change(argThat(new InterestMatcher(discoveryInterest)))).thenAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
-                registerAll(discoveryInfos.subList(0, 2), ((Sourced)channel).getSource());
+                registerAll(discoveryInfos.subList(0, 2), ((Sourced) channel).getSource());
                 return Observable.empty();
             }
         });
@@ -586,6 +588,7 @@ public class InterestHandlerTest {
     static class InterestMatcher extends ArgumentMatcher<Interest<InstanceInfo>> {
 
         private final Interest<InstanceInfo> interest;
+
         public InterestMatcher(Interest<InstanceInfo> interest) {
             this.interest = interest;
         }
@@ -593,7 +596,7 @@ public class InterestHandlerTest {
         @Override
         public boolean matches(Object argument) {
             if (argument instanceof Interest) {
-                return matchInterests(interest, (Interest)argument);
+                return matchInterests(interest, (Interest) argument);
             } else if (argument instanceof MultipleInterests) {
                 return matchInterests(interest, (MultipleInterests) argument);
             } else if (argument instanceof FullRegistryInterest) {

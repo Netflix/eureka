@@ -34,7 +34,7 @@ public class IndexConcurrencyTest {
         PublishSubject<ChangeNotification<InstanceInfo>> dataSource = PublishSubject.create();
 
         InstanceInfoInitStateHolder initStateHolder = new InstanceInfoInitStateHolder(
-                Collections.<ChangeNotification<InstanceInfo>>emptyIterator());
+                Collections.<ChangeNotification<InstanceInfo>>emptyIterator(), Interests.forFullRegistry());
 
         Index<InstanceInfo> index = Index.forInterest(Interests.forFullRegistry(), dataSource, initStateHolder);
 
@@ -71,7 +71,6 @@ public class IndexConcurrencyTest {
                 if (matched[i] == 0) {
                     missed++;
                 }
-//                System.out.println("At position " + i + " found " + matched[i] + " items");
             }
         }
 
@@ -96,7 +95,9 @@ public class IndexConcurrencyTest {
             index.subscribe(new Action1<ChangeNotification<InstanceInfo>>() {
                 @Override
                 public void call(ChangeNotification<InstanceInfo> notification) {
-                    ids.add(Integer.parseInt(notification.getData().getId()));
+                    if (notification.isDataNotification()) {
+                        ids.add(Integer.parseInt(notification.getData().getId()));
+                    }
                 }
             });
 

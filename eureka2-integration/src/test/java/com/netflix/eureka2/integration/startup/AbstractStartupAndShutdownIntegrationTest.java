@@ -22,6 +22,7 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Func1;
 
+import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -67,7 +68,7 @@ public abstract class AbstractStartupAndShutdownIntegrationTest<C extends Eureka
         EurekaClient eurekaClient = eurekaDeploymentResource.connectToWriteCluster();
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
-        eurekaClient.forInterest(Interests.forApplications(applicationName)).subscribe(testSubscriber);
+        eurekaClient.forInterest(Interests.forApplications(applicationName)).filter(dataOnlyFilter()).subscribe(testSubscriber);
 
         ChangeNotification<InstanceInfo> notification = testSubscriber.takeNextOrWait();
         assertThat(notification.getKind(), is(equalTo(Kind.Add)));

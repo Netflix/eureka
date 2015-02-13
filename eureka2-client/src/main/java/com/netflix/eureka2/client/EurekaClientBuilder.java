@@ -5,11 +5,15 @@ import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.client.channel.InterestChannelFactory;
 import com.netflix.eureka2.client.channel.RegistrationChannelFactory;
+import com.netflix.eureka2.client.interest.BatchAwareIndexRegistry;
+import com.netflix.eureka2.client.interest.BatchingRegistry;
+import com.netflix.eureka2.client.interest.BatchingRegistryImpl;
 import com.netflix.eureka2.client.interest.InterestHandlerImpl;
 import com.netflix.eureka2.client.registration.RegistrationHandlerImpl;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
+import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.client.registration.RegistrationHandler;
 import com.netflix.eureka2.client.interest.InterestHandler;
@@ -18,6 +22,7 @@ import com.netflix.eureka2.config.BasicEurekaRegistryConfig;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.registry.PreservableEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 
 /**
  * @author David Liu
@@ -111,13 +116,17 @@ public class EurekaClientBuilder {
             registryMetricFactory = EurekaRegistryMetricFactory.registryMetrics();
         }
 
+        BatchingRegistry<InstanceInfo> remoteBatchingRegistry = new BatchingRegistryImpl<>();
+        BatchAwareIndexRegistry<InstanceInfo> indexRegistry = new BatchAwareIndexRegistry<>(
+                new IndexRegistryImpl<InstanceInfo>(), remoteBatchingRegistry);
+
         PreservableEurekaRegistry registry = new PreservableEurekaRegistry(
-                new SourcedEurekaRegistryImpl(registryMetricFactory),
+                new SourcedEurekaRegistryImpl(indexRegistry, registryMetricFactory),
                 registryConfig,
                 registryMetricFactory);
 
         ClientChannelFactory<InterestChannel> channelFactory
-                = new InterestChannelFactory(transportConfig, readServerResolver, registry, metricFactory);
+                = new InterestChannelFactory(transportConfig, readServerResolver, registry, remoteBatchingRegistry, metricFactory);
 
         return new InterestHandlerImpl(registry, channelFactory);
     }
