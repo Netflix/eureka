@@ -16,7 +16,6 @@
 
 package com.netflix.eureka2.server.service.replication;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +28,7 @@ import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
+import com.netflix.eureka2.utils.Server;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
@@ -46,16 +46,16 @@ public class ReplicationServiceTest {
 
     private static final InstanceInfo SELF_INFO = SampleInstanceInfo.DiscoveryServer.build();
 
-    private static final InetSocketAddress ADDRESS1 = new InetSocketAddress("host1", 123);
-    private static final InetSocketAddress ADDRESS2 = new InetSocketAddress("host2", 456);
-    private static final InetSocketAddress ADDRESS3 = new InetSocketAddress("host3", 789);
+    private static final Server ADDRESS1 = new Server("host1", 123);
+    private static final Server ADDRESS2 = new Server("host2", 456);
+    private static final Server ADDRESS3 = new Server("host3", 789);
 
     private final WriteServerConfig config = WriteServerConfig.writeBuilder().build();
     private final SourcedEurekaRegistry<InstanceInfo> eurekaRegistry = mock(SourcedEurekaRegistry.class);
     private final SelfInfoResolver selfIdentityService = mock(SelfInfoResolver.class);
     private final ReplicationPeerAddressesProvider peerAddressProvider = mock(ReplicationPeerAddressesProvider.class);
 
-    private final ReplaySubject<ChangeNotification<InetSocketAddress>> peerAddressSubject = ReplaySubject.create();
+    private final ReplaySubject<ChangeNotification<Server>> peerAddressSubject = ReplaySubject.create();
 
     private ReplicationService replicationService;
 
@@ -68,7 +68,7 @@ public class ReplicationServiceTest {
 
     @Test(timeout = 60000)
     public void testConnectsToRemotePeers() throws Exception {
-        Map<InetSocketAddress, ReplicationHandler> addressVsHandler = replicationService.addressVsHandler;
+        Map<Server, ReplicationHandler> addressVsHandler = replicationService.addressVsHandler;
         assertThat(addressVsHandler.size(), is(0));
 
         // Connect to trigger replication process
@@ -82,7 +82,7 @@ public class ReplicationServiceTest {
 
     @Test(timeout = 60000)
     public void testDisconnectsFromRemovedServers() throws Exception {
-        Map<InetSocketAddress, ReplicationHandler> addressVsHandler = replicationService.addressVsHandler;
+        Map<Server, ReplicationHandler> addressVsHandler = replicationService.addressVsHandler;
         assertThat(addressVsHandler.size(), is(0));
 
         // Connect to trigger replication process
@@ -91,7 +91,7 @@ public class ReplicationServiceTest {
 
         peerAddressSubject.onNext(new ChangeNotification<>(Kind.Add, ADDRESS1));
         assertThat(addressVsHandler.size(), is(1));
-        Map.Entry<InetSocketAddress, ReplicationHandler> entry = addressVsHandler.entrySet().iterator().next();
+        Map.Entry<Server, ReplicationHandler> entry = addressVsHandler.entrySet().iterator().next();
         assertThat(entry.getKey(), is(equalTo(ADDRESS1)));
 
         // hotswap the handler with a spy of itself so we can check shutdown
@@ -106,7 +106,7 @@ public class ReplicationServiceTest {
 
     @Test(timeout = 60000)
     public void testShutdownCleanUpResources() {
-        Map<InetSocketAddress, ReplicationHandler> addressVsHandler = replicationService.addressVsHandler;
+        Map<Server, ReplicationHandler> addressVsHandler = replicationService.addressVsHandler;
         assertThat(addressVsHandler.size(), is(0));
 
         // Connect to trigger replication process
@@ -119,7 +119,7 @@ public class ReplicationServiceTest {
 
         // hotswap all of the handlers with spies so we can check shutdown
         List<ReplicationHandler> spies = new ArrayList<>();
-        for (Map.Entry<InetSocketAddress, ReplicationHandler> entry : replicationService.addressVsHandler.entrySet()) {
+        for (Map.Entry<Server, ReplicationHandler> entry : replicationService.addressVsHandler.entrySet()) {
             ReplicationHandler spyHandler = spy(entry.getValue());
             spies.add(spyHandler);
             addressVsHandler.put(entry.getKey(), spyHandler);

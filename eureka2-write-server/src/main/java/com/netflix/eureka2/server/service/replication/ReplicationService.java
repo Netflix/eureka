@@ -20,7 +20,6 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -32,6 +31,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
+import com.netflix.eureka2.utils.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -56,7 +56,7 @@ public class ReplicationService {
     private final ReplicationPeerAddressesProvider peerAddressesProvider;
     private final WriteServerMetricFactory metricFactory;
 
-    protected final Map<InetSocketAddress, ReplicationHandler> addressVsHandler;
+    protected final Map<Server, ReplicationHandler> addressVsHandler;
 
     private InstanceInfo ownInstanceInfo;
     private Subscription resolverSubscription;
@@ -87,14 +87,14 @@ public class ReplicationService {
         }
 
         resolverSubscription = selfInfoResolver.resolve().take(1)
-                .switchMap(new Func1<InstanceInfo, Observable<ChangeNotification<InetSocketAddress>>>() {
+                .switchMap(new Func1<InstanceInfo, Observable<ChangeNotification<Server>>>() {
                     @Override
-                    public Observable<ChangeNotification<InetSocketAddress>> call(InstanceInfo instanceInfo) {
+                    public Observable<ChangeNotification<Server>> call(InstanceInfo instanceInfo) {
                         ownInstanceInfo = instanceInfo;
                         return peerAddressesProvider.get();
                     }
                 })
-                .subscribe(new Subscriber<ChangeNotification<InetSocketAddress>>() {
+                .subscribe(new Subscriber<ChangeNotification<Server>>() {
                     @Override
                     public void onCompleted() {
                         logger.debug("Replication server resolver stream completed - write cluster server list will no longer be updated");
@@ -106,8 +106,8 @@ public class ReplicationService {
                     }
 
                     @Override
-                    public void onNext(ChangeNotification<InetSocketAddress> serverNotif) {
-                        InetSocketAddress address = serverNotif.getData();
+                    public void onNext(ChangeNotification<Server> serverNotif) {
+                        Server address = serverNotif.getData();
                         switch (serverNotif.getKind()) {
                             case Add:
                                 addServer(address);
@@ -119,14 +119,14 @@ public class ReplicationService {
                 });
     }
 
-    private void addServer(final InetSocketAddress address) {
+    private void addServer(final Server address) {
         if (state.get() == STATE.Closed) {
             logger.info("Not adding server as the service is already shutdown");
             return;
         }
 
         if (!addressVsHandler.containsKey(address)) {
-            logger.debug("Adding replication channel to server {}", address);
+            logger.info("Adding replication channel to server {}", address);
 
             ReplicationHandler handler = new ReplicationHandlerImpl(config, address, eurekaRegistry, ownInstanceInfo, metricFactory);
             addressVsHandler.put(address, handler);
@@ -134,9 +134,10 @@ public class ReplicationService {
         }
     }
 
-    private void removeServer(InetSocketAddress address) {
+    private void removeServer(Server address) {
         ReplicationHandler handler = addressVsHandler.remove(address);
         if (handler != null) {
+            logger.info("Removing replication channel to server {}", address);
             handler.shutdown();
         }
     }

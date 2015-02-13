@@ -1,6 +1,5 @@
 package com.netflix.eureka2.testkit.embedded.server;
 
-import java.net.InetSocketAddress;
 import java.util.Properties;
 
 import com.google.inject.AbstractModule;
@@ -15,6 +14,7 @@ import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer.WriteServerReport;
+import com.netflix.eureka2.utils.Server;
 import rx.Observable;
 
 /**
@@ -22,10 +22,10 @@ import rx.Observable;
  */
 public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig, WriteServerReport> {
 
-    private final Observable<ChangeNotification<InetSocketAddress>> replicationPeers;
+    private final Observable<ChangeNotification<Server>> replicationPeers;
 
     public EmbeddedWriteServer(final WriteServerConfig config,
-                               final Observable<ChangeNotification<InetSocketAddress>> replicationPeers,
+                               final Observable<ChangeNotification<Server>> replicationPeers,
                                boolean withExt,
                                boolean withDashboards) {
         super(config, withExt, withDashboards);

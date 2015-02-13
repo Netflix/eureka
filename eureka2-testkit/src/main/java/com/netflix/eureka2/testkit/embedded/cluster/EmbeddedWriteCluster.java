@@ -1,11 +1,9 @@
 package com.netflix.eureka2.testkit.embedded.cluster;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.netflix.eureka2.client.resolver.ServerResolver;
-import com.netflix.eureka2.client.resolver.ServerResolver.Server;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
@@ -15,6 +13,7 @@ import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster.WriteSe
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer.WriteServerReport;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
+import com.netflix.eureka2.utils.Server;
 import netflix.ocelli.LoadBalancer;
 import netflix.ocelli.MembershipEvent;
 import netflix.ocelli.MembershipEvent.EventType;
@@ -121,20 +120,20 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
         });
     }
 
-    public Observable<ChangeNotification<InetSocketAddress>> replicationPeers() {
+    public Observable<ChangeNotification<Server>> replicationPeers() {
         return clusterChangeObservable().map(
-                new Func1<ChangeNotification<WriteServerAddress>, ChangeNotification<InetSocketAddress>>() {
+                new Func1<ChangeNotification<WriteServerAddress>, ChangeNotification<Server>>() {
                     @Override
-                    public ChangeNotification<InetSocketAddress> call(ChangeNotification<WriteServerAddress> notification) {
+                    public ChangeNotification<Server> call(ChangeNotification<WriteServerAddress> notification) {
                         WriteServerAddress data = notification.getData();
-                        InetSocketAddress socketAddress = new InetSocketAddress(data.getHostName(), data.getReplicationPort());
+                        Server serverAddress = new Server(data.getHostName(), data.getReplicationPort());
                         switch (notification.getKind()) {
                             case Add:
-                                return new ChangeNotification<InetSocketAddress>(Kind.Add, socketAddress);
+                                return new ChangeNotification<Server>(Kind.Add, serverAddress);
                             case Modify:
                                 throw new IllegalStateException("Modify not expected");
                             case Delete:
-                                return new ChangeNotification<InetSocketAddress>(Kind.Delete, socketAddress);
+                                return new ChangeNotification<Server>(Kind.Delete, serverAddress);
                         }
                         return null;
                     }

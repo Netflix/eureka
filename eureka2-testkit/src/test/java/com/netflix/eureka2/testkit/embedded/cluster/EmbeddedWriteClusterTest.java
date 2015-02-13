@@ -1,14 +1,13 @@
 package com.netflix.eureka2.testkit.embedded.cluster;
 
-import java.net.InetSocketAddress;
 import java.util.List;
 
-import com.netflix.eureka2.client.resolver.ServerResolver.Server;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster.WriteClusterReport;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
+import com.netflix.eureka2.utils.Server;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,7 +49,7 @@ public class EmbeddedWriteClusterTest {
         verify(writeServer, times(1)).start();
 
         // Verify replication peers observable
-        TestSubscriber<ChangeNotification<InetSocketAddress>> replicationPeerSubscriber = new TestSubscriber<>();
+        TestSubscriber<ChangeNotification<Server>> replicationPeerSubscriber = new TestSubscriber<>();
         writeCluster.replicationPeers().subscribe(replicationPeerSubscriber);
 
         replicationPeerSubscriber.assertNoErrors();
@@ -76,7 +75,7 @@ public class EmbeddedWriteClusterTest {
         writeCluster.scaleUpBy(2);
 
         // Subscribe to replication peer before scale down to catch server remove update
-        TestSubscriber<ChangeNotification<InetSocketAddress>> replicationPeerSubscriber = new TestSubscriber<>();
+        TestSubscriber<ChangeNotification<Server>> replicationPeerSubscriber = new TestSubscriber<>();
         writeCluster.replicationPeers().subscribe(replicationPeerSubscriber);
 
         // Now scale down
@@ -84,7 +83,7 @@ public class EmbeddedWriteClusterTest {
         verify(writeServer, times(1)).shutdown();
 
         // Verify we have server remove
-        List<ChangeNotification<InetSocketAddress>> updates = replicationPeerSubscriber.getOnNextEvents();
+        List<ChangeNotification<Server>> updates = replicationPeerSubscriber.getOnNextEvents();
         assertThat(updates.size(), is(equalTo(3)));
         assertThat(updates.get(2).getKind(), is(equalTo(Kind.Delete)));
     }

@@ -6,7 +6,6 @@ import java.util.Set;
 
 import com.netflix.eureka2.Names;
 import com.netflix.eureka2.client.channel.SnapshotInterestChannel;
-import com.netflix.eureka2.client.resolver.ServerResolver.Server;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -14,6 +13,7 @@ import com.netflix.eureka2.registry.instance.NetworkAddress.ProtocolType;
 import com.netflix.eureka2.registry.selector.ServiceSelector;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.utils.ExtCollections;
+import com.netflix.eureka2.utils.Server;
 import netflix.ocelli.LoadBalancerBuilder;
 import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
 import org.junit.Before;

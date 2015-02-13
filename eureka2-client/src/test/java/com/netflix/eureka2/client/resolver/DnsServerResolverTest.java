@@ -3,11 +3,11 @@ package com.netflix.eureka2.client.resolver;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.client.resolver.DnsServerResolver.DnsServerResolverBuilder;
-import com.netflix.eureka2.client.resolver.ServerResolver.Server;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.ChangeNotificationSource;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.utils.Server;
 import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
 import org.junit.Before;
 import org.junit.Test;

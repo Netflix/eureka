@@ -1,5 +1,6 @@
 package com.netflix.eureka2.client.resolver;
 
+import com.netflix.eureka2.utils.Server;
 import com.netflix.eureka2.utils.rx.RetryStrategyFunc;
 import rx.Observable;
 

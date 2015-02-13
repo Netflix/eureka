@@ -9,6 +9,7 @@ import com.netflix.eureka2.transport.base.BaseMessageConnection;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.transport.base.SelfClosingConnection;
+import com.netflix.eureka2.utils.Server;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ObservableConnection;
 import io.reactivex.netty.client.RxClient;
@@ -34,7 +35,7 @@ public abstract class ResolverBasedTransportClient implements TransportClient {
     private final ServerResolver resolver;
     private final PipelineConfigurator<Object, Object> pipelineConfigurator;
     private final MessageConnectionMetrics metrics;
-    private final ConcurrentHashMap<ServerResolver.Server, RxClient<Object, Object>> clients;
+    private final ConcurrentHashMap<Server, RxClient<Object, Object>> clients;
 
     protected ResolverBasedTransportClient(EurekaTransportConfig config,
                                            ServerResolver resolver,
@@ -51,9 +52,9 @@ public abstract class ResolverBasedTransportClient implements TransportClient {
     public Observable<MessageConnection> connect() {
         return resolver.resolve()
                 .take(1)
-                .map(new Func1<ServerResolver.Server, RxClient<Object, Object>>() {
+                .map(new Func1<Server, RxClient<Object, Object>>() {
                     @Override
-                    public RxClient<Object, Object> call(ServerResolver.Server server) {
+                    public RxClient<Object, Object> call(Server server) {
                         // This should be invoked from a single thread.
                         RxClient<Object, Object> client = clients.get(server);
                         if (null == client) {

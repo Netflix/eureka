@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.client.resolver.FileServerResolver.FileServerResolverBuilder;
-import com.netflix.eureka2.client.resolver.ServerResolver.Server;
+import com.netflix.eureka2.utils.Server;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

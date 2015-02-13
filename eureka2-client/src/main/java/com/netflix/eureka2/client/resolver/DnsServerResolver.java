@@ -6,6 +6,7 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.ChangeNotificationSource;
 import com.netflix.eureka2.interests.host.DnsChangeNotificationSource;
+import com.netflix.eureka2.utils.Server;
 import netflix.ocelli.LoadBalancerBuilder;
 import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
 import rx.Observable;

@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.client.resolver;
 
+import com.netflix.eureka2.utils.Server;
 import rx.Observable;
 import rx.functions.Func1;
 
