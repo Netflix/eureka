@@ -23,10 +23,14 @@ import com.netflix.eureka2.client.resolver.EurekaServerResolver.EurekaServerReso
 import com.netflix.eureka2.client.resolver.FileServerResolver.FileServerResolverBuilder;
 import com.netflix.eureka2.client.resolver.ServerResolver.Server;
 import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
 import rx.Observable;
 import rx.functions.Func1;
+
+import static com.netflix.eureka2.metric.EurekaRegistryMetricFactory.registryMetrics;
+import static com.netflix.eureka2.metric.client.EurekaClientMetricFactory.clientMetrics;
 
 /**
  * A convenience factory for creating various flavors of {@link ServerResolver}
@@ -43,16 +47,18 @@ public final class ServerResolvers {
     }
 
     public static ServerResolver fromWriteServer(ServerResolver writeServerResolver, String readClusterVip) {
-        return fromWriteServer(writeServerResolver, readClusterVip, EurekaClientMetricFactory.clientMetrics());
+        return fromWriteServer(writeServerResolver, readClusterVip, clientMetrics(), registryMetrics());
     }
 
     public static ServerResolver fromWriteServer(ServerResolver writeServerResolver,
                                                  String readClusterVip,
-                                                 EurekaClientMetricFactory metricFactory) {
+                                                 EurekaClientMetricFactory clientMetricFactory,
+                                                 EurekaRegistryMetricFactory registryMetricFactory) {
         return new EurekaServerResolverBuilder()
                 .withBootstrapResolver(writeServerResolver)
                 .withReadServerInterest(Interests.forVips(readClusterVip))
-                .withMetricFactory(metricFactory)
+                .withMetricFactory(clientMetricFactory)
+                .withMetricFactory(registryMetricFactory)
                 .build();
     }
 
