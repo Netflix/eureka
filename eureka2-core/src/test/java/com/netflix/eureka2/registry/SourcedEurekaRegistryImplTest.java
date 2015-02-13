@@ -29,7 +29,7 @@ import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
-import static com.netflix.eureka2.interests.ChangeNotifications.batchMarkerFilter;
+import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
@@ -125,7 +125,7 @@ public class SourcedEurekaRegistryImplTest {
         final List<String> returnedIds = new ArrayList<>();
 
         Observable<ChangeNotification<InstanceInfo>> interestStream =
-                registry.forInterest(Interests.forApplications(discovery1.getApp())).filter(batchMarkerFilter());
+                registry.forInterest(Interests.forApplications(discovery1.getApp())).filter(dataOnlyFilter());
 
         interestStream.subscribe(new Action1<ChangeNotification<InstanceInfo>>() {
             @Override
@@ -352,10 +352,10 @@ public class SourcedEurekaRegistryImplTest {
         final List<String> returnedIdsAll = new ArrayList<>();
 
         Observable<ChangeNotification<InstanceInfo>> interestStreamDiscovery =
-                registry.forInterest(Interests.forApplications(discovery1.getApp())).filter(batchMarkerFilter());
+                registry.forInterest(Interests.forApplications(discovery1.getApp())).filter(dataOnlyFilter());
 
         Observable<ChangeNotification<InstanceInfo>> interestStreamAll =
-                registry.forInterest(Interests.forFullRegistry()).filter(batchMarkerFilter());
+                registry.forInterest(Interests.forFullRegistry()).filter(dataOnlyFilter());
 
         final CountDownLatch discoveryStreamCompletionLatch = new CountDownLatch(1);
         Subscription discoveryStreamSubscription = interestStreamDiscovery

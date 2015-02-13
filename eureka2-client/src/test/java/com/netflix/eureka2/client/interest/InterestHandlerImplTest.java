@@ -51,7 +51,7 @@ import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 import rx.subjects.ReplaySubject;
 
-import static com.netflix.eureka2.interests.ChangeNotifications.batchMarkerFilter;
+import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
@@ -134,8 +134,7 @@ public class InterestHandlerImplTest {
         BatchingRegistry<InstanceInfo> remoteBatchingRegistry = new BatchingRegistryImpl<>();
         IndexRegistry<InstanceInfo> indexRegistry = new BatchAwareIndexRegistry<>(new IndexRegistryImpl<InstanceInfo>(), remoteBatchingRegistry);
         SourcedEurekaRegistry<InstanceInfo> delegateRegistry = new SourcedEurekaRegistryImpl(
-                EurekaRegistryMetricFactory.registryMetrics(),
-                indexRegistry,
+                indexRegistry, EurekaRegistryMetricFactory.registryMetrics(),
                 registryScheduler
         );
         registry = spy(new PreservableEurekaRegistry(
@@ -180,7 +179,7 @@ public class InterestHandlerImplTest {
                 SampleChangeNotification.DiscoveryAdd.newNotification(discoveryInfos.get(2))
         );
 
-        handler.forInterest(discoveryInterest).filter(batchMarkerFilter()).subscribe(discoverySubscriber);
+        handler.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(discoverySubscriber);
         discoverySubscriber.assertProducesInAnyOrder(expectedDiscovery);
 
         assertThat(factory.getAllChannels().size(), is(1));
@@ -197,7 +196,7 @@ public class InterestHandlerImplTest {
                 SampleChangeNotification.ZuulAdd.newNotification(zuulInfos.get(2))
         );
 
-        handler.forInterest(zuulInterest).filter(batchMarkerFilter()).subscribe(zuulSubscriber);
+        handler.forInterest(zuulInterest).filter(dataOnlyFilter()).subscribe(zuulSubscriber);
         zuulSubscriber.assertProducesInAnyOrder(expectedZuul);
 
         assertThat(factory.getAllChannels().size(), is(1));
@@ -250,7 +249,7 @@ public class InterestHandlerImplTest {
                 SampleChangeNotification.DiscoveryAdd.newNotification(discoveryInfos.get(2))
         );
 
-        handler.forInterest(discoveryInterest).filter(batchMarkerFilter()).subscribe(discoverySubscriber);
+        handler.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(discoverySubscriber);
         discoverySubscriber.assertProducesInAnyOrder(expected);
 
         assertThat(factory.getAllChannels().size(), is(2));
@@ -317,10 +316,10 @@ public class InterestHandlerImplTest {
         handler = new InterestHandlerImpl(registry, factory, RETRY_WAIT_MILLIS);
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber1 = new ExtTestSubscriber<>();
-        handler.forInterest(discoveryInterest).filter(batchMarkerFilter()).subscribe(extTestSubscriber1);
+        handler.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber1);
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber2 = new ExtTestSubscriber<>();
-        handler.forInterest(discoveryInterest).filter(batchMarkerFilter()).subscribe(extTestSubscriber2);
+        handler.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber2);
 
         final List<InstanceInfo> discoveryOutput1 = new ArrayList<>();
         final List<InstanceInfo> discoveryOutput2 = new ArrayList<>();
@@ -349,10 +348,10 @@ public class InterestHandlerImplTest {
         handler = new InterestHandlerImpl(registry, factory, RETRY_WAIT_MILLIS);
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber1 = new ExtTestSubscriber<>();
-        handler.forInterest(discoveryInterest).filter(batchMarkerFilter()).subscribe(extTestSubscriber1);
+        handler.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber1);
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber2 = new ExtTestSubscriber<>();
-        handler.forInterest(zuulInterest).filter(batchMarkerFilter()).subscribe(extTestSubscriber2);
+        handler.forInterest(zuulInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber2);
 
         final List<InstanceInfo> discoveryOutput = new ArrayList<>();
         final List<InstanceInfo> zuulOutput = new ArrayList<>();
@@ -381,13 +380,13 @@ public class InterestHandlerImplTest {
         handler = new InterestHandlerImpl(registry, factory, RETRY_WAIT_MILLIS);
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber1 = new ExtTestSubscriber<>();
-        handler.forInterest(discoveryInterest).filter(batchMarkerFilter()).subscribe(extTestSubscriber1);
+        handler.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber1);
 
         // don't use all registry interest as it is a special singleton
         Interest<InstanceInfo> compositeInterest = new MultipleInterests<>(discoveryInterest, zuulInterest);
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber2 = new ExtTestSubscriber<>();
-        handler.forInterest(compositeInterest).filter(batchMarkerFilter()).subscribe(extTestSubscriber2);
+        handler.forInterest(compositeInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber2);
 
         final List<InstanceInfo> discoveryOutput = new ArrayList<>();
         final List<InstanceInfo> compositeOutput = new ArrayList<>();
@@ -430,7 +429,7 @@ public class InterestHandlerImplTest {
         ArgumentCaptor<InstanceInfo> infoCaptor = ArgumentCaptor.forClass(InstanceInfo.class);
         ArgumentCaptor<Source> sourceCaptor = ArgumentCaptor.forClass(Source.class);
 
-        handler.forInterest(discoveryInterest).filter(batchMarkerFilter()).subscribe(discoverySubscriber);
+        handler.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(discoverySubscriber);
 
         discoverySubscriber.assertProducesInAnyOrder(expected, new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
             @Override
@@ -473,7 +472,7 @@ public class InterestHandlerImplTest {
 
         // verify that a new subscriber can subscribe and see latest changes
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> newSubscriber = new ExtTestSubscriber<>();
-        handler.forInterest(discoveryInterest).filter(batchMarkerFilter()).subscribe(newSubscriber);
+        handler.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(newSubscriber);
 
         newSubscriber.assertProducesInAnyOrder(expected, new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
             @Override

@@ -30,6 +30,22 @@ import rx.functions.Func1;
  */
 public final class ChangeNotifications {
 
+    private static final Func1<ChangeNotification<?>, Boolean> DATA_ONLY_FILTER_FUNC =
+            new Func1<ChangeNotification<?>, Boolean>() {
+                @Override
+                public Boolean call(ChangeNotification<?> notification) {
+                    return notification.isDataNotification();
+                }
+            };
+
+    private static final Func1<ChangeNotification<?>, Boolean> STREAM_STATE_FILTER_FUNC =
+            new Func1<ChangeNotification<?>, Boolean>() {
+                @Override
+                public Boolean call(ChangeNotification<?> notification) {
+                    return notification instanceof StreamStateNotification;
+                }
+            };
+
     private ChangeNotifications() {
     }
 
@@ -44,12 +60,11 @@ public final class ChangeNotifications {
         return Observable.from(notifications);
     }
 
-    public static Func1<ChangeNotification<?>, Boolean> batchMarkerFilter() {
-        return new Func1<ChangeNotification<?>, Boolean>() {
-            @Override
-            public Boolean call(ChangeNotification<?> notification) {
-                return notification.isDataNotification();
-            }
-        };
+    public static Func1<ChangeNotification<?>, Boolean> dataOnlyFilter() {
+        return DATA_ONLY_FILTER_FUNC;
+    }
+
+    public static Func1<ChangeNotification<?>, Boolean> streamStateFilter() {
+        return STREAM_STATE_FILTER_FUNC;
     }
 }

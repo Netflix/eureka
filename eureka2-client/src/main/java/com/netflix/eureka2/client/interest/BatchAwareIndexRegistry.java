@@ -4,6 +4,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
+import com.netflix.eureka2.interests.ChangeNotifications;
 import com.netflix.eureka2.interests.Index.InitStateHolder;
 import com.netflix.eureka2.interests.IndexRegistry;
 import com.netflix.eureka2.interests.Interest;
@@ -14,6 +15,7 @@ import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import rx.Observable;
 import rx.Observable.OnSubscribe;
 import rx.Subscriber;
+import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.observables.ConnectableObservable;
@@ -27,7 +29,7 @@ import rx.subjects.PublishSubject;
  */
 public class BatchAwareIndexRegistry<T> implements IndexRegistry<T> {
 
-    private static final ChangeNotification<?> FINISH_BATCHING_NOTIFICATION = new ChangeNotification<>(Kind.BufferingSentinel, null);
+    private static final ChangeNotification<?> FINISH_BATCHING_NOTIFICATION = new ChangeNotification<>(Kind.BufferSentinel, null);
 
     private final IndexRegistry<T> delegateRegistry;
     private final BatchingRegistry<T> remoteBatchingRegistry;
@@ -52,11 +54,13 @@ public class BatchAwareIndexRegistry<T> implements IndexRegistry<T> {
 
     @Override
     public Observable<Void> shutdown() {
+        remoteBatchingRegistry.shutdown();
         return delegateRegistry.shutdown();
     }
 
     @Override
     public Observable<Void> shutdown(Throwable cause) {
+        remoteBatchingRegistry.shutdown();
         return delegateRegistry.shutdown(cause);
     }
 
@@ -66,34 +70,47 @@ public class BatchAwareIndexRegistry<T> implements IndexRegistry<T> {
             @Override
             public void call(Subscriber<? super ChangeNotification<T>> subscriber) {
                 ConnectableObservable<ChangeNotification<T>> notifications = changeNotifications.publish();
-                BatchingRegistryImpl<T> localBatchingRegistry = new BatchingRegistryImpl<>();
-                localBatchingRegistry.subscribe(notifications);
+                final BatchingRegistryImpl<T> localBatchingRegistry = new BatchingRegistryImpl<>();
+                localBatchingRegistry.connectTo(notifications);
 
                 // Buffer is defined by merge of batch hint from the registry and the channel
                 final AtomicBoolean batchingMode = new AtomicBoolean();
                 Observable<ChangeNotification<T>> finishBatchingObservable = BatchFunctions.combine(
                         localBatchingRegistry.forInterest(interest),
-                        remoteBatchingRegistry.forInterest(interest)
+                        remoteBatchingRegistry.forInterest(interest).doOnTerminate(new Action0() {
+                            @Override
+                            public void call() {
+                                // Local registry will be shutdown on forInterest unsubscribe or
+                                // when there is a global shutdown (here)
+                                localBatchingRegistry.shutdown();
+                            }
+                        })
                 ).doOnNext(new Action1<Boolean>() {
                     @Override
                     public void call(Boolean status) {
                         batchingMode.set(status);
                     }
-                }).flatMap(new Func1<Boolean, Observable<ChangeNotification<T>>>() {
+                }).filter(new Func1<Boolean, Boolean>() {
                     @Override
-                    public Observable<ChangeNotification<T>> call(Boolean batching) {
-                        return batching ? Observable.<ChangeNotification<T>>empty() : Observable.just((ChangeNotification<T>) FINISH_BATCHING_NOTIFICATION);
+                    public Boolean call(Boolean batching) {
+                        return !batching;
+                    }
+                }).map(new Func1<Boolean, ChangeNotification<T>>() {
+                    @Override
+                    public ChangeNotification<T> call(Boolean aBoolean) {
+                        return (ChangeNotification<T>) FINISH_BATCHING_NOTIFICATION;
+                    }
+                }).doOnTerminate(new Action0() {
+                    @Override
+                    public void call() {
+                        localBatchingRegistry.shutdown();
                     }
                 });
 
                 // Plain data change notification stream
                 Observable<ChangeNotification<T>> dataNotifications = notifications
-                        .filter(new Func1<ChangeNotification<T>, Boolean>() {
-                            @Override
-                            public Boolean call(ChangeNotification<T> notification) {
-                                return notification.isDataNotification();
-                            }
-                        }).flatMap(new Func1<ChangeNotification<T>, Observable<ChangeNotification<T>>>() {
+                        .filter(ChangeNotifications.dataOnlyFilter())
+                        .flatMap(new Func1<ChangeNotification<T>, Observable<ChangeNotification<T>>>() {
                             @Override
                             public Observable<ChangeNotification<T>> call(ChangeNotification<T> notification) {
                                 ChangeNotification<T> result = notification;
@@ -112,8 +129,7 @@ public class BatchAwareIndexRegistry<T> implements IndexRegistry<T> {
 
                 PublishSubject<ChangeNotification<T>> resultSubject = PublishSubject.create();
                 resultSubject.subscribe(subscriber);
-                finishBatchingObservable.subscribe(resultSubject);
-                dataNotifications.subscribe(resultSubject);
+                finishBatchingObservable.mergeWith(dataNotifications).subscribe(resultSubject);
 
                 // Two subscribers are watching it: localBatchingRegistry and resultSubject
                 notifications.connect();

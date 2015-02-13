@@ -234,8 +234,8 @@ public abstract class TransportCompatibilityTestSuite {
         }
 
         private void streamStateUpdateTest() {
-            runServerToClientWithAck(new StreamStateUpdate(StreamStateNotification.bufferNotification(Interests.forFullRegistry())));
-            runServerToClientWithAck(new StreamStateUpdate(StreamStateNotification.finishBufferingNotification(Interests.forFullRegistry())));
+            runServerToClientWithAck(new StreamStateUpdate(StreamStateNotification.bufferStartNotification(Interests.forFullRegistry())));
+            runServerToClientWithAck(new StreamStateUpdate(StreamStateNotification.bufferEndNotification(Interests.forFullRegistry())));
         }
     }
 }

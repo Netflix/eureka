@@ -121,7 +121,7 @@ public class EurekaClientBuilder {
                 new IndexRegistryImpl<InstanceInfo>(), remoteBatchingRegistry);
 
         PreservableEurekaRegistry registry = new PreservableEurekaRegistry(
-                new SourcedEurekaRegistryImpl(registryMetricFactory, indexRegistry),
+                new SourcedEurekaRegistryImpl(indexRegistry, registryMetricFactory),
                 registryConfig,
                 registryMetricFactory);
 

@@ -4,12 +4,11 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.interests.StreamStateNotification;
-import com.netflix.eureka2.interests.StreamStateNotification.BufferingState;
+import com.netflix.eureka2.interests.StreamStateNotification.BufferState;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import org.junit.Before;
 import org.junit.Test;
-import rx.Observable;
 import rx.subjects.PublishSubject;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -31,57 +30,98 @@ public class BatchingRegistryImplTest {
 
     @Before
     public void setUp() throws Exception {
-        batchingRegistry.subscribe(notificationSubject);
+        batchingRegistry.connectTo(notificationSubject);
     }
 
     @Test
     public void testGeneratesBatchStatusUpdatesFromChannelNotificationStream() throws Exception {
-        ExtTestSubscriber<BufferingState> interestSubscriberA = new ExtTestSubscriber<>();
+        ExtTestSubscriber<BufferState> interestSubscriberA = new ExtTestSubscriber<>();
         batchingRegistry.forInterest(ATOMIC_INTEREST_A).subscribe(interestSubscriberA);
-        ExtTestSubscriber<BufferingState> interestSubscriberAB = new ExtTestSubscriber<>();
+        ExtTestSubscriber<BufferState> interestSubscriberAB = new ExtTestSubscriber<>();
         batchingRegistry.forInterest(INTEREST_AB).subscribe(interestSubscriberAB);
 
         // No notification was sent, so the state is unknown
-        assertThat(interestSubscriberA.takeNext(), is(equalTo(BufferingState.Unknown)));
-        assertThat(interestSubscriberAB.takeNext(), is(equalTo(BufferingState.Unknown)));
+        assertThat(interestSubscriberA.takeNext(), is(equalTo(BufferState.Unknown)));
+        assertThat(interestSubscriberAB.takeNext(), is(equalTo(BufferState.Unknown)));
 
         // Generate batching markers in the stream
-        notificationSubject.onNext(StreamStateNotification.bufferNotification(ATOMIC_INTEREST_A));
-        notificationSubject.onNext(StreamStateNotification.bufferNotification(ATOMIC_INTEREST_B));
-        assertThat(interestSubscriberA.takeNext(), is(equalTo(BufferingState.Buffer)));
-        assertThat(interestSubscriberAB.takeNext(), is(equalTo(BufferingState.Buffer)));
+        notificationSubject.onNext(StreamStateNotification.bufferStartNotification(ATOMIC_INTEREST_A));
+        notificationSubject.onNext(StreamStateNotification.bufferStartNotification(ATOMIC_INTEREST_B));
+        assertThat(interestSubscriberA.takeNext(), is(equalTo(BufferState.BufferStart)));
+        assertThat(interestSubscriberAB.takeNext(), is(equalTo(BufferState.BufferStart)));
 
         // Finish interest A
-        notificationSubject.onNext(StreamStateNotification.finishBufferingNotification(ATOMIC_INTEREST_A));
-        assertThat(interestSubscriberA.takeNext(), is(equalTo(BufferingState.FinishBuffering)));
+        notificationSubject.onNext(StreamStateNotification.bufferEndNotification(ATOMIC_INTEREST_A));
+        assertThat(interestSubscriberA.takeNext(), is(equalTo(BufferState.BufferEnd)));
         assertThat(interestSubscriberAB.takeNext(), is(nullValue()));
 
         // Finish interest B
-        notificationSubject.onNext(StreamStateNotification.finishBufferingNotification(ATOMIC_INTEREST_B));
-        assertThat(interestSubscriberAB.takeNext(), is(equalTo(BufferingState.FinishBuffering)));
+        notificationSubject.onNext(StreamStateNotification.bufferEndNotification(ATOMIC_INTEREST_B));
+        assertThat(interestSubscriberAB.takeNext(), is(equalTo(BufferState.BufferEnd)));
     }
 
     @Test
-    public void testResetsStateAfterChannelReconnect() throws Exception {
-        ExtTestSubscriber<BufferingState> interestSubscriber = new ExtTestSubscriber<>();
+    public void testResetsStateAfterChannelReconnectOnCompleted() throws Exception {
+        doTestResetsStateAfterChannelReconnect(false);
+    }
+
+    @Test
+    public void testResetsStateAfterChannelReconnectOnError() throws Exception {
+        doTestResetsStateAfterChannelReconnect(true);
+    }
+
+    private void doTestResetsStateAfterChannelReconnect(boolean failNotificationChannel) {
+        ExtTestSubscriber<BufferState> interestSubscriber = new ExtTestSubscriber<>();
         batchingRegistry.forInterest(ATOMIC_INTEREST_A).subscribe(interestSubscriber);
 
         // No notification was sent, so the state is unknown
-        assertThat(interestSubscriber.takeNext(), is(equalTo(BufferingState.Unknown)));
+        assertThat(interestSubscriber.takeNext(), is(equalTo(BufferState.Unknown)));
 
         // Signal batching begin
-        notificationSubject.onNext(StreamStateNotification.bufferNotification(ATOMIC_INTEREST_A));
-        assertThat(interestSubscriber.takeNext(), is(equalTo(BufferingState.Buffer)));
+        notificationSubject.onNext(StreamStateNotification.bufferStartNotification(ATOMIC_INTEREST_A));
+        assertThat(interestSubscriber.takeNext(), is(equalTo(BufferState.BufferStart)));
 
-        // Sending error on channel should trigger FinishBuffering
-        notificationSubject.onError(new Exception("error"));
-        assertThat(interestSubscriber.takeNext(), is(equalTo(BufferingState.FinishBuffering)));
+        // Sending error on channel should trigger BufferEnd
+        if(failNotificationChannel) {
+            notificationSubject.onError(new Exception("error"));
+        } else {
+            notificationSubject.onCompleted();
+        }
+        assertThat(interestSubscriber.takeNext(), is(equalTo(BufferState.BufferEnd)));
 
         // Connect new channel and send some data
         PublishSubject<ChangeNotification<InstanceInfo>> notificationSubject2 = PublishSubject.create();
-        batchingRegistry.subscribe(notificationSubject2);
+        batchingRegistry.connectTo(notificationSubject2);
 
-        notificationSubject2.onNext(StreamStateNotification.bufferNotification(ATOMIC_INTEREST_A));
-        assertThat(interestSubscriber.takeNext(), is(equalTo(BufferingState.Buffer)));
+        notificationSubject2.onNext(StreamStateNotification.bufferStartNotification(ATOMIC_INTEREST_A));
+        assertThat(interestSubscriber.takeNext(), is(equalTo(BufferState.BufferStart)));
+    }
+
+    @Test
+    public void testSubscriptionChangeCleansUpInternalState() throws Exception {
+        // Signal batching begin
+        notificationSubject.onNext(StreamStateNotification.bufferStartNotification(ATOMIC_INTEREST_A));
+
+        ExtTestSubscriber<BufferState> interestSubscriber = new ExtTestSubscriber<>();
+        batchingRegistry.forInterest(ATOMIC_INTEREST_A).subscribe(interestSubscriber);
+
+        assertThat(interestSubscriber.takeNext(), is(equalTo(BufferState.BufferStart)));
+
+        // Now update the active subscription
+        batchingRegistry.retainAll(ATOMIC_INTEREST_B);
+
+        ExtTestSubscriber<BufferState> secondInterestSubscriber = new ExtTestSubscriber<>();
+        batchingRegistry.forInterest(ATOMIC_INTEREST_A).subscribe(secondInterestSubscriber);
+
+        assertThat(secondInterestSubscriber.takeNext(), is(equalTo(BufferState.Unknown)));
+    }
+
+    @Test
+    public void testShutdownReleasesResources() throws Exception {
+        ExtTestSubscriber<BufferState> interestSubscriberA = new ExtTestSubscriber<>();
+        batchingRegistry.forInterest(ATOMIC_INTEREST_A).subscribe(interestSubscriberA);
+
+        batchingRegistry.shutdown();
+        interestSubscriberA.assertOnCompleted();
     }
 }

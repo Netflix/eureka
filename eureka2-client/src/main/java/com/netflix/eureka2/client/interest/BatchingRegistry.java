@@ -2,7 +2,7 @@ package com.netflix.eureka2.client.interest;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.StreamStateNotification.BufferingState;
+import com.netflix.eureka2.interests.StreamStateNotification.BufferState;
 import rx.Observable;
 
 /**
@@ -17,18 +17,18 @@ public interface BatchingRegistry<T> {
      * Change notifications stream to observe. Subsequent subscribe invocation unsubscribe the
      * previous subscription, and connect a new one.
      */
-    void subscribe(Observable<ChangeNotification<T>> changeNotifications);
+    void connectTo(Observable<ChangeNotification<T>> changeNotifications);
 
     /**
-     * Issue batching state updates ({@link com.netflix.eureka2.interests.StreamStateNotification.BufferingState#Buffer}
-     * or {@link com.netflix.eureka2.interests.StreamStateNotification.BufferingState#FinishBuffering}).
+     * Issue batching state updates ({@link com.netflix.eureka2.interests.StreamStateNotification.BufferState#BufferStart}
+     * or {@link com.netflix.eureka2.interests.StreamStateNotification.BufferState#BufferEnd}).
      */
-    Observable<BufferingState> forInterest(Interest<T> interest);
+    Observable<BufferState> forInterest(Interest<T> interest);
 
     /**
      * Return batching state for a given atomic or composite interest.
      */
-    BufferingState shouldBatch(Interest<T> interest);
+    BufferState shouldBatch(Interest<T> interest);
 
     /**
      * Retain internal state information for the specified composite interest.

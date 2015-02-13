@@ -2,7 +2,7 @@ package com.netflix.eureka2.protocol.discovery;
 
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.StreamStateNotification;
-import com.netflix.eureka2.interests.StreamStateNotification.BufferingState;
+import com.netflix.eureka2.interests.StreamStateNotification.BufferState;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 
 /**
@@ -10,7 +10,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
  */
 public class StreamStateUpdate implements InterestSetNotification {
 
-    private final BufferingState state;
+    private final BufferState state;
     private final Interest<InstanceInfo> interest;
 
     /* For reflection */
@@ -20,11 +20,11 @@ public class StreamStateUpdate implements InterestSetNotification {
     }
 
     public StreamStateUpdate(StreamStateNotification<InstanceInfo> stateNotification) {
-        this.state = stateNotification.getBufferingState();
+        this.state = stateNotification.getBufferState();
         this.interest = stateNotification.getInterest();
     }
 
-    public BufferingState getState() {
+    public BufferState getState() {
         return state;
     }
 

@@ -22,7 +22,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import rx.Observable;
 
-import static com.netflix.eureka2.interests.ChangeNotifications.batchMarkerFilter;
+import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -63,7 +63,7 @@ public class EurekaClientIntegrationTest {
         eurekaClient.register(info).toBlocking().singleOrDefault(null);
 
         // Now check that we get the notification from the read server
-        Observable<ChangeNotification<InstanceInfo>> notifications = eurekaClient.forVips(info.getVipAddress()).filter(batchMarkerFilter());
+        Observable<ChangeNotification<InstanceInfo>> notifications = eurekaClient.forVips(info.getVipAddress()).filter(dataOnlyFilter());
         Iterator<ChangeNotification<InstanceInfo>> notificationIt = RxBlocking.iteratorFrom(5, TimeUnit.HOURS, notifications);
 
         assertThat(notificationIt.next(), is(addChangeNotificationOf(info)));

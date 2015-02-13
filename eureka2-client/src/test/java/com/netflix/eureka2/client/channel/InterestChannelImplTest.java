@@ -39,7 +39,7 @@ import rx.schedulers.TestScheduler;
 import rx.subjects.PublishSubject;
 import rx.subjects.ReplaySubject;
 
-import static com.netflix.eureka2.interests.ChangeNotifications.batchMarkerFilter;
+import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
 import static com.netflix.eureka2.metric.EurekaRegistryMetricFactory.registryMetrics;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
@@ -66,7 +66,7 @@ public class InterestChannelImplTest {
 
     protected BatchingRegistry<InstanceInfo> remoteBatchingRegistry = new BatchingRegistryImpl<>();
     protected IndexRegistry<InstanceInfo> indexRegistry = new BatchAwareIndexRegistry<>(new IndexRegistryImpl<InstanceInfo>(), remoteBatchingRegistry);
-    protected SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(registryMetrics(), indexRegistry, testScheduler);
+    protected SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(indexRegistry, registryMetrics(), testScheduler);
 
     protected InterestChannelMetrics interestChannelMetrics = mock(InterestChannelMetrics.class);
 
@@ -180,7 +180,7 @@ public class InterestChannelImplTest {
         testSubscriber.assertOnCompleted();
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> notificationSubscriber = new ExtTestSubscriber<>();
-        registry.forInterest(Interests.forFullRegistry()).filter(batchMarkerFilter()).subscribe(notificationSubscriber);
+        registry.forInterest(Interests.forFullRegistry()).filter(dataOnlyFilter()).subscribe(notificationSubscriber);
 
         // Send to add change notifications
         incomingSubject.onNext(message1);
@@ -213,14 +213,14 @@ public class InterestChannelImplTest {
         registry.forInterest(interest).subscribe(notificationSubscriber);
 
         // Issue batch of data
-        incomingSubject.onNext(new StreamStateUpdate(StreamStateNotification.bufferNotification(interest)));
+        incomingSubject.onNext(new StreamStateUpdate(StreamStateNotification.bufferStartNotification(interest)));
 
         incomingSubject.onNext(message1);
         testScheduler.triggerActions();
         incomingSubject.onNext(message2);
         testScheduler.triggerActions();
 
-        incomingSubject.onNext(new StreamStateUpdate(StreamStateNotification.finishBufferingNotification(interest)));
+        incomingSubject.onNext(new StreamStateUpdate(StreamStateNotification.bufferEndNotification(interest)));
 
         // We should have got <original 1> <original 2> <buffering sentinel> from registry
         assertThat(notificationSubscriber.takeNextOrFail(), is(addChangeNotificationOf(original1)));

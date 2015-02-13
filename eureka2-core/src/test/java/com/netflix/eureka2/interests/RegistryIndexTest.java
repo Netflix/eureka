@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static com.netflix.eureka2.interests.ChangeNotifications.batchMarkerFilter;
+import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
 import static com.netflix.eureka2.interests.Interests.forFullRegistry;
 import static com.netflix.eureka2.interests.Interests.forInstances;
 import static com.netflix.eureka2.interests.Interests.forSome;
@@ -100,7 +100,7 @@ public class RegistryIndexTest {
         final CountDownLatch expectedLatch = new CountDownLatch(expectedCount);
         registry.register(discoveryServer, localSource).toBlocking().firstOrDefault(null);
         registry.forInterest(interest)
-                .filter(batchMarkerFilter())
+                .filter(dataOnlyFilter())
                 .map(new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {  // transform from source version to base version for testing equals
                     @Override
                     public ChangeNotification<InstanceInfo> call(ChangeNotification<InstanceInfo> notification) {

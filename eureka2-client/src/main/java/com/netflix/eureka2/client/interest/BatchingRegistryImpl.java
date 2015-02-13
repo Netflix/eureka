@@ -6,10 +6,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.ChangeNotifications;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.interests.StreamStateNotification;
-import com.netflix.eureka2.interests.StreamStateNotification.BufferingState;
+import com.netflix.eureka2.interests.StreamStateNotification.BufferState;
 import com.netflix.eureka2.utils.rx.PauseableSubject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,8 +29,8 @@ public class BatchingRegistryImpl<T> implements BatchingRegistry<T> {
 
     private static final Logger logger = LoggerFactory.getLogger(BatchingRegistryImpl.class);
 
-    private final Map<Interest<T>, BufferingState> interestsBufferingState =
-            new ConcurrentHashMap<Interest<T>, BufferingState>();
+    private final Map<Interest<T>, BufferState> interestsBufferingState =
+            new ConcurrentHashMap<Interest<T>, BufferState>();
 
     private final PauseableSubject<Boolean> updatesSubject = PauseableSubject.create();
 
@@ -46,68 +47,65 @@ public class BatchingRegistryImpl<T> implements BatchingRegistry<T> {
                 new Func1<Observable<ChangeNotification<T>>, Observable<Boolean>>() {
                     @Override
                     public Observable<Boolean> call(Observable<ChangeNotification<T>> notifications) {
-                        return notifications.map(new Func1<ChangeNotification<T>, Boolean>() {
-                            @Override
-                            public Boolean call(ChangeNotification<T> notification) {
-                                if (notification instanceof StreamStateNotification) {
-                                    StreamStateNotification<T> stateNotification = (StreamStateNotification<T>) notification;
-                                    interestsBufferingState.put(stateNotification.getInterest(), stateNotification.getBufferingState());
-                                    return true;
-                                }
-                                return null;
-                            }
-                        }).filter(new Func1<Boolean, Boolean>() {
-                            @Override
-                            public Boolean call(Boolean value) {
-                                return value != null;
-                            }
-                        }).materialize().flatMap(new Func1<Notification<Boolean>, Observable<Boolean>>() {
-                            @Override
-                            public Observable<Boolean> call(Notification<Boolean> materialized) {
-                                switch (materialized.getKind()) {
-                                    case OnNext:
-                                        return Observable.just(materialized.getValue());
-                                    case OnError:
-                                        if (logger.isDebugEnabled()) {
-                                            logger.debug("Swallowed observable error", materialized.getThrowable());
+                        return notifications
+                                .filter(ChangeNotifications.streamStateFilter())
+                                .map(new Func1<ChangeNotification<T>, Boolean>() {
+                                    @Override
+                                    public Boolean call(ChangeNotification<T> notification) {
+                                        StreamStateNotification<T> stateNotification = (StreamStateNotification<T>) notification;
+                                        interestsBufferingState.put(stateNotification.getInterest(), stateNotification.getBufferState());
+                                        return true;
+                                    }
+                                }).materialize().map(new Func1<Notification<Boolean>, Boolean>() {
+                                    @Override
+                                    public Boolean call(Notification<Boolean> materialized) {
+                                        switch (materialized.getKind()) {
+                                            case OnNext:
+                                                return materialized.getValue();
+                                            case OnCompleted:
+                                                break; // No-op
+                                            case OnError:
+                                                if (logger.isDebugEnabled()) {
+                                                    logger.debug("Swallowed observable error", materialized.getThrowable());
+                                                }
+                                                break;
                                         }
-                                }
-                                // Set all to FinishBuffering to close opened buffered streams
-                                for(Interest<T> i: interestsBufferingState.keySet()) {
-                                    interestsBufferingState.put(i, BufferingState.FinishBuffering);
-                                }
-                                return Observable.just(false);
-                            }
-                        }).doOnCompleted(new Action0() {
-                            @Override
-                            public void call() {
-                                interestsBufferingState.clear();
-                            }
-                        });
+                                        // Set all to BufferEnd to close opened buffered streams
+                                        for (Interest<T> i : interestsBufferingState.keySet()) {
+                                            interestsBufferingState.put(i, BufferState.BufferEnd);
+                                        }
+                                        return false;
+                                    }
+                                }).doOnTerminate(new Action0() {
+                                    @Override
+                                    public void call() {
+                                        interestsBufferingState.clear();
+                                    }
+                                });
                     }
                 }
         ).subscribe(updatesSubject);
     }
 
     @Override
-    public void subscribe(Observable<ChangeNotification<T>> changeNotifications) {
+    public void connectTo(Observable<ChangeNotification<T>> changeNotifications) {
         notificationSources.onNext(changeNotifications);
     }
 
     @Override
-    public Observable<BufferingState> forInterest(final Interest<T> interest) {
-        return Observable.create(new OnSubscribe<BufferingState>() {
+    public Observable<BufferState> forInterest(final Interest<T> interest) {
+        return Observable.create(new OnSubscribe<BufferState>() {
             @Override
-            public void call(Subscriber<? super BufferingState> subscriber) {
+            public void call(Subscriber<? super BufferState> subscriber) {
                 updatesSubject.pause();
                 try {
-                    BufferingState current = shouldBatch(interest);
-                    if (current != BufferingState.FinishBuffering) {
+                    BufferState current = shouldBatch(interest);
+                    if (current != BufferState.BufferEnd) {
                         subscriber.onNext(current);
                     }
-                    updatesSubject.map(new Func1<Boolean, BufferingState>() {
+                    updatesSubject.map(new Func1<Boolean, BufferState>() {
                         @Override
-                        public BufferingState call(Boolean tick) {
+                        public BufferState call(Boolean tick) {
                             return shouldBatch(interest);
                         }
                     }).subscribe(subscriber);
@@ -120,13 +118,13 @@ public class BatchingRegistryImpl<T> implements BatchingRegistry<T> {
 
     @Override
     public void retainAll(Interest<T> interest) {
-        Set<Interest<T>> toRemove;
+        Set<Interest<T>> toKeep;
         if (interest instanceof MultipleInterests) {
-            toRemove = ((MultipleInterests<T>) interest).flatten();
+            toKeep = ((MultipleInterests<T>) interest).flatten();
         } else {
-            toRemove = Collections.singleton(interest);
+            toKeep = Collections.singleton(interest);
         }
-        interestsBufferingState.keySet().removeAll(toRemove);
+        interestsBufferingState.keySet().retainAll(toKeep);
     }
 
     /**
@@ -136,18 +134,18 @@ public class BatchingRegistryImpl<T> implements BatchingRegistry<T> {
      * for it received), the unknown batching state is returned.
      */
     @Override
-    public BufferingState shouldBatch(Interest<T> interest) {
+    public BufferState shouldBatch(Interest<T> interest) {
         if (interest instanceof MultipleInterests) {
             Set<Interest<T>> interests = ((MultipleInterests<T>) interest).getInterests();
             boolean allUnknown = true;
             for (Interest<T> atomic : interests) {
-                BufferingState state = shouldBatchAtomic(atomic);
-                if (state == BufferingState.Buffer) {
-                    return BufferingState.Buffer;
+                BufferState state = shouldBatchAtomic(atomic);
+                if (state == BufferState.BufferStart) {
+                    return BufferState.BufferStart;
                 }
-                allUnknown &= state == BufferingState.Unknown;
+                allUnknown &= state == BufferState.Unknown;
             }
-            return allUnknown ? BufferingState.Unknown : BufferingState.FinishBuffering;
+            return allUnknown ? BufferState.Unknown : BufferState.BufferEnd;
         }
         return shouldBatchAtomic(interest);
     }
@@ -155,16 +153,17 @@ public class BatchingRegistryImpl<T> implements BatchingRegistry<T> {
     @Override
     public void shutdown() {
         updatesSubject.onCompleted();
+        notificationSources.onCompleted();
     }
 
-    private BufferingState shouldBatchAtomic(Interest<T> atomic) {
-        BufferingState state = interestsBufferingState.get(atomic);
+    private BufferState shouldBatchAtomic(Interest<T> atomic) {
+        BufferState state = interestsBufferingState.get(atomic);
         if (state == null) {
-            return BufferingState.Unknown;
+            return BufferState.Unknown;
         }
-        if (state == BufferingState.Buffer) {
-            return BufferingState.Buffer;
+        if (state == BufferState.BufferStart) {
+            return BufferState.BufferStart;
         }
-        return BufferingState.FinishBuffering;
+        return BufferState.BufferEnd;
     }
 }

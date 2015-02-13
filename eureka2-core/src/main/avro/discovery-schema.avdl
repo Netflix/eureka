@@ -75,12 +75,12 @@ protocol DiscoveryProtocol {
     }
 
     @namespace("com.netflix.eureka2.interests.StreamStateNotification$")
-    enum BufferingState {
-        Unknown, Buffer, FinishBuffering
+    enum BufferState {
+        Unknown, BufferStart, BufferEnd
     }
 
     record StreamStateUpdate {
-        com.netflix.eureka2.interests.StreamStateNotification$.BufferingState state;
+        com.netflix.eureka2.interests.StreamStateNotification$.BufferState state;
         union {
             com.netflix.eureka2.interests.ApplicationInterest,
             com.netflix.eureka2.interests.FullRegistryInterest,

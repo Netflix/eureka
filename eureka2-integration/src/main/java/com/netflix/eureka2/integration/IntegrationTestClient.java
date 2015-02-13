@@ -21,7 +21,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static com.netflix.eureka2.interests.ChangeNotifications.batchMarkerFilter;
+import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
 
 /**
  * A test client that generates a random sequence of register/update/unregister events,
@@ -70,7 +70,7 @@ public class IntegrationTestClient {
         final ChangeNotification<InstanceInfo> expectedEnd = lifecycle.get(lifecycle.size() - 1);
 
         final CountDownLatch expectedEndLatch = new CountDownLatch(1);
-        Subscription subscription = readClient.forApplication(appName).filter(batchMarkerFilter()).subscribe(
+        Subscription subscription = readClient.forApplication(appName).filter(dataOnlyFilter()).subscribe(
                 new Subscriber<ChangeNotification<InstanceInfo>>() {
                     @Override
                     public void onCompleted() {
