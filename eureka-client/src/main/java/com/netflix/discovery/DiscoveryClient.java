@@ -590,10 +590,6 @@ public class DiscoveryClient implements LookupService {
     private boolean shouldRegister(InstanceInfo myInfo) {
         if (!clientConfig.shouldRegisterWithEureka()) {
             return false;
-        } else if ((myInfo != null)
-                && (myInfo.getDataCenterInfo()
-                        .equals(DataCenterInfo.Name.Amazon))) {
-            return true;
         }
 
         return true;
@@ -1623,29 +1619,6 @@ public class DiscoveryClient implements LookupService {
                 // Refresh the amazon info including public IP if it has changed
                 ApplicationInfoManager.getInstance()
                         .refreshDataCenterInfoIfRequired();
-                // Get the co-ordinating Discovery Server
-                InstanceInfo discoveryServer = getCoordinatingServer();
-                // Check if the ami id has changed. If it has then it means
-                // there is a new eureka server deployment now
-                // Pass in the appinfo again since
-                if ((discoveryServer != null)
-                        && (Name.Amazon.equals(discoveryServer
-                                .getDataCenterInfo()))) {
-                    String amiId = ((AmazonInfo) discoveryServer
-                            .getDataCenterInfo()).get(MetaDataKey.amiId);
-                    if (discoveryServerAMIId == null) {
-                        discoveryServerAMIId = amiId;
-                    } else if (!discoveryServerAMIId.equals(amiId)) {
-                        logger.info("The eureka AMI ID changed from "
-                                + discoveryServerAMIId + " to " + amiId
-                                + ". Pushing the appinfo to eureka");
-                        // Dirty the app info so that it can be sent
-                        instanceInfo.setIsDirty(true);
-                        // Assign the new ami id since we have already taken
-                        // action
-                        discoveryServerAMIId = amiId;
-                    }
-                }
 
                 final HealthCheckHandler handler = getHealthCheckHandler();
                 InstanceStatus status = handler.getStatus(instanceInfo.getStatus());
