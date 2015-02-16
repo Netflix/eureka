@@ -105,22 +105,6 @@ protocol DiscoveryProtocol {
     record UnregisterInterestSet {
     }
 
-    record SnapshotRegistration {
-        @java-class("[Lcom.netflix.eureka2.interests.Interest;")
-        array<
-            union {
-                com.netflix.eureka2.interests.ApplicationInterest,
-                com.netflix.eureka2.interests.FullRegistryInterest,
-                com.netflix.eureka2.interests.EmptyRegistryInterest,
-                com.netflix.eureka2.interests.VipInterest,
-                com.netflix.eureka2.interests.InstanceInterest
-            }
-        > interests;
-    }
-
-    record SnapshotComplete {
-    }
-
     record DiscoveryMessage {
         union {
             AddInstance,
@@ -130,9 +114,7 @@ protocol DiscoveryProtocol {
             InterestRegistration,
             UnregisterInterestSet,
             com.netflix.eureka2.transport.Acknowledgement,
-            com.netflix.eureka2.protocol.Heartbeat,
-            SnapshotRegistration,
-            SnapshotComplete
+            com.netflix.eureka2.protocol.Heartbeat
         } message;
     }
 }

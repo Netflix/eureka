@@ -24,8 +24,6 @@ import com.netflix.eureka2.protocol.Heartbeat;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.DeleteInstance;
 import com.netflix.eureka2.protocol.discovery.InterestRegistration;
-import com.netflix.eureka2.protocol.discovery.SnapshotComplete;
-import com.netflix.eureka2.protocol.discovery.SnapshotRegistration;
 import com.netflix.eureka2.protocol.discovery.StreamStateUpdate;
 import com.netflix.eureka2.protocol.discovery.UnregisterInterestSet;
 import com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo;
@@ -98,8 +96,7 @@ public final class EurekaTransports {
 
     static final Class<?>[] DISCOVERY_PROTOCOL_MODEL = {
             InterestRegistration.class, UnregisterInterestSet.class, Heartbeat.class,
-            AddInstance.class, DeleteInstance.class, UpdateInstanceInfo.class, StreamStateUpdate.class,
-            SnapshotRegistration.class, SnapshotComplete.class
+            AddInstance.class, DeleteInstance.class, UpdateInstanceInfo.class, StreamStateUpdate.class
     };
     static final Set<Class<?>> DISCOVERY_PROTOCOL_MODEL_SET = new HashSet<>(Arrays.asList(DISCOVERY_PROTOCOL_MODEL));
     static final Schema DISCOVERY_AVRO_SCHEMA = AvroUtils.loadSchema(DISCOVERY_SCHEMA_FILE, DISCOVERY_ENVELOPE_TYPE);

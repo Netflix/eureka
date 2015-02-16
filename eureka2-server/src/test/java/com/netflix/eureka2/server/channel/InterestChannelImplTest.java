@@ -9,10 +9,7 @@ import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics;
 import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics.AtomicInterest;
-import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.InterestRegistration;
-import com.netflix.eureka2.protocol.discovery.SnapshotComplete;
-import com.netflix.eureka2.protocol.discovery.SnapshotRegistration;
 import com.netflix.eureka2.protocol.discovery.StreamStateUpdate;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -81,27 +78,8 @@ public class InterestChannelImplTest {
     }
 
     @Test(timeout = 60000)
-    public void testSnapshotSubscription() throws Exception {
-        InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();
-        when(registry.forSnapshot(any(Interest.class))).thenReturn(Observable.just(instanceInfo));
-
-        // Send snapshot registration
-        incomingSubject.onNext(new SnapshotRegistration(SNAPSHOT_INTEREST));
-
-        // Verify registry content is streamed back
-        verify(connection, times(1)).acknowledge();
-        verify(connection, times(1)).submitWithAck(new AddInstance(instanceInfo));
-        verify(connection, times(1)).submit(SnapshotComplete.INSTANCE);
-    }
-
-    @Test(timeout = 60000)
     public void testMetricsStateMonitoring() throws Exception {
         verifyMetricStateMonitoring(new InterestRegistration(Interests.forFullRegistry()));
-    }
-
-    @Test(timeout = 60000)
-    public void testMetricsStateMonitoringForSnapshot() throws Exception {
-        verifyMetricStateMonitoring(new SnapshotRegistration(SNAPSHOT_INTEREST));
     }
 
     private <S> void verifyMetricStateMonitoring(S subscriptionRequest) {

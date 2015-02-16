@@ -6,9 +6,11 @@ package com.netflix.eureka2.interests;
  * @author Nitesh Kant
  */
 public class ChangeNotification<T> {
-
+    
     public enum Kind {Add, Delete, Modify, BufferSentinel}
 
+    private static final ChangeNotification<?> BUFFER_SENTINEL = new ChangeNotification<>(Kind.BufferSentinel, null);
+    
     private final Kind kind;
     private final T data;
 
@@ -62,6 +64,10 @@ public class ChangeNotification<T> {
         int result = kind.hashCode();
         result = 31 * result + (data != null ? data.hashCode() : 0);
         return result;
+    }
+
+    public static <T> ChangeNotification<T> bufferSentinel() {
+        return (ChangeNotification<T>) BUFFER_SENTINEL;
     }
 
     private static boolean _isDataNotification(Kind kind) {
