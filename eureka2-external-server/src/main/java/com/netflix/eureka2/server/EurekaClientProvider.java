@@ -39,15 +39,15 @@ import rx.functions.Func1;
 public class EurekaClientProvider implements Provider<EurekaClient> {
 
     private final EurekaCommonConfig config;
-    private final EurekaClientMetricFactory metricFactory;
+    private final EurekaClientMetricFactory clientMetricFactory;
     private final EurekaRegistryMetricFactory registryMetricFactory;
 
     @Inject
     public EurekaClientProvider(EurekaCommonConfig config,
-                                EurekaClientMetricFactory metricFactory,
+                                EurekaClientMetricFactory clientMetricFactory,
                                 EurekaRegistryMetricFactory registryMetricFactory) {
         this.config = config;
-        this.metricFactory = metricFactory;
+        this.clientMetricFactory = clientMetricFactory;
         this.registryMetricFactory = registryMetricFactory;
     }
 
@@ -69,8 +69,8 @@ public class EurekaClientProvider implements Provider<EurekaClient> {
                 }
         );
         return Eureka.newClientBuilder(discoveryResolver, registrationResolver)
-                .withMetricFactory(metricFactory)
-                .withMetricFactory(registryMetricFactory)
+                .withClientMetricFactory(clientMetricFactory)
+                .withRegistryMetricFactory(registryMetricFactory)
                 .build();
     }
 

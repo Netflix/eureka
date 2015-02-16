@@ -41,7 +41,7 @@ public class EurekaClientBuilder {
     private EurekaTransportConfig transportConfig;
     private EurekaRegistryConfig registryConfig;
 
-    private EurekaClientMetricFactory metricFactory;
+    private EurekaClientMetricFactory clientMetricFactory;
     private EurekaRegistryMetricFactory registryMetricFactory;
 
     private EurekaClientBuilder(boolean doDiscovery, boolean doRegistration) {
@@ -64,12 +64,12 @@ public class EurekaClientBuilder {
         return this;
     }
 
-    public EurekaClientBuilder withMetricFactory(EurekaClientMetricFactory clientMetricFactory) {
-        this.metricFactory = clientMetricFactory;
+    public EurekaClientBuilder withClientMetricFactory(EurekaClientMetricFactory clientMetricFactory) {
+        this.clientMetricFactory = clientMetricFactory;
         return this;
     }
 
-    public EurekaClientBuilder withMetricFactory(EurekaRegistryMetricFactory registryMetricFactory) {
+    public EurekaClientBuilder withRegistryMetricFactory(EurekaRegistryMetricFactory registryMetricFactory) {
         this.registryMetricFactory = registryMetricFactory;
         return this;
     }
@@ -89,8 +89,8 @@ public class EurekaClientBuilder {
             retryDelayMs = DEFAULT_RETRY_DELAY_MS;
         }
 
-        if (metricFactory == null) {
-            metricFactory = EurekaClientMetricFactory.clientMetrics();
+        if (clientMetricFactory == null) {
+            clientMetricFactory = EurekaClientMetricFactory.clientMetrics();
         }
 
         if (registryConfig == null) {
@@ -126,7 +126,7 @@ public class EurekaClientBuilder {
                 registryMetricFactory);
 
         ClientChannelFactory<InterestChannel> channelFactory
-                = new InterestChannelFactory(transportConfig, readServerResolver, registry, remoteBatchingRegistry, metricFactory);
+                = new InterestChannelFactory(transportConfig, readServerResolver, registry, remoteBatchingRegistry, clientMetricFactory);
 
         return new InterestHandlerImpl(registry, channelFactory);
     }
@@ -137,7 +137,7 @@ public class EurekaClientBuilder {
         }
 
         ClientChannelFactory<RegistrationChannel> channelFactory
-                = new RegistrationChannelFactory(transportConfig, writeServerResolver, metricFactory);
+                = new RegistrationChannelFactory(transportConfig, writeServerResolver, clientMetricFactory);
 
         return new RegistrationHandlerImpl(channelFactory);
     }

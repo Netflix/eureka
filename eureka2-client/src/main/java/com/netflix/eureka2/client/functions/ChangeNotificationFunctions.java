@@ -23,7 +23,9 @@ public final class ChangeNotificationFunctions {
 
     /**
      * Convert change notification stream with buffering sentinels into stream of lists, where each
-     * list element contains a batch of data delineated by the markers.
+     * list element contains a batch of data delineated by the markers. Only non-empty lists are
+     * issued, which means that for two successive BufferSentinels from the stream, the second
+     * one will be swallowed.
      *
      * @return observable of non-empty list objects
      */

@@ -63,5 +63,9 @@ public class ChangeNotificationFunctionsTest {
         assertThat(testSubscriber.takeNext(), is(equalTo((Set) asSet("A", "B"))));
         notificationSubject.onNext(SECOND_BATCH);
         assertThat(testSubscriber.takeNext(), is(equalTo((Set) asSet("B", "C"))));
+
+        // Verify that no snapshot is issued if no data are changed
+        notificationSubject.onNext(SECOND_BATCH);
+        assertThat(testSubscriber.takeNext(), is(nullValue()));
     }
 }

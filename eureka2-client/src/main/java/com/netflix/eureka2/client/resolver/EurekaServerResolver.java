@@ -224,12 +224,12 @@ public class EurekaServerResolver implements ServerResolver {
             return this;
         }
 
-        public EurekaServerResolverBuilder withMetricFactory(EurekaClientMetricFactory metricFactory) {
+        public EurekaServerResolverBuilder withClientMetricFactory(EurekaClientMetricFactory metricFactory) {
             this.clientMetricFactory = metricFactory;
             return this;
         }
 
-        public EurekaServerResolverBuilder withMetricFactory(EurekaRegistryMetricFactory metricFactory) {
+        public EurekaServerResolverBuilder withRegistryMetricFactory(EurekaRegistryMetricFactory metricFactory) {
             this.registryMetricFactory = metricFactory;
             return this;
         }
@@ -258,8 +258,8 @@ public class EurekaServerResolver implements ServerResolver {
             }
 
             EurekaClientBuilder eurekaClientBuilder = EurekaClientBuilder.newBuilder()
-                    .withMetricFactory(clientMetricFactory)
-                    .withMetricFactory(registryMetricFactory)
+                    .withClientMetricFactory(clientMetricFactory)
+                    .withRegistryMetricFactory(registryMetricFactory)
                     .withWriteServerResolver(ServerResolvers.just("localhost", 0)) // TODO We have provide some resolver, otherwise validation fails
                     .withReadServerResolver(bootstrapResolver)
                     .withTransportConfig(transportConfig);

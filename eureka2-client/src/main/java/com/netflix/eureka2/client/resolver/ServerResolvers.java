@@ -57,8 +57,8 @@ public final class ServerResolvers {
         return new EurekaServerResolverBuilder()
                 .withBootstrapResolver(writeServerResolver)
                 .withReadServerInterest(Interests.forVips(readClusterVip))
-                .withMetricFactory(clientMetricFactory)
-                .withMetricFactory(registryMetricFactory)
+                .withClientMetricFactory(clientMetricFactory)
+                .withRegistryMetricFactory(registryMetricFactory)
                 .build();
     }
 
