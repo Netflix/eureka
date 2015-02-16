@@ -33,6 +33,7 @@ import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.NetworkAddress.ProtocolType;
 import com.netflix.eureka2.registry.selector.ServiceSelector;
+import com.netflix.eureka2.Server;
 import netflix.ocelli.LoadBalancer;
 import netflix.ocelli.LoadBalancerBuilder;
 import netflix.ocelli.MembershipEvent;

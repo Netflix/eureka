@@ -21,11 +21,12 @@ import java.util.List;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
+import com.netflix.eureka2.Server;
 import netflix.ocelli.LoadBalancerBuilder;
 import rx.Observable;
 
 /**
- * An implementation of {@link ServerResolver} using a static list of {@link ServerResolver.Server} instances.
+ * An implementation of {@link ServerResolver} using a static list of {@link Server} instances.
  *
  * The usage of this implementation is not recommended for production use, for which the other implementations supporting
  * dynamic server lists must be used.
@@ -40,7 +41,7 @@ public class StaticServerResolver extends AbstractServerResolver {
         super(loadBalancerBuilder);
         List<ChangeNotification<Server>> updates = new ArrayList<>(serverList.length);
         for (Server server : serverList) {
-            updates.add(new ChangeNotification<Server>(Kind.Add, server));
+            updates.add(new ChangeNotification<>(Kind.Add, server));
         }
         updateStream = Observable.from(updates);
     }

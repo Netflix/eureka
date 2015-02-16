@@ -26,6 +26,7 @@ import com.netflix.eureka2.transport.Acknowledgement;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.Server;
 import io.netty.handler.logging.LogLevel;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ConnectionHandler;
@@ -80,7 +81,7 @@ public class ResolverBasedTransportClientTest {
     @Test(timeout = 60000)
     public void testConnectsToResolvedServer() throws Exception {
 
-        final AtomicReference<ServerResolver.Server> expectedServer = new AtomicReference<>(new ServerResolver.Server("localhost", 0));
+        final AtomicReference<Server> expectedServer = new AtomicReference<>(new Server("localhost", 0));
 
         final ServerResolver resolver = new ServerResolver() {
             @Override
@@ -107,7 +108,7 @@ public class ResolverBasedTransportClientTest {
         }
 
         // Now add our test server
-        expectedServer.set(new ServerResolver.Server("localhost", server.getServerPort()));
+        expectedServer.set(new Server("localhost", server.getServerPort()));
 
         MessageConnection connection = transportClient.connect().toBlocking().toFuture().get(30, TimeUnit.SECONDS);
         assertNotNull("Connection not established", connection);

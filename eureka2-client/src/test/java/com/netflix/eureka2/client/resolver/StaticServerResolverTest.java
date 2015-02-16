@@ -2,7 +2,7 @@ package com.netflix.eureka2.client.resolver;
 
 import java.util.Set;
 
-import com.netflix.eureka2.client.resolver.ServerResolver.Server;
+import com.netflix.eureka2.Server;
 import org.junit.Test;
 
 import static com.netflix.eureka2.utils.ExtCollections.asSet;

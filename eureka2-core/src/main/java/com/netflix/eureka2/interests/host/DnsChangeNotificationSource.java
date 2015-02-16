@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.interests.host;
 
+import javax.naming.Context;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
@@ -116,7 +117,7 @@ public class DnsChangeNotificationSource implements ChangeNotificationSource<Str
 
         private Set<ChangeNotification<String>> resolveServerDN() throws NamingException {
             Hashtable<String, String> env = new Hashtable<String, String>();
-            env.put("java.naming.factory.initial", "com.sun.jndi.dns.DnsContextFactory");
+            env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.dns.DnsContextFactory");
             DirContext dirContext = new InitialDirContext(env);
             try {
                 return resolveName(dirContext, domainName);
@@ -125,30 +126,33 @@ public class DnsChangeNotificationSource implements ChangeNotificationSource<Str
             }
         }
 
+        /**
+         * For A records, resolve and return.
+         * For CNAME, just return;
+         * For TXT, assume it is a list of hostnames and/or ip addresses and return them.
+         */
         private Set<ChangeNotification<String>> resolveName(DirContext dirContext, String targetDN) throws NamingException {
-            while (true) {
-                Attributes attrs = dirContext.getAttributes(targetDN, new String[]{"A", "CNAME", "TXT"});
-                // handle A records
-                Set<ChangeNotification<String>> addresses = new HashSet<>();
-                addresses.addAll(toSetOfServerEntries(attrs, "A"));
-                if (!addresses.isEmpty()) {
-                    return addresses;
-                }
-                // handle CNAME
-                Set<String> aliases = toSetOfString(attrs, "CNAME");
-                if (!aliases.isEmpty()) {
-                    targetDN = aliases.iterator().next();
-                    continue;
-                }
-                // handle TXT (assuming a list of hostnames as txt records)
-                aliases = toSetOfString(attrs, "TXT");
-                for (String alias : aliases) {
-                    Set<ChangeNotification<String>> subsetAddresses = resolveName(dirContext, alias);
-                    addresses.addAll(subsetAddresses);
-                }
-
+            Attributes attrs = dirContext.getAttributes(targetDN, new String[]{"A", "CNAME", "TXT"});
+            // handle A records
+            Set<ChangeNotification<String>> addresses = new HashSet<>();
+            addresses.addAll(toSetOfServerEntries(attrs, "A"));
+            if (!addresses.isEmpty()) {
                 return addresses;
             }
+
+            // handle CNAME
+            addresses.addAll(toSetOfServerEntries(attrs, "CNAME"));
+            if (!addresses.isEmpty()) {
+                return addresses;
+            }
+
+            // handle TXT (assuming a list of hostnames as txt records)
+            addresses.addAll(toSetOfServerEntries(attrs, "TXT"));
+            if (!addresses.isEmpty()) {
+                return addresses;
+            }
+
+            return addresses;
         }
 
         // will never return null

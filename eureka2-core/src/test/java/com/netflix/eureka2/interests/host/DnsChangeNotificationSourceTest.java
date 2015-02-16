@@ -1,8 +1,6 @@
 package com.netflix.eureka2.interests.host;
 
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
@@ -42,13 +40,6 @@ public class DnsChangeNotificationSourceTest {
     }
 
 
-    private static final Pattern IPV4_PATTERN = Pattern.compile(
-                    "^([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
-                     "([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
-                     "([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
-                     "([01]?\\d\\d?|2[0-4]\\d|25[0-5])$"
-                );
-
     private void testWithDomainName(String domainName, int expectedEntries) throws Exception {
         DnsChangeNotificationSource resolver = new DnsChangeNotificationSource(domainName);
 
@@ -58,10 +49,7 @@ public class DnsChangeNotificationSourceTest {
         for (int i = 0; i < expectedEntries; i++) {
             ChangeNotification<String> notification = testSubscriber.takeNext(30, TimeUnit.SECONDS);
             assertThat(notification, is(not(nullValue())));
-
-            // match ipv4 address
-            Matcher matcher = IPV4_PATTERN.matcher(notification.getData());
-            assertThat(matcher.matches(), is(true));
+            assertThat(notification.getData(), is(not(nullValue())));
         }
     }
 }

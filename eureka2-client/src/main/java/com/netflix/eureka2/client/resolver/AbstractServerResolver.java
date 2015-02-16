@@ -1,6 +1,7 @@
 package com.netflix.eureka2.client.resolver;
 
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.Server;
 import netflix.ocelli.LoadBalancer;
 import netflix.ocelli.LoadBalancerBuilder;
 import netflix.ocelli.MembershipEvent;
@@ -36,14 +37,14 @@ public abstract class AbstractServerResolver implements ServerResolver {
                 public void onNext(ChangeNotification<Server> notification) {
                     switch (notification.getKind()) {
                         case Add:
-                            subscriber.onNext(new MembershipEvent<Server>(EventType.ADD, notification.getData()));
+                            subscriber.onNext(new MembershipEvent<>(EventType.ADD, notification.getData()));
                             break;
                         case Modify:
                             // This should never happen
                             logger.warn("unexpected modify change notification; it is not supported by ocelli load balancer");
                             break;
                         case Delete:
-                            subscriber.onNext(new MembershipEvent<Server>(EventType.REMOVE, notification.getData()));
+                            subscriber.onNext(new MembershipEvent<>(EventType.REMOVE, notification.getData()));
                     }
                 }
             };

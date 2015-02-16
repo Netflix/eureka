@@ -21,10 +21,10 @@ import java.io.File;
 import com.netflix.eureka2.client.resolver.DnsServerResolver.DnsServerResolverBuilder;
 import com.netflix.eureka2.client.resolver.EurekaServerResolver.EurekaServerResolverBuilder;
 import com.netflix.eureka2.client.resolver.FileServerResolver.FileServerResolverBuilder;
-import com.netflix.eureka2.client.resolver.ServerResolver.Server;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
+import com.netflix.eureka2.Server;
 import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
 import rx.Observable;
 import rx.functions.Func1;
@@ -81,7 +81,7 @@ public final class ServerResolvers {
         };
     }
 
-    public static ServerResolver from(ServerResolver.Server... servers) {
+    public static ServerResolver from(Server... servers) {
         return new StaticServerResolver(new DefaultLoadBalancerBuilder<Server>(null), servers);
     }
 

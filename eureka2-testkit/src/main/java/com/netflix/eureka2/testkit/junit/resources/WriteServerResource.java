@@ -1,13 +1,12 @@
 package com.netflix.eureka2.testkit.junit.resources;
 
-import java.net.InetSocketAddress;
-
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
+import com.netflix.eureka2.Server;
 import org.junit.rules.ExternalResource;
 import rx.Observable;
 
@@ -51,7 +50,7 @@ public class WriteServerResource extends ExternalResource {
                 .withReplicationRetryMillis(1000)
                 .build();
 
-        server = new EmbeddedWriteServer(config, Observable.<ChangeNotification<InetSocketAddress>>never(), false, false);
+        server = new EmbeddedWriteServer(config, Observable.<ChangeNotification<Server>>never(), false, false);
         server.start();
     }
 

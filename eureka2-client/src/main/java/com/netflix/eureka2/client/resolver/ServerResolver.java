@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.client.resolver;
 
+import com.netflix.eureka2.Server;
 import rx.Observable;
 
 /**
@@ -33,7 +34,7 @@ import rx.Observable;
 public interface ServerResolver {
 
     /**
-     * Returns a single element {@link Observable} of {@link ServerResolver.Server} instances, which
+     * Returns a single element {@link Observable} of {@link Server} instances, which
      * completes immediately after the element is provided. Properly behaving implementations should
      * never complete before issuing the value. In case of a problem, a subscription should terminate
      * with an error.
@@ -41,7 +42,7 @@ public interface ServerResolver {
      * This interface does not define any specific error handling protocol, like distinguishing between
      * recoverable and non-recoverable errors.
      *
-     * @return An {@link Observable} of {@link ServerResolver.Server} instances.
+     * @return An {@link Observable} of {@link Server} instances.
      */
     Observable<Server> resolve();
 
@@ -49,53 +50,4 @@ public interface ServerResolver {
      * Cleanup resources.
      */
     void close();
-
-    class Server {
-
-        private final String host;
-        private final int port;
-
-        public Server(final String host, final int port) {
-            this.port = port;
-            this.host = host;
-        }
-
-        public String getHost() {
-            return host;
-        }
-
-        public int getPort() {
-            return port;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (!(o instanceof Server)) {
-                return false;
-            }
-
-            Server server = (Server) o;
-
-            return port == server.port && !(host != null ? !host.equals(server.host) : server.host != null);
-
-        }
-
-        @Override
-        public int hashCode() {
-            int result = host != null ? host.hashCode() : 0;
-            result = 31 * result + port;
-            return result;
-        }
-
-        @Override
-        public String toString() {
-            return "Server{" +
-                    "host='" + host + '\'' +
-                    ", port=" + port +
-                    '}';
-        }
-    }
 }

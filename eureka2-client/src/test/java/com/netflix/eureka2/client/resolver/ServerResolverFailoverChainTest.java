@@ -1,6 +1,6 @@
 package com.netflix.eureka2.client.resolver;
 
-import com.netflix.eureka2.client.resolver.ServerResolver.Server;
+import com.netflix.eureka2.Server;
 import org.junit.Test;
 import rx.Observable;
 

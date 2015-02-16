@@ -24,6 +24,7 @@ import com.netflix.eureka2.transport.base.BaseMessageConnection;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.transport.base.SelfClosingConnection;
+import com.netflix.eureka2.Server;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ObservableConnection;
 import io.reactivex.netty.client.RxClient;
@@ -33,8 +34,6 @@ import rx.Observable;
 import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
-
-import java.net.InetSocketAddress;
 
 /**
  * {@link ReplicationTransportClient} is always associated with single write server.
@@ -46,18 +45,19 @@ public class ReplicationTransportClient implements TransportClient {
     private static final Logger logger = LoggerFactory.getLogger(ReplicationTransportClient.class);
 
     private final EurekaTransportConfig config;
-    private final InetSocketAddress address;
+    private final Server address;
     private final RxClient<Object, Object> rxClient;
     private final MessageConnectionMetrics metrics;
 
     public ReplicationTransportClient(EurekaTransportConfig config,
-                                      InetSocketAddress address,
+                                      Server address,
                                       MessageConnectionMetrics metrics) {
         this.config = config;
         this.address = address;
         this.metrics = metrics;
-        this.rxClient = RxNetty.newTcpClientBuilder(address.getHostName(), address.getPort())
+        this.rxClient = RxNetty.newTcpClientBuilder(address.getHost(), address.getPort())
                 .pipelineConfigurator(EurekaTransports.replicationPipeline(config.getCodec()))
+                .withNoConnectionPooling()  // never pool as the address may be bound to different servers in the cloud
                 .build();
     }
 

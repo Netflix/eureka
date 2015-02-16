@@ -14,6 +14,7 @@ import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.SenderReplicationChannelFactory;
 import com.netflix.eureka2.server.config.WriteServerConfig;
+import com.netflix.eureka2.Server;
 import com.netflix.eureka2.utils.rx.RetryStrategyFunc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +22,6 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Func1;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -43,7 +43,7 @@ public class ReplicationHandlerImpl implements ReplicationHandler {
     private final AtomicReference<STATE> stateRef;
 
     public ReplicationHandlerImpl(final WriteServerConfig config,
-                                  final InetSocketAddress address,
+                                  final Server address,
                                   final SourcedEurekaRegistry<InstanceInfo> registry,
                                   final InstanceInfo selfInfo,
                                   final WriteServerMetricFactory metricFactory) {

@@ -1,6 +1,5 @@
 package com.netflix.eureka2.testkit.embedded.server;
 
-import java.net.InetSocketAddress;
 import java.util.Properties;
 
 import com.google.inject.AbstractModule;
@@ -14,6 +13,7 @@ import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedBridgeServer.BridgeServerReport;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
+import com.netflix.eureka2.Server;
 import rx.Observable;
 
 /**
@@ -24,10 +24,10 @@ public class EmbeddedBridgeServer extends EmbeddedEurekaServer<BridgeServerConfi
     private static final String BRIDGE_SERVER_NAME = "eureka2-bridge";
     private static final int BRIDGE_SERVER_PORTS_FROM = 15000;
 
-    private final Observable<ChangeNotification<InetSocketAddress>> replicationPeers;
+    private final Observable<ChangeNotification<Server>> replicationPeers;
 
     public EmbeddedBridgeServer(BridgeServerConfig config,
-                                final Observable<ChangeNotification<InetSocketAddress>> replicationPeers,
+                                final Observable<ChangeNotification<Server>> replicationPeers,
                                 boolean withExt,
                                 boolean withDashboard) {
         super(config, withExt, withDashboard);
@@ -67,13 +67,13 @@ public class EmbeddedBridgeServer extends EmbeddedEurekaServer<BridgeServerConfi
         );
     }
 
-    public static EmbeddedBridgeServer newBridge(final Observable<ChangeNotification<InetSocketAddress>> replicationPeers,
+    public static EmbeddedBridgeServer newBridge(final Observable<ChangeNotification<Server>> replicationPeers,
                                                  boolean withExt,
                                                  boolean withDashboard) {
         return newBridge(replicationPeers, withExt, withDashboard, Codec.Avro);
     }
 
-    public static EmbeddedBridgeServer newBridge(final Observable<ChangeNotification<InetSocketAddress>> replicationPeers,
+    public static EmbeddedBridgeServer newBridge(final Observable<ChangeNotification<Server>> replicationPeers,
                                                  boolean withExt,
                                                  boolean withDashboard,
                                                  Codec codec) {

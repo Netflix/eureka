@@ -23,13 +23,13 @@ import com.google.inject.Inject;
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.client.resolver.ServerResolver;
-import com.netflix.eureka2.client.resolver.ServerResolver.Server;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.config.EurekaCommonConfig.ResolverType;
 import com.netflix.eureka2.server.config.EurekaCommonConfig.ServerBootstrap;
+import com.netflix.eureka2.Server;
 import rx.functions.Func1;
 
 /**
