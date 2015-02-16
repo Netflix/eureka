@@ -13,7 +13,7 @@ import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedBridgeServer.BridgeServerReport;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
-import com.netflix.eureka2.utils.Server;
+import com.netflix.eureka2.Server;
 import rx.Observable;
 
 /**

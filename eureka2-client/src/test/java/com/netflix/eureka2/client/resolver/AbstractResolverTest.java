@@ -4,7 +4,7 @@ import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.rx.RxBlocking;
-import com.netflix.eureka2.utils.Server;
+import com.netflix.eureka2.Server;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;

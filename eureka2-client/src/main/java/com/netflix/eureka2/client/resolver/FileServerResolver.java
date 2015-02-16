@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
-import com.netflix.eureka2.utils.Server;
+import com.netflix.eureka2.Server;
 import com.netflix.eureka2.utils.rx.ResourceObservable;
 import com.netflix.eureka2.utils.rx.ResourceObservable.ResourceLoader;
 import com.netflix.eureka2.utils.rx.ResourceObservable.ResourceLoaderException;

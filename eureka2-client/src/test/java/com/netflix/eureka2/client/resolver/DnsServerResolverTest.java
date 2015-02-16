@@ -7,7 +7,7 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.ChangeNotificationSource;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
-import com.netflix.eureka2.utils.Server;
+import com.netflix.eureka2.Server;
 import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
 import org.junit.Before;
 import org.junit.Test;

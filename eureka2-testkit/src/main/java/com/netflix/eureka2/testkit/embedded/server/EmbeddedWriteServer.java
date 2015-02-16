@@ -14,7 +14,7 @@ import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer.WriteServerReport;
-import com.netflix.eureka2.utils.Server;
+import com.netflix.eureka2.Server;
 import rx.Observable;
 
 /**

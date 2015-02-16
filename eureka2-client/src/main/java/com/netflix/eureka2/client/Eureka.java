@@ -19,7 +19,7 @@ package com.netflix.eureka2.client;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.transport.EurekaTransports;
-import com.netflix.eureka2.utils.Server;
+import com.netflix.eureka2.Server;
 import rx.functions.Func1;
 
 /**

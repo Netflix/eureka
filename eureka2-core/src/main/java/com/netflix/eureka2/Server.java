@@ -1,4 +1,4 @@
-package com.netflix.eureka2.utils;
+package com.netflix.eureka2;
 
 /**
  * Simple hostname/port holder for a server

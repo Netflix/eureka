@@ -12,8 +12,6 @@ import com.netflix.eureka2.protocol.Heartbeat;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.DeleteInstance;
 import com.netflix.eureka2.protocol.discovery.InterestRegistration;
-import com.netflix.eureka2.protocol.discovery.SnapshotComplete;
-import com.netflix.eureka2.protocol.discovery.SnapshotRegistration;
 import com.netflix.eureka2.protocol.discovery.StreamStateUpdate;
 import com.netflix.eureka2.protocol.discovery.UnregisterInterestSet;
 import com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo;
@@ -227,10 +225,6 @@ public abstract class TransportCompatibilityTestSuite {
 
             // Update with null values (delete semantic)
             runServerToClientWithAck(new UpdateInstanceInfo(builder.withDelta(InstanceInfoField.APPLICATION, null).build()));
-
-            // Snapshot  subscription
-            runClientToServerWithAck(new SnapshotRegistration(Interests.forFullRegistry()));
-            runServerToClient(SnapshotComplete.INSTANCE);
         }
 
         private void streamStateUpdateTest() {

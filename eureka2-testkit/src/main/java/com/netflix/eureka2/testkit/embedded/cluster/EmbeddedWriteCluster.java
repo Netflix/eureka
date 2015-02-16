@@ -13,7 +13,7 @@ import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster.WriteSe
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer.WriteServerReport;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
-import com.netflix.eureka2.utils.Server;
+import com.netflix.eureka2.Server;
 import netflix.ocelli.LoadBalancer;
 import netflix.ocelli.MembershipEvent;
 import netflix.ocelli.MembershipEvent.EventType;

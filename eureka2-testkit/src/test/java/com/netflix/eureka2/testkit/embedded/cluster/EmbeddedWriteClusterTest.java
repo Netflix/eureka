@@ -7,7 +7,7 @@ import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster.WriteClusterReport;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
-import com.netflix.eureka2.utils.Server;
+import com.netflix.eureka2.Server;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

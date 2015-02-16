@@ -13,7 +13,7 @@ import com.netflix.eureka2.interests.host.DnsChangeNotificationSource;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.config.EurekaCommonConfig.ServerBootstrap;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.eureka2.utils.Server;
+import com.netflix.eureka2.Server;
 import rx.Observable;
 import rx.functions.Func1;
 

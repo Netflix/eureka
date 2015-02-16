@@ -5,7 +5,9 @@ import java.util.Iterator;
 import java.util.Set;
 
 import com.netflix.eureka2.Names;
-import com.netflix.eureka2.client.channel.SnapshotInterestChannel;
+import com.netflix.eureka2.client.EurekaClient;
+import com.netflix.eureka2.client.EurekaClientBuilder;
+import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -13,7 +15,7 @@ import com.netflix.eureka2.registry.instance.NetworkAddress.ProtocolType;
 import com.netflix.eureka2.registry.selector.ServiceSelector;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.utils.ExtCollections;
-import com.netflix.eureka2.utils.Server;
+import com.netflix.eureka2.Server;
 import netflix.ocelli.LoadBalancerBuilder;
 import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
 import org.junit.Before;
@@ -33,7 +35,7 @@ import static org.mockito.Mockito.when;
  */
 public class EurekaServerResolverTest {
 
-    private static final Interest<InstanceInfo> SNAPSHOT_INTEREST = Interests.forFullRegistry();
+    private static final Interest<InstanceInfo> READ_SERVERS_INTEREST = Interests.forFullRegistry();
     private static final ServiceSelector EUREKA_SELECTOR =
             ServiceSelector.selectBy().serviceLabel(Names.DISCOVERY).protocolType(ProtocolType.IPv4);
 
@@ -42,20 +44,27 @@ public class EurekaServerResolverTest {
     private static final InstanceInfo INSTANCE_1 = INSTANCE_INFO_IT.next();
     private static final InstanceInfo INSTANCE_2 = INSTANCE_INFO_IT.next();
 
-    private final SnapshotInterestChannel snapshotInterestChannel = mock(SnapshotInterestChannel.class);
+    private static final ChangeNotification<InstanceInfo> ADD_INSTANCE_1 = new ChangeNotification<>(ChangeNotification.Kind.Add, INSTANCE_1);
+    private static final ChangeNotification<InstanceInfo> DELETE_INSTANCE_1 = new ChangeNotification<>(ChangeNotification.Kind.Delete, INSTANCE_1);
+    private static final ChangeNotification<InstanceInfo> ADD_INSTANCE_2 = new ChangeNotification<>(ChangeNotification.Kind.Add, INSTANCE_2);
+    private static final ChangeNotification<InstanceInfo> BUFFERING_SENTINEL = ChangeNotification.bufferSentinel();
+
+    private final EurekaClientBuilder eurekaClientBuilder = mock(EurekaClientBuilder.class);
+    private final EurekaClient eurekaClient = mock(EurekaClient.class);
     private final LoadBalancerBuilder<Server> loadBalancerBuilder = new DefaultLoadBalancerBuilder<>(null);
 
     private EurekaServerResolver eurekaServerResolver;
 
     @Before
     public void setUp() throws Exception {
-        eurekaServerResolver = new EurekaServerResolver(snapshotInterestChannel, SNAPSHOT_INTEREST, EUREKA_SELECTOR, loadBalancerBuilder);
+        when(eurekaClientBuilder.build()).thenReturn(eurekaClient);
+        eurekaServerResolver = new EurekaServerResolver(eurekaClientBuilder, READ_SERVERS_INTEREST, EUREKA_SELECTOR, loadBalancerBuilder);
     }
 
     @Test(timeout = 60000)
-    public void testFetchesSnapshotFromEurekaServer() throws Exception {
-        // Inject two item snapshot
-        when(snapshotInterestChannel.forSnapshot(SNAPSHOT_INTEREST)).thenReturn(Observable.just(INSTANCE_1, INSTANCE_2));
+    public void testFetchesDataFromEurekaServer() throws Exception {
+        // Returns two items in subscription
+        when(eurekaClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(Observable.just(ADD_INSTANCE_1, ADD_INSTANCE_2, BUFFERING_SENTINEL));
 
         // Resolve twice
         Server firstServer = eurekaServerResolver.resolve().toBlocking().firstOrDefault(null);
@@ -68,11 +77,11 @@ public class EurekaServerResolverTest {
 
     @Test(timeout = 60000)
     public void testRemovesStaleItems() throws Exception {
-        // Snapshot with first item
+        // Batch with first item
         firstResolveWith(INSTANCE_1);
 
-        // Snapshot with a new, second item only
-        when(snapshotInterestChannel.forSnapshot(SNAPSHOT_INTEREST)).thenReturn(Observable.just(INSTANCE_2));
+        // Delete instance1 and add instance 2.
+        when(eurekaClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(Observable.just(DELETE_INSTANCE_1, ADD_INSTANCE_2, ChangeNotification.<InstanceInfo>bufferSentinel()));
 
         assertResolvesTo(INSTANCE_2);
         assertResolvesTo(INSTANCE_2);
@@ -80,12 +89,12 @@ public class EurekaServerResolverTest {
 
     @Test(timeout = 60000)
     public void testFallsBackToStaleContentIfRefreshFails() throws Exception {
-        // Snapshot with first item
+        // Batch with first item
         firstResolveWith(INSTANCE_1);
 
-        // Snapshot that completes with onError
+        // Send onError in the subscription stream
         Exception error = new Exception("channel error");
-        when(snapshotInterestChannel.forSnapshot(SNAPSHOT_INTEREST)).thenReturn(Observable.<InstanceInfo>error(error));
+        when(eurekaClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(Observable.<ChangeNotification<InstanceInfo>>error(error));
 
         assertResolvesTo(INSTANCE_1);
     }
@@ -93,28 +102,23 @@ public class EurekaServerResolverTest {
     @Test(timeout = 60000)
     public void testReturnsErrorIfResolveFailedAndNoStaleEntryAvailable() throws Exception {
         Exception error = new Exception("channel error");
-        when(snapshotInterestChannel.forSnapshot(SNAPSHOT_INTEREST)).thenReturn(Observable.<InstanceInfo>error(error));
+        when(eurekaClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(Observable.<ChangeNotification<InstanceInfo>>error(error));
         assertResolveToError();
     }
 
-    @Test(timeout = 60000)
-    public void testFallsBackToStaleContentIfEmptyListReturned() throws Exception {
-        // Snapshot with first item
-        firstResolveWith(INSTANCE_1);
-
-        // Snapshot that completes with onError
-        when(snapshotInterestChannel.forSnapshot(SNAPSHOT_INTEREST)).thenReturn(Observable.<InstanceInfo>empty());
-        assertResolvesTo(INSTANCE_1);
-    }
-
     private void firstResolveWith(InstanceInfo instance) {
-        when(snapshotInterestChannel.forSnapshot(SNAPSHOT_INTEREST)).thenReturn(Observable.just(instance));
+        when(eurekaClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(
+                Observable.just(
+                        new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Add, instance),
+                        ChangeNotification.<InstanceInfo>bufferSentinel()
+                )
+        );
         assertResolvesTo(instance);
     }
 
-    protected void assertResolvesTo(InstanceInfo instance2) {
+    protected void assertResolvesTo(InstanceInfo instance) {
         Server server = eurekaServerResolver.resolve().toBlocking().firstOrDefault(null);
-        assertThat(server, is(equalTo(toServer(instance2))));
+        assertThat(server, is(equalTo(toServer(instance))));
     }
 
     private void assertResolveToError() {

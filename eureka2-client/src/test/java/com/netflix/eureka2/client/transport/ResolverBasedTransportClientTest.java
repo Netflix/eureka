@@ -26,7 +26,7 @@ import com.netflix.eureka2.transport.Acknowledgement;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import com.netflix.eureka2.transport.MessageConnection;
-import com.netflix.eureka2.utils.Server;
+import com.netflix.eureka2.Server;
 import io.netty.handler.logging.LogLevel;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ConnectionHandler;

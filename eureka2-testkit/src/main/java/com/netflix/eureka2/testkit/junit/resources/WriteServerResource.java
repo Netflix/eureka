@@ -6,7 +6,7 @@ import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterTyp
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
-import com.netflix.eureka2.utils.Server;
+import com.netflix.eureka2.Server;
 import org.junit.rules.ExternalResource;
 import rx.Observable;
 

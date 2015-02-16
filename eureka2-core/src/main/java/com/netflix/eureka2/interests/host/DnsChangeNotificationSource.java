@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.interests.host;
 
+import javax.naming.Context;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
@@ -116,7 +117,7 @@ public class DnsChangeNotificationSource implements ChangeNotificationSource<Str
 
         private Set<ChangeNotification<String>> resolveServerDN() throws NamingException {
             Hashtable<String, String> env = new Hashtable<String, String>();
-            env.put("java.naming.factory.initial", "com.sun.jndi.dns.DnsContextFactory");
+            env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.dns.DnsContextFactory");
             DirContext dirContext = new InitialDirContext(env);
             try {
                 return resolveName(dirContext, domainName);

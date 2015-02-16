@@ -21,7 +21,7 @@ import java.util.List;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
-import com.netflix.eureka2.utils.Server;
+import com.netflix.eureka2.Server;
 import netflix.ocelli.LoadBalancerBuilder;
 import rx.Observable;
 

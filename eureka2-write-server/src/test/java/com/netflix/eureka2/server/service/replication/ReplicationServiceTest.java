@@ -28,7 +28,7 @@ import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
-import com.netflix.eureka2.utils.Server;
+import com.netflix.eureka2.Server;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
