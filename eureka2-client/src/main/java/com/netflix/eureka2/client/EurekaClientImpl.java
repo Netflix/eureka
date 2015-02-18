@@ -19,12 +19,11 @@ package com.netflix.eureka2.client;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import com.netflix.eureka2.client.registration.RegistrationHandler;
-import com.netflix.eureka2.client.interest.InterestHandler;
-import com.netflix.eureka2.client.registration.RegistrationTracker;
+import com.netflix.eureka2.client.interest.EurekaInterestClient;
+import com.netflix.eureka2.client.registration.EurekaRegistrationClient;
+import com.netflix.eureka2.client.registration.RegistrationRequest;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,61 +33,38 @@ import rx.Observable;
  * @author Tomasz Bak
  */
 @Singleton
-public class EurekaClientImpl extends EurekaClient {
+public class EurekaClientImpl implements EurekaClient {
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaClientImpl.class);
 
-    private final InterestHandler interestHandler;
-    private final RegistrationHandler registrationHandler;
-
-    private final RegistrationTracker registrationTracker;  // temp bridge until API change
+    private final EurekaInterestClient interestClient;
+    private final EurekaRegistrationClient registrationClient;
 
     @Inject
-    public EurekaClientImpl(InterestHandler interestHandler, RegistrationHandler registrationHandler) {
-        this.interestHandler = interestHandler;
-        this.registrationHandler = registrationHandler;
-        this.registrationTracker = new RegistrationTracker(registrationHandler);
-    }
-
-    @Override
-    public Observable<Void> register(InstanceInfo instanceInfo) {
-        return registrationTracker.register(instanceInfo);
-    }
-
-    @Override
-    public Observable<Void> unregister(InstanceInfo instanceInfo) {
-        return registrationTracker.unregister(instanceInfo);
+    public EurekaClientImpl(EurekaInterestClient interestClient, EurekaRegistrationClient registrationClient) {
+        this.interestClient = interestClient;
+        this.registrationClient = registrationClient;
     }
 
     @Override
     public Observable<ChangeNotification<InstanceInfo>> forInterest(final Interest<InstanceInfo> interest) {
-        return interestHandler.forInterest(interest);
+        return interestClient.forInterest(interest);
     }
 
     @Override
-    public Observable<ChangeNotification<InstanceInfo>> forApplication(String appName) {
-        return forInterest(Interests.forApplications(appName));
+    public RegistrationRequest connect(Observable<InstanceInfo> registrant) {
+        return registrationClient.connect(registrant);
     }
 
     @Override
-    public Observable<ChangeNotification<InstanceInfo>> forVips(String... vips) {
-        return forInterest(Interests.forVips(vips));
-    }
-
-    @Override
-    public void close() {
+    public void shutdown() {
         logger.info("Shutting down eureka client");
-        if (null != interestHandler) {
-            interestHandler.shutdown();
+        if (null != interestClient) {
+            interestClient.shutdown();
         }
 
-        if (null != registrationHandler) {
-            registrationHandler.shutdown();
+        if (null != registrationClient) {
+            registrationClient.shutdown();
         }
-    }
-
-    @Override
-    public String toString() {
-        return interestHandler.toString();
     }
 }

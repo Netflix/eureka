@@ -312,9 +312,9 @@ public class RetryableConnectionFactoryTest {
         }
     }
 
-    // since the nullary connection reuses the same constructs as the unary connection, just this test should suffice
+    // since the zeroOpConnection reuses the same constructs as the singleOpConnection, just this test should suffice
     @Test
-    public void testNullaryConnectionLifecycleOnErrorRetryInitialFail() {
+    public void testZeroOpConnectionLifecycleOnErrorRetryInitialFail() {
         innerFactory = new FailableChannelFactory(new Func1<TestOp, Boolean>() {
             @Override
             public Boolean call(TestOp testOp) {

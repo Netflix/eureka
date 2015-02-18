@@ -31,17 +31,12 @@ public class DashboardServerSelfRegistrationService extends SelfRegistrationServ
     }
 
     @Override
+    public Observable<Void> connect(Observable<InstanceInfo> registrant) {
+        return eurekaClient.connect(registrant);
+    }
+
+    @Override
     public void cleanUpResources() {
-        eurekaClient.close();
-    }
-
-    @Override
-    public Observable<Void> register(final InstanceInfo instanceInfo) {
-        return eurekaClient.register(instanceInfo);
-    }
-
-    @Override
-    public Observable<Void> unregister(InstanceInfo instanceInfo) {
-        return eurekaClient.unregister(instanceInfo);
+        eurekaClient.shutdown();
     }
 }

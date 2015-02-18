@@ -34,6 +34,6 @@ public class WriteServerRandomLifecycleTest extends AbstractRandomLifecycleTest 
 
         assertLifecycles(expectedLifecycle, actualLifecycle);
 
-        eurekaClient.close();
+        eurekaClient.shutdown();
     }
 }

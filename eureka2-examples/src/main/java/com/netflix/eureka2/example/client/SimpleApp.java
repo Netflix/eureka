@@ -27,6 +27,8 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Builder;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import rx.Subscriber;
+import rx.Subscription;
+import rx.subjects.BehaviorSubject;
 
 /**
  * This example demonstrates how to register an application using {@link EurekaClient},
@@ -81,27 +83,30 @@ public final class SimpleApp {
                     }
                 });
 
+        BehaviorSubject<InstanceInfo> infoSubject = BehaviorSubject.create();
+        Subscription subscription = client.connect(infoSubject).subscribe();
+
         // Register client 1
         System.out.println("Registering SERVICE_A with Eureka...");
-        client.register(SERVICE_A).toBlocking().singleOrDefault(null);
+        infoSubject.onNext(SERVICE_A);
         Thread.sleep(1000);
 
         // Modify client 1 status
         System.out.println("Updating service status to DOWN...");
         InstanceInfo updatedInfo = new Builder().withInstanceInfo(SERVICE_A).withStatus(Status.DOWN).build();
-        client.register(updatedInfo).toBlocking().singleOrDefault(null);
+        infoSubject.onNext(updatedInfo);
         Thread.sleep(1000);
 
         // Unregister client 1
         System.out.println("Unregistering SERVICE_A from Eureka...");
-        client.unregister(updatedInfo).toBlocking().singleOrDefault(null);
+        subscription.unsubscribe();
         Thread.sleep(1000);
 
         Thread.sleep(5000);
 
         // Terminate both clients.
         System.out.println("Shutting down clients");
-        client.close();
+        client.shutdown();
     }
 
     public static void main(String[] args) throws InterruptedException {

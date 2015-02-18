@@ -7,6 +7,7 @@ import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
@@ -60,15 +61,17 @@ public class EurekaClientIntegrationTest {
 
         // First register
         InstanceInfo info = SampleInstanceInfo.ZuulServer.build();
-        eurekaClient.register(info).toBlocking().singleOrDefault(null);
+        eurekaClient.connect(Observable.just(info)).subscribe();
 
         // Now check that we get the notification from the read server
-        Observable<ChangeNotification<InstanceInfo>> notifications = eurekaClient.forVips(info.getVipAddress()).filter(dataOnlyFilter());
+        Observable<ChangeNotification<InstanceInfo>> notifications = eurekaClient
+                .forInterest(Interests.forVips(info.getVipAddress()))
+                .filter(dataOnlyFilter());
         Iterator<ChangeNotification<InstanceInfo>> notificationIt = RxBlocking.iteratorFrom(5, TimeUnit.HOURS, notifications);
 
         assertThat(notificationIt.next(), is(addChangeNotificationOf(info)));
 
-        eurekaClient.close();
+        eurekaClient.shutdown();
     }
 
     @Test(timeout = 60000)
@@ -79,6 +82,6 @@ public class EurekaClientIntegrationTest {
                 ServerResolvers.forDnsName("cluster.domain.name", 12102)
         ).build();
         ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
-        eurekaClient.register(SampleInstanceInfo.CliServer.build()).subscribe(testSubscriber);
+        eurekaClient.connect(Observable.just(SampleInstanceInfo.CliServer.build())).subscribe(testSubscriber);
     }
 }

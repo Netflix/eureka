@@ -67,7 +67,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author David Liu
  */
-public class InterestHandlerImplTest {
+public class EurekaInterestClientImplTest {
 
     private static final int RETRY_WAIT_MILLIS = 10;
     private static final long EVICTION_TIMEOUT_MS = 30 * 1000;
@@ -91,7 +91,7 @@ public class InterestHandlerImplTest {
 
     private ChannelFactory<InterestChannel> mockFactory;
     private TestChannelFactory<InterestChannel> factory;
-    private InterestHandler handler;
+    private EurekaInterestClient client;
 
     private ExtTestSubscriber<ChangeNotification<InstanceInfo>> discoverySubscriber;
     private ExtTestSubscriber<ChangeNotification<InstanceInfo>> zuulSubscriber;
@@ -157,8 +157,8 @@ public class InterestHandlerImplTest {
         zuulSubscriber.unsubscribe();
         allSubscriber.unsubscribe();
 
-        if (handler != null) {
-            handler.shutdown();
+        if (client != null) {
+            client.shutdown();
         }
     }
 
@@ -171,7 +171,7 @@ public class InterestHandlerImplTest {
             }
         });
 
-        handler = new InterestHandlerImpl(registry, factory, RETRY_WAIT_MILLIS);
+        client = new EurekaInterestClientImpl(registry, factory, RETRY_WAIT_MILLIS);
 
         List<ChangeNotification<InstanceInfo>> expectedDiscovery = Arrays.asList(
                 SampleChangeNotification.DiscoveryAdd.newNotification(discoveryInfos.get(0)),
@@ -179,7 +179,7 @@ public class InterestHandlerImplTest {
                 SampleChangeNotification.DiscoveryAdd.newNotification(discoveryInfos.get(2))
         );
 
-        handler.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(discoverySubscriber);
+        client.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(discoverySubscriber);
         discoverySubscriber.assertProducesInAnyOrder(expectedDiscovery);
 
         assertThat(factory.getAllChannels().size(), is(1));
@@ -196,7 +196,7 @@ public class InterestHandlerImplTest {
                 SampleChangeNotification.ZuulAdd.newNotification(zuulInfos.get(2))
         );
 
-        handler.forInterest(zuulInterest).filter(dataOnlyFilter()).subscribe(zuulSubscriber);
+        client.forInterest(zuulInterest).filter(dataOnlyFilter()).subscribe(zuulSubscriber);
         zuulSubscriber.assertProducesInAnyOrder(expectedZuul);
 
         assertThat(factory.getAllChannels().size(), is(1));
@@ -241,7 +241,7 @@ public class InterestHandlerImplTest {
     }
 
     private void testChannelFailOver() throws Exception {
-        handler = new InterestHandlerImpl(registry, factory, RETRY_WAIT_MILLIS);
+        client = new EurekaInterestClientImpl(registry, factory, RETRY_WAIT_MILLIS);
 
         List<ChangeNotification<InstanceInfo>> expected = Arrays.asList(
                 SampleChangeNotification.DiscoveryAdd.newNotification(discoveryInfos.get(0)),
@@ -249,7 +249,7 @@ public class InterestHandlerImplTest {
                 SampleChangeNotification.DiscoveryAdd.newNotification(discoveryInfos.get(2))
         );
 
-        handler.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(discoverySubscriber);
+        client.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(discoverySubscriber);
         discoverySubscriber.assertProducesInAnyOrder(expected);
 
         assertThat(factory.getAllChannels().size(), is(2));
@@ -276,9 +276,9 @@ public class InterestHandlerImplTest {
             }
         });
 
-        handler = new InterestHandlerImpl(registry, factory, RETRY_WAIT_MILLIS);
+        client = new EurekaInterestClientImpl(registry, factory, RETRY_WAIT_MILLIS);
 
-        handler.forInterest(discoveryInterest).subscribe(discoverySubscriber);
+        client.forInterest(discoveryInterest).subscribe(discoverySubscriber);
 
         assertThat(factory.getAllChannels().size(), is(1));
         TestInterestChannel channel0 = (TestInterestChannel) factory.getAllChannels().get(0);
@@ -287,7 +287,7 @@ public class InterestHandlerImplTest {
         assertThat(channel0.closeCalled, is(false));
         assertThat(matchInterests(channel0.operations.iterator().next(), discoveryInterest), is(true));
 
-        handler.forInterest(zuulInterest).subscribe(zuulSubscriber);
+        client.forInterest(zuulInterest).subscribe(zuulSubscriber);
 
         assertThat(factory.getAllChannels().size(), is(1));
         channel0 = (TestInterestChannel) factory.getAllChannels().get(0);
@@ -298,7 +298,7 @@ public class InterestHandlerImplTest {
         assertThat(matchInterests(operations[0], discoveryInterest), is(true));
         assertThat(matchInterests(operations[1], new MultipleInterests<>(discoveryInterest, zuulInterest)), is(true));
 
-        handler.shutdown();
+        client.shutdown();
 
         discoverySubscriber.assertOnCompleted();
         zuulSubscriber.assertOnCompleted();
@@ -313,13 +313,13 @@ public class InterestHandlerImplTest {
             }
         });
 
-        handler = new InterestHandlerImpl(registry, factory, RETRY_WAIT_MILLIS);
+        client = new EurekaInterestClientImpl(registry, factory, RETRY_WAIT_MILLIS);
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber1 = new ExtTestSubscriber<>();
-        handler.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber1);
+        client.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber1);
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber2 = new ExtTestSubscriber<>();
-        handler.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber2);
+        client.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber2);
 
         final List<InstanceInfo> discoveryOutput1 = new ArrayList<>();
         final List<InstanceInfo> discoveryOutput2 = new ArrayList<>();
@@ -345,13 +345,13 @@ public class InterestHandlerImplTest {
             }
         });
 
-        handler = new InterestHandlerImpl(registry, factory, RETRY_WAIT_MILLIS);
+        client = new EurekaInterestClientImpl(registry, factory, RETRY_WAIT_MILLIS);
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber1 = new ExtTestSubscriber<>();
-        handler.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber1);
+        client.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber1);
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber2 = new ExtTestSubscriber<>();
-        handler.forInterest(zuulInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber2);
+        client.forInterest(zuulInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber2);
 
         final List<InstanceInfo> discoveryOutput = new ArrayList<>();
         final List<InstanceInfo> zuulOutput = new ArrayList<>();
@@ -377,16 +377,16 @@ public class InterestHandlerImplTest {
             }
         });
 
-        handler = new InterestHandlerImpl(registry, factory, RETRY_WAIT_MILLIS);
+        client = new EurekaInterestClientImpl(registry, factory, RETRY_WAIT_MILLIS);
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber1 = new ExtTestSubscriber<>();
-        handler.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber1);
+        client.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber1);
 
         // don't use all registry interest as it is a special singleton
         Interest<InstanceInfo> compositeInterest = new MultipleInterests<>(discoveryInterest, zuulInterest);
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber2 = new ExtTestSubscriber<>();
-        handler.forInterest(compositeInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber2);
+        client.forInterest(compositeInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber2);
 
         final List<InstanceInfo> discoveryOutput = new ArrayList<>();
         final List<InstanceInfo> compositeOutput = new ArrayList<>();
@@ -418,7 +418,7 @@ public class InterestHandlerImplTest {
             }
         });
 
-        handler = new InterestHandlerImpl(registry, factory, RETRY_WAIT_MILLIS);
+        client = new EurekaInterestClientImpl(registry, factory, RETRY_WAIT_MILLIS);
 
         List<ChangeNotification<InstanceInfo>> expected = Arrays.asList(
                 SampleChangeNotification.DiscoveryAdd.newNotification(discoveryInfos.get(0)),
@@ -429,7 +429,7 @@ public class InterestHandlerImplTest {
         ArgumentCaptor<InstanceInfo> infoCaptor = ArgumentCaptor.forClass(InstanceInfo.class);
         ArgumentCaptor<Source> sourceCaptor = ArgumentCaptor.forClass(Source.class);
 
-        handler.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(discoverySubscriber);
+        client.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(discoverySubscriber);
 
         discoverySubscriber.assertProducesInAnyOrder(expected, new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
             @Override
@@ -472,7 +472,7 @@ public class InterestHandlerImplTest {
 
         // verify that a new subscriber can subscribe and see latest changes
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> newSubscriber = new ExtTestSubscriber<>();
-        handler.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(newSubscriber);
+        client.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(newSubscriber);
 
         newSubscriber.assertProducesInAnyOrder(expected, new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
             @Override

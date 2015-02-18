@@ -1,7 +1,5 @@
 package com.netflix.eureka2.integration;
 
-import java.util.concurrent.TimeUnit;
-
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.interests.ChangeNotification;
@@ -16,7 +14,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import rx.observers.TestSubscriber;
+import rx.Observable;
+import rx.Subscription;
 
 import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
@@ -48,7 +47,7 @@ public class ReadWriteClusterIntegrationTest {
 
     @After
     public void tearDown() {
-        eurekaClient.close();
+        eurekaClient.shutdown();
     }
 
     @Test(timeout = 30000)
@@ -60,20 +59,11 @@ public class ReadWriteClusterIntegrationTest {
                 .subscribe(notificationSubscriber);
 
         // Register
-        TestSubscriber<Void> registrationSubscriber = new TestSubscriber<>();
-
-        eurekaClient.register(registeringInfo).subscribe(registrationSubscriber);
-        registrationSubscriber.awaitTerminalEvent(10, TimeUnit.SECONDS);
-        registrationSubscriber.assertNoErrors();
-
+        Subscription subscription = eurekaClient.connect(Observable.just(registeringInfo)).subscribe();
         assertThat(notificationSubscriber.takeNextOrWait(), is(addChangeNotificationOf(registeringInfo)));
 
         // Unregister
-        registrationSubscriber = new TestSubscriber<>();
-        eurekaClient.unregister(registeringInfo).subscribe(registrationSubscriber);
-        registrationSubscriber.awaitTerminalEvent(5, TimeUnit.SECONDS);
-        registrationSubscriber.assertNoErrors();
-
+        subscription.unsubscribe();
         assertThat(notificationSubscriber.takeNextOrWait(), is(deleteChangeNotificationOf(registeringInfo)));
     }
 }

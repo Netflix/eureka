@@ -43,7 +43,7 @@ public class RetryableConnectionFactory<CHANNEL extends ServiceChannel> {
      * can be retried on.
      */
     public RetryableConnection<CHANNEL> zeroOpConnection(final Func1<CHANNEL, Observable<Void>> executeOnChannel) {
-        Observable<Integer> opStream = Observable.just(1).mergeWith(Observable.<Integer>never());
+        Observable<Integer> opStream = Observable.just(1);
         Func2<CHANNEL, Integer, Observable<Void>> adaptedExecute = new Func2<CHANNEL, Integer, Observable<Void>>() {
             @Override
             public Observable<Void> call(CHANNEL channel, Integer integer) {
@@ -67,16 +67,17 @@ public class RetryableConnectionFactory<CHANNEL extends ServiceChannel> {
             final Func2<CHANNEL, OP, Observable<Void>> executeOnChannel) {
         final AsyncSubject<Void> initSubject = AsyncSubject.create();  // subject used to cache init status
 
-        final BreakerSwitchSubject<OP> opSubject = BreakerSwitchSubject.create(BehaviorSubject.<OP>create());
         final BreakerSwitchSubject<CHANNEL> channelSubject = BreakerSwitchSubject.create(BehaviorSubject.<CHANNEL>create());
 
+        final Observable<OP> opObservable = opStream.replay(1).refCount();
+        final Subscriber<OP> opSubscriber = new NoOpSubscriber<>();
         final Observable<CHANNEL> channelObservable = channelObservableWithCleanUp(channelSubject);
 
         final AtomicBoolean opStreamConnected = new AtomicBoolean(false);
         final AtomicBoolean initialConnect = new AtomicBoolean(true);
 
         Observable<Void> lifecycle = Observable
-                .combineLatest(channelObservable, opSubject, new Func2<CHANNEL, OP, Observable<Void>>() {
+                .combineLatest(channelObservable, opObservable, new Func2<CHANNEL, OP, Observable<Void>>() {
                     @Override
                     public Observable<Void> call(final CHANNEL channel, OP op) {
                         logger.debug("executing on channel {} op {}", channel.toString(), op.toString());
@@ -112,7 +113,9 @@ public class RetryableConnectionFactory<CHANNEL extends ServiceChannel> {
                     public void call() {
                         channelSubject.onNext(channelFactory.newChannel());
                         if (opStreamConnected.compareAndSet(false, true)) {
-                            opStream.subscribe(opSubject);
+                            // keep a constant subscription to the opStream throughout retries so we don't need to
+                            // replay all prev states (if the stream replays)
+                            opObservable.subscribe(opSubscriber);
                         }
                     }
                 });
@@ -131,7 +134,7 @@ public class RetryableConnectionFactory<CHANNEL extends ServiceChannel> {
                             }
                         }).subscribe();
                         channelSubject.close();
-                        opSubject.close();
+                        opSubscriber.unsubscribe();
                     }
                 }
         );

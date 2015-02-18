@@ -8,15 +8,15 @@ import com.netflix.eureka2.client.channel.RegistrationChannelFactory;
 import com.netflix.eureka2.client.interest.BatchAwareIndexRegistry;
 import com.netflix.eureka2.client.interest.BatchingRegistry;
 import com.netflix.eureka2.client.interest.BatchingRegistryImpl;
-import com.netflix.eureka2.client.interest.InterestHandlerImpl;
-import com.netflix.eureka2.client.registration.RegistrationHandlerImpl;
+import com.netflix.eureka2.client.interest.EurekaInterestClient;
+import com.netflix.eureka2.client.interest.EurekaInterestClientImpl;
+import com.netflix.eureka2.client.registration.EurekaRegistrationClient;
+import com.netflix.eureka2.client.registration.EurekaRegistrationClientImpl;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
-import com.netflix.eureka2.client.registration.RegistrationHandler;
-import com.netflix.eureka2.client.interest.InterestHandler;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.BasicEurekaRegistryConfig;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
@@ -101,13 +101,13 @@ public class EurekaClientBuilder {
             transportConfig = new BasicEurekaTransportConfig.Builder().build();
         }
 
-        InterestHandler interestHandler = doDiscovery ? buildInterestHandler() : null;
-        RegistrationHandler registrationHandler = doRegistration ? buildRegistrationHandler() : null;
+        EurekaInterestClient interestClient = doDiscovery ? buildInterestClient() : null;
+        EurekaRegistrationClient registrationClient = doRegistration ? buildRegistrationClient() : null;
 
-        return new EurekaClientImpl(interestHandler, registrationHandler);
+        return new EurekaClientImpl(interestClient, registrationClient);
     }
 
-    private InterestHandler buildInterestHandler() {
+    private EurekaInterestClient buildInterestClient() {
         if (readServerResolver == null) {
             throw new IllegalArgumentException("Cannot build client for discovery without read server resolver");
         }
@@ -128,10 +128,10 @@ public class EurekaClientBuilder {
         ClientChannelFactory<InterestChannel> channelFactory
                 = new InterestChannelFactory(transportConfig, readServerResolver, registry, remoteBatchingRegistry, clientMetricFactory);
 
-        return new InterestHandlerImpl(registry, channelFactory);
+        return new EurekaInterestClientImpl(registry, channelFactory);
     }
 
-    private RegistrationHandler buildRegistrationHandler() {
+    private EurekaRegistrationClient buildRegistrationClient() {
         if (writeServerResolver == null) {
             throw new IllegalArgumentException("Cannot build client for registration without write server resolver");
         }
@@ -139,7 +139,7 @@ public class EurekaClientBuilder {
         ClientChannelFactory<RegistrationChannel> channelFactory
                 = new RegistrationChannelFactory(transportConfig, writeServerResolver, clientMetricFactory);
 
-        return new RegistrationHandlerImpl(channelFactory);
+        return new EurekaRegistrationClientImpl(channelFactory);
     }
 
 

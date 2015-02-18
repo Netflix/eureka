@@ -1,6 +1,5 @@
 package com.netflix.eureka2.client.registration;
 
-import com.netflix.eureka2.client.registration.RegistrationResponse;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -13,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @author David Liu
  */
-public class RegistrationResponseTest {
+public class RegistrationRequestTest {
 
     private TestSubscriber<Void> testSubscriber1;
     private TestSubscriber<Void> testSubscriber2;
@@ -34,7 +33,7 @@ public class RegistrationResponseTest {
             }
         });
         Observable<Void> init = Observable.empty();
-        RegistrationResponse observable = RegistrationResponse.from(delegate, init);
+        RegistrationRequest observable = RegistrationRequest.from(delegate, init);
 
         observable.subscribe(testSubscriber1);
         testSubscriber1.assertTerminalEvent();
@@ -52,7 +51,7 @@ public class RegistrationResponseTest {
         Exception e = new Exception("error");
         Observable<Void> delegate = Observable.error(e);
         Observable<Void> init = Observable.empty();
-        RegistrationResponse observable = RegistrationResponse.from(delegate, init);
+        RegistrationRequest observable = RegistrationRequest.from(delegate, init);
 
         observable.subscribe(testSubscriber1);
         testSubscriber1.assertTerminalEvent();
@@ -69,7 +68,7 @@ public class RegistrationResponseTest {
         Exception e = new Exception("error");
         Observable<Void> delegate = Observable.empty();
         Observable<Void> init = Observable.error(e);
-        RegistrationResponse observable = RegistrationResponse.from(delegate, init);
+        RegistrationRequest observable = RegistrationRequest.from(delegate, init);
 
         observable.subscribe(testSubscriber1);
         testSubscriber1.assertTerminalEvent();
