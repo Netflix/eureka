@@ -16,6 +16,10 @@
 
 package com.netflix.eureka2.server.audit;
 
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
@@ -23,11 +27,10 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rx.Observable;
 import rx.Subscriber;
-
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import rx.functions.Action1;
+import rx.functions.Func1;
 
 /**
  * @author Tomasz Bak
@@ -53,11 +56,22 @@ public class AuditServiceController {
 
     @PostConstruct
     public void startRegistryAuditing() {
-        InstanceInfo auditServer = serverIdentity.resolve().toBlocking().firstOrDefault(null);  // FIXME why toBlocking?
-        final String auditServerId = auditServer == null ? null : auditServer.getId();
-
         // TODO: this should be only Origin.Local, but since bridge works on replication channel we would not audit eureka 1.0 entries.
-        registry.forInterest(Interests.forFullRegistry()).subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
+        serverIdentity.resolve().take(1).flatMap(new Func1<InstanceInfo, Observable<Void>>() {
+            @Override
+            public Observable<Void> call(InstanceInfo ownInstanceInfo) {
+                final String ownServerId = ownInstanceInfo == null ? null : ownInstanceInfo.getId();
+                return registry.forInterest(Interests.forFullRegistry()).doOnNext(new Action1<ChangeNotification<InstanceInfo>>() {
+                    @Override
+                    public void call(ChangeNotification<InstanceInfo> notification) {
+                        if (notification.isDataNotification()) {
+                            AuditRecord record = AuditRecords.forChangeNotification(ownServerId, System.currentTimeMillis(), false, notification);
+                            auditService.write(record);
+                        }
+                    }
+                }).ignoreElements().cast(Void.class);
+            }
+        }).subscribe(new Subscriber<Void>() {
             @Override
             public void onCompleted() {
                 logger.warn("Registry auditing finished");
@@ -69,11 +83,7 @@ public class AuditServiceController {
             }
 
             @Override
-            public void onNext(ChangeNotification<InstanceInfo> notification) {
-                if(notification.isDataNotification()) {
-                    AuditRecord record = AuditRecords.forChangeNotification(auditServerId, System.currentTimeMillis(), false, notification);
-                    auditService.write(record);
-                }
+            public void onNext(Void notification) {
             }
         });
     }
