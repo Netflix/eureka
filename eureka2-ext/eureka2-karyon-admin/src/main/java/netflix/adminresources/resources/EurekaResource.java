@@ -1,4 +1,4 @@
-package netflix.admin.eureka;
+package netflix.adminresources.resources;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -14,7 +14,7 @@ import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import netflix.adminresources.tableview.DataTableHelper;
 
-@Path("/webadmin/eureka2")
+@Path("/eureka2")
 @Produces(MediaType.APPLICATION_JSON)
 public class EurekaResource {
 

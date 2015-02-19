@@ -3,7 +3,9 @@ $(document).ready(function () {
     var statusErrorElm = $('#status-error');
     statusErrorElm.html("");
 
-    console.log("Making ajax call - IV");
+  var source = "${ajax_base}/eureka2";
+
+  console.log("Making ajax call - " + source);
     $('#discovery-table-2').dataTable({
         "aoColumns"      : [
             {"sTitle": "Application", "mDataProp": "appId", sDefaultContent: '-'},
@@ -13,7 +15,7 @@ $(document).ready(function () {
             {"sTitle": "VIP", "mDataProp": "vip", sDefaultContent: '-'},
             {"sTitle": "Hostname", "mDataProp": "hostname", sDefaultContent: '-'}
         ],
-        "sAjaxSource"    : '/webadmin/eureka2',
+      "sAjaxSource": source,
         "fnServerData"   : function (sSource, aoData, fnCallback) {
             $.getJSON(sSource, aoData, function (json) {
                 $("#status-lastupdate").html(new Date().format());

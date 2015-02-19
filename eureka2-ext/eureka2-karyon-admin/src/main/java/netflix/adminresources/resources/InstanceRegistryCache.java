@@ -1,4 +1,4 @@
-package netflix.admin.eureka;
+package netflix.adminresources.resources;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
