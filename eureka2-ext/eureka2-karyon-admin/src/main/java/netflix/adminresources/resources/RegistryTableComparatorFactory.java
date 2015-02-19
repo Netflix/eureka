@@ -1,4 +1,4 @@
-package netflix.admin.eureka;
+package netflix.adminresources.resources;
 
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 

@@ -1,4 +1,4 @@
-package netflix.admin.eureka;
+package netflix.adminresources.resources;
 
 import com.google.inject.ImplementedBy;
 import com.netflix.eureka2.client.EurekaClient;

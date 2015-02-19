@@ -1,4 +1,4 @@
-package netflix.admin;
+package netflix.adminresources.pages;
 
 import netflix.adminresources.AbstractAdminPageInfo;
 import netflix.adminresources.AdminPage;
