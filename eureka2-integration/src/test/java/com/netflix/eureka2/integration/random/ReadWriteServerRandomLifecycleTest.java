@@ -34,7 +34,7 @@ public class ReadWriteServerRandomLifecycleTest extends AbstractRandomLifecycleT
 
         assertLifecycles(expectedLifecycle, actualLifecycle);
 
-        readClient.close();
-        writeClient.close();
+        readClient.shutdown();
+        writeClient.shutdown();
     }
 }

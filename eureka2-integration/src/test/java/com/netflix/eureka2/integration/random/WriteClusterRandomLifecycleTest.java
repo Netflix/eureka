@@ -34,7 +34,7 @@ public class WriteClusterRandomLifecycleTest extends AbstractRandomLifecycleTest
 
         assertLifecycles(expectedLifecycle, actualLifecycle);
 
-        readClient.close();
-        writeClient.close();
+        readClient.shutdown();
+        writeClient.shutdown();
     }
 }

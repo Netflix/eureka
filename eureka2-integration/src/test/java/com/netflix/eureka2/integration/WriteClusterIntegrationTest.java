@@ -6,7 +6,9 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.client.EurekaClient;
+import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -17,6 +19,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import rx.Observable;
+import rx.Subscription;
+import rx.subjects.BehaviorSubject;
 
 import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
 import static com.netflix.eureka2.rx.RxBlocking.iteratorFrom;
@@ -42,7 +46,7 @@ public class WriteClusterIntegrationTest {
      * It verifies two cases where one of the nodes came up first (so had no peers first), and the
      * other joined afterwards (so was initialized with one peer already).
      */
-    @Test(timeout = 20000)
+    @Test(timeout = 60000)
     public void testWriteClusterReplicationWorksBothWays() throws Exception {
         EurekaClient clientToFirst = eurekaDeploymentResource.connectToWriteServer(0);
         EurekaClient clientToSecond = eurekaDeploymentResource.connectToWriteServer(1);
@@ -53,23 +57,25 @@ public class WriteClusterIntegrationTest {
         // Second <- First
         testWriteClusterReplicationWorksBothWays(clientToSecond, clientToFirst, SampleInstanceInfo.ZuulServer.build());
 
-        clientToFirst.close();
-        clientToSecond.close();
+        clientToFirst.shutdown();
+        clientToSecond.shutdown();
     }
 
-    protected void testWriteClusterReplicationWorksBothWays(EurekaClient firstClient, EurekaClient secondClient, InstanceInfo clientInfo) {
+    protected void testWriteClusterReplicationWorksBothWays(EurekaClient firstClient, EurekaClient secondClient, InstanceInfo clientInfo) throws Exception {
         // Register via first write server
-        firstClient.register(clientInfo).toBlocking().firstOrDefault(null);
+        RegistrationObservable request = firstClient.register(Observable.just(clientInfo));
+        Subscription subscription = request.subscribe();
+        request.initialRegistrationResult().toBlocking().firstOrDefault(null);  // wait for initial registration
 
         // Subscribe to second write server
-        Observable<ChangeNotification<InstanceInfo>> notifications = secondClient.forApplication(clientInfo.getApp()).filter(dataOnlyFilter());
-        Iterator<ChangeNotification<InstanceInfo>> notificationIterator = iteratorFrom(10, TimeUnit.SECONDS, notifications);
+        Interest<InstanceInfo> interest = Interests.forApplications(clientInfo.getApp());
+        Observable<ChangeNotification<InstanceInfo>> notifications = secondClient.forInterest(interest).filter(dataOnlyFilter());
 
+        Iterator<ChangeNotification<InstanceInfo>> notificationIterator = iteratorFrom(60, TimeUnit.SECONDS, notifications);
         assertThat(notificationIterator.next(), is(addChangeNotificationOf(clientInfo)));
 
         // Now unregister
-        firstClient.unregister(clientInfo).toBlocking().firstOrDefault(null);
-
+        subscription.unsubscribe();
         assertThat(notificationIterator.next(), is(deleteChangeNotificationOf(clientInfo)));
     }
 
@@ -87,25 +93,29 @@ public class WriteClusterIntegrationTest {
 
         // Subscribe to second write server
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
-        discoveryClient.forApplication(infos.get(0).getApp()).filter(dataOnlyFilter()).subscribe(testSubscriber);
+        Interest<InstanceInfo> interest = Interests.forApplications(infos.get(0).getApp());
+        discoveryClient.forInterest(interest).filter(dataOnlyFilter()).subscribe(testSubscriber);
 
         // We need to wait for notification after each registry update, to avoid compaction
         // on the way.
-        registrationClient.register(infos.get(0)).subscribe();
+        BehaviorSubject<InstanceInfo> registrant = BehaviorSubject.create();
+        Subscription subscription = registrationClient.register(registrant).subscribe();
+        registrant.onNext(infos.get(0));
         assertThat(testSubscriber.takeNextOrWait(), is(addChangeNotificationOf(infos.get(0))));
-        registrationClient.register(infos.get(1)).subscribe();
+
+        registrant.onNext(infos.get(1));
         assertThat(testSubscriber.takeNextOrWait(), is(modifyChangeNotificationOf(infos.get(1))));
-        registrationClient.register(infos.get(2)).subscribe();
+
+        registrant.onNext(infos.get(2));
         assertThat(testSubscriber.takeNextOrWait(), is(modifyChangeNotificationOf(infos.get(2))));
 
         // do the unregister after we've looked at the register and updates. Otherwise the unregister may process
         // before replication happen which means no data will be replicated to the second write server.
-        registrationClient.unregister(infos.get(2)).subscribe();
-
+        subscription.unsubscribe();
         assertThat(testSubscriber.takeNextOrWait(), is(deleteChangeNotificationOf(infos.get(2))));
 
-        registrationClient.close();
-        discoveryClient.close();
+        registrationClient.shutdown();
+        discoveryClient.shutdown();
     }
 
     @Test(timeout = 60000)
@@ -117,7 +127,7 @@ public class WriteClusterIntegrationTest {
 
         // First populate registry with some data.
         InstanceInfo firstRecord = instanceInfos.next();
-        dataSourceClient.register(firstRecord).toBlocking().firstOrDefault(null);
+        dataSourceClient.register(Observable.just(firstRecord)).subscribe();
 
         // Subscribe to get current registry content
         Observable<ChangeNotification<InstanceInfo>> notifications =
@@ -128,12 +138,12 @@ public class WriteClusterIntegrationTest {
 
         // Now register another client
         InstanceInfo secondRecord = instanceInfos.next();
-        dataSourceClient.register(secondRecord).toBlocking().firstOrDefault(null);
+        dataSourceClient.register(Observable.just(secondRecord)).subscribe();
 
         assertThat(notificationIterator.next(), is(addChangeNotificationOf(secondRecord)));
 
-        dataSourceClient.close();
-        subscriberClient.close();
+        dataSourceClient.shutdown();
+        subscriberClient.shutdown();
     }
 
     @Test
@@ -146,5 +156,8 @@ public class WriteClusterIntegrationTest {
         assertThat(testSubscriber.takeNextOrWait(), is(addChangeNotification()));
         assertThat(testSubscriber.takeNextOrWait(), is(addChangeNotification()));
         assertThat(testSubscriber.takeNextOrWait(), is(bufferingChangeNotification()));
+
+        subscriberClient.shutdown();
     }
+
 }

@@ -22,14 +22,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.resolver.ServerResolver;
+import com.netflix.eureka2.client.EurekaClientBuilder;
+import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.utils.ExtCollections;
 import rx.Subscriber;
+import rx.Subscription;
+import rx.subjects.BehaviorSubject;
 
 /**
  * Represents single registration/interest connection.
@@ -50,10 +52,13 @@ public class Session {
 
     private Mode mode;
 
+    private volatile Subscription registrationSubscription;
     private Status registrationStatus = Status.NotStarted;
+    private final BehaviorSubject<InstanceInfo> infoSubject = BehaviorSubject.create();
 
     private volatile InstanceInfo lastInstanceInfo;
     private EurekaClient eurekaClient;
+
 
     private final AtomicInteger streamIds = new AtomicInteger();
     private final Map<String, InterestSubscriber> subscriptions = new HashMap<>();
@@ -96,16 +101,16 @@ public class Session {
     }
 
     public void connectToRegister(String host, int port) {
-        eurekaClient = Eureka.newClientBuilder(ServerResolvers.just(host, port))
+        eurekaClient = EurekaClientBuilder.registrationBuilder()
+                .withWriteServerResolver(ServerResolvers.just(host, port))
                 .withTransportConfig(context.getTransportConfig())
                 .build();
         mode = Mode.Write;
     }
 
     public void connectToRead(String host, int port) {
-        // TODO There is no way now to create just subscribing client, so we create default resolver for registration
-        ServerResolver writeResolver = ServerResolvers.just("localhost", EurekaTransports.DEFAULT_REGISTRATION_PORT);
-        eurekaClient = Eureka.newClientBuilder(ServerResolvers.just(host, port), writeResolver)
+        eurekaClient = EurekaClientBuilder.discoveryBuilder()
+                .withReadServerResolver(ServerResolvers.just(host, port))
                 .withTransportConfig(context.getTransportConfig())
                 .build();
         mode = Mode.Read;
@@ -134,27 +139,30 @@ public class Session {
         }
 
         registrationStatus = Status.Initiated;
-        eurekaClient.register(instanceInfo)
-                .subscribe(new Subscriber<Void>() {
-                    @Override
-                    public void onCompleted() {
-                        System.out.println("Successfully registered with Eureka server");
-                        lastInstanceInfo = instanceInfo;
-                        registrationStatus = Status.Complete;
-                    }
+        RegistrationObservable registrationRequest = eurekaClient.register(infoSubject);
+        registrationRequest.initialRegistrationResult().subscribe(new Subscriber<Void>() {
+            @Override
+            public void onCompleted() {
+                System.out.println("Successfully registered with Eureka server");
+                lastInstanceInfo = instanceInfo;
+                registrationStatus = Status.Complete;
+            }
 
-                    @Override
-                    public void onError(Throwable e) {
-                        System.out.println("ERROR: Registration failed.");
-                        e.printStackTrace();
-                        registrationStatus = Status.Failed;
-                    }
+            @Override
+            public void onError(Throwable e) {
+                System.out.println("ERROR: Registration failed.");
+                e.printStackTrace();
+                registrationStatus = Status.Failed;
+            }
 
-                    @Override
-                    public void onNext(Void aVoid) {
-                        // No op
-                    }
-                });
+            @Override
+            public void onNext(Void aVoid) {
+                // no-op
+            }
+        });
+
+        registrationSubscription = registrationRequest.subscribe();
+        infoSubject.onNext(instanceInfo);
     }
 
     public void update(final InstanceInfo newInfo) {
@@ -162,26 +170,8 @@ public class Session {
             System.err.println("ERROR: subscription-only session");
             return;
         }
-        eurekaClient.register(newInfo).subscribe(new Subscriber<Void>() {
-            @Override
-            public void onCompleted() {
-                System.out.println("Successfully updated registry information.");
-                lastInstanceInfo = newInfo;
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                System.out.println("ERROR: Registration update failed.");
-                e.printStackTrace();
-                registrationStatus = Status.Failed;
-            }
-
-            @Override
-            public void onNext(Void aVoid) {
-                // No op
-            }
-        });
-
+        lastInstanceInfo = newInfo;
+        infoSubject.onNext(newInfo);
     }
 
     public void unregister() {
@@ -189,26 +179,11 @@ public class Session {
             System.err.println("ERROR: subscription-only session");
             return;
         }
-        eurekaClient.unregister(lastInstanceInfo)
-                .subscribe(new Subscriber<Void>() {
-                    @Override
-                    public void onCompleted() {
-                        System.out.println("Successfuly unregistered with Eureka server");
-                        registrationStatus = Status.NotStarted;
-                    }
 
-                    @Override
-                    public void onError(Throwable e) {
-                        System.out.println("ERROR: Unregistration failed.");
-                        e.printStackTrace();
-                        registrationStatus = Status.Failed;
-                    }
-
-                    @Override
-                    public void onNext(Void aVoid) {
-                        // No op
-                    }
-                });
+        if (registrationSubscription != null) {
+            registrationSubscription.unsubscribe();
+        }
+        registrationStatus = Status.NotStarted;
     }
 
     public void forInterest(Interest<InstanceInfo> interest) {
@@ -227,7 +202,7 @@ public class Session {
     public void close() {
         if (eurekaClient != null) {
             System.out.println("Closing session " + sessionId);
-            eurekaClient.close();
+            eurekaClient.shutdown();
             eurekaClient = null;
         }
     }

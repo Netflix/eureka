@@ -22,7 +22,7 @@ public class DashboardServerStartupAndShutdownIntegrationTest extends
         EurekaDashboardConfig config = EurekaDashboardConfig.newBuilder()
                 .withAppName(SERVER_NAME)
                 .withResolverType(ResolverType.fixed)
-                .withWebAdminPort(9079)
+                .withWebAdminPort(0)
                 .withShutDownPort(0)
                 .withServerList(writeServerList)
                 .build();

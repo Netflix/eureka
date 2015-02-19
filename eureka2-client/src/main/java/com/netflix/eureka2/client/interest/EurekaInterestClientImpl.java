@@ -23,7 +23,7 @@ import rx.functions.Func1;
 import rx.functions.Func2;
 
 /**
- * Each InterestHandler class contains an interest channel and handles the lifecycle and reconnect of this channel.
+ * Each InterestClient class contains an interest channel and handles the lifecycle and reconnect of this channel.
  * At any point in time, this handler will have a single interest channel active, however this channel may not be
  * the same channel over time as it is refreshed. A retryableConnection is used for this purpose.
  *
@@ -33,8 +33,8 @@ import rx.functions.Func2;
  *
  * @author David Liu
  */
-public class InterestHandlerImpl implements InterestHandler {
-    private static final Logger logger = LoggerFactory.getLogger(InterestHandlerImpl.class);
+public class EurekaInterestClientImpl implements EurekaInterestClient {
+    private static final Logger logger = LoggerFactory.getLogger(EurekaInterestClientImpl.class);
 
     private static final int DEFAULT_RETRY_WAIT_MILLIS = 500;
 
@@ -45,14 +45,14 @@ public class InterestHandlerImpl implements InterestHandler {
     private final RetryableConnection<InterestChannel> retryableConnection;
 
     @Inject
-    public InterestHandlerImpl(SourcedEurekaRegistry<InstanceInfo> registry,
-                               ChannelFactory<InterestChannel> channelFactory) {
+    public EurekaInterestClientImpl(SourcedEurekaRegistry<InstanceInfo> registry,
+                                    ChannelFactory<InterestChannel> channelFactory) {
         this(registry, channelFactory, DEFAULT_RETRY_WAIT_MILLIS);
     }
 
-    /* visible for testing*/ InterestHandlerImpl(final SourcedEurekaRegistry<InstanceInfo> registry,
-                                                 ChannelFactory<InterestChannel> channelFactory,
-                                                 int retryWaitMillis) {
+    /* visible for testing*/ EurekaInterestClientImpl(final SourcedEurekaRegistry<InstanceInfo> registry,
+                                                      ChannelFactory<InterestChannel> channelFactory,
+                                                      int retryWaitMillis) {
         this.registry = registry;
         this.interestTracker = new InterestTracker();
         this.isShutdown = new AtomicBoolean(false);
@@ -156,7 +156,7 @@ public class InterestHandlerImpl implements InterestHandler {
     @Override
     public void shutdown() {
         if (isShutdown.compareAndSet(false, true)) {
-            logger.info("Shutting down InterestHandler");
+            logger.info("Shutting down InterestClient");
             retryableConnection.close();
             registry.shutdown();
         }

@@ -21,9 +21,9 @@ import javax.inject.Inject;
 *
 * @author David Liu
 */
-public class RegistrationHandlerImpl implements RegistrationHandler {
+public class EurekaRegistrationClientImpl implements EurekaRegistrationClient {
 
-    private static final Logger logger = LoggerFactory.getLogger(RegistrationHandlerImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(EurekaRegistrationClientImpl.class);
 
     private static final int DEFAULT_RETRY_WAIT_MILLIS = 500;
 
@@ -31,17 +31,17 @@ public class RegistrationHandlerImpl implements RegistrationHandler {
     private final int retryWaitMillis;
 
     @Inject
-    public RegistrationHandlerImpl(ChannelFactory<RegistrationChannel> channelFactory) {
+    public EurekaRegistrationClientImpl(ChannelFactory<RegistrationChannel> channelFactory) {
         this(channelFactory, DEFAULT_RETRY_WAIT_MILLIS);
     }
 
-    /*visible for testing*/ RegistrationHandlerImpl(ChannelFactory<RegistrationChannel> channelFactory, int retryWaitMillis) {
+    /*visible for testing*/ EurekaRegistrationClientImpl(ChannelFactory<RegistrationChannel> channelFactory, int retryWaitMillis) {
         this.retryableConnectionFactory = new RetryableConnectionFactory<>(channelFactory);
         this.retryWaitMillis = retryWaitMillis;
     }
 
     @Override
-    public RegistrationResponse register(Observable<InstanceInfo> instanceInfoStream) {
+    public RegistrationObservable register(Observable<InstanceInfo> instanceInfoStream) {
         Observable<InstanceInfo> opStream = instanceInfoStream.distinctUntilChanged();
         Func2<RegistrationChannel, InstanceInfo, Observable<Void>> executeOnChannel = new Func2<RegistrationChannel, InstanceInfo, Observable<Void>>() {
             @Override
@@ -77,12 +77,12 @@ public class RegistrationHandlerImpl implements RegistrationHandler {
                 })
                 .share();
 
-        return RegistrationResponse.from(lifecycle, initObservable);
+        return RegistrationObservable.from(lifecycle, initObservable);
     }
 
     @Override
     public void shutdown() {
-        logger.info("Shutting down RegistrationHandler");
+        logger.info("Shutting down RegistrationClient");
         // nothing to shutdown
     }
 }

@@ -153,11 +153,11 @@ public class EurekaServerResolver implements ServerResolver {
                     .doOnTerminate(new Action0() {
                         @Override
                         public void call() {
-                            eurekaClient.close();
+                            eurekaClient.shutdown();
                         }
                     });
         } catch (Exception e) {
-            eurekaClient.close();
+            eurekaClient.shutdown();
             throw e;
         }
     }

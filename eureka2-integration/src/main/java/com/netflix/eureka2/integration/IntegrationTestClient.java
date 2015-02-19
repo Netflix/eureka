@@ -1,7 +1,9 @@
 package com.netflix.eureka2.integration;
 
 import com.netflix.eureka2.client.EurekaClient;
+import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +16,6 @@ import rx.functions.Func1;
 import rx.functions.Func2;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -36,14 +37,14 @@ public class IntegrationTestClient {
     private static final String APPNAME_PREFIX = "IntegTestClient_";
 
     private final String appName;
-    private final List<ChangeNotification<InstanceInfo>> lifecycle;
+    private final Observable<InstanceInfo> registrant;
+    private final List<ChangeNotification<InstanceInfo>> expectedLifecycle;
+
     private final EurekaClient readClient;
     private final EurekaClient writeClient;
     private final int unregisterPercentage;
     private final int gapWaitMs;
     private final int endWaitMs;
-
-    private final List<ChangeNotification<InstanceInfo>> actualLifecycle;
 
     public IntegrationTestClient(EurekaClient readClient, EurekaClient writeClient) {
         this(readClient, writeClient, 15, 300, 10000);
@@ -58,103 +59,112 @@ public class IntegrationTestClient {
         this.endWaitMs = endWaitMs;
 
         this.appName = APPNAME_PREFIX + UUID.randomUUID().toString();
-        this.lifecycle = generateLifecycle(appName);
-        this.actualLifecycle = new ArrayList<>();
+        this.registrant = generateLifecycle(appName);
+        this.expectedLifecycle = computeExpectedLifecycle(registrant);
     }
 
     public List<ChangeNotification<InstanceInfo>> getExpectedLifecycle() {
-        return lifecycle;
+        return expectedLifecycle;
+    }
+
+    public List<ChangeNotification<InstanceInfo>> computeExpectedLifecycle(Observable<InstanceInfo> lifecycle) {
+        final List<ChangeNotification<InstanceInfo>> expected = new ArrayList<>();
+        lifecycle.toBlocking().forEach(new Action1<InstanceInfo>() {
+            @Override
+            public void call(InstanceInfo instanceInfo) {
+                expected.add(new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Add, instanceInfo));
+            }
+        });
+
+        return expected;
     }
 
     public List<ChangeNotification<InstanceInfo>> playLifecycle() {
-        final ChangeNotification<InstanceInfo> expectedEnd = lifecycle.get(lifecycle.size() - 1);
+        boolean shouldUnregisterAtEnd = Math.random() * 100 < unregisterPercentage;
+
+        ChangeNotification<InstanceInfo> lastNotification = expectedLifecycle.get(expectedLifecycle.size() - 1);
+        final ChangeNotification<InstanceInfo> expectedEnd = shouldUnregisterAtEnd
+                ? lastNotification
+                : new ChangeNotification<>(ChangeNotification.Kind.Delete, lastNotification.getData());
+
+        final List<ChangeNotification<InstanceInfo>> actualLifecycle = new ArrayList<>();
 
         final CountDownLatch expectedEndLatch = new CountDownLatch(1);
-        Subscription subscription = readClient.forApplication(appName).filter(dataOnlyFilter()).subscribe(
-                new Subscriber<ChangeNotification<InstanceInfo>>() {
-                    @Override
-                    public void onCompleted() {
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                    }
-
-                    @Override
-                    public void onNext(ChangeNotification<InstanceInfo> notification) {
-                        actualLifecycle.add(notification);
-                        if (expectedEnd.getData().equals(notification.getData())) {
-                            expectedEndLatch.countDown();
-                        }
-                    }
-                }
-        );
-
-        final CountDownLatch registerLatch = new CountDownLatch(lifecycle.size());
-        Observable.from(lifecycle)
-                .zipWith(
-                        Observable.interval(gapWaitMs, TimeUnit.MILLISECONDS),
-                        new Func2<ChangeNotification<InstanceInfo>, Long, ChangeNotification<InstanceInfo>>() {
+        Subscription readSubscription = readClient.forInterest(Interests.forApplications(appName))
+                .filter(dataOnlyFilter())
+                .subscribe(
+                        new Subscriber<ChangeNotification<InstanceInfo>>() {
                             @Override
-                            public ChangeNotification<InstanceInfo> call(ChangeNotification<InstanceInfo> notification, Long aLong) {
-                                return notification;
+                            public void onCompleted() {
                             }
-                        })
-                .flatMap(new Func1<ChangeNotification<InstanceInfo>, Observable<Void>>() {
-                    @Override
-                    public Observable<Void> call(ChangeNotification<InstanceInfo> notification) {
-                        if (notification.getKind() == ChangeNotification.Kind.Delete) {
-                            return writeClient.unregister(notification.getData()).retry(3);
-                        } else {
-                            return writeClient.register(notification.getData()).retry(3);
+
+                            @Override
+                            public void onError(Throwable e) {
+                            }
+
+                            @Override
+                            public void onNext(ChangeNotification<InstanceInfo> notification) {
+                                actualLifecycle.add(notification);
+                                if (expectedEnd.getData().equals(notification.getData())) {
+                                    expectedEndLatch.countDown();
+                                }
+                            }
                         }
-                    }
-                })
-                .doOnEach(new Action1<Notification<? super Void>>() {
-                    @Override
-                    public void call(Notification<? super Void> notification) {
-                        registerLatch.countDown();
-                    }
-                })
-                .subscribe();
+                );
+
+        final CountDownLatch registrantCountLatch = new CountDownLatch(expectedLifecycle.size());
+        RegistrationObservable registrationRequest = writeClient.register(registrant.doOnEach(new Action1<Notification<? super InstanceInfo>>() {
+            @Override
+            public void call(Notification<? super InstanceInfo> notification) {
+                registrantCountLatch.countDown();
+            }
+        }));
+
+        Subscription writeSubscription = registrationRequest.subscribe();
 
         try {
-            registerLatch.await(lifecycle.size() * gapWaitMs * 2, TimeUnit.MILLISECONDS);
-
-            if (!expectedEndLatch.await(endWaitMs, TimeUnit.MILLISECONDS)) {
-                logger.warn("Did not see expected end after 10 seconds");
+            registrantCountLatch.await(expectedLifecycle.size() * gapWaitMs * 2, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            logger.warn("Did not see all expected registration InstanceInfos");
+        } finally {
+            if (shouldUnregisterAtEnd) {
+                writeSubscription.unsubscribe();
             }
-        } catch (Exception e) {}
+        }
 
-        subscription.unsubscribe();
-        return Collections.unmodifiableList(actualLifecycle);
+        try {
+            expectedEndLatch.await(endWaitMs, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            logger.warn("Did not see expected final notification after waiting");
+        }
+
+        readSubscription.unsubscribe();
+
+        return actualLifecycle;
     }
 
-    protected List<ChangeNotification<InstanceInfo>> generateLifecycle(String appName) {
+    protected Observable<InstanceInfo> generateLifecycle(final String appName) {
         int size = new Random().nextInt(10) + 5;
-        List<ChangeNotification<InstanceInfo>> lifecycle = new ArrayList<>(size);
-
-        for (int i = 0; i < size; i++) {
-            lifecycle.add(randomNotification(randomInstanceInfo(appName)));
-        }
-
-        return lifecycle;
-    }
-
-    protected InstanceInfo randomInstanceInfo(String appName) {
-        return new InstanceInfo.Builder()
-                .withId(appName)
-                .withApp(appName)
-                .withAsg("asg_" + new Random().nextInt(100))
-                .build();
-    }
-
-    protected ChangeNotification<InstanceInfo> randomNotification(InstanceInfo instanceInfo) {
-        if (Math.random() * 100 < unregisterPercentage) {
-            return new ChangeNotification<>(ChangeNotification.Kind.Delete, instanceInfo);
-        } else {
-            return new ChangeNotification<>(ChangeNotification.Kind.Add, instanceInfo);
-        }
+        return Observable.range(0, size)
+                .map(new Func1<Integer, InstanceInfo>() {
+                    @Override
+                    public InstanceInfo call(Integer integer) {
+                        return new InstanceInfo.Builder()
+                                .withId(appName)
+                                .withApp(appName)
+                                .withAsg("asg_" + integer)
+                                .build();
+                    }
+                })
+                .zipWith(
+                        Observable.interval(gapWaitMs, TimeUnit.MILLISECONDS),
+                        new Func2<InstanceInfo, Long, InstanceInfo>() {
+                            @Override
+                            public InstanceInfo call(InstanceInfo instanceInfo, Long aLong) {
+                                return instanceInfo;
+                            }
+                        }
+                );
     }
 
 }

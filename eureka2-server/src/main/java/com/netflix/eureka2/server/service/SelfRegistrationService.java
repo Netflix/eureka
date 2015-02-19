@@ -8,9 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscription;
-import rx.functions.Action0;
-import rx.functions.Action1;
-import rx.functions.Func1;
 
 import javax.annotation.PreDestroy;
 
@@ -32,53 +29,16 @@ public abstract class SelfRegistrationService implements SelfInfoResolver {
     }
 
     public void init() {
-        subscription = resolve()
-                .distinctUntilChanged()
-                .switchMap(new Func1<InstanceInfo, Observable<? extends Void>>() {
-                    @Override
-                    public Observable<Void> call(final InstanceInfo instanceInfo) {
-                        logger.info("SelfInfo has changed. Latest info is {}", instanceInfo);
-                        latestSelfInfo.set(instanceInfo);
-
-                        return register(instanceInfo)
-                                .doOnError(new Action1<Throwable>() {
-                                    @Override
-                                    public void call(Throwable throwable) {
-                                        logger.warn("Error reporting updated self info {}", instanceInfo, throwable);
-                                    }
-                                })
-                                .doOnCompleted(new Action0() {
-                                    @Override
-                                    public void call() {
-                                        logger.info("Reported updated self info {}", instanceInfo);
-                                    }
-                                });
-                    }
-                })
-                .retryWhen(new RetryStrategyFunc(500, 3, true))
-                .subscribe();
+        Observable<InstanceInfo> selfInfoStream = resolve().distinctUntilChanged();
+        subscription = connect(selfInfoStream).retryWhen(new RetryStrategyFunc(500)).subscribe();
     }
 
     @PreDestroy
     public void shutdown() {
         logger.info("Shutting down the self registration service");
+
         if (subscription != null) {
             subscription.unsubscribe();
-        }
-        if (latestSelfInfo.get() != null) {
-            unregister(latestSelfInfo.get())
-                    .doOnCompleted(new Action0() {
-                        @Override
-                        public void call() {
-                            logger.info("Unregistered own instance info: {}", latestSelfInfo.get());
-                        }
-                    })
-                    .doOnError(new Action1<Throwable>() {
-                        @Override
-                        public void call(Throwable throwable) {
-                            logger.warn("Error during self unregistration process: {}", latestSelfInfo);
-                        }
-                    }).materialize().toBlocking().firstOrDefault(null);  // FIXME why materialize and block here?
         }
 
         cleanUpResources();
@@ -91,7 +51,5 @@ public abstract class SelfRegistrationService implements SelfInfoResolver {
 
     public abstract void cleanUpResources();
 
-    public abstract Observable<Void> register(InstanceInfo instanceInfo);
-
-    public abstract Observable<Void> unregister(InstanceInfo instanceInfo);
+    public abstract Observable<Void> connect(Observable<InstanceInfo> registrant);
 }

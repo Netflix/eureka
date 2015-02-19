@@ -69,7 +69,7 @@ public class EurekaClientResource extends ExternalResource {
     @Override
     protected void after() {
         if (eurekaClient != null) {
-            eurekaClient.close();
+            eurekaClient.shutdown();
         }
     }
 

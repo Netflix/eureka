@@ -37,7 +37,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author David Liu
  */
-public class RegistrationHandlerTest {
+public class EurekaRegistrationClientImplTest {
 
     private static final int RETRY_WAIT_MILLIS = 10;
     private final AtomicInteger channelId = new AtomicInteger(0);
@@ -47,7 +47,7 @@ public class RegistrationHandlerTest {
     private ReplaySubject<InstanceInfo> registrationSubject;
     private ChannelFactory<RegistrationChannel> mockFactory;
     private TestChannelFactory<RegistrationChannel> factory;
-    private RegistrationHandler handler;
+    private EurekaRegistrationClient client;
 
     private TestSubscriber<Void> initSubscriber;
     private TestSubscriber<Void> testSubscriber;
@@ -67,7 +67,7 @@ public class RegistrationHandlerTest {
         registrationSubject = ReplaySubject.create();
         mockFactory = mock(RegistrationChannelFactory.class);
         factory = new TestChannelFactory<>(mockFactory);
-        handler = spy(new RegistrationHandlerImpl(factory, RETRY_WAIT_MILLIS));
+        client = spy(new EurekaRegistrationClientImpl(factory, RETRY_WAIT_MILLIS));
 
         initSubscriber = new TestSubscriber<>();
         testSubscriber = new TestSubscriber<>();
@@ -78,7 +78,7 @@ public class RegistrationHandlerTest {
         initSubscriber.unsubscribe();
         testSubscriber.unsubscribe();
 
-        handler.shutdown();
+        client.shutdown();
     }
 
     @Test
@@ -90,8 +90,8 @@ public class RegistrationHandlerTest {
             }
         });
 
-        RegistrationResponse response = handler.register(registrationSubject);
-        response.getInitObservable().subscribe(initSubscriber);
+        RegistrationObservable response = client.register(registrationSubject);
+        response.initialRegistrationResult().subscribe(initSubscriber);
         response.subscribe(testSubscriber);
 
         // send the first registration information
@@ -155,8 +155,8 @@ public class RegistrationHandlerTest {
             }
         });
 
-        RegistrationResponse response = handler.register(registrationSubject);
-        response.getInitObservable().subscribe(initSubscriber);
+        RegistrationObservable response = client.register(registrationSubject);
+        response.initialRegistrationResult().subscribe(initSubscriber);
         response.subscribe(testSubscriber);
 
         // send the first registration information
@@ -222,8 +222,8 @@ public class RegistrationHandlerTest {
             }
         });
 
-        RegistrationResponse response = handler.register(registrationSubject);
-        response.getInitObservable().subscribe(initSubscriber);
+        RegistrationObservable response = client.register(registrationSubject);
+        response.initialRegistrationResult().subscribe(initSubscriber);
         response.subscribe(testSubscriber);
 
         // send the first registration information
@@ -282,8 +282,8 @@ public class RegistrationHandlerTest {
             }
         });
 
-        RegistrationResponse response = handler.register(registrationSubject);
-        response.getInitObservable().subscribe(initSubscriber);
+        RegistrationObservable response = client.register(registrationSubject);
+        response.initialRegistrationResult().subscribe(initSubscriber);
         response.subscribe(testSubscriber);
 
         // send the first registration information
@@ -322,7 +322,7 @@ public class RegistrationHandlerTest {
             }
         });
 
-        RegistrationResponse response = handler.register(registrationSubject);
+        RegistrationObservable response = client.register(registrationSubject);
         response.subscribe(testSubscriber);
         response.subscribe(anotherSubscriber);
 

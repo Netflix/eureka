@@ -5,7 +5,6 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -31,16 +30,11 @@ public class EurekaReadServerSelfRegistrationService extends SelfRegistrationSer
 
     @Override
     public void cleanUpResources() {
-        eurekaClient.close();
+        eurekaClient.shutdown();
     }
 
     @Override
-    public Observable<Void> register(final InstanceInfo instanceInfo) {
-        return eurekaClient.register(instanceInfo);
-    }
-
-    @Override
-    public Observable<Void> unregister(InstanceInfo instanceInfo) {
-        return eurekaClient.unregister(instanceInfo);
+    public Observable<Void> connect(Observable<InstanceInfo> registrant) {
+        return eurekaClient.register(registrant);
     }
 }
