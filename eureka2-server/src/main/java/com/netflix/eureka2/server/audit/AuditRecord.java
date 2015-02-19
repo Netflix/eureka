@@ -64,6 +64,14 @@ public class AuditRecord {
         this.deltas = deltas;
     }
 
+    public String getAuditServerId() {
+        return auditServerId;
+    }
+
+    public InstanceInfo getInstanceInfo() {
+        return instanceInfo;
+    }
+
     public long getTime() {
         return time;
     }
