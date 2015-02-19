@@ -1,7 +1,7 @@
 package com.netflix.eureka2.integration;
 
 import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.registration.RegistrationRequest;
+import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -113,7 +113,7 @@ public class IntegrationTestClient {
                 );
 
         final CountDownLatch registrantCountLatch = new CountDownLatch(expectedLifecycle.size());
-        RegistrationRequest registrationRequest = writeClient.connect(registrant.doOnEach(new Action1<Notification<? super InstanceInfo>>() {
+        RegistrationObservable registrationRequest = writeClient.register(registrant.doOnEach(new Action1<Notification<? super InstanceInfo>>() {
             @Override
             public void call(Notification<? super InstanceInfo> notification) {
                 registrantCountLatch.countDown();

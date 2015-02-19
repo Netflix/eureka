@@ -90,8 +90,8 @@ public class EurekaRegistrationClientImplTest {
             }
         });
 
-        RegistrationRequest response = client.connect(registrationSubject);
-        response.getInitObservable().subscribe(initSubscriber);
+        RegistrationObservable response = client.register(registrationSubject);
+        response.initialRegistrationResult().subscribe(initSubscriber);
         response.subscribe(testSubscriber);
 
         // send the first registration information
@@ -155,8 +155,8 @@ public class EurekaRegistrationClientImplTest {
             }
         });
 
-        RegistrationRequest response = client.connect(registrationSubject);
-        response.getInitObservable().subscribe(initSubscriber);
+        RegistrationObservable response = client.register(registrationSubject);
+        response.initialRegistrationResult().subscribe(initSubscriber);
         response.subscribe(testSubscriber);
 
         // send the first registration information
@@ -222,8 +222,8 @@ public class EurekaRegistrationClientImplTest {
             }
         });
 
-        RegistrationRequest response = client.connect(registrationSubject);
-        response.getInitObservable().subscribe(initSubscriber);
+        RegistrationObservable response = client.register(registrationSubject);
+        response.initialRegistrationResult().subscribe(initSubscriber);
         response.subscribe(testSubscriber);
 
         // send the first registration information
@@ -282,8 +282,8 @@ public class EurekaRegistrationClientImplTest {
             }
         });
 
-        RegistrationRequest response = client.connect(registrationSubject);
-        response.getInitObservable().subscribe(initSubscriber);
+        RegistrationObservable response = client.register(registrationSubject);
+        response.initialRegistrationResult().subscribe(initSubscriber);
         response.subscribe(testSubscriber);
 
         // send the first registration information
@@ -322,7 +322,7 @@ public class EurekaRegistrationClientImplTest {
             }
         });
 
-        RegistrationRequest response = client.connect(registrationSubject);
+        RegistrationObservable response = client.register(registrationSubject);
         response.subscribe(testSubscriber);
         response.subscribe(anotherSubscriber);
 

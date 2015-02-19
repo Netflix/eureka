@@ -5,7 +5,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.slf4j.Logger;
@@ -20,7 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author David Liu
  */
 @Singleton
-public class EurekaWriteServerSelfRegistrationService extends SelfRegistrationService implements Sourced {
+public class EurekaWriteServerSelfRegistrationService extends SelfRegistrationService {
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaWriteServerSelfRegistrationService.class);
 
@@ -62,11 +61,6 @@ public class EurekaWriteServerSelfRegistrationService extends SelfRegistrationSe
                         }
                     }
                 });
-    }
-
-    @Override
-    public Source getSource() {
-        return selfSource;
     }
 
     @Override

@@ -21,7 +21,7 @@ import javax.inject.Singleton;
 
 import com.netflix.eureka2.client.interest.EurekaInterestClient;
 import com.netflix.eureka2.client.registration.EurekaRegistrationClient;
-import com.netflix.eureka2.client.registration.RegistrationRequest;
+import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -52,8 +52,8 @@ public class EurekaClientImpl implements EurekaClient {
     }
 
     @Override
-    public RegistrationRequest connect(Observable<InstanceInfo> registrant) {
-        return registrationClient.connect(registrant);
+    public RegistrationObservable register(Observable<InstanceInfo> registrant) {
+        return registrationClient.register(registrant);
     }
 
     @Override

@@ -15,7 +15,7 @@ import rx.Observable;
 public interface EurekaRegistrationClient {
 
     /**
-     * Return a {@link RegistrationRequest} that when subscribes to, initiates registration with the remote server
+     * Return a {@link RegistrationObservable} that when subscribes to, initiates registration with the remote server
      * based on the InstanceInfos received. Changes between InstanceInfos will be applied as updates to the initial
      * registration. InstanceInfo Ids cannot change for InstanceInfos within an input stream.
      *
@@ -23,9 +23,9 @@ public interface EurekaRegistrationClient {
      *                   updated. Initial registrations is predicated on two conditions, the returned
      *                   RegistrationRequest must be subscribed to, and an initial InstanceInfo must be emitted
      *                   by the input observable.
-     * @return {@link RegistrationRequest}
+     * @return {@link RegistrationObservable}
      */
-    RegistrationRequest connect(Observable<InstanceInfo> registrant);
+    RegistrationObservable register(Observable<InstanceInfo> registrant);
 
     /**
      * shutdown and clean up all resources for this client

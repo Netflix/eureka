@@ -59,7 +59,7 @@ public class ReadWriteClusterIntegrationTest {
                 .subscribe(notificationSubscriber);
 
         // Register
-        Subscription subscription = eurekaClient.connect(Observable.just(registeringInfo)).subscribe();
+        Subscription subscription = eurekaClient.register(Observable.just(registeringInfo)).subscribe();
         assertThat(notificationSubscriber.takeNextOrWait(), is(addChangeNotificationOf(registeringInfo)));
 
         // Unregister

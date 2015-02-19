@@ -52,7 +52,7 @@ public class WriteServerIntegrationTest {
         // We need to block, otherwise if we shot all of them in one row, they may be
         // compacted in the index.
         BehaviorSubject<InstanceInfo> registrant = BehaviorSubject.create();
-        Subscription subscription = registrationClient.connect(registrant).subscribe();
+        Subscription subscription = registrationClient.register(registrant).subscribe();
         registrant.onNext(infos.get(0));
         assertThat(testSubscriber.takeNextOrWait(), is(addChangeNotificationOf(infos.get(0))));
 

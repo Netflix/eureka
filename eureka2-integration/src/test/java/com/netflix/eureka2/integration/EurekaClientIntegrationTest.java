@@ -61,7 +61,7 @@ public class EurekaClientIntegrationTest {
 
         // First register
         InstanceInfo info = SampleInstanceInfo.ZuulServer.build();
-        eurekaClient.connect(Observable.just(info)).subscribe();
+        eurekaClient.register(Observable.just(info)).subscribe();
 
         // Now check that we get the notification from the read server
         Observable<ChangeNotification<InstanceInfo>> notifications = eurekaClient
@@ -82,6 +82,6 @@ public class EurekaClientIntegrationTest {
                 ServerResolvers.forDnsName("cluster.domain.name", 12102)
         ).build();
         ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
-        eurekaClient.connect(Observable.just(SampleInstanceInfo.CliServer.build())).subscribe(testSubscriber);
+        eurekaClient.register(Observable.just(SampleInstanceInfo.CliServer.build())).subscribe(testSubscriber);
     }
 }

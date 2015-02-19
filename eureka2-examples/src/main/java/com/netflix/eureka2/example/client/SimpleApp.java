@@ -84,7 +84,7 @@ public final class SimpleApp {
                 });
 
         BehaviorSubject<InstanceInfo> infoSubject = BehaviorSubject.create();
-        Subscription subscription = client.connect(infoSubject).subscribe();
+        Subscription subscription = client.register(infoSubject).subscribe();
 
         // Register client 1
         System.out.println("Registering SERVICE_A with Eureka...");

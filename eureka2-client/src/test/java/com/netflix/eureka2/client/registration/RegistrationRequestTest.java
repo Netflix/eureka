@@ -33,7 +33,7 @@ public class RegistrationRequestTest {
             }
         });
         Observable<Void> init = Observable.empty();
-        RegistrationRequest observable = RegistrationRequest.from(delegate, init);
+        RegistrationObservable observable = RegistrationObservable.from(delegate, init);
 
         observable.subscribe(testSubscriber1);
         testSubscriber1.assertTerminalEvent();
@@ -51,14 +51,14 @@ public class RegistrationRequestTest {
         Exception e = new Exception("error");
         Observable<Void> delegate = Observable.error(e);
         Observable<Void> init = Observable.empty();
-        RegistrationRequest observable = RegistrationRequest.from(delegate, init);
+        RegistrationObservable observable = RegistrationObservable.from(delegate, init);
 
         observable.subscribe(testSubscriber1);
         testSubscriber1.assertTerminalEvent();
         Assert.assertEquals(1, testSubscriber1.getOnErrorEvents().size());
         Assert.assertEquals(e, testSubscriber1.getOnErrorEvents().get(0));
 
-        observable.getInitObservable().subscribe(testSubscriber2);
+        observable.initialRegistrationResult().subscribe(testSubscriber2);
         testSubscriber2.assertTerminalEvent();
         testSubscriber2.assertNoErrors();
     }
@@ -68,13 +68,13 @@ public class RegistrationRequestTest {
         Exception e = new Exception("error");
         Observable<Void> delegate = Observable.empty();
         Observable<Void> init = Observable.error(e);
-        RegistrationRequest observable = RegistrationRequest.from(delegate, init);
+        RegistrationObservable observable = RegistrationObservable.from(delegate, init);
 
         observable.subscribe(testSubscriber1);
         testSubscriber1.assertTerminalEvent();
         testSubscriber1.assertNoErrors();
 
-        observable.getInitObservable().subscribe(testSubscriber2);
+        observable.initialRegistrationResult().subscribe(testSubscriber2);
         testSubscriber2.assertTerminalEvent();
         Assert.assertEquals(1, testSubscriber2.getOnErrorEvents().size());
         Assert.assertEquals(e, testSubscriber2.getOnErrorEvents().get(0));

@@ -32,7 +32,7 @@ public class DashboardServerSelfRegistrationService extends SelfRegistrationServ
 
     @Override
     public Observable<Void> connect(Observable<InstanceInfo> registrant) {
-        return eurekaClient.connect(registrant);
+        return eurekaClient.register(registrant);
     }
 
     @Override

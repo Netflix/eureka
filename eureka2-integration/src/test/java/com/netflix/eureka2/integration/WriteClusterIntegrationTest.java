@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.registration.RegistrationRequest;
+import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
@@ -19,11 +19,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import rx.Observable;
-import rx.Subscriber;
 import rx.Subscription;
-import rx.functions.Action0;
-import rx.functions.Func2;
-import rx.observers.TestSubscriber;
 import rx.subjects.BehaviorSubject;
 
 import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
@@ -67,9 +63,9 @@ public class WriteClusterIntegrationTest {
 
     protected void testWriteClusterReplicationWorksBothWays(EurekaClient firstClient, EurekaClient secondClient, InstanceInfo clientInfo) throws Exception {
         // Register via first write server
-        RegistrationRequest request = firstClient.connect(Observable.just(clientInfo));
+        RegistrationObservable request = firstClient.register(Observable.just(clientInfo));
         Subscription subscription = request.subscribe();
-        request.getInitObservable().toBlocking().firstOrDefault(null);  // wait for initial registration
+        request.initialRegistrationResult().toBlocking().firstOrDefault(null);  // wait for initial registration
 
         // Subscribe to second write server
         Interest<InstanceInfo> interest = Interests.forApplications(clientInfo.getApp());
@@ -103,7 +99,7 @@ public class WriteClusterIntegrationTest {
         // We need to wait for notification after each registry update, to avoid compaction
         // on the way.
         BehaviorSubject<InstanceInfo> registrant = BehaviorSubject.create();
-        Subscription subscription = registrationClient.connect(registrant).subscribe();
+        Subscription subscription = registrationClient.register(registrant).subscribe();
         registrant.onNext(infos.get(0));
         assertThat(testSubscriber.takeNextOrWait(), is(addChangeNotificationOf(infos.get(0))));
 
@@ -131,7 +127,7 @@ public class WriteClusterIntegrationTest {
 
         // First populate registry with some data.
         InstanceInfo firstRecord = instanceInfos.next();
-        dataSourceClient.connect(Observable.just(firstRecord)).subscribe();
+        dataSourceClient.register(Observable.just(firstRecord)).subscribe();
 
         // Subscribe to get current registry content
         Observable<ChangeNotification<InstanceInfo>> notifications =
@@ -142,7 +138,7 @@ public class WriteClusterIntegrationTest {
 
         // Now register another client
         InstanceInfo secondRecord = instanceInfos.next();
-        dataSourceClient.connect(Observable.just(secondRecord)).subscribe();
+        dataSourceClient.register(Observable.just(secondRecord)).subscribe();
 
         assertThat(notificationIterator.next(), is(addChangeNotificationOf(secondRecord)));
 
