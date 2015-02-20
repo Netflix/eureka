@@ -15,13 +15,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Singleton
 public class InstanceRegistryCache {
-    private static final Logger logger = LoggerFactory.getLogger(EurekaResource.class);
+    private static final Logger logger = LoggerFactory.getLogger(Eureka2Resource.class);
     private final Map<String, InstanceInfo> registryCache;
     private final EurekaClient eurekaClient;
 
     @Inject
-    public InstanceRegistryCache(EurekaClientProvider eurekaClientProvider) {
-        eurekaClient = eurekaClientProvider.get();
+    public InstanceRegistryCache(Eureka2ClientProvider eureka2ClientProvider) {
+        eurekaClient = eureka2ClientProvider.get();
         registryCache = new ConcurrentHashMap<>();
         start();
     }

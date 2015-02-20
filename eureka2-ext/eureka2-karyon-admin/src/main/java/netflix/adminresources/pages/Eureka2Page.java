@@ -4,17 +4,17 @@ import netflix.adminresources.AbstractAdminPageInfo;
 import netflix.adminresources.AdminPage;
 
 @AdminPage
-public class EurekaPage extends AbstractAdminPageInfo {
+public class Eureka2Page extends AbstractAdminPageInfo {
 
     public static final String PAGE_ID = "eureka2";
     public static final String NAME = "Eureka2";
 
-    public EurekaPage() {
+    public Eureka2Page() {
         super(PAGE_ID, NAME);
     }
 
     @Override
     public String getPageTemplate() {
-        return "/eureka-registry.ftl";
+        return "/eureka2-registry.ftl";
     }
 }

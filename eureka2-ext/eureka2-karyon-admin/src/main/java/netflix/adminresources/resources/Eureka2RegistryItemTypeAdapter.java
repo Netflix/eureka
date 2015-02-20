@@ -6,7 +6,7 @@ import com.netflix.eureka2.registry.datacenter.AwsDataCenterInfo;
 
 import java.lang.reflect.Type;
 
-public class EurekaRegistryItemTypeAdapter implements JsonSerializer<InstanceInfo> {
+public class Eureka2RegistryItemTypeAdapter implements JsonSerializer<InstanceInfo> {
     @Override
     public JsonElement serialize(InstanceInfo instanceInfo, Type typeOfSrc, JsonSerializationContext context) {
         JsonObject result = new JsonObject();

@@ -1,5 +1,5 @@
 <script type="text/javascript">
-<#include "eureka-registry.js"/>
+<#include "eureka2-registry.js"/>
 </script>
 
 <style>
