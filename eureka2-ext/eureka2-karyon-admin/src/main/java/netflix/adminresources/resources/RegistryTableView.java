@@ -58,7 +58,7 @@ public class RegistryTableView implements TableViewResource {
     @Inject
     public RegistryTableView(InstanceRegistryCache cache) {
         this.registryCache = cache;
-        gson = new GsonBuilder().registerTypeAdapter(InstanceInfo.class, new EurekaRegistryItemTypeAdapter()).create();
+        gson = new GsonBuilder().registerTypeAdapter(InstanceInfo.class, new Eureka2RegistryItemTypeAdapter()).create();
     }
 
     @Override

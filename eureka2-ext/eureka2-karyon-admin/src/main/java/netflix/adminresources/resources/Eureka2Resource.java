@@ -16,7 +16,7 @@ import netflix.adminresources.tableview.DataTableHelper;
 
 @Path("/eureka2")
 @Produces(MediaType.APPLICATION_JSON)
-public class EurekaResource {
+public class Eureka2Resource {
 
     @Inject(optional = false)
     private RegistryTableView registryTableView;
