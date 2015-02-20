@@ -314,7 +314,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         if (leaseToRenew == null) {
             RENEW_NOT_FOUND.increment(isReplication);
             logger.warn("DS: Registry: lease doesn't exist, registering resource: "
-                        + appName + " - " + id);
+                    + appName + " - " + id);
             return false;
         } else {
             InstanceInfo instanceInfo = leaseToRenew.getHolder();
@@ -323,8 +323,12 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
                 InstanceStatus overriddenInstanceStatus = this
                         .getOverriddenInstanceStatus(instanceInfo,
                                 leaseToRenew, isReplication);
-                // InstanceStatus overriddenInstanceStatus =
-                // instanceInfo.getStatus();
+                if(overriddenInstanceStatus == InstanceStatus.UNKNOWN) {
+                    logger.info("Instance status UNKNOWN possibly due to deleted override for instance {}"
+                            + "; re-register required", instanceInfo.getId());
+                    RENEW_NOT_FOUND.increment(isReplication);
+                    return false;
+                }
                 if (!instanceInfo.getStatus().equals(overriddenInstanceStatus)) {
                     Object[] args = {instanceInfo.getStatus().name(),
                                      instanceInfo.getOverriddenStatus().name(),
