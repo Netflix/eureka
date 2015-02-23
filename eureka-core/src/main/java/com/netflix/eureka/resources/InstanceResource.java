@@ -173,6 +173,10 @@ public class InstanceResource {
             @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication,
             @QueryParam("lastDirtyTimestamp") String lastDirtyTimestamp) {
         try {
+            if(registry.getInstanceByAppAndId(app.getName(), id) == null) {
+                logger.warn("Instance not found: {}/{}", app.getName(), id);
+                return Response.status(Status.NOT_FOUND).build();
+            }
             boolean isSuccess = registry.statusUpdate(app.getName(), id,
                     InstanceStatus.valueOf(newStatus), lastDirtyTimestamp,
                     "true".equals(isReplication));
@@ -184,7 +188,7 @@ public class InstanceResource {
             } else {
                 logger.warn("Unable to update status: " + app.getName() + " - "
                         + id + " - " + newStatus);
-                return Response.status(Status.NOT_ACCEPTABLE).build();
+                return Response.serverError().build();
             }
         } catch (Throwable e) {
             logger.error("Error updating instance {} for status {}", id,
@@ -212,6 +216,11 @@ public class InstanceResource {
             @QueryParam("value") String newStatusValue,
             @QueryParam("lastDirtyTimestamp") String lastDirtyTimestamp) {
         try {
+            if(registry.getInstanceByAppAndId(app.getName(), id) == null) {
+                logger.warn("Instance not found: {}/{}", app.getName(), id);
+                return Response.status(Status.NOT_FOUND).build();
+            }
+
             InstanceStatus newStatus = newStatusValue == null ? InstanceStatus.UNKNOWN : InstanceStatus.valueOf(newStatusValue);
             boolean isSuccess = registry.deleteStatusOverride(app.getName(), id,
                     newStatus, lastDirtyTimestamp, "true".equals(isReplication));
@@ -221,7 +230,7 @@ public class InstanceResource {
                 return Response.ok().build();
             } else {
                 logger.warn("Unable to remove status override: " + app.getName() + " - " + id);
-                return Response.status(Status.NOT_ACCEPTABLE).build();
+                return Response.serverError().build();
             }
         } catch (Throwable e) {
             logger.error("Error removing instance's {} status override", id);

@@ -956,7 +956,9 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         } else if (includeRemoteRegions) {
             for (RemoteRegionRegistry remoteRegistry : this.regionNameVSRemoteRegistry.values()) {
                 Application application = remoteRegistry.getApplication(appName);
-                return application.getByInstanceId(id);
+                if(application != null) {
+                    return application.getByInstanceId(id);
+                }
             }
         }
         return null;
