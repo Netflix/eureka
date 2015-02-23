@@ -1,6 +1,7 @@
 package com.netflix.eureka.resources;
 
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
@@ -24,6 +25,18 @@ public class InstanceResourceTest extends AbstractTester {
         super.setUp();
         applicationResource = new ApplicationResource(testInstanceInfo.getAppName());
         instanceResource = new InstanceResource(applicationResource, testInstanceInfo.getId(), registry);
+    }
+
+    @Test
+    public void testStatusOverrideReturnsNotFoundErrorCodeIfInstanceNotRegistered() throws Exception {
+        Response response = instanceResource.statusUpdate(InstanceStatus.OUT_OF_SERVICE.name(), "false", "0");
+        assertThat(response.getStatus(), is(equalTo(Status.NOT_FOUND.getStatusCode())));
+    }
+
+    @Test
+    public void testStatusOverrideDeleteReturnsNotFoundErrorCodeIfInstanceNotRegistered() throws Exception {
+        Response response = instanceResource.deleteStatusUpdate(InstanceStatus.OUT_OF_SERVICE.name(), "false", "0");
+        assertThat(response.getStatus(), is(equalTo(Status.NOT_FOUND.getStatusCode())));
     }
 
     @Test
