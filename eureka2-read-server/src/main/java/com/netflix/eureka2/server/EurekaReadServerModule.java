@@ -18,7 +18,8 @@ package com.netflix.eureka2.server;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
-import com.netflix.eureka2.client.EurekaClient;
+import com.netflix.eureka2.client.interest.EurekaInterestClient;
+import com.netflix.eureka2.client.registration.EurekaRegistrationClient;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.SpectatorEurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
@@ -43,19 +44,23 @@ import io.reactivex.netty.spectator.SpectatorEventsListenerFactory;
 public class EurekaReadServerModule extends AbstractModule {
 
     private final EurekaServerConfig config;
-    private final EurekaClient eurekaClient;
+    private final EurekaRegistrationClient registrationClient;
+    private final EurekaInterestClient interestClient;
 
     public EurekaReadServerModule() {
         this(null);
     }
 
     public EurekaReadServerModule(EurekaServerConfig config) {
-        this(config, null);
+        this(config, null, null);
     }
 
-    public EurekaReadServerModule(EurekaServerConfig config, EurekaClient eurekaClient) {
+    public EurekaReadServerModule(EurekaServerConfig config,
+                                  EurekaRegistrationClient registrationClient,
+                                  EurekaInterestClient interestClient) {
         this.config = config;
-        this.eurekaClient = eurekaClient;
+        this.registrationClient = registrationClient;
+        this.interestClient = interestClient;
     }
 
     @Override
@@ -67,10 +72,15 @@ public class EurekaReadServerModule extends AbstractModule {
             bind(EurekaCommonConfig.class).toInstance(config);
             bind(EurekaServerConfig.class).toInstance(config);
         }
-        if (eurekaClient == null) {
-            bind(EurekaClient.class).toProvider(EurekaClientProvider.class);
+        if (registrationClient == null) {
+            bind(EurekaRegistrationClient.class).toProvider(RegistrationClientProvider.class);
         } else {
-            bind(EurekaClient.class).toInstance(eurekaClient);
+            bind(EurekaRegistrationClient.class).toInstance(registrationClient);
+        }
+        if (interestClient == null) {
+            bind(EurekaInterestClient.class).toProvider(FullFetchInterestClientProvider.class);
+        } else {
+            bind(EurekaInterestClient.class).toInstance(interestClient);
         }
 
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new SpectatorEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));

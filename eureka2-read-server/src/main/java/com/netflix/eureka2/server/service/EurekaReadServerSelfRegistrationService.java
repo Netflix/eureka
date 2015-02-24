@@ -1,12 +1,12 @@
 package com.netflix.eureka2.server.service;
 
-import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
-import rx.Observable;
-
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import com.netflix.eureka2.client.registration.EurekaRegistrationClient;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
+import rx.Observable;
 
 /**
  * @author David Liu
@@ -14,12 +14,12 @@ import javax.inject.Singleton;
 @Singleton
 public class EurekaReadServerSelfRegistrationService extends SelfRegistrationService {
 
-    private final EurekaClient eurekaClient;
+    private final EurekaRegistrationClient registrationClient;
 
     @Inject
-    public EurekaReadServerSelfRegistrationService(SelfInfoResolver resolver, EurekaClient eurekaClient) {
+    public EurekaReadServerSelfRegistrationService(SelfInfoResolver resolver, EurekaRegistrationClient registrationClient) {
         super(resolver);
-        this.eurekaClient = eurekaClient;
+        this.registrationClient = registrationClient;
     }
 
     @PostConstruct
@@ -30,11 +30,11 @@ public class EurekaReadServerSelfRegistrationService extends SelfRegistrationSer
 
     @Override
     public void cleanUpResources() {
-        eurekaClient.shutdown();
+        registrationClient.shutdown();
     }
 
     @Override
     public Observable<Void> connect(Observable<InstanceInfo> registrant) {
-        return eurekaClient.register(registrant);
+        return registrationClient.register(registrant);
     }
 }
