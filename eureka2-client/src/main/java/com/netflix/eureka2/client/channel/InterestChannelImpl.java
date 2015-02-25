@@ -82,7 +82,7 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
                                InterestChannelMetrics metrics) {
         super(STATE.Idle, client, metrics);
         this.remoteBatchingRegistry = remoteBatchingRegistry;
-        this.selfSource = new Source(Source.Origin.LOCAL);
+        this.selfSource = new Source(Source.Origin.INTERESTED);
         this.registry = registry;
         channelInterestSubscriber = new ChannelInterestSubscriber(registry);
         channelInterestStream = createInterestStream();

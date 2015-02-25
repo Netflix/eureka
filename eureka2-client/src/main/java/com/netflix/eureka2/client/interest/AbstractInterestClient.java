@@ -59,7 +59,7 @@ public abstract class AbstractInterestClient implements EurekaInterestClient {
                     public Observable<Long> call(InterestChannel interestChannel) {
                         if (interestChannel instanceof Sourced) {
                             Source toRetain = ((Sourced) interestChannel).getSource();
-                            return registry.evictAllExcept(toRetain);
+                            return registry.evictAllExcept(Source.matcherFor(toRetain));
                         }
                         return Observable.empty();
                     }

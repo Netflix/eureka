@@ -76,17 +76,19 @@ public class Source {
                 '}';
     }
 
-    public static Matcher matcherFor(final Source source) {
-        return new Matcher() {
+    public static SourceMatcher matcherFor(final Source source) {
+        return new SourceMatcher() {
             @Override
             public boolean match(Source another) {
-                return source.equals(another);
+                return (source == null)
+                        ? (another == null)
+                        : source.equals(another);
             }
         };
     }
 
-    public static Matcher matcherFor(final Origin origin) {
-        return new Matcher() {
+    public static SourceMatcher matcherFor(final Origin origin) {
+        return new SourceMatcher() {
             @Override
             public boolean match(Source another) {
                 if (another == null) {
@@ -97,19 +99,23 @@ public class Source {
         };
     }
 
-    public static Matcher matcherFor(final Origin origin, final String name) {
-        return new Matcher() {
+    public static SourceMatcher matcherFor(final Origin origin, final String name) {
+        return new SourceMatcher() {
             @Override
             public boolean match(Source another) {
                 if (another == null) {
                     return false;
                 }
-                return origin.equals(another.origin) && name.equals(another.name);
+                boolean originMatches = origin.equals(another.origin);
+                boolean nameMatches = (name == null)
+                        ? (another.name == null)
+                        : name.equals(another.name);
+                return originMatches && nameMatches;
             }
         };
     }
 
-    public static abstract class Matcher {
+    public static abstract class SourceMatcher {
         public abstract boolean match(Source another);
     }
 }
