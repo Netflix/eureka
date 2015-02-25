@@ -22,7 +22,7 @@ import io.reactivex.netty.protocol.http.client.HttpClientResponse;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Func1;
-import rx.subjects.ReplaySubject;
+import rx.subjects.AsyncSubject;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -134,7 +134,7 @@ public class AwsDataCenterInfoProvider implements DataCenterInfoProvider {
     }
 
     private Observable<AwsDataCenterInfo> readMetaInfo() {
-        final ReplaySubject<AwsDataCenterInfo> subject = ReplaySubject.create();
+        final AsyncSubject<AwsDataCenterInfo> subject = AsyncSubject.create();
 
         final AwsDataCenterInfo.Builder builder = new AwsDataCenterInfo.Builder();
         Observable.from(MetaDataKey.values()).flatMap(new Func1<MetaDataKey, Observable<Void>>() {
