@@ -87,6 +87,9 @@ public class EurekaReadServerRegistry implements SourcedEurekaRegistry<InstanceI
         throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
     }
 
+    /**
+     * This class emits buffer start/end markers used internally by the interest channels/transport.
+     */
     @Override
     public Observable<ChangeNotification<InstanceInfo>> forInterest(final Interest<InstanceInfo> interest) {
         return interestClient.forInterest(interest).flatMap(bufferStartEndDelineateFun(interest));
@@ -144,9 +147,7 @@ public class EurekaReadServerRegistry implements SourcedEurekaRegistry<InstanceI
                 } else {
                     List<ChangeNotification<InstanceInfo>> batch = new ArrayList<>(2 + buffer.size());
                     batch.add(bufferStartNotification);
-                    for (ChangeNotification<InstanceInfo> item : buffer) {
-                        batch.add(item);
-                    }
+                    batch.addAll(buffer);
                     batch.add(bufferEndNotification);
                     result = Observable.from(batch);
                 }
