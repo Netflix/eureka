@@ -28,12 +28,15 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
+import com.netflix.eureka2.server.health.EurekaHealthStatusModule;
+import com.netflix.eureka2.server.utils.guice.PostInjectorModule;
 import com.netflix.governator.configuration.ArchaiusConfigurationProvider;
 import com.netflix.governator.configuration.ArchaiusConfigurationProvider.Builder;
 import com.netflix.governator.configuration.ConfigurationOwnershipPolicies;
 import com.netflix.governator.guice.BootstrapBinder;
 import com.netflix.governator.guice.BootstrapModule;
 import com.netflix.governator.guice.LifecycleInjector;
+import com.netflix.governator.guice.LifecycleInjectorBuilder;
 import com.netflix.governator.lifecycle.LifecycleManager;
 import com.netflix.governator.lifecycle.LifecycleState;
 import com.netflix.spectator.api.Clock;
@@ -98,7 +101,9 @@ public abstract class AbstractEurekaServer<C extends EurekaCommonConfig> {
                     ConfigurationManager.getConfigInstance().setProperty(
                             "netflix.platform.admin.resources.port", Integer.toString(config.getWebAdminPort()));
                 }
+
                 bindMetricsRegistry(binder);
+                binder.include(EurekaHealthStatusModule.class);
                 binder.include(KaryonWebAdminModule.class);
                 binder.include(new AbstractModule() {
                     @Override
@@ -110,14 +115,16 @@ public abstract class AbstractEurekaServer<C extends EurekaCommonConfig> {
                         bind(HealthCheckInvocationStrategy.class).to(SyncHealthCheckInvocationStrategy.class).asEagerSingleton();
                     }
                 });
+                binder.include(EurekaHealthStatusModule.class);
             }
         });
 
         additionalModules(bootstrapModules);
-        injector = LifecycleInjector.bootstrap(
-                this.getClass(),
-                bootstrapModules.toArray(new BootstrapModule[bootstrapModules.size()])
-        );
+
+        LifecycleInjectorBuilder builder = LifecycleInjector.builder();
+        builder.withAdditionalBootstrapModules(bootstrapModules);
+        builder.withModules(PostInjectorModule.forLifecycleInjectorBuilder(builder));
+        injector = builder.build().createInjector();
         startLifecycleManager();
     }
 

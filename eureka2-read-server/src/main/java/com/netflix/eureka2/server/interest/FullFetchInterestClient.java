@@ -8,12 +8,19 @@ import com.netflix.eureka2.client.interest.AbstractInterestClient;
 import com.netflix.eureka2.client.interest.EurekaInterestClient;
 import com.netflix.eureka2.connection.RetryableConnection;
 import com.netflix.eureka2.connection.RetryableConnectionFactory;
+import com.netflix.eureka2.health.AbstractHealthStatusProvider;
+import com.netflix.eureka2.health.HealthStatusProvider;
+import com.netflix.eureka2.health.HealthStatusUpdate;
+import com.netflix.eureka2.health.SubsystemDescriptor;
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import rx.Observable;
+import rx.functions.Action0;
 import rx.functions.Func1;
 
 /**
@@ -23,9 +30,17 @@ import rx.functions.Func1;
  *
  * @author Tomasz Bak
  */
-public class FullFetchInterestClient extends AbstractInterestClient {
+public class FullFetchInterestClient extends AbstractInterestClient implements HealthStatusProvider<InstanceInfo.Status, FullFetchInterestClient> {
+
+    private static final SubsystemDescriptor<Status, FullFetchInterestClient> DESCRIPTOR = new SubsystemDescriptor<>(
+            Status.class,
+            FullFetchInterestClient.class,
+            "Read Server full fetch InterestClient",
+            "Source of registry data for Eureka read server clients."
+    );
 
     private final RetryableConnection<InterestChannel> retryableConnection;
+    private final FullFetchInterestClientHealth healthProvider;
 
     @Inject
     public FullFetchInterestClient(SourcedEurekaRegistry<InstanceInfo> registry,
@@ -38,6 +53,7 @@ public class FullFetchInterestClient extends AbstractInterestClient {
                                                      int retryWaitMillis) {
         super(registry, retryWaitMillis);
 
+        this.healthProvider = new FullFetchInterestClientHealth();
 
         RetryableConnectionFactory<InterestChannel> retryableConnectionFactory
                 = new RetryableConnectionFactory<>(channelFactory);
@@ -53,6 +69,7 @@ public class FullFetchInterestClient extends AbstractInterestClient {
 
         registryEvictionSubscribe(retryableConnection);
         lifecycleSubscribe(retryableConnection);
+        bootstrapUploadSubscribe();
     }
 
     @Override
@@ -66,5 +83,45 @@ public class FullFetchInterestClient extends AbstractInterestClient {
     @Override
     protected RetryableConnection<InterestChannel> getRetryableConnection() {
         return retryableConnection;
+    }
+
+    @Override
+    public void shutdown() {
+        healthProvider.moveHealthTo(Status.DOWN);
+        super.shutdown();
+    }
+
+    @Override
+    public Observable<HealthStatusUpdate<Status, FullFetchInterestClient>> healthStatus() {
+        return healthProvider.healthStatus();
+    }
+
+    /**
+     * Eureka Read server registry is ready when the initial batch of data is uploaded from the server.
+     */
+    private void bootstrapUploadSubscribe() {
+        forInterest(Interests.forFullRegistry()).takeWhile(new Func1<ChangeNotification<InstanceInfo>, Boolean>() {
+            @Override
+            public Boolean call(ChangeNotification<InstanceInfo> notification) {
+                return notification.getKind() != Kind.BufferSentinel;
+            }
+        }).doOnCompleted(new Action0() {
+            @Override
+            public void call() {
+                healthProvider.moveHealthTo(Status.UP);
+            }
+        }).subscribe();
+    }
+
+    public static class FullFetchInterestClientHealth extends AbstractHealthStatusProvider<Status, FullFetchInterestClient> {
+
+        protected FullFetchInterestClientHealth() {
+            super(Status.STARTING, DESCRIPTOR);
+        }
+
+        @Override
+        public Status toEurekaStatus(Status status) {
+            return status;
+        }
     }
 }

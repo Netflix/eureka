@@ -20,6 +20,7 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
 
     public static final int DEFAULT_SHUTDOWN_PORT = 7700;
     public static final int DEFAULT_ADMIN_PORT = 8077;
+    public static final int DEFAULT_HTTP_PORT = 8080;
 
     public static final long DEFAULT_HEARTBEAT_INTERVAL_MS = 30 * 1000;
     public static final long DEFAULT_CONNECTION_AUTO_TIMEOUT_MS = 30*60*1000;
@@ -48,6 +49,9 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
 
     @Configuration("eureka.dataCenterInfo.resolveIntervalSec")
     protected int dataCenterResolveIntervalSec = DEFAULT_DATACENTER_RESOLVE_INTERVAL_SEC;
+
+    @Configuration("eureka.services.http.port")
+    protected int httpPort = DEFAULT_HTTP_PORT;
 
     @Configuration("eureka.services.shutdown.port")
     protected int shutDownPort = DEFAULT_SHUTDOWN_PORT;
@@ -87,6 +91,7 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
             String vipAddress,
             LocalDataCenterInfo.DataCenterType dataCenterType,
             int dataCenterResolveIntervalSec,
+            int httpPort,
             int shutDownPort,
             int webAdminPort,
             long heartbeatIntervalMs,
@@ -102,6 +107,7 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
         this.vipAddress = vipAddress == null ? this.vipAddress : vipAddress;
         this.dataCenterType = dataCenterType == null ? this.dataCenterType : dataCenterType.name();
         this.dataCenterResolveIntervalSec = dataCenterResolveIntervalSec;
+        this.httpPort = httpPort;
         this.shutDownPort = shutDownPort;
         this.webAdminPort = webAdminPort;
         this.heartbeatIntervalMs = heartbeatIntervalMs;
@@ -146,6 +152,10 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
 
     public long getDataCenterResolveIntervalSec() {
         return dataCenterResolveIntervalSec;
+    }
+
+    public int getHttpPort() {
+        return httpPort;
     }
 
     public int getWebAdminPort() {
@@ -208,6 +218,7 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
         protected String vipAddress;
         protected LocalDataCenterInfo.DataCenterType dataCenterType;
         protected int dataCenterResolveIntervalSec = DEFAULT_DATACENTER_RESOLVE_INTERVAL_SEC;
+        protected int httpPort = DEFAULT_HTTP_PORT;
         protected int shutDownPort = DEFAULT_SHUTDOWN_PORT;
         protected int webAdminPort = DEFAULT_ADMIN_PORT;
 
@@ -251,6 +262,11 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
 
         public B withDataCenterResolveIntervalSec(int dataCenterResolveIntervalSec) {
             this.dataCenterResolveIntervalSec = dataCenterResolveIntervalSec;
+            return self();
+        }
+
+        public B withHttpPort(int httpPort) {
+            this.httpPort = httpPort;
             return self();
         }
 

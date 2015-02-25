@@ -51,6 +51,7 @@ public class WriteServerConfig extends EurekaServerConfig {
             String vipAddress,
             DataCenterType dataCenterType,
             int dataCenterResolveIntervalSec,
+            int httpPort,
             int shutDownPort,
             int webAdminPort,
             int discoveryPort,
@@ -66,7 +67,7 @@ public class WriteServerConfig extends EurekaServerConfig {
             long replicationReconnectDelayMillis
     ) {
         super(resolverType, serverList, appName, vipAddress, dataCenterType, dataCenterResolveIntervalSec,
-              shutDownPort, webAdminPort, discoveryPort, heartbeatIntervalMs, connectionAutoTimeoutMs, codec,
+              httpPort, shutDownPort, webAdminPort, discoveryPort, heartbeatIntervalMs, connectionAutoTimeoutMs, codec,
               evictionTimeoutMs, evictionStrategyType, evictionStrategyValue);
 
         this.registrationPort = registrationPort;
@@ -103,6 +104,7 @@ public class WriteServerConfig extends EurekaServerConfig {
                     vipAddress,
                     dataCenterType,
                     dataCenterResolveIntervalSec,
+                    httpPort,
                     shutDownPort,
                     webAdminPort,
                     discoveryPort,

@@ -160,7 +160,9 @@ public class EurekaDeployment {
                         readClusterResolver,
                         discoveryPort,
                         extensionsEnabled,
-                        adminUIEnabled
+                        adminUIEnabled,
+                        ephemeralPorts,
+                        transportConfig.getCodec()
                 );
                 dashboardServer.start();
             }

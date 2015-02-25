@@ -6,11 +6,16 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.DiscoveryManager;
+import com.netflix.eureka2.client.resolver.ServerResolver;
+import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.server.EurekaBridgeServerModule;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
+import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
+import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
+import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedBridgeServer.BridgeServerReport;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import com.netflix.eureka2.Server;
@@ -50,9 +55,29 @@ public class EmbeddedBridgeServer extends EmbeddedEurekaServer<BridgeServerConfi
     }
 
     @Override
+    public ServerResolver getInterestServerResolver() {
+        return ServerResolvers.just("localhost", getDiscoveryPort());
+    }
+
+    @Override
     protected void loadInstanceProperties(Properties props) {
         super.loadInstanceProperties(props);
         props.setProperty("eureka.client.discovery-endpoint.port", Integer.toString(config.getDiscoveryPort()));
+    }
+
+    public int getRegistrationPort() {
+        // Since server might be started on the ephemeral port, we need to get it directly from RxNetty server
+        return injector.getInstance(TcpRegistrationServer.class).serverPort();
+    }
+
+    public int getDiscoveryPort() {
+        // Since server might be started on the ephemeral port, we need to get it directly from RxNetty server
+        return injector.getInstance(TcpDiscoveryServer.class).serverPort();
+    }
+
+    public int getReplicationPort() {
+        // Since server might be started on the ephemeral port, we need to get it directly from RxNetty server
+        return injector.getInstance(TcpReplicationServer.class).serverPort();
     }
 
     @Override

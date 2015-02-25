@@ -1,17 +1,17 @@
 package com.netflix.eureka2.server.service;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.HashSet;
+
 import com.netflix.eureka2.Names;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.ServicePort;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
+import com.netflix.eureka2.server.health.EurekaHealthStatusAggregator;
 import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
 import rx.Observable;
-import rx.Subscriber;
 import rx.functions.Func1;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.HashSet;
 
 /**
  * @author David Liu
@@ -22,10 +22,13 @@ public class EurekaReadServerSelfInfoResolver implements SelfInfoResolver {
     private final SelfInfoResolver delegate;
 
     @Inject
-    public EurekaReadServerSelfInfoResolver(final EurekaServerConfig config, final TcpDiscoveryServer discoveryServer) {
+    public EurekaReadServerSelfInfoResolver(final EurekaServerConfig config,
+                                            final TcpDiscoveryServer discoveryServer,
+                                            EurekaHealthStatusAggregator healthStatusAggregator) {
 
         SelfInfoResolverChain resolverChain = new SelfInfoResolverChain(
                 new ConfigSelfInfoResolver(config),
+                new StatusInfoResolver(healthStatusAggregator),
                 // read server specific resolver
                 new ChainableSelfInfoResolver(Observable.just(new HashSet<ServicePort>())
                         .map(new Func1<HashSet<ServicePort>, InstanceInfo.Builder>() {
@@ -36,9 +39,7 @@ public class EurekaReadServerSelfInfoResolver implements SelfInfoResolver {
                             }
                         })
                 ),
-                new PeriodicDataCenterInfoResolver(config),
-                // TODO override with more meaningful health check
-                new ChainableSelfInfoResolver(Observable.just(new InstanceInfo.Builder().withStatus(InstanceInfo.Status.UP)))
+                new PeriodicDataCenterInfoResolver(config)
         );
 
         delegate = new CachingSelfInfoResolver(resolverChain);

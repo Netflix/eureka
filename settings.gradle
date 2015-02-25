@@ -12,5 +12,6 @@ include 'eureka2-client',\
         'eureka2-integration',\
         'eureka2-ext:eureka2-kafka',\
         'eureka2-ext:eureka2-karyon-admin',\
+        'eureka2-ext:eureka2-karyon-admin-status',\
         'eureka2-testkit',\
         'eureka2-examples'

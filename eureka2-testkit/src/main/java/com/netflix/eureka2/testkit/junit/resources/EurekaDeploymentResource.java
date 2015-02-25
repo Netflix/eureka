@@ -44,7 +44,7 @@ public class EurekaDeploymentResource extends ExternalResource {
     public EurekaClient connectToWriteServer(int idx) {
         EmbeddedWriteServer server = eurekaDeployment.getWriteCluster().getServer(idx);
         return EurekaClientBuilder.newBuilder()
-                .withReadServerResolver(server.getDiscoveryResolver())
+                .withReadServerResolver(server.getInterestServerResolver())
                 .withWriteServerResolver(server.getRegistrationResolver())
                 .withTransportConfig(transportConfig)
                 .build();
@@ -58,7 +58,7 @@ public class EurekaDeploymentResource extends ExternalResource {
     public EurekaClient connectToReadServer(int idx) {
         EmbeddedReadServer server = eurekaDeployment.getReadCluster().getServer(idx);
         return EurekaClientBuilder.discoveryBuilder()
-                .withReadServerResolver(server.getDiscoveryResolver())
+                .withReadServerResolver(server.getInterestServerResolver())
                 .withTransportConfig(transportConfig)
                 .build();
     }

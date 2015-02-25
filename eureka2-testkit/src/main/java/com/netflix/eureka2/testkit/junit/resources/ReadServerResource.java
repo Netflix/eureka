@@ -43,6 +43,7 @@ public class ReadServerResource extends ExternalResource {
                 .withAppName(name)
                 .withVipAddress(name)
                 .withDataCenterType(DataCenterType.Basic)
+                .withHttpPort(0)
                 .withDiscoveryPort(0)
                 .withShutDownPort(0)
                 .withWebAdminPort(0)

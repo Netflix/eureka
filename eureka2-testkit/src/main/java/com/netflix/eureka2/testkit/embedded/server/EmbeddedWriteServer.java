@@ -4,6 +4,7 @@ import java.util.Properties;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.netflix.eureka2.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
@@ -14,7 +15,6 @@ import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer.WriteServerReport;
-import com.netflix.eureka2.Server;
 import rx.Observable;
 
 /**
@@ -72,7 +72,8 @@ public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig,
         return ServerResolvers.just("localhost", getRegistrationPort());
     }
 
-    public ServerResolver getDiscoveryResolver() {
+    @Override
+    public ServerResolver getInterestServerResolver() {
         return ServerResolvers.just("localhost", getDiscoveryPort());
     }
 
@@ -82,6 +83,7 @@ public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig,
                 getRegistrationPort(),
                 getDiscoveryPort(),
                 getReplicationPort(),
+                formatHttpServerURI(),
                 formatAdminURI(),
                 getEurekaServerRegistry().size()
         );
@@ -91,13 +93,16 @@ public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig,
         private final int registrationPort;
         private final int discoveryPort;
         private final int replicationPort;
+        private final String httpServerURI;
         private final String adminURI;
         private final int registrySize;
 
-        public WriteServerReport(int registrationPort, int discoveryPort, int replicationPort, String adminURI, int registrySize) {
+        public WriteServerReport(int registrationPort, int discoveryPort, int replicationPort,
+                                 String httpServerURI, String adminURI, int registrySize) {
             this.registrationPort = registrationPort;
             this.discoveryPort = discoveryPort;
             this.replicationPort = replicationPort;
+            this.httpServerURI = httpServerURI;
             this.adminURI = adminURI;
             this.registrySize = registrySize;
         }
@@ -112,6 +117,10 @@ public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig,
 
         public int getReplicationPort() {
             return replicationPort;
+        }
+
+        public String getHttpServerURI() {
+            return httpServerURI;
         }
 
         public String getAdminURI() {

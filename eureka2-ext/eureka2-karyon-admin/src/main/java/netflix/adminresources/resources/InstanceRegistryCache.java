@@ -1,36 +1,38 @@
 package netflix.adminresources.resources;
 
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
-import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import rx.functions.Action1;
-
+import javax.annotation.PostConstruct;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import com.netflix.eureka2.client.interest.EurekaInterestClient;
+import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
+import rx.functions.Action1;
+
 @Singleton
 public class InstanceRegistryCache {
-    private static final Logger logger = LoggerFactory.getLogger(Eureka2Resource.class);
+
     private final Map<String, InstanceInfo> registryCache;
-    private final EurekaClient eurekaClient;
+    private final Eureka2ClientProvider eureka2ClientProvider;
+
+    private EurekaInterestClient eurekaClient;
 
     @Inject
     public InstanceRegistryCache(Eureka2ClientProvider eureka2ClientProvider) {
-        eurekaClient = eureka2ClientProvider.get();
+        this.eureka2ClientProvider = eureka2ClientProvider;
         registryCache = new ConcurrentHashMap<>();
-        start();
     }
 
     public Map<String, InstanceInfo> get() {
-       return registryCache;
+        return registryCache;
     }
 
-    private void start() {
+    @PostConstruct
+    public void start() {
+        eurekaClient = eureka2ClientProvider.get();
         eurekaClient.forInterest(Interests.forFullRegistry()).retry().subscribe(new Action1<ChangeNotification<InstanceInfo>>() {
             @Override
             public void call(ChangeNotification<InstanceInfo> changeNotification) {

@@ -29,6 +29,8 @@ import com.netflix.eureka2.metric.server.SpectatorEurekaServerMetricFactory;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
+import com.netflix.eureka2.server.health.EurekaHealthStatusAggregator;
+import com.netflix.eureka2.server.http.EurekaHttpServer;
 import com.netflix.eureka2.server.registry.EurekaReadServerRegistry;
 import com.netflix.eureka2.server.service.EurekaReadServerSelfInfoResolver;
 import com.netflix.eureka2.server.service.EurekaReadServerSelfRegistrationService;
@@ -82,6 +84,9 @@ public class EurekaReadServerModule extends AbstractModule {
         } else {
             bind(EurekaInterestClient.class).toInstance(interestClient);
         }
+
+        bind(EurekaHttpServer.class);
+        bind(EurekaHealthStatusAggregator.class);
 
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new SpectatorEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
         bind(TcpDiscoveryServer.class).asEagerSingleton();
