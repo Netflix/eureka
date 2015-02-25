@@ -1,7 +1,6 @@
 package com.netflix.eureka2.client.interest;
 
 import javax.inject.Inject;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.InterestChannel;
@@ -9,17 +8,11 @@ import com.netflix.eureka2.connection.RetryableConnection;
 import com.netflix.eureka2.connection.RetryableConnectionFactory;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.utils.rx.RetryStrategyFunc;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action0;
-import rx.functions.Func1;
 import rx.functions.Func2;
 
 /**
@@ -33,15 +26,9 @@ import rx.functions.Func2;
  *
  * @author David Liu
  */
-public class EurekaInterestClientImpl implements EurekaInterestClient {
-    private static final Logger logger = LoggerFactory.getLogger(EurekaInterestClientImpl.class);
+public class EurekaInterestClientImpl extends AbstractInterestClient {
 
-    private static final int DEFAULT_RETRY_WAIT_MILLIS = 500;
-
-    private final AtomicBoolean isShutdown;
-    private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final InterestTracker interestTracker;
-
     private final RetryableConnection<InterestChannel> retryableConnection;
 
     @Inject
@@ -53,9 +40,8 @@ public class EurekaInterestClientImpl implements EurekaInterestClient {
     /* visible for testing*/ EurekaInterestClientImpl(final SourcedEurekaRegistry<InstanceInfo> registry,
                                                       ChannelFactory<InterestChannel> channelFactory,
                                                       int retryWaitMillis) {
-        this.registry = registry;
+        super(registry, retryWaitMillis);
         this.interestTracker = new InterestTracker();
-        this.isShutdown = new AtomicBoolean(false);
 
 
         RetryableConnectionFactory<InterestChannel> retryableConnectionFactory
@@ -71,54 +57,8 @@ public class EurekaInterestClientImpl implements EurekaInterestClient {
 
         this.retryableConnection = retryableConnectionFactory.singleOpConnection(opStream, executeOnChannel);
 
-        // subscribe to the base interest channels to do cleanup on every channel refresh.
-        retryableConnection.getChannelObservable()
-                .flatMap(new Func1<InterestChannel, Observable<Long>>() {
-                    @Override
-                    public Observable<Long> call(InterestChannel interestChannel) {
-                        if (interestChannel instanceof Sourced) {
-                            Source toRetain = ((Sourced) interestChannel).getSource();
-                            return registry.evictAllExcept(Source.matcherFor(toRetain));
-                        }
-                        return Observable.empty();
-                    }
-                })
-                .subscribe(new Subscriber<Long>() {
-                    @Override
-                    public void onCompleted() {
-                        logger.info("Completed one round of eviction due to a new interestChannel creation");
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        logger.warn("OnError in one round of eviction due to a new interestChannel creation");
-                    }
-
-                    @Override
-                    public void onNext(Long aLong) {
-                        logger.info("Evicted {} instances in one round of eviction due to a new interestChannel creation", aLong);
-                    }
-                });
-
-        // subscribe to the lifecycle to initiate the interest subscription
-        retryableConnection.getRetryableLifecycle()
-                .retryWhen(new RetryStrategyFunc(retryWaitMillis))
-                .subscribe(new Subscriber<Void>() {
-                    @Override
-                    public void onCompleted() {
-                        logger.info("channel onCompleted");
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        logger.error("Lifecycle closed with an error");
-                    }
-
-                    @Override
-                    public void onNext(Void aVoid) {
-
-                    }
-                });
+        registryEvictionSubscribe(retryableConnection);
+        lifecycleSubscribe(retryableConnection);
     }
 
     /**
@@ -154,11 +94,7 @@ public class EurekaInterestClientImpl implements EurekaInterestClient {
     }
 
     @Override
-    public void shutdown() {
-        if (isShutdown.compareAndSet(false, true)) {
-            logger.info("Shutting down InterestClient");
-            retryableConnection.close();
-            registry.shutdown();
-        }
+    protected RetryableConnection<InterestChannel> getRetryableConnection() {
+        return retryableConnection;
     }
 }
