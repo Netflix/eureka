@@ -270,13 +270,13 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     }
 
     @Override
-    public Observable<Long> evictAllExcept(final Source toRetain) {
+    public Observable<Long> evictAllExcept(final Source.Matcher retainMatcher) {
         return getHolders()
                 .doOnNext(new Action1<MultiSourcedDataHolder<InstanceInfo>>() {
                     @Override
                     public void call(MultiSourcedDataHolder<InstanceInfo> holder) {
                         for (Source source : holder.getAllSources()) {
-                            if (!source.equals(toRetain)) {
+                            if (!retainMatcher.match(source)) {
                                 holder.remove(source).subscribe(new NoOpSubscriber<MultiSourcedDataHolder.Status>());
                             }
                         }
@@ -286,13 +286,13 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
                 .doOnError(new Action1<Throwable>() {
                     @Override
                     public void call(Throwable throwable) {
-                        logger.error("Error evicting registry while retaining source {}", toRetain, throwable);
+                        logger.error("Error evicting registry", throwable);
                     }
                 })
                 .doOnCompleted(new Action0() {
                     @Override
                     public void call() {
-                        logger.info("Completed evicting registry while retaining source {}", toRetain);
+                        logger.info("Completed evicting registry");
                     }
                 });
     }

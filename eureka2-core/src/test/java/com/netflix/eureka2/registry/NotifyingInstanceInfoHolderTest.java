@@ -80,6 +80,34 @@ public class NotifyingInstanceInfoHolderTest {
         assertThat(holder.get(), equalTo(secondInfo));
     }
 
+
+    @Test(timeout = 60000)
+    public void testUpdateSameSourceDiffIdAlsoUpdateSnapshot() throws Exception {
+        InstanceInfo.Builder builder = SampleInstanceInfo.DiscoveryServer.builder();
+        InstanceInfo firstInfo = builder
+                .withStatus(InstanceInfo.Status.STARTING)
+                .build();
+
+        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, notificationSubject, invoker, firstInfo.getId());
+        holder.update(localSource, firstInfo).toBlocking().firstOrDefault(null);
+
+        assertThat(holder.size(), equalTo(1));
+        assertThat(holder.get(), equalTo(firstInfo));
+        assertThat(holder.getSource(), equalTo(localSource));
+
+        InstanceInfo secondInfo = builder
+                .withStatus(InstanceInfo.Status.UP)
+                .build();
+
+        Source newLocalSource = new Source(localSource.getOrigin(), localSource.getName());
+        holder.update(newLocalSource, secondInfo).toBlocking().firstOrDefault(null);
+
+        assertThat(holder.size(), equalTo(1));
+        assertThat(holder.get(), not(equalTo(firstInfo)));
+        assertThat(holder.get(), equalTo(secondInfo));
+        assertThat(holder.getSource(), equalTo(newLocalSource));
+    }
+
     @Test(timeout = 60000)
     public void testUpdateDifferentSources() throws Exception {
         InstanceInfo.Builder builder = SampleInstanceInfo.DiscoveryServer.builder();
@@ -137,6 +165,28 @@ public class NotifyingInstanceInfoHolderTest {
         assertThat(holder.size(), equalTo(0));
         assertThat(holder.get(), equalTo(null));
         assertThat(holder.get(localSource), equalTo(null));
+    }
+
+    @Test(timeout = 60000)
+    public void testRemoveExistingSourceWithDifferentId() throws Exception {
+        InstanceInfo.Builder builder = SampleInstanceInfo.DiscoveryServer.builder();
+        InstanceInfo firstInfo = builder
+                .withStatus(InstanceInfo.Status.UP)
+                .build();
+
+        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, notificationSubject, invoker, firstInfo.getId());
+        holder.update(localSource, firstInfo).toBlocking().firstOrDefault(null);
+
+        assertThat(holder.size(), equalTo(1));
+        assertThat(holder.get(), equalTo(firstInfo));
+
+        Source newLocalSource = new Source(localSource.getOrigin(), localSource.getName());
+        MultiSourcedDataHolder.Status status = holder.remove(newLocalSource).toBlocking().firstOrDefault(null);
+
+        assertThat(status, equalTo(MultiSourcedDataHolder.Status.RemoveExpired));
+        assertThat(holder.size(), equalTo(1));
+        assertThat(holder.get(), equalTo(firstInfo));
+        assertThat(holder.get(localSource), equalTo(firstInfo));
     }
 
     @Test(timeout = 60000)

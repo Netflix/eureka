@@ -80,7 +80,9 @@ public class Source {
         return new Matcher() {
             @Override
             public boolean match(Source another) {
-                return source.equals(another);
+                return (source == null)
+                        ? (another == null)
+                        : source.equals(another);
             }
         };
     }
@@ -104,7 +106,11 @@ public class Source {
                 if (another == null) {
                     return false;
                 }
-                return origin.equals(another.origin) && name.equals(another.name);
+                boolean originMatches = origin.equals(another.origin);
+                boolean nameMatches = (name == null)
+                        ? (another.name == null)
+                        : name.equals(another.name);
+                return originMatches && nameMatches;
             }
         };
     }
