@@ -23,6 +23,7 @@ import java.util.TimerTask;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
+import com.netflix.discovery.converters.StringCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,6 +78,8 @@ public class EurekaBootStrap implements ServletContextListener {
     private static final int EIP_BIND_SLEEP_TIME_MS = 1000;
     private static final Timer timer = new Timer("Eureka-EIPBinder", true);
 
+    private final StringCache stringCache = new StringCache();
+
     /**
      * Initializes Eureka, including syncing up with other Eureka peers and publishing the registry.
      *
@@ -89,10 +92,10 @@ public class EurekaBootStrap implements ServletContextListener {
 
             // For backward compatibility
             JsonXStream.getInstance().registerConverter(
-                    new V1AwareInstanceInfoConverter(),
+                    new V1AwareInstanceInfoConverter(stringCache),
                     XStream.PRIORITY_VERY_HIGH);
             XmlXStream.getInstance().registerConverter(
-                    new V1AwareInstanceInfoConverter(),
+                    new V1AwareInstanceInfoConverter(stringCache),
                     XStream.PRIORITY_VERY_HIGH);
             InstanceInfo info = ApplicationInfoManager.getInstance().getInfo();
 

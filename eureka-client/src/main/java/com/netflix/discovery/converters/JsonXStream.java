@@ -49,21 +49,24 @@ public class JsonXStream extends XStream {
                 return this.coder;
             }
         });
-        registerConverter(new Converters.ApplicationConverter());
+
+        StringCache cache = new StringCache();
+
+        registerConverter(new Converters.ApplicationConverter(cache));
         registerConverter(new Converters.ApplicationsConverter());
-        registerConverter(new Converters.DataCenterInfoConverter());
-        registerConverter(new Converters.InstanceInfoConverter());
+        registerConverter(new Converters.DataCenterInfoConverter(cache));
+        registerConverter(new Converters.InstanceInfoConverter(cache));
         registerConverter(new Converters.LeaseInfoConverter());
-        registerConverter(new Converters.MetadataConverter());
+        registerConverter(new Converters.MetadataConverter(cache));
         setMode(XStream.NO_REFERENCES);
-        processAnnotations(new Class[] {InstanceInfo.class, Application.class, Applications.class});
+        processAnnotations(new Class[]{InstanceInfo.class, Application.class, Applications.class});
     }
 
     public static JsonXStream getInstance() {
         return s_instance;
     }
 
-    private static XmlFriendlyNameCoder initializeNameCoder(){
+    private static XmlFriendlyNameCoder initializeNameCoder() {
         EurekaClientConfig clientConfig = DiscoveryManager
                 .getInstance().getEurekaClientConfig();
         if (clientConfig == null) {
@@ -71,4 +74,5 @@ public class JsonXStream extends XStream {
         }
         return new XmlFriendlyNameCoder(clientConfig.getDollarReplacement(), clientConfig.getEscapeCharReplacement());
     }
+
 }
