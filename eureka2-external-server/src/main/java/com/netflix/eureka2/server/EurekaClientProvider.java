@@ -23,14 +23,9 @@ import com.google.inject.Inject;
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.client.resolver.ServerResolver;
-import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
-import com.netflix.eureka2.server.config.EurekaCommonConfig.ResolverType;
-import com.netflix.eureka2.server.config.EurekaCommonConfig.ServerBootstrap;
-import com.netflix.eureka2.Server;
-import rx.functions.Func1;
 
 /**
  * @author Tomasz Bak
@@ -53,58 +48,12 @@ public class EurekaClientProvider implements Provider<EurekaClient> {
 
     @Override
     public EurekaClient get() {
-        ServerResolver discoveryResolver = createWriteServerResolver(
-                new Func1<ServerBootstrap, Integer>() {
-                    @Override
-                    public Integer call(ServerBootstrap server) {
-                        return server.getDiscoveryPort();
-                    }
-                });
-        ServerResolver registrationResolver = createWriteServerResolver(
-                new Func1<ServerBootstrap, Integer>() {
-                    @Override
-                    public Integer call(ServerBootstrap server) {
-                        return server.getRegistrationPort();
-                    }
-                }
-        );
+        ServerResolver discoveryResolver = WriteClusterResolvers.createInterestResolver(config);
+        ServerResolver registrationResolver = WriteClusterResolvers.createRegistrationResolver(config);
+
         return Eureka.newClientBuilder(discoveryResolver, registrationResolver)
                 .withClientMetricFactory(clientMetricFactory)
                 .withRegistryMetricFactory(registryMetricFactory)
                 .build();
-    }
-
-    // TODO: move to a more general place
-    private ServerResolver createWriteServerResolver(Func1<ServerBootstrap, Integer> getPortFunc) {
-        EurekaCommonConfig.ResolverType resolverType = config.getServerResolverType();
-        if (resolverType == null) {
-            throw new IllegalArgumentException("Write cluster resolver type not defined");
-        }
-
-        ServerResolver resolver;
-
-        ServerBootstrap[] bootstraps = ServerBootstrap.from(config.getServerList());
-
-        if (resolverType == ResolverType.dns) {
-            resolver = forDNS(bootstraps, getPortFunc);
-        } else {
-            resolver = forFixed(bootstraps, getPortFunc);
-        }
-        return resolver;
-    }
-
-    private static ServerResolver forDNS(ServerBootstrap[] bootstraps, Func1<ServerBootstrap, Integer> getPortFunc) {
-        if (bootstraps.length != 1) {
-            throw new IllegalArgumentException("Expected one DNS name for server resolver, while got " + bootstraps.length);
-        }
-        return ServerResolvers.forDnsName(bootstraps[0].getHostname(), getPortFunc.call(bootstraps[0]));
-    }
-
-    private static ServerResolver forFixed(ServerBootstrap[] bootstraps, Func1<ServerBootstrap, Integer> getPortFunc) {
-        Server[] servers = new Server[bootstraps.length];
-        for (int i = 0; i < bootstraps.length; i++) {
-            servers[i] = new Server(bootstraps[i].getHostname(), getPortFunc.call(bootstraps[i]));
-        }
-        return ServerResolvers.from(servers);
     }
 }
