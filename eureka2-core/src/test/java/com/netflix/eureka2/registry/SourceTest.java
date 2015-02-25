@@ -2,7 +2,6 @@ package com.netflix.eureka2.registry;
 
 import org.junit.Test;
 
-import com.netflix.eureka2.registry.Source.Matcher;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
 
@@ -22,7 +21,7 @@ public class SourceTest {
 
     @Test
     public void testMatcherForSource() {
-        Matcher matcher = Source.matcherFor(originOnly1);
+        Source.SourceMatcher matcher = Source.matcherFor(originOnly1);
 
         assertTrue(matcher.match(originOnly1));
         assertFalse(matcher.match(originAndName1));
@@ -31,14 +30,14 @@ public class SourceTest {
         assertFalse(matcher.match(originAndName3));
         assertFalse(matcher.match(null));
 
-        Matcher nullMatcher = Source.matcherFor((Source)null);
+        Source.SourceMatcher nullMatcher = Source.matcherFor((Source)null);
         assertFalse(nullMatcher.match(originOnly1));  // just test a couple
         assertFalse(nullMatcher.match(originAndName1));
     }
 
     @Test
     public void testMatcherForOrigin() {
-        Matcher matcher = Source.matcherFor(originOnly1.getOrigin());
+        Source.SourceMatcher matcher = Source.matcherFor(originOnly1.getOrigin());
 
         assertTrue(matcher.match(originOnly1));
         assertTrue(matcher.match(originAndName1));
@@ -50,7 +49,7 @@ public class SourceTest {
 
     @Test
     public void testMatcherForOriginAndName() {
-        Matcher matcher = Source.matcherFor(originAndName1.getOrigin(), originAndName1.getName());
+        Source.SourceMatcher matcher = Source.matcherFor(originAndName1.getOrigin(), originAndName1.getName());
 
         assertFalse(matcher.match(originOnly1));
         assertTrue(matcher.match(originAndName1));

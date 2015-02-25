@@ -318,7 +318,7 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
         }
 
         /**
-         * Matches sources on origin:name only.
+         * Matches sources on origin:name:id.
          * - If a matching source already exist in the sourceMap, and has the same id as the input source, do removal
          * - If a matching source already exist in the sourceMap, but have a different id as the input source, no-op
          * - Otherwise, no-op
