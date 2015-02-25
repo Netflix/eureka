@@ -381,7 +381,7 @@ public final class Converters {
                 } else if (ELEM_APP.equals(nodeName)) {
                     builder.setAppName(cache.cachedValueOf(reader.getValue()));
                 } else if (ELEM_IP.equals(nodeName)) {
-                    builder.setIPAddr(cache.cachedValueOf(reader.getValue()));
+                    builder.setIPAddr(reader.getValue());
                 } else if (ELEM_SID.equals(nodeName)) {
                     builder.setSID(cache.cachedValueOf(reader.getValue()));
                 } else if (ELEM_IDENTIFYING_ATTR.equals(nodeName)) {

@@ -1,16 +1,20 @@
 package com.netflix.discovery.converters;
 
+import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
-* @author Tomasz Bak
-*/
+ * @author Tomasz Bak
+ */
 public class StringCache {
 
     public static final int LENGTH_LIMIT = 38;
 
-    private final Map<String, String> cache = new WeakHashMap<>();
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    private final Map<String, WeakReference<String>> cache = new WeakHashMap<>();
     private final int lengthLimit;
 
     public StringCache() {
@@ -23,16 +27,39 @@ public class StringCache {
 
     public String cachedValueOf(final String str) {
         if (str != null && (lengthLimit < 0 || str.length() <= lengthLimit)) {
-            String s;
-            synchronized (cache) {
-                s = cache.get(str);
-                if (s == null) {
-                    cache.put(str, str);
-                    s = str;
+            // Return value from cache if available
+            try {
+                lock.readLock().lock();
+                WeakReference<String> ref = cache.get(str);
+                if (ref != null) {
+                    return ref.get();
                 }
+            } finally {
+                lock.readLock().unlock();
             }
-            return s;
+
+            // Update cache with new content
+            try {
+                lock.writeLock().lock();
+                WeakReference<String> ref = cache.get(str);
+                if (ref != null) {
+                    return ref.get();
+                }
+                cache.put(str, new WeakReference<String>(str));
+            } finally {
+                lock.writeLock().unlock();
+            }
+            return str;
         }
         return str;
+    }
+
+    public int size() {
+        try {
+            lock.readLock().lock();
+            return cache.size();
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 }
