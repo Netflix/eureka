@@ -16,7 +16,6 @@
 
 package com.netflix.eureka2.server;
 
-import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.netflix.eureka2.client.interest.EurekaInterestClient;
 import com.netflix.eureka2.client.registration.EurekaRegistrationClient;
@@ -29,8 +28,6 @@ import com.netflix.eureka2.metric.server.SpectatorEurekaServerMetricFactory;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.eureka2.server.health.EurekaHealthStatusAggregator;
-import com.netflix.eureka2.server.http.EurekaHttpServer;
 import com.netflix.eureka2.server.registry.EurekaReadServerRegistry;
 import com.netflix.eureka2.server.service.EurekaReadServerSelfInfoResolver;
 import com.netflix.eureka2.server.service.EurekaReadServerSelfRegistrationService;
@@ -43,7 +40,7 @@ import io.reactivex.netty.spectator.SpectatorEventsListenerFactory;
 /**
  * @author Tomasz Bak
  */
-public class EurekaReadServerModule extends AbstractModule {
+public class EurekaReadServerModule extends AbstractEurekaServerModule {
 
     private final EurekaServerConfig config;
     private final EurekaRegistrationClient registrationClient;
@@ -66,7 +63,7 @@ public class EurekaReadServerModule extends AbstractModule {
     }
 
     @Override
-    public void configure() {
+    public void configureEureka() {
         if (config == null) {
             bind(EurekaServerConfig.class).asEagerSingleton();
             bind(EurekaCommonConfig.class).to(EurekaServerConfig.class);
@@ -84,9 +81,6 @@ public class EurekaReadServerModule extends AbstractModule {
         } else {
             bind(EurekaInterestClient.class).toInstance(interestClient);
         }
-
-        bind(EurekaHttpServer.class);
-        bind(EurekaHealthStatusAggregator.class);
 
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new SpectatorEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
         bind(TcpDiscoveryServer.class).asEagerSingleton();

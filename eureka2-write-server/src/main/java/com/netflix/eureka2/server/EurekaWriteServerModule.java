@@ -16,7 +16,6 @@
 
 package com.netflix.eureka2.server;
 
-import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.interests.IndexRegistry;
@@ -52,7 +51,7 @@ import io.reactivex.netty.spectator.SpectatorEventsListenerFactory;
 /**
  * @author Tomasz Bak
  */
-public class EurekaWriteServerModule extends AbstractModule {
+public class EurekaWriteServerModule extends AbstractEurekaServerModule {
 
     private final WriteServerConfig config;
 
@@ -65,7 +64,7 @@ public class EurekaWriteServerModule extends AbstractModule {
     }
 
     @Override
-    public void configure() {
+    public void configureEureka() {
         if (config == null) {
             bind(WriteServerConfig.class).asEagerSingleton();
             bind(EurekaCommonConfig.class).to(WriteServerConfig.class);
