@@ -142,7 +142,7 @@ public class PreservableEurekaRegistry
     }
 
     @Override
-    public Observable<InstanceInfo> forSnapshot(Interest<InstanceInfo> interest, Source.Matcher sourceMatcher) {
+    public Observable<InstanceInfo> forSnapshot(Interest<InstanceInfo> interest, Source.SourceMatcher sourceMatcher) {
         return eurekaRegistry.forSnapshot(interest, sourceMatcher);
     }
 
@@ -152,7 +152,7 @@ public class PreservableEurekaRegistry
     }
 
     @Override
-    public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, Source.Matcher sourceMatcher) {
+    public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, Source.SourceMatcher sourceMatcher) {
         return eurekaRegistry.forInterest(interest, sourceMatcher);
     }
 
@@ -169,13 +169,13 @@ public class PreservableEurekaRegistry
      * Evict by sending to the evictionQueue instead of directly.
      */
     @Override
-    public Observable<Long> evictAllExcept(final Source toRetain) {
+    public Observable<Long> evictAllExcept(final Source.SourceMatcher retainMatcher) {
         return eurekaRegistry.getHolders()
                 .doOnNext(new Action1<MultiSourcedDataHolder<InstanceInfo>>() {
                     @Override
                     public void call(MultiSourcedDataHolder<InstanceInfo> holder) {
                         for (Source source : holder.getAllSources()) {
-                            if (!source.equals(toRetain)) {
+                            if (!retainMatcher.match(source)) {
                                 evictionQueue.add(holder.get(source), source);
                             }
                         }

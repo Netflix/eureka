@@ -83,22 +83,25 @@ public class EurekaReadServerRegistry implements SourcedEurekaRegistry<InstanceI
     }
 
     @Override
-    public Observable<InstanceInfo> forSnapshot(Interest<InstanceInfo> interest, Source.Matcher sourceMatcher) {
+    public Observable<InstanceInfo> forSnapshot(Interest<InstanceInfo> interest, Source.SourceMatcher sourceMatcher) {
         throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
     }
 
+    /**
+     * This class emits buffer start/end markers used internally by the interest channels/transport.
+     */
     @Override
     public Observable<ChangeNotification<InstanceInfo>> forInterest(final Interest<InstanceInfo> interest) {
         return interestClient.forInterest(interest).flatMap(bufferStartEndDelineateFun(interest));
     }
 
     @Override
-    public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, Source.Matcher sourceMatcher) {
+    public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, Source.SourceMatcher sourceMatcher) {
         throw new UnsupportedOperationException("Origin filtering not supported by EurekaReadServerRegistry");
     }
 
     @Override
-    public Observable<Long> evictAllExcept(Source source) {
+    public Observable<Long> evictAllExcept(Source.SourceMatcher retainMatcher) {
         throw new UnsupportedOperationException("evictAllExcept not supported by EurekaReadServerRegistry");
     }
 
@@ -144,9 +147,7 @@ public class EurekaReadServerRegistry implements SourcedEurekaRegistry<InstanceI
                 } else {
                     List<ChangeNotification<InstanceInfo>> batch = new ArrayList<>(2 + buffer.size());
                     batch.add(bufferStartNotification);
-                    for (ChangeNotification<InstanceInfo> item : buffer) {
-                        batch.add(item);
-                    }
+                    batch.addAll(buffer);
                     batch.add(bufferEndNotification);
                     result = Observable.from(batch);
                 }

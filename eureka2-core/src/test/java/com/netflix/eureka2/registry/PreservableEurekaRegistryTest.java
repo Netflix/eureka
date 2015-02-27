@@ -186,7 +186,7 @@ public class PreservableEurekaRegistryTest {
         when(baseRegistry.forInterest(Interests.forFullRegistry())).thenReturn(notification1);
         assertSame(notification1, preservableRegistry.forInterest(Interests.forFullRegistry()));
 
-        Source.Matcher matcher = Source.matcherFor(remoteSource);
+        Source.SourceMatcher matcher = Source.matcherFor(remoteSource);
         Observable<ChangeNotification<InstanceInfo>> notification2 = Observable.just(new ChangeNotification<>(Kind.Add, DISCOVERY));
         when(baseRegistry.forInterest(Interests.forFullRegistry(), matcher)).thenReturn(notification2);
         assertSame(notification2, preservableRegistry.forInterest(Interests.forFullRegistry(), matcher));
