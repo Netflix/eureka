@@ -103,33 +103,19 @@ public class EmbeddedReadServer extends EmbeddedEurekaServer<EurekaServerConfig,
 
     @Override
     public ReadServerReport serverReport() {
-        return new ReadServerReport(
-                getDiscoveryPort(), formatHttpServerURI(),
-                formatAdminURI()
-        );
+        return new ReadServerReport(getDiscoveryPort(), getHttpServerPort(), getWebAdminPort());
     }
 
-    public static class ReadServerReport {
+    public static class ReadServerReport extends AbstractServerReport {
         private final int discoveryPort;
-        private final String httpServerURI;
-        private final String adminURI;
 
-        public ReadServerReport(int discoveryPort, String httpServerURI, String adminURI) {
+        public ReadServerReport(int discoveryPort, int httpServerPort, int adminPort) {
+            super(httpServerPort, adminPort);
             this.discoveryPort = discoveryPort;
-            this.httpServerURI = httpServerURI;
-            this.adminURI = adminURI;
         }
 
         public int getDiscoveryPort() {
             return discoveryPort;
-        }
-
-        public String getHttpServerURI() {
-            return httpServerURI;
-        }
-
-        public String getAdminURI() {
-            return adminURI;
         }
     }
 }

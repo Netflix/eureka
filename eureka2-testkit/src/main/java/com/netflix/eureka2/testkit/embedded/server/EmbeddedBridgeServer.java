@@ -6,6 +6,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.DiscoveryManager;
+import com.netflix.eureka2.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
@@ -18,7 +19,6 @@ import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServ
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedBridgeServer.BridgeServerReport;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
-import com.netflix.eureka2.Server;
 import rx.Observable;
 
 /**
@@ -86,7 +86,8 @@ public class EmbeddedBridgeServer extends EmbeddedEurekaServer<BridgeServerConfi
                 config.getRegistrationPort(),
                 config.getDiscoveryPort(),
                 config.getReplicationPort(),
-                formatAdminURI(),
+                getHttpServerPort(),
+                getWebAdminPort(),
                 DiscoveryClient.getRegion(),
                 DiscoveryManager.getInstance().getEurekaClientConfig().getEurekaServerDNSName()
         );
@@ -117,25 +118,25 @@ public class EmbeddedBridgeServer extends EmbeddedEurekaServer<BridgeServerConfi
         return new EmbeddedBridgeServer(config, replicationPeers, withExt, withDashboard);
     }
 
-    public static class BridgeServerReport {
+    public static class BridgeServerReport extends AbstractServerReport {
 
         private final int registrationPort;
         private final int discoveryPort;
         private final int replicationPort;
-        private final String adminURI;
         private final String bridgedRegion;
         private final String eureka1DNSName;
 
         public BridgeServerReport(int registrationPort,
                                   int discoveryPort,
                                   int replicationPort,
-                                  String adminURI,
+                                  int httpServerPort,
+                                  int adminPort,
                                   String bridgedRegion,
                                   String eureka1DNSName) {
+            super(httpServerPort, adminPort);
             this.registrationPort = registrationPort;
             this.discoveryPort = discoveryPort;
             this.replicationPort = replicationPort;
-            this.adminURI = adminURI;
             this.bridgedRegion = bridgedRegion;
             this.eureka1DNSName = eureka1DNSName;
         }
@@ -150,10 +151,6 @@ public class EmbeddedBridgeServer extends EmbeddedEurekaServer<BridgeServerConfi
 
         public int getReplicationPort() {
             return replicationPort;
-        }
-
-        public String getAdminURI() {
-            return adminURI;
         }
 
         public String getBridgedRegion() {

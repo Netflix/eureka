@@ -67,10 +67,7 @@ public class EmbeddedDashboardServer extends EmbeddedEurekaServer<EurekaDashboar
     @Override
     public DashboardServerReport serverReport() {
         String dashboardURI = "http://localhost:" + getDashboardPort() + "/dashboard.html";
-        return new DashboardServerReport(
-                dashboardURI,
-                formatAdminURI()
-        );
+        return new DashboardServerReport(dashboardURI, getHttpServerPort(), getWebAdminPort());
     }
 
     public static EmbeddedDashboardServer newDashboard(ServerResolver registrationServerResolver,
@@ -96,22 +93,17 @@ public class EmbeddedDashboardServer extends EmbeddedEurekaServer<EurekaDashboar
         return new EmbeddedDashboardServer(config, discoveryPort, registrationServerResolver, discoveryServerResolver, withExt, withAdminUI);
     }
 
-    public static class DashboardServerReport {
+    public static class DashboardServerReport extends AbstractServerReport {
 
         private final String dashboardURI;
-        private final String adminURI;
 
-        public DashboardServerReport(String dashboardURI, String adminURI) {
+        public DashboardServerReport(String dashboardURI, int httpServerPort, int webAdminPort) {
+            super(httpServerPort, webAdminPort);
             this.dashboardURI = dashboardURI;
-            this.adminURI = adminURI;
         }
 
         public String getDashboardURI() {
             return dashboardURI;
-        }
-
-        public String getAdminURI() {
-            return adminURI;
         }
     }
 }

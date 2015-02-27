@@ -83,27 +83,23 @@ public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig,
                 getRegistrationPort(),
                 getDiscoveryPort(),
                 getReplicationPort(),
-                formatHttpServerURI(),
-                formatAdminURI(),
-                getEurekaServerRegistry().size()
+                getEurekaServerRegistry().size(), getHttpServerPort(),
+                getWebAdminPort()
         );
     }
 
-    public static class WriteServerReport {
+    public static class WriteServerReport extends AbstractServerReport {
         private final int registrationPort;
         private final int discoveryPort;
         private final int replicationPort;
-        private final String httpServerURI;
-        private final String adminURI;
         private final int registrySize;
 
         public WriteServerReport(int registrationPort, int discoveryPort, int replicationPort,
-                                 String httpServerURI, String adminURI, int registrySize) {
+                                 int registrySize, int httpServerPort, int adminPort) {
+            super(httpServerPort, adminPort);
             this.registrationPort = registrationPort;
             this.discoveryPort = discoveryPort;
             this.replicationPort = replicationPort;
-            this.httpServerURI = httpServerURI;
-            this.adminURI = adminURI;
             this.registrySize = registrySize;
         }
 
@@ -117,14 +113,6 @@ public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig,
 
         public int getReplicationPort() {
             return replicationPort;
-        }
-
-        public String getHttpServerURI() {
-            return httpServerURI;
-        }
-
-        public String getAdminURI() {
-            return adminURI;
         }
 
         public int getRegistrySize() {

@@ -1,6 +1,5 @@
 package com.netflix.eureka2.testkit.embedded.server;
 
-import javax.inject.Inject;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,7 +26,6 @@ import com.netflix.spectator.api.ExtendedRegistry;
 import com.netflix.spectator.metrics3.MetricsRegistry;
 import netflix.adminresources.AdminResourcesContainer;
 import netflix.adminresources.resources.Eureka2ClientProviderImpl;
-import netflix.karyon.archaius.PropertiesLoader;
 
 /**
  * @author Tomasz Bak
@@ -142,14 +140,6 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
         };
     }
 
-    protected String formatHttpServerURI() {
-        return "http://localhost:" + getHttpServerPort();
-    }
-
-    protected String formatAdminURI() {
-        return "http://localhost:" + getWebAdminPort() + "/admin";
-    }
-
     protected void bindMetricsRegistry(LifecycleInjectorBuilder bootstrapBinder) {
         bootstrapBinder.withAdditionalModules(new AbstractModule() {
             @Override
@@ -177,10 +167,4 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
         }
     }
 
-    private static class PropertiesInitializer {
-        @Inject
-        private PropertiesInitializer(PropertiesLoader loader) {
-            loader.load();
-        }
-    }
 }

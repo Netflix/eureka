@@ -9,6 +9,7 @@ import com.netflix.config.ConfigurationManager;
 import com.netflix.eureka2.client.EurekaClientBuilder;
 import com.netflix.eureka2.client.interest.EurekaInterestClient;
 import com.netflix.eureka2.client.resolver.ServerResolver;
+import com.netflix.eureka2.server.health.KaryonHealthCheckHandler;
 import com.netflix.governator.configuration.ArchaiusConfigurationProvider;
 import com.netflix.governator.configuration.ArchaiusConfigurationProvider.Builder;
 import com.netflix.governator.configuration.ConfigurationOwnershipPolicies;
@@ -21,7 +22,6 @@ import netflix.adminresources.resources.Eureka2ClientProvider;
 import netflix.adminresources.resources.Eureka2ClientProviderImpl;
 import netflix.adminresources.resources.StatusRegistry;
 import netflix.karyon.archaius.PropertiesLoader;
-import netflix.karyon.health.AlwaysHealthyHealthCheck;
 import netflix.karyon.health.HealthCheckHandler;
 import netflix.karyon.health.HealthCheckInvocationStrategy;
 import netflix.karyon.health.SyncHealthCheckInvocationStrategy;
@@ -43,7 +43,7 @@ public abstract class EmbeddedKaryonAdminModule extends AbstractModule {
         bindEureka2RegistryUI();
         bindEureka2StatusUI();
 
-        bind(HealthCheckHandler.class).to(AlwaysHealthyHealthCheck.class).asEagerSingleton();
+        bind(HealthCheckHandler.class).to(KaryonHealthCheckHandler.class).asEagerSingleton();
         bind(HealthCheckInvocationStrategy.class).to(SyncHealthCheckInvocationStrategy.class).asEagerSingleton();
     }
 

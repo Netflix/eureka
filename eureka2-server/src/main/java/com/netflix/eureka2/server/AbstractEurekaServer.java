@@ -29,6 +29,7 @@ import com.google.inject.Injector;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.health.EurekaHealthStatusModule;
+import com.netflix.eureka2.server.health.KaryonHealthCheckHandler;
 import com.netflix.eureka2.server.utils.guice.PostInjectorModule;
 import com.netflix.governator.configuration.ArchaiusConfigurationProvider;
 import com.netflix.governator.configuration.ArchaiusConfigurationProvider.Builder;
@@ -45,7 +46,6 @@ import com.netflix.spectator.metrics3.MetricsRegistry;
 import netflix.adminresources.resources.KaryonWebAdminModule;
 import netflix.karyon.archaius.DefaultPropertiesLoader;
 import netflix.karyon.archaius.PropertiesLoader;
-import netflix.karyon.health.AlwaysHealthyHealthCheck;
 import netflix.karyon.health.HealthCheckHandler;
 import netflix.karyon.health.HealthCheckInvocationStrategy;
 import netflix.karyon.health.SyncHealthCheckInvocationStrategy;
@@ -110,8 +110,7 @@ public abstract class AbstractEurekaServer<C extends EurekaCommonConfig> {
                     protected void configure() {
                         bind(EurekaShutdownService.class).asEagerSingleton();
                         bind(ShutdownDetector.class).toInstance(new ShutdownDetector());
-                        // TODO: replace fake health check with a real one.
-                        bind(HealthCheckHandler.class).to(AlwaysHealthyHealthCheck.class).asEagerSingleton();
+                        bind(HealthCheckHandler.class).to(KaryonHealthCheckHandler.class).asEagerSingleton();
                         bind(HealthCheckInvocationStrategy.class).to(SyncHealthCheckInvocationStrategy.class).asEagerSingleton();
                     }
                 });
