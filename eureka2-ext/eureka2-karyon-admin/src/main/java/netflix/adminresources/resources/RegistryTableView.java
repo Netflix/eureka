@@ -21,7 +21,7 @@ public class RegistryTableView implements TableViewResource {
     private int totalRecords;
     private int numFilteredRecords;
 
-    public static enum Column {
+    public enum Column {
         Application,
         InstanceId,
         Status,

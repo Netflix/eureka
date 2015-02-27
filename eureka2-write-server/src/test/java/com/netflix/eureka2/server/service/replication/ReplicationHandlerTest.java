@@ -281,7 +281,7 @@ public class ReplicationHandlerTest {
         assertThat(testChannel1.closeCalled, is(false));
         assertThat(testChannel1.operations.size(), is(1));
         assertThat(testChannel1.operations.iterator().next(), equalTo(hello));
-        testChannel0.awaitReplicationItems(5, 100);
+        testChannel1.awaitReplicationItems(5, 100);
         assertThat(testChannel1.replicationItems.size(), is(5));
 
         List<String> ids = new ArrayList<>();

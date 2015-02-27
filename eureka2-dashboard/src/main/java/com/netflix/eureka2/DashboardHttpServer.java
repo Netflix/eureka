@@ -61,4 +61,8 @@ public class DashboardHttpServer {
             server.shutdown();
         }
     }
+
+    public int serverPort() {
+        return server.getServerPort();
+    }
 }

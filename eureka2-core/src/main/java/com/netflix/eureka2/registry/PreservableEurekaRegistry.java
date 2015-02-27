@@ -22,6 +22,8 @@ import javax.inject.Named;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.netflix.eureka2.config.EurekaRegistryConfig;
+import com.netflix.eureka2.health.AbstractHealthStatusProvider;
+import com.netflix.eureka2.health.SubsystemDescriptor;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
@@ -32,6 +34,7 @@ import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
 import com.netflix.eureka2.registry.eviction.EvictionStrategy;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -46,9 +49,17 @@ import rx.functions.Action1;
  *
  * @author Tomasz Bak
  */
-public class PreservableEurekaRegistry implements SourcedEurekaRegistry<InstanceInfo> {
+public class PreservableEurekaRegistry
+        extends AbstractHealthStatusProvider<PreservableEurekaRegistry>
+        implements SourcedEurekaRegistry<InstanceInfo> {
 
     private static final Logger logger = LoggerFactory.getLogger(PreservableEurekaRegistry.class);
+
+    private static final SubsystemDescriptor<PreservableEurekaRegistry> DESCRIPTOR = new SubsystemDescriptor<>(
+            PreservableEurekaRegistry.class,
+            "Preservable Eureka registry",
+            "Prevents items from being evicted if there are massive abrupt network disconnects."
+    );
 
     private final SourcedEurekaRegistry<InstanceInfo> eurekaRegistry;
     private final EvictionQueue evictionQueue;
@@ -96,6 +107,8 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
                                      EvictionQueue evictionQueue,
                                      EvictionStrategy evictionStrategy,
                                      EurekaRegistryMetricFactory metricFactory) {
+        super(Status.UP, DESCRIPTOR);
+
         this.eurekaRegistry = eurekaRegistry;
         this.evictionQueue = evictionQueue;
         this.evictionStrategy = evictionStrategy;
@@ -186,6 +199,8 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
     @PreDestroy
     @Override
     public Observable<Void> shutdown() {
+        moveHealthTo(Status.DOWN);
+
         logger.info("Shutting down the preservable registry");
         evictionSubscription.unsubscribe();
         evictionQueue.shutdown();
@@ -194,9 +209,16 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
 
     @Override
     public Observable<Void> shutdown(Throwable cause) {
+        moveHealthTo(Status.DOWN);
+
         evictionSubscription.unsubscribe();
         evictionQueue.shutdown();
         return eurekaRegistry.shutdown(cause);
+    }
+
+    @Override
+    public Status toEurekaStatus(Status healthStatus) {
+        return healthStatus;
     }
 
     /**
@@ -204,7 +226,10 @@ public class PreservableEurekaRegistry implements SourcedEurekaRegistry<Instance
      * >= 0 as when both sizes are equal, we still allow eviction to happen as they may be stale copies
      */
     private boolean allowedToEvict() {
-        return evictionStrategy.allowedToEvict(expectedRegistrySize, eurekaRegistry.size()) >= 0;
+        boolean allowed = evictionStrategy.allowedToEvict(expectedRegistrySize, eurekaRegistry.size()) >= 0;
+        // TODO We decided that self preservation should not trigger component DOWN transition. Health check from PreservableEurekaRegistry might be not needed
+//        moveHealthTo(allowed ? Status.UP : Status.DOWN);
+        return allowed;
     }
 
     private void resumeEviction() {

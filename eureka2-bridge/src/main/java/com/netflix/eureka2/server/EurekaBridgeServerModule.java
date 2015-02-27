@@ -1,6 +1,5 @@
 package com.netflix.eureka2.server;
 
-import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
@@ -35,7 +34,7 @@ import io.reactivex.netty.spectator.SpectatorEventsListenerFactory;
 /**
  * @author David Liu
  */
-public class EurekaBridgeServerModule extends AbstractModule {
+public class EurekaBridgeServerModule extends AbstractEurekaServerModule {
 
     private final BridgeServerConfig config;
 
@@ -48,7 +47,7 @@ public class EurekaBridgeServerModule extends AbstractModule {
     }
 
     @Override
-    public void configure() {
+    public void configureEureka() {
         if (config == null) {
             bind(BridgeServerConfig.class).asEagerSingleton();
             bind(EurekaCommonConfig.class).to(BridgeServerConfig.class);

@@ -3,6 +3,7 @@ package com.netflix.eureka2.testkit.embedded.server;
 import java.util.Properties;
 
 import com.google.inject.Module;
+import com.netflix.eureka2.DashboardHttpServer;
 import com.netflix.eureka2.EurekaDashboardModule;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.client.EurekaClientBuilder;
@@ -54,46 +55,55 @@ public class EmbeddedDashboardServer extends EmbeddedEurekaServer<EurekaDashboar
     }
 
     @Override
+    protected ServerResolver getInterestServerResolver() {
+        return discoveryServerResolver;
+    }
+
+    public int getDashboardPort() {
+        // Since server might be started on the ephemeral port, we need to get it directly from RxNetty server
+        return injector.getInstance(DashboardHttpServer.class).serverPort();
+    }
+
+    @Override
     public DashboardServerReport serverReport() {
-        String dashboardURI = "http://localhost:" + config.getDashboardPort() + "/dashboard.html";
-        return new DashboardServerReport(
-                dashboardURI,
-                formatAdminURI()
-        );
+        String dashboardURI = "http://localhost:" + getDashboardPort() + "/dashboard.html";
+        return new DashboardServerReport(dashboardURI, getHttpServerPort(), getWebAdminPort());
     }
 
     public static EmbeddedDashboardServer newDashboard(ServerResolver registrationServerResolver,
                                                        ServerResolver discoveryServerResolver,
                                                        int discoveryPort,
                                                        boolean withExt,
-                                                       boolean withAdminUI) {
+                                                       boolean withAdminUI,
+                                                       boolean ephemeralPorts,
+                                                       Codec codec) {
+
+        int dashboardPort = ephemeralPorts ? 0 : DASHBOARD_SERVER_PORTS_FROM;
+        int webAdminPort = ephemeralPorts ? 0 : DASHBOARD_SERVER_PORTS_FROM + 1;
+
         EurekaDashboardConfig config = EurekaDashboardConfig.newBuilder()
                 .withAppName(DASHBOARD_SERVER_NAME)
                 .withVipAddress(DASHBOARD_SERVER_NAME)
                 .withDataCenterType(DataCenterType.Basic)
-                .withCodec(Codec.Avro)
-                .withShutDownPort(DASHBOARD_SERVER_PORTS_FROM + 3)
-                .withWebAdminPort(DASHBOARD_SERVER_PORTS_FROM + 4)
+                .withCodec(codec)
+                .withShutDownPort(-1) // No shutdown service in embedded mode
+                .withWebAdminPort(webAdminPort)
+                .withDashboardPort(dashboardPort)
                 .build();
         return new EmbeddedDashboardServer(config, discoveryPort, registrationServerResolver, discoveryServerResolver, withExt, withAdminUI);
     }
 
-    public static class DashboardServerReport {
+    public static class DashboardServerReport extends AbstractServerReport {
 
         private final String dashboardURI;
-        private final String adminURI;
 
-        public DashboardServerReport(String dashboardURI, String adminURI) {
+        public DashboardServerReport(String dashboardURI, int httpServerPort, int webAdminPort) {
+            super(httpServerPort, webAdminPort);
             this.dashboardURI = dashboardURI;
-            this.adminURI = adminURI;
         }
 
         public String getDashboardURI() {
             return dashboardURI;
-        }
-
-        public String getAdminURI() {
-            return adminURI;
         }
     }
 }

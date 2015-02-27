@@ -9,7 +9,6 @@ import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.client.channel.InterestChannelFactory;
 import com.netflix.eureka2.client.interest.BatchAwareIndexRegistry;
 import com.netflix.eureka2.client.interest.BatchingRegistry;
-import com.netflix.eureka2.client.interest.EurekaInterestClient;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.BasicEurekaRegistryConfig;
 import com.netflix.eureka2.config.BasicEurekaRegistryConfig.Builder;
@@ -27,7 +26,7 @@ import com.netflix.eureka2.server.interest.FullFetchInterestClient;
 /**
  * @author Tomasz Bak
  */
-public class FullFetchInterestClientProvider implements Provider<EurekaInterestClient> {
+public class FullFetchInterestClientProvider implements Provider<FullFetchInterestClient> {
 
     private final EurekaCommonConfig config;
     private final EurekaClientMetricFactory clientMetricFactory;
@@ -43,7 +42,7 @@ public class FullFetchInterestClientProvider implements Provider<EurekaInterestC
     }
 
     @Override
-    public EurekaInterestClient get() {
+    public FullFetchInterestClient get() {
         BatchingRegistry<InstanceInfo> remoteBatchingRegistry = new FullFetchBatchingRegistry<>();
         BatchAwareIndexRegistry<InstanceInfo> indexRegistry = new BatchAwareIndexRegistry<>(
                 new IndexRegistryImpl<InstanceInfo>(), remoteBatchingRegistry);

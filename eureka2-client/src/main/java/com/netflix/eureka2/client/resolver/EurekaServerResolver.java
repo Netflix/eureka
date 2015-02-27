@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.Names;
+import com.netflix.eureka2.Server;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.client.EurekaClientBuilder;
 import com.netflix.eureka2.client.functions.ChangeNotificationFunctions;
@@ -31,9 +32,9 @@ import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import com.netflix.eureka2.registry.instance.NetworkAddress.ProtocolType;
 import com.netflix.eureka2.registry.selector.ServiceSelector;
-import com.netflix.eureka2.Server;
 import netflix.ocelli.LoadBalancer;
 import netflix.ocelli.LoadBalancerBuilder;
 import netflix.ocelli.MembershipEvent;
@@ -143,9 +144,11 @@ public class EurekaServerResolver implements ServerResolver {
                         public Set<Server> call(Set<InstanceInfo> notifications) {
                             Set<Server> servers = new HashSet<Server>();
                             for (InstanceInfo item : notifications) {
-                                InetSocketAddress socketAddress = serviceSelector.returnServiceAddress(item);
-                                Server newServer = new Server(socketAddress.getHostString(), socketAddress.getPort());
-                                servers.add(newServer);
+                                if (item.getStatus() == Status.UP) {
+                                    InetSocketAddress socketAddress = serviceSelector.returnServiceAddress(item);
+                                    Server newServer = new Server(socketAddress.getHostString(), socketAddress.getPort());
+                                    servers.add(newServer);
+                                }
                             }
                             return servers;
                         }

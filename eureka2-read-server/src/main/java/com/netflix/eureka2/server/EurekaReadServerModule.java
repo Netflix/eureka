@@ -16,7 +16,6 @@
 
 package com.netflix.eureka2.server;
 
-import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.netflix.eureka2.client.interest.EurekaInterestClient;
 import com.netflix.eureka2.client.registration.EurekaRegistrationClient;
@@ -41,7 +40,7 @@ import io.reactivex.netty.spectator.SpectatorEventsListenerFactory;
 /**
  * @author Tomasz Bak
  */
-public class EurekaReadServerModule extends AbstractModule {
+public class EurekaReadServerModule extends AbstractEurekaServerModule {
 
     private final EurekaServerConfig config;
     private final EurekaRegistrationClient registrationClient;
@@ -64,7 +63,7 @@ public class EurekaReadServerModule extends AbstractModule {
     }
 
     @Override
-    public void configure() {
+    public void configureEureka() {
         if (config == null) {
             bind(EurekaServerConfig.class).asEagerSingleton();
             bind(EurekaCommonConfig.class).to(EurekaServerConfig.class);

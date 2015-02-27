@@ -3,6 +3,7 @@ package com.netflix.eureka2.testkit.embedded.cluster;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.netflix.eureka2.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
@@ -13,7 +14,6 @@ import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster.WriteSe
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer.WriteServerReport;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
-import com.netflix.eureka2.Server;
 import netflix.ocelli.LoadBalancer;
 import netflix.ocelli.MembershipEvent;
 import netflix.ocelli.MembershipEvent.EventType;
@@ -54,6 +54,9 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
                 new WriteServerAddress("localhost", 0, 0, 0) :
                 new WriteServerAddress("localhost", nextAvailablePort, nextAvailablePort + 1, nextAvailablePort + 2);
 
+        int httpPort = ephemeralPorts ? 0 : nextAvailablePort + 1;
+        int adminPort = ephemeralPorts ? 0 : nextAvailablePort + 2;
+
         WriteServerConfig config = WriteServerConfig.writeBuilder()
                 .withAppName(WRITE_SERVER_NAME)
                 .withVipAddress(WRITE_SERVER_NAME)
@@ -61,9 +64,11 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
                 .withRegistrationPort(writeServerAddress.getRegistrationPort())
                 .withDiscoveryPort(writeServerAddress.getDiscoveryPort())
                 .withReplicationPort(writeServerAddress.getReplicationPort())
+                .withServerList(new String[]{writeServerAddress.toString()})
                 .withCodec(codec)
-                .withShutDownPort(nextAvailablePort + 3)
-                .withWebAdminPort(nextAvailablePort + 4)
+                .withHttpPort(httpPort)
+                .withShutDownPort(0) // We do not run shutdown service in embedded server
+                .withWebAdminPort(adminPort)
                 .withReplicationRetryMillis(1000)
                 .build();
         EmbeddedWriteServer newServer = newServer(config);
@@ -200,6 +205,11 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
 
         public int getReplicationPort() {
             return replicationPort;
+        }
+
+        @Override
+        public String toString() {
+            return getHostName() + ':' + getRegistrationPort() + ':' + getDiscoveryPort() + ':' + getReplicationPort();
         }
     }
 

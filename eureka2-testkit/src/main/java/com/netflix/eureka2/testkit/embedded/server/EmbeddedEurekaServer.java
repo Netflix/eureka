@@ -1,23 +1,22 @@
 package com.netflix.eureka2.testkit.embedded.server;
 
-import javax.inject.Inject;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.MetricRegistry;
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.google.inject.Module;
-import com.netflix.config.ConfigurationManager;
+import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
+import com.netflix.eureka2.server.health.EurekaHealthStatusModule;
+import com.netflix.eureka2.server.http.EurekaHttpServer;
 import com.netflix.eureka2.server.spi.ExtensionLoader;
-import com.netflix.governator.configuration.ArchaiusConfigurationProvider;
-import com.netflix.governator.configuration.ArchaiusConfigurationProvider.Builder;
-import com.netflix.governator.configuration.ConfigurationOwnershipPolicies;
-import com.netflix.governator.guice.BootstrapBinder;
-import com.netflix.governator.guice.BootstrapModule;
+import com.netflix.eureka2.server.utils.guice.PostInjectorModule;
 import com.netflix.governator.guice.LifecycleInjector;
 import com.netflix.governator.guice.LifecycleInjectorBuilder;
 import com.netflix.governator.guice.transformer.OverrideAllDuplicateBindings;
@@ -25,14 +24,8 @@ import com.netflix.governator.lifecycle.LifecycleManager;
 import com.netflix.spectator.api.Clock;
 import com.netflix.spectator.api.ExtendedRegistry;
 import com.netflix.spectator.metrics3.MetricsRegistry;
-import io.reactivex.netty.RxNetty;
 import netflix.adminresources.AdminResourcesContainer;
-import netflix.adminresources.resources.KaryonWebAdminModule;
-import netflix.karyon.archaius.PropertiesLoader;
-import netflix.karyon.health.AlwaysHealthyHealthCheck;
-import netflix.karyon.health.HealthCheckHandler;
-import netflix.karyon.health.HealthCheckInvocationStrategy;
-import netflix.karyon.health.SyncHealthCheckInvocationStrategy;
+import netflix.adminresources.resources.Eureka2ClientProviderImpl;
 
 /**
  * @author Tomasz Bak
@@ -43,6 +36,7 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
     protected final C config;
 
     protected Injector injector;
+    protected Injector webAdminInjector;
     protected LifecycleManager lifecycleManager;
 
     protected EmbeddedEurekaServer(C config, boolean withExt, boolean withAdminUI) {
@@ -65,22 +59,41 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
         return injector.getInstance(SourcedEurekaRegistry.class);
     }
 
+    public int getWebAdminPort() {
+        // Since server might be started on the ephemeral port, we need to get it directly from RxNetty server
+        return webAdminInjector == null ? -1 : webAdminInjector.getInstance(AdminResourcesContainer.class).getServerPort();
+    }
+
+    public int getHttpServerPort() {
+        // Since server might be started on the ephemeral port, we need to get it directly from RxNetty server
+        return injector.getInstance(EurekaHttpServer.class).serverPort();
+    }
+
+    protected abstract ServerResolver getInterestServerResolver();
+
     public abstract R serverReport();
 
     protected void setup(Module[] modules) {
         LifecycleInjectorBuilder builder = LifecycleInjector.builder()
                 .withModuleTransformer(new OverrideAllDuplicateBindings());
+        builder.withAdditionalModules(PostInjectorModule.forLifecycleInjectorBuilder(builder));
         builder.withAdditionalModules(modules);
 
         // Extensions
         builder.withAdditionalModules(new ExtensionLoader(!withExt).asModuleArray());
 
-        // Admin console
+        EmbeddedKaryonAdminModule adminUIModule = null;
         if (withAdminUI) {
-            bindConfigurationProvider(builder);
-            bindDashboard(builder);
+            adminUIModule = createAdminUIModule(builder);
+            if (adminUIModule != null) {
+                adminUIModule.bindKaryonAdminEnvironment(builder);
+            }
         }
+
         bindMetricsRegistry(builder);
+
+        EurekaHealthStatusModule healthStatusModule = new EurekaHealthStatusModule();
+        builder.withAdditionalModules(healthStatusModule);
 
         injector = builder.build().createInjector();
 
@@ -88,52 +101,43 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
         try {
             lifecycleManager.start();
 
-            // This is hack to force warming up adminUI singletons, that read Archaius parameters,
-            // which itself is singleton, and changes values for each subsequently created new server.
-            if (withAdminUI) {
-                RxNetty.createHttpGet("http://localhost:" + config.getWebAdminPort() + "/webadmin/eureka2")
-                        .materialize().toBlocking().lastOrDefault(null);
+            // Admin console
+            if (adminUIModule != null) {
+                webAdminInjector = injector.createChildInjector(adminUIModule);
+                // This is hack to force warming up adminUI singletons, that read Archaius parameters,
+                // which itself is singleton, and changes values for each subsequently created new server.
+                adminUIModule.connectToAdminUI();
             }
         } catch (Exception e) {
             throw new RuntimeException("Container setup failure", e);
         }
     }
 
-    protected String formatAdminURI() {
-        return "http://localhost:" + config.getWebAdminPort() + "/admin";
-    }
+    protected EmbeddedKaryonAdminModule createAdminUIModule(LifecycleInjectorBuilder builder) {
+        return new EmbeddedKaryonAdminModule() {
 
-    private void bindDashboard(LifecycleInjectorBuilder builder) {
-        builder.withAdditionalModuleClasses(KaryonWebAdminModule.class);
-        builder.withAdditionalModules(new AbstractModule() {
             @Override
-            protected void configure() {
-                bind(HealthCheckHandler.class).to(AlwaysHealthyHealthCheck.class).asEagerSingleton();
-                bind(HealthCheckInvocationStrategy.class).to(SyncHealthCheckInvocationStrategy.class).asEagerSingleton();
+            protected Properties getProperties() {
+                Properties props = new Properties();
+                loadInstanceProperties(props);
+                return props;
             }
-        });
-    }
 
-    protected void bindConfigurationProvider(LifecycleInjectorBuilder bootstrapBinder) {
-        final Properties props = new Properties();
-        loadInstanceProperties(props);
-
-        bootstrapBinder.withAdditionalBootstrapModules(new BootstrapModule() {
             @Override
-            public void configure(BootstrapBinder binder) {
-                binder.bind(PropertiesLoader.class).toInstance(new PropertiesLoader() {
-                    @Override
-                    public void load() {
-                        ConfigurationManager.loadProperties(props);
-                    }
-                });
-                binder.bind(PropertiesInitializer.class).asEagerSingleton();
-
-                Builder builder = ArchaiusConfigurationProvider.builder();
-                builder.withOwnershipPolicy(ConfigurationOwnershipPolicies.ownsAll());
-                binder.bindConfigurationProvider().toInstance(builder.build());
+            protected int getEurekaWebAdminPort() {
+                return config.getWebAdminPort();
             }
-        });
+
+            @Override
+            protected int getEurekaHttpServerPort() {
+                return getHttpServerPort();
+            }
+
+            @Override
+            protected ServerResolver getInterestResolver() {
+                return getInterestServerResolver();
+            }
+        };
     }
 
     protected void bindMetricsRegistry(LifecycleInjectorBuilder bootstrapBinder) {
@@ -153,12 +157,14 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
     protected void loadInstanceProperties(Properties props) {
         props.setProperty(AdminResourcesContainer.CONTAINER_LISTEN_PORT, Integer.toString(config.getWebAdminPort()));
         props.setProperty("netflix.platform.admin.pages.packages", "netflix");
-    }
 
-    private static class PropertiesInitializer {
-        @Inject
-        private PropertiesInitializer(PropertiesLoader loader) {
-            loader.load();
+        // TODO Until admin WEB configuration is more flexible we take port of first write server
+        String writeServer = config.getServerList()[0];
+        Matcher matcher = Pattern.compile("[^:]+:\\d+:(\\d+):\\d+").matcher(writeServer);
+        if (matcher.matches()) {
+            String interestPort = matcher.group(1);
+            props.setProperty(Eureka2ClientProviderImpl.CONFIG_DISCOVERY_PORT, interestPort);
         }
     }
+
 }

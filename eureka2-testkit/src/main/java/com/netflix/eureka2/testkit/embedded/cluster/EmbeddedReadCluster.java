@@ -62,14 +62,17 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
     @Override
     public int scaleUpByOne() {
         int discoveryPort = ephemeralPorts ? 0 : nextAvailablePort;
+        int httpPort = ephemeralPorts ? 0 : nextAvailablePort + 1;
+        int adminPort = ephemeralPorts ? 0 : nextAvailablePort + 2;
 
         EurekaServerConfig config = EurekaServerConfig.baseBuilder()
                 .withAppName(READ_SERVER_NAME)
                 .withVipAddress(READ_SERVER_NAME)
                 .withDataCenterType(DataCenterType.Basic)
                 .withDiscoveryPort(discoveryPort)
-                .withShutDownPort(nextAvailablePort + 1)
-                .withWebAdminPort(nextAvailablePort + 2)
+                .withHttpPort(httpPort)
+                .withShutDownPort(0) // We do not run shutdown service in embedded server
+                .withWebAdminPort(adminPort)
                 .withCodec(codec)
                 .build();
 

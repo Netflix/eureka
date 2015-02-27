@@ -41,6 +41,7 @@ public class WriteServerResource extends ExternalResource {
                 .withAppName(name)
                 .withVipAddress(name)
                 .withDataCenterType(DataCenterType.Basic)
+                .withHttpPort(0)
                 .withRegistrationPort(0)
                 .withDiscoveryPort(0)
                 .withReplicationPort(0)
@@ -78,6 +79,6 @@ public class WriteServerResource extends ExternalResource {
     }
 
     public ServerResolver getDiscoveryResolver() {
-        return server.getDiscoveryResolver();
+        return server.getInterestServerResolver();
     }
 }

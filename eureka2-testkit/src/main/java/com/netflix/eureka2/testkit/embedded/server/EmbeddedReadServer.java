@@ -79,7 +79,7 @@ public class EmbeddedReadServer extends EmbeddedEurekaServer<EurekaServerConfig,
         EurekaInterestClient interestClient = new FullFetchInterestClient(registry, channelFactory);
 
         Module[] modules = {
-                new EurekaReadServerModule(config, registrationClient, interestClient)
+                new EurekaReadServerModule(config, registrationClient, interestClient),
         };
 
         setup(modules);
@@ -96,33 +96,26 @@ public class EmbeddedReadServer extends EmbeddedEurekaServer<EurekaServerConfig,
         return injector.getInstance(TcpDiscoveryServer.class).serverPort();
     }
 
-    public ServerResolver getDiscoveryResolver() {
+    @Override
+    public ServerResolver getInterestServerResolver() {
         return ServerResolvers.just("localhost", getDiscoveryPort());
     }
 
     @Override
     public ReadServerReport serverReport() {
-        return new ReadServerReport(
-                getDiscoveryPort(),
-                formatAdminURI()
-        );
+        return new ReadServerReport(getDiscoveryPort(), getHttpServerPort(), getWebAdminPort());
     }
 
-    public static class ReadServerReport {
+    public static class ReadServerReport extends AbstractServerReport {
         private final int discoveryPort;
-        private final String adminURI;
 
-        public ReadServerReport(int discoveryPort, String adminURI) {
+        public ReadServerReport(int discoveryPort, int httpServerPort, int adminPort) {
+            super(httpServerPort, adminPort);
             this.discoveryPort = discoveryPort;
-            this.adminURI = adminURI;
         }
 
         public int getDiscoveryPort() {
             return discoveryPort;
-        }
-
-        public String getAdminURI() {
-            return adminURI;
         }
     }
 }
