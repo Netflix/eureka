@@ -227,7 +227,8 @@ public class PreservableEurekaRegistry
      */
     private boolean allowedToEvict() {
         boolean allowed = evictionStrategy.allowedToEvict(expectedRegistrySize, eurekaRegistry.size()) >= 0;
-        moveHealthTo(allowed ? Status.UP : Status.DOWN);
+        // TODO We decided that self preservation should not trigger component DOWN transition. Health check from PreservableEurekaRegistry might be not needed
+//        moveHealthTo(allowed ? Status.UP : Status.DOWN);
         return allowed;
     }
 
@@ -271,7 +272,7 @@ public class PreservableEurekaRegistry
             } else {
                 selfPreservation.set(true);
                 metrics.setSelfPreservation(true);
-                logger.info("Entering self preserv4ation mode");
+                logger.info("Entering self preservation mode");
             }
         }
 

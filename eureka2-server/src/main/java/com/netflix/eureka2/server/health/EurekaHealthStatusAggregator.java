@@ -79,7 +79,7 @@ public class EurekaHealthStatusAggregator implements HealthStatusAggregator<Eure
                         });
                     }
                 })
-                .distinct()
+                .distinctUntilChanged()
                 .map(new Func1<Status, HealthStatusUpdate<EurekaHealthStatusAggregator>>() {
                     @Override
                     public HealthStatusUpdate<EurekaHealthStatusAggregator> call(Status status) {
