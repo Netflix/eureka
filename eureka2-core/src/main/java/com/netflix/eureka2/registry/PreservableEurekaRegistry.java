@@ -28,7 +28,6 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.EurekaRegistryMetrics;
-import com.netflix.eureka2.registry.PreservableEurekaRegistry.HealthStatus;
 import com.netflix.eureka2.registry.eviction.EvictionItem;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
@@ -51,19 +50,16 @@ import rx.functions.Action1;
  * @author Tomasz Bak
  */
 public class PreservableEurekaRegistry
-        extends AbstractHealthStatusProvider<HealthStatus, PreservableEurekaRegistry>
+        extends AbstractHealthStatusProvider<PreservableEurekaRegistry>
         implements SourcedEurekaRegistry<InstanceInfo> {
 
     private static final Logger logger = LoggerFactory.getLogger(PreservableEurekaRegistry.class);
 
-    private static final SubsystemDescriptor<HealthStatus, PreservableEurekaRegistry> DESCRIPTOR = new SubsystemDescriptor<>(
-            HealthStatus.class,
+    private static final SubsystemDescriptor<PreservableEurekaRegistry> DESCRIPTOR = new SubsystemDescriptor<>(
             PreservableEurekaRegistry.class,
             "Preservable Eureka registry",
             "Prevents items from being evicted if there are massive abrupt network disconnects."
     );
-
-    public enum HealthStatus {Up, Down, SelfPreservation}
 
     private final SourcedEurekaRegistry<InstanceInfo> eurekaRegistry;
     private final EvictionQueue evictionQueue;
@@ -111,7 +107,7 @@ public class PreservableEurekaRegistry
                                      EvictionQueue evictionQueue,
                                      EvictionStrategy evictionStrategy,
                                      EurekaRegistryMetricFactory metricFactory) {
-        super(HealthStatus.Up, DESCRIPTOR);
+        super(Status.UP, DESCRIPTOR);
 
         this.eurekaRegistry = eurekaRegistry;
         this.evictionQueue = evictionQueue;
@@ -203,7 +199,7 @@ public class PreservableEurekaRegistry
     @PreDestroy
     @Override
     public Observable<Void> shutdown() {
-        moveHealthTo(HealthStatus.Down);
+        moveHealthTo(Status.DOWN);
 
         logger.info("Shutting down the preservable registry");
         evictionSubscription.unsubscribe();
@@ -213,7 +209,7 @@ public class PreservableEurekaRegistry
 
     @Override
     public Observable<Void> shutdown(Throwable cause) {
-        moveHealthTo(HealthStatus.Down);
+        moveHealthTo(Status.DOWN);
 
         evictionSubscription.unsubscribe();
         evictionQueue.shutdown();
@@ -221,16 +217,8 @@ public class PreservableEurekaRegistry
     }
 
     @Override
-    public Status toEurekaStatus(HealthStatus healthStatus) {
-        switch (healthStatus) {
-            case Up:
-                return Status.UP;
-            case Down:
-                return Status.DOWN;
-            case SelfPreservation:
-                return Status.UP;
-        }
-        throw new IllegalStateException("Unexpected status value " + healthStatus);
+    public Status toEurekaStatus(Status healthStatus) {
+        return healthStatus;
     }
 
     /**
@@ -239,7 +227,7 @@ public class PreservableEurekaRegistry
      */
     private boolean allowedToEvict() {
         boolean allowed = evictionStrategy.allowedToEvict(expectedRegistrySize, eurekaRegistry.size()) >= 0;
-        moveHealthTo(allowed ? HealthStatus.Up : HealthStatus.SelfPreservation);
+        moveHealthTo(allowed ? Status.UP : Status.DOWN);
         return allowed;
     }
 
@@ -283,7 +271,7 @@ public class PreservableEurekaRegistry
             } else {
                 selfPreservation.set(true);
                 metrics.setSelfPreservation(true);
-                logger.info("Entering self preservation mode");
+                logger.info("Entering self preserv4ation mode");
             }
         }
 

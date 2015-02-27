@@ -24,7 +24,7 @@ import rx.subjects.BehaviorSubject;
  * @author Tomasz Bak
  */
 @Singleton
-public class EurekaHealthStatusAggregator implements HealthStatusAggregator<Status, EurekaHealthStatusAggregator> {
+public class EurekaHealthStatusAggregator implements HealthStatusAggregator<EurekaHealthStatusAggregator> {
 
     private static final Map<Status, Integer> STATUS_PRIORITY_MAP;
 
@@ -37,8 +37,7 @@ public class EurekaHealthStatusAggregator implements HealthStatusAggregator<Stat
         STATUS_PRIORITY_MAP.put(Status.UP, 4);
     }
 
-    private static final SubsystemDescriptor<Status, EurekaHealthStatusAggregator> DESCRIPTOR = new SubsystemDescriptor<>(
-            Status.class,
+    private static final SubsystemDescriptor<EurekaHealthStatusAggregator> DESCRIPTOR = new SubsystemDescriptor<>(
             EurekaHealthStatusAggregator.class,
             "Aggregated health check status",
             "Aggregated health check status"
@@ -46,7 +45,7 @@ public class EurekaHealthStatusAggregator implements HealthStatusAggregator<Stat
 
     private final HealthStatusProviderRegistry registry;
 
-    private AtomicReference<Observable<HealthStatusUpdate<Status, EurekaHealthStatusAggregator>>> aggregatedHealthObservable = new AtomicReference<>();
+    private AtomicReference<Observable<HealthStatusUpdate<EurekaHealthStatusAggregator>>> aggregatedHealthObservable = new AtomicReference<>();
     private Subscription subscription;
 
     @Inject
@@ -54,14 +53,14 @@ public class EurekaHealthStatusAggregator implements HealthStatusAggregator<Stat
         this.registry = registry;
     }
 
-    protected Observable<HealthStatusUpdate<Status, EurekaHealthStatusAggregator>> connect() {
-        Observable<HealthStatusUpdate<Status, EurekaHealthStatusAggregator>> updateObservable = registry.healthStatusProviders()
-                .flatMap(new Func1<List<HealthStatusProvider<?, ?>>, Observable<Status>>() {
+    protected Observable<HealthStatusUpdate<EurekaHealthStatusAggregator>> connect() {
+        Observable<HealthStatusUpdate<EurekaHealthStatusAggregator>> updateObservable = registry.healthStatusProviders()
+                .flatMap(new Func1<List<HealthStatusProvider<?>>, Observable<Status>>() {
                     @Override
-                    public Observable<Status> call(List<HealthStatusProvider<?, ?>> healthStatusProviders) {
-                        List<Observable<HealthStatusUpdate<Status, ?>>> healthObservables = new ArrayList<>(healthStatusProviders.size());
+                    public Observable<Status> call(List<HealthStatusProvider<?>> healthStatusProviders) {
+                        List<Observable<HealthStatusUpdate<?>>> healthObservables = new ArrayList<>(healthStatusProviders.size());
                         for (final HealthStatusProvider provider : healthStatusProviders) {
-                            Observable<HealthStatusUpdate<Status, ?>> updateObservable = provider.healthStatus();
+                            Observable<HealthStatusUpdate<?>> updateObservable = provider.healthStatus();
                             healthObservables.add(updateObservable);
                         }
 
@@ -70,7 +69,7 @@ public class EurekaHealthStatusAggregator implements HealthStatusAggregator<Stat
                             public Status call(Object... updates) {
                                 Status aggregate = Status.UP;
                                 for (Object update : updates) {
-                                    Status next = ((HealthStatusUpdate<?, ?>) update).getEurekaStatus();
+                                    Status next = ((HealthStatusUpdate<?>) update).getStatus();
                                     if (STATUS_PRIORITY_MAP.get(next) < STATUS_PRIORITY_MAP.get(aggregate)) {
                                         aggregate = next;
                                     }
@@ -81,13 +80,13 @@ public class EurekaHealthStatusAggregator implements HealthStatusAggregator<Stat
                     }
                 })
                 .distinct()
-                .map(new Func1<Status, HealthStatusUpdate<Status, EurekaHealthStatusAggregator>>() {
+                .map(new Func1<Status, HealthStatusUpdate<EurekaHealthStatusAggregator>>() {
                     @Override
-                    public HealthStatusUpdate<Status, EurekaHealthStatusAggregator> call(Status status) {
-                        return new HealthStatusUpdate<Status, EurekaHealthStatusAggregator>(status, DESCRIPTOR, status);
+                    public HealthStatusUpdate<EurekaHealthStatusAggregator> call(Status status) {
+                        return new HealthStatusUpdate<EurekaHealthStatusAggregator>(status, DESCRIPTOR);
                     }
                 });
-        BehaviorSubject<HealthStatusUpdate<Status, EurekaHealthStatusAggregator>> subject = BehaviorSubject.create();
+        BehaviorSubject<HealthStatusUpdate<EurekaHealthStatusAggregator>> subject = BehaviorSubject.create();
         updateObservable.subscribe(subject);
         return subject;
     }
@@ -101,12 +100,12 @@ public class EurekaHealthStatusAggregator implements HealthStatusAggregator<Stat
     }
 
     @Override
-    public Observable<List<HealthStatusProvider<?, ?>>> components() {
+    public Observable<List<HealthStatusProvider<?>>> components() {
         return registry.healthStatusProviders();
     }
 
     @Override
-    public Observable<HealthStatusUpdate<Status, EurekaHealthStatusAggregator>> healthStatus() {
+    public Observable<HealthStatusUpdate<EurekaHealthStatusAggregator>> healthStatus() {
         if (aggregatedHealthObservable.get() != null) {
             return aggregatedHealthObservable.get();
         }

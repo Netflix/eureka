@@ -5,20 +5,17 @@ package netflix.adminresources.resources;
  */
 public class GenericSubsystemDescriptor {
 
-    private final String[] statuses;
     private final String className;
     private final String title;
     private final String description;
 
     /* For serializer */ GenericSubsystemDescriptor() {
-        this.statuses = null;
         this.className = null;
         this.title = null;
         this.description = null;
     }
 
-    public GenericSubsystemDescriptor(String[] statuses, String className, String title, String description) {
-        this.statuses = statuses;
+    public GenericSubsystemDescriptor(String className, String title, String description) {
         this.className = className;
         this.title = title;
         this.description = description;
@@ -34,9 +31,5 @@ public class GenericSubsystemDescriptor {
 
     public String getDescription() {
         return description;
-    }
-
-    public String[] getStatuses() {
-        return statuses;
     }
 }

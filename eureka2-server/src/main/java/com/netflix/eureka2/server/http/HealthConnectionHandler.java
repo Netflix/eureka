@@ -24,16 +24,16 @@ import rx.functions.Func1;
  */
 public class HealthConnectionHandler implements ConnectionHandler<WebSocketFrame, WebSocketFrame> {
 
-    private final Observable<HealthStatusUpdate<?, ?>> updateObservable;
+    private final Observable<HealthStatusUpdate<?>> updateObservable;
 
     @Inject
     public HealthConnectionHandler(final EurekaHealthStatusAggregator aggregatedHealth) {
         updateObservable = aggregatedHealth.components()
-                .flatMap(new Func1<List<HealthStatusProvider<?, ?>>, Observable<HealthStatusUpdate<?, ?>>>() {
+                .flatMap(new Func1<List<HealthStatusProvider<?>>, Observable<HealthStatusUpdate<?>>>() {
                     @Override
-                    public Observable<HealthStatusUpdate<?, ?>> call(List<HealthStatusProvider<?, ?>> healthStatusProviders) {
-                        List<Observable<HealthStatusUpdate<?, ?>>> updatesObservables = new ArrayList<>();
-                        for (HealthStatusProvider<?, ?> provider : healthStatusProviders) {
+                    public Observable<HealthStatusUpdate<?>> call(List<HealthStatusProvider<?>> healthStatusProviders) {
+                        List<Observable<HealthStatusUpdate<?>>> updatesObservables = new ArrayList<>();
+                        for (HealthStatusProvider<?> provider : healthStatusProviders) {
                             Observable statusUpdateObservable = provider.healthStatus();
                             updatesObservables.add(statusUpdateObservable);
                         }
@@ -49,26 +49,20 @@ public class HealthConnectionHandler implements ConnectionHandler<WebSocketFrame
         // Ignore messages from client
         connection.getInput().subscribe();
 
-        return updateObservable.flatMap(new Func1<HealthStatusUpdate<?, ?>, Observable<Void>>() {
+        return updateObservable.flatMap(new Func1<HealthStatusUpdate<?>, Observable<Void>>() {
             @Override
-            public Observable<Void> call(HealthStatusUpdate<?, ?> healthStatusUpdate) {
+            public Observable<Void> call(HealthStatusUpdate<?> healthStatusUpdate) {
                 return connection.writeAndFlush(new TextWebSocketFrame(format(healthStatusUpdate)));
             }
         });
     }
 
-    public static ByteBuf format(HealthStatusUpdate<?, ?> healthStatusUpdate) {
-        SubsystemDescriptor<? extends Enum<?>, ?> descriptor = healthStatusUpdate.getDescriptor();
+    public static ByteBuf format(HealthStatusUpdate<?> healthStatusUpdate) {
+        SubsystemDescriptor<?> descriptor = healthStatusUpdate.getDescriptor();
         Map<String, Object> descriptorMap = new HashMap<>();
         descriptorMap.put("className", descriptor.getSubsystemClass().getCanonicalName());
         descriptorMap.put("title", descriptor.getTitle());
         descriptorMap.put("description", descriptor.getDescription());
-
-        List<String> statusNames = new ArrayList<>();
-        for (Enum<?> item : descriptor.getStatusClass().getEnumConstants()) {
-            statusNames.add(item.name());
-        }
-        descriptorMap.put("statuses", statusNames);
 
         Map<String, Object> rootMap = new HashMap<>();
         rootMap.put("status", healthStatusUpdate.getStatus().name());

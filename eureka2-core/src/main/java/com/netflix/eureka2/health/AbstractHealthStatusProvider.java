@@ -9,31 +9,31 @@ import rx.subjects.BehaviorSubject;
 /**
  * @author Tomasz Bak
  */
-public abstract class AbstractHealthStatusProvider<STATUS extends Enum<STATUS>, SUBSYSTEM> implements HealthStatusProvider<STATUS, SUBSYSTEM> {
+public abstract class AbstractHealthStatusProvider<SUBSYSTEM> implements HealthStatusProvider<SUBSYSTEM> {
 
-    private final AtomicReference<STATUS> currentStatus;
-    private final SubsystemDescriptor<STATUS, SUBSYSTEM> descriptor;
+    private final AtomicReference<Status> currentStatus;
+    private final SubsystemDescriptor<SUBSYSTEM> descriptor;
 
-    private final BehaviorSubject<HealthStatusUpdate<STATUS, SUBSYSTEM>> healthSubject = BehaviorSubject.create();
+    private final BehaviorSubject<HealthStatusUpdate<SUBSYSTEM>> healthSubject = BehaviorSubject.create();
 
-    protected AbstractHealthStatusProvider(STATUS initialState, SubsystemDescriptor<STATUS, SUBSYSTEM> descriptor) {
+    protected AbstractHealthStatusProvider(Status initialState, SubsystemDescriptor<SUBSYSTEM> descriptor) {
         this.currentStatus = new AtomicReference<>();
         this.descriptor = descriptor;
         moveHealthTo(initialState);
     }
 
     @Override
-    public Observable<HealthStatusUpdate<STATUS, SUBSYSTEM>> healthStatus() {
+    public Observable<HealthStatusUpdate<SUBSYSTEM>> healthStatus() {
         return healthSubject;
     }
 
-    public boolean moveHealthTo(STATUS newStatus) {
+    public boolean moveHealthTo(Status newStatus) {
         if (currentStatus.getAndSet(newStatus) == newStatus) {
             return false;
         }
-        healthSubject.onNext(new HealthStatusUpdate<STATUS, SUBSYSTEM>(newStatus, descriptor, toEurekaStatus(newStatus)));
+        healthSubject.onNext(new HealthStatusUpdate<SUBSYSTEM>(newStatus, descriptor));
         return true;
     }
 
-    protected abstract Status toEurekaStatus(STATUS status);
+    protected abstract Status toEurekaStatus(Status status);
 }

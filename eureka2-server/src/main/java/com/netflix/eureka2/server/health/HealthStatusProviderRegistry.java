@@ -13,14 +13,14 @@ import rx.subjects.ReplaySubject;
  */
 public class HealthStatusProviderRegistry {
 
-    private final List<HealthStatusProvider<?, ?>> providers = new CopyOnWriteArrayList<>();
-    private final ReplaySubject<List<HealthStatusProvider<?, ?>>> providerSubject = ReplaySubject.create();
+    private final List<HealthStatusProvider<?>> providers = new CopyOnWriteArrayList<>();
+    private final ReplaySubject<List<HealthStatusProvider<?>>> providerSubject = ReplaySubject.create();
 
-    public void add(HealthStatusProvider<?, ?> provider) {
+    public void add(HealthStatusProvider<?> provider) {
         providers.add(provider);
     }
 
-    public Observable<List<HealthStatusProvider<?, ?>>> healthStatusProviders() {
+    public Observable<List<HealthStatusProvider<?>>> healthStatusProviders() {
         return providerSubject;
     }
 

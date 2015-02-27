@@ -5,29 +5,21 @@ import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 /**
  * @author Tomasz Bak
  */
-public class HealthStatusUpdate<STATUS extends Enum<STATUS>, SUBSYSTEM> {
+public class HealthStatusUpdate<SUBSYSTEM> {
 
-    private final STATUS status;
-    private final SubsystemDescriptor<STATUS, SUBSYSTEM> description;
-    private final Status eurekaStatus;
+    private final Status status;
+    private final SubsystemDescriptor<SUBSYSTEM> description;
 
-    public HealthStatusUpdate(STATUS status,
-                              SubsystemDescriptor<STATUS, SUBSYSTEM> description,
-                              Status eurekaStatus) {
+    public HealthStatusUpdate(Status status, SubsystemDescriptor<SUBSYSTEM> description) {
         this.status = status;
         this.description = description;
-        this.eurekaStatus = eurekaStatus;
     }
 
-    public STATUS getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public Status getEurekaStatus() {
-        return eurekaStatus;
-    }
-
-    public SubsystemDescriptor<STATUS, SUBSYSTEM> getDescriptor() {
+    public SubsystemDescriptor<SUBSYSTEM> getDescriptor() {
         return description;
     }
 

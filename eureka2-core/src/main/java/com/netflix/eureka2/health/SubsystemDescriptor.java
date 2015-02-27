@@ -7,15 +7,13 @@ package com.netflix.eureka2.health;
  *
  * @author Tomasz Bak
  */
-public class SubsystemDescriptor<STATUS extends Enum<STATUS>, SUBSYSTEM> {
+public class SubsystemDescriptor<SUBSYSTEM> {
 
-    private final Class<STATUS> statusClass;
     private final Class<SUBSYSTEM> subsystemClass;
     private final String title;
     private final String description;
 
-    public SubsystemDescriptor(Class<STATUS> statusClass, Class<SUBSYSTEM> subsystemClass, String title, String description) {
-        this.statusClass = statusClass;
+    public SubsystemDescriptor(Class<SUBSYSTEM> subsystemClass, String title, String description) {
         this.subsystemClass = subsystemClass;
         this.title = title;
         this.description = description;
@@ -31,10 +29,6 @@ public class SubsystemDescriptor<STATUS extends Enum<STATUS>, SUBSYSTEM> {
 
     public String getDescription() {
         return description;
-    }
-
-    public Class<STATUS> getStatusClass() {
-        return statusClass;
     }
 
     @Override

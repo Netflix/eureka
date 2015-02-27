@@ -30,10 +30,9 @@ import rx.functions.Func1;
  *
  * @author Tomasz Bak
  */
-public class FullFetchInterestClient extends AbstractInterestClient implements HealthStatusProvider<InstanceInfo.Status, FullFetchInterestClient> {
+public class FullFetchInterestClient extends AbstractInterestClient implements HealthStatusProvider<FullFetchInterestClient> {
 
-    private static final SubsystemDescriptor<Status, FullFetchInterestClient> DESCRIPTOR = new SubsystemDescriptor<>(
-            Status.class,
+    private static final SubsystemDescriptor<FullFetchInterestClient> DESCRIPTOR = new SubsystemDescriptor<>(
             FullFetchInterestClient.class,
             "Read Server full fetch InterestClient",
             "Source of registry data for Eureka read server clients."
@@ -92,7 +91,7 @@ public class FullFetchInterestClient extends AbstractInterestClient implements H
     }
 
     @Override
-    public Observable<HealthStatusUpdate<Status, FullFetchInterestClient>> healthStatus() {
+    public Observable<HealthStatusUpdate<FullFetchInterestClient>> healthStatus() {
         return healthProvider.healthStatus();
     }
 
@@ -113,7 +112,7 @@ public class FullFetchInterestClient extends AbstractInterestClient implements H
         }).subscribe();
     }
 
-    public static class FullFetchInterestClientHealth extends AbstractHealthStatusProvider<Status, FullFetchInterestClient> {
+    public static class FullFetchInterestClientHealth extends AbstractHealthStatusProvider<FullFetchInterestClient> {
 
         protected FullFetchInterestClientHealth() {
             super(Status.STARTING, DESCRIPTOR);

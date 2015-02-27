@@ -10,9 +10,8 @@ $(document).ready(function () {
     "aoColumns": [
       {"sTitle": "Title", "mDataProp": "descriptor.title", sDefaultContent: '-', "sWidth": "20%"},
       {"sTitle": "Current status", "mDataProp": "status", sDefaultContent: '-', "sWidth": "10%"},
-      {"sTitle": "Status values", "mDataProp": "descriptor.statuses", sDefaultContent: '-', "sWidth": "20%"},
-      {"sTitle": "Component", "mDataProp": "descriptor.className", sDefaultContent: '-', "sWidth": "20%"},
-      {"sTitle": "Description", "mDataProp": "descriptor.description", sDefaultContent: '-', "sWidth": "30%"}
+      {"sTitle": "Component", "mDataProp": "descriptor.className", sDefaultContent: '-', "sWidth": "30%"},
+      {"sTitle": "Description", "mDataProp": "descriptor.description", sDefaultContent: '-', "sWidth": "40%"}
     ],
     "sAjaxSource": source,
     "fnServerData": function (sSource, aoData, fnCallback) {
