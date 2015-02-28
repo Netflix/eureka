@@ -1,6 +1,7 @@
 package com.netflix.eureka2.server.http;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -22,12 +23,14 @@ import rx.functions.Func1;
 /**
  * @author Tomasz Bak
  */
+@Singleton
 public class HealthConnectionHandler implements ConnectionHandler<WebSocketFrame, WebSocketFrame> {
 
     private final Observable<HealthStatusUpdate<?>> updateObservable;
 
     @Inject
-    public HealthConnectionHandler(final EurekaHealthStatusAggregator aggregatedHealth) {
+    public HealthConnectionHandler(final EurekaHealthStatusAggregator aggregatedHealth,
+                                   EurekaHttpServer httpServer) {
         updateObservable = aggregatedHealth.components()
                 .flatMap(new Func1<List<HealthStatusProvider<?>>, Observable<HealthStatusUpdate<?>>>() {
                     @Override
@@ -42,6 +45,7 @@ public class HealthConnectionHandler implements ConnectionHandler<WebSocketFrame
                         return Observable.merge(updatesObservables);
                     }
                 });
+        httpServer.connectWebSocketEndpoint("/health", this);
     }
 
     @Override
