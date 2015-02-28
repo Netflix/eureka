@@ -1,7 +1,10 @@
 package com.netflix.eureka2.testkit.junit.resources;
 
-import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.EurekaClientBuilder;
+import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaInterestClientBuilder;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
+import com.netflix.eureka2.client.EurekaRegistrationClientBuilder;
+import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -22,7 +25,8 @@ public class EurekaClientResource extends ExternalResource {
     private final ReadServerResource readServerResource;
     private final InstanceInfo clientInfo;
 
-    private EurekaClient eurekaClient;
+    private EurekaRegistrationClient registrationClient;
+    private EurekaInterestClient interestClient;
 
     public EurekaClientResource(String name, WriteServerResource writeServerResource) {
         this(name, writeServerResource, null);
@@ -41,8 +45,12 @@ public class EurekaClientResource extends ExternalResource {
         this.clientInfo = buildClientInfo(name);
     }
 
-    public EurekaClient getEurekaClient() {
-        return eurekaClient;
+    public EurekaRegistrationClient getRegistrationClient() {
+        return registrationClient;
+    }
+
+    public EurekaInterestClient getInterestClient() {
+        return interestClient;
     }
 
     public InstanceInfo getClientInfo() {
@@ -51,25 +59,28 @@ public class EurekaClientResource extends ExternalResource {
 
     @Override
     protected void before() throws Throwable {
-        if (readServerResource == null) {
-            eurekaClient = EurekaClientBuilder.newBuilder()
-                    .withReadServerResolver(writeServerResource.getDiscoveryResolver())
-                    .withWriteServerResolver(writeServerResource.getRegistrationResolver())
-                    .withTransportConfig(transportConfig)
-                    .build();
-        } else {
-            eurekaClient = EurekaClientBuilder.newBuilder()
-                    .withReadServerResolver(readServerResource.getDiscoveryResolver())
-                    .withWriteServerResolver(writeServerResource.getRegistrationResolver())
-                    .withTransportConfig(transportConfig)
-                    .build();
-        }
+        registrationClient = new EurekaRegistrationClientBuilder()
+                .withTransportConfig(transportConfig)
+                .fromWriteServerResolver(writeServerResource.getRegistrationResolver())
+                .build();
+
+        ServerResolver readResolverToUse = readServerResource == null
+                ? writeServerResource.getInterestResolver()
+                : readServerResource.getInterestResolver();
+
+        interestClient = new EurekaInterestClientBuilder()
+                .withTransportConfig(transportConfig)
+                .fromReadServerResolver(readResolverToUse)
+                .build();
     }
 
     @Override
     protected void after() {
-        if (eurekaClient != null) {
-            eurekaClient.shutdown();
+        if (registrationClient != null) {
+            registrationClient.shutdown();
+        }
+        if (interestClient != null) {
+            interestClient.shutdown();
         }
     }
 

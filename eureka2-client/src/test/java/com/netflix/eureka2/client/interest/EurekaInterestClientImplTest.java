@@ -10,6 +10,7 @@ import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.channel.TestChannelFactory;
 import com.netflix.eureka2.channel.TestInterestChannel;
+import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.channel.InterestChannelFactory;
 import com.netflix.eureka2.client.channel.InterestChannelImpl;
 import com.netflix.eureka2.interests.ChangeNotification;

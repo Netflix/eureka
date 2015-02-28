@@ -55,7 +55,7 @@ public class EmbeddedBridgeServer extends EmbeddedEurekaServer<BridgeServerConfi
     }
 
     @Override
-    public ServerResolver getInterestServerResolver() {
+    public ServerResolver getInterestResolver() {
         return ServerResolvers.just("localhost", getDiscoveryPort());
     }
 

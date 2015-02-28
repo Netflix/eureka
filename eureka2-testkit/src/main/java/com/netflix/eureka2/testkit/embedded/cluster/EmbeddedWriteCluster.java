@@ -116,7 +116,7 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
         });
     }
 
-    public ServerResolver discoveryResolver() {
+    public ServerResolver interestResolver() {
         return getServerResolver(new Func1<WriteServerAddress, Integer>() {
             @Override
             public Integer call(WriteServerAddress writeServerAddress) {

@@ -23,8 +23,8 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.Names;
 import com.netflix.eureka2.Server;
-import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.EurekaClientBuilder;
+import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.client.functions.ChangeNotificationFunctions;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
@@ -62,7 +62,7 @@ import rx.subjects.PublishSubject;
  * due to an error. If the internal load balancer has at least one item, this item
  * will be returned (even if the data is stale).
  *
- * As we are using {@link EurekaClient} in this resolver, the retries are handled by it.
+ * As we are using {@link EurekaInterestClient} in this resolver, the retries are handled by it.
  * To prevent from indefinite halt (due to lack of connectivity), there is a timeout
  * configured for how long we want to wait for the fresh data.
  *
@@ -87,15 +87,15 @@ public class EurekaServerResolver implements ServerResolver {
 
     private final LoadBalancer<Server> loadBalancer;
     private final PublishSubject<MembershipEvent<Server>> loadBalancerUpdates = PublishSubject.create();
-    private final EurekaClientBuilder eurekaClientBuilder;
+    private final EurekaInterestClientBuilder interestClientBuilder;
     private Set<Server> lastServerSet = new HashSet<>();
 
     public EurekaServerResolver(
-            EurekaClientBuilder eurekaClientBuilder,
+            EurekaInterestClientBuilder interestClientBuilder,
             Interest<InstanceInfo> readServerInterest,
             ServiceSelector serviceSelector,
             LoadBalancerBuilder<Server> loadBalancerBuilder) {
-        this.eurekaClientBuilder = eurekaClientBuilder;
+        this.interestClientBuilder = interestClientBuilder;
         this.readServerInterest = readServerInterest;
         this.serviceSelector = serviceSelector;
         this.loadBalancer = loadBalancerBuilder.withMembershipSource(loadBalancerUpdates).build();
@@ -133,9 +133,9 @@ public class EurekaServerResolver implements ServerResolver {
      * exactly one item with list of retrieved servers, or an empty list, or an error.
      */
     private Observable<Set<Server>> fetchFreshServerSet() {
-        final EurekaClient eurekaClient = eurekaClientBuilder.build();
+        final EurekaInterestClient interestClient = interestClientBuilder.build();
         try {
-            return eurekaClient.forInterest(readServerInterest)
+            return interestClient.forInterest(readServerInterest)
                     .compose(ChangeNotificationFunctions.<InstanceInfo>buffers())
                     .compose(ChangeNotificationFunctions.<InstanceInfo>snapshots())
                     .take(1)
@@ -156,11 +156,11 @@ public class EurekaServerResolver implements ServerResolver {
                     .doOnTerminate(new Action0() {
                         @Override
                         public void call() {
-                            eurekaClient.shutdown();
+                            interestClient.shutdown();
                         }
                     });
         } catch (Exception e) {
-            eurekaClient.shutdown();
+            interestClient.shutdown();
             throw e;
         }
     }
@@ -261,13 +261,13 @@ public class EurekaServerResolver implements ServerResolver {
                 registryMetricFactory = EurekaRegistryMetricFactory.registryMetrics();
             }
 
-            EurekaClientBuilder eurekaClientBuilder = EurekaClientBuilder.newBuilder()
+            EurekaInterestClientBuilder interestClientBuilder = new EurekaInterestClientBuilder()
                     .withClientMetricFactory(clientMetricFactory)
                     .withRegistryMetricFactory(registryMetricFactory)
-                    .withWriteServerResolver(ServerResolvers.just("localhost", 0)) // TODO We have provide some resolver, otherwise validation fails
-                    .withReadServerResolver(bootstrapResolver)
-                    .withTransportConfig(transportConfig);
-            return new EurekaServerResolver(eurekaClientBuilder, readServerInterest, serviceSelector, loadBalancerBuilder);
+                    .withTransportConfig(transportConfig)
+                    .fromReadServerResolver(bootstrapResolver);
+
+            return new EurekaServerResolver(interestClientBuilder, readServerInterest, serviceSelector, loadBalancerBuilder);
         }
     }
 }

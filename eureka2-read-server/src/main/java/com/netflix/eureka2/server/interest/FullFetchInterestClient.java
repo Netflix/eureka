@@ -5,7 +5,7 @@ import javax.inject.Inject;
 import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.client.interest.AbstractInterestClient;
-import com.netflix.eureka2.client.interest.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.connection.RetryableConnection;
 import com.netflix.eureka2.connection.RetryableConnectionFactory;
 import com.netflix.eureka2.health.AbstractHealthStatusProvider;

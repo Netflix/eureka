@@ -5,8 +5,10 @@ import java.util.Properties;
 import com.google.inject.Module;
 import com.netflix.eureka2.DashboardHttpServer;
 import com.netflix.eureka2.EurekaDashboardModule;
-import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.EurekaClientBuilder;
+import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaInterestClientBuilder;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
+import com.netflix.eureka2.client.EurekaRegistrationClientBuilder;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.EurekaDashboardConfig;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
@@ -23,28 +25,35 @@ public class EmbeddedDashboardServer extends EmbeddedEurekaServer<EurekaDashboar
 
     private final int discoveryPort;
     private final ServerResolver registrationServerResolver;
-    private final ServerResolver discoveryServerResolver;
+    private final ServerResolver interestServerResolver;
 
     public EmbeddedDashboardServer(EurekaDashboardConfig config,
                                    int discoveryPort, // TODO: remove this property once eureka2 UI tab is refactored
                                    ServerResolver registrationServerResolver,
-                                   ServerResolver discoveryServerResolver,
+                                   ServerResolver interestServerResolver,
                                    boolean withExt,
                                    boolean withDashboard) {
         super(config, withExt, withDashboard);
         this.discoveryPort = discoveryPort;
         this.registrationServerResolver = registrationServerResolver;
-        this.discoveryServerResolver = discoveryServerResolver;
+        this.interestServerResolver = interestServerResolver;
     }
 
     @Override
     public void start() {
-        final EurekaClient eurekaClient = EurekaClientBuilder.newBuilder()
-                .withReadServerResolver(discoveryServerResolver)
-                .withWriteServerResolver(registrationServerResolver)
+        final EurekaRegistrationClient registrationClient = new EurekaRegistrationClientBuilder()
+                .withTransportConfig(config)
+                .withRegistryConfig(config)
+                .fromWriteServerResolver(registrationServerResolver)
                 .build();
 
-        Module[] modules = {new EurekaDashboardModule(config, eurekaClient)};
+        final EurekaInterestClient interestClient = new EurekaInterestClientBuilder()
+                .withTransportConfig(config)
+                .withRegistryConfig(config)
+                .fromReadServerResolver(interestServerResolver)
+                .build();
+
+        Module[] modules = {new EurekaDashboardModule(config, registrationClient, interestClient)};
         setup(modules);
     }
 
@@ -55,8 +64,8 @@ public class EmbeddedDashboardServer extends EmbeddedEurekaServer<EurekaDashboar
     }
 
     @Override
-    protected ServerResolver getInterestServerResolver() {
-        return discoveryServerResolver;
+    protected ServerResolver getInterestResolver() {
+        return interestServerResolver;
     }
 
     public int getDashboardPort() {

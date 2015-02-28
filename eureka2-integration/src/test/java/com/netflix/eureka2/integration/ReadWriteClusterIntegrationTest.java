@@ -1,7 +1,7 @@
 package com.netflix.eureka2.integration;
 
-import com.netflix.eureka2.client.Eureka;
-import com.netflix.eureka2.client.EurekaClient;
+import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
@@ -32,34 +32,33 @@ public class ReadWriteClusterIntegrationTest {
     @Rule
     public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResource(3, 6);
 
-    private EurekaClient eurekaClient;
+    private EurekaRegistrationClient registrationClient;
+    private EurekaInterestClient interestClient;
     private InstanceInfo registeringInfo;
 
     @Before
     public void setup() {
-        eurekaClient = Eureka.newClientBuilder(
-                eurekaDeploymentResource.getEurekaDeployment().getReadCluster().discoveryResolver(),
-                eurekaDeploymentResource.getEurekaDeployment().getWriteCluster().registrationResolver()
-        ).build();
-        eurekaClient = eurekaDeploymentResource.connectToEureka();
+        registrationClient = eurekaDeploymentResource.registrationClientToWriteCluster();
+        interestClient = eurekaDeploymentResource.cannonicalInterestClient();
         registeringInfo = SampleInstanceInfo.CliServer.build();
     }
 
     @After
     public void tearDown() {
-        eurekaClient.shutdown();
+        registrationClient.shutdown();
+        interestClient.shutdown();
     }
 
     @Test(timeout = 30000)
     public void testReadServerFetchesDataFromWriteServerRegistry() throws Exception {
         // Listen to interest stream updates
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> notificationSubscriber = new ExtTestSubscriber<>();
-        eurekaClient.forInterest(Interests.forApplications(registeringInfo.getApp()))
+        interestClient.forInterest(Interests.forApplications(registeringInfo.getApp()))
                 .filter(dataOnlyFilter())
                 .subscribe(notificationSubscriber);
 
         // Register
-        Subscription subscription = eurekaClient.register(Observable.just(registeringInfo)).subscribe();
+        Subscription subscription = registrationClient.register(Observable.just(registeringInfo)).subscribe();
         assertThat(notificationSubscriber.takeNextOrWait(), is(addChangeNotificationOf(registeringInfo)));
 
         // Unregister

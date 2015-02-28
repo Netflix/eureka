@@ -16,10 +16,10 @@
 
 package com.netflix.eureka2.example.client;
 
-import com.netflix.eureka2.client.Eureka;
-import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.resolver.ServerResolver;
-import com.netflix.eureka2.client.resolver.ServerResolvers;
+import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaInterestClientBuilder;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
+import com.netflix.eureka2.client.EurekaRegistrationClientBuilder;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.datacenter.BasicDataCenterInfo;
@@ -31,8 +31,8 @@ import rx.Subscription;
 import rx.subjects.BehaviorSubject;
 
 /**
- * This example demonstrates how to register an application using {@link EurekaClient},
- * and how to access registry data.
+ * This example demonstrates how to register an application using {@link EurekaRegistrationClient}
+ * and how to access registry data using {@link EurekaInterestClient}.
  *
  * @author Tomasz Bak
  */
@@ -46,26 +46,29 @@ public final class SimpleApp {
             .withDataCenterInfo(BasicDataCenterInfo.fromSystemData())
             .build();
 
-
-    private final ServerResolver writeClusterDiscoveryResolver;
-    private final ServerResolver writeClusterRegistrationResolver;
+    private final String writeServerDns;
+    private final int writeRegistrationPort;
+    private final int writeInterestPort;
     private final String readServerVip;
 
-    public SimpleApp(String eurekaWriteServer, int registrationPort, int discoveryPort, String readServerVip) {
-        this.writeClusterDiscoveryResolver = ServerResolvers.just(eurekaWriteServer, discoveryPort);
-        this.writeClusterRegistrationResolver = ServerResolvers.just(eurekaWriteServer, registrationPort);
+    public SimpleApp(String writeServerDns, int writeRegistrationPort, int writeInterestPort, String readServerVip) {
+        this.writeServerDns = writeServerDns;
+        this.writeRegistrationPort = writeRegistrationPort;
+        this.writeInterestPort = writeInterestPort;
         this.readServerVip = readServerVip;
     }
 
     public void run() throws InterruptedException {
 
-        EurekaClient client = Eureka.newClientBuilder(
-                writeClusterDiscoveryResolver,
-                writeClusterRegistrationResolver,
-                readServerVip
-        ).build();
+        EurekaRegistrationClient registrationClient = new EurekaRegistrationClientBuilder()
+                .fromDns(writeServerDns, writeRegistrationPort)
+                .build();
 
-        client.forInterest(Interests.forApplications("WriteServer", "ReadServer", "ServiceA")).subscribe(
+        EurekaInterestClient interestClient = new EurekaInterestClientBuilder()
+                .fromWriteDns(writeServerDns, writeInterestPort, readServerVip)
+                .build();
+
+        interestClient.forInterest(Interests.forApplications("WriteServer", "ReadServer", "ServiceA")).subscribe(
                 new Subscriber<ChangeNotification<InstanceInfo>>() {
                     @Override
                     public void onCompleted() {
@@ -84,7 +87,7 @@ public final class SimpleApp {
                 });
 
         BehaviorSubject<InstanceInfo> infoSubject = BehaviorSubject.create();
-        Subscription subscription = client.register(infoSubject).subscribe();
+        Subscription subscription = registrationClient.register(infoSubject).subscribe();
 
         // Register client 1
         System.out.println("Registering SERVICE_A with Eureka...");
@@ -106,7 +109,8 @@ public final class SimpleApp {
 
         // Terminate both clients.
         System.out.println("Shutting down clients");
-        client.shutdown();
+        registrationClient.shutdown();
+        interestClient.shutdown();
     }
 
     public static void main(String[] args) throws InterruptedException {

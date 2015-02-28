@@ -5,7 +5,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.client.EurekaClient;
+import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
@@ -48,28 +49,36 @@ public class WriteClusterIntegrationTest {
      */
     @Test(timeout = 60000)
     public void testWriteClusterReplicationWorksBothWays() throws Exception {
-        EurekaClient clientToFirst = eurekaDeploymentResource.connectToWriteServer(0);
-        EurekaClient clientToSecond = eurekaDeploymentResource.connectToWriteServer(1);
+        EurekaRegistrationClient registrationClientToFirst = eurekaDeploymentResource.registrationClientToWriteServer(0);
+        EurekaRegistrationClient registrationClientToSecond = eurekaDeploymentResource.registrationClientToWriteServer(1);
+
+        EurekaInterestClient interestClientToFirst = eurekaDeploymentResource.interestClientToWriteServer(0);
+        EurekaInterestClient interestClientToSecond = eurekaDeploymentResource.interestClientToWriteServer(1);
 
         // First -> Second
-        testWriteClusterReplicationWorksBothWays(clientToFirst, clientToSecond, SampleInstanceInfo.DiscoveryServer.build());
+        testWriteClusterReplicationWorksBothWays(registrationClientToFirst, interestClientToSecond, SampleInstanceInfo.DiscoveryServer.build());
 
         // Second <- First
-        testWriteClusterReplicationWorksBothWays(clientToSecond, clientToFirst, SampleInstanceInfo.ZuulServer.build());
+        testWriteClusterReplicationWorksBothWays(registrationClientToSecond, interestClientToFirst, SampleInstanceInfo.ZuulServer.build());
 
-        clientToFirst.shutdown();
-        clientToSecond.shutdown();
+        registrationClientToFirst.shutdown();
+        registrationClientToSecond.shutdown();
+
+        interestClientToFirst.shutdown();
+        interestClientToSecond.shutdown();
     }
 
-    protected void testWriteClusterReplicationWorksBothWays(EurekaClient firstClient, EurekaClient secondClient, InstanceInfo clientInfo) throws Exception {
+    protected void testWriteClusterReplicationWorksBothWays(EurekaRegistrationClient registrationClient,
+                                                            EurekaInterestClient interestClient,
+                                                            InstanceInfo clientInfo) throws Exception {
         // Register via first write server
-        RegistrationObservable request = firstClient.register(Observable.just(clientInfo));
+        RegistrationObservable request = registrationClient.register(Observable.just(clientInfo));
         Subscription subscription = request.subscribe();
         request.initialRegistrationResult().toBlocking().firstOrDefault(null);  // wait for initial registration
 
         // Subscribe to second write server
         Interest<InstanceInfo> interest = Interests.forApplications(clientInfo.getApp());
-        Observable<ChangeNotification<InstanceInfo>> notifications = secondClient.forInterest(interest).filter(dataOnlyFilter());
+        Observable<ChangeNotification<InstanceInfo>> notifications = interestClient.forInterest(interest).filter(dataOnlyFilter());
 
         Iterator<ChangeNotification<InstanceInfo>> notificationIterator = iteratorFrom(60, TimeUnit.SECONDS, notifications);
         assertThat(notificationIterator.next(), is(addChangeNotificationOf(clientInfo)));
@@ -81,8 +90,8 @@ public class WriteClusterIntegrationTest {
 
     @Test(timeout = 60000)
     public void testWriteClusterReplicationWithRegistrationLifecycle() throws Exception {
-        final EurekaClient registrationClient = eurekaDeploymentResource.connectToWriteServer(0);
-        final EurekaClient discoveryClient = eurekaDeploymentResource.connectToWriteServer(1);
+        final EurekaRegistrationClient registrationClient = eurekaDeploymentResource.registrationClientToWriteServer(0);
+        final EurekaInterestClient interestClient = eurekaDeploymentResource.interestClientToWriteServer(1);
 
         InstanceInfo.Builder seedBuilder = new InstanceInfo.Builder().withId("id123").withApp("app");
         List<InstanceInfo> infos = Arrays.asList(
@@ -94,7 +103,7 @@ public class WriteClusterIntegrationTest {
         // Subscribe to second write server
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
         Interest<InstanceInfo> interest = Interests.forApplications(infos.get(0).getApp());
-        discoveryClient.forInterest(interest).filter(dataOnlyFilter()).subscribe(testSubscriber);
+        interestClient.forInterest(interest).filter(dataOnlyFilter()).subscribe(testSubscriber);
 
         // We need to wait for notification after each registry update, to avoid compaction
         // on the way.
@@ -115,13 +124,13 @@ public class WriteClusterIntegrationTest {
         assertThat(testSubscriber.takeNextOrWait(), is(deleteChangeNotificationOf(infos.get(2))));
 
         registrationClient.shutdown();
-        discoveryClient.shutdown();
+        interestClient.shutdown();
     }
 
     @Test(timeout = 60000)
     public void testSubscriptionToInterestChannelGetsAllUpdates() throws Exception {
-        EurekaClient dataSourceClient = eurekaDeploymentResource.connectToWriteServer(0);
-        EurekaClient subscriberClient = eurekaDeploymentResource.connectToWriteServer(0);
+        final EurekaRegistrationClient dataSourceClient = eurekaDeploymentResource.registrationClientToWriteServer(0);
+        final EurekaInterestClient subscriberClient = eurekaDeploymentResource.interestClientToWriteServer(0);
 
         Iterator<InstanceInfo> instanceInfos = SampleInstanceInfo.collectionOf("itest", SampleInstanceInfo.ZuulServer.build());
 
@@ -148,7 +157,7 @@ public class WriteClusterIntegrationTest {
 
     @Test
     public void testWriteServerReturnsAvailableContentAsOneBatch() throws Exception {
-        EurekaClient subscriberClient = eurekaDeploymentResource.connectToWriteServer(0);
+        EurekaInterestClient subscriberClient = eurekaDeploymentResource.interestClientToWriteServer(0);
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
         subscriberClient.forInterest(Interests.forFullRegistry()).subscribe(testSubscriber);

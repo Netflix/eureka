@@ -3,9 +3,11 @@ package com.netflix.eureka2.integration;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.client.Eureka;
-import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.resolver.ServerResolvers;
+import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaInterestClientBuilder;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
+import com.netflix.eureka2.client.EurekaRegistrationClientBuilder;
+import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
@@ -54,34 +56,41 @@ public class EurekaClientIntegrationTest {
         EmbeddedWriteCluster writeCluster = deployment.getWriteCluster();
         String readClusterVip = deployment.getReadCluster().getVip();
 
-        EurekaClient eurekaClient = Eureka.newClientBuilder(
-                ServerResolvers.fromWriteServer(writeCluster.discoveryResolver(), readClusterVip),
-                writeCluster.registrationResolver()
-        ).build();
+        EurekaInterestClient interestClient = new EurekaInterestClientBuilder()
+                .fromWriteInterestResolver(writeCluster.interestResolver(), readClusterVip)
+                .build();
+
+        EurekaRegistrationClient registrationClient = eurekaDeploymentResource.registrationClientToWriteCluster();
 
         // First register
         InstanceInfo info = SampleInstanceInfo.ZuulServer.build();
-        eurekaClient.register(Observable.just(info)).subscribe();
+        registrationClient.register(Observable.just(info)).subscribe();
 
         // Now check that we get the notification from the read server
-        Observable<ChangeNotification<InstanceInfo>> notifications = eurekaClient
+        Observable<ChangeNotification<InstanceInfo>> notifications = interestClient
                 .forInterest(Interests.forVips(info.getVipAddress()))
                 .filter(dataOnlyFilter());
         Iterator<ChangeNotification<InstanceInfo>> notificationIt = RxBlocking.iteratorFrom(5, TimeUnit.HOURS, notifications);
 
         assertThat(notificationIt.next(), is(addChangeNotificationOf(info)));
 
-        eurekaClient.shutdown();
+        registrationClient.shutdown();
+        interestClient.shutdown();
     }
 
     @Test(timeout = 60000)
     @Ignore
     public void testResolveFromDns() {
-        EurekaClient eurekaClient = Eureka.newClientBuilder(
-                ServerResolvers.forDnsName("cluster.domain.name", 12103),
-                ServerResolvers.forDnsName("cluster.domain.name", 12102)
-        ).build();
+        EurekaRegistrationClient registrationClient = new EurekaRegistrationClientBuilder()
+                .fromDns("cluster.domain.name", 12102)
+                .build();
+
         ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
-        eurekaClient.register(Observable.just(SampleInstanceInfo.CliServer.build())).subscribe(testSubscriber);
+
+        RegistrationObservable result = registrationClient.register(Observable.just(SampleInstanceInfo.CliServer.build()));
+        result.initialRegistrationResult().subscribe(testSubscriber);
+        result.subscribe();  // start the registration
+
+        testSubscriber.assertOnCompleted();
     }
 }

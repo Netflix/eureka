@@ -6,8 +6,8 @@ import java.util.Properties;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provider;
 import com.netflix.config.ConfigurationManager;
-import com.netflix.eureka2.client.EurekaClientBuilder;
-import com.netflix.eureka2.client.interest.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.server.health.KaryonHealthCheckHandler;
 import com.netflix.governator.configuration.ArchaiusConfigurationProvider;
@@ -18,8 +18,8 @@ import com.netflix.governator.guice.BootstrapModule;
 import com.netflix.governator.guice.LifecycleInjectorBuilder;
 import io.reactivex.netty.RxNetty;
 import netflix.adminresources.AdminResourcesContainer;
-import netflix.adminresources.resources.Eureka2ClientProvider;
-import netflix.adminresources.resources.Eureka2ClientProviderImpl;
+import netflix.adminresources.resources.Eureka2InterestClientProvider;
+import netflix.adminresources.resources.Eureka2InterestClientProviderImpl;
 import netflix.adminresources.resources.StatusRegistry;
 import netflix.karyon.archaius.PropertiesLoader;
 import netflix.karyon.health.HealthCheckHandler;
@@ -84,15 +84,14 @@ public abstract class EmbeddedKaryonAdminModule extends AbstractModule {
     protected abstract ServerResolver getInterestResolver();
 
     private void bindEureka2RegistryUI() {
-        bind(Eureka2ClientProvider.class).toInstance(new Eureka2ClientProviderImpl() {
+        bind(Eureka2InterestClientProvider.class).toInstance(new Eureka2InterestClientProviderImpl() {
             EurekaInterestClient interestClient;
 
             @Override
             public EurekaInterestClient get() {
                 if (interestClient == null) {
-                    interestClient = EurekaClientBuilder
-                            .discoveryBuilder()
-                            .withReadServerResolver(getInterestResolver())
+                    interestClient = new EurekaInterestClientBuilder()
+                            .fromReadServerResolver(getInterestResolver())
                             .build();
                 }
                 return interestClient;

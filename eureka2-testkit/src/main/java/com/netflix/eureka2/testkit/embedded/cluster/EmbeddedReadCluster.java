@@ -101,7 +101,7 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
         return new ReadClusterReport(serverReports);
     }
 
-    public ServerResolver discoveryResolver() {
+    public ServerResolver interestResolver() {
         Observable<MembershipEvent<Server>> events = clusterChangeObservable()
                 .map(new Func1<ChangeNotification<Server>, MembershipEvent<Server>>() {
                     @Override

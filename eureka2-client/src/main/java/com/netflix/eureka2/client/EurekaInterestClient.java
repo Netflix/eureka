@@ -1,4 +1,4 @@
-package com.netflix.eureka2.client.interest;
+package com.netflix.eureka2.client;
 
 import com.netflix.eureka2.client.functions.ChangeNotificationFunctions;
 import com.netflix.eureka2.interests.ChangeNotification;

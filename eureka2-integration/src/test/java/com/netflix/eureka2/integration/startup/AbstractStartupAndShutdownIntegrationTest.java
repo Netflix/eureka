@@ -1,7 +1,7 @@
 package com.netflix.eureka2.integration.startup;
 
 import com.netflix.config.ConfigurationManager;
-import com.netflix.eureka2.client.EurekaClient;
+import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interests;
@@ -65,10 +65,10 @@ public abstract class AbstractStartupAndShutdownIntegrationTest<C extends Eureka
         server.start();
 
         // Subscribe to write cluster and verify that read server connected properly
-        EurekaClient eurekaClient = eurekaDeploymentResource.connectToWriteCluster();
+        EurekaInterestClient interestClient = eurekaDeploymentResource.interestClientToWriteCluster();
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
-        eurekaClient.forInterest(Interests.forApplications(applicationName)).filter(dataOnlyFilter()).subscribe(testSubscriber);
+        interestClient.forInterest(Interests.forApplications(applicationName)).filter(dataOnlyFilter()).subscribe(testSubscriber);
 
         ChangeNotification<InstanceInfo> notification = testSubscriber.takeNextOrWait();
         assertThat(notification.getKind(), is(equalTo(Kind.Add)));

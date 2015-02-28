@@ -4,7 +4,7 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import com.netflix.eureka2.client.registration.EurekaRegistrationClient;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
 

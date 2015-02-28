@@ -3,9 +3,8 @@ package com.netflix.eureka2.server;
 import javax.inject.Provider;
 
 import com.google.inject.Inject;
-import com.netflix.eureka2.client.EurekaClientBuilder;
-import com.netflix.eureka2.client.registration.EurekaRegistrationClient;
-import com.netflix.eureka2.client.resolver.ServerResolver;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
+import com.netflix.eureka2.client.EurekaRegistrationClientBuilder;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
@@ -13,16 +12,16 @@ import com.netflix.eureka2.server.config.EurekaCommonConfig;
 /**
  * @author Tomasz Bak
  */
-public class RegistrationClientProvider implements Provider<EurekaRegistrationClient> {
+public class EurekaRegistrationClientProvider implements Provider<EurekaRegistrationClient> {
 
     private final EurekaCommonConfig config;
     private final EurekaClientMetricFactory clientMetricFactory;
     private final EurekaRegistryMetricFactory registryMetricFactory;
 
     @Inject
-    public RegistrationClientProvider(EurekaCommonConfig config,
-                                      EurekaClientMetricFactory clientMetricFactory,
-                                      EurekaRegistryMetricFactory registryMetricFactory) {
+    public EurekaRegistrationClientProvider(EurekaCommonConfig config,
+                                            EurekaClientMetricFactory clientMetricFactory,
+                                            EurekaRegistryMetricFactory registryMetricFactory) {
         this.config = config;
         this.clientMetricFactory = clientMetricFactory;
         this.registryMetricFactory = registryMetricFactory;
@@ -30,11 +29,12 @@ public class RegistrationClientProvider implements Provider<EurekaRegistrationCl
 
     @Override
     public EurekaRegistrationClient get() {
-        ServerResolver registrationResolver = WriteClusterResolvers.createRegistrationResolver(config);
-        return EurekaClientBuilder.registrationBuilder()
+        return new EurekaRegistrationClientBuilder()
+                .withTransportConfig(config)
+                .withRegistryConfig(config)
                 .withClientMetricFactory(clientMetricFactory)
-                .withWriteServerResolver(registrationResolver)
                 .withRegistryMetricFactory(registryMetricFactory)
+                .fromWriteServerResolver(WriteClusterResolvers.createRegistrationResolver(config))
                 .build();
     }
 }

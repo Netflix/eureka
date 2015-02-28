@@ -20,9 +20,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.netflix.eureka2.client.Eureka;
-import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.EurekaClientBuilder;
+import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaInterestClientBuilder;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
+import com.netflix.eureka2.client.EurekaRegistrationClientBuilder;
 import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
@@ -57,8 +58,8 @@ public class Session {
     private final BehaviorSubject<InstanceInfo> infoSubject = BehaviorSubject.create();
 
     private volatile InstanceInfo lastInstanceInfo;
-    private EurekaClient eurekaClient;
-
+    private EurekaRegistrationClient registrationClient;
+    private EurekaInterestClient interestClient;
 
     private final AtomicInteger streamIds = new AtomicInteger();
     private final Map<String, InterestSubscriber> subscriptions = new HashMap<>();
@@ -101,35 +102,61 @@ public class Session {
     }
 
     public void connectToRegister(String host, int port) {
-        eurekaClient = EurekaClientBuilder.registrationBuilder()
-                .withWriteServerResolver(ServerResolvers.just(host, port))
+        registrationClient = new EurekaRegistrationClientBuilder()
                 .withTransportConfig(context.getTransportConfig())
+                .fromHostname(host, port)
                 .build();
+
         mode = Mode.Write;
     }
 
     public void connectToRead(String host, int port) {
-        eurekaClient = EurekaClientBuilder.discoveryBuilder()
-                .withReadServerResolver(ServerResolvers.just(host, port))
+        interestClient = new EurekaInterestClientBuilder()
                 .withTransportConfig(context.getTransportConfig())
+                .fromHostname(host, port)
                 .build();
+
         mode = Mode.Read;
     }
 
-    public void connectToCluster(String host, int registrationPort, int discoveryPort, String readClusterVip) {
-        eurekaClient = Eureka.newClientBuilder(
-                ServerResolvers.fromWriteServer(ServerResolvers.just(host, discoveryPort), readClusterVip),
-                ServerResolvers.just(host, registrationPort)
-        ).withTransportConfig(context.getTransportConfig()).build();
+    public void connectToCluster(String host, int registrationPort, int interestPort, String readClusterVip) {
+        registrationClient = new EurekaRegistrationClientBuilder()
+                .withTransportConfig(context.getTransportConfig())
+                .fromHostname(host, registrationPort)
+                .build();
+
+        interestClient = new EurekaInterestClientBuilder()
+                .withTransportConfig(context.getTransportConfig())
+                .fromWriteInterestResolver(ServerResolvers.just(host, interestPort), readClusterVip)
+                .build();
+
         mode = Mode.ReadWrite;
     }
 
     public boolean isConnected() {
-        if (eurekaClient == null) {
-            System.out.println("ERROR: connect first to Eureka server");
-            return false;
+        switch (mode) {
+            case Read:
+                if (interestClient == null) {
+                    System.out.println("ERROR: connect first to Eureka server");
+                    return false;
+                }
+                return true;
+            case Write:
+                if (registrationClient == null) {
+                    System.out.println("ERROR: connect first to Eureka server");
+                    return false;
+                }
+                return true;
+            case ReadWrite:
+                if (registrationClient == null || interestClient == null) {
+                    System.out.println("ERROR: connect first to Eureka server");
+                    return false;
+                }
+                return true;
+           default:
+               System.out.println("Unknown mode state: " + mode);
+               return false;
         }
-        return true;
     }
 
     public void register(final InstanceInfo instanceInfo) {
@@ -139,7 +166,7 @@ public class Session {
         }
 
         registrationStatus = Status.Initiated;
-        RegistrationObservable registrationRequest = eurekaClient.register(infoSubject);
+        RegistrationObservable registrationRequest = registrationClient.register(infoSubject);
         registrationRequest.initialRegistrationResult().subscribe(new Subscriber<Void>() {
             @Override
             public void onCompleted() {
@@ -194,22 +221,29 @@ public class Session {
         String id = sessionId + "#" + streamIds.incrementAndGet();
         InterestSubscriber subscriber = new InterestSubscriber(interest, id);
         subscriptions.put(id, subscriber);
-        eurekaClient.forInterest(interest).subscribe(subscriber);
+        interestClient.forInterest(interest).subscribe(subscriber);
 
         System.out.println("Stream_" + id + ": Subscribing to Interest: " + interest);
     }
 
     public void close() {
-        if (eurekaClient != null) {
-            System.out.println("Closing session " + sessionId);
-            eurekaClient.shutdown();
-            eurekaClient = null;
+        System.out.println("Closing session " + sessionId);
+        if (registrationClient != null) {
+            registrationClient.shutdown();
+            registrationClient = null;
+            System.out.println("Shutdown registration client");
         }
+        if (interestClient != null) {
+            interestClient.shutdown();
+            interestClient = null;
+            System.out.println("Shutdown interest client");
+        }
+        mode = null;
     }
 
     public void printStatus() {
         System.out.println("Session " + sessionId);
-        if (eurekaClient == null) {
+        if (mode == null) {
             System.out.println("Connection status: disconnected");
         } else {
             System.out.println("Connection status: connected in mode " + mode);

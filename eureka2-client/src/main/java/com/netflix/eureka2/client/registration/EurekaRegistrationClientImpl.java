@@ -2,6 +2,7 @@ package com.netflix.eureka2.client.registration;
 
 import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.RegistrationChannel;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.connection.RetryableConnectionFactory;
 import com.netflix.eureka2.connection.RetryableConnection;
 import com.netflix.eureka2.registry.instance.InstanceInfo;

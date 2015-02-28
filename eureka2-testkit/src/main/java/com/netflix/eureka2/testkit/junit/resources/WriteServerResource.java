@@ -78,7 +78,7 @@ public class WriteServerResource extends ExternalResource {
         return server.getRegistrationResolver();
     }
 
-    public ServerResolver getDiscoveryResolver() {
-        return server.getInterestServerResolver();
+    public ServerResolver getInterestResolver() {
+        return server.getInterestResolver();
     }
 }

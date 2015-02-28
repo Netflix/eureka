@@ -1,5 +1,6 @@
-package com.netflix.eureka2.client.registration;
+package com.netflix.eureka2.client;
 
+import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
 
@@ -15,7 +16,7 @@ import rx.Observable;
 public interface EurekaRegistrationClient {
 
     /**
-     * Return a {@link RegistrationObservable} that when subscribes to, initiates registration with the remote server
+     * Return a {@link com.netflix.eureka2.client.registration.RegistrationObservable} that when subscribes to, initiates registration with the remote server
      * based on the InstanceInfos received. Changes between InstanceInfos will be applied as updates to the initial
      * registration. InstanceInfo Ids cannot change for InstanceInfos within an input stream.
      *
@@ -23,7 +24,7 @@ public interface EurekaRegistrationClient {
      *                   updated. Initial registrations is predicated on two conditions, the returned
      *                   RegistrationRequest must be subscribed to, and an initial InstanceInfo must be emitted
      *                   by the input observable.
-     * @return {@link RegistrationObservable}
+     * @return {@link com.netflix.eureka2.client.registration.RegistrationObservable}
      */
     RegistrationObservable register(Observable<InstanceInfo> registrant);
 

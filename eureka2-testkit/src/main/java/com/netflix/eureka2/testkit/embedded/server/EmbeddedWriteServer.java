@@ -73,7 +73,7 @@ public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig,
     }
 
     @Override
-    public ServerResolver getInterestServerResolver() {
+    public ServerResolver getInterestResolver() {
         return ServerResolvers.just("localhost", getDiscoveryPort());
     }
 

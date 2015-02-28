@@ -73,7 +73,7 @@ public class ReadServerResource extends ExternalResource {
         return discoveryPort;
     }
 
-    public ServerResolver getDiscoveryResolver() {
+    public ServerResolver getInterestResolver() {
         return ServerResolvers.just("localhost", discoveryPort);
     }
 }

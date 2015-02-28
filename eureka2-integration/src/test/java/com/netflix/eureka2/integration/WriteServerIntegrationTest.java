@@ -3,7 +3,8 @@ package com.netflix.eureka2.integration;
 import java.util.Arrays;
 import java.util.List;
 
-import com.netflix.eureka2.client.EurekaClient;
+import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
@@ -35,8 +36,8 @@ public class WriteServerIntegrationTest {
 
     @Test(timeout = 60000)
     public void testRegistrationLifecycle() throws Exception {
-        final EurekaClient registrationClient = eurekaDeploymentResource.connectToWriteServer(0);
-        final EurekaClient discoveryClient = eurekaDeploymentResource.connectToWriteServer(0);
+        final EurekaRegistrationClient registrationClient = eurekaDeploymentResource.registrationClientToWriteServer(0);
+        final EurekaInterestClient interestClient = eurekaDeploymentResource.interestClientToWriteServer(0);
 
         InstanceInfo.Builder seedBuilder = new InstanceInfo.Builder().withId("id").withApp("app");
         List<InstanceInfo> infos = Arrays.asList(
@@ -47,7 +48,7 @@ public class WriteServerIntegrationTest {
 
         // Subscribe to second write server
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
-        discoveryClient.forInterest(Interests.forApplications(infos.get(0).getApp())).filter(dataOnlyFilter()).subscribe(testSubscriber);
+        interestClient.forInterest(Interests.forApplications(infos.get(0).getApp())).filter(dataOnlyFilter()).subscribe(testSubscriber);
 
         // We need to block, otherwise if we shot all of them in one row, they may be
         // compacted in the index.
@@ -66,6 +67,6 @@ public class WriteServerIntegrationTest {
         assertThat(testSubscriber.takeNextOrWait(), is(deleteChangeNotificationOf(infos.get(2))));
 
         registrationClient.shutdown();
-        discoveryClient.shutdown();
+        interestClient.shutdown();
     }
 }

@@ -135,7 +135,7 @@ public class EurekaDeployment {
             writeCluster.scaleUpBy(writeClusterSize);
 
             EmbeddedReadCluster readCluster = new EmbeddedReadCluster(writeCluster.registrationResolver(),
-                    writeCluster.discoveryResolver(), extensionsEnabled, adminUIEnabled, ephemeralPorts, transportConfig.getCodec());
+                    writeCluster.interestResolver(), extensionsEnabled, adminUIEnabled, ephemeralPorts, transportConfig.getCodec());
             readCluster.scaleUpBy(readClusterSize);
 
             EmbeddedBridgeServer bridgeServer = null;
@@ -149,10 +149,10 @@ public class EurekaDeployment {
                 ServerResolver readClusterResolver;
                 if (readClusterSize > 0) {
                     discoveryPort = readCluster.getServer(0).getDiscoveryPort();
-                    readClusterResolver = ServerResolvers.fromWriteServer(writeCluster.discoveryResolver(), readCluster.getVip());
+                    readClusterResolver = ServerResolvers.fromWriteServer(writeCluster.interestResolver(), readCluster.getVip());
                 } else {
                     discoveryPort = writeCluster.getServer(0).getDiscoveryPort();
-                    readClusterResolver = writeCluster.discoveryResolver();
+                    readClusterResolver = writeCluster.interestResolver();
                 }
 
                 dashboardServer = EmbeddedDashboardServer.newDashboard(

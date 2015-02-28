@@ -5,8 +5,8 @@ import java.util.Iterator;
 import java.util.Set;
 
 import com.netflix.eureka2.Names;
-import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.EurekaClientBuilder;
+import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
@@ -49,22 +49,22 @@ public class EurekaServerResolverTest {
     private static final ChangeNotification<InstanceInfo> ADD_INSTANCE_2 = new ChangeNotification<>(ChangeNotification.Kind.Add, INSTANCE_2);
     private static final ChangeNotification<InstanceInfo> BUFFERING_SENTINEL = ChangeNotification.bufferSentinel();
 
-    private final EurekaClientBuilder eurekaClientBuilder = mock(EurekaClientBuilder.class);
-    private final EurekaClient eurekaClient = mock(EurekaClient.class);
+    private final EurekaInterestClientBuilder interestClientBuilder = mock(EurekaInterestClientBuilder.class);
+    private final EurekaInterestClient interestClient = mock(EurekaInterestClient.class);
     private final LoadBalancerBuilder<Server> loadBalancerBuilder = new DefaultLoadBalancerBuilder<>(null);
 
     private EurekaServerResolver eurekaServerResolver;
 
     @Before
     public void setUp() throws Exception {
-        when(eurekaClientBuilder.build()).thenReturn(eurekaClient);
-        eurekaServerResolver = new EurekaServerResolver(eurekaClientBuilder, READ_SERVERS_INTEREST, EUREKA_SELECTOR, loadBalancerBuilder);
+        when(interestClientBuilder.build()).thenReturn(interestClient);
+        eurekaServerResolver = new EurekaServerResolver(interestClientBuilder, READ_SERVERS_INTEREST, EUREKA_SELECTOR, loadBalancerBuilder);
     }
 
     @Test(timeout = 60000)
     public void testFetchesDataFromEurekaServer() throws Exception {
         // Returns two items in subscription
-        when(eurekaClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(Observable.just(ADD_INSTANCE_1, ADD_INSTANCE_2, BUFFERING_SENTINEL));
+        when(interestClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(Observable.just(ADD_INSTANCE_1, ADD_INSTANCE_2, BUFFERING_SENTINEL));
 
         // Resolve twice
         Server firstServer = eurekaServerResolver.resolve().toBlocking().firstOrDefault(null);
@@ -81,7 +81,7 @@ public class EurekaServerResolverTest {
         firstResolveWith(INSTANCE_1);
 
         // Delete instance1 and add instance 2.
-        when(eurekaClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(Observable.just(DELETE_INSTANCE_1, ADD_INSTANCE_2, ChangeNotification.<InstanceInfo>bufferSentinel()));
+        when(interestClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(Observable.just(DELETE_INSTANCE_1, ADD_INSTANCE_2, ChangeNotification.<InstanceInfo>bufferSentinel()));
 
         assertResolvesTo(INSTANCE_2);
         assertResolvesTo(INSTANCE_2);
@@ -94,7 +94,7 @@ public class EurekaServerResolverTest {
 
         // Send onError in the subscription stream
         Exception error = new Exception("channel error");
-        when(eurekaClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(Observable.<ChangeNotification<InstanceInfo>>error(error));
+        when(interestClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(Observable.<ChangeNotification<InstanceInfo>>error(error));
 
         assertResolvesTo(INSTANCE_1);
     }
@@ -102,12 +102,12 @@ public class EurekaServerResolverTest {
     @Test(timeout = 60000)
     public void testReturnsErrorIfResolveFailedAndNoStaleEntryAvailable() throws Exception {
         Exception error = new Exception("channel error");
-        when(eurekaClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(Observable.<ChangeNotification<InstanceInfo>>error(error));
+        when(interestClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(Observable.<ChangeNotification<InstanceInfo>>error(error));
         assertResolveToError();
     }
 
     private void firstResolveWith(InstanceInfo instance) {
-        when(eurekaClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(
+        when(interestClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(
                 Observable.just(
                         new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Add, instance),
                         ChangeNotification.<InstanceInfo>bufferSentinel()

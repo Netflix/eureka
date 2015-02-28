@@ -1,6 +1,7 @@
 package com.netflix.eureka2.integration.random;
 
-import com.netflix.eureka2.client.EurekaClient;
+import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.integration.IntegrationTestClient;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
@@ -24,8 +25,8 @@ public class ReadWriteServerRandomLifecycleTest extends AbstractRandomLifecycleT
 
     @Test(timeout = 60000)
     public void writeServerRandomLifecycleTest() {
-        final EurekaClient readClient = eurekaDeploymentResource.connectToReadServer(0);
-        final EurekaClient writeClient = eurekaDeploymentResource.connectToWriteServer(0);
+        final EurekaInterestClient readClient = eurekaDeploymentResource.cannonicalInterestClient();
+        final EurekaRegistrationClient writeClient = eurekaDeploymentResource.registrationClientToWriteCluster();
 
         IntegrationTestClient testClient = new IntegrationTestClient(readClient, writeClient);
 
