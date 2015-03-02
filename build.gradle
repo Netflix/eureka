@@ -1,5 +1,5 @@
 plugins {
-    id 'nebula.netflixoss' version '2.2.4'
+    id 'nebula.netflixoss' version '2.2.7'
 }
 
 ext {
