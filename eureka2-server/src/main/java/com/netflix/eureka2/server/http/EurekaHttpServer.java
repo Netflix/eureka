@@ -4,16 +4,26 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
+import com.netflix.eureka2.server.http.proxy.ForwardingRule;
+import com.netflix.eureka2.server.http.proxy.RxHttpReverseProxy;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.reactivex.netty.RxNetty;
+import io.reactivex.netty.channel.ConnectionHandler;
+import io.reactivex.netty.protocol.http.server.HttpServer;
+import io.reactivex.netty.protocol.http.server.RequestHandler;
+import io.reactivex.netty.protocol.http.websocket.WebSocketServer;
 import io.reactivex.netty.server.RxServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This is prototype implementation of Eureka HTTP server, with many shortcuts to go around problems.
+ * Eureka HTTP server endpoint. As RxNetty as of now does not support HTTP/WebSocket protocols
+ * on the same server port, multiple backend are created with a fronted proxy implemented by
+ * {@link RxHttpReverseProxy} class.
  *
  * @author Tomasz Bak
  */
@@ -22,35 +32,49 @@ public class EurekaHttpServer {
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaHttpServer.class);
 
-    private final EurekaCommonConfig config;
-    private final HealthConnectionHandler healthConnectionHandler;
-
-    private RxServer<WebSocketFrame, WebSocketFrame> server;
+    private final List<RxServer<?, ?>> backendServers = new CopyOnWriteArrayList<>();
+    private final RxHttpReverseProxy proxy;
 
     @Inject
-    public EurekaHttpServer(EurekaCommonConfig config, HealthConnectionHandler healthConnectionHandler) {
-        this.config = config;
-        this.healthConnectionHandler = healthConnectionHandler;
+    public EurekaHttpServer(EurekaCommonConfig config) {
+        this.proxy = new RxHttpReverseProxy(config.getHttpPort());
     }
 
     @PostConstruct
     public void start() {
-        server = RxNetty.newWebSocketServerBuilder(config.getHttpPort(), healthConnectionHandler).build().start();
+        proxy.start();
+        logger.info("Started HTTP server on port {}", proxy.getServerPort());
     }
 
     @PreDestroy
     public void stop() {
-        if (server != null) {
+        proxy.shutdown();
+        for (RxServer<?, ?> server : backendServers) {
             try {
                 server.shutdown();
             } catch (InterruptedException e) {
-                logger.info("EurekaHttpServer shutdown interrupted", e);
+                // IGNORE
             }
-            server = null;
         }
     }
 
     public int serverPort() {
-        return server.getServerPort();
+        return proxy.getServerPort();
+    }
+
+    public <T extends WebSocketFrame> void connectWebSocketEndpoint(String pathPrefix, ConnectionHandler<T, T> handler) {
+        WebSocketServer<T, T> backend = RxNetty.newWebSocketServerBuilder(0, handler).build();
+        backend.start();
+        backendServers.add(backend);
+        proxy.register(ForwardingRule.pathPrefix(backend.getServerPort(), pathPrefix));
+        logger.info("Started backend WebSocket server on port {} or {}", backend.getServerPort(), handler.getClass().getSimpleName());
+    }
+
+    public <I, O> void connectHttpEndpoint(String pathPrefix, RequestHandler<I, O> handler) {
+        HttpServer<I, O> backend = RxNetty.newHttpServerBuilder(0, handler).build();
+        backend.start();
+        backendServers.add(backend);
+        proxy.register(ForwardingRule.pathPrefix(backend.getServerPort(), pathPrefix));
+        logger.info("Started backend HTTP server on port {} or {}", backend.getServerPort(), handler.getClass().getSimpleName());
     }
 }
