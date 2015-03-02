@@ -77,9 +77,9 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATE> im
 
             private void evict() {
                 if (!replicationLoop) {
-                    logger.info("{}: Replication channel disconnected; putting all registrations from the channel in the eviction queue", replicationSource.getId());
+                    logger.info("Replication channel disconnected; putting all registrations from the channel in the eviction queue");
                     for (InstanceInfo instanceInfo : instanceInfoById.values()) {
-                        logger.info("{}: Replication channel disconnected; adding instance {} to the eviction queue", replicationSource.getId(), instanceInfo.getId());
+                        logger.info("Replication channel disconnected; adding instance {} to the eviction queue", instanceInfo.getId());
                         evictionQueue.add(instanceInfo, replicationSource);
                     }
                 }

@@ -537,9 +537,23 @@ public class EurekaInterestClientImplTest {
     }
 
     private TestInterestChannel newAlwaysFailChannel(Integer id) {
+        final Exception e = new Exception("test: operation error");
+
         final InterestChannel channel = createInterestChannel();
-        when(channel.change(any(Interest.class))).thenReturn(Observable.<Void>error(new Exception("test: operation error")));
-        when(channel.change(any(MultipleInterests.class))).thenReturn(Observable.<Void>error(new Exception("test: operation error")));
+        when(channel.change(any(Interest.class))).thenAnswer(new Answer<Observable<Void>>() {
+            @Override
+            public Observable<Void> answer(InvocationOnMock invocation) throws Throwable {
+                channel.close(e);  // link up with the channel lifecycle as we can't mock that
+                return Observable.error(e);
+            }
+        });
+        when(channel.change(any(MultipleInterests.class))).thenAnswer(new Answer<Observable<Void>>() {
+            @Override
+            public Observable<Void> answer(InvocationOnMock invocation) throws Throwable {
+                channel.close(e);  // link up with the channel lifecycle as we can't mock that
+                return Observable.error(e);
+            }
+        });
 
         return new TestInterestChannel(channel, id);
     }
