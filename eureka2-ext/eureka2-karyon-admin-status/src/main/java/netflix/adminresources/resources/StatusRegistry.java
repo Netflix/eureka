@@ -48,7 +48,7 @@ public class StatusRegistry {
 
     @PostConstruct
     public void start() {
-        wsClient = RxNetty.<TextWebSocketFrame, TextWebSocketFrame>newWebSocketClientBuilder("localhost", port).build();
+        wsClient = RxNetty.<TextWebSocketFrame, TextWebSocketFrame>newWebSocketClientBuilder("localhost", port).withWebSocketURI("/healthcheck").build();
         wsClient.connect().flatMap(new Func1<ObservableConnection<TextWebSocketFrame, TextWebSocketFrame>, Observable<TextWebSocketFrame>>() {
             @Override
             public Observable<TextWebSocketFrame> call(ObservableConnection<TextWebSocketFrame, TextWebSocketFrame> connection) {
