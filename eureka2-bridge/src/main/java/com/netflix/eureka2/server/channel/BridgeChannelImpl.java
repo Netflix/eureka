@@ -185,7 +185,6 @@ public class BridgeChannelImpl extends AbstractHandlerChannel<STATE> implements 
     @Override
     protected void _close() {
         discoveryClient.shutdown();
-        registry.shutdown();
         lifecycle.onCompleted();
     }
 }

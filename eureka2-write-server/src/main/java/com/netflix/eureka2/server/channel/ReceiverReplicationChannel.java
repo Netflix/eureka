@@ -77,9 +77,9 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATE> im
 
             private void evict() {
                 if (!replicationLoop) {
-                    logger.info("Replication channel disconnected; putting all registrations from the channel in the eviction queue");
+                    logger.info("{}: Replication channel disconnected; putting all registrations from the channel in the eviction queue", replicationSource.getId());
                     for (InstanceInfo instanceInfo : instanceInfoById.values()) {
-                        logger.info("Replication channel disconnected; adding instance {} to the eviction queue", instanceInfo.getId());
+                        logger.info("{}: Replication channel disconnected; adding instance {} to the eviction queue", replicationSource.getId(), instanceInfo.getId());
                         evictionQueue.add(instanceInfo, replicationSource);
                     }
                 }
@@ -95,6 +95,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATE> im
     protected void dispatchMessageFromClient(final Object message) {
         Observable<?> reply;
         if (message instanceof ReplicationHello) {
+            logger.info("Received Hello from {}", ((ReplicationHello) message).getSourceId());
             reply = hello((ReplicationHello) message);
         } else if (message instanceof RegisterCopy) {
             InstanceInfo instanceInfo = ((RegisterCopy) message).getInstanceInfo();

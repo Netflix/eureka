@@ -81,25 +81,23 @@ public class RetryableConnectionFactory<CHANNEL extends ServiceChannel> {
                     @Override
                     public Observable<Void> call(final CHANNEL channel, OP op) {
                         logger.debug("executing on channel {} op {}", channel.toString(), op.toString());
-                        executeOnChannel.call(channel, op).subscribe(new Subscriber<Void>() {
-                            @Override
-                            public void onCompleted() {
-                                if (initialConnect.compareAndSet(true, false)) {
-                                    initSubject.onCompleted();
-                                }
-                            }
+                        Observable<Void> channelExecute = executeOnChannel.call(channel, op)
+                                .doOnCompleted(new Action0() {
+                                    @Override
+                                    public void call() {
+                                        if (initialConnect.compareAndSet(true, false)) {
+                                            initSubject.onCompleted();
+                                        }
+                                    }
+                                })
+                                .doOnError(new Action1<Throwable>() {
+                                    @Override
+                                    public void call(Throwable throwable) {
+                                        channel.close();
+                                    }
+                                });
 
-                            @Override
-                            public void onError(Throwable e) {
-                                channel.close(e);
-                            }
-
-                            @Override
-                            public void onNext(Void aVoid) {
-                            }
-                        });
-
-                        return channel.asLifecycleObservable();
+                        return channel.asLifecycleObservable().mergeWith(channelExecute);
                     }
                 })
                 .flatMap(new Func1<Observable<Void>, Observable<Void>>() {  // flatmap from Ob<Ob<Void> to Ob<Void>

@@ -51,7 +51,7 @@ public class BridgeService {
     @SuppressWarnings("unchecked")
     @PostConstruct
     public void connect() {
-        selfIdentityService.resolve().subscribe(new Subscriber<InstanceInfo>() {
+        selfIdentityService.resolve().take(1).subscribe(new Subscriber<InstanceInfo>() {
             @Override
             public void onCompleted() {
             }
