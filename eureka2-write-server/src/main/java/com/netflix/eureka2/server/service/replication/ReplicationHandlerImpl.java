@@ -37,7 +37,6 @@ public class ReplicationHandlerImpl implements ReplicationHandler {
 
     private final ChannelFactory<ReplicationChannel> channelFactory;
     private final int retryWaitMillis;
-    private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final RetryableConnection<ReplicationChannel> connection;
     private final Subscriber<Void> replicationSubscriber;
     private final AtomicReference<STATE> stateRef;
@@ -57,7 +56,6 @@ public class ReplicationHandlerImpl implements ReplicationHandler {
                                   final InstanceInfo selfInfo) {
         this.stateRef = new AtomicReference<>(STATE.Idle);
         this.retryWaitMillis = retryWaitMillis;
-        this.registry = registry;
         this.channelFactory = channelFactory;
 
         final String ownInstanceId = selfInfo.getId();
@@ -70,37 +68,43 @@ public class ReplicationHandlerImpl implements ReplicationHandler {
             public Observable<Void> call(final ReplicationChannel replicationChannel) {
                 return replicationChannel.hello(new ReplicationHello(ownInstanceId, registry.size()))
                         .take(1)
-                        .map(new Func1<ReplicationHelloReply, ReplicationHelloReply>() {
+                        .map(new Func1<ReplicationHelloReply, ReplicationChannel>() {
                             @Override
-                            public ReplicationHelloReply call(ReplicationHelloReply replicationHelloReply) {
+                            public ReplicationChannel call(ReplicationHelloReply replicationHelloReply) {
                                 if (replicationHelloReply.getSourceId().equals(ownInstanceId)) {
                                     logger.info("{}: Taking out replication connection to itself", ownInstanceId);
                                     replicationChannel.close();  // gracefully close
+                                    return null;
                                 } else {
                                     logger.info("{} received hello back from {}", ownInstanceId, replicationHelloReply.getSourceId());
-                                    replicate(replicationChannel);
+                                    return replicationChannel;
                                 }
-                                return replicationHelloReply;
                             }
                         })
-                        .ignoreElements()
-                        .cast(Void.class);
+                        .filter(new Func1<ReplicationChannel, Boolean>() {
+                            @Override
+                            public Boolean call(ReplicationChannel channel) {
+                                return channel != null;
+                            }
+                        })
+                        .flatMap(new ReplicateFunc(registry));
             }
         });
 
         this.replicationSubscriber = new Subscriber<Void>() {
             @Override
             public void onCompleted() {
-                logger.info("Replication onCompleted");
+                logger.info("sender replication connection onCompleted");
             }
 
             @Override
             public void onError(Throwable e) {
-                logger.warn("Replication onError", e);
+                logger.warn("sender replication connection onError", e);
             }
 
             @Override
             public void onNext(Void aVoid) {
+
             }
         };
     }
@@ -111,22 +115,7 @@ public class ReplicationHandlerImpl implements ReplicationHandler {
             // TODO better retry func?
             connection.getRetryableLifecycle()
                     .retryWhen(new RetryStrategyFunc(retryWaitMillis))
-                    .subscribe(new Subscriber<Void>() {
-                        @Override
-                        public void onCompleted() {
-                            logger.info("sender replication connection onCompleted");
-                        }
-
-                        @Override
-                        public void onError(Throwable e) {
-                            logger.warn("sender replication connection onError", e);
-                        }
-
-                        @Override
-                        public void onNext(Void aVoid) {
-
-                        }
-                    });
+                    .subscribe(replicationSubscriber);
         }
     }
 
@@ -140,26 +129,34 @@ public class ReplicationHandlerImpl implements ReplicationHandler {
         }
     }
 
-    protected void replicate(final ReplicationChannel channel) {
-        registry.forInterest(Interests.forFullRegistry(), Source.matcherFor(Source.Origin.LOCAL))
-                .flatMap(new Func1<ChangeNotification<InstanceInfo>, Observable<Void>>() {
-                    @Override
-                    public Observable<Void> call(ChangeNotification<InstanceInfo> notification) {
-                        switch (notification.getKind()) {
-                            case Add:
-                                return channel.register(notification.getData());
-                            case Modify:
-                                return channel.register(notification.getData());
-                            case Delete:
-                                return channel.unregister(notification.getData().getId());
-                            default:
-                                logger.warn("Unrecognised notification kind {}", notification);
-                                return Observable.empty();
+
+    protected static class ReplicateFunc implements Func1<ReplicationChannel, Observable<Void>> {
+        private final SourcedEurekaRegistry<InstanceInfo> registry;
+
+        public ReplicateFunc(SourcedEurekaRegistry<InstanceInfo> registry) {
+            this.registry = registry;
+        }
+
+        @Override
+        public Observable<Void> call(final ReplicationChannel channel) {
+            return registry.forInterest(Interests.forFullRegistry(), Source.matcherFor(Source.Origin.LOCAL))
+                    .flatMap(new Func1<ChangeNotification<InstanceInfo>, Observable<Void>>() {
+                        @Override
+                        public Observable<Void> call(ChangeNotification<InstanceInfo> notification) {
+                            switch (notification.getKind()) {
+                                case Add:
+                                    return channel.register(notification.getData());
+                                case Modify:
+                                    return channel.register(notification.getData());
+                                case Delete:
+                                    return channel.unregister(notification.getData().getId());
+                                default:
+                                    logger.warn("Unrecognised notification kind {}", notification);
+                                    return Observable.empty();
+                            }
+
                         }
-
-                    }
-                })
-                .subscribe(replicationSubscriber);
-
+                    });
+        }
     }
 }

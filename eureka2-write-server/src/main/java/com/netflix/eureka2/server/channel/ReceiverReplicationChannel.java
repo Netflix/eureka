@@ -95,6 +95,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATE> im
     protected void dispatchMessageFromClient(final Object message) {
         Observable<?> reply;
         if (message instanceof ReplicationHello) {
+            logger.info("Received Hello from {}", ((ReplicationHello) message).getSourceId());
             reply = hello((ReplicationHello) message);
         } else if (message instanceof RegisterCopy) {
             InstanceInfo instanceInfo = ((RegisterCopy) message).getInstanceInfo();
