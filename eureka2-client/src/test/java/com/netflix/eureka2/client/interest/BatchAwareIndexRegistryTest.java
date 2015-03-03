@@ -2,7 +2,7 @@ package com.netflix.eureka2.client.interest;
 
 import java.util.List;
 
-import com.netflix.eureka2.interest.InterestSubscriber;
+import com.netflix.eureka2.interest.TestInterestSubscriber;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Index.InitStateHolder;
@@ -46,7 +46,7 @@ public class BatchAwareIndexRegistryTest {
 
     private final PublishSubject<ChangeNotification<InstanceInfo>> notificationSubject = PublishSubject.create();
 
-    private final InterestSubscriber testSubscriber = new InterestSubscriber();
+    private final TestInterestSubscriber testSubscriber = new TestInterestSubscriber();
 
     @Before
     public void setUp() throws Exception {

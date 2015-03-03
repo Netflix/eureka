@@ -24,6 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -111,7 +112,7 @@ public class ReadServerIntegrationTest {
 
         // We should always get in the first batch all entries
         Set<InstanceInfo> initialSet = snapshotSubscriber.takeNextOrWait();
-        assertThat(initialSet.size(), is(greaterThan(REGISTRY_INITIAL_SIZE)));
+        assertThat(initialSet.size(), is(equalTo(REGISTRY_INITIAL_SIZE + 2)));
     }
 
     private EurekaInterestClientResource connectEurekaClient(ServerResolver serverResolver) {

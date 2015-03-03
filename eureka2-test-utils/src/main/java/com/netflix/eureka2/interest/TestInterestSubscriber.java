@@ -14,7 +14,7 @@ import static org.junit.Assert.assertThat;
  *
  * @author Tomasz Bak
  */
-public class InterestSubscriber extends ExtTestSubscriber<ChangeNotification<InstanceInfo>> {
+public class TestInterestSubscriber extends ExtTestSubscriber<ChangeNotification<InstanceInfo>> {
 
     @SafeVarargs
     public final void assertReceives(ChangeNotification<InstanceInfo>... dataNotifications) {
