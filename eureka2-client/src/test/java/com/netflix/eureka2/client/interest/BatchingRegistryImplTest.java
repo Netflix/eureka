@@ -60,16 +60,6 @@ public class BatchingRegistryImplTest {
         assertThat(interestSubscriberAB.takeNext(), is(equalTo(BufferState.BufferEnd)));
     }
 
-    @Test
-    public void testResetsStateAfterChannelReconnectOnCompleted() throws Exception {
-        doTestResetsStateAfterChannelReconnect(false);
-    }
-
-    @Test
-    public void testResetsStateAfterChannelReconnectOnError() throws Exception {
-        doTestResetsStateAfterChannelReconnect(true);
-    }
-
     private void doTestResetsStateAfterChannelReconnect(boolean failNotificationChannel) {
         ExtTestSubscriber<BufferState> interestSubscriber = new ExtTestSubscriber<>();
         batchingRegistry.forInterest(ATOMIC_INTEREST_A).subscribe(interestSubscriber);

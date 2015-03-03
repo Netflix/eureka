@@ -70,10 +70,6 @@ public class BatchingRegistryImpl<T> implements BatchingRegistry<T> {
                                                 }
                                                 break;
                                         }
-                                        // Set all to BufferEnd to close opened buffered streams
-                                        for (Interest<T> i : interestsBufferingState.keySet()) {
-                                            interestsBufferingState.put(i, BufferState.BufferEnd);
-                                        }
                                         return false;
                                     }
                                 }).doOnTerminate(new Action0() {
@@ -100,9 +96,7 @@ public class BatchingRegistryImpl<T> implements BatchingRegistry<T> {
                 updatesSubject.pause();
                 try {
                     BufferState current = shouldBatch(interest);
-                    if (current != BufferState.BufferEnd) {
-                        subscriber.onNext(current);
-                    }
+                    subscriber.onNext(current);
                     updatesSubject.map(new Func1<Boolean, BufferState>() {
                         @Override
                         public BufferState call(Boolean tick) {
@@ -158,12 +152,9 @@ public class BatchingRegistryImpl<T> implements BatchingRegistry<T> {
 
     private BufferState shouldBatchAtomic(Interest<T> atomic) {
         BufferState state = interestsBufferingState.get(atomic);
-        if (state == null) {
+        if (state == null || state == BufferState.Unknown) {
             return BufferState.Unknown;
         }
-        if (state == BufferState.BufferStart) {
-            return BufferState.BufferStart;
-        }
-        return BufferState.BufferEnd;
+        return state;
     }
 }
