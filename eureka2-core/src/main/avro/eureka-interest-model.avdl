@@ -7,7 +7,7 @@ protocol EurekaInterestModel {
     }
 
     record ApplicationInterest {
-        string applicationName;
+        string pattern;
         union {
             null,
             com.netflix.eureka2.interests.Interest$.Operator
@@ -21,7 +21,15 @@ protocol EurekaInterestModel {
     }
 
     record VipInterest {
-        string vip;
+        string pattern;
+        union {
+            null,
+            com.netflix.eureka2.interests.Interest$.Operator
+        } operator;
+    }
+
+    record SecureVipInterest {
+        string pattern;
         union {
             null,
             com.netflix.eureka2.interests.Interest$.Operator
@@ -29,7 +37,7 @@ protocol EurekaInterestModel {
     }
 
     record InstanceInterest {
-        string instanceId;
+        string pattern;
         union {
             null,
             com.netflix.eureka2.interests.Interest$.Operator

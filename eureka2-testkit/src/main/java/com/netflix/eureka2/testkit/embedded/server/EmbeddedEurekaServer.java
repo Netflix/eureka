@@ -15,6 +15,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.health.EurekaHealthStatusModule;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
+import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.server.spi.ExtensionLoader;
 import com.netflix.eureka2.server.utils.guice.PostInjectorModule;
 import com.netflix.governator.guice.LifecycleInjector;
@@ -33,13 +34,15 @@ import netflix.adminresources.resources.Eureka2ClientProviderImpl;
 public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
     private final boolean withExt;
     private final boolean withAdminUI;
+    private final ServerType serverType;
     protected final C config;
 
     protected Injector injector;
     protected Injector webAdminInjector;
     protected LifecycleManager lifecycleManager;
 
-    protected EmbeddedEurekaServer(C config, boolean withExt, boolean withAdminUI) {
+    protected EmbeddedEurekaServer(ServerType serverType, C config, boolean withExt, boolean withAdminUI) {
+        this.serverType = serverType;
         this.config = config;
         this.withExt = withExt;
         this.withAdminUI = withAdminUI;
@@ -80,7 +83,7 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
         builder.withAdditionalModules(modules);
 
         // Extensions
-        builder.withAdditionalModules(new ExtensionLoader(!withExt).asModuleArray());
+        builder.withAdditionalModules(new ExtensionLoader(!withExt).asModuleArray(serverType));
 
         EmbeddedKaryonAdminModule adminUIModule = null;
         if (withAdminUI) {

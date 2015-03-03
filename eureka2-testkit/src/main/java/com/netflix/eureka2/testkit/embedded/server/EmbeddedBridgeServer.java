@@ -14,6 +14,7 @@ import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterTyp
 import com.netflix.eureka2.server.EurekaBridgeServerModule;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
+import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
@@ -35,7 +36,7 @@ public class EmbeddedBridgeServer extends EmbeddedEurekaServer<BridgeServerConfi
                                 final Observable<ChangeNotification<Server>> replicationPeers,
                                 boolean withExt,
                                 boolean withDashboard) {
-        super(config, withExt, withDashboard);
+        super(ServerType.Write, config, withExt, withDashboard);
         this.replicationPeers = replicationPeers;
     }
 

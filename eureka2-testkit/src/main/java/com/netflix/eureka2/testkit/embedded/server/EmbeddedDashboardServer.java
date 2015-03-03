@@ -10,6 +10,7 @@ import com.netflix.eureka2.client.EurekaClientBuilder;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.EurekaDashboardConfig;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
+import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedDashboardServer.DashboardServerReport;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
 
@@ -31,7 +32,7 @@ public class EmbeddedDashboardServer extends EmbeddedEurekaServer<EurekaDashboar
                                    ServerResolver discoveryServerResolver,
                                    boolean withExt,
                                    boolean withDashboard) {
-        super(config, withExt, withDashboard);
+        super(ServerType.Dashboard, config, withExt, withDashboard);
         this.discoveryPort = discoveryPort;
         this.registrationServerResolver = registrationServerResolver;
         this.discoveryServerResolver = discoveryServerResolver;

@@ -24,6 +24,7 @@ import com.netflix.eureka2.server.EurekaReadServerModule;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.interest.FullFetchBatchingRegistry;
 import com.netflix.eureka2.server.interest.FullFetchInterestClient;
+import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer.ReadServerReport;
 
@@ -42,7 +43,7 @@ public class EmbeddedReadServer extends EmbeddedEurekaServer<EurekaServerConfig,
                               ServerResolver discoveryResolver,
                               boolean withExt,
                               boolean withDashboard) {
-        super(config, withExt, withDashboard);
+        super(ServerType.Read, config, withExt, withDashboard);
         this.registrationResolver = registrationResolver;
         this.discoveryResolver = discoveryResolver;
     }

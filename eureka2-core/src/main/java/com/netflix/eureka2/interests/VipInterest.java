@@ -2,85 +2,24 @@ package com.netflix.eureka2.interests;
 
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 
-import java.util.regex.Pattern;
-
 /**
  * @author Nitesh Kant
  */
-public class VipInterest extends Interest<InstanceInfo> {
-
-    private final String vip;
-    private final Operator operator;
-
-    private volatile Pattern pattern;
+public class VipInterest extends AbstractPatternInterest<InstanceInfo> {
 
     protected VipInterest() {
-        vip = null;
-        operator = null;
     }
 
     public VipInterest(String vip) {
-        this.vip = vip;
-        this.operator = Operator.Equals;
+        super(vip);
     }
 
     public VipInterest(String vip, Operator operator) {
-        this.vip = vip;
-        this.operator = operator;
-    }
-
-    public String getVip() {
-        return vip;
-    }
-
-    public Operator getOperator() {
-        return operator;
+        super(vip, operator);
     }
 
     @Override
-    public boolean matches(InstanceInfo data) {
-        if(data.getVipAddress() == null) {
-            return false;
-        }
-        if (operator != Operator.Like) {
-            return vip.equals(data.getVipAddress());
-        }
-        if (pattern == null) {
-            pattern = Pattern.compile(vip);
-        }
-        return pattern.matcher(data.getVipAddress()).matches();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        VipInterest that = (VipInterest) o;
-
-        if (operator != that.operator) {
-            return false;
-        }
-        if (vip != null ? !vip.equals(that.vip) : that.vip != null) {
-            return false;
-        }
-
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = vip != null ? vip.hashCode() : 0;
-        result = 31 * result + (operator != null ? operator.hashCode() : 0);
-        return result;
-    }
-
-    @Override
-    public String toString() {
-        return "VipInterest{operator=" + operator + ", vip='" + vip + '\'' + '}';
+    protected String getValue(InstanceInfo data) {
+        return data.getVipAddress();
     }
 }

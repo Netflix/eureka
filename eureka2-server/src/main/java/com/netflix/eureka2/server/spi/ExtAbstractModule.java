@@ -27,14 +27,15 @@ import com.netflix.eureka2.server.spi.ExtensionLoader.StandardExtension;
  */
 public abstract class ExtAbstractModule extends AbstractModule {
 
+    public enum ServerType {Write, Read, Dashboard}
+
     /**
      * Module will be added to the container if it is runnable. It is up to the
      * module implementation to decide what are the conditions for that.
-     * As a minimum modules shall verify that its configuration is complete.
-     * This allows to failover to default service implementation, if available.
-     * @param extensionContext
+     *
+     * @param serverType running server type
      */
-    public boolean isRunnable(ExtensionContext extensionContext) {
+    public boolean isRunnable(ServerType serverType) {
         return true;
     }
 
