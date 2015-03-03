@@ -16,6 +16,14 @@
 
 package com.netflix.eureka2.utils.rx;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Observable.OnSubscribe;
 import rx.Scheduler;
@@ -25,12 +33,6 @@ import rx.Subscription;
 import rx.functions.Action0;
 import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
-
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Observable over an external resource that must be access in a synchronous way. Background task
@@ -44,6 +46,8 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Tomasz Bak
  */
 public class ResourceObservable<T> {
+
+    private static final Logger logger = LoggerFactory.getLogger(ResourceObservable.class);
 
     private final ResourceLoader<T> loader;
     private final Scheduler scheduler;
@@ -216,7 +220,21 @@ public class ResourceObservable<T> {
                 return;
             }
 
-            ResourceUpdate<T> update = loader.reload(dataSnapshot);
+            ResourceUpdate<T> update;
+            try {
+                update = loader.reload(dataSnapshot);
+            } catch (Exception e) {
+                if (e instanceof ResourceLoaderException) {
+                    if (((ResourceLoaderException) e).isRecoverable()) {
+                        logger.warn("Recoverable resource loader exception; rescheduling action", e);
+                        reschedule();
+                        return;
+                    }
+                }
+                logger.error("Non recoverable resource loader exception; no more actions will be triggered", e);
+                dataUpdates.onError(e);
+                return;
+            }
 
             // Push new data to existing subscribers. No new subscription is allowed when doing that.
             lock.lock();

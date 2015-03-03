@@ -131,6 +131,10 @@ public class ExtTestSubscriber<T> extends Subscriber<T> {
         return next;
     }
 
+    public void assertOpen() {
+        assertThat(state.get(), is(equalTo(State.Open)));
+    }
+
     public void assertOnCompleted() {
         assertThat(state.get(), is(equalTo(State.OnCompleted)));
     }

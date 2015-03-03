@@ -16,7 +16,14 @@
 
 package com.netflix.eureka2.utils.rx;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.utils.rx.ResourceObservable.ResourceLoader;
+import com.netflix.eureka2.utils.rx.ResourceObservable.ResourceLoaderException;
 import com.netflix.eureka2.utils.rx.ResourceObservable.ResourceUpdate;
 import com.netflix.eureka2.utils.rx.ResourceObservableTest.ItemUpdate.Operation;
 import org.eclipse.jetty.util.ConcurrentHashSet;
@@ -27,13 +34,10 @@ import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
+import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -107,6 +111,46 @@ public class ResourceObservableTest {
         assertThat(collector.size(), is(0));
     }
 
+    @Test
+    public void testNonRecoverableErrorIsPropagatedToClient() throws Exception {
+        ExtTestSubscriber<ItemUpdate> testSubscriber = new ExtTestSubscriber<>();
+        resourceObservable.subscribe(testSubscriber);
+
+        loader.sendError(new ResourceLoaderException("error", false, new Exception()));
+        scheduler.advanceTimeBy(REFRESH, TimeUnit.SECONDS);
+
+        testSubscriber.assertOnError();
+    }
+
+    @Test
+    public void testRecoverableErrorIsNotPropagatedToClient() throws Exception {
+        ExtTestSubscriber<ItemUpdate> testSubscriber = new ExtTestSubscriber<>();
+        resourceObservable.subscribe(testSubscriber);
+
+        // First resolve round
+        ItemUpdate addA = new ItemUpdate(Operation.Add, "A");
+        loader.add(addA);
+
+        scheduler.advanceTimeBy(REFRESH, TimeUnit.SECONDS);
+        assertThat(testSubscriber.takeNext(1), is(equalTo(singletonList(addA))));
+
+        // Trigger recoverable error
+        loader.sendError(new ResourceLoaderException("error", true, new Exception()));
+        scheduler.advanceTimeBy(REFRESH, TimeUnit.SECONDS);
+
+        testSubscriber.assertOpen();
+        assertThat(testSubscriber.takeNext(), is(nullValue()));
+
+        // Now another update round
+        loader.cancelError();
+
+        ItemUpdate addB = new ItemUpdate(Operation.Add, "B");
+        loader.add(addB);
+
+        scheduler.advanceTimeBy(REFRESH, TimeUnit.SECONDS);
+        assertThat(testSubscriber.takeNext(1), is(equalTo(singletonList(addB))));
+    }
+
     private Subscription subscribe() {
         return resourceObservable.subscribe(new Action1<ItemUpdate>() {
             @Override
@@ -149,9 +193,13 @@ public class ResourceObservableTest {
 
         private volatile Set<ItemUpdate> addQueue = new ConcurrentHashSet<>();
         private volatile Set<ItemUpdate> removeQueue = new ConcurrentHashSet<>();
+        private volatile ResourceLoaderException error;
 
         @Override
         public ResourceUpdate<ItemUpdate> reload(Set<ItemUpdate> currentSnapshot) {
+            if (error != null) {
+                throw error;
+            }
             Set<ItemUpdate> newItems = addQueue;
             addQueue = new ConcurrentHashSet<>();
             Set<ItemUpdate> cancelled = removeQueue;
@@ -165,6 +213,14 @@ public class ResourceObservableTest {
 
         public void remove(ItemUpdate... itemUpdates) {
             Collections.addAll(removeQueue, itemUpdates);
+        }
+
+        public void sendError(ResourceLoaderException error) {
+            this.error = error;
+        }
+
+        public void cancelError() {
+            this.error = null;
         }
     }
 }
