@@ -22,10 +22,13 @@ public final class BatchFunctions {
         return Observable.combineLatest(registryBatching, channelBatching, new Func2<BufferState, BufferState, Boolean>() {
             @Override
             public Boolean call(BufferState batchFirst, BufferState batchSecond) {
-                if (batchFirst == BufferState.Unknown && batchSecond == BufferState.Unknown) {
+                if(batchFirst == BufferState.BufferStart || batchSecond == BufferState.BufferStart) {
+                    return true;
+                }
+                if (batchFirst == BufferState.Unknown || batchSecond == BufferState.Unknown) {
                     return null;
                 }
-                return batchFirst == BufferState.BufferStart || batchSecond == BufferState.BufferStart;
+                return false; // BufferState.BufferEnd
             }
         }).filter(filterNullValuesFunc());
     }

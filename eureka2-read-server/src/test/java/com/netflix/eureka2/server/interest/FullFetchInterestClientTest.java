@@ -101,6 +101,8 @@ public class FullFetchInterestClientTest {
 
     @Test
     public void testBufferMarkersFromRegistryArePropagatedToSubscribers() throws Exception {
+        notificationsSubject.onNext(StreamStateNotification.bufferEndNotification(Interests.forFullRegistry()));
+
         registry.register(ADD_INSTANCE_1.getData(), SOURCE).subscribe();
         registry.register(ADD_INSTANCE_2.getData(), SOURCE).subscribe();
         registry.register(ADD_ANOTHER_VIP.getData(), SOURCE).subscribe();

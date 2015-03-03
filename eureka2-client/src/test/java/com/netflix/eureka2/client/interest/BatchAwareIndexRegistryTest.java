@@ -1,5 +1,8 @@
 package com.netflix.eureka2.client.interest;
 
+import java.util.List;
+
+import com.netflix.eureka2.interest.InterestSubscriber;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Index.InitStateHolder;
@@ -35,7 +38,7 @@ public class BatchAwareIndexRegistryTest {
     private static final ChangeNotification<InstanceInfo> DATA_NOTIFICATION = SampleChangeNotification.DiscoveryAdd.newNotification();
 
     private final BatchingRegistry<InstanceInfo> remoteBatchingRegistry = new BatchingRegistryImpl<>();
-    private final PublishSubject<ChangeNotification<InstanceInfo>> remoteBatchingHintsSubject = PublishSubject.create();
+    private PublishSubject<ChangeNotification<InstanceInfo>> remoteBatchingHintsSubject = PublishSubject.create();
 
     private final IndexRegistry<InstanceInfo> delegateIndexRegistry = mock(IndexRegistry.class);
     private final BatchAwareIndexRegistry<InstanceInfo> indexRegistry =
@@ -43,7 +46,7 @@ public class BatchAwareIndexRegistryTest {
 
     private final PublishSubject<ChangeNotification<InstanceInfo>> notificationSubject = PublishSubject.create();
 
-    private final ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
+    private final InterestSubscriber testSubscriber = new InterestSubscriber();
 
     @Before
     public void setUp() throws Exception {
@@ -63,8 +66,10 @@ public class BatchAwareIndexRegistryTest {
     public void testColdCacheAndDataInChannel() throws Exception {
         indexRegistry.forInterest(ATOMIC_INTEREST_A, null, null).subscribe(testSubscriber);
 
+        notificationSubject.onNext(StreamStateNotification.bufferEndNotification(ATOMIC_INTEREST_A));
         sendRemoteBatch(ATOMIC_INTEREST_A, DATA_NOTIFICATION, DATA_NOTIFICATION);
-        verifyReceivedBatch(DATA_NOTIFICATION, DATA_NOTIFICATION);
+
+        testSubscriber.assertReceivesBatch(DATA_NOTIFICATION, DATA_NOTIFICATION);
     }
 
     /**
@@ -76,31 +81,30 @@ public class BatchAwareIndexRegistryTest {
     @Test
     public void testHotCacheAndNoDataInChannel() throws Exception {
         indexRegistry.forInterest(ATOMIC_INTEREST_A, null, null).subscribe(testSubscriber);
+
+        remoteBatchingHintsSubject.onNext(StreamStateNotification.bufferEndNotification(ATOMIC_INTEREST_A));
         sendLocalBatch(ATOMIC_INTEREST_A, DATA_NOTIFICATION, DATA_NOTIFICATION);
-        verifyReceivedBatch(DATA_NOTIFICATION, DATA_NOTIFICATION);
+
+        testSubscriber.assertReceivesBatch(DATA_NOTIFICATION, DATA_NOTIFICATION);
     }
 
     /**
      * Test situation where we subscribe second time to the same interest (2 items in cache), after the
-     * original subscriber disconnected (cold cache). There are two fresh data items on the server.
+     * original subscriber disconnected. There are two fresh data items on the server.
      * <p>
-     * Expected behavior: two data notification followed by single finish buffering (from cache), followed by
-     * two data notification followed by single finish buffering (from server)
+     * Expected behavior: four data notification followed by single buffer end notification
      */
     @Test
     public void testStaleCacheAndDataInChannel() throws Exception {
         indexRegistry.forInterest(ATOMIC_INTEREST_A, null, null).subscribe(testSubscriber);
 
         sendLocalBatch(ATOMIC_INTEREST_A, DATA_NOTIFICATION, DATA_NOTIFICATION);
-        verifyReceivedBatch(DATA_NOTIFICATION, DATA_NOTIFICATION);
-
         sendRemoteBatch(ATOMIC_INTEREST_A, DATA_NOTIFICATION, DATA_NOTIFICATION);
-        verifyReceivedBatch(DATA_NOTIFICATION, DATA_NOTIFICATION);
+        testSubscriber.assertReceivesBatch(DATA_NOTIFICATION, DATA_NOTIFICATION, DATA_NOTIFICATION, DATA_NOTIFICATION);
     }
 
     /**
-     * Test situation where we subscribe second time to the same interest (2 items in cache), after the
-     * original subscriber disconnected (cold cache). There are two fresh data items on the server.
+     * Test situation where there was a reconnect on the channel within a single client subscription.
      * <p>
      * Expected behavior: two data notification followed by single finish buffering (from cache), followed by
      * two data notification followed by single finish buffering (from server)
@@ -109,15 +113,30 @@ public class BatchAwareIndexRegistryTest {
     public void testNoCacheAndTwoReconnectsWithDataInChannel() throws Exception {
         indexRegistry.forInterest(ATOMIC_INTEREST_A, null, null).subscribe(testSubscriber);
 
+        // First time local registry was empty
+        notificationSubject.onNext(StreamStateNotification.bufferEndNotification(ATOMIC_INTEREST_A));
         sendRemoteBatch(ATOMIC_INTEREST_A, DATA_NOTIFICATION, DATA_NOTIFICATION);
-        verifyReceivedBatch(DATA_NOTIFICATION, DATA_NOTIFICATION);
+        testSubscriber.assertReceivesBatch(DATA_NOTIFICATION, DATA_NOTIFICATION);
 
+        // Simulate disconnect
+        reconnect();
+
+        // Next time it contains the same data as we receive from the channel
         sendRemoteBatch(ATOMIC_INTEREST_A, DATA_NOTIFICATION, DATA_NOTIFICATION);
-        verifyReceivedBatch(DATA_NOTIFICATION, DATA_NOTIFICATION);
+        testSubscriber.assertReceivesBatch(DATA_NOTIFICATION, DATA_NOTIFICATION);
+
+        // Another subscriber should get single batch from cache
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber2 = new ExtTestSubscriber<>();
+        indexRegistry.forInterest(ATOMIC_INTEREST_A, null, null).subscribe(testSubscriber2);
+
+        sendLocalBatch(ATOMIC_INTEREST_A, DATA_NOTIFICATION, DATA_NOTIFICATION);
+
+        List<ChangeNotification<InstanceInfo>> notifications = testSubscriber2.takeNext(3);
+        assertThat(notifications.get(2).getKind(), is(equalTo(Kind.BufferSentinel)));
     }
 
     /**
-     * Test composite subscription scenario, with no data on server and two data items on server
+     * Test composite subscription scenario, with no data in local registry and two data items on server
      * per each vip (A & B).
      * <p>
      * Expected behavior: single batch of four items expected
@@ -129,13 +148,14 @@ public class BatchAwareIndexRegistryTest {
     public void testCompositeWithColdCacheAndDataInChannel() throws Exception {
         indexRegistry.forInterest(INTEREST_AB, null, null).subscribe(testSubscriber);
 
-        notificationSubject.onNext(StreamStateNotification.bufferStartNotification(INTEREST_AB));
+        notificationSubject.onNext(StreamStateNotification.bufferEndNotification(ATOMIC_INTEREST_A));
+        notificationSubject.onNext(StreamStateNotification.bufferEndNotification(ATOMIC_INTEREST_B));
 
         sendRemoteBatch(ATOMIC_INTEREST_A, DATA_NOTIFICATION, DATA_NOTIFICATION);
-        verifyReceivedBatch(DATA_NOTIFICATION, DATA_NOTIFICATION);
+        testSubscriber.assertReceivesBatch(DATA_NOTIFICATION, DATA_NOTIFICATION);
 
-        sendRemoteBatch(ATOMIC_INTEREST_A, DATA_NOTIFICATION, DATA_NOTIFICATION);
-        verifyReceivedBatch(DATA_NOTIFICATION, DATA_NOTIFICATION);
+        sendRemoteBatch(ATOMIC_INTEREST_B, DATA_NOTIFICATION, DATA_NOTIFICATION);
+        testSubscriber.assertReceivesBatch(DATA_NOTIFICATION, DATA_NOTIFICATION);
     }
 
     /**
@@ -156,15 +176,14 @@ public class BatchAwareIndexRegistryTest {
         sendData(DATA_NOTIFICATION, DATA_NOTIFICATION);
         notificationSubject.onNext(StreamStateNotification.bufferEndNotification(ATOMIC_INTEREST_A));
 
-        verifyReceivedData(DATA_NOTIFICATION, DATA_NOTIFICATION);
+        testSubscriber.assertReceives(DATA_NOTIFICATION, DATA_NOTIFICATION);
         assertThat(testSubscriber.takeNext(), is(nullValue())); // Check sentinel was not sent
 
         // Send data from server followed by BufferEnd marker
         sendData(DATA_NOTIFICATION, DATA_NOTIFICATION);
         remoteBatchingHintsSubject.onNext(StreamStateNotification.bufferEndNotification(ATOMIC_INTEREST_A));
 
-        verifyReceivedData(DATA_NOTIFICATION, DATA_NOTIFICATION);
-        remoteBatchingHintsSubject.onNext(StreamStateNotification.bufferEndNotification(ATOMIC_INTEREST_A));
+        testSubscriber.assertReceivesBatch(DATA_NOTIFICATION, DATA_NOTIFICATION);
     }
 
     @SafeVarargs
@@ -172,12 +191,6 @@ public class BatchAwareIndexRegistryTest {
         notificationSubject.onNext(StreamStateNotification.bufferStartNotification(interest));
         sendData(dataNotifications);
         notificationSubject.onNext(StreamStateNotification.bufferEndNotification(interest));
-    }
-
-    private void sendData(ChangeNotification<InstanceInfo>... dataNotifications) {
-        for (ChangeNotification<InstanceInfo> n : dataNotifications) {
-            notificationSubject.onNext(n);
-        }
     }
 
     @SafeVarargs
@@ -188,14 +201,15 @@ public class BatchAwareIndexRegistryTest {
     }
 
     @SafeVarargs
-    private final void verifyReceivedBatch(ChangeNotification<InstanceInfo>... dataNotifications) {
-        verifyReceivedData(dataNotifications);
-        assertThat(testSubscriber.takeNextOrFail().getKind(), is(equalTo(Kind.BufferSentinel)));
+    private final void sendData(ChangeNotification<InstanceInfo>... dataNotifications) {
+        for (ChangeNotification<InstanceInfo> n : dataNotifications) {
+            notificationSubject.onNext(n);
+        }
     }
 
-    private void verifyReceivedData(ChangeNotification<InstanceInfo>... dataNotifications) {
-        for (ChangeNotification<InstanceInfo> n : dataNotifications) {
-            assertThat(testSubscriber.takeNextOrFail(), is(equalTo(n)));
-        }
+    private void reconnect() {
+        remoteBatchingHintsSubject.onCompleted();
+        remoteBatchingHintsSubject = PublishSubject.create();
+        remoteBatchingRegistry.connectTo(remoteBatchingHintsSubject);
     }
 }
