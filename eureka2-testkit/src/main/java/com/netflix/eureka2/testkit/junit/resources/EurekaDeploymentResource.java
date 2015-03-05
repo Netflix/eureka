@@ -1,5 +1,8 @@
 package com.netflix.eureka2.testkit.junit.resources;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaClient;
 import com.netflix.eureka2.client.EurekaClientBuilder;
@@ -22,6 +25,8 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
 
     private EurekaDeployment eurekaDeployment;
 
+    private final List<EurekaClient> connectedClients = new ArrayList<>();
+
     public EurekaDeploymentResource(int writeClusterSize, int readClusterSize) {
         this(writeClusterSize, readClusterSize, new BasicEurekaTransportConfig.Builder().build());
     }
@@ -43,11 +48,13 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
      */
     public EurekaClient connectToWriteServer(int idx) {
         EmbeddedWriteServer server = eurekaDeployment.getWriteCluster().getServer(idx);
-        return EurekaClientBuilder.newBuilder()
+        EurekaClient eurekaClient = EurekaClientBuilder.newBuilder()
                 .withReadServerResolver(server.getInterestServerResolver())
                 .withWriteServerResolver(server.getRegistrationResolver())
                 .withTransportConfig(transportConfig)
                 .build();
+        connectedClients.add(eurekaClient);
+        return eurekaClient;
     }
 
     /**
@@ -57,31 +64,37 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
      */
     public EurekaClient connectToReadServer(int idx) {
         EmbeddedReadServer server = eurekaDeployment.getReadCluster().getServer(idx);
-        return EurekaClientBuilder.discoveryBuilder()
+        EurekaClient eurekaClient = EurekaClientBuilder.discoveryBuilder()
                 .withReadServerResolver(server.getInterestServerResolver())
                 .withTransportConfig(transportConfig)
                 .build();
+        connectedClients.add(eurekaClient);
+        return eurekaClient;
     }
 
     /**
      * Create {@link EurekaClient} instance connected to a write cluster.
      */
     public EurekaClient connectToWriteCluster() {
-        return EurekaClientBuilder.newBuilder()
+        EurekaClient eurekaClient = EurekaClientBuilder.newBuilder()
                 .withReadServerResolver(eurekaDeployment.getWriteCluster().discoveryResolver())
                 .withWriteServerResolver(eurekaDeployment.getWriteCluster().registrationResolver())
                 .withTransportConfig(transportConfig)
                 .build();
+        connectedClients.add(eurekaClient);
+        return eurekaClient;
     }
 
     /**
      * Create {@link EurekaClient} instance connected to a read cluster.
      */
     public EurekaClient connectToReadCluster() {
-        return EurekaClientBuilder.discoveryBuilder()
+        EurekaClient eurekaClient = EurekaClientBuilder.discoveryBuilder()
                 .withReadServerResolver(eurekaDeployment.getReadCluster().discoveryResolver())
                 .withTransportConfig(transportConfig)
                 .build();
+        connectedClients.add(eurekaClient);
+        return eurekaClient;
     }
 
     /**
@@ -89,12 +102,13 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
      * write cluster first.
      */
     public EurekaClient connectToEureka() {
-        return Eureka.newClientBuilder(
+        EurekaClient eurekaClient = Eureka.newClientBuilder(
                 eurekaDeployment.getWriteCluster().discoveryResolver(),
                 eurekaDeployment.getWriteCluster().registrationResolver(),
                 eurekaDeployment.getReadCluster().getVip()
-        ).withTransportConfig(transportConfig)
-                .build();
+        ).withTransportConfig(transportConfig).build();
+        connectedClients.add(eurekaClient);
+        return eurekaClient;
     }
 
     @Override

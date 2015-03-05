@@ -1,21 +1,16 @@
 package com.netflix.eureka2.integration.eureka1x;
 
-import java.util.Collections;
-import java.util.List;
-
-import com.netflix.appinfo.DataCenterInfo;
-import com.netflix.appinfo.InstanceInfo;
-import com.netflix.appinfo.InstanceInfo.Builder;
-import com.netflix.appinfo.LeaseInfo;
-import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka2.eureka1x.rest.Eureka1xConfiguration;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.junit.categories.LongRunningTest;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
+import com.netflix.eureka2.testkit.junit.resources.Eureka1xClientResource;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
+import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -42,6 +37,9 @@ public class Eureka1xRestApiIntegrationTest {
 
     @Rule
     public final EurekaDeploymentResource deploymentResource = new EurekaDeploymentResource(1, 0);
+
+    @Rule
+    public final EurekaExternalResources externalResources = new EurekaExternalResources();
 
     @Before
     public void setUp() throws Exception {
@@ -79,7 +77,7 @@ public class Eureka1xRestApiIntegrationTest {
 
         // Register a client with Eureka 2.x cluster
         TestSubscriber<Void> registrationSubscriber = new TestSubscriber<>();
-        final com.netflix.eureka2.registry.instance.InstanceInfo instanceInfo = SampleInstanceInfo.WebServer.build();
+        final InstanceInfo instanceInfo = SampleInstanceInfo.WebServer.build();
         deploymentResource.connectToWriteCluster()
                 .register(Observable.just(instanceInfo))
                 .subscribe(registrationSubscriber);
@@ -109,47 +107,7 @@ public class Eureka1xRestApiIntegrationTest {
 
     private DiscoveryClient createDefaultDiscoveryClient() {
         int httpServerPort = deploymentResource.getEurekaDeployment().getWriteCluster().getServer(0).getHttpServerPort();
-        return createDiscoveryClient(MY_APP_NAME, httpServerPort);
-    }
-
-    /**
-     * Create discovery client that connects to this server, and registers with the given
-     * application name. All configuration parameters are provided directly, however
-     */
-    public DiscoveryClient createDiscoveryClient(String appName, final int serverPort) {
-        System.setProperty("eureka.client.props", EUREKA1_CLIENT_FILE);
-
-        LeaseInfo leaseInfo = LeaseInfo.Builder.newBuilder()
-                .setRenewalIntervalInSecs(1)
-                .build();
-
-        DataCenterInfo dataCenterInfo = new DataCenterInfo() {
-            @Override
-            public Name getName() {
-                return Name.MyOwn;
-            }
-        };
-
-        Builder builder = Builder.newBuilder();
-        builder.setAppName(appName);
-        builder.setAppGroupName(appName);
-        builder.setHostName(appName + ".host");
-        builder.setIPAddr("127.0.0.1");
-        builder.setDataCenterInfo(dataCenterInfo);
-        builder.setLeaseInfo(leaseInfo);
-        InstanceInfo instanceInfo = builder.build();
-
-        DefaultEurekaClientConfig config = new DefaultEurekaClientConfig() {
-            @Override
-            public List<String> getEurekaServerServiceUrls(String myZone) {
-                return Collections.singletonList("http://localhost:" + serverPort + "/eureka1x/v2/");
-            }
-
-            @Override
-            public int getRegistryFetchIntervalSeconds() {
-                return 1;
-            }
-        };
-        return new DiscoveryClient(instanceInfo, config);
+        Eureka1xClientResource clientResource = new Eureka1xClientResource(EUREKA1_CLIENT_FILE, MY_APP_NAME, httpServerPort);
+        return externalResources.connect(clientResource).getEurekaClient();
     }
 }
