@@ -46,6 +46,6 @@ public class Eureka1xConfiguration {
                 logger.warn("Invalid {} property value {}; defaulting to ", key, value, defaultValue);
             }
         }
-        return 0;
+        return defaultValue;
     }
 }

@@ -1,19 +1,19 @@
 package com.netflix.eureka2.testkit.junit.resources;
 
+import com.netflix.eureka2.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
+import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources.EurekaExternalResource;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
-import com.netflix.eureka2.Server;
-import org.junit.rules.ExternalResource;
 import rx.Observable;
 
 /**
  * @author Tomasz Bak
  */
-public class WriteServerResource extends ExternalResource {
+public class WriteServerResource extends EurekaExternalResource {
 
     public static final String DEFAULT_WRITE_CLUSTER_NAME = "write-test";
 
@@ -80,5 +80,9 @@ public class WriteServerResource extends ExternalResource {
 
     public ServerResolver getDiscoveryResolver() {
         return server.getInterestServerResolver();
+    }
+
+    public EmbeddedWriteServer getServer() {
+        return server;
     }
 }

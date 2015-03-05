@@ -9,12 +9,12 @@ import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment.EurekaDeploymentBuilder;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
-import org.junit.rules.ExternalResource;
+import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources.EurekaExternalResource;
 
 /**
  * @author Tomasz Bak
  */
-public class EurekaDeploymentResource extends ExternalResource {
+public class EurekaDeploymentResource extends EurekaExternalResource {
 
     private final int writeClusterSize;
     private final int readClusterSize;

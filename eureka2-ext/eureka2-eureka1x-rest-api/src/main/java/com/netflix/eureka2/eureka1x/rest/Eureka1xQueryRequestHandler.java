@@ -80,7 +80,7 @@ public class Eureka1xQueryRequestHandler extends AbstractEureka1xRequestHandler 
                 if (matcher.matches()) {
                     return instanceGetByInstanceId(matcher.group(1), format, gzip, response);
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
                 logger.error("Error during handling request GET " + path, e);
                 return Observable.error(e);
             }
