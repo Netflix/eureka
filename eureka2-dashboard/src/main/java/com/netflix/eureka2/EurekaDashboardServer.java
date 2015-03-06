@@ -8,6 +8,7 @@ import com.google.inject.Singleton;
 import com.netflix.eureka2.config.DashboardCommandLineParser;
 import com.netflix.eureka2.config.EurekaDashboardConfig;
 import com.netflix.eureka2.server.AbstractEurekaServer;
+import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.server.spi.ExtensionLoader;
 import com.netflix.governator.guice.BootstrapBinder;
 import com.netflix.governator.guice.BootstrapModule;
@@ -35,7 +36,7 @@ public class EurekaDashboardServer extends AbstractEurekaServer<EurekaDashboardC
                 binder.include(new EurekaDashboardModule(config));
             }
         });
-        bootstrapModules.add(new ExtensionLoader().asBootstrapModule());
+        bootstrapModules.add(new ExtensionLoader().asBootstrapModule(ServerType.Dashboard));
     }
 
     public static void main(String[] args) {

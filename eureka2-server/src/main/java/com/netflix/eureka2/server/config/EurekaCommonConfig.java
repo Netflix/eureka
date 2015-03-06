@@ -44,6 +44,9 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
     @Configuration("eureka.instanceInfo.vipAddress")
     protected String vipAddress = "defaultEurekaCluster";
 
+    @Configuration("eureka.services.readCluster.vipAddress")
+    protected String readClusterVipAddress;
+
     @Configuration("eureka.dataCenterInfo.type")
     protected String dataCenterType = LocalDataCenterInfo.DataCenterType.Basic.name();
 
@@ -89,6 +92,7 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
             String[] serverList,
             String appName,
             String vipAddress,
+            String readClusterVipAddress,
             LocalDataCenterInfo.DataCenterType dataCenterType,
             int dataCenterResolveIntervalSec,
             int httpPort,
@@ -105,6 +109,7 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
         this.serverList = serverList == null ? this.serverList : serverList;
         this.appName = appName == null ? this.appName : appName;
         this.vipAddress = vipAddress == null ? this.vipAddress : vipAddress;
+        this.readClusterVipAddress = readClusterVipAddress == null ? this.readClusterVipAddress : readClusterVipAddress;
         this.dataCenterType = dataCenterType == null ? this.dataCenterType : dataCenterType.name();
         this.dataCenterResolveIntervalSec = dataCenterResolveIntervalSec;
         this.httpPort = httpPort;
@@ -138,6 +143,10 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
 
     public String getVipAddress() {
         return vipAddress;
+    }
+
+    public String getReadClusterVipAddress() {
+        return readClusterVipAddress;
     }
 
     public LocalDataCenterInfo.DataCenterType getMyDataCenterType() {
@@ -216,6 +225,7 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
         protected String[] serverList;
         protected String appName;
         protected String vipAddress;
+        protected String readClusterVipAddress;
         protected LocalDataCenterInfo.DataCenterType dataCenterType;
         protected int dataCenterResolveIntervalSec = DEFAULT_DATACENTER_RESOLVE_INTERVAL_SEC;
         protected int httpPort = DEFAULT_HTTP_PORT;
@@ -252,6 +262,11 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
 
         public B withVipAddress(String vipAddress) {
             this.vipAddress = vipAddress;
+            return self();
+        }
+
+        public B withReadClusterVipAddress(String readClusterVipAddress) {
+            this.readClusterVipAddress = readClusterVipAddress;
             return self();
         }
 

@@ -3,6 +3,7 @@ package com.netflix.eureka2.testkit.embedded.cluster;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.netflix.eureka2.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
@@ -11,7 +12,6 @@ import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedReadCluster.ReadClus
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer.ReadServerReport;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
-import com.netflix.eureka2.Server;
 import netflix.ocelli.LoadBalancer;
 import netflix.ocelli.MembershipEvent;
 import netflix.ocelli.MembershipEvent.EventType;
@@ -24,8 +24,8 @@ import rx.functions.Func1;
  */
 public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServer, Server, ReadClusterReport> {
 
-    private static final String READ_SERVER_NAME = "eureka2-read";
-    private static final int READ_SERVER_PORTS_FROM = 14000;
+    public static final String READ_SERVER_NAME = "eureka2-read";
+    public static final int READ_SERVER_PORTS_FROM = 14000;
 
     private final ServerResolver registrationResolver;
     private final ServerResolver discoveryResolver;
@@ -68,6 +68,7 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
         EurekaServerConfig config = EurekaServerConfig.baseBuilder()
                 .withAppName(READ_SERVER_NAME)
                 .withVipAddress(READ_SERVER_NAME)
+                .withReadClusterVipAddress(READ_SERVER_NAME)
                 .withDataCenterType(DataCenterType.Basic)
                 .withDiscoveryPort(discoveryPort)
                 .withHttpPort(httpPort)
@@ -81,7 +82,7 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
 
         nextAvailablePort += 10;
 
-        if(ephemeralPorts) {
+        if (ephemeralPorts) {
             discoveryPort = newServer.getDiscoveryPort();
         }
 

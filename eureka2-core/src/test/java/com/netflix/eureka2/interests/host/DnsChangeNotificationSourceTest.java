@@ -9,7 +9,10 @@ import com.netflix.eureka2.rx.ExtTestSubscriber;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -19,8 +22,7 @@ import static org.junit.Assert.assertThat;
 public class DnsChangeNotificationSourceTest {
     @Test(timeout = 60000)
     public void testPublicAddressResolution() throws Exception {
-        // Google has a long list of addresses.
-        testWithDomainName("google.com", 2);
+        testWithDomainName("google.com", 1); // We can get in a reliable way only single IP
     }
 
     @Test(timeout = 60000)

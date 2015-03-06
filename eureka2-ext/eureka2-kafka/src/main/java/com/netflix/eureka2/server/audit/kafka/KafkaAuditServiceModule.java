@@ -36,6 +36,11 @@ public class KafkaAuditServiceModule extends ExtAbstractModule {
             };
 
     @Override
+    public boolean isRunnable(ServerType serverType) {
+        return serverType == ServerType.Write;
+    }
+
+    @Override
     protected void configure() {
         bind(STREAMED_DATA_COLLECTOR_TYPE_LITERAL).toProvider(KafkaServersProvider.class);
         bind(AuditService.class).to(KafkaAuditService.class);

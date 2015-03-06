@@ -1,13 +1,13 @@
 package com.netflix.eureka2.client.functions;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
+import com.netflix.eureka2.interests.ChangeNotifications;
 import com.netflix.eureka2.utils.rx.RxFunctions;
 import rx.Observable;
 import rx.Observable.Transformer;
@@ -59,32 +59,6 @@ public final class ChangeNotificationFunctions {
      * @return observable of distinct set objects
      */
     public static <T> Transformer<List<ChangeNotification<T>>, Set<T>> snapshots() {
-        final Set<T> snapshotSet = new HashSet<>();
-        return new Transformer<List<ChangeNotification<T>>, Set<T>>() {
-            @Override
-            public Observable<Set<T>> call(Observable<List<ChangeNotification<T>>> batches) {
-                return batches.map(new Func1<List<ChangeNotification<T>>, Set<T>>() {
-                    @Override
-                    public Set<T> call(List<ChangeNotification<T>> batch) {
-                        boolean changed = false;
-                        for (ChangeNotification<T> item : batch) {
-                            switch (item.getKind()) {
-                                case Add:
-                                case Modify:
-                                    changed |= snapshotSet.add(item.getData());
-                                    break;
-                                case Delete:
-                                    changed |= snapshotSet.remove(item.getData());
-                                    break;
-                            }
-                        }
-                        if (changed) {
-                            return new HashSet<>(snapshotSet);
-                        }
-                        return null;
-                    }
-                }).filter(RxFunctions.filterNullValuesFunc());
-            }
-        };
+        return ChangeNotifications.snapshots();
     }
 }

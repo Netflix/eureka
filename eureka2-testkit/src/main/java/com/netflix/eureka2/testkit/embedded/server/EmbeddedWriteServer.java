@@ -7,10 +7,13 @@ import com.google.inject.Module;
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
+import com.netflix.eureka2.eureka1.rest.Eureka1Configuration;
+import com.netflix.eureka2.eureka1.rest.Eureka1RestApiModule;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.server.EurekaWriteServerModule;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.config.WriteServerConfig;
+import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
@@ -28,7 +31,7 @@ public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig,
                                final Observable<ChangeNotification<Server>> replicationPeers,
                                boolean withExt,
                                boolean withDashboards) {
-        super(config, withExt, withDashboards);
+        super(ServerType.Write, config, withExt, withDashboards);
         this.replicationPeers = replicationPeers;
     }
 
@@ -41,7 +44,8 @@ public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig,
                     protected void configure() {
                         bind(ReplicationPeerAddressesProvider.class).toInstance(new ReplicationPeerAddressesProvider(replicationPeers));
                     }
-                }
+                },
+                new Eureka1RestApiModule(new Eureka1Configuration(1, 1000), ServerType.Write)
         };
 
         setup(modules);

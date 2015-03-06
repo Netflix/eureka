@@ -1,17 +1,19 @@
 package com.netflix.eureka2.testkit.data.builder;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.netflix.eureka2.registry.datacenter.AwsDataCenterInfo;
 import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Builder;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import com.netflix.eureka2.registry.instance.NetworkAddress;
 import com.netflix.eureka2.registry.instance.ServicePort;
-import com.netflix.eureka2.registry.datacenter.AwsDataCenterInfo;
 import com.netflix.eureka2.utils.ExtCollections;
 
 /**
@@ -19,26 +21,11 @@ import com.netflix.eureka2.utils.ExtCollections;
  */
 public enum SampleInstanceInfo {
 
-    ZuulServer() {
-        @Override
-        public Builder builder() {
-            return templateFor(this.name());
-        }
-    },
-
-    DiscoveryServer() {
-        @Override
-        public Builder builder() {
-            return templateFor(this.name());
-        }
-    },
-
-    CliServer() {
-        @Override
-        public Builder builder() {
-            return templateFor(this.name());
-        }
-    },
+    WebServer(),
+    Backend(),
+    ZuulServer(),
+    DiscoveryServer(),
+    CliServer(),
     EurekaWriteServer() {
         @Override
         public Builder builder() {
@@ -56,16 +43,31 @@ public enum SampleInstanceInfo {
         }
     };
 
-    public abstract Builder builder();
+    public Builder builder() {
+        return templateFor(this.name());
+    }
 
     public InstanceInfo build() {
         return builder().build();
     }
 
+    public Iterator<InstanceInfo> cluster() {
+        return collectionOf(name(), build());
+    }
+
+    public List<InstanceInfo> clusterOf(int clusterSize) {
+        List<InstanceInfo> cluster = new ArrayList<>();
+        Iterator<InstanceInfo> clusterIt = cluster();
+        for (int i = 0; i < clusterSize; i++) {
+            cluster.add(clusterIt.next());
+        }
+        return cluster;
+    }
+
     protected Builder templateFor(String name) {
         HashSet<String> healthCheckUrls = new HashSet<>();
-        healthCheckUrls.add("http://eureka/healthCheck/" + name + "1");
-        healthCheckUrls.add("http://eureka/healthCheck/" + name + "2");
+        healthCheckUrls.add("http://eureka/healthCheck/" + name);
+        healthCheckUrls.add("https://eureka/healthCheck/" + name);
         HashSet<Integer> ports = new HashSet<>();
         ports.add(80);
         ports.add(8080);
@@ -119,6 +121,7 @@ public enum SampleInstanceInfo {
                 NetworkAddress privateAddress = privateAddresses.next();
                 DataCenterInfo dataCenter = new AwsDataCenterInfo.Builder()
                         .withAwsDataCenter(templateDataCenter)
+                        .withInstanceId(String.format("i-%s-%08d", baseName, cidx))
                         .withPublicHostName(publicAddress.getHostName())
                         .withPublicIPv4(publicAddress.getIpAddress())
                         .withPrivateHostName(privateAddress.getHostName())
@@ -126,16 +129,16 @@ public enum SampleInstanceInfo {
                         .build();
                 return new InstanceInfo.Builder()
                         .withId("id#" + name)
-                        .withApp("app#" + baseName)
-                        .withAppGroup("group#" + baseName)
-                        .withAsg("asg#" + baseName)
+                        .withApp(template.getApp())
+                        .withAppGroup(template.getAppGroup())
+                        .withAsg(template.getAsg())
                         .withHealthCheckUrls(template.getHealthCheckUrls())
                         .withHomePageUrl(template.getHomePageUrl())
                         .withPorts(template.getPorts())
-                        .withSecureVipAddress("vipSecure#" + name)
+                        .withSecureVipAddress(template.getSecureVipAddress())
                         .withStatus(template.getStatus())
                         .withStatusPageUrl(template.getStatusPageUrl())
-                        .withVipAddress("vip#" + baseName)
+                        .withVipAddress(template.getVipAddress())
                         .withMetaData(template.getMetaData())
                         .withDataCenterInfo(dataCenter)
                         .build();

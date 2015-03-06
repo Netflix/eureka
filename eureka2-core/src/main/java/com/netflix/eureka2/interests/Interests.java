@@ -31,6 +31,24 @@ public final class Interests {
         return new MultipleInterests<InstanceInfo>(interests);
     }
 
+    public static Interest<InstanceInfo> forSecureVips(String... secureVips) {
+        return forSecureVips(Operator.Equals, secureVips);
+    }
+
+    public static Interest<InstanceInfo> forSecureVips(Operator operator, String... secureVips) {
+        if (secureVips.length == 0) {
+            return EmptyRegistryInterest.getInstance();
+        }
+        if (secureVips.length == 1) {
+            return new SecureVipInterest(secureVips[0], operator);
+        }
+        Interest[] interests = new Interest[secureVips.length];
+        for (int i = 0; i < interests.length; i++) {
+            interests[i] = new SecureVipInterest(secureVips[i], operator);
+        }
+        return new MultipleInterests<InstanceInfo>(interests);
+    }
+
     public static Interest<InstanceInfo> forApplications(String... applicationNames) {
         return forApplications(Operator.Equals, applicationNames);
     }

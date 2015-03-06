@@ -21,6 +21,7 @@ import java.util.List;
 
 import com.netflix.eureka2.server.config.WriteCommandLineParser;
 import com.netflix.eureka2.server.config.WriteServerConfig;
+import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.server.spi.ExtensionLoader;
 import com.netflix.governator.guice.BootstrapBinder;
 import com.netflix.governator.guice.BootstrapModule;
@@ -50,7 +51,7 @@ public class EurekaWriteServer extends AbstractEurekaServer<WriteServerConfig> {
                 binder.include(new EurekaWriteServerModule(config));
             }
         });
-        bootstrapModules.add(new ExtensionLoader().asBootstrapModule());
+        bootstrapModules.add(new ExtensionLoader().asBootstrapModule(ServerType.Write));
     }
 
     public static void main(String[] args) {

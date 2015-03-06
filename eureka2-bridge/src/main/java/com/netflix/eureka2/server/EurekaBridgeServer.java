@@ -5,6 +5,7 @@ import java.util.List;
 import com.google.inject.AbstractModule;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
+import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.server.spi.ExtensionLoader;
 import com.netflix.governator.guice.BootstrapBinder;
 import com.netflix.governator.guice.BootstrapModule;
@@ -34,7 +35,7 @@ public class EurekaBridgeServer extends AbstractEurekaServer<BridgeServerConfig>
                 binder.include(new EurekaBridgeServerModule(config));
             }
         });
-        bootstrapModules.add(new ExtensionLoader().asBootstrapModule());
+        bootstrapModules.add(new ExtensionLoader().asBootstrapModule(ServerType.Write));
     }
 
     /**
