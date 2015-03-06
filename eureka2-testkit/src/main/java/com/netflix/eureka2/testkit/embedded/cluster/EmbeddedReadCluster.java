@@ -12,12 +12,7 @@ import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer.ReadServerReport;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import com.netflix.eureka2.Server;
-import netflix.ocelli.LoadBalancer;
-import netflix.ocelli.MembershipEvent;
-import netflix.ocelli.MembershipEvent.EventType;
-import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
 import rx.Observable;
-import rx.functions.Func1;
 
 /**
  * @author Tomasz Bak
@@ -102,34 +97,7 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
     }
 
     public ServerResolver interestResolver() {
-        Observable<MembershipEvent<Server>> events = clusterChangeObservable()
-                .map(new Func1<ChangeNotification<Server>, MembershipEvent<Server>>() {
-                    @Override
-                    public MembershipEvent<Server> call(ChangeNotification<Server> notification) {
-                        Server server = notification.getData();
-                        switch (notification.getKind()) {
-                            case Add:
-                                return new MembershipEvent<>(EventType.ADD, server);
-                            case Modify:
-                                throw new IllegalStateException("Modify not expected");
-                            case Delete:
-                                return new MembershipEvent<Server>(EventType.REMOVE, server);
-                        }
-                        return null;
-                    }
-                });
-        final LoadBalancer<Server> loadBalancer = new DefaultLoadBalancerBuilder<Server>(events).build();
-        return new ServerResolver() {
-            @Override
-            public Observable<Server> resolve() {
-                return loadBalancer.choose();
-            }
-
-            @Override
-            public void close() {
-                loadBalancer.shutdown();
-            }
-        };
+        return ServerResolver.forServerSource(clusterChangeObservable()).loadBalance();
     }
 
     public static class ReadClusterReport {

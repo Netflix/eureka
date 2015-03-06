@@ -7,6 +7,7 @@ import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.EurekaRegistrationClientBuilder;
 import com.netflix.eureka2.client.registration.RegistrationObservable;
+import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -30,11 +31,11 @@ public class EmbeddedWriteServerTest {
     @Test(timeout = 10000)
     public void testRegistrationAndDiscoveryServices() throws Exception {
         EurekaRegistrationClient registrationClient = new EurekaRegistrationClientBuilder()
-                .fromHostname("localhost", writeServerResource.getRegistrationPort())
+                .fromServerResolver(ServerResolver.withHostname("localhost").withPort(writeServerResource.getRegistrationPort()))
                 .build();
 
         EurekaInterestClient interestClient = new EurekaInterestClientBuilder()
-                .fromHostname("localhost", writeServerResource.getDiscoveryPort())
+                .fromServerResolver(ServerResolver.withHostname("localhost").withPort(writeServerResource.getDiscoveryPort()))
                 .build();
 
         InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();

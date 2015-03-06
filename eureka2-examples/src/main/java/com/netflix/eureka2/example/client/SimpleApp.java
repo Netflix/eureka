@@ -20,6 +20,7 @@ import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.EurekaRegistrationClientBuilder;
+import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.datacenter.BasicDataCenterInfo;
@@ -61,11 +62,20 @@ public final class SimpleApp {
     public void run() throws InterruptedException {
 
         EurekaRegistrationClient registrationClient = new EurekaRegistrationClientBuilder()
-                .fromDns(writeServerDns, writeRegistrationPort)
+                .fromServerResolver(ServerResolver.withDnsName(writeServerDns).withPort(writeRegistrationPort))
                 .build();
 
+        ServerResolver interestClientResolver =
+                ServerResolver
+                        .fromEureka(
+                                ServerResolver
+                                        .withDnsName(writeServerDns)
+                                        .withPort(writeInterestPort)
+                        )
+                        .forVips(readServerVip);
+
         EurekaInterestClient interestClient = new EurekaInterestClientBuilder()
-                .fromWriteDns(writeServerDns, writeInterestPort, readServerVip)
+                .fromServerResolver(interestClientResolver)
                 .build();
 
         interestClient.forInterest(Interests.forApplications("WriteServer", "ReadServer", "ServiceA")).subscribe(

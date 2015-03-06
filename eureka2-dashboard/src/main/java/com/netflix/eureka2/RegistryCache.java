@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaInterestClientBuilder;
+import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -83,7 +84,7 @@ public class RegistryCache {
     public static void main(String[] args) {
 
         final EurekaInterestClient interestClient = new EurekaInterestClientBuilder()
-                .fromHostname("localhost", 13101)
+                .fromServerResolver(ServerResolver.withHostname("localhost").withPort(13101))
                 .build();
 
         final Observable<ChangeNotification<InstanceInfo>> notificationsObservable =

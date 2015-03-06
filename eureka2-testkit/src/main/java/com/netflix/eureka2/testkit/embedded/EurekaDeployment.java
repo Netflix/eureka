@@ -1,7 +1,6 @@
 package com.netflix.eureka2.testkit.embedded;
 
 import com.netflix.eureka2.client.resolver.ServerResolver;
-import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedReadCluster;
@@ -149,7 +148,7 @@ public class EurekaDeployment {
                 ServerResolver readClusterResolver;
                 if (readClusterSize > 0) {
                     discoveryPort = readCluster.getServer(0).getDiscoveryPort();
-                    readClusterResolver = ServerResolvers.fromWriteServer(writeCluster.interestResolver(), readCluster.getVip());
+                    readClusterResolver = ServerResolver.fromEureka(writeCluster.interestResolver()).forVips(readCluster.getVip());
                 } else {
                     discoveryPort = writeCluster.getServer(0).getDiscoveryPort();
                     readClusterResolver = writeCluster.interestResolver();

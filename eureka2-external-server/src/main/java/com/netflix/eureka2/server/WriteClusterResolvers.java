@@ -2,7 +2,6 @@ package com.netflix.eureka2.server;
 
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
-import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.config.EurekaCommonConfig.ResolverType;
 import com.netflix.eureka2.server.config.EurekaCommonConfig.ServerBootstrap;
@@ -60,7 +59,7 @@ public final class WriteClusterResolvers {
         if (bootstraps.length != 1) {
             throw new IllegalArgumentException("Expected one DNS name for server resolver, while got " + bootstraps.length);
         }
-        return ServerResolvers.forDnsName(bootstraps[0].getHostname(), getPortFunc.call(bootstraps[0]));
+        return ServerResolver.withDnsName(bootstraps[0].getHostname()).withPort(getPortFunc.call(bootstraps[0]));
     }
 
     private static ServerResolver forFixed(ServerBootstrap[] bootstraps, Func1<ServerBootstrap, Integer> getPortFunc) {
@@ -68,6 +67,6 @@ public final class WriteClusterResolvers {
         for (int i = 0; i < bootstraps.length; i++) {
             servers[i] = new Server(bootstraps[i].getHostname(), getPortFunc.call(bootstraps[i]));
         }
-        return ServerResolvers.from(servers);
+        return ServerResolver.from(servers);
     }
 }

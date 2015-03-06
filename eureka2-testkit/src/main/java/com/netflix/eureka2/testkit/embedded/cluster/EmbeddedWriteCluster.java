@@ -14,10 +14,7 @@ import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster.WriteSe
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer.WriteServerReport;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
-import netflix.ocelli.LoadBalancer;
-import netflix.ocelli.MembershipEvent;
-import netflix.ocelli.MembershipEvent.EventType;
-import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
+import com.netflix.eureka2.utils.rx.RxFunctions;
 import rx.Observable;
 import rx.functions.Func1;
 
@@ -130,6 +127,10 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
                 new Func1<ChangeNotification<WriteServerAddress>, ChangeNotification<Server>>() {
                     @Override
                     public ChangeNotification<Server> call(ChangeNotification<WriteServerAddress> notification) {
+                        if (notification.getKind() == Kind.BufferSentinel) {
+                            return null;
+                        }
+
                         WriteServerAddress data = notification.getData();
                         Server serverAddress = new Server(data.getHostName(), data.getReplicationPort());
                         switch (notification.getKind()) {
@@ -142,39 +143,34 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
                         }
                         return null;
                     }
-                });
+                }).filter(RxFunctions.filterNullValuesFunc());
     }
 
     private ServerResolver getServerResolver(final Func1<WriteServerAddress, Integer> portFunc) {
-        Observable<MembershipEvent<Server>> events = clusterChangeObservable()
-                .map(new Func1<ChangeNotification<WriteServerAddress>, MembershipEvent<Server>>() {
-                    @Override
-                    public MembershipEvent<Server> call(ChangeNotification<WriteServerAddress> notification) {
-                        WriteServerAddress endpoints = notification.getData();
-                        int port = portFunc.call(endpoints);
-                        switch (notification.getKind()) {
-                            case Add:
-                                return new MembershipEvent<>(EventType.ADD, new Server(endpoints.getHostName(), port));
-                            case Modify:
-                                throw new IllegalStateException("Modify not expected");
-                            case Delete:
-                                return new MembershipEvent<Server>(EventType.REMOVE, new Server(endpoints.getHostName(), port));
-                        }
-                        return null;
-                    }
-                });
-        final LoadBalancer<Server> loadBalancer = new DefaultLoadBalancerBuilder<Server>(events).build();
-        return new ServerResolver() {
+        Observable<ChangeNotification<Server>> serverSource = clusterChangeObservable().map(new Func1<ChangeNotification<WriteServerAddress>, ChangeNotification<Server>>() {
             @Override
-            public Observable<Server> resolve() {
-                return loadBalancer.choose();
-            }
+            public ChangeNotification<Server> call(ChangeNotification<WriteServerAddress> notification) {
+                if (notification.getKind() == Kind.BufferSentinel) {
+                    return ChangeNotification.bufferSentinel();
+                }
 
-            @Override
-            public void close() {
-                loadBalancer.shutdown();
+                WriteServerAddress endpoints = notification.getData();
+                int port = portFunc.call(endpoints);
+                switch (notification.getKind()) {
+                    case Add:
+                        return new ChangeNotification<>(Kind.Add, new Server(endpoints.getHostName(), port));
+                    case Modify:
+                        throw new IllegalStateException("Modify not expected");
+                    case Delete:
+                        return new ChangeNotification<>(Kind.Delete, new Server(endpoints.getHostName(), port));
+                    default:
+                        //no-op
+                }
+                return null;
             }
-        };
+        }).filter(RxFunctions.filterNullValuesFunc());
+
+        return ServerResolver.forServerSource(serverSource).loadBalance();
     }
 
     public static class WriteServerAddress {

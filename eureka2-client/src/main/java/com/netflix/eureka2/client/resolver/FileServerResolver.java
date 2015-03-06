@@ -1,20 +1,11 @@
-/*
- * Copyright 2014 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.netflix.eureka2.client.resolver;
+
+import com.netflix.eureka2.Server;
+import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.utils.rx.ResourceObservable;
+import rx.Observable;
+import rx.Scheduler;
+import rx.schedulers.Schedulers;
 
 import java.io.File;
 import java.io.FileReader;
@@ -25,19 +16,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.ChangeNotification.Kind;
-import com.netflix.eureka2.Server;
-import com.netflix.eureka2.utils.rx.ResourceObservable;
-import com.netflix.eureka2.utils.rx.ResourceObservable.ResourceLoader;
-import com.netflix.eureka2.utils.rx.ResourceObservable.ResourceLoaderException;
-import com.netflix.eureka2.utils.rx.ResourceObservable.ResourceUpdate;
-import netflix.ocelli.LoadBalancerBuilder;
-import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
-import rx.Observable;
-import rx.Scheduler;
-import rx.schedulers.Schedulers;
-
 /**
  * A list of server addresses read from a local configuration file. The file can be
  * optionally re-read at specified interval.
@@ -47,100 +25,117 @@ import rx.schedulers.Schedulers;
  *
  * @author Tomasz Bak
  */
-public class FileServerResolver extends AbstractServerResolver {
+public class FileServerResolver extends ObservableServerResolver {
 
     private final File textFile;
-    private final TimeUnit timeUnit;
-    private final boolean alwaysReload;
-    private final Scheduler scheduler;
-    private final long reloadInterval;
-    private final long idleTimeout;
+    private final Configuration configuration;
 
-    public FileServerResolver(File textFile, long reloadInterval, long idleTimeout, TimeUnit timeUnit,
-                              boolean alwaysReload, LoadBalancerBuilder<Server> loadBalancerBuilder,
-                              Scheduler scheduler) {
-        super(loadBalancerBuilder);
+    FileServerResolver(File textFile) {
+        this(textFile, new Configuration());
+    }
+
+    FileServerResolver(File textFile, Configuration configuration) {
+        super(createServerSource(textFile, configuration));
         this.textFile = textFile;
-        this.reloadInterval = reloadInterval;
-        this.idleTimeout = idleTimeout;
-        this.timeUnit = timeUnit;
-        this.alwaysReload = alwaysReload;
-        this.scheduler = scheduler;
+        this.configuration = configuration;
+    }
+
+    public FileServerResolver configureReload(boolean alwaysReload, int reloadInterval, int idleTimeout, TimeUnit timeUnit) {
+        Configuration updatedConfig = configuration
+                .copy()
+                .withAlwaysReload(alwaysReload)
+                .withReloadInterval(reloadInterval)
+                .withIdleTimeout(idleTimeout)
+                .withTimeUnit(timeUnit);
+
+        return new FileServerResolver(textFile, updatedConfig);
+    }
+
+    public FileServerResolver configureReloadScheduler(Scheduler scheduler) {
+        Configuration updatedConfig = configuration
+                .copy()
+                .withScheduler(scheduler);
+
+        return new FileServerResolver(textFile, updatedConfig);
     }
 
     @Override
-    protected Observable<ChangeNotification<Server>> serverUpdates() {
-        return ResourceObservable.fromResource(new FileResolveTask(), reloadInterval, idleTimeout, timeUnit, scheduler);
+    public void close() {
+        super.close();
     }
 
-    public static class FileServerResolverBuilder {
+    private static Observable<ChangeNotification<Server>> createServerSource(File textFile, Configuration configuration) {
+        return ResourceObservable.fromResource(
+                new FileResolveTask(textFile, configuration),
+                configuration.reloadInterval,
+                configuration.idleTimeout,
+                configuration.timeUnit,
+                configuration.scheduler
+        );
+    }
 
-        private File textFile;
 
-        private long idleTimeoutMs = -1;
+    protected static class Configuration {
+        // mutable fields set to defaults
+        boolean alwaysReload = false;
+        long reloadInterval = -1;
+        long idleTimeout = -1;
+        TimeUnit timeUnit = TimeUnit.MILLISECONDS;
+        Scheduler scheduler = Schedulers.io();
 
-        private long reloadIntervalMs = -1;
-
-        private boolean alwaysReload;
-
-        private LoadBalancerBuilder<Server> loadBalancerBuilder;
-
-        private Scheduler scheduler = Schedulers.io();
-
-        public FileServerResolverBuilder withTextFile(File textFile) {
-            this.textFile = textFile;
-            return this;
+        public Configuration copy() {
+            return new Configuration()
+                    .withAlwaysReload(this.alwaysReload)
+                    .withReloadInterval(this.reloadInterval)
+                    .withIdleTimeout(this.idleTimeout)
+                    .withTimeUnit(this.timeUnit)
+                    .withScheduler(this.scheduler);
         }
 
-        public FileServerResolverBuilder withIdleTimeout(long timeout, TimeUnit timeUnit) {
-            this.idleTimeoutMs = timeUnit.toMillis(timeout);
-            return this;
-        }
-
-        public FileServerResolverBuilder withReloadInterval(long interval, TimeUnit timeUnit) {
-            this.reloadIntervalMs = timeUnit.toMillis(interval);
-            return this;
-        }
-
-        public FileServerResolverBuilder withAlwaysReload(boolean alwaysReload) {
+        public Configuration withAlwaysReload(boolean alwaysReload) {
             this.alwaysReload = alwaysReload;
             return this;
         }
 
-        public FileServerResolverBuilder withLoadBalancerBuilder(LoadBalancerBuilder<Server> loadBalancerBuilder) {
-            this.loadBalancerBuilder = loadBalancerBuilder;
+        public Configuration withReloadInterval(long reloadInterval) {
+            this.reloadInterval = reloadInterval;
             return this;
         }
 
-        public FileServerResolverBuilder withScheduler(Scheduler scheduler) {
+        public Configuration withIdleTimeout(long idleTimeout) {
+            this.idleTimeout = idleTimeout;
+            return this;
+        }
+
+        public Configuration withTimeUnit(TimeUnit reloadUnit) {
+            this.timeUnit = reloadUnit;
+            return this;
+        }
+
+        public Configuration withScheduler(Scheduler scheduler) {
             this.scheduler = scheduler;
             return this;
         }
-
-        public FileServerResolver build() {
-            if (loadBalancerBuilder == null) {
-                loadBalancerBuilder = new DefaultLoadBalancerBuilder<>(null);
-            }
-            return new FileServerResolver(
-                    textFile,
-                    reloadIntervalMs,
-                    idleTimeoutMs,
-                    TimeUnit.MILLISECONDS,
-                    alwaysReload,
-                    loadBalancerBuilder,
-                    scheduler
-            );
-        }
     }
 
-    class FileResolveTask implements ResourceLoader<ChangeNotification<Server>> {
 
+    private static class FileResolveTask implements ResourceObservable.ResourceLoader<ChangeNotification<Server>> {
+
+        private final File textFile;
+        private final Configuration configuration;
+
+        private final ChangeNotification<Server> sentinel = ChangeNotification.bufferSentinel();
         private long lastModified = -1;
 
+        FileResolveTask(File textFile, Configuration configuration) {
+            this.textFile = textFile;
+            this.configuration = configuration;
+        }
+
         @Override
-        public ResourceUpdate<ChangeNotification<Server>> reload(Set<ChangeNotification<Server>> currentSnapshot) {
+        public ResourceObservable.ResourceUpdate<ChangeNotification<Server>> reload(Set<ChangeNotification<Server>> currentSnapshot) {
             if (!isUpdated()) {
-                return new ResourceUpdate<>(currentSnapshot, Collections.<ChangeNotification<Server>>emptySet());
+                return new ResourceObservable.ResourceUpdate<>(currentSnapshot, Collections.<ChangeNotification<Server>>emptySet(), sentinel);
             }
             try {
                 try (LineNumberReader reader = new LineNumberReader(new FileReader(textFile))) {
@@ -149,16 +144,16 @@ public class FileServerResolver extends AbstractServerResolver {
                     while ((line = reader.readLine()) != null) {
                         if (!(line = line.trim()).isEmpty()) {
                             Server server = parseLine(reader.getLineNumber(), line);
-                            newAddresses.add(new ChangeNotification<Server>(Kind.Add, server));
+                            newAddresses.add(new ChangeNotification<Server>(ChangeNotification.Kind.Add, server));
                         }
                     }
-                    return new ResourceUpdate<>(newAddresses, cancellationSet(currentSnapshot, newAddresses));
+                    return new ResourceObservable.ResourceUpdate<>(newAddresses, cancellationSet(currentSnapshot, newAddresses), sentinel);
                 }
             } catch (IOException e) {
                 if (lastModified == -1) {
-                    throw new ResourceLoaderException("Server resolver file missing on startup " + textFile, false, e);
+                    throw new ResourceObservable.ResourceLoaderException("Server resolver file missing on startup " + textFile, false, e);
                 }
-                throw new ResourceLoaderException("Cannot reload server resolver file " + textFile, true, e);
+                throw new ResourceObservable.ResourceLoaderException("Cannot reload server resolver file " + textFile, true, e);
             }
         }
 
@@ -166,7 +161,7 @@ public class FileServerResolver extends AbstractServerResolver {
             Set<ChangeNotification<Server>> cancelled = new HashSet<>();
             for (ChangeNotification<Server> entry : currentSnapshot) {
                 if (!newAddresses.contains(entry)) {
-                    cancelled.add(new ChangeNotification<Server>(Kind.Delete, entry.getData()));
+                    cancelled.add(new ChangeNotification<Server>(ChangeNotification.Kind.Delete, entry.getData()));
                 }
             }
             return cancelled;
@@ -209,7 +204,7 @@ public class FileServerResolver extends AbstractServerResolver {
         }
 
         boolean isUpdated() {
-            if (alwaysReload) {
+            if (configuration.alwaysReload) {
                 return true;
             }
             long newLastModified = textFile.lastModified();

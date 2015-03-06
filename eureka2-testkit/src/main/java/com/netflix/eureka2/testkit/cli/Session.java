@@ -25,7 +25,7 @@ import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.EurekaRegistrationClientBuilder;
 import com.netflix.eureka2.client.registration.RegistrationObservable;
-import com.netflix.eureka2.client.resolver.ServerResolvers;
+import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -104,7 +104,7 @@ public class Session {
     public void connectToRegister(String host, int port) {
         registrationClient = new EurekaRegistrationClientBuilder()
                 .withTransportConfig(context.getTransportConfig())
-                .fromHostname(host, port)
+                .fromServerResolver(ServerResolver.withHostname(host).withPort(port))
                 .build();
 
         mode = Mode.Write;
@@ -113,7 +113,7 @@ public class Session {
     public void connectToRead(String host, int port) {
         interestClient = new EurekaInterestClientBuilder()
                 .withTransportConfig(context.getTransportConfig())
-                .fromHostname(host, port)
+                .fromServerResolver(ServerResolver.withHostname(host).withPort(port))
                 .build();
 
         mode = Mode.Read;
@@ -122,12 +122,15 @@ public class Session {
     public void connectToCluster(String host, int registrationPort, int interestPort, String readClusterVip) {
         registrationClient = new EurekaRegistrationClientBuilder()
                 .withTransportConfig(context.getTransportConfig())
-                .fromHostname(host, registrationPort)
+                .fromServerResolver(ServerResolver.withHostname(host).withPort(registrationPort))
                 .build();
 
         interestClient = new EurekaInterestClientBuilder()
                 .withTransportConfig(context.getTransportConfig())
-                .fromWriteInterestResolver(ServerResolvers.just(host, interestPort), readClusterVip)
+                .fromServerResolver(ServerResolver.fromEureka(
+                        ServerResolver.withHostname(host).withPort(interestPort))
+                                .forVips(readClusterVip)
+                )
                 .build();
 
         mode = Mode.ReadWrite;

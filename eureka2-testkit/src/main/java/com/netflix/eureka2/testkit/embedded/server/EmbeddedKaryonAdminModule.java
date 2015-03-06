@@ -91,7 +91,7 @@ public abstract class EmbeddedKaryonAdminModule extends AbstractModule {
             public EurekaInterestClient get() {
                 if (interestClient == null) {
                     interestClient = new EurekaInterestClientBuilder()
-                            .fromReadServerResolver(getInterestResolver())
+                            .fromServerResolver(getInterestResolver())
                             .build();
                 }
                 return interestClient;

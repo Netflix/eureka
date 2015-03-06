@@ -6,7 +6,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
-import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.server.EurekaWriteServerModule;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
@@ -69,12 +68,12 @@ public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig,
     }
 
     public ServerResolver getRegistrationResolver() {
-        return ServerResolvers.just("localhost", getRegistrationPort());
+        return ServerResolver.withHostname("localhost").withPort(getRegistrationPort());
     }
 
     @Override
     public ServerResolver getInterestResolver() {
-        return ServerResolvers.just("localhost", getDiscoveryPort());
+        return ServerResolver.withHostname("localhost").withPort(getDiscoveryPort());
     }
 
     @Override

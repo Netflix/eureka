@@ -93,7 +93,10 @@ public abstract class EmbeddedEurekaCluster<S extends EmbeddedEurekaServer, A, R
     public abstract R clusterReport();
 
     protected Observable<ChangeNotification<A>> clusterChangeObservable() {
-        return Observable.from(clusterAddresses).concatWith(clusterAddressUpdates);
+        ChangeNotification<A> sentinel = ChangeNotification.bufferSentinel();
+        return Observable.from(clusterAddresses)
+                .concatWith(Observable.just(sentinel))
+                .concatWith(clusterAddressUpdates);
     }
 
     private void addServerAddress(A serverAddress) {

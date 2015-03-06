@@ -19,9 +19,13 @@ import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Action0;
 import rx.functions.Func1;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * {@link EurekaInterestClient} implementation with single full registry fetch subscription.
@@ -31,6 +35,8 @@ import rx.functions.Func1;
  * @author Tomasz Bak
  */
 public class FullFetchInterestClient extends AbstractInterestClient implements HealthStatusProvider<FullFetchInterestClient> {
+
+    private static final Logger logger = LoggerFactory.getLogger(FullFetchInterestClient.class);
 
     private static final SubsystemDescriptor<FullFetchInterestClient> DESCRIPTOR = new SubsystemDescriptor<>(
             FullFetchInterestClient.class,
@@ -99,15 +105,18 @@ public class FullFetchInterestClient extends AbstractInterestClient implements H
      * Eureka Read server registry is ready when the initial batch of data is uploaded from the server.
      */
     private void bootstrapUploadSubscribe() {
+        final AtomicInteger boostrapCount = new AtomicInteger(0);
         forInterest(Interests.forFullRegistry()).takeWhile(new Func1<ChangeNotification<InstanceInfo>, Boolean>() {
             @Override
             public Boolean call(ChangeNotification<InstanceInfo> notification) {
+                boostrapCount.incrementAndGet();
                 return notification.getKind() != Kind.BufferSentinel;
             }
         }).doOnCompleted(new Action0() {
             @Override
             public void call() {
                 healthProvider.moveHealthTo(Status.UP);
+                logger.info("Initial bootstrap completed. Bootstrapped with {} instances", boostrapCount.get());
             }
         }).subscribe();
     }

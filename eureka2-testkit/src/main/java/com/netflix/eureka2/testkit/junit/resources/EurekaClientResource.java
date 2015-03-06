@@ -61,7 +61,7 @@ public class EurekaClientResource extends ExternalResource {
     protected void before() throws Throwable {
         registrationClient = new EurekaRegistrationClientBuilder()
                 .withTransportConfig(transportConfig)
-                .fromWriteServerResolver(writeServerResource.getRegistrationResolver())
+                .fromServerResolver(writeServerResource.getRegistrationResolver())
                 .build();
 
         ServerResolver readResolverToUse = readServerResource == null
@@ -70,7 +70,7 @@ public class EurekaClientResource extends ExternalResource {
 
         interestClient = new EurekaInterestClientBuilder()
                 .withTransportConfig(transportConfig)
-                .fromReadServerResolver(readResolverToUse)
+                .fromServerResolver(readResolverToUse)
                 .build();
     }
 

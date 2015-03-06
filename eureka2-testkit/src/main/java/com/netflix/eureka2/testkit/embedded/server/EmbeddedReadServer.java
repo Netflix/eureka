@@ -12,7 +12,6 @@ import com.netflix.eureka2.client.interest.BatchingRegistry;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.resolver.ServerResolver;
-import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.config.BasicEurekaRegistryConfig;
 import com.netflix.eureka2.config.BasicEurekaRegistryConfig.Builder;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
@@ -50,7 +49,7 @@ public class EmbeddedReadServer extends EmbeddedEurekaServer<EurekaServerConfig,
     @Override
     public void start() {
         EurekaRegistrationClient registrationClient = new EurekaRegistrationClientBuilder()
-                .fromWriteServerResolver(registrationResolver)
+                .fromServerResolver(registrationResolver)
                 .build();
 
         // TODO We need to better encapsulate EurekaInterestClient construction
@@ -97,7 +96,7 @@ public class EmbeddedReadServer extends EmbeddedEurekaServer<EurekaServerConfig,
 
     @Override
     public ServerResolver getInterestResolver() {
-        return ServerResolvers.just("localhost", getDiscoveryPort());
+        return ServerResolver.withHostname("localhost").withPort(getDiscoveryPort());
     }
 
     @Override

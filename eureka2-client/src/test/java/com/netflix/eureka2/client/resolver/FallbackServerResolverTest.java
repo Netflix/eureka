@@ -9,32 +9,32 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 /**
- * @author Tomasz Bak
+ * @author David Liu
  */
-public class ServerResolverFailoverChainTest extends AbstractResolverTest {
+public class FallbackServerResolverTest extends AbstractResolverTest {
 
     @Test(timeout = 60000)
     public void testFailoverToSecondResolver() throws Exception {
         Server serverA = new Server("hostA", 123);
 
-        ServerResolver goodResolver = ServerResolvers.from(serverA);
+        ServerResolver goodResolver = ServerResolver.from(serverA);
         ServerResolver brokenResolver = new ServerResolver() {
+            @Override
+            public void close() {
+            }
+
             @Override
             public Observable<Server> resolve() {
                 return Observable.error(new Exception("resolver error"));
             }
-
-            @Override
-            public void close() {
-            }
         };
 
         // First resolver ok
-        ServerResolver resolver = ServerResolvers.failoverChainFrom(goodResolver, brokenResolver);
+        ServerResolver resolver = goodResolver.withFallback(brokenResolver);
         assertThat(takeNext(resolver), is(equalTo(serverA)));
 
         // First resolver broken
-        resolver = ServerResolvers.failoverChainFrom(brokenResolver, goodResolver);
+        resolver = brokenResolver.withFallback(goodResolver);
         assertThat(takeNext(resolver), is(equalTo(serverA)));
     }
 }

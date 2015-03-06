@@ -44,13 +44,13 @@ public class EmbeddedDashboardServer extends EmbeddedEurekaServer<EurekaDashboar
         final EurekaRegistrationClient registrationClient = new EurekaRegistrationClientBuilder()
                 .withTransportConfig(config)
                 .withRegistryConfig(config)
-                .fromWriteServerResolver(registrationServerResolver)
+                .fromServerResolver(registrationServerResolver)
                 .build();
 
         final EurekaInterestClient interestClient = new EurekaInterestClientBuilder()
                 .withTransportConfig(config)
                 .withRegistryConfig(config)
-                .fromReadServerResolver(interestServerResolver)
+                .fromServerResolver(interestServerResolver)
                 .build();
 
         Module[] modules = {new EurekaDashboardModule(config, registrationClient, interestClient)};

@@ -1,7 +1,6 @@
 package com.netflix.eureka2.testkit.junit.resources;
 
 import com.netflix.eureka2.client.resolver.ServerResolver;
-import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
@@ -49,8 +48,8 @@ public class ReadServerResource extends ExternalResource {
                 .withWebAdminPort(0)
                 .withCodec(codec)
                 .build();
-        ServerResolver registrationResolver = ServerResolvers.just("localhost", writeServerResource.getRegistrationPort());
-        ServerResolver discoveryResolver = ServerResolvers.just("localhost", writeServerResource.getDiscoveryPort());
+        ServerResolver registrationResolver = ServerResolver.withHostname("localhost").withPort(writeServerResource.getRegistrationPort());
+        ServerResolver discoveryResolver = ServerResolver.withHostname("localhost").withPort(writeServerResource.getDiscoveryPort());
         server = new EmbeddedReadServer(config, registrationResolver, discoveryResolver, false, false);
         server.start();
 
@@ -74,6 +73,6 @@ public class ReadServerResource extends ExternalResource {
     }
 
     public ServerResolver getInterestResolver() {
-        return ServerResolvers.just("localhost", discoveryPort);
+        return ServerResolver.withHostname("localhost").withPort(discoveryPort);
     }
 }

@@ -4,6 +4,7 @@ import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.EurekaRegistrationClientBuilder;
+import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
@@ -46,7 +47,7 @@ public class EurekaDeploymentResource extends ExternalResource {
         EmbeddedWriteServer server = eurekaDeployment.getWriteCluster().getServer(idx);
         return new EurekaRegistrationClientBuilder()
                 .withTransportConfig(transportConfig)
-                .fromWriteServerResolver(server.getRegistrationResolver())
+                .fromServerResolver(server.getRegistrationResolver())
                 .build();
 
     }
@@ -57,7 +58,7 @@ public class EurekaDeploymentResource extends ExternalResource {
     public EurekaRegistrationClient registrationClientToWriteCluster() {
         return new EurekaRegistrationClientBuilder()
                 .withTransportConfig(transportConfig)
-                .fromWriteServerResolver(eurekaDeployment.getWriteCluster().registrationResolver())
+                .fromServerResolver(eurekaDeployment.getWriteCluster().registrationResolver())
                 .build();
 
     }
@@ -71,7 +72,7 @@ public class EurekaDeploymentResource extends ExternalResource {
         EmbeddedWriteServer server = eurekaDeployment.getWriteCluster().getServer(idx);
         return new EurekaInterestClientBuilder()
                 .withTransportConfig(transportConfig)
-                .fromReadServerResolver(server.getInterestResolver())
+                .fromServerResolver(server.getInterestResolver())
                 .build();
     }
 
@@ -81,7 +82,7 @@ public class EurekaDeploymentResource extends ExternalResource {
     public EurekaInterestClient interestClientToWriteCluster() {
         return new EurekaInterestClientBuilder()
                 .withTransportConfig(transportConfig)
-                .fromReadServerResolver(eurekaDeployment.getWriteCluster().interestResolver())
+                .fromServerResolver(eurekaDeployment.getWriteCluster().interestResolver())
                 .build();
     }
 
@@ -94,7 +95,7 @@ public class EurekaDeploymentResource extends ExternalResource {
         EmbeddedReadServer server = eurekaDeployment.getReadCluster().getServer(idx);
         return new EurekaInterestClientBuilder()
                 .withTransportConfig(transportConfig)
-                .fromReadServerResolver(server.getInterestResolver())
+                .fromServerResolver(server.getInterestResolver())
                 .build();
     }
 
@@ -104,7 +105,7 @@ public class EurekaDeploymentResource extends ExternalResource {
     public EurekaInterestClient interestClientToReadCluster() {
         return new EurekaInterestClientBuilder()
                 .withTransportConfig(transportConfig)
-                .fromReadServerResolver(eurekaDeployment.getReadCluster().interestResolver())
+                .fromServerResolver(eurekaDeployment.getReadCluster().interestResolver())
                 .build();
     }
 
@@ -115,8 +116,8 @@ public class EurekaDeploymentResource extends ExternalResource {
     public EurekaInterestClient cannonicalInterestClient() {
         return new EurekaInterestClientBuilder()
                 .withTransportConfig(transportConfig)
-                .fromWriteInterestResolver(eurekaDeployment.getWriteCluster().interestResolver(),
-                                           eurekaDeployment.getReadCluster().getVip())
+                .fromServerResolver(ServerResolver.fromEureka(eurekaDeployment.getWriteCluster().interestResolver())
+                        .forVips(eurekaDeployment.getReadCluster().getVip()))
                 .build();
     }
 

@@ -4,6 +4,7 @@ import com.google.inject.Singleton;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaInterestClientBuilder;
+import com.netflix.eureka2.client.resolver.ServerResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +22,7 @@ public class Eureka2InterestClientProviderImpl implements Eureka2InterestClientP
     public EurekaInterestClient get() {
         logger.info("Subscribing to Eureka2 server {}:{}", discoveryDNS, port);
         return new EurekaInterestClientBuilder()
-                .fromDns(discoveryDNS, port)
+                .fromServerResolver(ServerResolver.withDnsName(discoveryDNS).withPort(port))
                 .build();
     }
 }

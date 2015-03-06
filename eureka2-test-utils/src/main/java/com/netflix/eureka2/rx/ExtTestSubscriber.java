@@ -17,6 +17,7 @@ import rx.functions.Func1;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
@@ -133,6 +134,21 @@ public class ExtTestSubscriber<T> extends Subscriber<T> {
 
     public void assertOnCompleted() {
         assertThat(state.get(), is(equalTo(State.OnCompleted)));
+    }
+
+    public void assertOnCompleted(int timeout, TimeUnit timeUnit) throws Exception {
+        long waitTimeInMs = timeUnit.toMillis(timeout);
+        long minWait = Math.max(waitTimeInMs, 10);
+
+        for (int i = 0; i < minWait; i+=10) {
+            if (state.get() == State.OnCompleted) {
+                assertTrue(true);
+                return;
+            }
+            Thread.sleep(10);
+        }
+
+        assertTrue(false);
     }
 
     public void assertOnError() {

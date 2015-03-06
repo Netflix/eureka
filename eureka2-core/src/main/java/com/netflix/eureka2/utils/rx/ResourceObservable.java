@@ -26,7 +26,9 @@ import rx.functions.Action0;
 import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -52,7 +54,7 @@ public class ResourceObservable<T> {
     private final TimeUnit timeUnit;
 
     private final ReentrantLock lock = new ReentrantLock();
-    private ResourceLoaderExecutor executor; // Updates guarded by lock
+    private volatile ResourceLoaderExecutor executor; // Updates guarded by lock
     private final AtomicInteger subscriptionCounter = new AtomicInteger();
 
     private final Observable<T> observable;
@@ -71,14 +73,15 @@ public class ResourceObservable<T> {
                 try {
                     if (executor == null) {
                         executor = new ResourceLoaderExecutor();
+
                         // TODO: this is synchronous resource load that should be run on separate thread.
                         executor.call();
                     }
                     subscriptionCounter.incrementAndGet();
-
                     for (T entry : executor.getDataSnapshot()) {
                         subscriber.onNext(entry);
                     }
+
                     executor.getDataUpdates().subscribe(subscriber);
                 } finally {
                     lock.unlock();
@@ -149,10 +152,16 @@ public class ResourceObservable<T> {
     public static class ResourceUpdate<T> {
         private final Set<T> added;
         private final Set<T> cancelled;
+        private final T finalSentinal;
 
         public ResourceUpdate(Set<T> added, Set<T> cancelled) {
+            this(added, cancelled, null);
+        }
+
+        public ResourceUpdate(Set<T> added, Set<T> cancelled, T finalSentinel) {
             this.added = added;
             this.cancelled = cancelled;
+            this.finalSentinal = finalSentinel;
         }
 
         public Set<T> getAdded() {
@@ -161,6 +170,10 @@ public class ResourceObservable<T> {
 
         public Set<T> getCancelled() {
             return cancelled;
+        }
+
+        public T getFinalSentinel() {
+            return finalSentinal;
         }
     }
 
@@ -185,12 +198,13 @@ public class ResourceObservable<T> {
     class ResourceLoaderExecutor implements Action0 {
 
         private final Worker worker = scheduler.createWorker();
-        private volatile Set<T> dataSnapshot = new HashSet<>();
+        private volatile Set<T> internalSnapshot = new HashSet<>();
+        private volatile List<T> dataSnapshot = new ArrayList<>();
         private final PublishSubject<T> dataUpdates = PublishSubject.create();
         private volatile boolean terminate;
         private Subscription rescheduleSubscription;
 
-        public Set<T> getDataSnapshot() {
+        public List<T> getDataSnapshot() {  // list for order
             return dataSnapshot;
         }
 
@@ -216,7 +230,7 @@ public class ResourceObservable<T> {
                 return;
             }
 
-            ResourceUpdate<T> update = loader.reload(dataSnapshot);
+            ResourceUpdate<T> update = loader.reload(internalSnapshot);
 
             // Push new data to existing subscribers. No new subscription is allowed when doing that.
             lock.lock();
@@ -225,14 +239,21 @@ public class ResourceObservable<T> {
                     dataUpdates.onNext(entry);
                 }
                 for (T entry : update.getAdded()) {
-                    if (!dataSnapshot.contains(entry)) {
+                    if (!internalSnapshot.contains(entry)) {
                         dataUpdates.onNext(entry);
                     }
                 }
-                dataSnapshot = update.getAdded();
+
+                internalSnapshot = update.getAdded();
+
+                dataSnapshot = new ArrayList<>(update.added);
+                if (update.getFinalSentinel() != null) {
+                    dataSnapshot.add(update.getFinalSentinel());
+                }
             } finally {
                 lock.unlock();
             }
+
             reschedule();
         }
     }
