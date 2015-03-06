@@ -52,7 +52,7 @@ public class EurekaInterestClientProvider implements Provider<EurekaInterestClie
                 .withRegistryConfig(config)
                 .withClientMetricFactory(clientMetricFactory)
                 .withRegistryMetricFactory(registryMetricFactory)
-                .fromServerResolver(WriteClusterResolvers.createInterestResolver(config))
+                .withServerResolver(WriteClusterResolvers.createInterestResolver(config))
                 .build();
     }
 }

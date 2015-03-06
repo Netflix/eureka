@@ -5,13 +5,13 @@ import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterTyp
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
+import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources.EurekaExternalResource;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
-import org.junit.rules.ExternalResource;
 
 /**
  * @author Tomasz Bak
  */
-public class ReadServerResource extends ExternalResource {
+public class ReadServerResource extends EurekaExternalResource {
 
     public static final String DEFAULT_READ_CLUSTER_NAME = "read-test";
 

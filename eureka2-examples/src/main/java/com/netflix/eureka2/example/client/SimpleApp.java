@@ -62,7 +62,7 @@ public final class SimpleApp {
     public void run() throws InterruptedException {
 
         EurekaRegistrationClient registrationClient = new EurekaRegistrationClientBuilder()
-                .fromServerResolver(ServerResolver.withDnsName(writeServerDns).withPort(writeRegistrationPort))
+                .withServerResolver(ServerResolver.withDnsName(writeServerDns).withPort(writeRegistrationPort))
                 .build();
 
         ServerResolver interestClientResolver =
@@ -75,7 +75,7 @@ public final class SimpleApp {
                         .forVips(readServerVip);
 
         EurekaInterestClient interestClient = new EurekaInterestClientBuilder()
-                .fromServerResolver(interestClientResolver)
+                .withServerResolver(interestClientResolver)
                 .build();
 
         interestClient.forInterest(Interests.forApplications("WriteServer", "ReadServer", "ServiceA")).subscribe(

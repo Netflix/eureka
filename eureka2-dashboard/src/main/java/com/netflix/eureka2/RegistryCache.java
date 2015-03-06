@@ -84,7 +84,7 @@ public class RegistryCache {
     public static void main(String[] args) {
 
         final EurekaInterestClient interestClient = new EurekaInterestClientBuilder()
-                .fromServerResolver(ServerResolver.withHostname("localhost").withPort(13101))
+                .withServerResolver(ServerResolver.withHostname("localhost").withPort(13101))
                 .build();
 
         final Observable<ChangeNotification<InstanceInfo>> notificationsObservable =

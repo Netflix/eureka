@@ -13,7 +13,7 @@ public class Eureka1ServerTest {
     @Rule
     public final Eureka1ServerResource serverResource = new Eureka1ServerResource();
 
-    @Test
+    @Test(timeout = 60000)
     public void testDiscoveryClient() throws Exception {
         serverResource.createDiscoveryClient("testService");
         serverResource.getServer().assertContainsInstance("testService", 60, TimeUnit.SECONDS);

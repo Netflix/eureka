@@ -1,6 +1,5 @@
 package com.netflix.eureka2.interests;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -61,7 +60,7 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
     @Override
     protected Iterator<ChangeNotification<InstanceInfo>> _newIterator() {
         if (notificationMap.isEmpty()) {
-            return Collections.emptyIterator();
+            return singletonIterator(bufferEndNotificaton);
         }
         return concat(
                 singletonIterator(bufferStartNotificaton),

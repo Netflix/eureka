@@ -58,7 +58,7 @@ public class EurekaClientIntegrationTest {
         String readClusterVip = deployment.getReadCluster().getVip();
 
         EurekaInterestClient interestClient = new EurekaInterestClientBuilder()
-                .fromServerResolver(ServerResolver.fromEureka(writeCluster.interestResolver()).forVips(readClusterVip))
+                .withServerResolver(ServerResolver.fromEureka(writeCluster.interestResolver()).forVips(readClusterVip))
                 .build();
 
         EurekaRegistrationClient registrationClient = eurekaDeploymentResource.registrationClientToWriteCluster();
@@ -83,7 +83,7 @@ public class EurekaClientIntegrationTest {
     @Ignore
     public void testResolveFromDns() throws Exception {
         EurekaRegistrationClient registrationClient = new EurekaRegistrationClientBuilder()
-                .fromServerResolver(ServerResolver.withDnsName("cluster.domain.name").withPort(12102))
+                .withServerResolver(ServerResolver.withDnsName("cluster.domain.name").withPort(12102))
                 .build();
 
         ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();

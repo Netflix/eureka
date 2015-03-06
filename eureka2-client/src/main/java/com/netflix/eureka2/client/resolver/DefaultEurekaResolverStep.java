@@ -24,7 +24,7 @@ class DefaultEurekaResolverStep implements EurekaRemoteResolverStep {
     private final EurekaInterestClientBuilder interestClientBuilder;
 
     DefaultEurekaResolverStep(ServerResolver bootstrapResolver) {
-        this(new EurekaInterestClientBuilder().fromServerResolver(bootstrapResolver));
+        this(new EurekaInterestClientBuilder().withServerResolver(bootstrapResolver));
     }
 
     /* for testing */ DefaultEurekaResolverStep(EurekaInterestClientBuilder interestClientBuilder) {

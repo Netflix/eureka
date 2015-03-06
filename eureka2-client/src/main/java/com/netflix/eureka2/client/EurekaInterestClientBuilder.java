@@ -43,7 +43,7 @@ public class EurekaInterestClientBuilder
      * @param serverResolver the resolver to specify which read server to connect to (may have redirects)
      * @return a builder to continue client construction
      */
-    public EurekaInterestClientBuilder fromServerResolver(ServerResolver serverResolver) {
+    public EurekaInterestClientBuilder withServerResolver(ServerResolver serverResolver) {
         this.serverResolver = serverResolver;
         return self();
     }

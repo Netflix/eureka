@@ -49,7 +49,7 @@ public class EmbeddedReadServer extends EmbeddedEurekaServer<EurekaServerConfig,
     @Override
     public void start() {
         EurekaRegistrationClient registrationClient = new EurekaRegistrationClientBuilder()
-                .fromServerResolver(registrationResolver)
+                .withServerResolver(registrationResolver)
                 .build();
 
         // TODO We need to better encapsulate EurekaInterestClient construction

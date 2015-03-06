@@ -36,7 +36,7 @@ public class EurekaRegistrationClientBuilder
      * @param serverResolver the resolver to specify which write server to connect to (may have redirects)
      * @return a builder to continue client construction
      */
-    public EurekaRegistrationClientBuilder fromServerResolver(ServerResolver serverResolver) {
+    public EurekaRegistrationClientBuilder withServerResolver(ServerResolver serverResolver) {
         this.serverResolver = serverResolver;
         return self();
     }

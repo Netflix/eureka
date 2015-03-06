@@ -11,12 +11,12 @@ import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment.EurekaDeploymentBuilder;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
-import org.junit.rules.ExternalResource;
+import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources.EurekaExternalResource;
 
 /**
  * @author Tomasz Bak
  */
-public class EurekaDeploymentResource extends ExternalResource {
+public class EurekaDeploymentResource extends EurekaExternalResource {
 
     private final int writeClusterSize;
     private final int readClusterSize;
@@ -47,7 +47,7 @@ public class EurekaDeploymentResource extends ExternalResource {
         EmbeddedWriteServer server = eurekaDeployment.getWriteCluster().getServer(idx);
         return new EurekaRegistrationClientBuilder()
                 .withTransportConfig(transportConfig)
-                .fromServerResolver(server.getRegistrationResolver())
+                .withServerResolver(server.getRegistrationResolver())
                 .build();
 
     }
@@ -58,7 +58,7 @@ public class EurekaDeploymentResource extends ExternalResource {
     public EurekaRegistrationClient registrationClientToWriteCluster() {
         return new EurekaRegistrationClientBuilder()
                 .withTransportConfig(transportConfig)
-                .fromServerResolver(eurekaDeployment.getWriteCluster().registrationResolver())
+                .withServerResolver(eurekaDeployment.getWriteCluster().registrationResolver())
                 .build();
 
     }
@@ -72,7 +72,7 @@ public class EurekaDeploymentResource extends ExternalResource {
         EmbeddedWriteServer server = eurekaDeployment.getWriteCluster().getServer(idx);
         return new EurekaInterestClientBuilder()
                 .withTransportConfig(transportConfig)
-                .fromServerResolver(server.getInterestResolver())
+                .withServerResolver(server.getInterestResolver())
                 .build();
     }
 
@@ -82,7 +82,7 @@ public class EurekaDeploymentResource extends ExternalResource {
     public EurekaInterestClient interestClientToWriteCluster() {
         return new EurekaInterestClientBuilder()
                 .withTransportConfig(transportConfig)
-                .fromServerResolver(eurekaDeployment.getWriteCluster().interestResolver())
+                .withServerResolver(eurekaDeployment.getWriteCluster().interestResolver())
                 .build();
     }
 
@@ -95,7 +95,7 @@ public class EurekaDeploymentResource extends ExternalResource {
         EmbeddedReadServer server = eurekaDeployment.getReadCluster().getServer(idx);
         return new EurekaInterestClientBuilder()
                 .withTransportConfig(transportConfig)
-                .fromServerResolver(server.getInterestResolver())
+                .withServerResolver(server.getInterestResolver())
                 .build();
     }
 
@@ -105,7 +105,7 @@ public class EurekaDeploymentResource extends ExternalResource {
     public EurekaInterestClient interestClientToReadCluster() {
         return new EurekaInterestClientBuilder()
                 .withTransportConfig(transportConfig)
-                .fromServerResolver(eurekaDeployment.getReadCluster().interestResolver())
+                .withServerResolver(eurekaDeployment.getReadCluster().interestResolver())
                 .build();
     }
 
@@ -116,7 +116,7 @@ public class EurekaDeploymentResource extends ExternalResource {
     public EurekaInterestClient cannonicalInterestClient() {
         return new EurekaInterestClientBuilder()
                 .withTransportConfig(transportConfig)
-                .fromServerResolver(ServerResolver.fromEureka(eurekaDeployment.getWriteCluster().interestResolver())
+                .withServerResolver(ServerResolver.fromEureka(eurekaDeployment.getWriteCluster().interestResolver())
                         .forVips(eurekaDeployment.getReadCluster().getVip()))
                 .build();
     }
