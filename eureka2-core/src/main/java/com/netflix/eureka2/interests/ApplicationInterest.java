@@ -9,12 +9,12 @@ public class ApplicationInterest extends AbstractPatternInterest<InstanceInfo> {
     protected ApplicationInterest() {
     }
 
-    public ApplicationInterest(String secureVip) {
-        super(secureVip);
+    public ApplicationInterest(String application) {
+        super(application);
     }
 
-    public ApplicationInterest(String secureVip, Operator operator) {
-        super(secureVip, operator);
+    public ApplicationInterest(String application, Operator operator) {
+        super(application, operator);
     }
 
     @Override

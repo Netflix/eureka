@@ -7,8 +7,8 @@ import com.google.inject.Module;
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
-import com.netflix.eureka2.eureka1x.rest.Eureka1xConfiguration;
-import com.netflix.eureka2.eureka1x.rest.Eureka1xRestApiModule;
+import com.netflix.eureka2.eureka1.rest.Eureka1Configuration;
+import com.netflix.eureka2.eureka1.rest.Eureka1RestApiModule;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.server.EurekaWriteServerModule;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
@@ -45,7 +45,7 @@ public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig,
                         bind(ReplicationPeerAddressesProvider.class).toInstance(new ReplicationPeerAddressesProvider(replicationPeers));
                     }
                 },
-                new Eureka1xRestApiModule(new Eureka1xConfiguration(1, 1000), ServerType.Write)
+                new Eureka1RestApiModule(new Eureka1Configuration(1, 1000), ServerType.Write)
         };
 
         setup(modules);
