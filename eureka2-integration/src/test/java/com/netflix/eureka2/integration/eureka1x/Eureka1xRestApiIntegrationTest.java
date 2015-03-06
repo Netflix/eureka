@@ -36,7 +36,7 @@ public class Eureka1xRestApiIntegrationTest {
     private static final long TIMEOUT_MS = 60000;
 
     @Rule
-    public final EurekaDeploymentResource deploymentResource = new EurekaDeploymentResource(1, 0);
+    public final EurekaDeploymentResource deploymentResource = new EurekaDeploymentResource(1, 1);
 
     @Rule
     public final EurekaExternalResources externalResources = new EurekaExternalResources();
@@ -55,7 +55,7 @@ public class Eureka1xRestApiIntegrationTest {
             @Override
             public Application call() {
                 Applications applications = discoveryClient.getApplications();
-                return applications.getRegisteredApplications().get(0);
+                return applications.getRegisteredApplications().isEmpty() ? null : applications.getRegisteredApplications().get(0);
             }
         });
         assertThat(app, is(notNullValue()));

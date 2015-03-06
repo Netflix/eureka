@@ -49,6 +49,7 @@ public class WriteServerConfig extends EurekaServerConfig {
             String[] serverList,
             String appName,
             String vipAddress,
+            String readClusterVipAddress,
             DataCenterType dataCenterType,
             int dataCenterResolveIntervalSec,
             int httpPort,
@@ -66,7 +67,8 @@ public class WriteServerConfig extends EurekaServerConfig {
             int replicationPort,
             long replicationReconnectDelayMillis
     ) {
-        super(resolverType, serverList, appName, vipAddress, dataCenterType, dataCenterResolveIntervalSec,
+        super(resolverType, serverList, appName, vipAddress, readClusterVipAddress,
+                dataCenterType, dataCenterResolveIntervalSec,
               httpPort, shutDownPort, webAdminPort, discoveryPort, heartbeatIntervalMs, connectionAutoTimeoutMs, codec,
               evictionTimeoutMs, evictionStrategyType, evictionStrategyValue);
 
@@ -102,6 +104,7 @@ public class WriteServerConfig extends EurekaServerConfig {
                     serverList,
                     appName,
                     vipAddress,
+                    readClusterVipAddress,
                     dataCenterType,
                     dataCenterResolveIntervalSec,
                     httpPort,

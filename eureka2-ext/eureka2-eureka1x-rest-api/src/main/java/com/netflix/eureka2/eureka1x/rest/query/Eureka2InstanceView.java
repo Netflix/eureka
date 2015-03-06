@@ -10,7 +10,7 @@ import rx.Observable;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
 
-import static com.netflix.eureka2.eureka1x.rest.Eureka1xDomainObjectModelMapper.EUREKA_1X_MAPPER;
+import static com.netflix.eureka2.eureka1x.rest.model.Eureka1xDomainObjectModelMapper.EUREKA_1X_MAPPER;
 
 /**
  * TODO Eureka 2.x has own ids, while 1.x uses AWS instance id

@@ -9,6 +9,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.ServicePort;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.health.EurekaHealthStatusAggregator;
+import com.netflix.eureka2.server.http.EurekaHttpServer;
 import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
 import rx.Observable;
 import rx.functions.Func1;
@@ -23,6 +24,7 @@ public class EurekaReadServerSelfInfoResolver implements SelfInfoResolver {
 
     @Inject
     public EurekaReadServerSelfInfoResolver(final EurekaServerConfig config,
+                                            final EurekaHttpServer httpServer,
                                             final TcpDiscoveryServer discoveryServer,
                                             EurekaHealthStatusAggregator healthStatusAggregator) {
 
@@ -34,6 +36,7 @@ public class EurekaReadServerSelfInfoResolver implements SelfInfoResolver {
                         .map(new Func1<HashSet<ServicePort>, InstanceInfo.Builder>() {
                             @Override
                             public InstanceInfo.Builder call(HashSet<ServicePort> ports) {
+                                ports.add(new ServicePort(Names.EUREKA_HTTP, httpServer.serverPort(), false));
                                 ports.add(new ServicePort(Names.DISCOVERY, discoveryServer.serverPort(), false));
                                 return new InstanceInfo.Builder().withPorts(ports);
                             }

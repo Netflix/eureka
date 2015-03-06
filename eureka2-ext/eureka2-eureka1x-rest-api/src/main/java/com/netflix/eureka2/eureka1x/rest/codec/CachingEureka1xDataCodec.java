@@ -45,6 +45,11 @@ public class CachingEureka1xDataCodec implements Eureka1xDataCodec {
         }
     }
 
+    @Override
+    public <T> T decode(byte[] bytes, Class<T> bodyType, EncodingFormat format) throws IOException {
+        return delegate.decode(bytes, bodyType, format);
+    }
+
     static class CachedObjectReference {
         private final Object ref;
         private final EncodingFormat format;

@@ -45,7 +45,7 @@ public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig,
                         bind(ReplicationPeerAddressesProvider.class).toInstance(new ReplicationPeerAddressesProvider(replicationPeers));
                     }
                 },
-                new Eureka1xRestApiModule(new Eureka1xConfiguration(1, 1000))
+                new Eureka1xRestApiModule(new Eureka1xConfiguration(1, 1000), ServerType.Write)
         };
 
         setup(modules);

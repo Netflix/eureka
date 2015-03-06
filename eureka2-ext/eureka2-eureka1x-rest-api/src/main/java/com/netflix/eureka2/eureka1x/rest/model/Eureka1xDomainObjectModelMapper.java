@@ -1,9 +1,10 @@
-package com.netflix.eureka2.eureka1x.rest;
+package com.netflix.eureka2.eureka1x.rest.model;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -17,6 +18,7 @@ import com.netflix.appinfo.LeaseInfo;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka2.registry.datacenter.AwsDataCenterInfo;
+import com.netflix.eureka2.registry.datacenter.BasicDataCenterInfo;
 import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
@@ -24,6 +26,8 @@ import com.netflix.eureka2.registry.instance.NetworkAddress;
 import com.netflix.eureka2.registry.instance.NetworkAddress.ProtocolType;
 import com.netflix.eureka2.registry.instance.ServicePort;
 import com.netflix.eureka2.registry.selector.AddressSelector;
+
+import static com.netflix.eureka2.utils.ExtCollections.asSet;
 
 /**
  * Map Eureka 2.x domain model to Eureka 1.x abstractions.
@@ -197,6 +201,61 @@ public class Eureka1xDomainObjectModelMapper {
         return applications;
     }
 
+    public InstanceInfo.Status tuEureka2xStatus(InstanceStatus v1Status) {
+        switch (v1Status) {
+            case DOWN:
+                return InstanceInfo.Status.DOWN;
+            case OUT_OF_SERVICE:
+                return InstanceInfo.Status.OUT_OF_SERVICE;
+            case STARTING:
+                return InstanceInfo.Status.STARTING;
+            case UNKNOWN:
+                return InstanceInfo.Status.UNKNOWN;
+            case UP:
+                return InstanceInfo.Status.UP;
+        }
+        throw new IllegalStateException("Unexpected Eureka 1.x status " + v1Status);
+    }
+
+    public DataCenterInfo toEureka2xDataCenterInfo(com.netflix.appinfo.DataCenterInfo v1DataCenterInfo) {
+        DataCenterInfo.DataCenterInfoBuilder builder;
+
+        if (v1DataCenterInfo instanceof AmazonInfo) {
+            AmazonInfo v1Info = (AmazonInfo) v1DataCenterInfo;
+
+            builder = new AwsDataCenterInfo.Builder()
+                    .withZone(v1Info.get(AmazonInfo.MetaDataKey.availabilityZone))
+                    .withAmiId(v1Info.get(AmazonInfo.MetaDataKey.amiId))
+                    .withInstanceId(v1Info.get(AmazonInfo.MetaDataKey.instanceId))
+                    .withInstanceType(v1Info.get(AmazonInfo.MetaDataKey.instanceType))
+                    .withPrivateIPv4(v1Info.get(AmazonInfo.MetaDataKey.localIpv4))
+                    .withPublicIPv4(v1Info.get(AmazonInfo.MetaDataKey.publicIpv4))
+                    .withPublicHostName(v1Info.get(AmazonInfo.MetaDataKey.publicHostname));
+        } else {
+            builder = new BasicDataCenterInfo.BasicDataCenterInfoBuilder()
+                    .withName(v1DataCenterInfo.getName().name());
+        }
+        return builder.build();
+    }
+
+    public InstanceInfo toEureka2xInstanceInfo(com.netflix.appinfo.InstanceInfo v1InstanceInfo) {
+        InstanceInfo.Builder builder = new InstanceInfo.Builder()
+                .withId(v1InstanceInfo.getAppName() + "_" + v1InstanceInfo.getId())  // instanceId is not unique for v1Data
+                .withAppGroup(v1InstanceInfo.getAppGroupName())
+                .withApp(v1InstanceInfo.getAppName())
+                .withAsg(v1InstanceInfo.getASGName())
+                .withVipAddress(v1InstanceInfo.getVIPAddress())
+                .withSecureVipAddress(v1InstanceInfo.getSecureVipAddress())
+                .withPorts(asSet(new ServicePort(v1InstanceInfo.getPort(), false), new ServicePort(v1InstanceInfo.getSecurePort(), true)))
+                .withStatus(tuEureka2xStatus(v1InstanceInfo.getStatus()))
+                .withHomePageUrl(v1InstanceInfo.getHomePageUrl())
+                .withStatusPageUrl(v1InstanceInfo.getStatusPageUrl())
+                .withHealthCheckUrls(new HashSet<>(v1InstanceInfo.getHealthCheckUrls()))
+                .withMetaData(v1InstanceInfo.getMetadata())
+                .withDataCenterInfo(toEureka2xDataCenterInfo(v1InstanceInfo.getDataCenterInfo()));
+        return builder.build();
+    }
+
     private static String relativeUrlOf(String absoluteUrl) {
         if (absoluteUrl == null) {
             return null;
@@ -210,7 +269,6 @@ public class Eureka1xDomainObjectModelMapper {
     }
 
     private static class MyEureka1xDataCenterInfo implements com.netflix.appinfo.DataCenterInfo {
-
         @Override
         public Name getName() {
             return Name.MyOwn;

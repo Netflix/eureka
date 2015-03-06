@@ -21,6 +21,9 @@ package com.netflix.eureka2;
  */
 public final class Names {
 
+    public static final String EUREKA_HTTP = "http";
+    public static final String EUREKA_HTTPS = "https";
+
     public static final String REGISTRATION = "registration";
     public static final String DISCOVERY = "discovery";
     public static final String REPLICATION = "replication";

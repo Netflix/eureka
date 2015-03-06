@@ -1,4 +1,4 @@
-package com.netflix.eureka2.eureka1x.rest;
+package com.netflix.eureka2.eureka1x.rest.model;
 
 import java.util.Set;
 
@@ -91,6 +91,46 @@ public class Eureka1xDomainObjectModelMapperTest {
         assertThat(v1InstanceInfo.getMetadata(), is(equalTo(v2InstanceInfo.getMetaData())));
     }
 
+    @Test
+    public void testConversionToEureka2xDataCenterInfo() throws Exception {
+        // First v2 -> v1
+        AwsDataCenterInfo v2DataCenterInfo = SampleAwsDataCenterInfo.UsEast1a.build();
+        AmazonInfo v1DataCenterInfo = mapper.toEureka1xDataCenterInfo(v2DataCenterInfo);
+
+        // Now v1 -> v2, and check that resulting v2 record
+        AwsDataCenterInfo mappedV2DataCenterInfo = (AwsDataCenterInfo) mapper.toEureka2xDataCenterInfo(v1DataCenterInfo);
+        verifyDataCenterInfoMapping(v2DataCenterInfo, mappedV2DataCenterInfo);
+    }
+
+    @Test
+    public void testConversionToEureka2xInstanceInfo() throws Exception {
+        // First v2 -> v1
+        InstanceInfo v2InstanceInfo = SampleInstanceInfo.WebServer.build();
+        com.netflix.appinfo.InstanceInfo v1InstanceInfo = mapper.toEureka1xInstanceInfo(v2InstanceInfo);
+
+        // Now v1 -> v2, and check that resulting v2 record
+        InstanceInfo mappedV2InstanceInfo = mapper.toEureka2xInstanceInfo(v1InstanceInfo);
+
+        AwsDataCenterInfo v2DataCenterInfo = (AwsDataCenterInfo) v2InstanceInfo.getDataCenterInfo();
+        AwsDataCenterInfo mappedV2DataCenterInfo = (AwsDataCenterInfo) mappedV2InstanceInfo.getDataCenterInfo();
+
+        assertThat(mappedV2InstanceInfo.getApp(), is(equalToIgnoringCase(v2InstanceInfo.getApp())));
+        assertThat(mappedV2InstanceInfo.getAppGroup(), is(equalToIgnoringCase(v2InstanceInfo.getAppGroup())));
+        assertThat(mappedV2InstanceInfo.getAsg(), is(equalToIgnoringCase(v2InstanceInfo.getAsg())));
+        assertThat(mappedV2InstanceInfo.getHealthCheckUrls(), is(equalTo(v2InstanceInfo.getHealthCheckUrls())));
+        assertThat(mappedV2InstanceInfo.getHomePageUrl(), is(equalToIgnoringCase(v2InstanceInfo.getHomePageUrl())));
+        // v1 is computed from application name and AWS instance id (the original V2 id value is lost in the conversion)
+        assertThat(mappedV2InstanceInfo.getId(), is(equalToIgnoringCase(v2InstanceInfo.getApp() + '_' + v2DataCenterInfo.getInstanceId())));
+        assertThat(mappedV2InstanceInfo.getMetaData(), is(equalTo(v2InstanceInfo.getMetaData())));
+        assertThat(mappedV2InstanceInfo.getSecureVipAddress(), is(equalTo(v2InstanceInfo.getSecureVipAddress())));
+        assertThat(mappedV2InstanceInfo.getVipAddress(), is(equalTo(v2InstanceInfo.getVipAddress())));
+        assertThat(mappedV2InstanceInfo.getStatus(), is(equalTo(v2InstanceInfo.getStatus())));
+        assertThat(mappedV2InstanceInfo.getStatusPageUrl(), is(equalTo(v2InstanceInfo.getStatusPageUrl())));
+
+        // Data center info
+        verifyDataCenterInfoMapping(v2DataCenterInfo, mappedV2DataCenterInfo);
+    }
+
     private static void verifyDataCenterInfoMapping(AmazonInfo v1DataCenterInfo, AwsDataCenterInfo v2DataCenterInfo) {
         assertThat(v1DataCenterInfo.getName(), is(equalTo(Name.Amazon)));
         assertThat(v1DataCenterInfo.getId(), is(equalTo(v2DataCenterInfo.getInstanceId())));
@@ -101,5 +141,17 @@ public class Eureka1xDomainObjectModelMapperTest {
         assertThat(v1DataCenterInfo.get(MetaDataKey.localIpv4), is(equalTo(v2DataCenterInfo.getPrivateAddress().getIpAddress())));
         assertThat(v1DataCenterInfo.get(MetaDataKey.publicHostname), is(equalTo(v2DataCenterInfo.getPublicAddress().getHostName())));
         assertThat(v1DataCenterInfo.get(MetaDataKey.publicIpv4), is(equalTo(v2DataCenterInfo.getPublicAddress().getIpAddress())));
+    }
+
+    private static void verifyDataCenterInfoMapping(AwsDataCenterInfo v2DataCenterInfo, AwsDataCenterInfo mappedV2DataCenterInfo) {
+        // We check all meta info except placement group that is not present in v1
+        assertThat(mappedV2DataCenterInfo.getAmiId(), is(equalTo(v2DataCenterInfo.getAmiId())));
+        assertThat(mappedV2DataCenterInfo.getInstanceId(), is(equalTo(v2DataCenterInfo.getInstanceId())));
+        assertThat(mappedV2DataCenterInfo.getInstanceType(), is(equalTo(v2DataCenterInfo.getInstanceType())));
+        assertThat(mappedV2DataCenterInfo.getName(), is(equalTo(v2DataCenterInfo.getName())));
+        assertThat(mappedV2DataCenterInfo.getRegion(), is(equalTo(v2DataCenterInfo.getRegion())));
+
+        assertThat(mappedV2DataCenterInfo.getPublicAddress(), is(equalTo(v2DataCenterInfo.getPublicAddress())));
+        assertThat(mappedV2DataCenterInfo.getPrivateAddress().getIpAddress(), is(equalTo(v2DataCenterInfo.getPrivateAddress().getIpAddress())));
     }
 }

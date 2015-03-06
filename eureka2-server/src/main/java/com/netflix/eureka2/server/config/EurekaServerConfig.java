@@ -27,6 +27,7 @@ public class EurekaServerConfig extends EurekaCommonConfig {
             String[] serverList,
             String appName,
             String vipAddress,
+            String readClusterVipAddress,
             DataCenterType dataCenterType,
             int dataCenterResolveIntervalSec,
             int httpPort,
@@ -40,7 +41,8 @@ public class EurekaServerConfig extends EurekaCommonConfig {
             StrategyType evictionStrategyType,
             String evictionStrategyValue
     ) {
-        super(resolverType, serverList, appName, vipAddress, dataCenterType, dataCenterResolveIntervalSec,
+        super(resolverType, serverList, appName, vipAddress, readClusterVipAddress,
+                dataCenterType, dataCenterResolveIntervalSec,
                 httpPort, shutDownPort, webAdminPort, heartbeatIntervalMs, connectionAutoTimeoutMs, codec,
                 evictionTimeoutMs, evictionStrategyType, evictionStrategyValue);
         this.discoveryPort = discoveryPort;
@@ -65,6 +67,7 @@ public class EurekaServerConfig extends EurekaCommonConfig {
                     serverList,
                     appName,
                     vipAddress,
+                    readClusterVipAddress,
                     dataCenterType,
                     dataCenterResolveIntervalSec,
                     httpPort,

@@ -45,14 +45,15 @@ public class Eureka1xQueryRequestHandlerTest {
     private final EurekaServerConfig config = new EurekaServerConfigBuilder().withHttpPort(0).build();
     private final EurekaHttpServer httpServer = new EurekaHttpServer(config);
     private final ExtensionContext context = mock(ExtensionContext.class);
-    private Eureka1xQueryRequestHandler rootResource;
+    private Eureka1xQueryRequestHandler queryResource;
     private String webAppName;
     private String backendAppName;
 
     @Before
     public void setUp() throws Exception {
         when(context.getLocalRegistry()).thenReturn(registryMockResource.registry());
-        rootResource = new Eureka1xQueryRequestHandler(new Eureka1xConfiguration(), httpServer, context);
+        queryResource = new Eureka1xQueryRequestHandler(new Eureka1xConfiguration(), context);
+        httpServer.connectHttpEndpoint(ROOT_PATH, queryResource);
         httpServer.start();
     }
 

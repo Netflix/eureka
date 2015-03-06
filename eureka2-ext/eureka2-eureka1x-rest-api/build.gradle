@@ -17,7 +17,7 @@
 apply plugin: 'osgi'
 
 dependencies {
-    compile project(':eureka2-server')
+    compile project(':eureka2-external-server')
     compile "com.netflix.eureka:eureka-core:${eureka_v1_version}"
     testCompile project(':eureka2-test-utils')
 }

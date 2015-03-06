@@ -12,17 +12,23 @@ public abstract class AbstractPatternInterest<T> extends Interest<T> {
 
     private volatile Pattern compiledPattern;
 
+    /* For serializer */
     protected AbstractPatternInterest() {
         pattern = null;
         operator = null;
     }
 
     protected AbstractPatternInterest(String pattern) {
-        this.pattern = pattern;
-        this.operator = Operator.Equals;
+        this(pattern, Operator.Equals);
     }
 
     protected AbstractPatternInterest(String pattern, Operator operator) {
+        if (pattern == null) {
+            throw new IllegalArgumentException("Expected non null pattern value");
+        }
+        if (operator == null) {
+            throw new IllegalArgumentException("Expected non null operator value");
+        }
         this.pattern = pattern;
         this.operator = operator;
     }
