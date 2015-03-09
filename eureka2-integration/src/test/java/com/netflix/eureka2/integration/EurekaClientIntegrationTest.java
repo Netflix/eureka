@@ -8,7 +8,7 @@ import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.EurekaRegistrationClientBuilder;
 import com.netflix.eureka2.client.registration.RegistrationObservable;
-import com.netflix.eureka2.client.resolver.ServerResolver;
+import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
@@ -58,7 +58,8 @@ public class EurekaClientIntegrationTest {
         String readClusterVip = deployment.getReadCluster().getVip();
 
         EurekaInterestClient interestClient = new EurekaInterestClientBuilder()
-                .withServerResolver(ServerResolver.fromEureka(writeCluster.interestResolver()).forVips(readClusterVip))
+                .withServerResolver(ServerResolvers.fromEureka(writeCluster.interestResolver())
+                        .forInterest(Interests.forVips(readClusterVip)))
                 .build();
 
         EurekaRegistrationClient registrationClient = eurekaDeploymentResource.registrationClientToWriteCluster();
@@ -83,7 +84,7 @@ public class EurekaClientIntegrationTest {
     @Ignore
     public void testResolveFromDns() throws Exception {
         EurekaRegistrationClient registrationClient = new EurekaRegistrationClientBuilder()
-                .withServerResolver(ServerResolver.withDnsName("cluster.domain.name").withPort(12102))
+                .withServerResolver(ServerResolvers.withDnsName("cluster.domain.name").withPort(12102))
                 .build();
 
         ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();

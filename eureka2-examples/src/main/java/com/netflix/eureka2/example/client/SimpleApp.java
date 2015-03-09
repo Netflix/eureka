@@ -22,7 +22,6 @@ import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.EurekaRegistrationClientBuilder;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.datacenter.BasicDataCenterInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Builder;
@@ -30,6 +29,9 @@ import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import rx.Subscriber;
 import rx.Subscription;
 import rx.subjects.BehaviorSubject;
+
+import static com.netflix.eureka2.client.resolver.ServerResolvers.*;
+import static com.netflix.eureka2.interests.Interests.*;
 
 /**
  * This example demonstrates how to register an application using {@link EurekaRegistrationClient}
@@ -62,23 +64,19 @@ public final class SimpleApp {
     public void run() throws InterruptedException {
 
         EurekaRegistrationClient registrationClient = new EurekaRegistrationClientBuilder()
-                .withServerResolver(ServerResolver.withDnsName(writeServerDns).withPort(writeRegistrationPort))
+                .withServerResolver(withDnsName(writeServerDns).withPort(writeRegistrationPort))
                 .build();
 
         ServerResolver interestClientResolver =
-                ServerResolver
-                        .fromEureka(
-                                ServerResolver
-                                        .withDnsName(writeServerDns)
-                                        .withPort(writeInterestPort)
-                        )
-                        .forVips(readServerVip);
+                fromEureka(
+                        withDnsName(writeServerDns).withPort(writeInterestPort)
+                ).forInterest(forVips(readServerVip));
 
         EurekaInterestClient interestClient = new EurekaInterestClientBuilder()
                 .withServerResolver(interestClientResolver)
                 .build();
 
-        interestClient.forInterest(Interests.forApplications("WriteServer", "ReadServer", "ServiceA")).subscribe(
+        interestClient.forInterest(forApplications("WriteServer", "ReadServer", "ServiceA")).subscribe(
                 new Subscriber<ChangeNotification<InstanceInfo>>() {
                     @Override
                     public void onCompleted() {

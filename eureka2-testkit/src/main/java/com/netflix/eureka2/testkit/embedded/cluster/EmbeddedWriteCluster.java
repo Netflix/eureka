@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
+import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
@@ -170,7 +171,7 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
             }
         }).filter(RxFunctions.filterNullValuesFunc());
 
-        return ServerResolver.forServerSource(serverSource).loadBalance();
+        return ServerResolvers.forServerSource(serverSource);
     }
 
     public static class WriteServerAddress {

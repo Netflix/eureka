@@ -1,12 +1,13 @@
 package netflix.adminresources.resources;
 
-import com.google.inject.Singleton;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaInterestClientBuilder;
-import com.netflix.eureka2.client.resolver.ServerResolver;
+import com.netflix.eureka2.client.resolver.ServerResolvers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.inject.Singleton;
 
 @Singleton
 public class Eureka2InterestClientProviderImpl implements Eureka2InterestClientProvider {
@@ -22,7 +23,7 @@ public class Eureka2InterestClientProviderImpl implements Eureka2InterestClientP
     public EurekaInterestClient get() {
         logger.info("Subscribing to Eureka2 server {}:{}", discoveryDNS, port);
         return new EurekaInterestClientBuilder()
-                .withServerResolver(ServerResolver.withDnsName(discoveryDNS).withPort(port))
+                .withServerResolver(ServerResolvers.withDnsName(discoveryDNS).withPort(port))
                 .build();
     }
 }

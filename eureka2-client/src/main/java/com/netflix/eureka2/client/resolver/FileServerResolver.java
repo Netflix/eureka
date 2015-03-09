@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Tomasz Bak
  */
-public class FileServerResolver extends ObservableServerResolver {
+public class FileServerResolver extends OcelliServerResolver {
 
     private final File textFile;
     private final Configuration configuration;
@@ -57,11 +57,6 @@ public class FileServerResolver extends ObservableServerResolver {
                 .withScheduler(scheduler);
 
         return new FileServerResolver(textFile, updatedConfig);
-    }
-
-    @Override
-    public void close() {
-        super.close();
     }
 
     private static Observable<ChangeNotification<Server>> createServerSource(File textFile, Configuration configuration) {

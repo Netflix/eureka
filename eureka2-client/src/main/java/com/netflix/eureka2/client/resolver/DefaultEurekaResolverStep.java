@@ -4,7 +4,6 @@ import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,16 +28,6 @@ class DefaultEurekaResolverStep implements EurekaRemoteResolverStep {
 
     /* for testing */ DefaultEurekaResolverStep(EurekaInterestClientBuilder interestClientBuilder) {
         this.interestClientBuilder = interestClientBuilder;
-    }
-
-    @Override
-    public ServerResolver forApps(String... appNames) {
-        return forInterest(Interests.forApplications(appNames));
-    }
-
-    @Override
-    public ServerResolver forVips(String... vipAddresses) {
-        return forInterest(Interests.forVips(vipAddresses));
     }
 
     @Override

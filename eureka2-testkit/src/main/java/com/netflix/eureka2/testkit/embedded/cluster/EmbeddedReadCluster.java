@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.netflix.eureka2.client.resolver.ServerResolver;
-import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedReadCluster.ReadClusterReport;
@@ -12,7 +12,6 @@ import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer.ReadServerReport;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import com.netflix.eureka2.Server;
-import rx.Observable;
 
 /**
  * @author Tomasz Bak
@@ -97,7 +96,7 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
     }
 
     public ServerResolver interestResolver() {
-        return ServerResolver.forServerSource(clusterChangeObservable()).loadBalance();
+        return ServerResolvers.forServerSource(clusterChangeObservable());
     }
 
     public static class ReadClusterReport {

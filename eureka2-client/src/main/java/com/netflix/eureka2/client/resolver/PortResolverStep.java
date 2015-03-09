@@ -3,9 +3,9 @@ package com.netflix.eureka2.client.resolver;
 /**
  * @author David Liu
  */
-public interface PortResolverStep {
+public interface PortResolverStep extends ServerResolverStep {
 
-    public ServerResolver withHostname(String hostname);
+    ServerResolver withHostname(String hostname);
 
-    public ServerResolver withDnsName(String dnsName);
+    ServerResolver withDnsName(String dnsName);
 }

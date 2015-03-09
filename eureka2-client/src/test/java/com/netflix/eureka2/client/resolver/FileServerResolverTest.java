@@ -49,7 +49,7 @@ public class FileServerResolverTest extends AbstractResolverTest {
 
         // We need to force reload, as file last update time resolution is 1sec. Too long to wait.
         testScheduler = Schedulers.test();
-        resolver = ServerResolver.fromFile(configurationFile)
+        resolver = ServerResolvers.fromFile(configurationFile)
                 .configureReload(true, 10, 100, TimeUnit.MILLISECONDS)
                 .configureReloadScheduler(testScheduler);
     }
@@ -74,30 +74,10 @@ public class FileServerResolverTest extends AbstractResolverTest {
         // Now update the file, and change one server address
         updateFile("serverA", "serverC");
         testScheduler.advanceTimeBy(10, TimeUnit.MILLISECONDS);
+
         expected = asSet(new Server("serverA", 0), new Server("serverC", 0));
         // take 1 extra, should loop back and be de-duped
         actual = asSet(takeNext(resolver), takeNext(resolver), takeNext(resolver));
-
-        assertThat(actual, is(equalTo(expected)));
-    }
-
-    @Test(timeout = 30000)
-    public void testReadingServersFromFileWithLoadBalancer() throws Exception {
-        ServerResolver loadBalancedResolver = resolver.loadBalance();
-        Set<Server> expected = asSet(new Server("serverA", 555),
-                new Server("serverB", 0));
-        // take 1 extra, should loop back and be de-duped
-        Set<Server> actual = asSet(takeNext(loadBalancedResolver), takeNext(loadBalancedResolver), takeNext(loadBalancedResolver));
-
-        assertThat(actual, is(equalTo(expected)));
-
-        // Now update the file, and change one server address
-        updateFile("serverA", "serverC");
-        testScheduler.advanceTimeBy(10, TimeUnit.MILLISECONDS);
-
-        expected = asSet(new Server("serverA", 0), new Server("serverC", 0));
-        // take 1 extra, should loop back and be de-duped
-        actual = asSet(takeNext(loadBalancedResolver), takeNext(loadBalancedResolver), takeNext(loadBalancedResolver));
 
         assertThat(actual, is(equalTo(expected)));
     }

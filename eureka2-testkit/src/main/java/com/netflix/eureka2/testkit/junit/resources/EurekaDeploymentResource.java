@@ -4,7 +4,7 @@ import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.EurekaRegistrationClientBuilder;
-import com.netflix.eureka2.client.resolver.ServerResolver;
+import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
@@ -12,6 +12,8 @@ import com.netflix.eureka2.testkit.embedded.EurekaDeployment.EurekaDeploymentBui
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources.EurekaExternalResource;
+
+import static com.netflix.eureka2.interests.Interests.*;
 
 /**
  * @author Tomasz Bak
@@ -116,8 +118,8 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
     public EurekaInterestClient cannonicalInterestClient() {
         return new EurekaInterestClientBuilder()
                 .withTransportConfig(transportConfig)
-                .withServerResolver(ServerResolver.fromEureka(eurekaDeployment.getWriteCluster().interestResolver())
-                        .forVips(eurekaDeployment.getReadCluster().getVip()))
+                .withServerResolver(ServerResolvers.fromEureka(eurekaDeployment.getWriteCluster().interestResolver())
+                        .forInterest(forVips(eurekaDeployment.getReadCluster().getVip())))
                 .build();
     }
 

@@ -8,6 +8,7 @@ import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
+import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.server.EurekaBridgeServerModule;
@@ -55,7 +56,7 @@ public class EmbeddedBridgeServer extends EmbeddedEurekaServer<BridgeServerConfi
 
     @Override
     public ServerResolver getInterestResolver() {
-        return ServerResolver.withHostname("localhost").withPort(getDiscoveryPort());
+        return ServerResolvers.withHostname("localhost").withPort(getDiscoveryPort());
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.netflix.eureka2.testkit.embedded;
 
 import com.netflix.eureka2.client.resolver.ServerResolver;
+import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedReadCluster;
@@ -8,6 +9,8 @@ import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedBridgeServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedDashboardServer;
 import com.netflix.eureka2.testkit.embedded.view.ClusterViewHttpServer;
+
+import static com.netflix.eureka2.interests.Interests.*;
 
 /**
  * @author Tomasz Bak
@@ -148,7 +151,7 @@ public class EurekaDeployment {
                 ServerResolver readClusterResolver;
                 if (readClusterSize > 0) {
                     discoveryPort = readCluster.getServer(0).getDiscoveryPort();
-                    readClusterResolver = ServerResolver.fromEureka(writeCluster.interestResolver()).forVips(readCluster.getVip());
+                    readClusterResolver = ServerResolvers.fromEureka(writeCluster.interestResolver()).forInterest(forVips(readCluster.getVip()));
                 } else {
                     discoveryPort = writeCluster.getServer(0).getDiscoveryPort();
                     readClusterResolver = writeCluster.interestResolver();

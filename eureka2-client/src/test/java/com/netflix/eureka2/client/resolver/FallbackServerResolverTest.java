@@ -17,7 +17,7 @@ public class FallbackServerResolverTest extends AbstractResolverTest {
     public void testFailoverToSecondResolver() throws Exception {
         Server serverA = new Server("hostA", 123);
 
-        ServerResolver goodResolver = ServerResolver.from(serverA);
+        ServerResolver goodResolver = ServerResolvers.from(serverA);
         ServerResolver brokenResolver = new ServerResolver() {
             @Override
             public void close() {
@@ -30,11 +30,11 @@ public class FallbackServerResolverTest extends AbstractResolverTest {
         };
 
         // First resolver ok
-        ServerResolver resolver = goodResolver.withFallback(brokenResolver);
+        ServerResolver resolver = ServerResolvers.fallbackResolver(goodResolver, brokenResolver);
         assertThat(takeNext(resolver), is(equalTo(serverA)));
 
         // First resolver broken
-        resolver = brokenResolver.withFallback(goodResolver);
+        resolver = ServerResolvers.fallbackResolver(brokenResolver, goodResolver);
         assertThat(takeNext(resolver), is(equalTo(serverA)));
     }
 }

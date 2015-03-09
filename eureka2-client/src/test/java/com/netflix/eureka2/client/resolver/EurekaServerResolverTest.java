@@ -73,23 +73,8 @@ public class EurekaServerResolverTest extends AbstractResolverTest {
     }
 
     @Test(timeout = 30000)
-    public void testWithLoadBalancer() throws Exception {
-        // Returns two items in subscription
-        when(interestClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(Observable.just(ADD_INSTANCE_1, ADD_INSTANCE_2, BUFFERING_SENTINEL));
-
-        eurekaServerResolver = new DefaultEurekaResolverStep(interestClientBuilder).forInterest(READ_SERVERS_INTEREST)
-            .loadBalance();
-
-        // Resolve three times, should be overlap
-        Set<Server> actual = asSet(takeNext(eurekaServerResolver), takeNext(eurekaServerResolver), takeNext(eurekaServerResolver));
-
-        Set<Server> expected = asSet(toServer(INSTANCE_1), toServer(INSTANCE_2));
-        assertThat(actual, is(equalTo(expected)));
-    }
-
-    @Test(timeout = 30000)
-    public void testFallsBackToStaleContentIfRefreshFailsWithLoadBalancer() throws Exception {
-        final Exception error = new Exception("channel error");
+    public void testFallsBackToStaleContentIfRefreshFails() throws Exception {
+        final Exception error = new Exception("test error");
 
         when(interestClient.forInterest(READ_SERVERS_INTEREST))
                 .thenAnswer(new Answer<Observable<ChangeNotification<InstanceInfo>>>() {
@@ -108,8 +93,7 @@ public class EurekaServerResolverTest extends AbstractResolverTest {
                     }
                 });
 
-        eurekaServerResolver = new DefaultEurekaResolverStep(interestClientBuilder).forInterest(READ_SERVERS_INTEREST)
-                .loadBalance();
+        eurekaServerResolver = new DefaultEurekaResolverStep(interestClientBuilder).forInterest(READ_SERVERS_INTEREST);
 
         // Batch with first item
         assertResolvesTo(INSTANCE_1);

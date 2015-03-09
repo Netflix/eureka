@@ -32,22 +32,26 @@ public class OcelliServerResolverTest extends AbstractResolverTest {
 
     @Test
     public void testEmptyLoadBalancer() {
-        ServerResolver resolver = ServerResolver.from()
-                .loadBalance();
+        ServerResolver resolver = new OcelliServerResolver();
 
         resolver.resolve().subscribe(testSubscriber);
 
         testSubscriber.awaitTerminalEvent(5000, TimeUnit.MILLISECONDS);
 
-        testSubscriber.assertNoErrors();
         testSubscriber.assertTerminalEvent();
+        assertThat(testSubscriber.getOnErrorEvents().size(), is(1));
         assertThat(testSubscriber.getOnNextEvents().size(), is(0));
     }
 
     @Test
-    public void testSingleElementLoadBalancer() {
-        ServerResolver resolver = ServerResolver.from(SERVER_A)
-                .loadBalance();
+    public void testSingleElementLoadBalancer() throws Exception {
+        ServerResolver resolver = new OcelliServerResolver(SERVER_A);
+
+        ExtTestSubscriber<Server> extTestSubscriber = new ExtTestSubscriber<>();
+        resolver.resolve().subscribe(extTestSubscriber);
+        Server next = extTestSubscriber.takeNext(1000, TimeUnit.MILLISECONDS);
+
+        assertThat(next, is(SERVER_A));
 
         resolver.resolve().subscribe(testSubscriber);
 
@@ -87,8 +91,7 @@ public class OcelliServerResolverTest extends AbstractResolverTest {
             }
         });
 
-        ServerResolver resolver = ServerResolver.forServerSource(serverSource)
-                .loadBalance();
+        ServerResolver resolver = new OcelliServerResolver(serverSource);
 
         // resolve once
         resolver.resolve().subscribe(testSubscriber);
@@ -119,8 +122,8 @@ public class OcelliServerResolverTest extends AbstractResolverTest {
                 .just(new ChangeNotification<>(ChangeNotification.Kind.Add, SERVER_A))
                 .delay(delayTime, timeUnit);
 
-        ServerResolver resolver = ServerResolver.forServerSource(serverSource)
-                .loadBalance(warmUpTimeout, timeUnit);
+        ServerResolver resolver = new OcelliServerResolver(serverSource)
+                .withWarmUpConfiguration(warmUpTimeout, timeUnit);
 
         ExtTestSubscriber<Server> extTestSubscriber = new ExtTestSubscriber<>();
         resolver.resolve().subscribe(extTestSubscriber);
@@ -141,8 +144,8 @@ public class OcelliServerResolverTest extends AbstractResolverTest {
                 .just(new ChangeNotification<>(ChangeNotification.Kind.Add, SERVER_A))
                 .delay(delayTime, timeUnit);
 
-        ServerResolver resolver = ServerResolver.forServerSource(serverSource)
-                .loadBalance(warmUpTimeout, timeUnit);
+        ServerResolver resolver = new OcelliServerResolver(serverSource)
+                .withWarmUpConfiguration(warmUpTimeout, timeUnit);
 
         ExtTestSubscriber<Server> extTestSubscriber = new ExtTestSubscriber<>();
         resolver.resolve().subscribe(extTestSubscriber);
@@ -157,8 +160,7 @@ public class OcelliServerResolverTest extends AbstractResolverTest {
         Throwable expected = new Exception("test error");
         Observable<ChangeNotification<Server>> serverSource = Observable.error(expected);
 
-        ServerResolver resolver = ServerResolver.forServerSource(serverSource)
-                .loadBalance();
+        ServerResolver resolver = new OcelliServerResolver(serverSource);
 
         resolver.resolve().subscribe(testSubscriber);
         // return empty lb error instead
@@ -173,8 +175,7 @@ public class OcelliServerResolverTest extends AbstractResolverTest {
                 .just(new ChangeNotification<Server>(ChangeNotification.Kind.Add, SERVER_A))
                 .concatWith(errorSource);
 
-        ServerResolver resolver = ServerResolver.forServerSource(serverSource)
-                .loadBalance();
+        ServerResolver resolver = new OcelliServerResolver(serverSource);
 
         resolver.resolve().subscribe(testSubscriber);
         assertThat(testSubscriber.getOnNextEvents().size(), is(0));  // when input onError we don't emit buffers
@@ -188,8 +189,8 @@ public class OcelliServerResolverTest extends AbstractResolverTest {
     @Test
     public void testLoadBalancerFallbackToPreviousIfOnError() throws Exception {
         PublishSubject<ChangeNotification<Server>> serverSubject = PublishSubject.create();
-        ServerResolver resolver = ServerResolver.forServerSource(serverSubject)
-                .loadBalance();
+
+        ServerResolver resolver = new OcelliServerResolver(serverSubject);
 
         ExtTestSubscriber<Server> extTestSubscriber = new ExtTestSubscriber<>();
 
@@ -214,8 +215,8 @@ public class OcelliServerResolverTest extends AbstractResolverTest {
     @Test
     public void testResolverRoundRobin() {  // change if we use a different loadbalancer
         Set<Server> fullServerSet = asSet(SERVER_A, SERVER_B, SERVER_C);
-        ServerResolver resolver = ServerResolver.from(SERVER_A, SERVER_B, SERVER_C)
-                .loadBalance();
+
+        ServerResolver resolver = new OcelliServerResolver(SERVER_A, SERVER_B, SERVER_C);
 
         Map<Server, AtomicInteger> roundRobinCount = new HashMap<>();
         for (int i = 0; i < 6; i++) {

@@ -28,7 +28,7 @@ public class DnsServerResolverTest extends AbstractResolverTest {
 
     @Test(timeout = 10000)
     public void testBuilderWithoutDefaults() throws Exception {
-        ServerResolver resolver = ServerResolver
+        ServerResolver resolver = ServerResolvers
                 .withDnsName("my.domain")
                 .configureReload(1000, 2000, TimeUnit.MILLISECONDS)
                 .configureReloadScheduler(Schedulers.test())
@@ -39,7 +39,7 @@ public class DnsServerResolverTest extends AbstractResolverTest {
 
     @Test(timeout = 10000)
     public void testBuilderWithDefaults() throws Exception {
-        ServerResolver resolver = ServerResolver
+        ServerResolver resolver = ServerResolvers
                 .withDnsName("my.domain")
                 .withPort(80);
 
@@ -52,7 +52,7 @@ public class DnsServerResolverTest extends AbstractResolverTest {
 
         when(dnsChangeNotificationSource.forInterest(null)).thenReturn(dnsUpdatesSubject);
 
-        ServerResolver resolver = ServerResolver
+        ServerResolver resolver = ServerResolvers
                 .withDnsName("my.domain")
                 .configureChangeNotificationSource(dnsChangeNotificationSource)
                 .withPort(80);
@@ -97,11 +97,10 @@ public class DnsServerResolverTest extends AbstractResolverTest {
 
         when(dnsChangeNotificationSource.forInterest(null)).thenReturn(dnsSource);
 
-        ServerResolver resolver = ServerResolver
+        ServerResolver resolver = ServerResolvers
                 .withDnsName("my.domain")
                 .configureChangeNotificationSource(dnsChangeNotificationSource)
-                .withPort(80)
-                .loadBalance();
+                .withPort(80);
 
         Set<Server> expected = asSet(new Server("host2", 80), new Server("host3", 80));
         Set<Server> actual = asSet(takeNext(resolver), takeNext(resolver), takeNext(resolver));

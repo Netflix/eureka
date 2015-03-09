@@ -1,15 +1,12 @@
 package com.netflix.eureka2.client.functions;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
-import com.netflix.eureka2.utils.rx.RxFunctions;
 import rx.Notification;
 import rx.Observable;
 import rx.Observable.Transformer;
@@ -77,6 +74,10 @@ public final class ChangeNotificationFunctions {
      * Collapse observable of change notification batches into a set of currently known items.
      * Use a LinkedHashSet to maintain order based on insertion order.
      *
+     * Note that the same batch can be emitted multiple times if the transformer receive "empty" prompts
+     * from the buffers transformer. Users should apply .distinctUntilChanged() if this is not desired
+     * behaviour.
+     *
      * @return observable of distinct set objects
      */
     public static <T> Transformer<List<ChangeNotification<T>>, LinkedHashSet<T>> snapshots() {
@@ -87,26 +88,22 @@ public final class ChangeNotificationFunctions {
                 return batches.map(new Func1<List<ChangeNotification<T>>, LinkedHashSet<T>>() {
                     @Override
                     public LinkedHashSet<T> call(List<ChangeNotification<T>> batch) {
-                        boolean changed = false;
                         for (ChangeNotification<T> item : batch) {
                             switch (item.getKind()) {
                                 case Add:
                                 case Modify:
-                                    changed |= snapshotSet.add(item.getData());
+                                    snapshotSet.add(item.getData());
                                     break;
                                 case Delete:
-                                    changed |= snapshotSet.remove(item.getData());
+                                    snapshotSet.remove(item.getData());
                                     break;
                                 default:
                                     // no-op
                             }
                         }
-                        if (changed) {
-                            return new LinkedHashSet<>(snapshotSet);
-                        }
-                        return null;
+                        return new LinkedHashSet<>(snapshotSet);
                     }
-                }).filter(RxFunctions.filterNullValuesFunc());
+                });
             }
         };
     }

@@ -15,6 +15,6 @@ class FixedHostResolverStep implements HostResolverStep {
 
     @Override
     public ServerResolver withPort(final int port) {
-        return ServerResolver.from(new Server(hostname, port));
+        return ServerResolvers.from(new Server(hostname, port));
     }
 }

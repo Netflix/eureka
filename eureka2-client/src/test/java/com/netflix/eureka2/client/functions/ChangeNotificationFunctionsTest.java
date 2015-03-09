@@ -1,6 +1,7 @@
 package com.netflix.eureka2.client.functions;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -112,8 +113,12 @@ public class ChangeNotificationFunctionsTest {
         notificationSubject.onNext(SECOND_BATCH);
         assertThat(testSubscriber.takeNext(), is(equalTo((Set) asSet("B", "C"))));
 
-        // Verify that no snapshot is issued if no data are changed
+        // Verify that the same snapshot is issued if no data are changed on a prompt
         notificationSubject.onNext(SECOND_BATCH);
-        assertThat(testSubscriber.takeNext(), is(nullValue()));
+        assertThat(testSubscriber.takeNext(), is(equalTo((Set) asSet("B", "C"))));
+
+        // Verify that the same snapshot is issued if an empty prompt arrives
+        notificationSubject.onNext(Collections.EMPTY_LIST);
+        assertThat(testSubscriber.takeNext(), is(equalTo((Set) asSet("B", "C"))));
     }
 }

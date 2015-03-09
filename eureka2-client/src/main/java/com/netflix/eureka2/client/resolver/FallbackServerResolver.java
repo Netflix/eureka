@@ -6,7 +6,7 @@ import rx.Observable;
 /**
  * @author David Liu
  */
-public class FallbackServerResolver extends ServerResolver {
+public class FallbackServerResolver implements ServerResolver {
 
     private final ServerResolver primary;
     private final ServerResolver fallback;
