@@ -14,7 +14,7 @@ import java.net.InetSocketAddress;
 /**
  * @author David Liu
  */
-class EurekaServerResolver extends OcelliServerResolver {
+public class EurekaServerResolver extends OcelliServerResolver {
     EurekaServerResolver(Observable<ChangeNotification<InstanceInfo>> instanceInfoSource) {
         super(instanceInfoSource.map(SERVER_TRANSFORM_FUNC));
     }

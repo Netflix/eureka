@@ -49,7 +49,7 @@ public class FileServerResolverTest extends AbstractResolverTest {
 
         // We need to force reload, as file last update time resolution is 1sec. Too long to wait.
         testScheduler = Schedulers.test();
-        resolver = ServerResolvers.fromFile(configurationFile)
+        resolver = new FileServerResolver(configurationFile)
                 .configureReload(true, 10, 100, TimeUnit.MILLISECONDS)
                 .configureReloadScheduler(testScheduler);
     }

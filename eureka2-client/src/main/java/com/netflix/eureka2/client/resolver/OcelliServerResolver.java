@@ -34,23 +34,27 @@ public class OcelliServerResolver implements ServerResolver {
     private final LoadBalancer<Server> loadBalancer;
 
 
-    public OcelliServerResolver(Server... servers) {
-        this(sourceFromList(servers), 10, TimeUnit.SECONDS);
+    OcelliServerResolver(Server... servers) {
+        this(sourceFromList(servers), RoundRobinLoadBalancer.<Server>create(), 10, TimeUnit.SECONDS);
     }
 
-    public OcelliServerResolver(Observable<ChangeNotification<Server>> serverSource) {
-        this(serverSource, 10, TimeUnit.SECONDS);
+    OcelliServerResolver(Observable<ChangeNotification<Server>> serverSource) {
+        this(serverSource, RoundRobinLoadBalancer.<Server>create(), 10, TimeUnit.SECONDS);
     }
 
-    private OcelliServerResolver(Observable<ChangeNotification<Server>> serverSource, int warmUpTimeout, TimeUnit timeUnit) {
+    private OcelliServerResolver(Observable<ChangeNotification<Server>> serverSource, LoadBalancer<Server> loadBalancer, int warmUpTimeout, TimeUnit timeUnit) {
         this.serverSource = serverSource;
         this.warmUpTimeout = warmUpTimeout;
         this.timeUnit = timeUnit;
-        this.loadBalancer = RoundRobinLoadBalancer.create();
+        this.loadBalancer = loadBalancer;
     }
 
-    public OcelliServerResolver withWarmUpConfiguration(int warmUpTimeout, TimeUnit timeUnit) {
-        return new OcelliServerResolver(serverSource, warmUpTimeout, timeUnit);
+    public OcelliServerResolver withWarmUpConfiguration(int newWarmUpTimeout, TimeUnit newTimeUnit) {
+        return new OcelliServerResolver(serverSource, loadBalancer, newWarmUpTimeout, newTimeUnit);
+    }
+
+    public OcelliServerResolver withLoadBalancer(LoadBalancer<Server> newLoadBalancer) {
+        return new OcelliServerResolver(serverSource, newLoadBalancer, warmUpTimeout, timeUnit);
     }
 
     @Override

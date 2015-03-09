@@ -74,7 +74,7 @@ public class ServerResolvers {
      * @param file a file containing server resolver information, see {@link FileServerResolver} for specification
      * @return {@link FileServerResolver}
      */
-    public static FileServerResolver fromFile(File file) {
+    public static ServerResolver fromFile(File file) {
         return new FileServerResolver(file);
     }
 
