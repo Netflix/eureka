@@ -57,7 +57,7 @@ public class RxHttpReverseProxy {
     }
 
     static class ForwardingHandler implements ConnectionHandler<ByteBuf, ByteBuf> {
-        private static final Logger LOG = LoggerFactory.getLogger(ForwardingHandler.class);
+        private static final Logger logger = LoggerFactory.getLogger(ForwardingHandler.class);
 
         private final List<ForwardingRule> forwardingRules = new CopyOnWriteArrayList<>();
 
@@ -105,7 +105,7 @@ public class RxHttpReverseProxy {
 
                                         @Override
                                         public void onError(Throwable e) {
-                                            LOG.error("Error in proxy connection", e);
+                                            logger.error("Error in proxy connection", e);
                                             targetConnection.close();
                                         }
 
@@ -119,13 +119,12 @@ public class RxHttpReverseProxy {
                                         @Override
                                         public Observable<Void> call(ByteBuf byteBuf) {
                                             byteBuf.retain();
-                                            proxyConnection.writeAndFlush(byteBuf);
-                                            return Observable.empty();
+                                            return proxyConnection.writeAndFlush(byteBuf);
                                         }
                                     }).doOnError(new Action1<Throwable>() {
                                         @Override
                                         public void call(Throwable e) {
-                                            LOG.error("Error in target connection", e);
+                                            logger.error("Error in target connection", e);
                                             proxyConnection.close();
                                         }
                                     });

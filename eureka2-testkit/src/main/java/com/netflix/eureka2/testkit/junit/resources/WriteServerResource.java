@@ -18,20 +18,22 @@ public class WriteServerResource extends EurekaExternalResource {
     public static final String DEFAULT_WRITE_CLUSTER_NAME = "write-test";
 
     private final String name;
+    private final String readClusterName;
     private final Codec codec;
 
     private EmbeddedWriteServer server;
 
     public WriteServerResource() {
-        this(DEFAULT_WRITE_CLUSTER_NAME);
+        this(DEFAULT_WRITE_CLUSTER_NAME, ReadServerResource.DEFAULT_READ_CLUSTER_NAME);
     }
 
-    public WriteServerResource(String name) {
-        this(name, Codec.Avro);
+    public WriteServerResource(String name, String readClusterName) {
+        this(name, readClusterName, Codec.Avro);
     }
 
-    public WriteServerResource(String name, Codec codec) {
+    public WriteServerResource(String name, String readClusterName, Codec codec) {
         this.name = name;
+        this.readClusterName = readClusterName;
         this.codec = codec;
     }
 
@@ -40,6 +42,7 @@ public class WriteServerResource extends EurekaExternalResource {
         WriteServerConfig config = WriteServerConfig.writeBuilder()
                 .withAppName(name)
                 .withVipAddress(name)
+                .withReadClusterVipAddress(readClusterName)
                 .withDataCenterType(DataCenterType.Basic)
                 .withHttpPort(0)
                 .withRegistrationPort(0)

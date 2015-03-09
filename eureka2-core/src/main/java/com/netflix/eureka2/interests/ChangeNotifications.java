@@ -17,10 +17,19 @@
 package com.netflix.eureka2.interests;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
+import com.netflix.eureka2.interests.StreamStateNotification.BufferState;
+import com.netflix.eureka2.utils.rx.RxFunctions;
 import rx.Observable;
+import rx.Observable.Transformer;
 import rx.functions.Func1;
 
 /**
@@ -67,4 +76,86 @@ public final class ChangeNotifications {
     public static Func1<ChangeNotification<?>, Boolean> streamStateFilter() {
         return STREAM_STATE_FILTER_FUNC;
     }
+
+    /**
+     * Convert change notification stream with buffering start/end markers into stream of lists, where each
+     * list element contains a batch of data delineated by the markers. Only non-empty lists are
+     * issued, which means that for two successive BufferSentinels from the stream, the second
+     * one will be swallowed.
+     *
+     * @return observable of non-empty list objects
+     */
+    public static <T> Transformer<ChangeNotification<T>, List<ChangeNotification<T>>> delineatedBuffers() {
+        return new Transformer<ChangeNotification<T>, List<ChangeNotification<T>>>() {
+            @Override
+            public Observable<List<ChangeNotification<T>>> call(Observable<ChangeNotification<T>> notifications) {
+                final AtomicBoolean bufferStart = new AtomicBoolean();
+                final AtomicReference<List<ChangeNotification<T>>> bufferRef = new AtomicReference<>();
+                return notifications.map(new Func1<ChangeNotification<T>, List<ChangeNotification<T>>>() {
+                    @Override
+                    public List<ChangeNotification<T>> call(ChangeNotification<T> notification) {
+                        List<ChangeNotification<T>> buffer = bufferRef.get();
+                        if (notification instanceof StreamStateNotification) {
+                            BufferState bufferState = ((StreamStateNotification<T>) notification).getBufferState();
+                            if (bufferState == BufferState.BufferStart) {
+                                bufferStart.set(true);
+                            } else { // BufferEnd
+                                bufferStart.set(false);
+                                bufferRef.set(null);
+                                return buffer;
+                            }
+                        } else if (bufferStart.get()) {
+                            if (buffer == null) {
+                                bufferRef.set(buffer = new ArrayList<ChangeNotification<T>>());
+                            }
+                            buffer.add(notification);
+                        } else {
+                            return Collections.singletonList(notification);
+                        }
+
+                        return null;
+                    }
+                }).filter(RxFunctions.filterNullValuesFunc());
+            }
+        };
+    }
+
+    /**
+     * Collapse observable of change notification batches into a set of currently known items.
+     * Use a LinkedHashSet to maintain order based on insertion order.
+     *
+     * Note that the same batch can be emitted multiple times if the transformer receive "empty" prompts
+     * from the buffers transformer. Users should apply .distinctUntilChanged() if this is not desired
+     * behaviour.
+     *
+     * @return observable of distinct set objects
+     */
+    public static <T> Transformer<List<ChangeNotification<T>>, LinkedHashSet<T>> snapshots() {
+        final LinkedHashSet<T> snapshotSet = new LinkedHashSet<>();
+        return new Transformer<List<ChangeNotification<T>>, LinkedHashSet<T>>() {
+            @Override
+            public Observable<LinkedHashSet<T>> call(Observable<List<ChangeNotification<T>>> batches) {
+                return batches.map(new Func1<List<ChangeNotification<T>>, LinkedHashSet<T>>() {
+                    @Override
+                    public LinkedHashSet<T> call(List<ChangeNotification<T>> batch) {
+                        for (ChangeNotification<T> item : batch) {
+                            switch (item.getKind()) {
+                                case Add:
+                                case Modify:
+                                    snapshotSet.add(item.getData());
+                                    break;
+                                case Delete:
+                                    snapshotSet.remove(item.getData());
+                                    break;
+                                default:
+                                    // no-op
+                            }
+                        }
+                        return new LinkedHashSet<>(snapshotSet);
+                    }
+                });
+            }
+        };
+    }
+
 }

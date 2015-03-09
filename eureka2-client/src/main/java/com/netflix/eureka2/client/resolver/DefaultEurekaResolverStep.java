@@ -54,6 +54,8 @@ class DefaultEurekaResolverStep implements EurekaRemoteResolverStep {
                     }
                 });
 
-        return new EurekaServerResolver(instanceInfoSource);
+        EurekaServerResolver resolver = new EurekaServerResolver(instanceInfoSource);
+
+        return resolver;
     }
 }

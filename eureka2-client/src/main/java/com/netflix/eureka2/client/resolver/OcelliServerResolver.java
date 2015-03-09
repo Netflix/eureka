@@ -7,6 +7,7 @@ import netflix.ocelli.LoadBalancer;
 import netflix.ocelli.loadbalancer.RoundRobinLoadBalancer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rx.Notification;
 import rx.Observable;
 import rx.functions.Func1;
 
@@ -34,11 +35,11 @@ public class OcelliServerResolver implements ServerResolver {
 
 
     public OcelliServerResolver(Server... servers) {
-        this(sourceFromList(servers), 5, TimeUnit.SECONDS);
+        this(sourceFromList(servers), 10, TimeUnit.SECONDS);
     }
 
     public OcelliServerResolver(Observable<ChangeNotification<Server>> serverSource) {
-        this(serverSource, 5, TimeUnit.SECONDS);
+        this(serverSource, 10, TimeUnit.SECONDS);
     }
 
     private OcelliServerResolver(Observable<ChangeNotification<Server>> serverSource, int warmUpTimeout, TimeUnit timeUnit) {
@@ -75,29 +76,41 @@ public class OcelliServerResolver implements ServerResolver {
         return serverSource
                 .compose(ChangeNotificationFunctions.<Server>buffers())
                 .compose(ChangeNotificationFunctions.<Server>snapshots())
-                .timeout(warmUpTimeout, timeUnit)
-                .onErrorResumeNext(new Func1<Throwable, Observable<? extends LinkedHashSet<Server>>>() {
+                .materialize()
+                .concatMap(new Func1<Notification<LinkedHashSet<Server>>, Observable<? extends LoadBalancer<Server>>>() {
                     @Override
-                    public Observable<? extends LinkedHashSet<Server>> call(Throwable throwable) {
-                        if (!(throwable instanceof TimeoutException)) {
-                            logger.warn("Exception thrown when connecting serverSource to load balancer", throwable);
+                    public Observable<? extends LoadBalancer<Server>> call(Notification<LinkedHashSet<Server>> rxNotification) {
+                        switch (rxNotification.getKind()) {
+                            case OnNext:
+                                LinkedHashSet<Server> servers = rxNotification.getValue();
+                                if (servers.isEmpty()) {  // if onNext is empty, do nothing and wait
+                                    return Observable.never();
+                                } else {
+                                    logger.info("Populating the loadbalancer with {} servers", servers.size());
+                                    loadBalancer.call(new ArrayList<>(servers));
+                                }
+                                break;
+                            case OnCompleted:  // onCompleted also return the loadbalancer
+                                break;
+                            case OnError:
+                                return Observable.error(rxNotification.getThrowable());
                         }
-                        return Observable.just(EMPTY_SERVER_SET);
+                        return Observable.just(loadBalancer);
                     }
                 })
-                .map(new Func1<LinkedHashSet<Server>, LoadBalancer<Server>>() {
+                .timeout(warmUpTimeout, timeUnit)
+                .onErrorResumeNext(new Func1<Throwable, Observable<? extends LoadBalancer<Server>>>() {
                     @Override
-                    public LoadBalancer<Server> call(LinkedHashSet<Server> servers) {
-                        if (!servers.isEmpty()) {
-                            loadBalancer.call(new ArrayList<>(servers));
+                    public Observable<? extends LoadBalancer<Server>> call(Throwable throwable) {
+                        if (!(throwable instanceof TimeoutException)) {
+                            logger.warn("Exception thrown when connecting serverSource to load balancer", throwable);
+
                         }
-                        return loadBalancer;
+                        return Observable.just(loadBalancer);
                     }
                 })
                 .take(1);
     }
-
-    private static LinkedHashSet<Server> EMPTY_SERVER_SET = new LinkedHashSet<>();
 
     private static Observable<ChangeNotification<Server>> sourceFromList(Server... servers) {
         return Observable.from(servers)

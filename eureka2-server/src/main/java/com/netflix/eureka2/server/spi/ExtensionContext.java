@@ -46,6 +46,10 @@ public class ExtensionContext {
         this.localRegistry = localRegistry;
     }
 
+    public EurekaServerConfig getConfig() {
+        return config;
+    }
+
     /**
      * Unique name assigned to read or write cluster.
      */
@@ -55,17 +59,6 @@ public class ExtensionContext {
 
     public SourcedEurekaRegistry<InstanceInfo> getLocalRegistry() {
         return localRegistry;
-    }
-
-    /**
-     * TODO: this should be replaced with internal EurekaClient API connecting us directly to local registry
-     */
-    public String getInteralReadServerHost() {
-        return "localhost";
-    }
-
-    public int getInteralReadServerPort() {
-        return config.getDiscoveryPort();
     }
 
     public static class ExtensionContextBuilder {

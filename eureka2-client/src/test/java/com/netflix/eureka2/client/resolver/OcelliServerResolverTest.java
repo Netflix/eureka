@@ -32,11 +32,12 @@ public class OcelliServerResolverTest extends AbstractResolverTest {
 
     @Test
     public void testEmptyLoadBalancer() {
-        ServerResolver resolver = new OcelliServerResolver();
+        ServerResolver resolver = new OcelliServerResolver()
+                .withWarmUpConfiguration(10, TimeUnit.MILLISECONDS);
 
         resolver.resolve().subscribe(testSubscriber);
 
-        testSubscriber.awaitTerminalEvent(5000, TimeUnit.MILLISECONDS);
+        testSubscriber.awaitTerminalEvent(50, TimeUnit.MILLISECONDS);
 
         testSubscriber.assertTerminalEvent();
         assertThat(testSubscriber.getOnErrorEvents().size(), is(1));

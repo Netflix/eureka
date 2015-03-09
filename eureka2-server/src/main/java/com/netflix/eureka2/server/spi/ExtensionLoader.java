@@ -25,6 +25,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.netflix.eureka2.server.audit.AuditService;
 import com.netflix.eureka2.server.audit.SimpleAuditService;
+import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.governator.guice.BootstrapBinder;
 import com.netflix.governator.guice.BootstrapModule;
 import org.slf4j.Logger;
@@ -51,24 +52,23 @@ public class ExtensionLoader {
         this.stdExtOnly = stdExtOnly;
     }
 
-    public Module[] asModuleArray() {
-        List<Module> moduleList = enableExtensions();
+    public Module[] asModuleArray(ServerType serverType) {
+        List<Module> moduleList = enableExtensions(serverType);
         return moduleList.toArray(new Module[moduleList.size()]);
     }
 
-    // TODO: ExtensionContext not visible if we use BootstrapModule. Why?
-    public BootstrapModule asBootstrapModule() {
+    public BootstrapModule asBootstrapModule(final ServerType serverType) {
         return new BootstrapModule() {
             @Override
             public void configure(BootstrapBinder binder) {
-                for (Module m : enableExtensions()) {
+                for (Module m : enableExtensions(serverType)) {
                     binder.include(m);
                 }
             }
         };
     }
 
-    private List<Module> enableExtensions() {
+    private List<Module> enableExtensions(ServerType serverType) {
         List<Module> moduleList = new ArrayList<>();
 
         // Discover and load whats available
@@ -76,10 +76,15 @@ public class ExtensionLoader {
         if (!stdExtOnly) {
             loadedStdExts = EnumSet.noneOf(StandardExtension.class);
             for (ExtAbstractModule m : ServiceLoader.load(ExtAbstractModule.class)) {
-                logger.info("Loading module {}", m.getClass().getName());
-                moduleList.add(m);
-                if (m.standardExtension() != StandardExtension.Undefined) {
-                    loadedStdExts.add(m.standardExtension());
+                String moduleName = m.getClass().getName();
+                if (m.isRunnable(serverType)) {
+                    logger.info("Loading module {}", moduleName);
+                    moduleList.add(m);
+                    if (m.standardExtension() != StandardExtension.Undefined) {
+                        loadedStdExts.add(m.standardExtension());
+                    }
+                } else {
+                    logger.info("Ignoring module {}, as it is not runnable on {} server", moduleName, serverType);
                 }
             }
         } else {

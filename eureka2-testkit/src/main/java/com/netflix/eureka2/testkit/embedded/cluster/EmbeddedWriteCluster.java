@@ -58,6 +58,7 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
         WriteServerConfig config = WriteServerConfig.writeBuilder()
                 .withAppName(WRITE_SERVER_NAME)
                 .withVipAddress(WRITE_SERVER_NAME)
+                .withReadClusterVipAddress(EmbeddedReadCluster.READ_SERVER_NAME)
                 .withDataCenterType(DataCenterType.Basic)
                 .withRegistrationPort(writeServerAddress.getRegistrationPort())
                 .withDiscoveryPort(writeServerAddress.getDiscoveryPort())

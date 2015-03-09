@@ -23,7 +23,6 @@ import com.netflix.eureka2.client.interest.BatchAwareIndexRegistry;
 import com.netflix.eureka2.client.interest.BatchingRegistry;
 import com.netflix.eureka2.client.interest.BatchingRegistryImpl;
 import com.netflix.eureka2.client.interest.EurekaInterestClientImpl;
-import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.registry.PreservableEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
@@ -34,19 +33,6 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
  */
 public class EurekaInterestClientBuilder
         extends AbstractClientBuilder<EurekaInterestClient, EurekaInterestClientBuilder> {
-
-    protected ServerResolver serverResolver;
-
-    /**
-     * Connect to read servers specified by the given read server resolver.
-     *
-     * @param serverResolver the resolver to specify which read server to connect to (may have redirects)
-     * @return a builder to continue client construction
-     */
-    public EurekaInterestClientBuilder withServerResolver(ServerResolver serverResolver) {
-        this.serverResolver = serverResolver;
-        return self();
-    }
 
     @Override
     protected EurekaInterestClient buildClient() {

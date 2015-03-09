@@ -96,7 +96,9 @@ public class DnsResolverStep implements HostResolverStep {
                             }
                         });
 
-        return new OcelliServerResolver(serverSource);
+        ServerResolver resolver = new OcelliServerResolver(serverSource);
+
+        return resolver;
     }
 
 

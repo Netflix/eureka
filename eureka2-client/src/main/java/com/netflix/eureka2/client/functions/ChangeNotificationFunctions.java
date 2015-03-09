@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
+import com.netflix.eureka2.interests.ChangeNotifications;
 import rx.Notification;
 import rx.Observable;
 import rx.Observable.Transformer;
@@ -81,30 +82,6 @@ public final class ChangeNotificationFunctions {
      * @return observable of distinct set objects
      */
     public static <T> Transformer<List<ChangeNotification<T>>, LinkedHashSet<T>> snapshots() {
-        final LinkedHashSet<T> snapshotSet = new LinkedHashSet<>();
-        return new Transformer<List<ChangeNotification<T>>, LinkedHashSet<T>>() {
-            @Override
-            public Observable<LinkedHashSet<T>> call(Observable<List<ChangeNotification<T>>> batches) {
-                return batches.map(new Func1<List<ChangeNotification<T>>, LinkedHashSet<T>>() {
-                    @Override
-                    public LinkedHashSet<T> call(List<ChangeNotification<T>> batch) {
-                        for (ChangeNotification<T> item : batch) {
-                            switch (item.getKind()) {
-                                case Add:
-                                case Modify:
-                                    snapshotSet.add(item.getData());
-                                    break;
-                                case Delete:
-                                    snapshotSet.remove(item.getData());
-                                    break;
-                                default:
-                                    // no-op
-                            }
-                        }
-                        return new LinkedHashSet<>(snapshotSet);
-                    }
-                });
-            }
-        };
+        return ChangeNotifications.snapshots();
     }
 }

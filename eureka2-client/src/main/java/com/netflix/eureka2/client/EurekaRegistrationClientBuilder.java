@@ -20,26 +20,12 @@ import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.client.channel.RegistrationChannelFactory;
 import com.netflix.eureka2.client.registration.EurekaRegistrationClientImpl;
-import com.netflix.eureka2.client.resolver.ServerResolver;
 
 /**
  * @author David Liu
  */
 public class EurekaRegistrationClientBuilder
         extends AbstractClientBuilder<EurekaRegistrationClient, EurekaRegistrationClientBuilder> {
-
-    protected ServerResolver serverResolver;
-
-    /**
-     * Connect to write servers specified by the given write server resolver.
-     *
-     * @param serverResolver the resolver to specify which write server to connect to (may have redirects)
-     * @return a builder to continue client construction
-     */
-    public EurekaRegistrationClientBuilder withServerResolver(ServerResolver serverResolver) {
-        this.serverResolver = serverResolver;
-        return self();
-    }
 
     @Override
     protected EurekaRegistrationClient buildClient() {

@@ -57,11 +57,11 @@ public interface ServerInterestChannelMetrics extends InterestChannelMetrics {
             boolean newFullRegistry = false;
             for (Interest<InstanceInfo> basicInterest : getBasicInterests(newInterests)) {
                 if (basicInterest instanceof InstanceInterest) {
-                    newInstances.add(((InstanceInterest) basicInterest).getInstanceId());
+                    newInstances.add(((InstanceInterest) basicInterest).getPattern());
                 } else if (basicInterest instanceof ApplicationInterest) {
-                    newApplications.add(((ApplicationInterest) basicInterest).getApplicationName());
+                    newApplications.add(((ApplicationInterest) basicInterest).getPattern());
                 } else if (basicInterest instanceof VipInterest) {
-                    newVips.add(((VipInterest) basicInterest).getVip());
+                    newVips.add(((VipInterest) basicInterest).getPattern());
                 } else if (basicInterest instanceof FullRegistryInterest) {
                     newFullRegistry = true;
                 }

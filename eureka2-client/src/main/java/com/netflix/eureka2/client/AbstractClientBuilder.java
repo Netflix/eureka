@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.client;
 
+import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.BasicEurekaRegistryConfig;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.config.EurekaRegistryConfig;
@@ -32,6 +33,9 @@ import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
  */
 abstract class AbstractClientBuilder<CLIENT, T extends AbstractClientBuilder<CLIENT, T>> {
 
+    // server tager
+    protected ServerResolver serverResolver;
+
     // configs
     protected EurekaTransportConfig transportConfig;
     protected EurekaRegistryConfig registryConfig;
@@ -39,6 +43,17 @@ abstract class AbstractClientBuilder<CLIENT, T extends AbstractClientBuilder<CLI
     // metrics
     protected EurekaClientMetricFactory clientMetricFactory;
     protected EurekaRegistryMetricFactory registryMetricFactory;
+
+    /**
+     * Connect to eureka servers specified by the given server resolver.
+     *
+     * @param serverResolver the resolver to specify which eureka server to connect to (may have redirects)
+     * @return a builder to continue client construction
+     */
+    public T withServerResolver(ServerResolver serverResolver) {
+        this.serverResolver = serverResolver;
+        return self();
+    }
 
     public T withTransportConfig(EurekaTransportConfig transportConfig) {
         this.transportConfig = transportConfig;
