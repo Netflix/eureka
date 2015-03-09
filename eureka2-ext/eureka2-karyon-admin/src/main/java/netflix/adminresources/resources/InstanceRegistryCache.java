@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.netflix.eureka2.client.interest.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -16,13 +16,13 @@ import rx.functions.Action1;
 public class InstanceRegistryCache {
 
     private final Map<String, InstanceInfo> registryCache;
-    private final Eureka2ClientProvider eureka2ClientProvider;
+    private final Eureka2InterestClientProvider eureka2InterestClientProvider;
 
     private EurekaInterestClient eurekaClient;
 
     @Inject
-    public InstanceRegistryCache(Eureka2ClientProvider eureka2ClientProvider) {
-        this.eureka2ClientProvider = eureka2ClientProvider;
+    public InstanceRegistryCache(Eureka2InterestClientProvider eureka2InterestClientProvider) {
+        this.eureka2InterestClientProvider = eureka2InterestClientProvider;
         registryCache = new ConcurrentHashMap<>();
     }
 
@@ -32,7 +32,7 @@ public class InstanceRegistryCache {
 
     @PostConstruct
     public void start() {
-        eurekaClient = eureka2ClientProvider.get();
+        eurekaClient = eureka2InterestClientProvider.get();
         eurekaClient.forInterest(Interests.forFullRegistry()).retry().subscribe(new Action1<ChangeNotification<InstanceInfo>>() {
             @Override
             public void call(ChangeNotification<InstanceInfo> changeNotification) {

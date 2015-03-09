@@ -1,6 +1,5 @@
 package com.netflix.eureka2.client.transport;
 
-import com.netflix.eureka2.client.resolver.RetryableServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.transport.MessageConnection;
@@ -42,7 +41,7 @@ public abstract class ResolverBasedTransportClient implements TransportClient {
                                            PipelineConfigurator<Object, Object> pipelineConfigurator,
                                            MessageConnectionMetrics metrics) {
         this.config = config;
-        this.resolver = new RetryableServerResolver(resolver);
+        this.resolver = resolver;
         this.pipelineConfigurator = pipelineConfigurator;
         this.metrics = metrics;
         clients = new ConcurrentHashMap<>();

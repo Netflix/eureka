@@ -3,8 +3,8 @@ package com.netflix.eureka2.integration;
 import java.util.Iterator;
 import java.util.Set;
 
+import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.functions.ChangeNotificationFunctions;
-import com.netflix.eureka2.client.interest.EurekaInterestClient;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
@@ -63,7 +63,7 @@ public class ReadServerIntegrationTest {
 
         // Bootstrap read server and connect Eureka client immediately
         ReadServerResource readServerResource = bootstrapReadServer();
-        EurekaInterestClient eurekaClient = connectEurekaClient(readServerResource.getDiscoveryResolver()).getEurekaClient();
+        EurekaInterestClient eurekaClient = connectEurekaClient(readServerResource.getInterestResolver()).getEurekaClient();
 
         ExtTestSubscriber<Set<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
         eurekaClient.forInterest(Interests.forFullRegistry())
@@ -85,7 +85,7 @@ public class ReadServerIntegrationTest {
     public void testHotCacheDataBatching() throws Exception {
         // Bootstrap read server and connect Eureka client immediately
         ReadServerResource readServerResource = bootstrapReadServer();
-        EurekaInterestClient eurekaClient = connectEurekaClient(readServerResource.getDiscoveryResolver()).getEurekaClient();
+        EurekaInterestClient eurekaClient = connectEurekaClient(readServerResource.getInterestResolver()).getEurekaClient();
 
         // Fill in the registry
         fillUpRegistry(writeServer.getEurekaServerRegistry(), REGISTRY_INITIAL_SIZE);
@@ -97,7 +97,7 @@ public class ReadServerIntegrationTest {
         eurekaClient.shutdown();
 
         // Now connect again
-        eurekaClient = connectEurekaClient(readServerResource.getDiscoveryResolver()).getEurekaClient();
+        eurekaClient = connectEurekaClient(readServerResource.getInterestResolver()).getEurekaClient();
         testSubscriber = new ExtTestSubscriber<>();
         eurekaClient.forInterest(Interests.forFullRegistry()).subscribe(testSubscriber);
         for (int i = 0; i < REGISTRY_INITIAL_SIZE + 2; i++) {

@@ -1,110 +1,104 @@
-/*
- * Copyright 2014 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.netflix.eureka2.client.resolver;
+
+import com.netflix.eureka2.Server;
+import com.netflix.eureka2.interests.ChangeNotification;
+import rx.Observable;
 
 import java.io.File;
 
-import com.netflix.eureka2.client.resolver.DnsServerResolver.DnsServerResolverBuilder;
-import com.netflix.eureka2.client.resolver.EurekaServerResolver.EurekaServerResolverBuilder;
-import com.netflix.eureka2.client.resolver.FileServerResolver.FileServerResolverBuilder;
-import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
-import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
-import com.netflix.eureka2.Server;
-import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
-import rx.Observable;
-import rx.functions.Func1;
-
-import static com.netflix.eureka2.metric.EurekaRegistryMetricFactory.registryMetrics;
-import static com.netflix.eureka2.metric.client.EurekaClientMetricFactory.clientMetrics;
-
 /**
- * A convenience factory for creating various flavors of {@link ServerResolver}
+ * Class for creating various flavours of {@link ServerResolver}s.
  *
- * @author Tomasz Bak
+ * @author David Liu
  */
-public final class ServerResolvers {
+public class ServerResolvers {
 
-    private ServerResolvers() {
+    /**
+     * Return a server resolver that resolves from a fixed list of servers using a round robin strategy
+     *
+     * @param servers a list of servers to resolve from
+     * @return {@link ServerResolver}
+     */
+    public static ServerResolver from(final Server... servers) {
+        return new OcelliServerResolver(servers);
     }
 
-    public static ServerResolver forDnsName(String dnsName, int port) {
-        return new DnsServerResolverBuilder().withDomainName(dnsName).withPort(port).build();
+    /**
+     * Return a server resolver that resolves from a stream of servers using a best effort round robin strategy,
+     * where BufferSentinels are used to buffer and snapshot the servers to lists for round robin.
+     *
+     * @param serverSource an observable servers to resolve from
+     * @return {@link ServerResolver}
+     */
+    public static ServerResolver forServerSource(final Observable<ChangeNotification<Server>> serverSource) {
+        return new OcelliServerResolver(serverSource);
     }
 
-    public static ServerResolver fromWriteServer(ServerResolver writeServerResolver, String readClusterVip) {
-        return fromWriteServer(writeServerResolver, readClusterVip, clientMetrics(), registryMetrics());
+    /**
+     * Return a resolver step that contains a specified port value, and must specify a subsequent value
+     * (see {@link PortResolverStep} to be able to create the final ServerResolver.
+     *
+     * @param port the eureka server port for communication
+     * @return {@link PortResolverStep}
+     */
+    public static PortResolverStep withPort(int port) {
+        return new DefaultPortResolverStep(port);
     }
 
-    public static ServerResolver fromWriteServer(ServerResolver writeServerResolver,
-                                                 String readClusterVip,
-                                                 EurekaClientMetricFactory clientMetricFactory,
-                                                 EurekaRegistryMetricFactory registryMetricFactory) {
-        return new EurekaServerResolverBuilder()
-                .withBootstrapResolver(writeServerResolver)
-                .withReadServerInterest(Interests.forVips(readClusterVip))
-                .withClientMetricFactory(clientMetricFactory)
-                .withRegistryMetricFactory(registryMetricFactory)
-                .build();
+    /**
+     * Return a resolver step that contains a specified hostname, and must specify a subsequent value
+     * (see {@link HostResolverStep} to be able to create the final ServerResolver.
+     *
+     * @param hostname a fixed hostname
+     * @return {@link HostResolverStep}
+     */
+    public static HostResolverStep withHostname(String hostname) {
+        return new FixedHostResolverStep(hostname);
     }
 
-    public static ServerResolver fromFile(File textFile) {
-        return new FileServerResolverBuilder().withTextFile(textFile).build();
+    /**
+     * Return a resolver step that contains a dns name, and must specify a subsequent value
+     * (see {@link DnsResolverStep} to be able to create the final ServerResolver. The dns is
+     * resolved (if possible) to a full list of hostnames.
+     *
+     * @param dnsName a dnsName to resolve from
+     * @return {@link DnsResolverStep}
+     */
+    public static DnsResolverStep withDnsName(String dnsName) {
+        return new DnsResolverStep(dnsName);
     }
 
-    public static ServerResolver just(String hostName, int port) {
-        final Observable<Server> serverObservable = Observable.just(new Server(hostName, port));
-        return new ServerResolver() {
-            @Override
-            public Observable<Server> resolve() {
-                return serverObservable;
-            }
-
-            @Override
-            public void close() {
-                // Np-op
-            }
-        };
+    /**
+     * Return a file server resolver that resolves from a file using a best effort round robin strategy.
+     *
+     * @param file a file containing server resolver information, see {@link FileServerResolver} for specification
+     * @return {@link FileServerResolver}
+     */
+    public static ServerResolver fromFile(File file) {
+        return new FileServerResolver(file);
     }
 
-    public static ServerResolver from(Server... servers) {
-        return new StaticServerResolver(new DefaultLoadBalancerBuilder<Server>(null), servers);
+    /**
+     * Return a server resolver step that resolves from data read from a remote eureka server. A subsequent interest
+     * (see {@link EurekaRemoteResolverStep} must be specified for the final servers to resolve from the remote
+     * server data.
+     *
+     * @param serverToReadFrom a server resolver that resolves to the interest protocol of a remote eureka server
+     * @return {@link EurekaRemoteResolverStep}
+     */
+    public static EurekaRemoteResolverStep fromEureka(ServerResolver serverToReadFrom) {
+        return new DefaultEurekaResolverStep(serverToReadFrom);
     }
 
-    public static ServerResolver failoverChainFrom(ServerResolver... resolvers) {
-        return new ServerResolverFailoverChain(resolvers);
-    }
-
-    public static ServerResolver apply(final ServerResolver original, final Func1<Server, Server> transformation) {
-        return new ServerResolver() {
-            @Override
-            public Observable<Server> resolve() {
-                return original.resolve().map(new Func1<Server, Server>() {
-                    @Override
-                    public Server call(Server server) {
-                        return transformation.call(server);
-                    }
-                });
-            }
-
-            @Override
-            public void close() {
-                original.close();
-            }
-        };
+    /**
+     * Return a server resolver that resolves from the primary resolver, and if that onError will backback to
+     * the specified fallback resolver.
+     *
+     * @param primary the primary resolver to resolve from
+     * @param fallback the fallback resolver if resolve() on the primary Resolver onError.
+     * @return {@link ServerResolver}
+     */
+    public static ServerResolver fallbackResolver(ServerResolver primary, ServerResolver fallback) {
+        return new FallbackServerResolver(primary, fallback);
     }
 }

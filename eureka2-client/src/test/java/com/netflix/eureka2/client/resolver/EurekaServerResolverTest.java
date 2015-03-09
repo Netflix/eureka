@@ -5,8 +5,8 @@ import java.util.Iterator;
 import java.util.Set;
 
 import com.netflix.eureka2.Names;
-import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.EurekaClientBuilder;
+import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
@@ -14,16 +14,16 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.NetworkAddress.ProtocolType;
 import com.netflix.eureka2.registry.selector.ServiceSelector;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
-import com.netflix.eureka2.utils.ExtCollections;
 import com.netflix.eureka2.Server;
-import netflix.ocelli.LoadBalancerBuilder;
-import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import rx.Notification;
 import rx.Notification.Kind;
 import rx.Observable;
 
+import static com.netflix.eureka2.utils.ExtCollections.asSet;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -33,7 +33,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Tomasz Bak
  */
-public class EurekaServerResolverTest {
+public class EurekaServerResolverTest extends AbstractResolverTest {
 
     private static final Interest<InstanceInfo> READ_SERVERS_INTEREST = Interests.forFullRegistry();
     private static final ServiceSelector EUREKA_SELECTOR =
@@ -49,75 +49,69 @@ public class EurekaServerResolverTest {
     private static final ChangeNotification<InstanceInfo> ADD_INSTANCE_2 = new ChangeNotification<>(ChangeNotification.Kind.Add, INSTANCE_2);
     private static final ChangeNotification<InstanceInfo> BUFFERING_SENTINEL = ChangeNotification.bufferSentinel();
 
-    private final EurekaClientBuilder eurekaClientBuilder = mock(EurekaClientBuilder.class);
-    private final EurekaClient eurekaClient = mock(EurekaClient.class);
-    private final LoadBalancerBuilder<Server> loadBalancerBuilder = new DefaultLoadBalancerBuilder<>(null);
+    private final EurekaInterestClientBuilder interestClientBuilder = mock(EurekaInterestClientBuilder.class);
+    private final EurekaInterestClient interestClient = mock(EurekaInterestClient.class);
 
-    private EurekaServerResolver eurekaServerResolver;
+    private volatile ServerResolver eurekaServerResolver;
 
     @Before
-    public void setUp() throws Exception {
-        when(eurekaClientBuilder.build()).thenReturn(eurekaClient);
-        eurekaServerResolver = new EurekaServerResolver(eurekaClientBuilder, READ_SERVERS_INTEREST, EUREKA_SELECTOR, loadBalancerBuilder);
+    public void setUp() {
+        when(interestClientBuilder.build()).thenReturn(interestClient);
     }
 
-    @Test(timeout = 60000)
+    @Test(timeout = 30000)
     public void testFetchesDataFromEurekaServer() throws Exception {
         // Returns two items in subscription
-        when(eurekaClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(Observable.just(ADD_INSTANCE_1, ADD_INSTANCE_2, BUFFERING_SENTINEL));
+        when(interestClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(Observable.just(ADD_INSTANCE_1, ADD_INSTANCE_2, BUFFERING_SENTINEL));
+        eurekaServerResolver = new DefaultEurekaResolverStep(interestClientBuilder).forInterest(READ_SERVERS_INTEREST);
 
-        // Resolve twice
-        Server firstServer = eurekaServerResolver.resolve().toBlocking().firstOrDefault(null);
-        Server secondServer = eurekaServerResolver.resolve().toBlocking().firstOrDefault(null);
+        // Resolve three times, should be overlap
+        Set<Server> actual = asSet(takeNext(eurekaServerResolver), takeNext(eurekaServerResolver), takeNext(eurekaServerResolver));
 
-        Set<Server> expected = ExtCollections.asSet(toServer(INSTANCE_1), toServer(INSTANCE_2));
-        Set<Server> result = ExtCollections.asSet(firstServer, secondServer);
-        assertThat(result, is(equalTo(expected)));
+        Set<Server> expected = asSet(toServer(INSTANCE_1), toServer(INSTANCE_2));
+        assertThat(actual, is(equalTo(expected)));
     }
 
-    @Test(timeout = 60000)
-    public void testRemovesStaleItems() throws Exception {
-        // Batch with first item
-        firstResolveWith(INSTANCE_1);
-
-        // Delete instance1 and add instance 2.
-        when(eurekaClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(Observable.just(DELETE_INSTANCE_1, ADD_INSTANCE_2, ChangeNotification.<InstanceInfo>bufferSentinel()));
-
-        assertResolvesTo(INSTANCE_2);
-        assertResolvesTo(INSTANCE_2);
-    }
-
-    @Test(timeout = 60000)
+    @Test(timeout = 30000)
     public void testFallsBackToStaleContentIfRefreshFails() throws Exception {
+        final Exception error = new Exception("test error");
+
+        when(interestClient.forInterest(READ_SERVERS_INTEREST))
+                .thenAnswer(new Answer<Observable<ChangeNotification<InstanceInfo>>>() {
+                    @Override
+                    public Observable<ChangeNotification<InstanceInfo>> answer(InvocationOnMock invocation) throws Throwable {
+                        return  Observable.just(
+                                new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Add, INSTANCE_1),
+                                ChangeNotification.<InstanceInfo>bufferSentinel()
+                        );
+                    }
+                })
+                .thenAnswer(new Answer<Observable<ChangeNotification<InstanceInfo>>>() {
+                    @Override
+                    public Observable<ChangeNotification<InstanceInfo>> answer(InvocationOnMock invocation) throws Throwable {
+                        return Observable.error(error);
+                    }
+                });
+
+        eurekaServerResolver = new DefaultEurekaResolverStep(interestClientBuilder).forInterest(READ_SERVERS_INTEREST);
+
         // Batch with first item
-        firstResolveWith(INSTANCE_1);
+        assertResolvesTo(INSTANCE_1);
 
-        // Send onError in the subscription stream
-        Exception error = new Exception("channel error");
-        when(eurekaClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(Observable.<ChangeNotification<InstanceInfo>>error(error));
-
+        // try again, should emit error but still resolve to instance1 due to loadbalancer
         assertResolvesTo(INSTANCE_1);
     }
 
-    @Test(timeout = 60000)
+    @Test(timeout = 30000)
     public void testReturnsErrorIfResolveFailedAndNoStaleEntryAvailable() throws Exception {
         Exception error = new Exception("channel error");
-        when(eurekaClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(Observable.<ChangeNotification<InstanceInfo>>error(error));
+        when(interestClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(Observable.<ChangeNotification<InstanceInfo>>error(error));
+        eurekaServerResolver = new DefaultEurekaResolverStep(interestClientBuilder).forInterest(READ_SERVERS_INTEREST);
         assertResolveToError();
     }
 
-    private void firstResolveWith(InstanceInfo instance) {
-        when(eurekaClient.forInterest(READ_SERVERS_INTEREST)).thenReturn(
-                Observable.just(
-                        new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Add, instance),
-                        ChangeNotification.<InstanceInfo>bufferSentinel()
-                )
-        );
-        assertResolvesTo(instance);
-    }
-
     protected void assertResolvesTo(InstanceInfo instance) {
-        Server server = eurekaServerResolver.resolve().toBlocking().firstOrDefault(null);
+        Server server = takeNext(eurekaServerResolver);
         assertThat(server, is(equalTo(toServer(instance))));
     }
 

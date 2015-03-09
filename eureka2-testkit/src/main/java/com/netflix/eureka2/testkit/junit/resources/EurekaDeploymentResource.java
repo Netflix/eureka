@@ -3,9 +3,11 @@ package com.netflix.eureka2.testkit.junit.resources;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.netflix.eureka2.client.Eureka;
-import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.EurekaClientBuilder;
+import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaInterestClientBuilder;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
+import com.netflix.eureka2.client.EurekaRegistrationClientBuilder;
+import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
@@ -13,6 +15,8 @@ import com.netflix.eureka2.testkit.embedded.EurekaDeployment.EurekaDeploymentBui
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources.EurekaExternalResource;
+
+import static com.netflix.eureka2.interests.Interests.*;
 
 /**
  * @author Tomasz Bak
@@ -25,7 +29,8 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
 
     private EurekaDeployment eurekaDeployment;
 
-    private final List<EurekaClient> connectedClients = new ArrayList<>();
+    private final List<EurekaInterestClient> connectedInterestClients = new ArrayList<>();
+    private final List<EurekaRegistrationClient> connectedRegistrationClients = new ArrayList<>();
 
     public EurekaDeploymentResource(int writeClusterSize, int readClusterSize) {
         this(writeClusterSize, readClusterSize, new BasicEurekaTransportConfig.Builder().build());
@@ -42,73 +47,98 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
     }
 
     /**
-     * Create {@link EurekaClient} instance connected to a particular write server.
+     * Create a {@link EurekaRegistrationClient} instance to register with a particular write server
      *
      * @param idx id of a write server where to connect
      */
-    public EurekaClient connectToWriteServer(int idx) {
+    public EurekaRegistrationClient registrationClientToWriteServer(int idx) {
         EmbeddedWriteServer server = eurekaDeployment.getWriteCluster().getServer(idx);
-        EurekaClient eurekaClient = EurekaClientBuilder.newBuilder()
-                .withReadServerResolver(server.getInterestServerResolver())
-                .withWriteServerResolver(server.getRegistrationResolver())
+        EurekaRegistrationClient registrationClient = new EurekaRegistrationClientBuilder()
                 .withTransportConfig(transportConfig)
+                .withServerResolver(server.getRegistrationResolver())
                 .build();
-        connectedClients.add(eurekaClient);
-        return eurekaClient;
+        connectedRegistrationClients.add(registrationClient);
+        return registrationClient;
     }
 
     /**
-     * Create {@link EurekaClient} instance connected to a particular read server (interest subscription only).
+     * Create a {@link EurekaRegistrationClient} instance to register with any instance in a write cluster
+     */
+    public EurekaRegistrationClient registrationClientToWriteCluster() {
+        EurekaRegistrationClient registrationClient = new EurekaRegistrationClientBuilder()
+                .withTransportConfig(transportConfig)
+                .withServerResolver(eurekaDeployment.getWriteCluster().registrationResolver())
+                .build();
+        connectedRegistrationClients.add(registrationClient);
+        return registrationClient;
+    }
+
+    /**
+     * Create a {@link EurekaInterestClient} instance to do interest discovery with a particular write server
      *
-     * @param idx id of a read server where to connect
+     * @param idx id of a write server where to connect
      */
-    public EurekaClient connectToReadServer(int idx) {
+    public EurekaInterestClient interestClientToWriteServer(int idx) {
+        EmbeddedWriteServer server = eurekaDeployment.getWriteCluster().getServer(idx);
+        EurekaInterestClient interestClient = new EurekaInterestClientBuilder()
+                .withTransportConfig(transportConfig)
+                .withServerResolver(server.getInterestResolver())
+                .build();
+        connectedInterestClients.add(interestClient);
+        return interestClient;
+    }
+
+    /**
+     * Create a {@link EurekaInterestClient} instance to do interest discovery with any instance in a write cluster
+     */
+    public EurekaInterestClient interestClientToWriteCluster() {
+        EurekaInterestClient interestClient = new EurekaInterestClientBuilder()
+                .withTransportConfig(transportConfig)
+                .withServerResolver(eurekaDeployment.getWriteCluster().interestResolver())
+                .build();
+        connectedInterestClients.add(interestClient);
+        return interestClient;
+    }
+
+    /**
+     * Create a {@link EurekaInterestClient} instance to do interest discovery with a particular read server
+     *
+     * @param idx id of a write server where to connect
+     */
+    public EurekaInterestClient interestClientToReadServer(int idx) {
         EmbeddedReadServer server = eurekaDeployment.getReadCluster().getServer(idx);
-        EurekaClient eurekaClient = EurekaClientBuilder.discoveryBuilder()
-                .withReadServerResolver(server.getInterestServerResolver())
+        EurekaInterestClient interestClient = new EurekaInterestClientBuilder()
                 .withTransportConfig(transportConfig)
+                .withServerResolver(server.getInterestResolver())
                 .build();
-        connectedClients.add(eurekaClient);
-        return eurekaClient;
+        connectedInterestClients.add(interestClient);
+        return interestClient;
     }
 
     /**
-     * Create {@link EurekaClient} instance connected to a write cluster.
+     * Create a {@link EurekaInterestClient} instance to do interest discovery with any instance in a read cluster
      */
-    public EurekaClient connectToWriteCluster() {
-        EurekaClient eurekaClient = EurekaClientBuilder.newBuilder()
-                .withReadServerResolver(eurekaDeployment.getWriteCluster().discoveryResolver())
-                .withWriteServerResolver(eurekaDeployment.getWriteCluster().registrationResolver())
+    public EurekaInterestClient interestClientToReadCluster() {
+        EurekaInterestClient interestClient = new EurekaInterestClientBuilder()
                 .withTransportConfig(transportConfig)
+                .withServerResolver(eurekaDeployment.getReadCluster().interestResolver())
                 .build();
-        connectedClients.add(eurekaClient);
-        return eurekaClient;
+        connectedInterestClients.add(interestClient);
+        return interestClient;
     }
 
     /**
-     * Create {@link EurekaClient} instance connected to a read cluster.
+     * Create a {@link EurekaInterestClient} instance to do interest discovery with any instance in a read cluster,
+     * using the canonical method to first discover the read cluster from the write cluster
      */
-    public EurekaClient connectToReadCluster() {
-        EurekaClient eurekaClient = EurekaClientBuilder.discoveryBuilder()
-                .withReadServerResolver(eurekaDeployment.getReadCluster().discoveryResolver())
+    public EurekaInterestClient cannonicalInterestClient() {
+        EurekaInterestClient interestClient = new EurekaInterestClientBuilder()
                 .withTransportConfig(transportConfig)
+                .withServerResolver(ServerResolvers.fromEureka(eurekaDeployment.getWriteCluster().interestResolver())
+                        .forInterest(forVips(eurekaDeployment.getReadCluster().getVip())))
                 .build();
-        connectedClients.add(eurekaClient);
-        return eurekaClient;
-    }
-
-    /**
-     * Create {@link EurekaClient} in canonical setup, where read cluster is discovered from
-     * write cluster first.
-     */
-    public EurekaClient connectToEureka() {
-        EurekaClient eurekaClient = Eureka.newClientBuilder(
-                eurekaDeployment.getWriteCluster().discoveryResolver(),
-                eurekaDeployment.getWriteCluster().registrationResolver(),
-                eurekaDeployment.getReadCluster().getVip()
-        ).withTransportConfig(transportConfig).build();
-        connectedClients.add(eurekaClient);
-        return eurekaClient;
+        connectedInterestClients.add(interestClient);
+        return interestClient;
     }
 
     @Override

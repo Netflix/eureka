@@ -82,7 +82,6 @@ public class ResolverBasedTransportClientTest {
     public void testConnectsToResolvedServer() throws Exception {
 
         final AtomicReference<Server> expectedServer = new AtomicReference<>(new Server("localhost", 0));
-
         final ServerResolver resolver = new ServerResolver() {
             @Override
             public Observable<Server> resolve() {

@@ -6,6 +6,7 @@ import com.netflix.eureka2.channel.TestChannelFactory;
 import com.netflix.eureka2.channel.TestRegistrationChannel;
 import com.netflix.eureka2.client.channel.RegistrationChannelFactory;
 import com.netflix.eureka2.client.channel.RegistrationChannelImpl;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.metric.RegistrationChannelMetrics;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;

@@ -16,14 +16,16 @@
 
 package com.netflix.eureka2;
 
-import com.netflix.eureka2.client.EurekaClient;
+import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.config.EurekaDashboardConfig;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.SpectatorEurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.metric.client.SpectatorEurekaClientMetricFactory;
 import com.netflix.eureka2.server.AbstractEurekaServerModule;
-import com.netflix.eureka2.server.EurekaClientProvider;
+import com.netflix.eureka2.server.EurekaInterestClientProvider;
+import com.netflix.eureka2.server.EurekaRegistrationClientProvider;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
@@ -34,19 +36,23 @@ import com.netflix.eureka2.server.service.SelfRegistrationService;
 public class EurekaDashboardModule extends AbstractEurekaServerModule {
 
     private final EurekaDashboardConfig config;
-    private final EurekaClient eurekaClient;
+    private final EurekaRegistrationClient registrationClient;
+    private final EurekaInterestClient interestClient;
 
     public EurekaDashboardModule() {
         this(null);
     }
 
     public EurekaDashboardModule(EurekaDashboardConfig config) {
-        this(config, null);
+        this(config, null, null);
     }
 
-    public EurekaDashboardModule(EurekaDashboardConfig config, EurekaClient eurekaClient) {
+    public EurekaDashboardModule(EurekaDashboardConfig config,
+                                 EurekaRegistrationClient registrationClient,
+                                 EurekaInterestClient interestClient) {
         this.config = config;
-        this.eurekaClient = eurekaClient;
+        this.registrationClient = registrationClient;
+        this.interestClient = interestClient;
     }
 
     @Override
@@ -58,10 +64,16 @@ public class EurekaDashboardModule extends AbstractEurekaServerModule {
             bind(EurekaCommonConfig.class).toInstance(config);
             bind(EurekaDashboardConfig.class).toInstance(config);
         }
-        if (eurekaClient == null) {
-            bind(EurekaClient.class).toProvider(EurekaClientProvider.class);
+        if (registrationClient == null) {
+            bind(EurekaRegistrationClient.class).toProvider(EurekaRegistrationClientProvider.class);
         } else {
-            bind(EurekaClient.class).toInstance(eurekaClient);
+            bind(EurekaRegistrationClient.class).toInstance(registrationClient);
+        }
+
+        if (interestClient == null) {
+            bind(EurekaInterestClient.class).toProvider(EurekaInterestClientProvider.class);
+        } else {
+            bind(EurekaInterestClient.class).toInstance(interestClient);
         }
 
         bind(DashboardHttpServer.class).asEagerSingleton();

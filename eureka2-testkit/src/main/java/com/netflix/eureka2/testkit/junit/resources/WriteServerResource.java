@@ -81,8 +81,8 @@ public class WriteServerResource extends EurekaExternalResource {
         return server.getRegistrationResolver();
     }
 
-    public ServerResolver getDiscoveryResolver() {
-        return server.getInterestServerResolver();
+    public ServerResolver getInterestResolver() {
+        return server.getInterestResolver();
     }
 
     public EmbeddedWriteServer getServer() {

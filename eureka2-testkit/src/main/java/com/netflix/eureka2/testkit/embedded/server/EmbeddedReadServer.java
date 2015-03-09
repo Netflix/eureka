@@ -4,13 +4,13 @@ import java.util.Properties;
 
 import com.google.inject.Module;
 import com.netflix.eureka2.channel.InterestChannel;
-import com.netflix.eureka2.client.EurekaClientBuilder;
+import com.netflix.eureka2.client.EurekaRegistrationClientBuilder;
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.client.channel.InterestChannelFactory;
 import com.netflix.eureka2.client.interest.BatchAwareIndexRegistry;
 import com.netflix.eureka2.client.interest.BatchingRegistry;
-import com.netflix.eureka2.client.interest.EurekaInterestClient;
-import com.netflix.eureka2.client.registration.EurekaRegistrationClient;
+import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.config.BasicEurekaRegistryConfig;
@@ -52,9 +52,8 @@ public class EmbeddedReadServer extends EmbeddedEurekaServer<EurekaServerConfig,
 
     @Override
     public void start() {
-        EurekaRegistrationClient registrationClient = EurekaClientBuilder
-                .registrationBuilder()
-                .withWriteServerResolver(registrationResolver)
+        EurekaRegistrationClient registrationClient = new EurekaRegistrationClientBuilder()
+                .withServerResolver(registrationResolver)
                 .build();
 
         // TODO We need to better encapsulate EurekaInterestClient construction
@@ -101,8 +100,8 @@ public class EmbeddedReadServer extends EmbeddedEurekaServer<EurekaServerConfig,
     }
 
     @Override
-    public ServerResolver getInterestServerResolver() {
-        return ServerResolvers.just("localhost", getDiscoveryPort());
+    public ServerResolver getInterestResolver() {
+        return ServerResolvers.withHostname("localhost").withPort(getDiscoveryPort());
     }
 
     @Override

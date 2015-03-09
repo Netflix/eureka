@@ -87,6 +87,7 @@ public class DnsChangeNotificationSource implements ChangeNotificationSource<Str
 
     class DnsResolverTask implements ResourceLoader<ChangeNotification<String>> {
 
+        private final ChangeNotification<String> sentinel = ChangeNotification.bufferSentinel();
         private boolean succeededOnce;
 
         @Override
@@ -94,7 +95,7 @@ public class DnsChangeNotificationSource implements ChangeNotificationSource<Str
             try {
                 Set<ChangeNotification<String>> newAddresses = resolveServerDN();
                 succeededOnce = true;
-                return new ResourceUpdate<>(newAddresses, cancellationSet(currentSnapshot, newAddresses));
+                return new ResourceUpdate<>(newAddresses, cancellationSet(currentSnapshot, newAddresses), sentinel);
             } catch (NamingException e) {
                 if (succeededOnce) {
                     throw new ResourceLoaderException("DNS failure on subsequent access", true, e);

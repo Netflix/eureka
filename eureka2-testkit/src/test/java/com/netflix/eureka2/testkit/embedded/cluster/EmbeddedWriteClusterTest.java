@@ -64,7 +64,7 @@ public class EmbeddedWriteClusterTest {
 
         // Verify discovery resolver returns the new server
         TestSubscriber<Server> discoveryServerSubscriber = new TestSubscriber<>();
-        writeCluster.discoveryResolver().resolve().subscribe(discoveryServerSubscriber);
+        writeCluster.interestResolver().resolve().subscribe(discoveryServerSubscriber);
 
         expectedServer = new Server("localhost", EmbeddedWriteCluster.WRITE_SERVER_PORTS_FROM + 1);
         discoveryServerSubscriber.assertReceivedOnNext(singletonList(expectedServer));

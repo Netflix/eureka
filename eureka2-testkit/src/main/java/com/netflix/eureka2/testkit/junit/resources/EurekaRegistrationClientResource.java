@@ -1,8 +1,7 @@
 package com.netflix.eureka2.testkit.junit.resources;
 
-import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.EurekaClientBuilder;
-import com.netflix.eureka2.client.registration.EurekaRegistrationClient;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
+import com.netflix.eureka2.client.EurekaRegistrationClientBuilder;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources.EurekaExternalResource;
 
@@ -13,7 +12,7 @@ public class EurekaRegistrationClientResource extends EurekaExternalResource {
 
     private final ServerResolver serverResolver;
 
-    private EurekaClient eurekaClient;
+    private EurekaRegistrationClient registrationClient;
 
     public EurekaRegistrationClientResource(ServerResolver serverResolver) {
         this.serverResolver = serverResolver;
@@ -21,18 +20,18 @@ public class EurekaRegistrationClientResource extends EurekaExternalResource {
 
     @Override
     protected void before() throws Throwable {
-        eurekaClient = EurekaClientBuilder.registrationBuilder().withWriteServerResolver(serverResolver).build();
+        registrationClient = new EurekaRegistrationClientBuilder().withServerResolver(serverResolver).build();
     }
 
     @Override
     protected void after() {
-        if (eurekaClient != null) {
-            eurekaClient.shutdown();
-            eurekaClient = null;
+        if (registrationClient != null) {
+            registrationClient.shutdown();
+            registrationClient = null;
         }
     }
 
     public EurekaRegistrationClient getEurekaClient() {
-        return eurekaClient;
+        return registrationClient;
     }
 }

@@ -12,7 +12,7 @@ import com.netflix.eureka2.eureka1.rest.codec.Eureka1DataCodec.EncodingFormat;
 import com.netflix.eureka2.eureka1.rest.registry.Eureka1RegistryProxy;
 import com.netflix.eureka2.eureka1.rest.registry.Eureka1RegistryProxy.Result;
 import com.netflix.eureka2.eureka1.rest.registry.Eureka1RegistryProxyImpl;
-import com.netflix.eureka2.server.RegistrationClientProvider;
+import com.netflix.eureka2.server.EurekaRegistrationClientProvider;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
@@ -38,7 +38,7 @@ public class Eureka1RegistrationRequestHandler extends AbstractEureka1RequestHan
     }
 
     @Inject
-    public Eureka1RegistrationRequestHandler(RegistrationClientProvider registrationClientProvider) {
+    public Eureka1RegistrationRequestHandler(EurekaRegistrationClientProvider registrationClientProvider) {
         this.registryProxy = new Eureka1RegistryProxyImpl(registrationClientProvider.get(), Schedulers.io());
     }
 

@@ -60,7 +60,7 @@ public final class WriteClusterResolvers {
         if (bootstraps.length != 1) {
             throw new IllegalArgumentException("Expected one DNS name for server resolver, while got " + bootstraps.length);
         }
-        return ServerResolvers.forDnsName(bootstraps[0].getHostname(), getPortFunc.call(bootstraps[0]));
+        return ServerResolvers.withDnsName(bootstraps[0].getHostname()).withPort(getPortFunc.call(bootstraps[0]));
     }
 
     private static ServerResolver forFixed(ServerBootstrap[] bootstraps, Func1<ServerBootstrap, Integer> getPortFunc) {

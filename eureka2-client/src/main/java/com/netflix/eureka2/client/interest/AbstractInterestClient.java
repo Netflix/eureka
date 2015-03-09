@@ -3,6 +3,7 @@ package com.netflix.eureka2.client.interest;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.netflix.eureka2.channel.InterestChannel;
+import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.connection.RetryableConnection;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Sourced;

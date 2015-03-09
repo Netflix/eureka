@@ -73,12 +73,12 @@ public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig,
     }
 
     public ServerResolver getRegistrationResolver() {
-        return ServerResolvers.just("localhost", getRegistrationPort());
+        return ServerResolvers.withHostname("localhost").withPort(getRegistrationPort());
     }
 
     @Override
-    public ServerResolver getInterestServerResolver() {
-        return ServerResolvers.just("localhost", getDiscoveryPort());
+    public ServerResolver getInterestResolver() {
+        return ServerResolvers.withHostname("localhost").withPort(getDiscoveryPort());
     }
 
     @Override

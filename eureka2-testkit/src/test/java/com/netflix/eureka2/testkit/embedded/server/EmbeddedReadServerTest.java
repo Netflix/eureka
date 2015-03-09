@@ -2,8 +2,10 @@ package com.netflix.eureka2.testkit.embedded.server;
 
 import java.util.List;
 
-import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.EurekaClientBuilder;
+import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaInterestClientBuilder;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
+import com.netflix.eureka2.client.EurekaRegistrationClientBuilder;
 import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
@@ -35,17 +37,20 @@ public class EmbeddedReadServerTest {
 
     @Test(timeout = 10000)
     public void testDiscoveryServices() throws Exception {
-        EurekaClient eurekaClient = EurekaClientBuilder.newBuilder()
-                .withReadServerResolver(ServerResolvers.just("localhost", readServerResource.getDiscoveryPort()))
-                .withWriteServerResolver(ServerResolvers.just("localhost", writeServerResource.getRegistrationPort()))
+        EurekaRegistrationClient registrationClient = new EurekaRegistrationClientBuilder()
+                .withServerResolver(ServerResolvers.withHostname("localhost").withPort(writeServerResource.getRegistrationPort()))
+                .build();
+
+        EurekaInterestClient interestClient = new EurekaInterestClientBuilder()
+                .withServerResolver(ServerResolvers.withHostname("localhost").withPort(readServerResource.getDiscoveryPort()))
                 .build();
 
         InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();
-        RegistrationObservable registrationRequest = eurekaClient.register(Observable.just(instanceInfo));
+        RegistrationObservable registrationRequest = registrationClient.register(Observable.just(instanceInfo));
         registrationRequest.subscribe();
         registrationRequest.initialRegistrationResult().toBlocking().lastOrDefault(null);
 
-        List<ChangeNotification<InstanceInfo>> notifications = eurekaClient
+        List<ChangeNotification<InstanceInfo>> notifications = interestClient
                 .forInterest(Interests.forFullRegistry())
                 .take(2)
                 .toList()
@@ -53,6 +58,7 @@ public class EmbeddedReadServerTest {
 
         assertThat(notifications.size(), is(equalTo(2)));
 
-        eurekaClient.shutdown();
+        registrationClient.shutdown();
+        interestClient.shutdown();
     }
 }

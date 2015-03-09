@@ -14,7 +14,7 @@ public class RegistryCacheTest extends RegistryTestBase {
 
     @Test(timeout = 60000)
     public void checkRegistryCount() {
-        RegistryCache registryCache = new RegistryCache(eurekaClient);
+        RegistryCache registryCache = new RegistryCache(interestClient);
         final Map<String, InstanceInfo> regCache = registryCache.getCache();
         assertTrue(regCache != null);
         assertTrue(regCache.size() == 4);

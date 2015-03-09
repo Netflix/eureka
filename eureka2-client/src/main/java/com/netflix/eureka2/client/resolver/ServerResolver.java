@@ -25,6 +25,7 @@ import rx.Observable;
  * connection.
  * <p>
  * Out of the box implementations can be created using {@link ServerResolvers}
+ *
  * <h1>Thread safety</h1>
  * Calls to {@link #resolve} method are not thread safe, as given its embedded load balancing
  * semantic sharing single resolver by multiple clients has little sense.
@@ -35,9 +36,9 @@ public interface ServerResolver {
 
     /**
      * Returns a single element {@link Observable} of {@link Server} instances, which
-     * completes immediately after the element is provided. Properly behaving implementations should
-     * never complete before issuing the value. In case of a problem, a subscription should terminate
-     * with an error.
+     * completes immediately after the element is provided, Properly behaving implementations should
+     * never complete before issuing the value, and always complete after issuing a single value.
+     * In case of a problem, a subscription should terminate with an error.
      * <h1>Error handling</h1>
      * This interface does not define any specific error handling protocol, like distinguishing between
      * recoverable and non-recoverable errors.

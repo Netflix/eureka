@@ -26,7 +26,7 @@ import com.netflix.spectator.api.Clock;
 import com.netflix.spectator.api.ExtendedRegistry;
 import com.netflix.spectator.metrics3.MetricsRegistry;
 import netflix.adminresources.AdminResourcesContainer;
-import netflix.adminresources.resources.Eureka2ClientProviderImpl;
+import netflix.adminresources.resources.Eureka2InterestClientProviderImpl;
 
 /**
  * @author Tomasz Bak
@@ -72,7 +72,7 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
         return injector.getInstance(EurekaHttpServer.class).serverPort();
     }
 
-    protected abstract ServerResolver getInterestServerResolver();
+    protected abstract ServerResolver getInterestResolver();
 
     public abstract R serverReport();
 
@@ -138,7 +138,7 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
 
             @Override
             protected ServerResolver getInterestResolver() {
-                return getInterestServerResolver();
+                return EmbeddedEurekaServer.this.getInterestResolver();
             }
         };
     }
@@ -166,7 +166,7 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
         Matcher matcher = Pattern.compile("[^:]+:\\d+:(\\d+):\\d+").matcher(writeServer);
         if (matcher.matches()) {
             String interestPort = matcher.group(1);
-            props.setProperty(Eureka2ClientProviderImpl.CONFIG_DISCOVERY_PORT, interestPort);
+            props.setProperty(Eureka2InterestClientProviderImpl.CONFIG_DISCOVERY_PORT, interestPort);
         }
     }
 
