@@ -1,7 +1,9 @@
 dependencies {
     compile project(':eureka-client')
 
-    compile 'com.amazonaws:aws-java-sdk:1.3.27'
+    compile "com.amazonaws:aws-java-sdk-core:$awsVersion"
+    compile "com.amazonaws:aws-java-sdk-ec2:$awsVersion"
+    compile "com.amazonaws:aws-java-sdk-autoscaling:$awsVersion"
     compile "javax.servlet:servlet-api:$servletVersion"
     compile 'com.thoughtworks.xstream:xstream:1.4.2'
     compile 'javax.ws.rs:jsr311-api:1.1.1'
@@ -10,6 +12,6 @@ dependencies {
     testCompile 'junit:junit:4.10'
     testCompile 'org.mortbay.jetty:jetty:6.1H.22'
     testCompile 'org.mockito:mockito-all:1.8.5'
-    testRuntime 'org.slf4j:slf4j-simple:1.7.0'
+    testRuntime 'org.slf4j:slf4j-simple:1.7.10'
     testCompile project(':eureka-client')
 }

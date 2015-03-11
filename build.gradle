@@ -4,11 +4,12 @@ plugins {
 
 ext {
     githubProjectName = 'eureka'
+    awsVersion='1.9.3'
     servletVersion='2.5'
     jerseyVersion='1.11'
-    governatorVersion='1.2.10'
-    archaiusVersion='0.6.0'
-    ribbonVersion='2.0-RC9'
+    governatorVersion='1.3.3'
+    archaiusVersion='0.6.5'
+    ribbonVersion='2.0.0'
     blitzVersion='1.34'
 }
 
