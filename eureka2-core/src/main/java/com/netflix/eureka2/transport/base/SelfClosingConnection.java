@@ -8,6 +8,7 @@ import rx.Scheduler;
 import rx.functions.Action0;
 import rx.schedulers.Schedulers;
 
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static rx.Scheduler.Worker;
@@ -30,6 +31,8 @@ public class SelfClosingConnection implements MessageConnection {
         }
     };
 
+    private final Random random = new Random();
+
     private final MessageConnection delegate;
     private final Worker terminationWorker;
     private final long lifecycleDurationMs;
@@ -44,7 +47,7 @@ public class SelfClosingConnection implements MessageConnection {
 
         terminationWorker = terminationScheduler.createWorker();
         if (lifecycleDurationMs > 0) {
-            terminationWorker.schedule(selfTerminateTask, lifecycleDurationMs, TimeUnit.MILLISECONDS);
+            terminationWorker.schedule(selfTerminateTask, randomizeLifecycleDuration(lifecycleDurationMs), TimeUnit.MILLISECONDS);
         }
     }
 
@@ -105,6 +108,10 @@ public class SelfClosingConnection implements MessageConnection {
         return delegate.lifecycleObservable();
     }
 
+    protected long randomizeLifecycleDuration(long lifecycleDurationMs) {
+        long delta = (long) (lifecycleDurationMs * (random.nextDouble() - 0.5));
+        return lifecycleDurationMs + delta;
+    }
 
     public static class SelfClosingException extends Exception {
         public SelfClosingException(String msg) {
