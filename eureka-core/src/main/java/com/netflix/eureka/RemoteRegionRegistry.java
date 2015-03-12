@@ -23,12 +23,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.discovery.EurekaIdentityHeaderFilter;
+import com.netflix.discovery.TimedSupervisorTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,8 +71,8 @@ public class RemoteRegionRegistry implements LookupService<String> {
     private JerseyClient discoveryJerseyClient;
     private com.netflix.servo.monitor.Timer fetchRegistryTimer;
     private URL remoteRegionURL;
-    private Timer remoteRegionCacheRefreshTimer = new Timer(
-            "Eureka-RemoteRegionCacheRefresher", true);
+
+    private final ScheduledExecutorService scheduler;
     private volatile AtomicReference<Applications> applications = new AtomicReference<Applications>();
     private volatile AtomicReference<Applications> applicationsDelta = new AtomicReference<Applications>();
     private volatile boolean readyForServingData;
@@ -138,31 +145,44 @@ public class RemoteRegionRegistry implements LookupService<String> {
             logger.error("Problem fetching registry information :", e);
         }
 
-        // Registry fetch timer
-        remoteRegionCacheRefreshTimer
-                .schedule(new TimerTask() {
-
-                    @Override
-                    public void run() {
-                        try {
-                            if (fetchRegistry()) {
-                                readyForServingData = true;
-                            } else {
-                                logger.warn("Failed to fetch remote registry. This means this eureka server is not "
-                                        + "ready for serving traffic.");
-                            }
-                        } catch (Throwable e) {
-                            logger.error(
-                                    "Error getting from remote registry :", e);
-                        }
+        // remote region fetch
+        Runnable remoteRegionFetchTask = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    if (fetchRegistry()) {
+                        readyForServingData = true;
+                    } else {
+                        logger.warn("Failed to fetch remote registry. This means this eureka server is not "
+                                + "ready for serving traffic.");
                     }
+                } catch (Throwable e) {
+                    logger.error(
+                            "Error getting from remote registry :", e);
+                }
+            }
+        };
 
-                },
-                        EUREKA_SERVER_CONFIG
-                                .getRemoteRegionRegistryFetchInterval() * 1000,
-                        EUREKA_SERVER_CONFIG
-                                .getRemoteRegionRegistryFetchInterval() * 1000);
+        ThreadPoolExecutor remoteRegionFetchExecutor = new ThreadPoolExecutor(
+                1, 2, 0, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());  // use direct handoff
 
+        scheduler = Executors.newScheduledThreadPool(1,
+                new ThreadFactoryBuilder()
+                        .setNameFormat("Eureka-RemoteRegionCacheRefresher_" + regionName + "-%d")
+                        .setDaemon(true)
+                        .build());
+
+        scheduler.schedule(
+                new TimedSupervisorTask(
+                        "RemoteRegionFetch_" + regionName,
+                        scheduler,
+                        remoteRegionFetchExecutor,
+                        EUREKA_SERVER_CONFIG.getRemoteRegionRegistryFetchInterval(),
+                        TimeUnit.SECONDS,
+                        5,  // exponential backoff bound
+                        remoteRegionFetchTask
+                ),
+                EUREKA_SERVER_CONFIG.getRemoteRegionRegistryFetchInterval(), TimeUnit.SECONDS);
     }
 
     /**
