@@ -21,13 +21,12 @@ import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.ws.rs.core.MediaType;
@@ -73,6 +72,10 @@ public class RemoteRegionRegistry implements LookupService<String> {
     private URL remoteRegionURL;
 
     private final ScheduledExecutorService scheduler;
+    // monotonically increasing generation counter to ensure stale threads do not reset registry to an older version
+    private volatile AtomicLong fullRegistryGeneration = new AtomicLong(0);
+    private volatile AtomicLong deltaGeneration = new AtomicLong(0);
+
     private volatile AtomicReference<Applications> applications = new AtomicReference<Applications>();
     private volatile AtomicReference<Applications> applicationsDelta = new AtomicReference<Applications>();
     private volatile boolean readyForServingData;
@@ -216,12 +219,20 @@ public class RemoteRegionRegistry implements LookupService<String> {
                         (getApplications().getRegisteredApplications().size() == 0));
                 response = storeFullRegistry();
             } else {
+                long currDeltaGeneration = deltaGeneration.get();
                 Applications delta = null;
                 response = fetchRemoteRegistry(true);
                 if (null != response) {
                     if (response.getStatus() == Status.OK.getStatusCode()) {
                         delta = response.getEntity(Applications.class);
-                        this.applicationsDelta.set(delta);
+                        if (delta == null) {
+                            logger.error("The delta is null for some reason. Not storing this information");
+                        } else if (deltaGeneration.compareAndSet(currDeltaGeneration, currDeltaGeneration + 1)) {
+                            this.applicationsDelta.set(delta);
+                        } else {
+                            delta = null;  // set the delta to null so we don't use it
+                            logger.warn("Not updating delta as another thread is updating it already");
+                        }
                     }
                     if (delta == null) {
                         logger.warn("The server does not allow the delta revision to be applied because it is not "
@@ -335,6 +346,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
      * @return the full registry information.
      */
     public ClientResponse storeFullRegistry() {
+        long currentUpdateGeneration = fullRegistryGeneration.get();
         ClientResponse response = fetchRemoteRegistry(false);
         if (response == null) {
             logger.error("The response is null.");
@@ -343,8 +355,10 @@ public class RemoteRegionRegistry implements LookupService<String> {
         Applications apps = response.getEntity(Applications.class);
         if (apps == null) {
             logger.error("The application is null for some reason. Not storing this information");
-        } else {
+        } else if (fullRegistryGeneration.compareAndSet(currentUpdateGeneration, currentUpdateGeneration + 1)) {
             applications.set(apps);
+        } else {
+            logger.warn("Not updating applications as another thread is updating it already");
         }
         logger.info("The response status is {}", response.getStatus());
         return response;
