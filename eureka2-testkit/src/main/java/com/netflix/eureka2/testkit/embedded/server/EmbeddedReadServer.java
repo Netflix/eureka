@@ -101,7 +101,7 @@ public class EmbeddedReadServer extends EmbeddedEurekaServer<EurekaServerConfig,
 
     @Override
     public ServerResolver getInterestResolver() {
-        return ServerResolvers.withHostname("localhost").withPort(getDiscoveryPort());
+        return ServerResolvers.fromHostname("localhost").withPort(getDiscoveryPort());
     }
 
     @Override

@@ -172,7 +172,7 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
             }
         }).filter(RxFunctions.filterNullValuesFunc());
 
-        return ServerResolvers.forServerSource(serverSource);
+        return ServerResolvers.fromServerSource(serverSource);
     }
 
     public static class WriteServerAddress {

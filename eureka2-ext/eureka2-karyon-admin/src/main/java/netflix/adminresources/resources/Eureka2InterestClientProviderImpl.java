@@ -23,7 +23,7 @@ public class Eureka2InterestClientProviderImpl implements Eureka2InterestClientP
     public EurekaInterestClient get() {
         logger.info("Subscribing to Eureka2 server {}:{}", discoveryDNS, port);
         return new EurekaInterestClientBuilder()
-                .withServerResolver(ServerResolvers.withDnsName(discoveryDNS).withPort(port))
+                .withServerResolver(ServerResolvers.fromDnsName(discoveryDNS).withPort(port))
                 .build();
     }
 }

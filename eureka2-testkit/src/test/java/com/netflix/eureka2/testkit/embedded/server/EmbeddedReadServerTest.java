@@ -38,11 +38,11 @@ public class EmbeddedReadServerTest {
     @Test(timeout = 10000)
     public void testDiscoveryServices() throws Exception {
         EurekaRegistrationClient registrationClient = new EurekaRegistrationClientBuilder()
-                .withServerResolver(ServerResolvers.withHostname("localhost").withPort(writeServerResource.getRegistrationPort()))
+                .withServerResolver(ServerResolvers.fromHostname("localhost").withPort(writeServerResource.getRegistrationPort()))
                 .build();
 
         EurekaInterestClient interestClient = new EurekaInterestClientBuilder()
-                .withServerResolver(ServerResolvers.withHostname("localhost").withPort(readServerResource.getDiscoveryPort()))
+                .withServerResolver(ServerResolvers.fromHostname("localhost").withPort(readServerResource.getDiscoveryPort()))
                 .build();
 
         InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();

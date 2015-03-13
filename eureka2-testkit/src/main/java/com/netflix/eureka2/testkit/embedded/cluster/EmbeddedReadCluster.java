@@ -12,7 +12,6 @@ import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedReadCluster.ReadClus
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer.ReadServerReport;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
-import com.netflix.eureka2.Server;
 
 /**
  * @author Tomasz Bak
@@ -98,7 +97,7 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
     }
 
     public ServerResolver interestResolver() {
-        return ServerResolvers.forServerSource(clusterChangeObservable());
+        return ServerResolvers.fromServerSource(clusterChangeObservable());
     }
 
     public static class ReadClusterReport {

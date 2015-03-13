@@ -64,12 +64,12 @@ public final class SimpleApp {
     public void run() throws InterruptedException {
 
         EurekaRegistrationClient registrationClient = new EurekaRegistrationClientBuilder()
-                .withServerResolver(withDnsName(writeServerDns).withPort(writeRegistrationPort))
+                .withServerResolver(fromDnsName(writeServerDns).withPort(writeRegistrationPort))
                 .build();
 
         ServerResolver interestClientResolver =
                 fromEureka(
-                        withDnsName(writeServerDns).withPort(writeInterestPort)
+                        fromDnsName(writeServerDns).withPort(writeInterestPort)
                 ).forInterest(forVips(readServerVip));
 
         EurekaInterestClient interestClient = new EurekaInterestClientBuilder()

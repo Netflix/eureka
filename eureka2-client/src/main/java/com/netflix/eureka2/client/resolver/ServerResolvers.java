@@ -30,7 +30,7 @@ public class ServerResolvers {
      * @param serverSource an observable servers to resolve from
      * @return {@link ServerResolver}
      */
-    public static ServerResolver forServerSource(final Observable<ChangeNotification<Server>> serverSource) {
+    public static ServerResolver fromServerSource(final Observable<ChangeNotification<Server>> serverSource) {
         return new OcelliServerResolver(serverSource);
     }
 
@@ -41,7 +41,7 @@ public class ServerResolvers {
      * @param port the eureka server port for communication
      * @return {@link PortResolverStep}
      */
-    public static PortResolverStep withPort(int port) {
+    public static PortResolverStep fromPort(int port) {
         return new DefaultPortResolverStep(port);
     }
 
@@ -52,7 +52,7 @@ public class ServerResolvers {
      * @param hostname a fixed hostname
      * @return {@link HostResolverStep}
      */
-    public static HostResolverStep withHostname(String hostname) {
+    public static HostResolverStep fromHostname(String hostname) {
         return new FixedHostResolverStep(hostname);
     }
 
@@ -64,7 +64,7 @@ public class ServerResolvers {
      * @param dnsName a dnsName to resolve from
      * @return {@link DnsResolverStep}
      */
-    public static DnsResolverStep withDnsName(String dnsName) {
+    public static DnsResolverStep fromDnsName(String dnsName) {
         return new DnsResolverStep(dnsName);
     }
 

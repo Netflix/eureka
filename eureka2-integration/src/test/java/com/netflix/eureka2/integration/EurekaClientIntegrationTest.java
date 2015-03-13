@@ -84,7 +84,7 @@ public class EurekaClientIntegrationTest {
     @Ignore
     public void testResolveFromDns() throws Exception {
         EurekaRegistrationClient registrationClient = new EurekaRegistrationClientBuilder()
-                .withServerResolver(ServerResolvers.withDnsName("cluster.domain.name").withPort(12102))
+                .withServerResolver(ServerResolvers.fromDnsName("cluster.domain.name").withPort(12102))
                 .build();
 
         ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
