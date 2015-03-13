@@ -25,10 +25,22 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
  */
 public enum SampleInterest {
 
+    ZuulInstance() {
+        @Override
+        public Interest<InstanceInfo> build() {
+            return Interests.forInstances(SampleInstanceInfo.ZuulServer.build().getId());
+        }
+    },
     ZuulVip() {
         @Override
         public Interest<InstanceInfo> build() {
             return Interests.forVips(SampleInstanceInfo.ZuulServer.build().getVipAddress());
+        }
+    },
+    ZuulVipSecure() {
+        @Override
+        public Interest<InstanceInfo> build() {
+            return Interests.forSecureVips(SampleInstanceInfo.ZuulServer.build().getVipAddress());
         }
     },
     ZuulApp() {
@@ -37,10 +49,22 @@ public enum SampleInterest {
             return Interests.forApplications(SampleInstanceInfo.ZuulServer.build().getApp());
         }
     },
+    DiscoveryInstance() {
+        @Override
+        public Interest<InstanceInfo> build() {
+            return Interests.forInstances(SampleInstanceInfo.DiscoveryServer.build().getId());
+        }
+    },
     DiscoveryVip() {
         @Override
         public Interest<InstanceInfo> build() {
-            return Interests.forApplications(SampleInstanceInfo.DiscoveryServer.build().getVipAddress());
+            return Interests.forVips(SampleInstanceInfo.DiscoveryServer.build().getVipAddress());
+        }
+    },
+    DiscoveryVipSecure() {
+        @Override
+        public Interest<InstanceInfo> build() {
+            return Interests.forSecureVips(SampleInstanceInfo.DiscoveryServer.build().getVipAddress());
         }
     },
     DiscoveryApp() {
@@ -52,7 +76,7 @@ public enum SampleInterest {
     MultipleApps() {
         @Override
         public Interest<InstanceInfo> build() {
-            return Interests.forSome(ZuulApp.build(), DiscoveryApp.build());
+            return Interests.forSome(ZuulInstance.build(), DiscoveryApp.build(), ZuulVipSecure.build(), DiscoveryInstance.build());
         }
     };
 

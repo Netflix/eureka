@@ -182,7 +182,13 @@ public abstract class TransportCompatibilityTestSuite {
         }
 
         private void registerInterestSetTest() {
+            runClientToServerWithAck(new InterestRegistration(SampleInterest.DiscoveryInstance.build()));
+            runClientToServerWithAck(new InterestRegistration(SampleInterest.DiscoveryApp.build()));
+            runClientToServerWithAck(new InterestRegistration(SampleInterest.DiscoveryVip.build()));
+            runClientToServerWithAck(new InterestRegistration(SampleInterest.DiscoveryVipSecure.build()));
             runClientToServerWithAck(new InterestRegistration(SampleInterest.MultipleApps.build()));
+            runClientToServerWithAck(new InterestRegistration(Interests.forFullRegistry()));
+            runClientToServerWithAck(new InterestRegistration(Interests.forNone()));
         }
 
         private void unregisterInterestSetTest() {
