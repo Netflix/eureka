@@ -45,6 +45,6 @@ protocol EurekaInterestModel {
     }
 
     record MultipleInterests {
-        array< union {ApplicationInterest, FullRegistryInterest, EmptyRegistryInterest, VipInterest, InstanceInterest} > interests;
+        array< union {ApplicationInterest, FullRegistryInterest, EmptyRegistryInterest, VipInterest, SecureVipInterest, InstanceInterest} > interests;
     }
 }
