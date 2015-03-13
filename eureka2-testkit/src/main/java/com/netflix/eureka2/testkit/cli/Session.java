@@ -105,7 +105,7 @@ public class Session {
     public void connectToRegister(String host, int port) {
         registrationClient = new EurekaRegistrationClientBuilder()
                 .withTransportConfig(context.getTransportConfig())
-                .withServerResolver(ServerResolvers.withHostname(host).withPort(port))
+                .withServerResolver(ServerResolvers.fromHostname(host).withPort(port))
                 .build();
 
         mode = Mode.Write;
@@ -114,7 +114,7 @@ public class Session {
     public void connectToRead(String host, int port) {
         interestClient = new EurekaInterestClientBuilder()
                 .withTransportConfig(context.getTransportConfig())
-                .withServerResolver(ServerResolvers.withHostname(host).withPort(port))
+                .withServerResolver(ServerResolvers.fromHostname(host).withPort(port))
                 .build();
 
         mode = Mode.Read;
@@ -123,13 +123,13 @@ public class Session {
     public void connectToCluster(String host, int registrationPort, int interestPort, String readClusterVip) {
         registrationClient = new EurekaRegistrationClientBuilder()
                 .withTransportConfig(context.getTransportConfig())
-                .withServerResolver(ServerResolvers.withHostname(host).withPort(registrationPort))
+                .withServerResolver(ServerResolvers.fromHostname(host).withPort(registrationPort))
                 .build();
 
         interestClient = new EurekaInterestClientBuilder()
                 .withTransportConfig(context.getTransportConfig())
                 .withServerResolver(ServerResolvers.fromEureka(
-                                ServerResolvers.withHostname(host).withPort(interestPort))
+                                ServerResolvers.fromHostname(host).withPort(interestPort))
                                 .forInterest(Interests.forVips(readClusterVip))
                 )
                 .build();

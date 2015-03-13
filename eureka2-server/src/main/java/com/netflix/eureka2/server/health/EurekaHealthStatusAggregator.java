@@ -14,6 +14,8 @@ import com.netflix.eureka2.health.HealthStatusProvider;
 import com.netflix.eureka2.health.HealthStatusUpdate;
 import com.netflix.eureka2.health.SubsystemDescriptor;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscription;
 import rx.functions.Func1;
@@ -26,10 +28,12 @@ import rx.subjects.BehaviorSubject;
 @Singleton
 public class EurekaHealthStatusAggregator implements HealthStatusAggregator<EurekaHealthStatusAggregator> {
 
+    private static final Logger logger = LoggerFactory.getLogger(EurekaHealthStatusAggregator.class);
+
     private static final Map<Status, Integer> STATUS_PRIORITY_MAP;
 
     static {
-        STATUS_PRIORITY_MAP = new EnumMap<Status, Integer>(Status.class);
+        STATUS_PRIORITY_MAP = new EnumMap<>(Status.class);
         STATUS_PRIORITY_MAP.put(Status.UNKNOWN, 0);
         STATUS_PRIORITY_MAP.put(Status.OUT_OF_SERVICE, 1);
         STATUS_PRIORITY_MAP.put(Status.DOWN, 2);
@@ -83,6 +87,7 @@ public class EurekaHealthStatusAggregator implements HealthStatusAggregator<Eure
                 .map(new Func1<Status, HealthStatusUpdate<EurekaHealthStatusAggregator>>() {
                     @Override
                     public HealthStatusUpdate<EurekaHealthStatusAggregator> call(Status status) {
+                        logger.info("New health status update: {}", status);
                         return new HealthStatusUpdate<EurekaHealthStatusAggregator>(status, DESCRIPTOR);
                     }
                 });

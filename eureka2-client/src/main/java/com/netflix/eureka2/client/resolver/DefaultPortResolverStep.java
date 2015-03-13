@@ -19,6 +19,6 @@ class DefaultPortResolverStep implements PortResolverStep {
 
     @Override
     public ServerResolver withDnsName(String dnsName) {
-        return ServerResolvers.withDnsName(dnsName).withPort(port);
+        return ServerResolvers.fromDnsName(dnsName).withPort(port);
     }
 }

@@ -13,6 +13,7 @@ import rx.functions.Func1;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -35,11 +36,11 @@ public class OcelliServerResolver implements ServerResolver {
 
 
     OcelliServerResolver(Server... servers) {
-        this(sourceFromList(servers), RoundRobinLoadBalancer.<Server>create(), 10, TimeUnit.SECONDS);
+        this(sourceFromList(servers), RoundRobinLoadBalancer.<Server>create(new Random().nextInt(100)), 10, TimeUnit.SECONDS);
     }
 
     OcelliServerResolver(Observable<ChangeNotification<Server>> serverSource) {
-        this(serverSource, RoundRobinLoadBalancer.<Server>create(), 10, TimeUnit.SECONDS);
+        this(serverSource, RoundRobinLoadBalancer.<Server>create(new Random().nextInt(100)), 10, TimeUnit.SECONDS);
     }
 
     private OcelliServerResolver(Observable<ChangeNotification<Server>> serverSource, LoadBalancer<Server> loadBalancer, int warmUpTimeout, TimeUnit timeUnit) {
