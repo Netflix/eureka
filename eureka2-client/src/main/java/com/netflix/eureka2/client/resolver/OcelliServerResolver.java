@@ -40,7 +40,7 @@ public class OcelliServerResolver implements ServerResolver {
     }
 
     OcelliServerResolver(Observable<ChangeNotification<Server>> serverSource) {
-        this(serverSource, RoundRobinLoadBalancer.<Server>create(), 10, TimeUnit.SECONDS);
+        this(serverSource, RoundRobinLoadBalancer.<Server>create(new Random().nextInt(100)), 10, TimeUnit.SECONDS);
     }
 
     private OcelliServerResolver(Observable<ChangeNotification<Server>> serverSource, LoadBalancer<Server> loadBalancer, int warmUpTimeout, TimeUnit timeUnit) {
