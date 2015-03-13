@@ -84,8 +84,11 @@ protocol DiscoveryProtocol {
         union {
             com.netflix.eureka2.interests.ApplicationInterest,
             com.netflix.eureka2.interests.FullRegistryInterest,
+            com.netflix.eureka2.interests.EmptyRegistryInterest,
             com.netflix.eureka2.interests.VipInterest,
-            com.netflix.eureka2.interests.InstanceInterest
+            com.netflix.eureka2.interests.SecureVipInterest,
+            com.netflix.eureka2.interests.InstanceInterest,
+            com.netflix.eureka2.interests.MultipleInterests
         } interest;
     }
 
@@ -98,7 +101,8 @@ protocol DiscoveryProtocol {
                 com.netflix.eureka2.interests.EmptyRegistryInterest,
                 com.netflix.eureka2.interests.VipInterest,
                 com.netflix.eureka2.interests.SecureVipInterest,
-                com.netflix.eureka2.interests.InstanceInterest
+                com.netflix.eureka2.interests.InstanceInterest,
+                com.netflix.eureka2.interests.MultipleInterests
             }
         > interests;
     }
