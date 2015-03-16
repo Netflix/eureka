@@ -169,7 +169,7 @@ public class HeartBeatConnection implements MessageConnection {
         @Override
         public void onError(Throwable e) {
             logger.error("Heartbeat receiver subscription got an error. This will close the connection " + delegate.name(), e);
-            shutdown();
+            shutdown(e);
         }
 
         @Override
@@ -187,7 +187,7 @@ public class HeartBeatConnection implements MessageConnection {
                     @Override
                     public void onError(Throwable e) {
                         logger.warn("Failed to send heartbeat message; terminating the connection " + delegate.name(), e);
-                        shutdown();
+                        shutdown(e);
                     }
 
                     @Override
