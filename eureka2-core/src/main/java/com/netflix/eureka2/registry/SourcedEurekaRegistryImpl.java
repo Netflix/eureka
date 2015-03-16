@@ -30,6 +30,7 @@ import com.netflix.eureka2.interests.InstanceInfoInitStateHolder;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.interests.NotificationsSubject;
+import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.EurekaRegistryMetrics;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -261,6 +262,8 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
                 if (changeNotification instanceof Sourced) {
                     Source notificationSource = ((Sourced) changeNotification).getSource();
                     return sourceMatcher.match(notificationSource);
+                } else if (changeNotification instanceof StreamStateNotification) {
+                    return false;
                 } else {
                     logger.warn("Received notification without a source, {}", changeNotification);
                     return false;

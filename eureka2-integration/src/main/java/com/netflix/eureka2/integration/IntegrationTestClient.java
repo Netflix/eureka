@@ -48,10 +48,14 @@ public class IntegrationTestClient {
     private final int endWaitMs;
 
     public IntegrationTestClient(EurekaInterestClient readClient, EurekaRegistrationClient writeClient) {
-        this(readClient, writeClient, 15, 300, 10000);
+        this(APPNAME_PREFIX + UUID.randomUUID().toString(), readClient, writeClient, 15, 300, 10000);
     }
 
-    public IntegrationTestClient(EurekaInterestClient readClient, EurekaRegistrationClient writeClient, int unregisterPercentage, int gapWaitMs, int endWaitMs) {
+    public IntegrationTestClient(String name, EurekaInterestClient readClient, EurekaRegistrationClient writeClient) {
+        this(name, readClient, writeClient, 15, 300, 10000);
+    }
+
+    public IntegrationTestClient(String name, EurekaInterestClient readClient, EurekaRegistrationClient writeClient, int unregisterPercentage, int gapWaitMs, int endWaitMs) {
         this.readClient = readClient;
         this.writeClient = writeClient;
 
@@ -59,7 +63,7 @@ public class IntegrationTestClient {
         this.gapWaitMs = gapWaitMs;
         this.endWaitMs = endWaitMs;
 
-        this.appName = APPNAME_PREFIX + UUID.randomUUID().toString();
+        this.appName = name;
         this.registrant = generateLifecycle(appName);
         this.expectedLifecycle = computeExpectedLifecycle(registrant);
     }

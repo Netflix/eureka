@@ -5,6 +5,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.StreamStateNotification.BufferState;
+import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,13 +25,13 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
     private static final Logger logger = LoggerFactory.getLogger(InstanceInfoInitStateHolder.class);
 
     private final ConcurrentHashMap<String, ChangeNotification<InstanceInfo>> notificationMap;
-    private final ChangeNotification<InstanceInfo> bufferStartNotificaton;
-    private final ChangeNotification<InstanceInfo> bufferEndNotificaton;
+    private final ChangeNotification<InstanceInfo> bufferStartNotification;
+    private final ChangeNotification<InstanceInfo> bufferEndNotification;
 
     public InstanceInfoInitStateHolder(Iterator<ChangeNotification<InstanceInfo>> initialRegistry, Interest<InstanceInfo> interest) {
         super(NotificationsSubject.<InstanceInfo>create());
-        this.bufferStartNotificaton = new StreamStateNotification<>(BufferState.BufferStart, interest);
-        this.bufferEndNotificaton = new StreamStateNotification<>(BufferState.BufferEnd, interest);
+        this.bufferStartNotification = new StreamStateNotification<>(BufferState.BufferStart, interest);
+        this.bufferEndNotification = new StreamStateNotification<>(BufferState.BufferEnd, interest);
         notificationMap = new ConcurrentHashMap<>();
 
         while (initialRegistry.hasNext()) {
@@ -60,12 +61,12 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
     @Override
     protected Iterator<ChangeNotification<InstanceInfo>> _newIterator() {
         if (notificationMap.isEmpty()) {
-            return singletonIterator(bufferEndNotificaton);
+            return singletonIterator(bufferEndNotification);
         }
         return concat(
-                singletonIterator(bufferStartNotificaton),
+                singletonIterator(bufferStartNotification),
                 notificationMap.values().iterator(),
-                singletonIterator(bufferEndNotificaton)
+                singletonIterator(bufferEndNotification)
         );
     }
 
@@ -84,7 +85,12 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
                             update
                     );
                 }
-                return new ChangeNotification<>(Kind.Add, update.getData());
+
+                if (update instanceof Sourced) {
+                    return new SourcedChangeNotification<>(Kind.Add, update.getData(), ((Sourced) update).getSource());
+                } else {
+                    return new ChangeNotification<>(Kind.Add, update.getData());
+                }
         }
         return null;
     }
