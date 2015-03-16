@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action1;
+import rx.functions.Func1;
 
 /**
  * An implementation of {@link InterestChannel} for eureka server.
@@ -110,8 +111,14 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
     }
 
     private void initializeNotificationMultiplexer() {
-        notificationMultiplexer.changeNotifications().subscribe(
-                new Subscriber<ChangeNotification<InstanceInfo>>() {
+        notificationMultiplexer.changeNotifications()
+                .concatMap(new Func1<ChangeNotification<InstanceInfo>, Observable<Void>>() {
+                    @Override
+                    public Observable<Void> call(ChangeNotification<InstanceInfo> notification) {
+                        return handleChangeNotification(notification);
+                    }
+                })
+                .subscribe(new Subscriber<Void>() {
                     @Override
                     public void onCompleted() {
                         sendOnCompleteOnTransport(); // On complete of stream.
@@ -125,22 +132,23 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
                     }
 
                     @Override
-                    public void onNext(ChangeNotification<InstanceInfo> notification) {
-                        handleChangeNotification(notification);
+                    public void onNext(Void aVoid) {
+                        // no-op
                     }
                 });
     }
 
-    protected void handleChangeNotification(ChangeNotification<InstanceInfo> notification) {
+    protected Observable<Void> handleChangeNotification(ChangeNotification<InstanceInfo> notification) {
         if (notification.isDataNotification()) {
             metrics.incrementApplicationNotificationCounter(notification.getData().getApp());
         }
         Observable<Void> sendResult = sendNotification(notification);
         if (sendResult != null) {
-            subscribeToTransportSend(sendResult, "notification");
+            return subscribeToTransportSend(sendResult, "notification");
         } else {
             // TODO: how to report effectively invariant violations that should never happen in a valid code, but are not errors?
             logger.warn("No-effect modify in the interest channel: {}", notification);
+            return Observable.empty();
         }
     }
 
