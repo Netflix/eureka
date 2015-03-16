@@ -69,7 +69,6 @@ public class OcelliServerResolverTest extends AbstractResolverTest {
         final List<ChangeNotification<Server>> batchOne = Arrays.asList(
                 new ChangeNotification<>(ChangeNotification.Kind.Add, SERVER_A),
                 new ChangeNotification<>(ChangeNotification.Kind.Add, SERVER_B),
-                new ChangeNotification<>(ChangeNotification.Kind.Modify, SERVER_C),
                 ChangeNotification.<Server>bufferSentinel()
         );
 

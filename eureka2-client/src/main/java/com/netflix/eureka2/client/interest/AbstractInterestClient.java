@@ -26,7 +26,7 @@ public abstract class AbstractInterestClient implements EurekaInterestClient {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractInterestClient.class);
 
-    public static final int DEFAULT_RETRY_WAIT_MILLIS = 500;
+    public static final int DEFAULT_RETRY_WAIT_MILLIS = 1000;
 
     protected final SourcedEurekaRegistry<InstanceInfo> registry;
     protected final int retryWaitMillis;
