@@ -242,7 +242,7 @@ public class EurekaRegistrationClientImplTest {
         assertThat(testChannel0.operations.size(), is(1));
         assertThat(testChannel0.operations.toArray(), equalTo(infos.subList(0, 1).toArray()));
 
-        factory.awaitChannels(2, failTimeMillis + RETRY_WAIT_MILLIS + 10);  // wait out the retry period configured for .retryWhen()
+        factory.awaitChannels(2, failTimeMillis + RETRY_WAIT_MILLIS + 500);  // wait out the retry period configured for .retryWhen()
 
         assertThat(factory.getAllChannels().size(), is(2));
 
