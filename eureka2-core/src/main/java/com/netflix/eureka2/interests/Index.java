@@ -4,6 +4,7 @@ import java.util.Iterator;
 
 import rx.Observable;
 import rx.Subscriber;
+import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
@@ -77,20 +78,20 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
                 // Because new instance holder updates will be added while we replay them, they will be
                 // partially visible by the subscriber. When we replay buffered real time updates,
                 // they may overlap with what was already sent from the init holder.
-                NotificationsSubject<T> realTimeSubject = NotificationsSubject.create();
+                // TODO can we make this buffering cheaper?
+                final NotificationsSubject<T> realTimeSubject = NotificationsSubject.create();
                 realTimeSubject.pause();
                 realTimeSource.subscribe(realTimeSubject);
-                realTimeSubject.subscribe(subscriber);
 
-                // Reply initial state
-                for (ChangeNotification<T> notification : initStateHolder) {
-                    subscriber.onNext(notification);
-                }
-
-                // Now open real time source
-                realTimeSubject.resume();
+                realTimeSubject.mergeWith(Observable.from(initStateHolder).doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        realTimeSubject.resume();
+                    }
+                })).subscribe(subscriber);
             }
         });
+
         this.interest = interest;
         this.notificationsSubject = initStateHolder.getNotificationSubject();
         this.notificationsSubject.subscribe(initStateHolder);// It is important to ALWAYS update init state first otherwise, we will lose data (see class javadoc)

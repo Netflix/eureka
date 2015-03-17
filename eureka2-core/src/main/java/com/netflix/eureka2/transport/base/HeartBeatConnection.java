@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
 import rx.Subscriber;
+import rx.functions.Func1;
 import rx.subjects.PublishSubject;
 
 import java.util.concurrent.TimeUnit;
@@ -67,27 +68,20 @@ public class HeartBeatConnection implements MessageConnection {
         this.scheduler = scheduler;
 
         this.filteredInput = PublishSubject.create();
-        delegate.incoming().subscribe(new Subscriber<Object>() {
-            @Override
-            public void onCompleted() {
-                filteredInput.onCompleted();
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                filteredInput.onError(e);
-            }
-
-            @Override
-            public void onNext(Object o) {
-                if (o instanceof Heartbeat) {
-                    heartbeatSenderReceiver.onHeartbeatReceived();
-                } else {
-                    filteredInput.onNext(o);
-                }
-            }
-        });
         this.heartbeatSenderReceiver = new HeartbeatSenderReceiver();
+
+        delegate.incoming()
+                .filter(new Func1<Object, Boolean>() {
+                    @Override
+                    public Boolean call(Object o) {
+                        if (o instanceof Heartbeat) {
+                            heartbeatSenderReceiver.onHeartbeatReceived();
+                            return false;
+                        }
+                        return true;
+                    }
+                })
+                .subscribe(filteredInput);
     }
 
     @Override
