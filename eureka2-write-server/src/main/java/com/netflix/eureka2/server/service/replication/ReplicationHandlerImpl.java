@@ -140,7 +140,7 @@ public class ReplicationHandlerImpl implements ReplicationHandler {
         @Override
         public Observable<Void> call(final ReplicationChannel channel) {
             return registry.forInterest(Interests.forFullRegistry(), Source.matcherFor(Source.Origin.LOCAL))
-                    .concatMap(new Func1<ChangeNotification<InstanceInfo>, Observable<Void>>() {
+                    .flatMap(new Func1<ChangeNotification<InstanceInfo>, Observable<Void>>() {// TODO concatMap once backpressure is properly working
                         @Override
                         public Observable<Void> call(ChangeNotification<InstanceInfo> notification) {
                             switch (notification.getKind()) {

@@ -53,7 +53,7 @@ public class HeartBeatConnection implements MessageConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(HeartBeatConnection.class);
 
-    private static final IllegalStateException MISSING_HEARTBEAT_EXCEPTION = new IllegalStateException("too many heartbeats missed");
+    protected static final IllegalStateException MISSING_HEARTBEAT_EXCEPTION = new IllegalStateException("too many heartbeats missed");
 
     private final MessageConnection delegate;
     private final long heartbeatIntervalMs;
