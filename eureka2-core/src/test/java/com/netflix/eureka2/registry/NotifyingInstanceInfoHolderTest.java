@@ -147,6 +147,54 @@ public class NotifyingInstanceInfoHolderTest {
         assertThat(holder.get(fooSource), equalTo(thirdInfo));
     }
 
+
+    @Test(timeout = 60000)
+    public void testUpdateDifferentSourcesPromoteLocal() throws Exception {
+        InstanceInfo.Builder builder = SampleInstanceInfo.DiscoveryServer.builder();
+        InstanceInfo firstInfo = builder
+                .withStatus(InstanceInfo.Status.STARTING)
+                .build();
+
+        Source fooSource = new Source(Source.Origin.REPLICATED, "foo");
+        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, notificationSubject, invoker, firstInfo.getId());
+        holder.update(fooSource, firstInfo).toBlocking().firstOrDefault(null);
+
+        assertThat(holder.size(), equalTo(1));
+        assertThat(holder.get(), equalTo(firstInfo));
+
+        InstanceInfo secondInfo = builder
+                .withStatus(InstanceInfo.Status.UP)
+                .build();
+
+        holder.update(localSource, secondInfo).toBlocking().firstOrDefault(null);
+
+        // verify promotion of local source happened
+        assertThat(holder.size(), equalTo(2));
+        assertThat(holder.get(), equalTo(secondInfo));
+        assertThat(holder.get(), not(equalTo(firstInfo)));
+        assertThat(holder.get(fooSource), equalTo(firstInfo));
+
+        InstanceInfo thirdInfo = builder
+                .withStatus(InstanceInfo.Status.DOWN)
+                .build();
+
+        holder.update(fooSource, thirdInfo).toBlocking().firstOrDefault(null);
+
+        assertThat(holder.size(), equalTo(2));
+        assertThat(holder.get(), equalTo(secondInfo));
+        assertThat(holder.get(fooSource), equalTo(thirdInfo));
+
+        InstanceInfo fourthSource = builder
+                .withStatus(InstanceInfo.Status.OUT_OF_SERVICE)
+                .build();
+
+        holder.update(localSource, fourthSource).toBlocking().firstOrDefault(null);
+
+        assertThat(holder.size(), equalTo(2));
+        assertThat(holder.get(), equalTo(fourthSource));
+        assertThat(holder.get(localSource), equalTo(fourthSource));
+    }
+
     @Test(timeout = 60000)
     public void testRemoveSameSource() throws Exception {
         InstanceInfo.Builder builder = SampleInstanceInfo.DiscoveryServer.builder();
