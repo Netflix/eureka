@@ -191,15 +191,11 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
 
         InstanceInfo incoming = msg.getInstanceInfo();
         InstanceInfo cached = idVsInstance.get(incoming.getId());
-        if (cached == null) {
-            idVsInstance.put(incoming.getId(), incoming);
-            notification = new ChangeNotification<>(ChangeNotification.Kind.Add, incoming);
-        } else {
+        if (cached != null) {
             logger.debug("Received newer version of an existing instanceInfo as Add");
-            idVsInstance.put(incoming.getId(), incoming);
-            notification = new ChangeNotification<>(ChangeNotification.Kind.Add, incoming);
         }
-
+        idVsInstance.put(incoming.getId(), incoming);
+        notification = new ChangeNotification<>(ChangeNotification.Kind.Add, incoming);
         return notification;
     }
 
@@ -267,8 +263,7 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
 
                 @Override
                 public void onError(Throwable e) {
-                    // TODO: handle/do failover/fallback
-                    logger.error("Channel interest throw error", e);
+                    logger.debug("Channel interest throw error", e);  // debug log as errors are retried by default
                 }
 
                 @Override

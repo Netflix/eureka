@@ -112,7 +112,7 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
 
     private void initializeNotificationMultiplexer() {
         notificationMultiplexer.changeNotifications()
-                .concatMap(new Func1<ChangeNotification<InstanceInfo>, Observable<Void>>() {
+                .flatMap(new Func1<ChangeNotification<InstanceInfo>, Observable<Void>>() { // TODO concatMap once backpressure is properly working
                     @Override
                     public Observable<Void> call(ChangeNotification<InstanceInfo> notification) {
                         return handleChangeNotification(notification);
