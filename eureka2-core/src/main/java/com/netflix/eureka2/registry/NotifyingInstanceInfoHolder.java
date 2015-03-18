@@ -23,9 +23,13 @@ import rx.functions.Action1;
 
 /**
  * This holder maintains the data copies in a list ordered by write time. It also maintains a consistent "snapshot"
- * view of the copies, sourced from the head of the ordered list of copies. This snapshot is updated w.r.t. the
- * previous snapshot for each write into this holder, if the write is to the head copy. When the head copy is removed,
- * the next copy in line is promoted as the new view.
+ * view of the copies, sourced from the head of the ordered list of copies.
+ *
+ * This snapshot is updated w.r.t. the previous snapshot for each write into this holder, if the write is to
+ * the head copy. When the head copy is removed, the next copy in line is promoted as the new view.
+ *
+ * If the current snapshot is from a non-local source and an update from a local source is received, this new local
+ * sourced update is promoted to the snapshot regardless the write order.
  *
  * This holder serializes actions between update and remove by queuing (via SerializedTaskInvoker)
  *
@@ -100,11 +104,6 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
         return dataStore.getAllSources();
     }
 
-    /**
-     * if the update is an add at the head, send an ADD notification of the data;
-     * if the update is an add to an existing head, send the diff as a MODIFY notification;
-     * else no-op.
-     */
     @Override
     public Observable<Status> update(final Source source, final InstanceInfo data) {
         return invoker.submitTask(new Callable<Observable<Status>>() {
@@ -125,6 +124,13 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
         });
     }
 
+    /**
+     * - if the update is an add at the head, send an ADD notification of the data;
+     * - if the update is an add to an existing head, send the diff as a MODIFY notification;
+     * - if the update is from a local source type and the current snapshot is from a non-local source type,
+     *   promote the new update to the snapshot and generate notification regardless of whether they diff;
+     * - else no-op.
+     */
     protected Status doUpdate(final Source source, final InstanceInfo data) {
         // add self to the holder datastore if not already there, else delegate to existing one
         NotifyingInstanceInfoHolder existing = holderStoreAccessor.get(id);
@@ -144,6 +150,10 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
             snapshot = newSnapshot;
             notificationSubject.onNext(newSnapshot.getNotification());
             result = Status.AddedFirst;
+        } else if ((currSnapshot.getSource().getOrigin() != Source.Origin.LOCAL) &&
+                (source.getOrigin() == Source.Origin.LOCAL)) {  // promote new update from local to snapshot
+            snapshot = newSnapshot;
+            notificationSubject.onNext(newSnapshot.getNotification());
         } else {
             if (matches(currSnapshot.getSource(), newSnapshot.getSource())) {  // modify to current snapshot
                 snapshot = newSnapshot;
@@ -168,11 +178,6 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
         return result;
     }
 
-    /**
-     * If the remove is from the head and there is a new head, send the diff to the old head as a MODIFY notification;
-     * if the remove is of the last copy, send a DELETE notification;
-     * else no-op.
-     */
     @Override
     public Observable<Status> remove(final Source source) {
         return invoker.submitTask(new Callable<Observable<Status>>() {
@@ -193,6 +198,11 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
         });
     }
 
+    /**
+     * If the remove is from the head and there is a new head, send the diff to the old head as a MODIFY notification;
+     * if the remove is of the last copy, send a DELETE notification;
+     * else no-op.
+     */
     private Status doRemove(final Source source) {
         InstanceInfo removed = dataStore.remove(source);
         Snapshot<InstanceInfo> currSnapshot = snapshot;

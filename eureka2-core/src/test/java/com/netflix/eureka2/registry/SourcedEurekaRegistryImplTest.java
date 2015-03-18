@@ -15,6 +15,7 @@ import com.netflix.eureka2.metric.EurekaRegistryMetrics;
 import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.registry.Source.Origin;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.After;
 import org.junit.Assert;
@@ -26,16 +27,14 @@ import rx.Subscriber;
 import rx.Subscription;
 import rx.functions.Action0;
 import rx.functions.Action1;
+import rx.functions.Func1;
+import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
 import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.hasItems;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -335,6 +334,70 @@ public class SourcedEurekaRegistryImplTest {
     }
 
     @Test(timeout = 60000)
+    public void testUpdateWithLocalSourcePromoteOverNonLocalSnapshot() {
+        InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
+                .withStatus(InstanceInfo.Status.UP)
+                .build();
+
+        registry.register(original, replicatedSource);
+        testScheduler.triggerActions();
+
+        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
+        assertThat(internalStore.size(), equalTo(1));
+
+        MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
+        assertThat(holder.size(), equalTo(1));
+        InstanceInfo snapshot1 = holder.get();
+        assertThat(snapshot1, equalTo(original));
+
+        InstanceInfo newInstanceInfo = new InstanceInfo.Builder()
+                .withInstanceInfo(original)
+                .withStatus(InstanceInfo.Status.STARTING).build();
+
+        registry.register(newInstanceInfo, localSource);
+        testScheduler.triggerActions();
+
+        assertThat(internalStore.size(), equalTo(1));
+
+        assertThat(holder.size(), equalTo(2));
+        InstanceInfo snapshot2 = holder.get();
+        assertThat(snapshot2, equalTo(newInstanceInfo));
+    }
+
+    @Test(timeout = 60000)
+    public void testRegisterWithLocalSourcePromoteTriggersNewChangeNotification() {
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
+
+        registry.forInterest(Interests.forFullRegistry())
+                .filter(new Func1<ChangeNotification<InstanceInfo>, Boolean>() {
+                    @Override
+                    public Boolean call(ChangeNotification<InstanceInfo> notification) {
+                        return notification.isDataNotification();
+                    }
+                }).subscribe(testSubscriber);
+
+        InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
+                .withStatus(InstanceInfo.Status.UP)
+                .build();
+
+        registry.register(original, replicatedSource);
+        testScheduler.triggerActions();
+
+        ChangeNotification<InstanceInfo> notification = testSubscriber.takeNext();
+        assertThat(notification, is(instanceOf(Sourced.class)));
+        assertThat(notification.getData(), is(equalTo(original)));
+        assertThat(((Sourced)notification).getSource(), is(equalTo(replicatedSource)));
+
+        registry.register(original, localSource);  // register with the same but with localSource
+        testScheduler.triggerActions();
+
+        notification = testSubscriber.takeNext();
+        assertThat(notification, is(instanceOf(Sourced.class)));
+        assertThat(notification.getData(), is(equalTo(original)));
+        assertThat(((Sourced)notification).getSource(), is(equalTo(localSource)));
+    }
+
+        @Test(timeout = 60000)
     public void testRegistryShutdownOnCompleteAllInterestStreams() throws Exception {
         InstanceInfo discovery1 = SampleInstanceInfo.DiscoveryServer.build();
         InstanceInfo discovery2 = SampleInstanceInfo.DiscoveryServer.build();
