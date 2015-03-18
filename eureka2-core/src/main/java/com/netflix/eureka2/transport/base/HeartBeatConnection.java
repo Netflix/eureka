@@ -53,6 +53,8 @@ public class HeartBeatConnection implements MessageConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(HeartBeatConnection.class);
 
+    private static final IllegalStateException MISSING_HEARTBEAT_EXCEPTION = new IllegalStateException("too many heartbeats missed");
+
     private final MessageConnection delegate;
     private final long heartbeatIntervalMs;
     private final long tolerance;
@@ -170,7 +172,7 @@ public class HeartBeatConnection implements MessageConnection {
         public void onNext(Long aLong) {
             if (missingHeartbeatsCount.incrementAndGet() > tolerance) {
                 logger.warn("More than {} heartbeat messages missed; closing the connection {}", tolerance, delegate.name());
-                shutdown();
+                shutdown(MISSING_HEARTBEAT_EXCEPTION);
             } else {
                 logger.debug("Sending heartbeat message in the connection {}", delegate.name());
                 submit(Heartbeat.INSTANCE).subscribe(new Subscriber<Void>() {

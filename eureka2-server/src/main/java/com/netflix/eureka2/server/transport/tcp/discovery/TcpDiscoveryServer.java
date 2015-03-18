@@ -58,6 +58,7 @@ public class TcpDiscoveryServer extends AbstractTcpServer {
                 .pipelineConfigurator(EurekaTransports.discoveryPipeline(config.getCodec()))
                 .withMetricEventsListenerFactory(servoEventsListenerFactory)
                 .build()
+//                .withErrorHandler()  TODO use a custom handler (?) as the default emits extraneous error logs
                 .start();
 
         logger.info("Starting TCP discovery server on port {} with {} encoding...", server.getServerPort(), config.getCodec());
