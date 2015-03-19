@@ -12,6 +12,7 @@ dependencies {
     compile 'org.apache.httpcomponents:httpclient:4.2.1'
     compile "com.netflix.ribbon:ribbon-httpclient:$ribbonVersion"
     compile "com.netflix.governator:governator:$governatorVersion"
+    compile "org.codehaus.jackson:jackson-mapper-asl:$jacksonVersion"
     runtime 'org.codehaus.jettison:jettison:1.2'
 
     testCompile 'junit:junit:4.10'
