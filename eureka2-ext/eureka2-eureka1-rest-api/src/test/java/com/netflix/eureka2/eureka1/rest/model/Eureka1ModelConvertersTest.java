@@ -1,11 +1,13 @@
 package com.netflix.eureka2.eureka1.rest.model;
 
+import java.util.List;
 import java.util.Set;
 
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
+import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
@@ -18,6 +20,12 @@ import org.junit.Before;
 import org.junit.Test;
 import rx.subjects.ReplaySubject;
 
+import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka1xApplicationsFromV2Collection;
+import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka1xDataCenterInfo;
+import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka1xInstanceInfo;
+import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka1xStatus;
+import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka2xDataCenterInfo;
+import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka2xInstanceInfo;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
@@ -30,11 +38,10 @@ import static org.mockito.Mockito.when;
 /**
  * @author Tomasz Bak
  */
-public class Eureka1DomainObjectModelMapperTest {
+@SuppressWarnings("unchecked")
+public class Eureka1ModelConvertersTest {
 
     public static final int APPLICATION_CLUSTER_SIZE = 3;
-
-    private final Eureka1DomainObjectModelMapper mapper = new Eureka1DomainObjectModelMapper();
 
     private final SourcedEurekaRegistry<InstanceInfo> registry = mock(SourcedEurekaRegistry.class);
     private final ReplaySubject<ChangeNotification<InstanceInfo>> notificationSubject = ReplaySubject.create();
@@ -47,21 +54,21 @@ public class Eureka1DomainObjectModelMapperTest {
     @Test
     public void testConversionToEureka1xDataCenterInfo() throws Exception {
         AwsDataCenterInfo v2DataCenterInfo = SampleAwsDataCenterInfo.UsEast1a.build();
-        AmazonInfo v1DataCenterInfo = mapper.toEureka1xDataCenterInfo(v2DataCenterInfo);
+        AmazonInfo v1DataCenterInfo = toEureka1xDataCenterInfo(v2DataCenterInfo);
         verifyDataCenterInfoMapping(v1DataCenterInfo, v2DataCenterInfo);
     }
 
     @Test
     public void testConversionToEureka1xInstanceInfo() {
         InstanceInfo v2InstanceInfo = SampleInstanceInfo.WebServer.build();
-        com.netflix.appinfo.InstanceInfo v1InstanceInfo = mapper.toEureka1xInstanceInfo(v2InstanceInfo);
+        com.netflix.appinfo.InstanceInfo v1InstanceInfo = toEureka1xInstanceInfo(v2InstanceInfo);
 
         assertThat(v1InstanceInfo.getAppGroupName(), is(equalToIgnoringCase(v2InstanceInfo.getAppGroup())));
         assertThat(v1InstanceInfo.getAppName(), is(equalToIgnoringCase(v2InstanceInfo.getApp())));
         assertThat(v1InstanceInfo.getASGName(), is(equalToIgnoringCase(v2InstanceInfo.getAsg())));
         assertThat(v1InstanceInfo.getVIPAddress(), is(equalToIgnoringCase(v2InstanceInfo.getVipAddress())));
         assertThat(v1InstanceInfo.getSecureVipAddress(), is(equalToIgnoringCase(v2InstanceInfo.getSecureVipAddress())));
-        InstanceStatus mappedStatus = mapper.toEureka1xStatus(v2InstanceInfo.getStatus());
+        InstanceStatus mappedStatus = toEureka1xStatus(v2InstanceInfo.getStatus());
         assertThat(v1InstanceInfo.getStatus(), is(equalTo(mappedStatus)));
 
         // Data center info
@@ -95,10 +102,10 @@ public class Eureka1DomainObjectModelMapperTest {
     public void testConversionToEureka2xDataCenterInfo() throws Exception {
         // First v2 -> v1
         AwsDataCenterInfo v2DataCenterInfo = SampleAwsDataCenterInfo.UsEast1a.build();
-        AmazonInfo v1DataCenterInfo = mapper.toEureka1xDataCenterInfo(v2DataCenterInfo);
+        AmazonInfo v1DataCenterInfo = toEureka1xDataCenterInfo(v2DataCenterInfo);
 
         // Now v1 -> v2, and check that resulting v2 record
-        AwsDataCenterInfo mappedV2DataCenterInfo = (AwsDataCenterInfo) mapper.toEureka2xDataCenterInfo(v1DataCenterInfo);
+        AwsDataCenterInfo mappedV2DataCenterInfo = (AwsDataCenterInfo) toEureka2xDataCenterInfo(v1DataCenterInfo);
         verifyDataCenterInfoMapping(v2DataCenterInfo, mappedV2DataCenterInfo);
     }
 
@@ -106,10 +113,10 @@ public class Eureka1DomainObjectModelMapperTest {
     public void testConversionToEureka2xInstanceInfo() throws Exception {
         // First v2 -> v1
         InstanceInfo v2InstanceInfo = SampleInstanceInfo.WebServer.build();
-        com.netflix.appinfo.InstanceInfo v1InstanceInfo = mapper.toEureka1xInstanceInfo(v2InstanceInfo);
+        com.netflix.appinfo.InstanceInfo v1InstanceInfo = toEureka1xInstanceInfo(v2InstanceInfo);
 
         // Now v1 -> v2, and check that resulting v2 record
-        InstanceInfo mappedV2InstanceInfo = mapper.toEureka2xInstanceInfo(v1InstanceInfo);
+        InstanceInfo mappedV2InstanceInfo = toEureka2xInstanceInfo(v1InstanceInfo);
 
         AwsDataCenterInfo v2DataCenterInfo = (AwsDataCenterInfo) v2InstanceInfo.getDataCenterInfo();
         AwsDataCenterInfo mappedV2DataCenterInfo = (AwsDataCenterInfo) mappedV2InstanceInfo.getDataCenterInfo();
@@ -129,6 +136,17 @@ public class Eureka1DomainObjectModelMapperTest {
 
         // Data center info
         verifyDataCenterInfoMapping(v2DataCenterInfo, mappedV2DataCenterInfo);
+    }
+
+    @Test
+    public void testConversionToEureka1xApplications() throws Exception {
+        List<InstanceInfo> v2InstanceInfos = SampleInstanceInfo.WebServer.clusterOf(2);
+
+        Applications applications = toEureka1xApplicationsFromV2Collection(v2InstanceInfos);
+
+        assertThat(applications.getAppsHashCode(), is(notNullValue()));
+        assertThat(applications.getRegisteredApplications().size(), is(equalTo(1)));
+        assertThat(applications.getRegisteredApplications().get(0).getInstances().size(), is(equalTo(2)));
     }
 
     private static void verifyDataCenterInfoMapping(AmazonInfo v1DataCenterInfo, AwsDataCenterInfo v2DataCenterInfo) {

@@ -22,7 +22,7 @@ import static org.junit.Assert.assertThat;
 /**
  * @author Tomasz Bak
  */
-public class AbstractEureka2RegistryViewTest {
+public class Eureka2ApplicationsViewTest {
 
     private static final int APPLICATION_CLUSTER_SIZE = 3;
     private static final long REFRESH_INTERVAL = 30000;

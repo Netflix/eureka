@@ -5,12 +5,11 @@ import javax.inject.Singleton;
 import java.io.IOException;
 import java.util.regex.Matcher;
 
+import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka2.eureka1.rest.codec.Eureka1DataCodec.EncodingFormat;
 import com.netflix.eureka2.eureka1.rest.query.Eureka2RegistryViewCache;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.spi.ExtensionContext;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
@@ -32,13 +31,15 @@ public class Eureka1QueryRequestHandler extends AbstractEureka1RequestHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(Eureka1QueryRequestHandler.class);
 
-    private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final Eureka2RegistryViewCache registryViewCache;
 
     @Inject
     public Eureka1QueryRequestHandler(Eureka1Configuration config, ExtensionContext context) {
-        this.registry = context.getLocalRegistry();
-        this.registryViewCache = new Eureka2RegistryViewCache(registry, config.getRefreshIntervalMs(), config.getQueryTimeout());
+        this.registryViewCache = new Eureka2RegistryViewCache(context.getLocalRegistry(), config.getRefreshIntervalMs(), config.getQueryTimeout());
+    }
+
+    /* For testing */Eureka1QueryRequestHandler(Eureka2RegistryViewCache registryViewCache) {
+        this.registryViewCache = registryViewCache;
     }
 
     @Override
@@ -55,7 +56,7 @@ public class Eureka1QueryRequestHandler extends AbstractEureka1RequestHandler {
             }
             matcher = APPS_DELTA_PATH_RE.matcher(path);
             if (matcher.matches()) {
-                return appGetDelta(response);
+                return appGetDelta(format, gzip, response);
             }
             matcher = APP_PATH_RE.matcher(path);
             if (matcher.matches()) {
@@ -86,10 +87,9 @@ public class Eureka1QueryRequestHandler extends AbstractEureka1RequestHandler {
         return encodeResponse(format, gzip, response, applications);
     }
 
-    private Observable<Void> appGetDelta(HttpServerResponse<ByteBuf> response) {
-        logger.info("Delta fetches not implemented");
-        response.setStatus(HttpResponseStatus.NOT_IMPLEMENTED);
-        return Observable.empty();
+    private Observable<Void> appGetDelta(EncodingFormat format, boolean gzip, HttpServerResponse<ByteBuf> response) throws IOException {
+        Applications applications = registryViewCache.findAllApplicationsDelta();
+        return encodeResponse(format, gzip, response, applications);
     }
 
     private Observable<Void> appGET(String appName, EncodingFormat format, boolean gzip, HttpServerResponse<ByteBuf> response) throws IOException {
@@ -109,7 +109,7 @@ public class Eureka1QueryRequestHandler extends AbstractEureka1RequestHandler {
 
     private Observable<Void> instanceGetByAppAndInstanceId(String appName, String instanceId, EncodingFormat format,
                                                            boolean gzip, HttpServerResponse<ByteBuf> response) throws IOException {
-        com.netflix.appinfo.InstanceInfo v1InstanceInfo = registryViewCache.findInstance(instanceId);
+        InstanceInfo v1InstanceInfo = registryViewCache.findInstance(instanceId);
         if (v1InstanceInfo == null) {
             logger.info("Instance info with id {} not found", instanceId);
             response.setStatus(HttpResponseStatus.NOT_FOUND);
@@ -126,7 +126,7 @@ public class Eureka1QueryRequestHandler extends AbstractEureka1RequestHandler {
 
     private Observable<Void> instanceGetByInstanceId(String instanceId, EncodingFormat format, boolean gzip,
                                                      HttpServerResponse<ByteBuf> response) throws IOException {
-        com.netflix.appinfo.InstanceInfo v1InstanceInfo = registryViewCache.findInstance(instanceId);
+        InstanceInfo v1InstanceInfo = registryViewCache.findInstance(instanceId);
         if (v1InstanceInfo == null) {
             logger.info("Instance info with id {} not found", instanceId);
             response.setStatus(HttpResponseStatus.NOT_FOUND);

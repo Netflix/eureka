@@ -9,7 +9,7 @@ import rx.Subscriber;
 import rx.Subscription;
 import rx.subjects.PublishSubject;
 
-import static com.netflix.eureka2.eureka1.rest.model.Eureka1DomainObjectModelMapper.EUREKA_1_MAPPER;
+import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka2xInstanceInfo;
 
 /**
  * @author Tomasz Bak
@@ -63,7 +63,7 @@ class RegistrationHandler {
         this.v1InstanceInfo = v1InstanceInfo;
         renew();
 
-        InstanceInfo v2InstanceInfo = EUREKA_1_MAPPER.toEureka2xInstanceInfo(v1InstanceInfo);
+        InstanceInfo v2InstanceInfo = toEureka2xInstanceInfo(v1InstanceInfo);
         registrationSubject.onNext(v2InstanceInfo);
     }
 

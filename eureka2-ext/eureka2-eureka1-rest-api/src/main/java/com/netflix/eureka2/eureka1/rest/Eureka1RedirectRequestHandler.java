@@ -103,9 +103,9 @@ public class Eureka1RedirectRequestHandler extends AbstractEureka1RequestHandler
         return Observable.empty();
     }
 
-    private Observable<Void> redirectTo(InstanceInfo readServerInfo,
-                                        HttpServerRequest<ByteBuf> request,
-                                        HttpServerResponse<ByteBuf> response) {
+    private static Observable<Void> redirectTo(InstanceInfo readServerInfo,
+                                               HttpServerRequest<ByteBuf> request,
+                                               HttpServerResponse<ByteBuf> response) {
         ServiceEndpoint serviceEndpoint = HTTP_PUBLIC_SERVICE_SELECTOR.returnServiceEndpoint(readServerInfo);
         String redirectHost = serviceEndpoint == null ? null : serviceEndpoint.getAddress().getHostName();
         if(redirectHost == null) {

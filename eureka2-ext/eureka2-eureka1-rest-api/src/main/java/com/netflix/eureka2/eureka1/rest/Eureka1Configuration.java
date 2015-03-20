@@ -42,7 +42,7 @@ public class Eureka1Configuration {
         if (value != null) {
             try {
                 return Long.parseLong(value);
-            } catch (NumberFormatException e) {
+            } catch (NumberFormatException ignored) {
                 logger.warn("Invalid {} property value {}; defaulting to ", key, value, defaultValue);
             }
         }

@@ -96,6 +96,10 @@ public class SourcedRegistryMockResource extends ExternalResource {
         fullRegistrySubject.onNext(new ChangeNotification<InstanceInfo>(Kind.Add, sample));
     }
 
+    public void removeFromRegistry(InstanceInfo sample) {
+        fullRegistrySubject.onNext(new ChangeNotification<InstanceInfo>(Kind.Delete, sample));
+    }
+
     /**
      * Upload a given number of instances to the registry, forged from the provided
      * template.

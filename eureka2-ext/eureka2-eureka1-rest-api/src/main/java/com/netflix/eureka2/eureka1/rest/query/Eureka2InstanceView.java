@@ -10,11 +10,9 @@ import rx.Observable;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
 
-import static com.netflix.eureka2.eureka1.rest.model.Eureka1DomainObjectModelMapper.EUREKA_1_MAPPER;
+import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka1xInstanceInfo;
 
 /**
- * TODO Eureka 2.x has own ids, while 1.x uses AWS instance id
- *
  * @author Tomasz Bak
  */
 public class Eureka2InstanceView extends AbstractEureka2RegistryView<com.netflix.appinfo.InstanceInfo> {
@@ -39,6 +37,6 @@ public class Eureka2InstanceView extends AbstractEureka2RegistryView<com.netflix
         if (latestSnapshot.size() > 1) {
             logger.error("Data consistency issue; two instances found with the same instance id {}", instanceInfo.getId());
         }
-        return EUREKA_1_MAPPER.toEureka1xInstanceInfo(instanceInfo);
+        return toEureka1xInstanceInfo(instanceInfo);
     }
 }

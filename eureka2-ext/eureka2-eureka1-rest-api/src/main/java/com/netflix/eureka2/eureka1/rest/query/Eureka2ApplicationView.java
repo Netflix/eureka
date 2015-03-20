@@ -9,7 +9,7 @@ import rx.Observable;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
 
-import static com.netflix.eureka2.eureka1.rest.model.Eureka1DomainObjectModelMapper.EUREKA_1_MAPPER;
+import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka1xApplication;
 
 /**
  * @author Tomasz Bak
@@ -35,6 +35,6 @@ public class Eureka2ApplicationView extends AbstractEureka2RegistryView<Applicat
 
     @Override
     protected Application updateSnapshot(Set<InstanceInfo> latestSnapshot) {
-        return EUREKA_1_MAPPER.toEureka1xApplication(applicationName, latestSnapshot);
+        return toEureka1xApplication(applicationName, latestSnapshot);
     }
 }

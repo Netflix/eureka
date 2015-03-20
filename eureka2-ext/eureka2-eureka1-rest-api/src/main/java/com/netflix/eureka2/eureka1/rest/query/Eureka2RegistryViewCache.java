@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.eureka2.eureka1.rest.query.Eureka2FullFetchWithDeltaView.RegistryFetch;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interest.Operator;
 import com.netflix.eureka2.interests.Interests;
@@ -28,7 +29,7 @@ public class Eureka2RegistryViewCache {
     private final long queryTimeoutMs;
     private final Scheduler scheduler;
 
-    private final AtomicReference<Eureka2ApplicationsView> allApplicationsView = new AtomicReference<>();
+    private final AtomicReference<Eureka2FullFetchWithDeltaView> fullFetchWithDeltaView = new AtomicReference<>();
     private final Map<String, Eureka2ApplicationView> applicationMap = new ConcurrentHashMap<>();
     private final Map<String, Eureka2ApplicationsView> vipMap = new ConcurrentHashMap<>();
     private final Map<String, Eureka2ApplicationsView> secureVipMap = new ConcurrentHashMap<>();
@@ -55,17 +56,11 @@ public class Eureka2RegistryViewCache {
     }
 
     public Applications findAllApplications() {
-        if (allApplicationsView.get() == null) {
-            Eureka2ApplicationsView newView = new Eureka2ApplicationsView(
-                    registry.forInterest(Interests.forFullRegistry()),
-                    refreshIntervalMs,
-                    scheduler
-            );
-            if (!allApplicationsView.compareAndSet(null, newView)) {
-                newView.close();
-            }
-        }
-        return allApplicationsView.get().latestCopy().timeout(queryTimeoutMs, TimeUnit.MILLISECONDS).take(1).toBlocking().first();
+        return getLatestFullFetch().getApplications();
+    }
+
+    public Applications findAllApplicationsDelta() {
+        return getLatestFullFetch().getDeltaChanges();
     }
 
     public Application findApplication(String appName) {
@@ -90,6 +85,20 @@ public class Eureka2RegistryViewCache {
 
     public Applications findApplicationsBySecureVip(final String secureVipAddress) {
         return findApplicationsBy(secureVipAddress, Interests.forSecureVips(secureVipAddress), secureVipMap);
+    }
+
+    private RegistryFetch getLatestFullFetch() {
+        if (fullFetchWithDeltaView.get() == null) {
+            Eureka2FullFetchWithDeltaView newView = new Eureka2FullFetchWithDeltaView(
+                    registry.forInterest(Interests.forFullRegistry()),
+                    refreshIntervalMs,
+                    scheduler
+            );
+            if (!fullFetchWithDeltaView.compareAndSet(null, newView)) {
+                newView.close();
+            }
+        }
+        return fullFetchWithDeltaView.get().latestCopy().timeout(queryTimeoutMs, TimeUnit.MILLISECONDS).take(1).toBlocking().first();
     }
 
     private Applications findApplicationsBy(String id, Interest<InstanceInfo> interest, Map<String, Eureka2ApplicationsView> cache) {

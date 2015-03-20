@@ -1,5 +1,7 @@
 package com.netflix.eureka2.eureka1.rest.query;
 
+import java.util.concurrent.TimeUnit;
+
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka2.interests.Interest;
@@ -10,6 +12,8 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Rule;
 import org.junit.Test;
+import rx.schedulers.Schedulers;
+import rx.schedulers.TestScheduler;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
@@ -22,9 +26,13 @@ import static org.junit.Assert.assertThat;
 public class Eureka2RegistryViewCacheTest {
 
     private static final int APPLICATION_CLUSTER_SIZE = 3;
+    private static final long REFRESH_INTERVAL = 30000;
+    private static final long QUERY_TIMEOUT = 30000;
 
     public static final String VIP_SERVER_FARM = "vip#serverFarm";
     public static final Interest<InstanceInfo> VIP_INTEREST = Interests.forVips(Operator.Equals, VIP_SERVER_FARM);
+
+    private final TestScheduler testScheduler = Schedulers.test();
 
     public static final String SECURE_VIP_SERVER_FARM = "secureVip#serverFarm";
     public static final Interest<InstanceInfo> SECURE_VIP_INTEREST = Interests.forSecureVips(Operator.Equals, SECURE_VIP_SERVER_FARM);
@@ -32,7 +40,7 @@ public class Eureka2RegistryViewCacheTest {
     @Rule
     public final SourcedRegistryMockResource registryMockResource = new SourcedRegistryMockResource();
 
-    private final Eureka2RegistryViewCache cache = new Eureka2RegistryViewCache(registryMockResource.registry());
+    private final Eureka2RegistryViewCache cache = new Eureka2RegistryViewCache(registryMockResource.registry(), REFRESH_INTERVAL, QUERY_TIMEOUT, testScheduler);
 
     @Test
     public void testAllApplicationsCaching() throws Exception {
@@ -46,6 +54,28 @@ public class Eureka2RegistryViewCacheTest {
 
         // Check the same copy is returned on subsequent call
         assertThat(cache.findAllApplications() == applications, is(true));
+    }
+
+    @Test
+    public void testApplicationsDeltaCaching() throws Exception {
+        // Generate first cache copy
+        registryMockResource.batchStart();
+        registryMockResource.uploadClusterToRegistry(SampleInstanceInfo.WebServer, APPLICATION_CLUSTER_SIZE);
+        registryMockResource.batchEnd();
+
+        Applications firstAppDelta = cache.findAllApplicationsDelta();
+        assertThat(firstAppDelta.getRegisteredApplications().size(), is(equalTo(0)));
+
+        // Generate second copy
+        registryMockResource.batchStart();
+        String backend = registryMockResource.uploadClusterToRegistry(SampleInstanceInfo.Backend, APPLICATION_CLUSTER_SIZE);
+        registryMockResource.batchEnd();
+        testScheduler.advanceTimeBy(REFRESH_INTERVAL, TimeUnit.MILLISECONDS);
+
+        Applications secondAppDelta = cache.findAllApplicationsDelta();
+        assertThat(secondAppDelta.getRegisteredApplications().size(), is(equalTo(1)));
+        Application deltaApp = secondAppDelta.getRegisteredApplications().get(0);
+        assertThat(deltaApp.getName(), is(equalToIgnoringCase(backend)));
     }
 
     @Test
