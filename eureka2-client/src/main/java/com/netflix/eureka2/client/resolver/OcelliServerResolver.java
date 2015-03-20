@@ -108,8 +108,7 @@ public class OcelliServerResolver implements ServerResolver {
                     @Override
                     public Observable<? extends LoadBalancer<Server>> call(Throwable throwable) {
                         if (!(throwable instanceof TimeoutException)) {
-                            logger.warn("Exception thrown when connecting serverSource to load balancer", throwable);
-
+                            logger.warn("Exception thrown when connecting serverSource to load balancer, using backup values", throwable);
                         }
                         return Observable.just(loadBalancer);
                     }
