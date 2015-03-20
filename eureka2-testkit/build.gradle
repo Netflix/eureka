@@ -31,19 +31,20 @@ dependencies {
 
 task runCluster (dependsOn: [classes], type: JavaExec) {
     group = "Examples"
-    description = "Run Eureka cluster (default -Pwrite=1 -Pread=2)"
+    description = "Run Eureka cluster (default -Pwrite=1 -Pread=1)"
 
     main = "com.netflix.eureka2.testkit.embedded.EmbeddedRunner"
     classpath = sourceSets.main.runtimeClasspath
 
     args = [
             project.hasProperty("write") ? write : 1,
-            project.hasProperty("read") ? read : 2,
+            project.hasProperty("read") ? read : 1,
             false, // bridge
-            true,  // dashboard
-            true,  // deployment view
+            false,  // dashboard
+            false,  // deployment view
             false, // extensions
-            true   // admin UI
+            true,  // admin UI
+            true   // ephemeral ports
     ]
 }
 
