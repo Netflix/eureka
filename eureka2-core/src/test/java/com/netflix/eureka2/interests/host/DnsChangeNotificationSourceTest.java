@@ -48,10 +48,12 @@ public class DnsChangeNotificationSourceTest {
         ExtTestSubscriber<ChangeNotification<String>> testSubscriber = new ExtTestSubscriber<>();
         resolver.forInterest(null).subscribe(testSubscriber);
 
-        for (int i = 0; i < expectedEntries; i++) {
+        for (int i = 0; i < expectedEntries + 1; i++) {  // + 1 for sentinel
             ChangeNotification<String> notification = testSubscriber.takeNext(30, TimeUnit.SECONDS);
             assertThat(notification, is(not(nullValue())));
-            assertThat(notification.getData(), is(not(nullValue())));
+            if (notification.getKind() != Kind.BufferSentinel) {
+                assertThat(notification.getData(), is(not(nullValue())));
+            }
         }
     }
 }

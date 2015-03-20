@@ -16,7 +16,9 @@
 
 package com.netflix.eureka2.utils.rx;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -56,7 +58,7 @@ public class ResourceObservable<T> {
     private final TimeUnit timeUnit;
 
     private final ReentrantLock lock = new ReentrantLock();
-    private ResourceLoaderExecutor executor; // Updates guarded by lock
+    private volatile ResourceLoaderExecutor executor; // Updates guarded by lock
     private final AtomicInteger subscriptionCounter = new AtomicInteger();
 
     private final Observable<T> observable;
@@ -153,10 +155,16 @@ public class ResourceObservable<T> {
     public static class ResourceUpdate<T> {
         private final Set<T> added;
         private final Set<T> cancelled;
+        private final T finalSentinal;
 
         public ResourceUpdate(Set<T> added, Set<T> cancelled) {
+            this(added, cancelled, null);
+        }
+
+        public ResourceUpdate(Set<T> added, Set<T> cancelled, T finalSentinel) {
             this.added = added;
             this.cancelled = cancelled;
+            this.finalSentinal = finalSentinel;
         }
 
         public Set<T> getAdded() {
@@ -165,6 +173,10 @@ public class ResourceObservable<T> {
 
         public Set<T> getCancelled() {
             return cancelled;
+        }
+
+        public T getFinalSentinel() {
+            return finalSentinal;
         }
     }
 
@@ -189,12 +201,13 @@ public class ResourceObservable<T> {
     class ResourceLoaderExecutor implements Action0 {
 
         private final Worker worker = scheduler.createWorker();
-        private volatile Set<T> dataSnapshot = new HashSet<>();
+        private volatile Set<T> internalSnapshot = new HashSet<>();
+        private volatile List<T> dataSnapshot = new ArrayList<>();
         private final PublishSubject<T> dataUpdates = PublishSubject.create();
         private volatile boolean terminate;
         private Subscription rescheduleSubscription;
 
-        public Set<T> getDataSnapshot() {
+        public List<T> getDataSnapshot() {  // list for order
             return dataSnapshot;
         }
 
@@ -222,7 +235,7 @@ public class ResourceObservable<T> {
 
             ResourceUpdate<T> update;
             try {
-                update = loader.reload(dataSnapshot);
+                update = loader.reload(internalSnapshot);
             } catch (Exception e) {
                 if (e instanceof ResourceLoaderException) {
                     if (((ResourceLoaderException) e).isRecoverable()) {
@@ -243,14 +256,21 @@ public class ResourceObservable<T> {
                     dataUpdates.onNext(entry);
                 }
                 for (T entry : update.getAdded()) {
-                    if (!dataSnapshot.contains(entry)) {
+                    if (!internalSnapshot.contains(entry)) {
                         dataUpdates.onNext(entry);
                     }
                 }
-                dataSnapshot = update.getAdded();
+
+                internalSnapshot = update.getAdded();
+
+                dataSnapshot = new ArrayList<>(update.added);
+                if (update.getFinalSentinel() != null) {
+                    dataSnapshot.add(update.getFinalSentinel());
+                }
             } finally {
                 lock.unlock();
             }
+
             reschedule();
         }
     }

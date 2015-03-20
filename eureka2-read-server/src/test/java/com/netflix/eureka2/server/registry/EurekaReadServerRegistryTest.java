@@ -1,6 +1,6 @@
 package com.netflix.eureka2.server.registry;
 
-import com.netflix.eureka2.client.interest.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interest;

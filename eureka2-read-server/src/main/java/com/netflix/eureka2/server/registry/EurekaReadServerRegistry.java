@@ -22,8 +22,7 @@ import java.util.List;
 import com.google.inject.Inject;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.channel.ServiceChannel;
-import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.interest.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interest;
@@ -37,7 +36,7 @@ import rx.functions.Func1;
 
 /**
  * Registry implemented on top of eureka-client. It does not story anything, just
- * provides an adapter from {@link EurekaClient} to {@link SourcedEurekaRegistry} interface.
+ * provides an adapter from {@link EurekaInterestClient} to {@link SourcedEurekaRegistry} interface.
  * Server side {@link InterestChannel} is bound to real registry on write server,
  * and to proxy registry (this class) for read server.
  *
@@ -46,10 +45,10 @@ import rx.functions.Func1;
  * relevant for the proxy. Our class hierarchy provides single abstraction for
  * registrations and interests, and it is not possible to get one without the other.
  *
- * <h1>Why not the same registry as used internally by {@link EurekaClient}?</h1>
+ * <h1>Why not the same registry as used internally by {@link EurekaInterestClient}?</h1>
  *
  * This registry is used by the {@link ServiceChannel}s on the server end of a read server which must always get its
- * data from a write server which in this case is fetched by the normal {@link EurekaClient}
+ * data from a write server which in this case is fetched by the normal {@link EurekaInterestClient}
  *
  * @author Tomasz Bak
  */

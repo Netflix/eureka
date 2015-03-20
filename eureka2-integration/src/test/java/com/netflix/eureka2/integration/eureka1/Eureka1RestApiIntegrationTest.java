@@ -78,7 +78,7 @@ public class Eureka1RestApiIntegrationTest {
         // Register a client with Eureka 2.x cluster
         TestSubscriber<Void> registrationSubscriber = new TestSubscriber<>();
         final InstanceInfo instanceInfo = SampleInstanceInfo.WebServer.build();
-        deploymentResource.connectToWriteCluster()
+        deploymentResource.registrationClientToWriteCluster()
                 .register(Observable.just(instanceInfo))
                 .subscribe(registrationSubscriber);
 

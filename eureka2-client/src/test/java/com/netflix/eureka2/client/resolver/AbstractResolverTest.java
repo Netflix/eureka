@@ -1,13 +1,12 @@
 package com.netflix.eureka2.client.resolver;
 
-import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.rx.RxBlocking;
+import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.Server;
+import rx.functions.Action0;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 /**
  * @author Tomasz Bak
@@ -16,11 +15,32 @@ public abstract class AbstractResolverTest {
 
     protected static final Server SERVER_A = new Server("hostA", 123);
     protected static final Server SERVER_B = new Server("hostB", 124);
+    protected static final Server SERVER_C = new Server("hostC", 125);
 
     protected Server takeNext(ServerResolver resolver) {
-        Iterator<Server> serverIterator = RxBlocking.iteratorFrom(30, TimeUnit.SECONDS, resolver.resolve());
-        Server next = serverIterator.next();
-        assertThat(serverIterator.hasNext(), is(false));
-        return next;
+        try {
+            ExtTestSubscriber<Server> testSubscriber = new ExtTestSubscriber<>();
+            resolver.resolve().subscribe(testSubscriber);
+            Server next = testSubscriber.takeNext(30, TimeUnit.SECONDS);
+            testSubscriber.assertOnCompleted();
+            return next;
+        } catch (Exception e) {
+            fail("Should not throw an exception: " + e);
+            return null;
+        }
+    }
+
+    protected Server takeNextWithEmits(ServerResolver resolver, Action0 emits) {
+        try {
+            ExtTestSubscriber<Server> testSubscriber = new ExtTestSubscriber<>();
+            resolver.resolve().subscribe(testSubscriber);
+            emits.call();  // do any emits inbetween the subscribe and the takeNext
+            Server next = testSubscriber.takeNext(30, TimeUnit.SECONDS);
+            testSubscriber.assertOnCompleted();
+            return next;
+        } catch (Exception e) {
+            fail("Should not throw an exception: " + e);
+            return null;
+        }
     }
 }

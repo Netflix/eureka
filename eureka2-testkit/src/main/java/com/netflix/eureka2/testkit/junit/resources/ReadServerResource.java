@@ -49,8 +49,8 @@ public class ReadServerResource extends EurekaExternalResource {
                 .withWebAdminPort(0)
                 .withCodec(codec)
                 .build();
-        ServerResolver registrationResolver = ServerResolvers.just("localhost", writeServerResource.getRegistrationPort());
-        ServerResolver discoveryResolver = ServerResolvers.just("localhost", writeServerResource.getDiscoveryPort());
+        ServerResolver registrationResolver = ServerResolvers.fromHostname("localhost").withPort(writeServerResource.getRegistrationPort());
+        ServerResolver discoveryResolver = ServerResolvers.fromHostname("localhost").withPort(writeServerResource.getDiscoveryPort());
         server = new EmbeddedReadServer(config, registrationResolver, discoveryResolver, false, false);
         server.start();
 
@@ -73,7 +73,7 @@ public class ReadServerResource extends EurekaExternalResource {
         return discoveryPort;
     }
 
-    public ServerResolver getDiscoveryResolver() {
-        return ServerResolvers.just("localhost", discoveryPort);
+    public ServerResolver getInterestResolver() {
+        return ServerResolvers.fromHostname("localhost").withPort(discoveryPort);
     }
 }

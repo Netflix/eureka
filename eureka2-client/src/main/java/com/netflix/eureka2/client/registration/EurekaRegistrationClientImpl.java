@@ -2,6 +2,7 @@ package com.netflix.eureka2.client.registration;
 
 import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.RegistrationChannel;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.connection.RetryableConnectionFactory;
 import com.netflix.eureka2.connection.RetryableConnection;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -25,7 +26,7 @@ public class EurekaRegistrationClientImpl implements EurekaRegistrationClient {
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaRegistrationClientImpl.class);
 
-    private static final int DEFAULT_RETRY_WAIT_MILLIS = 500;
+    private static final int DEFAULT_RETRY_WAIT_MILLIS = 1000;
 
     private final RetryableConnectionFactory<RegistrationChannel> retryableConnectionFactory;
     private final int retryWaitMillis;

@@ -1,17 +1,18 @@
 package netflix.adminresources.resources;
 
-import com.google.inject.Singleton;
 import com.netflix.config.ConfigurationManager;
-import com.netflix.eureka2.client.EurekaClientBuilder;
-import com.netflix.eureka2.client.interest.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Singleton
-public class Eureka2ClientProviderImpl implements Eureka2ClientProvider {
+import javax.inject.Singleton;
 
-    private static final Logger logger = LoggerFactory.getLogger(Eureka2ClientProviderImpl.class);
+@Singleton
+public class Eureka2InterestClientProviderImpl implements Eureka2InterestClientProvider {
+
+    private static final Logger logger = LoggerFactory.getLogger(Eureka2InterestClientProviderImpl.class);
 
     public static final String CONFIG_DISCOVERY_PORT = "eureka.client.discovery-endpoint.port";
     public static final String CONFIG_DISCOVERY_DNS = "eureka.client.discovery-endpoint.dns";
@@ -21,9 +22,8 @@ public class Eureka2ClientProviderImpl implements Eureka2ClientProvider {
     @Override
     public EurekaInterestClient get() {
         logger.info("Subscribing to Eureka2 server {}:{}", discoveryDNS, port);
-        return EurekaClientBuilder
-                .discoveryBuilder()
-                .withReadServerResolver(ServerResolvers.forDnsName(discoveryDNS, port))
+        return new EurekaInterestClientBuilder()
+                .withServerResolver(ServerResolvers.fromDnsName(discoveryDNS).withPort(port))
                 .build();
     }
 }

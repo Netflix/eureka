@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.client.resolver.FileServerResolver.FileServerResolverBuilder;
 import com.netflix.eureka2.Server;
 import org.junit.After;
 import org.junit.Before;
@@ -31,9 +30,8 @@ import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
 import static com.netflix.eureka2.utils.ExtCollections.asSet;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 
 /**
  * @author Tomasz Bak
@@ -51,13 +49,9 @@ public class FileServerResolverTest extends AbstractResolverTest {
 
         // We need to force reload, as file last update time resolution is 1sec. Too long to wait.
         testScheduler = Schedulers.test();
-        resolver = new FileServerResolverBuilder()
-                .withTextFile(configurationFile)
-                .withReloadInterval(10, TimeUnit.MILLISECONDS)
-                .withIdleTimeout(100, TimeUnit.MILLISECONDS)
-                .withAlwaysReload(true)
-                .withScheduler(testScheduler)
-                .build();
+        resolver = new FileServerResolver(configurationFile)
+                .configureReload(true, 10, 100, TimeUnit.MILLISECONDS)
+                .configureReloadScheduler(testScheduler);
     }
 
     @After
@@ -68,22 +62,24 @@ public class FileServerResolverTest extends AbstractResolverTest {
         }
     }
 
-    @Test(timeout = 60000)
+    @Test(timeout = 30000)
     public void testReadingServersFromFile() throws Exception {
         Set<Server> expected = asSet(new Server("serverA", 555),
                 new Server("serverB", 0));
-        Set<Server> actual = asSet(takeNext(resolver), takeNext(resolver));
+        // take 1 extra, should loop back and be de-duped
+        Set<Server> actual = asSet(takeNext(resolver), takeNext(resolver), takeNext(resolver));
 
-        assertThat(expected, is(equalTo(actual)));
+        assertThat(actual, is(equalTo(expected)));
 
         // Now update the file, and change one server address
         updateFile("serverA", "serverC");
         testScheduler.advanceTimeBy(10, TimeUnit.MILLISECONDS);
 
         expected = asSet(new Server("serverA", 0), new Server("serverC", 0));
-        actual = asSet(takeNext(resolver), takeNext(resolver));
+        // take 1 extra, should loop back and be de-duped
+        actual = asSet(takeNext(resolver), takeNext(resolver), takeNext(resolver));
 
-        assertThat(expected, is(equalTo(actual)));
+        assertThat(actual, is(equalTo(expected)));
     }
 
     private void updateFile(String... servers) throws IOException {

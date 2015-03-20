@@ -1,5 +1,6 @@
 package com.netflix.eureka2.interests;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -100,9 +101,13 @@ public class ChangeNotificationsTest {
         notificationSubject.onNext(SECOND_BATCH);
         assertThat(testSubscriber.takeNext(), is(equalTo((Set) asSet("B", "C"))));
 
-        // Verify that no snapshot is issued if no data are changed
+        // Verify that the same snapshot is issued if no data are changed on a prompt
         notificationSubject.onNext(SECOND_BATCH);
-        assertThat(testSubscriber.takeNext(), is(nullValue()));
+        assertThat(testSubscriber.takeNext(), is(equalTo((Set) asSet("B", "C"))));
+
+        // Verify that the same snapshot is issued if an empty prompt arrives
+        notificationSubject.onNext(Collections.EMPTY_LIST);
+        assertThat(testSubscriber.takeNext(), is(equalTo((Set) asSet("B", "C"))));
     }
 
     @Test

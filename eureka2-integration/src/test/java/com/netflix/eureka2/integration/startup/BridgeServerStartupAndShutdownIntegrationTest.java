@@ -41,7 +41,7 @@ public class BridgeServerStartupAndShutdownIntegrationTest extends
         };
     }
 
-    @Test(timeout = 60000)
+    @Test(timeout = 40000)
     public void testStartsWithFileBasedConfiguration() throws Exception {
         verifyThatStartsWithFileBasedConfiguration(SERVER_NAME, bridgeServer);
     }

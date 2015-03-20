@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.eureka2.client.registration.EurekaRegistrationClient;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Scheduler;

@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -159,35 +160,38 @@ public final class ChangeNotifications {
 
     /**
      * Collapse observable of change notification batches into a set of currently known items.
+     * Use a LinkedHashSet to maintain order based on insertion order.
+     *
+     * Note that the same batch can be emitted multiple times if the transformer receive "empty" prompts
+     * from the buffers transformer. Users should apply .distinctUntilChanged() if this is not desired
+     * behaviour.
      *
      * @return observable of distinct set objects
      */
-    public static <T> Transformer<List<ChangeNotification<T>>, Set<T>> snapshots() {
-        final Set<T> snapshotSet = new HashSet<>();
-        return new Transformer<List<ChangeNotification<T>>, Set<T>>() {
+    public static <T> Transformer<List<ChangeNotification<T>>, LinkedHashSet<T>> snapshots() {
+        final LinkedHashSet<T> snapshotSet = new LinkedHashSet<>();
+        return new Transformer<List<ChangeNotification<T>>, LinkedHashSet<T>>() {
             @Override
-            public Observable<Set<T>> call(Observable<List<ChangeNotification<T>>> batches) {
-                return batches.map(new Func1<List<ChangeNotification<T>>, Set<T>>() {
+            public Observable<LinkedHashSet<T>> call(Observable<List<ChangeNotification<T>>> batches) {
+                return batches.map(new Func1<List<ChangeNotification<T>>, LinkedHashSet<T>>() {
                     @Override
-                    public Set<T> call(List<ChangeNotification<T>> batch) {
-                        boolean changed = false;
+                    public LinkedHashSet<T> call(List<ChangeNotification<T>> batch) {
                         for (ChangeNotification<T> item : batch) {
                             switch (item.getKind()) {
                                 case Add:
                                 case Modify:
-                                    changed |= snapshotSet.add(item.getData());
+                                    snapshotSet.add(item.getData());
                                     break;
                                 case Delete:
-                                    changed |= snapshotSet.remove(item.getData());
+                                    snapshotSet.remove(item.getData());
                                     break;
+                                default:
+                                    // no-op
                             }
                         }
-                        if (changed) {
-                            return new HashSet<>(snapshotSet);
-                        }
-                        return null;
+                        return new LinkedHashSet<>(snapshotSet);
                     }
-                }).filter(RxFunctions.filterNullValuesFunc());
+                });
             }
         };
     }

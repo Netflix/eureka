@@ -1,6 +1,7 @@
 package com.netflix.eureka2.integration;
 
-import com.netflix.eureka2.client.EurekaClient;
+import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
@@ -40,17 +41,21 @@ public class IntegrationTestClient {
     private final Observable<InstanceInfo> registrant;
     private final List<ChangeNotification<InstanceInfo>> expectedLifecycle;
 
-    private final EurekaClient readClient;
-    private final EurekaClient writeClient;
+    private final EurekaInterestClient readClient;
+    private final EurekaRegistrationClient writeClient;
     private final int unregisterPercentage;
     private final int gapWaitMs;
     private final int endWaitMs;
 
-    public IntegrationTestClient(EurekaClient readClient, EurekaClient writeClient) {
-        this(readClient, writeClient, 15, 300, 10000);
+    public IntegrationTestClient(EurekaInterestClient readClient, EurekaRegistrationClient writeClient) {
+        this(APPNAME_PREFIX + UUID.randomUUID().toString(), readClient, writeClient, 15, 300, 10000);
     }
 
-    public IntegrationTestClient(EurekaClient readClient, EurekaClient writeClient, int unregisterPercentage, int gapWaitMs, int endWaitMs) {
+    public IntegrationTestClient(String name, EurekaInterestClient readClient, EurekaRegistrationClient writeClient) {
+        this(name, readClient, writeClient, 15, 300, 10000);
+    }
+
+    public IntegrationTestClient(String name, EurekaInterestClient readClient, EurekaRegistrationClient writeClient, int unregisterPercentage, int gapWaitMs, int endWaitMs) {
         this.readClient = readClient;
         this.writeClient = writeClient;
 
@@ -58,7 +63,7 @@ public class IntegrationTestClient {
         this.gapWaitMs = gapWaitMs;
         this.endWaitMs = endWaitMs;
 
-        this.appName = APPNAME_PREFIX + UUID.randomUUID().toString();
+        this.appName = name;
         this.registrant = generateLifecycle(appName);
         this.expectedLifecycle = computeExpectedLifecycle(registrant);
     }

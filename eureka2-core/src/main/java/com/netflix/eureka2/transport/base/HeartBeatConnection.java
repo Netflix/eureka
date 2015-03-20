@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
 import rx.Subscriber;
+import rx.functions.Func1;
 import rx.subjects.PublishSubject;
 
 import java.util.concurrent.TimeUnit;
@@ -52,6 +53,8 @@ public class HeartBeatConnection implements MessageConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(HeartBeatConnection.class);
 
+    protected static final IllegalStateException MISSING_HEARTBEAT_EXCEPTION = new IllegalStateException("too many heartbeats missed");
+
     private final MessageConnection delegate;
     private final long heartbeatIntervalMs;
     private final long tolerance;
@@ -67,27 +70,20 @@ public class HeartBeatConnection implements MessageConnection {
         this.scheduler = scheduler;
 
         this.filteredInput = PublishSubject.create();
-        delegate.incoming().subscribe(new Subscriber<Object>() {
-            @Override
-            public void onCompleted() {
-                filteredInput.onCompleted();
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                filteredInput.onError(e);
-            }
-
-            @Override
-            public void onNext(Object o) {
-                if (o instanceof Heartbeat) {
-                    heartbeatSenderReceiver.onHeartbeatReceived();
-                } else {
-                    filteredInput.onNext(o);
-                }
-            }
-        });
         this.heartbeatSenderReceiver = new HeartbeatSenderReceiver();
+
+        delegate.incoming()
+                .filter(new Func1<Object, Boolean>() {
+                    @Override
+                    public Boolean call(Object o) {
+                        if (o instanceof Heartbeat) {
+                            heartbeatSenderReceiver.onHeartbeatReceived();
+                            return false;
+                        }
+                        return true;
+                    }
+                })
+                .subscribe(filteredInput);
     }
 
     @Override
@@ -169,14 +165,14 @@ public class HeartBeatConnection implements MessageConnection {
         @Override
         public void onError(Throwable e) {
             logger.error("Heartbeat receiver subscription got an error. This will close the connection " + delegate.name(), e);
-            shutdown();
+            shutdown(e);
         }
 
         @Override
         public void onNext(Long aLong) {
             if (missingHeartbeatsCount.incrementAndGet() > tolerance) {
                 logger.warn("More than {} heartbeat messages missed; closing the connection {}", tolerance, delegate.name());
-                shutdown();
+                shutdown(MISSING_HEARTBEAT_EXCEPTION);
             } else {
                 logger.debug("Sending heartbeat message in the connection {}", delegate.name());
                 submit(Heartbeat.INSTANCE).subscribe(new Subscriber<Void>() {
@@ -187,7 +183,7 @@ public class HeartBeatConnection implements MessageConnection {
                     @Override
                     public void onError(Throwable e) {
                         logger.warn("Failed to send heartbeat message; terminating the connection " + delegate.name(), e);
-                        shutdown();
+                        shutdown(e);
                     }
 
                     @Override

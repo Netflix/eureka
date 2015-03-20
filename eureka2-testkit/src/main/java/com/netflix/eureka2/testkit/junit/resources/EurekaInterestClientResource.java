@@ -1,8 +1,7 @@
 package com.netflix.eureka2.testkit.junit.resources;
 
-import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.EurekaClientBuilder;
-import com.netflix.eureka2.client.interest.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources.EurekaExternalResource;
 
@@ -13,7 +12,7 @@ public class EurekaInterestClientResource extends EurekaExternalResource {
 
     private final ServerResolver serverResolver;
 
-    private EurekaClient eurekaClient;
+    private EurekaInterestClient interestClient;
 
     public EurekaInterestClientResource(ServerResolver serverResolver) {
         this.serverResolver = serverResolver;
@@ -21,18 +20,18 @@ public class EurekaInterestClientResource extends EurekaExternalResource {
 
     @Override
     protected void before() throws Throwable {
-        eurekaClient = EurekaClientBuilder.discoveryBuilder().withReadServerResolver(serverResolver).build();
+        interestClient = new EurekaInterestClientBuilder().withServerResolver(serverResolver).build();
     }
 
     @Override
     protected void after() {
-        if (eurekaClient != null) {
-            eurekaClient.shutdown();
-            eurekaClient = null;
+        if (interestClient != null) {
+            interestClient.shutdown();
+            interestClient = null;
         }
     }
 
     public EurekaInterestClient getEurekaClient() {
-        return eurekaClient;
+        return interestClient;
     }
 }

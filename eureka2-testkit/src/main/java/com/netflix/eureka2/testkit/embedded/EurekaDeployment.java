@@ -10,6 +10,8 @@ import com.netflix.eureka2.testkit.embedded.server.EmbeddedBridgeServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedDashboardServer;
 import com.netflix.eureka2.testkit.embedded.view.ClusterViewHttpServer;
 
+import static com.netflix.eureka2.interests.Interests.*;
+
 /**
  * @author Tomasz Bak
  */
@@ -135,7 +137,7 @@ public class EurekaDeployment {
             writeCluster.scaleUpBy(writeClusterSize);
 
             EmbeddedReadCluster readCluster = new EmbeddedReadCluster(writeCluster.registrationResolver(),
-                    writeCluster.discoveryResolver(), extensionsEnabled, adminUIEnabled, ephemeralPorts, transportConfig.getCodec());
+                    writeCluster.interestResolver(), extensionsEnabled, adminUIEnabled, ephemeralPorts, transportConfig.getCodec());
             readCluster.scaleUpBy(readClusterSize);
 
             EmbeddedBridgeServer bridgeServer = null;
@@ -149,10 +151,10 @@ public class EurekaDeployment {
                 ServerResolver readClusterResolver;
                 if (readClusterSize > 0) {
                     discoveryPort = readCluster.getServer(0).getDiscoveryPort();
-                    readClusterResolver = ServerResolvers.fromWriteServer(writeCluster.discoveryResolver(), readCluster.getVip());
+                    readClusterResolver = ServerResolvers.fromEureka(writeCluster.interestResolver()).forInterest(forVips(readCluster.getVip()));
                 } else {
                     discoveryPort = writeCluster.getServer(0).getDiscoveryPort();
-                    readClusterResolver = writeCluster.discoveryResolver();
+                    readClusterResolver = writeCluster.interestResolver();
                 }
 
                 dashboardServer = EmbeddedDashboardServer.newDashboard(

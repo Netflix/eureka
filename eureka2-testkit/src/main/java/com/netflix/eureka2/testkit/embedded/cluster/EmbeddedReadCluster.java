@@ -5,19 +5,13 @@ import java.util.List;
 
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
-import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedReadCluster.ReadClusterReport;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer.ReadServerReport;
 import com.netflix.eureka2.transport.EurekaTransports.Codec;
-import netflix.ocelli.LoadBalancer;
-import netflix.ocelli.MembershipEvent;
-import netflix.ocelli.MembershipEvent.EventType;
-import netflix.ocelli.loadbalancer.DefaultLoadBalancerBuilder;
-import rx.Observable;
-import rx.functions.Func1;
 
 /**
  * @author Tomasz Bak
@@ -102,35 +96,8 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
         return new ReadClusterReport(serverReports);
     }
 
-    public ServerResolver discoveryResolver() {
-        Observable<MembershipEvent<Server>> events = clusterChangeObservable()
-                .map(new Func1<ChangeNotification<Server>, MembershipEvent<Server>>() {
-                    @Override
-                    public MembershipEvent<Server> call(ChangeNotification<Server> notification) {
-                        Server server = notification.getData();
-                        switch (notification.getKind()) {
-                            case Add:
-                                return new MembershipEvent<>(EventType.ADD, server);
-                            case Modify:
-                                throw new IllegalStateException("Modify not expected");
-                            case Delete:
-                                return new MembershipEvent<Server>(EventType.REMOVE, server);
-                        }
-                        return null;
-                    }
-                });
-        final LoadBalancer<Server> loadBalancer = new DefaultLoadBalancerBuilder<Server>(events).build();
-        return new ServerResolver() {
-            @Override
-            public Observable<Server> resolve() {
-                return loadBalancer.choose();
-            }
-
-            @Override
-            public void close() {
-                loadBalancer.shutdown();
-            }
-        };
+    public ServerResolver interestResolver() {
+        return ServerResolvers.fromServerSource(clusterChangeObservable());
     }
 
     public static class ReadClusterReport {

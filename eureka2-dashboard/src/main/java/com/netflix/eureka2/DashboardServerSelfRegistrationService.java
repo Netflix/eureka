@@ -4,7 +4,7 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import com.netflix.eureka2.client.EurekaClient;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
@@ -16,12 +16,12 @@ import rx.Observable;
 @Singleton
 public class DashboardServerSelfRegistrationService extends SelfRegistrationService {
 
-    private final EurekaClient eurekaClient;
+    private final EurekaRegistrationClient registrationClient;
 
     @Inject
-    public DashboardServerSelfRegistrationService(SelfInfoResolver resolver, EurekaClient eurekaClient) {
+    public DashboardServerSelfRegistrationService(SelfInfoResolver resolver, EurekaRegistrationClient eurekaClient) {
         super(resolver);
-        this.eurekaClient = eurekaClient;
+        this.registrationClient = eurekaClient;
     }
 
     @PostConstruct
@@ -32,11 +32,11 @@ public class DashboardServerSelfRegistrationService extends SelfRegistrationServ
 
     @Override
     public Observable<Void> connect(Observable<InstanceInfo> registrant) {
-        return eurekaClient.register(registrant);
+        return registrationClient.register(registrant);
     }
 
     @Override
     public void cleanUpResources() {
-        eurekaClient.shutdown();
+        registrationClient.shutdown();
     }
 }

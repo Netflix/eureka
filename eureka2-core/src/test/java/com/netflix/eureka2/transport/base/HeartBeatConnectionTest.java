@@ -31,6 +31,7 @@ import rx.subjects.PublishSubject;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
+import static org.hamcrest.CoreMatchers.any;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -78,7 +79,7 @@ public class HeartBeatConnectionTest {
         // Advance time to cross tolerance level
         scheduler.advanceTimeBy(HEART_BEAT_INTERVAL * (TOLERANCE + 1), TimeUnit.MILLISECONDS);
 
-        verify(delegate, times(1)).shutdown();
+        verify(delegate, times(1)).shutdown(org.mockito.Matchers.any(Exception.class));
     }
 
     @Test(timeout = 60000)
@@ -94,7 +95,7 @@ public class HeartBeatConnectionTest {
 
         // Now cross the limit
         scheduler.advanceTimeBy(HEART_BEAT_INTERVAL, TimeUnit.MILLISECONDS);
-        verify(delegate, times(1)).shutdown();
+        verify(delegate, times(1)).shutdown(HeartBeatConnection.MISSING_HEARTBEAT_EXCEPTION);
     }
 
     @Test(timeout = 60000)

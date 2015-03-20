@@ -2,9 +2,8 @@ package com.netflix.eureka2;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.netflix.eureka2.client.Eureka;
-import com.netflix.eureka2.client.EurekaClient;
-import com.netflix.eureka2.client.resolver.ServerResolver;
+import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
@@ -19,12 +18,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Singleton
 public class RegistryCache {
-    private final EurekaClient eurekaClient;
+    private final EurekaInterestClient interestClient;
     private Map<String, InstanceInfo> cache = new ConcurrentHashMap<>();
 
     @Inject
-    public RegistryCache(EurekaClient eurekaClient) {
-        this.eurekaClient = eurekaClient;
+    public RegistryCache(EurekaInterestClient interestClient) {
+        this.interestClient = interestClient;
         subscribeToEurekaStream();
     }
 
@@ -33,7 +32,7 @@ public class RegistryCache {
     }
 
     private Observable<ChangeNotification<InstanceInfo>> buildEurekaFullRegistryObservable() {
-        return eurekaClient.forInterest(Interests.forFullRegistry());
+        return interestClient.forInterest(Interests.forFullRegistry());
     }
 
     private void subscribeToEurekaStream() {
@@ -84,9 +83,12 @@ public class RegistryCache {
 
     public static void main(String[] args) {
 
-        ServerResolver serverResolver = ServerResolvers.just("localhost", 13101);
-        final EurekaClient eurekaClient = Eureka.newClientBuilder(serverResolver).build();
-        final Observable<ChangeNotification<InstanceInfo>> notificationsObservable = eurekaClient.forInterest(Interests.forFullRegistry());
+        final EurekaInterestClient interestClient = new EurekaInterestClientBuilder()
+                .withServerResolver(ServerResolvers.fromHostname("localhost").withPort(13101))
+                .build();
+
+        final Observable<ChangeNotification<InstanceInfo>> notificationsObservable =
+                interestClient.forInterest(Interests.forFullRegistry());
 
         final AtomicInteger addCount = new AtomicInteger(0);
         final AtomicInteger updateCount = new AtomicInteger(0);
