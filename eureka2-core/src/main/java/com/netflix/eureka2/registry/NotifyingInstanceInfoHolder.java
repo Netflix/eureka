@@ -8,13 +8,13 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.NotificationsSubject;
 import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.interests.SourcedChangeNotification;
 import com.netflix.eureka2.interests.SourcedModifyNotification;
 import com.netflix.eureka2.utils.SerializedTaskInvoker;
+import com.netflix.eureka2.utils.rx.PauseableSubject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -39,7 +39,7 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
 
     private static final Logger logger = LoggerFactory.getLogger(NotifyingInstanceInfoHolder.class);
 
-    private final NotificationsSubject<InstanceInfo> notificationSubject;  // subject for all changes in the registry
+    private final PauseableSubject<ChangeNotification<InstanceInfo>> pauseableSubject;  // subject for all changes in the registry
 
     private final HolderStoreAccessor<NotifyingInstanceInfoHolder> holderStoreAccessor;
     private final DataStore dataStore;
@@ -49,12 +49,12 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
 
     public NotifyingInstanceInfoHolder(
             HolderStoreAccessor<NotifyingInstanceInfoHolder> holderStoreAccessor,
-            NotificationsSubject<InstanceInfo> notificationSubject,
+            PauseableSubject<ChangeNotification<InstanceInfo>> pauseableSubject,
             NotificationTaskInvoker invoker,
             String id)
     {
         this.holderStoreAccessor = holderStoreAccessor;
-        this.notificationSubject = notificationSubject;
+        this.pauseableSubject = pauseableSubject;
         this.invoker = invoker;
         this.id = id;
         this.dataStore = new DataStore();
@@ -148,12 +148,12 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
 
         if (currSnapshot == null) {  // real add to the head
             snapshot = newSnapshot;
-            notificationSubject.onNext(newSnapshot.getNotification());
+            pauseableSubject.onNext(newSnapshot.getNotification());
             result = Status.AddedFirst;
         } else if ((currSnapshot.getSource().getOrigin() != Source.Origin.LOCAL) &&
                 (source.getOrigin() == Source.Origin.LOCAL)) {  // promote new update from local to snapshot
             snapshot = newSnapshot;
-            notificationSubject.onNext(newSnapshot.getNotification());
+            pauseableSubject.onNext(newSnapshot.getNotification());
         } else {
             if (matches(currSnapshot.getSource(), newSnapshot.getSource())) {  // modify to current snapshot
                 snapshot = newSnapshot;
@@ -162,7 +162,7 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
                 if (!delta.isEmpty()) {
                     ChangeNotification<InstanceInfo> modifyNotification
                             = new SourcedModifyNotification<>(newSnapshot.getData(), delta, newSnapshot.getSource());
-                    notificationSubject.onNext(modifyNotification);
+                    pauseableSubject.onNext(modifyNotification);
                 } else {
                     logger.debug("No-change update for {}#{}", currSnapshot.getSource(), currSnapshot.getData().getId());
                 }
@@ -217,7 +217,7 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
                 snapshot = null;
                 ChangeNotification<InstanceInfo> deleteNotification
                         = new SourcedChangeNotification<>(ChangeNotification.Kind.Delete, removed, source);
-                notificationSubject.onNext(deleteNotification);
+                pauseableSubject.onNext(deleteNotification);
 
                 // remove self from the holder datastore if empty
                 holderStoreAccessor.remove(id);
@@ -230,7 +230,7 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
                 if (!delta.isEmpty()) {
                     ChangeNotification<InstanceInfo> modifyNotification
                             = new SourcedModifyNotification<>(newSnapshot.getData(), delta, newSnapshot.getSource());
-                    notificationSubject.onNext(modifyNotification);
+                    pauseableSubject.onNext(modifyNotification);
                 } else {
                     logger.debug("No-change update for {}#{}", currSnapshot.getSource(), currSnapshot.getData().getId());
                 }
@@ -246,7 +246,7 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
     @Override
     public String toString() {
         return "NotifyingInstanceInfoHolder{" +
-                "notificationSubject=" + notificationSubject +
+                "pauseableSubject=" + pauseableSubject +
                 ", dataStore=" + dataStore +
                 ", id='" + id + '\'' +
                 ", snapshot=" + snapshot +
