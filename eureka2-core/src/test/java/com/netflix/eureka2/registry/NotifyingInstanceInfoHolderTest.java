@@ -1,9 +1,10 @@
 package com.netflix.eureka2.registry;
 
-import com.netflix.eureka2.interests.NotificationsSubject;
+import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.registry.NotifyingInstanceInfoHolder.NotificationTaskInvoker;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
+import com.netflix.eureka2.utils.rx.PauseableSubject;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
@@ -19,7 +20,7 @@ import static org.hamcrest.Matchers.not;
  */
 public class NotifyingInstanceInfoHolderTest {
 
-    private NotificationsSubject<InstanceInfo> notificationSubject;
+    private PauseableSubject<ChangeNotification<InstanceInfo>> pauseableSubject;
     private MultiSourcedDataHolder.HolderStoreAccessor<NotifyingInstanceInfoHolder> storeAccessor;
     private NotificationTaskInvoker invoker;
     private Source localSource;
@@ -28,7 +29,7 @@ public class NotifyingInstanceInfoHolderTest {
     public final ExternalResource testResource = new ExternalResource() {
         @Override
         protected void before() throws Throwable {
-            notificationSubject = NotificationsSubject.create();
+            pauseableSubject = PauseableSubject.create();
             storeAccessor = new MultiSourcedDataHolder.HolderStoreAccessor<NotifyingInstanceInfoHolder>() {
                 @Override
                 public void add(NotifyingInstanceInfoHolder holder) {
@@ -63,7 +64,7 @@ public class NotifyingInstanceInfoHolderTest {
                 .withStatus(InstanceInfo.Status.STARTING)
                 .build();
 
-        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, notificationSubject, invoker, firstInfo.getId());
+        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, pauseableSubject, invoker, firstInfo.getId());
         holder.update(localSource, firstInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(1));
@@ -88,7 +89,7 @@ public class NotifyingInstanceInfoHolderTest {
                 .withStatus(InstanceInfo.Status.STARTING)
                 .build();
 
-        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, notificationSubject, invoker, firstInfo.getId());
+        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, pauseableSubject, invoker, firstInfo.getId());
         holder.update(localSource, firstInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(1));
@@ -115,7 +116,7 @@ public class NotifyingInstanceInfoHolderTest {
                 .withStatus(InstanceInfo.Status.STARTING)
                 .build();
 
-        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, notificationSubject, invoker, firstInfo.getId());
+        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, pauseableSubject, invoker, firstInfo.getId());
         holder.update(localSource, firstInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(1));
@@ -156,7 +157,7 @@ public class NotifyingInstanceInfoHolderTest {
                 .build();
 
         Source fooSource = new Source(Source.Origin.REPLICATED, "foo");
-        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, notificationSubject, invoker, firstInfo.getId());
+        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, pauseableSubject, invoker, firstInfo.getId());
         holder.update(fooSource, firstInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(1));
@@ -202,7 +203,7 @@ public class NotifyingInstanceInfoHolderTest {
                 .withStatus(InstanceInfo.Status.UP)
                 .build();
 
-        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, notificationSubject, invoker, firstInfo.getId());
+        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, pauseableSubject, invoker, firstInfo.getId());
         holder.update(localSource, firstInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(1));
@@ -222,7 +223,7 @@ public class NotifyingInstanceInfoHolderTest {
                 .withStatus(InstanceInfo.Status.UP)
                 .build();
 
-        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, notificationSubject, invoker, firstInfo.getId());
+        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, pauseableSubject, invoker, firstInfo.getId());
         holder.update(localSource, firstInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(1));
@@ -244,7 +245,7 @@ public class NotifyingInstanceInfoHolderTest {
                 .withStatus(InstanceInfo.Status.STARTING)
                 .build();
 
-        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, notificationSubject, invoker, localInfo.getId());
+        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, pauseableSubject, invoker, localInfo.getId());
         holder.update(localSource, localInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(1));
@@ -277,7 +278,7 @@ public class NotifyingInstanceInfoHolderTest {
                 .withStatus(InstanceInfo.Status.STARTING)
                 .build();
 
-        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, notificationSubject, invoker, localInfo.getId());
+        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, pauseableSubject, invoker, localInfo.getId());
         holder.update(localSource, localInfo).toBlocking().firstOrDefault(null);
 
         assertThat(holder.size(), equalTo(1));

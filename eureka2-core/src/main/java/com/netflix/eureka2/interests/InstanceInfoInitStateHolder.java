@@ -7,6 +7,7 @@ import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.StreamStateNotification.BufferState;
 import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.utils.rx.PauseableSubject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +30,7 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
     private final ChangeNotification<InstanceInfo> bufferEndNotification;
 
     public InstanceInfoInitStateHolder(Iterator<ChangeNotification<InstanceInfo>> initialRegistry, Interest<InstanceInfo> interest) {
-        super(NotificationsSubject.<InstanceInfo>create());
+        super(PauseableSubject.<ChangeNotification<InstanceInfo>>create());
         this.bufferStartNotification = new StreamStateNotification<>(BufferState.BufferStart, interest);
         this.bufferEndNotification = new StreamStateNotification<>(BufferState.BufferEnd, interest);
         notificationMap = new ConcurrentHashMap<>();

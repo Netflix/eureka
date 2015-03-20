@@ -1,5 +1,6 @@
-package com.netflix.eureka2.interests;
+package com.netflix.eureka2.utils.rx;
 
+import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
 import org.junit.Rule;
@@ -19,9 +20,9 @@ import static org.hamcrest.Matchers.is;
 /**
  * @author Nitesh Kant
  */
-public class NotificationsSubjectTest {
+public class PauseableSubjectTest {
 
-    private NotificationsSubject<InstanceInfo> notificationsSubject;
+    private PauseableSubject<ChangeNotification<InstanceInfo>> notificationsSubject;
     private List<ChangeNotification<InstanceInfo>> receivedNotifications;
 
     private ChangeNotification<InstanceInfo> discoveryAdd = SampleChangeNotification.DiscoveryAdd.newNotification();
@@ -32,8 +33,8 @@ public class NotificationsSubjectTest {
 
         @Override
         protected void before() throws Throwable {
-            notificationsSubject = NotificationsSubject.create();
-            receivedNotifications = new ArrayList<ChangeNotification<InstanceInfo>>();
+            notificationsSubject = PauseableSubject.create();
+            receivedNotifications = new ArrayList<>();
             notificationsSubject.subscribe(new Action1<ChangeNotification<InstanceInfo>>() {
                 @Override
                 public void call(ChangeNotification<InstanceInfo> notification) {
@@ -126,9 +127,9 @@ public class NotificationsSubjectTest {
     @Test(timeout = 60000)
     public void testResumeResults() throws Exception {
         assertThat(notificationsSubject.isPaused(), is(false));
-        assertThat(notificationsSubject.resume(), is(NotificationsSubject.ResumeResult.NotPaused));
+        assertThat(notificationsSubject.resume(), is(PauseableSubject.ResumeResult.NotPaused));
         notificationsSubject.pause();
         assertThat(notificationsSubject.isPaused(), is(true));
-        assertThat(notificationsSubject.resume(), is(NotificationsSubject.ResumeResult.Resumed));
+        assertThat(notificationsSubject.resume(), is(PauseableSubject.ResumeResult.Resumed));
     }
 }

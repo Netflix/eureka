@@ -2,6 +2,7 @@ package com.netflix.eureka2.interests;
 
 import java.util.Iterator;
 
+import com.netflix.eureka2.utils.rx.PauseableSubject;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action0;
@@ -67,7 +68,7 @@ import rx.subjects.Subject;
 public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<T>> {
 
     private final Interest<T> interest;
-    private final NotificationsSubject<T> notificationsSubject;
+    private final PauseableSubject<ChangeNotification<T>> notificationsSubject;
 
     protected Index(final Interest<T> interest, final InitStateHolder<T> initStateHolder,
                     final Subject<ChangeNotification<T>, ChangeNotification<T>> realTimeSource) {
@@ -79,7 +80,7 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
                 // partially visible by the subscriber. When we replay buffered real time updates,
                 // they may overlap with what was already sent from the init holder.
                 // TODO can we make this buffering cheaper?
-                final NotificationsSubject<T> realTimeSubject = NotificationsSubject.create();
+                final PauseableSubject<ChangeNotification<T>> realTimeSubject = PauseableSubject.create();
                 realTimeSubject.pause();
                 realTimeSource.subscribe(realTimeSubject);
 
@@ -178,9 +179,9 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
         };
 
         private volatile boolean done;
-        private final NotificationsSubject<T> notificationSubject;
+        private final PauseableSubject<ChangeNotification<T>> notificationSubject;
 
-        protected InitStateHolder(NotificationsSubject<T> notificationSubject) {
+        protected InitStateHolder(PauseableSubject<ChangeNotification<T>> notificationSubject) {
             this.notificationSubject = notificationSubject;
         }
 
@@ -219,7 +220,7 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
             addNotification(notification);
         }
 
-        protected NotificationsSubject<T> getNotificationSubject() {
+        protected PauseableSubject<ChangeNotification<T>> getNotificationSubject() {
             return notificationSubject;
         }
 

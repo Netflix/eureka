@@ -29,12 +29,12 @@ import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.interests.InstanceInfoInitStateHolder;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.MultipleInterests;
-import com.netflix.eureka2.interests.NotificationsSubject;
 import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.EurekaRegistryMetrics;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.utils.rx.NoOpSubscriber;
+import com.netflix.eureka2.utils.rx.PauseableSubject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -63,7 +63,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
      */
     protected final ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore;
     private final MultiSourcedDataHolder.HolderStoreAccessor<NotifyingInstanceInfoHolder> internalStoreAccessor;
-    private final NotificationsSubject<InstanceInfo> notificationSubject;  // subject for all changes in the registry
+    private final PauseableSubject<ChangeNotification<InstanceInfo>> pauseableSubject;  // subject for all changes in the registry
     private final IndexRegistry<InstanceInfo> indexRegistry;
     private final EurekaRegistryMetrics metrics;
     private final NotifyingInstanceInfoHolder.NotificationTaskInvoker invoker;
@@ -90,7 +90,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
                 scheduler);
 
         internalStore = new ConcurrentHashMap<>();
-        notificationSubject = NotificationsSubject.create();
+        pauseableSubject = PauseableSubject.create();
 
         internalStoreAccessor = new MultiSourcedDataHolder.HolderStoreAccessor<NotifyingInstanceInfoHolder>() {
             @Override
@@ -124,7 +124,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     @Override
     public Observable<Boolean> register(final InstanceInfo instanceInfo, final Source source) {
         MultiSourcedDataHolder<InstanceInfo> holder = new NotifyingInstanceInfoHolder(
-                internalStoreAccessor, notificationSubject, invoker, instanceInfo.getId());
+                internalStoreAccessor, pauseableSubject, invoker, instanceInfo.getId());
 
         Observable<MultiSourcedDataHolder.Status> result = holder.update(source, instanceInfo).doOnNext(new Action1<MultiSourcedDataHolder.Status>() {
             @Override
@@ -242,15 +242,15 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
         try {
             // TODO: this method can be run concurrently from different channels, unless we run everything on single server event loop.
             // It is possible that the same instanceinfo will be both in snapshot and paused notification queue.
-            notificationSubject.pause(); // Pause notifications till we get a snapshot of current registry (registry.values())
+            pauseableSubject.pause(); // Pause notifications till we get a snapshot of current registry (registry.values())
             if (interest instanceof MultipleInterests) {
                 return indexRegistry.forCompositeInterest((MultipleInterests) interest, this);
             } else {
-                return indexRegistry.forInterest(interest, notificationSubject,
+                return indexRegistry.forInterest(interest, pauseableSubject,
                         new InstanceInfoInitStateHolder(getSnapshotForInterest(interest), interest));
             }
         } finally {
-            notificationSubject.resume();
+            pauseableSubject.resume();
         }
     }
 
@@ -309,7 +309,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     public Observable<Void> shutdown() {
         logger.info("Shutting down the eureka registry");
         invoker.shutdown();
-        notificationSubject.onCompleted();
+        pauseableSubject.onCompleted();
         internalStore.clear();
         return indexRegistry.shutdown();
     }
@@ -317,7 +317,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     @Override
     public Observable<Void> shutdown(Throwable cause) {
         invoker.shutdown();
-        notificationSubject.onCompleted();
+        pauseableSubject.onCompleted();
         return indexRegistry.shutdown(cause);
     }
 

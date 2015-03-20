@@ -1,6 +1,7 @@
 package com.netflix.eureka2.interests;
 
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.utils.rx.PauseableSubject;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,7 +41,7 @@ public class IndexRegistryTest {
             indexRegistry = new ViewableIndexRegistry<>();
             indexRegistry.forInterest(
                     interest1,
-                    NotificationsSubject.<InstanceInfo>create(),
+                    PauseableSubject.<ChangeNotification<InstanceInfo>>create(),
                     new InstanceInfoInitStateHolder(EMPTY_CHANGE_NOTIFICATION_IT, Interests.forFullRegistry()));
         }
 
@@ -61,7 +62,7 @@ public class IndexRegistryTest {
 
         indexRegistry.forInterest(
                 Interests.forFullRegistry(),
-                NotificationsSubject.<InstanceInfo>create(),
+                PauseableSubject.<ChangeNotification<InstanceInfo>>create(),
                 new InstanceInfoInitStateHolder(EMPTY_CHANGE_NOTIFICATION_IT, Interests.forFullRegistry()))
                 .subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
                     @Override
@@ -82,7 +83,7 @@ public class IndexRegistryTest {
 
         indexRegistry.forInterest(
                 interest2,
-                NotificationsSubject.<InstanceInfo>create(),
+                PauseableSubject.<ChangeNotification<InstanceInfo>>create(),
                 new InstanceInfoInitStateHolder(EMPTY_CHANGE_NOTIFICATION_IT, interest2))
                 .subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
                     @Override
