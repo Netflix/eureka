@@ -27,7 +27,6 @@ public class Eureka2RegistryViewCacheTest {
 
     private static final int APPLICATION_CLUSTER_SIZE = 3;
     private static final long REFRESH_INTERVAL = 30000;
-    private static final long QUERY_TIMEOUT = 30000;
 
     public static final String VIP_SERVER_FARM = "vip#serverFarm";
     public static final Interest<InstanceInfo> VIP_INTEREST = Interests.forVips(Operator.Equals, VIP_SERVER_FARM);
@@ -40,7 +39,7 @@ public class Eureka2RegistryViewCacheTest {
     @Rule
     public final SourcedRegistryMockResource registryMockResource = new SourcedRegistryMockResource();
 
-    private final Eureka2RegistryViewCache cache = new Eureka2RegistryViewCache(registryMockResource.registry(), REFRESH_INTERVAL, QUERY_TIMEOUT, testScheduler);
+    private final Eureka2RegistryViewCache cache = new Eureka2RegistryViewCache(registryMockResource.registry(), REFRESH_INTERVAL, testScheduler);
 
     @Test
     public void testAllApplicationsCaching() throws Exception {
@@ -49,11 +48,12 @@ public class Eureka2RegistryViewCacheTest {
         registryMockResource.uploadClusterToRegistry(SampleInstanceInfo.Backend, APPLICATION_CLUSTER_SIZE);
         registryMockResource.batchEnd();
 
-        Applications applications = cache.findAllApplications();
-        assertThat(applications.getRegisteredApplications().size(), is(equalTo(2)));
+        Applications firstCopy = cache.findAllApplications().toBlocking().first();
+        assertThat(firstCopy.getRegisteredApplications().size(), is(equalTo(2)));
 
         // Check the same copy is returned on subsequent call
-        assertThat(cache.findAllApplications() == applications, is(true));
+        Applications secondCopy = cache.findAllApplications().toBlocking().first();
+        assertThat(secondCopy == firstCopy, is(true));
     }
 
     @Test
@@ -63,7 +63,7 @@ public class Eureka2RegistryViewCacheTest {
         registryMockResource.uploadClusterToRegistry(SampleInstanceInfo.WebServer, APPLICATION_CLUSTER_SIZE);
         registryMockResource.batchEnd();
 
-        Applications firstAppDelta = cache.findAllApplicationsDelta();
+        Applications firstAppDelta = cache.findAllApplicationsDelta().toBlocking().first();
         assertThat(firstAppDelta.getRegisteredApplications().size(), is(equalTo(0)));
 
         // Generate second copy
@@ -72,7 +72,7 @@ public class Eureka2RegistryViewCacheTest {
         registryMockResource.batchEnd();
         testScheduler.advanceTimeBy(REFRESH_INTERVAL, TimeUnit.MILLISECONDS);
 
-        Applications secondAppDelta = cache.findAllApplicationsDelta();
+        Applications secondAppDelta = cache.findAllApplicationsDelta().toBlocking().first();
         assertThat(secondAppDelta.getRegisteredApplications().size(), is(equalTo(1)));
         Application deltaApp = secondAppDelta.getRegisteredApplications().get(0);
         assertThat(deltaApp.getName(), is(equalToIgnoringCase(backend)));
@@ -82,11 +82,12 @@ public class Eureka2RegistryViewCacheTest {
     public void testApplicationCaching() throws Exception {
         String appName = registryMockResource.uploadClusterBatchToRegistry(SampleInstanceInfo.WebServer, APPLICATION_CLUSTER_SIZE);
 
-        Application application = cache.findApplication(appName);
-        assertThat(application.getName(), is(equalToIgnoringCase(appName)));
+        Application firstCopy = cache.findApplication(appName).toBlocking().first();
+        assertThat(firstCopy.getName(), is(equalToIgnoringCase(appName)));
 
         // Check the same copy is returned on subsequent call
-        assertThat(cache.findApplication(appName) == application, is(true));
+        Application secondCopy = cache.findApplication(appName).toBlocking().first();
+        assertThat(secondCopy == firstCopy, is(true));
     }
 
     @Test
@@ -98,11 +99,12 @@ public class Eureka2RegistryViewCacheTest {
         registryMockResource.uploadClusterToRegistry(backendTemplate, APPLICATION_CLUSTER_SIZE);
         registryMockResource.batchEnd(VIP_INTEREST);
 
-        Applications applications = cache.findApplicationsByVip(VIP_SERVER_FARM);
-        assertThat(applications.getRegisteredApplications().size(), is(equalTo(2)));
+        Applications firstCopy = cache.findApplicationsByVip(VIP_SERVER_FARM).toBlocking().first();
+        assertThat(firstCopy.getRegisteredApplications().size(), is(equalTo(2)));
 
         // Check the same copy is returned on subsequent call
-        assertThat(cache.findApplicationsByVip(VIP_SERVER_FARM) == applications, is(true));
+        Applications secondCopy = cache.findApplicationsByVip(VIP_SERVER_FARM).toBlocking().first();
+        assertThat(secondCopy == firstCopy, is(true));
     }
 
     @Test
@@ -114,11 +116,12 @@ public class Eureka2RegistryViewCacheTest {
         registryMockResource.uploadClusterToRegistry(backendTemplate, APPLICATION_CLUSTER_SIZE);
         registryMockResource.batchEnd(SECURE_VIP_INTEREST);
 
-        Applications applications = cache.findApplicationsBySecureVip(SECURE_VIP_SERVER_FARM);
-        assertThat(applications.getRegisteredApplications().size(), is(equalTo(2)));
+        Applications firstCopy = cache.findApplicationsBySecureVip(SECURE_VIP_SERVER_FARM).toBlocking().first();
+        assertThat(firstCopy.getRegisteredApplications().size(), is(equalTo(2)));
 
         // Check the same copy is returned on subsequent call
-        assertThat(cache.findApplicationsBySecureVip(SECURE_VIP_SERVER_FARM) == applications, is(true));
+        Applications secondCopy = cache.findApplicationsBySecureVip(SECURE_VIP_SERVER_FARM).toBlocking().first();
+        assertThat(secondCopy == firstCopy, is(true));
     }
 
     @Test
@@ -129,10 +132,7 @@ public class Eureka2RegistryViewCacheTest {
         registryMockResource.uploadToRegistry(instanceInfo);
         registryMockResource.batchEnd(interest);
 
-        com.netflix.appinfo.InstanceInfo v1InstanceInfo = cache.findInstance(instanceInfo.getId());
+        com.netflix.appinfo.InstanceInfo v1InstanceInfo = cache.findInstance(instanceInfo.getId()).toBlocking().first();
         assertThat(v1InstanceInfo.getAppName(), is(equalToIgnoringCase(instanceInfo.getApp())));
-
-        // Check the same copy is returned on subsequent call
-        assertThat(cache.findInstance(instanceInfo.getId()) == v1InstanceInfo, is(true));
     }
 }

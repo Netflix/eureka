@@ -84,12 +84,17 @@ public abstract class AbstractEureka1RequestHandler implements RequestHandler<By
         return acceptEncoding != null && acceptEncoding.contains("gzip");
     }
 
-    protected Observable<Void> encodeResponse(EncodingFormat format, boolean gzip, HttpServerResponse<ByteBuf> response, Object entity) throws IOException {
+    protected Observable<Void> encodeResponse(EncodingFormat format, boolean gzip, HttpServerResponse<ByteBuf> response, Object entity) {
         response.getHeaders().add(Names.CONTENT_TYPE, format == EncodingFormat.Json ? MediaType.APPLICATION_JSON : MediaType.APPLICATION_XML);
         if (gzip) {
             response.getHeaders().add(Names.CONTENT_ENCODING, "gzip");
         }
-        byte[] encodedBody = codec.encode(entity, format, gzip);
+        byte[] encodedBody;
+        try {
+            encodedBody = codec.encode(entity, format, gzip);
+        } catch (IOException e) {
+            return Observable.error(e);
+        }
         return response.writeAndFlush(Unpooled.wrappedBuffer(encodedBody));
     }
 

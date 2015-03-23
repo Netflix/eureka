@@ -27,7 +27,7 @@ import rx.functions.Func1;
 import rx.functions.Func2;
 
 import static com.netflix.eureka2.eureka1.rest.AbstractEureka1RequestHandler.ROOT_PATH;
-import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.*;
+import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka1xInstanceInfo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -144,7 +144,7 @@ public class Eureka1QueryRequestHandlerTest {
     }
 
     private void doTestGetAllApplications(MediaType mediaType) {
-        when(registryViewCache.findAllApplications()).thenReturn(V1_APPLICATIONS);
+        when(registryViewCache.findAllApplications()).thenReturn(Observable.just(V1_APPLICATIONS));
 
         HttpClientRequest<ByteBuf> request = HttpClientRequest.create(HttpMethod.GET, ROOT_PATH + "/apps");
         String response = handleGetRequest(request, mediaType);
@@ -152,7 +152,7 @@ public class Eureka1QueryRequestHandlerTest {
     }
 
     private void doTestGetApplicationsDelta(MediaType mediaType) {
-        when(registryViewCache.findAllApplicationsDelta()).thenReturn(V1_APPLICATIONS);
+        when(registryViewCache.findAllApplicationsDelta()).thenReturn(Observable.just(V1_APPLICATIONS));
 
         HttpClientRequest<ByteBuf> request = HttpClientRequest.create(HttpMethod.GET, ROOT_PATH + "/apps/delta");
         String response = handleGetRequest(request, mediaType);
@@ -160,7 +160,7 @@ public class Eureka1QueryRequestHandlerTest {
     }
 
     private void doTestGetApplicationsWithSecureVip(MediaType mediaType) {
-        when(registryViewCache.findApplicationsBySecureVip(V1_INSTANCE_1.getSecureVipAddress())).thenReturn(V1_APPLICATIONS);
+        when(registryViewCache.findApplicationsBySecureVip(V1_INSTANCE_1.getSecureVipAddress())).thenReturn(Observable.just(V1_APPLICATIONS));
 
         String path = ROOT_PATH + "/svips/" + V1_INSTANCE_1.getSecureVipAddress();
         HttpClientRequest<ByteBuf> request = HttpClientRequest.create(HttpMethod.GET, path);
@@ -170,7 +170,7 @@ public class Eureka1QueryRequestHandlerTest {
     }
 
     private void doTestGetApplicationsWithVip(MediaType mediaType) {
-        when(registryViewCache.findApplicationsByVip(V1_INSTANCE_1.getVIPAddress())).thenReturn(V1_APPLICATIONS);
+        when(registryViewCache.findApplicationsByVip(V1_INSTANCE_1.getVIPAddress())).thenReturn(Observable.just(V1_APPLICATIONS));
 
         String path = ROOT_PATH + "/vips/" + V1_INSTANCE_1.getVIPAddress();
         HttpClientRequest<ByteBuf> request = HttpClientRequest.create(HttpMethod.GET, path);
@@ -180,7 +180,7 @@ public class Eureka1QueryRequestHandlerTest {
     }
 
     private void doTestGetApplication(MediaType mediaType) {
-        when(registryViewCache.findApplication(V1_APPLICATION_1.getName())).thenReturn(V1_APPLICATION_1);
+        when(registryViewCache.findApplication(V1_APPLICATION_1.getName())).thenReturn(Observable.just(V1_APPLICATION_1));
 
         String path = ROOT_PATH + "/apps/" + V1_APPLICATION_1.getName();
         HttpClientRequest<ByteBuf> request = HttpClientRequest.create(HttpMethod.GET, path);
@@ -190,7 +190,7 @@ public class Eureka1QueryRequestHandlerTest {
     }
 
     private void doTestGetByApplicationAndInstanceId(MediaType mediaType) {
-        when(registryViewCache.findInstance(V1_INSTANCE_1.getId())).thenReturn(V1_INSTANCE_1);
+        when(registryViewCache.findInstance(V1_INSTANCE_1.getId())).thenReturn(Observable.just(V1_INSTANCE_1));
 
         String path = ROOT_PATH + "/apps/" + V1_INSTANCE_1.getAppName() + '/' + V1_INSTANCE_1.getId();
         HttpClientRequest<ByteBuf> request = HttpClientRequest.create(HttpMethod.GET, path);
@@ -200,7 +200,7 @@ public class Eureka1QueryRequestHandlerTest {
     }
 
     private void doTestGetByInstanceId(MediaType mediaType) {
-        when(registryViewCache.findInstance(V1_INSTANCE_1.getId())).thenReturn(V1_INSTANCE_1);
+        when(registryViewCache.findInstance(V1_INSTANCE_1.getId())).thenReturn(Observable.just(V1_INSTANCE_1));
 
         String path = ROOT_PATH + "/instances/" + V1_INSTANCE_1.getId();
         HttpClientRequest<ByteBuf> request = HttpClientRequest.create(HttpMethod.GET, path);
