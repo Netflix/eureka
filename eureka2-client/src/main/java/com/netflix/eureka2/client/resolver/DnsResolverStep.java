@@ -5,8 +5,10 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.host.DnsResolver;
 import rx.Observable;
+import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Func1;
+import rx.schedulers.Schedulers;
 
 import java.util.Set;
 
@@ -16,9 +18,11 @@ import java.util.Set;
 public class DnsResolverStep implements HostResolverStep {
 
     private final String dnsName;
+    private final Scheduler dnsLoadScheduler;
 
     DnsResolverStep(String dnsName) {
         this.dnsName = dnsName;
+        this.dnsLoadScheduler = Schedulers.io();
     }
 
     /* visible for testing */ DnsResolverStep configureDnsNameSource(final Observable<ChangeNotification<String>> changeNotificationSource) {
@@ -46,7 +50,8 @@ public class DnsResolverStep implements HostResolverStep {
 
     @Override
     public ServerResolver withPort(final int port) {
-        final Observable<ChangeNotification<String>> dnsChangeNotificationSource = createDnsChangeNotificationSource();
+        final Observable<ChangeNotification<String>> dnsChangeNotificationSource = createDnsChangeNotificationSource()
+                .subscribeOn(dnsLoadScheduler);   // async subscribe on an io scheduler
 
         final Observable<ChangeNotification<Server>> serverSource = dnsChangeNotificationSource
                 .map(new Func1<ChangeNotification<String>, ChangeNotification<Server>>() {
