@@ -20,6 +20,8 @@ import java.util.List;
 
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.config.ReadCommandLineParser;
+import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
+import com.netflix.eureka2.server.spi.ExtensionLoader;
 import com.netflix.governator.guice.BootstrapBinder;
 import com.netflix.governator.guice.BootstrapModule;
 import org.slf4j.Logger;
@@ -48,6 +50,7 @@ public class EurekaReadServer extends AbstractEurekaServer<EurekaServerConfig> {
                 binder.include(new EurekaReadServerModule(config));
             }
         });
+        bootstrapModules.add(new ExtensionLoader().asBootstrapModule(ServerType.Read));
     }
 
     public static void main(String[] args) {

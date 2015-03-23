@@ -52,8 +52,8 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
                 new WriteServerAddress("localhost", 0, 0, 0) :
                 new WriteServerAddress("localhost", nextAvailablePort, nextAvailablePort + 1, nextAvailablePort + 2);
 
-        int httpPort = ephemeralPorts ? 0 : nextAvailablePort + 1;
-        int adminPort = ephemeralPorts ? 0 : nextAvailablePort + 2;
+        int httpPort = ephemeralPorts ? 0 : nextAvailablePort + 3;
+        int adminPort = ephemeralPorts ? 0 : nextAvailablePort + 4;
 
         WriteServerConfig config = WriteServerConfig.writeBuilder()
                 .withAppName(WRITE_SERVER_NAME)

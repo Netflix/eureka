@@ -84,7 +84,7 @@ public class Eureka2FullFetchWithDeltaView {
     }
 
     public Observable<RegistryFetch> latestCopy() {
-        return latestCopySubject;
+        return latestCopySubject.take(1);
     }
 
     private RegistryFetch updateSnapshot(List<ChangeNotification<InstanceInfo>> latestUpdates) {
@@ -110,12 +110,14 @@ public class Eureka2FullFetchWithDeltaView {
 
             this.applications = toEureka1xApplications(this.allInstances);
             this.deltaChanges = new Applications();
+            this.deltaChanges.setAppsHashCode(this.applications.getAppsHashCode());
         }
 
         RegistryFetch(SortedSet<com.netflix.appinfo.InstanceInfo> allInstances, Collection<com.netflix.appinfo.InstanceInfo> deltaChanges) {
             this.allInstances = allInstances;
             this.applications = toEureka1xApplications(allInstances);
             this.deltaChanges = toEureka1xApplications(deltaChanges);
+            this.deltaChanges.setAppsHashCode(this.applications.getAppsHashCode());
         }
 
         public Applications getApplications() {
@@ -148,6 +150,7 @@ public class Eureka2FullFetchWithDeltaView {
                     case Delete:
                         newAllInstances.remove(toEureka1xInstanceInfo(update.getData()));
                         deltaChanges.add(toEureka1xInstanceInfo(update.getData(), ActionType.DELETED));
+                        break;
                     default:
                         logger.error("Unexpected change notification type {}", update.getKind());
                 }

@@ -10,27 +10,27 @@ public class Eureka1Configuration {
 
     private static final Logger logger = LoggerFactory.getLogger(Eureka1Configuration.class);
 
-    public static final String REFRESH_INTERVAL_KEY = "eureka.ext.eureka1.rest.refreshInterval";
+    public static final String CACHE_REFRESH_INTERVAL_KEY = "eureka.ext.eureka1.rest.cache.refreshInterval";
     public static final String QUERY_TIMEOUT_KEY = "eureka.ext.eureka1.rest.queryTimeout";
 
-    public static final long DEFAULT_REFRESH_INTERVAL_MS = 30000;
+    public static final long DEFAULT_CACHE_REFRESH_INTERVAL_MS = 30000;
     private static final long DEFAULT_QUERY_TIMEOUT = 30000;
 
-    private final long refreshIntervalMs;
+    private final long cacheRefreshIntervalMs;
     private final long queryTimeout;
 
     public Eureka1Configuration() {
-        this.refreshIntervalMs = getLongProperty(REFRESH_INTERVAL_KEY, DEFAULT_REFRESH_INTERVAL_MS);
+        this.cacheRefreshIntervalMs = getLongProperty(CACHE_REFRESH_INTERVAL_KEY, DEFAULT_CACHE_REFRESH_INTERVAL_MS);
         this.queryTimeout = getLongProperty(QUERY_TIMEOUT_KEY, DEFAULT_QUERY_TIMEOUT);
     }
 
-    public Eureka1Configuration(long refreshIntervalMs, long queryTimeout) {
-        this.refreshIntervalMs = refreshIntervalMs;
+    public Eureka1Configuration(long cacheRefreshIntervalMs, long queryTimeout) {
+        this.cacheRefreshIntervalMs = cacheRefreshIntervalMs;
         this.queryTimeout = queryTimeout;
     }
 
-    public long getRefreshIntervalMs() {
-        return refreshIntervalMs;
+    public long getCacheRefreshIntervalMs() {
+        return cacheRefreshIntervalMs;
     }
 
     public long getQueryTimeout() {

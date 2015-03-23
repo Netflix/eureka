@@ -67,7 +67,7 @@ public class Eureka1RegistrationRequestHandlerTest {
 
     @Test
     public void testRegistrationPost() throws Exception {
-        String path = ROOT_PATH + "/apps/" + V1_SAMPLE_INSTANCE.getAppName() + '/' + V1_SAMPLE_INSTANCE.getId();
+        String path = ROOT_PATH + "/apps/" + V1_SAMPLE_INSTANCE.getAppName();
         handleRequestWithBody(HttpMethod.POST, path, V1_SAMPLE_INSTANCE, MediaType.APPLICATION_JSON);
 
         verify(registryProxy, times(1)).register(any(com.netflix.appinfo.InstanceInfo.class));

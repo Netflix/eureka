@@ -1,17 +1,22 @@
 package com.netflix.eureka2.eureka1.rest.registry;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
+import com.netflix.eureka2.server.EurekaRegistrationClientProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Scheduler;
+import rx.schedulers.Schedulers;
 
 /**
  * @author Tomasz Bak
  */
+@Singleton
 public class Eureka1RegistryProxyImpl implements Eureka1RegistryProxy {
 
     private static final Logger logger = LoggerFactory.getLogger(Eureka1RegistryProxyImpl.class);
@@ -21,6 +26,15 @@ public class Eureka1RegistryProxyImpl implements Eureka1RegistryProxy {
     private final Scheduler scheduler;
 
     private final LeaseExpiryQueue expiryQueue;
+
+    @Inject
+    public Eureka1RegistryProxyImpl(EurekaRegistrationClientProvider registrationClientProvider) {
+        this(registrationClientProvider.get());
+    }
+
+    public Eureka1RegistryProxyImpl(EurekaRegistrationClient registrationClient) {
+        this(registrationClient, Schedulers.io());
+    }
 
     public Eureka1RegistryProxyImpl(EurekaRegistrationClient registrationClient, Scheduler scheduler) {
         this.registrationClient = registrationClient;

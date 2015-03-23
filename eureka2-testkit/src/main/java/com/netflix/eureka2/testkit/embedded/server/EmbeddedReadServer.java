@@ -82,7 +82,7 @@ public class EmbeddedReadServer extends EmbeddedEurekaServer<EurekaServerConfig,
 
         Module[] modules = {
                 new EurekaReadServerModule(config, registrationClient, interestClient),
-                new Eureka1RestApiModule(new Eureka1Configuration(1, 1000), ServerType.Read)
+                new Eureka1RestApiModule(new Eureka1Configuration(), registrationClient)
         };
 
         setup(modules);

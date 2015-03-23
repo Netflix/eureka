@@ -22,6 +22,7 @@ import rx.schedulers.TestScheduler;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -51,8 +52,13 @@ public class Eureka2FullFetchWithDeltaViewTest {
         String webAppName = registryMockResource.uploadClusterBatchToRegistry(SampleInstanceInfo.WebServer, APPLICATION_CLUSTER_SIZE);
         RegistryFetch registryFetch = latestCopy();
 
-        verifyApplicationsPresent(registryFetch.getApplications(), webAppName);
-        assertThat(registryFetch.getDeltaChanges().getRegisteredApplications().size(), is(equalTo(0)));
+        Applications fullFetch = registryFetch.getApplications();
+        Applications delta = registryFetch.getDeltaChanges();
+
+        verifyApplicationsPresent(fullFetch, webAppName);
+        assertThat(delta.getRegisteredApplications().size(), is(equalTo(0)));
+
+        verifyHashCodes(fullFetch, delta);
     }
 
     @Test
@@ -60,15 +66,22 @@ public class Eureka2FullFetchWithDeltaViewTest {
         // First batch
         String webAppName = registryMockResource.uploadClusterBatchToRegistry(SampleInstanceInfo.WebServer, APPLICATION_CLUSTER_SIZE);
         testScheduler.triggerActions();
+        RegistryFetch firstCopy = latestCopy();
 
         // Second batch
         String backendName = registryMockResource.uploadClusterBatchToRegistry(SampleInstanceInfo.Backend, APPLICATION_CLUSTER_SIZE);
+        assertSame(firstCopy, latestCopy());
         testScheduler.advanceTimeBy(REFRESH_INTERVAL, TimeUnit.MILLISECONDS);
 
-        RegistryFetch registryFetch = latestCopy();
+        RegistryFetch secondCopy = latestCopy();
 
-        verifyApplicationsPresent(registryFetch.getApplications(), webAppName, backendName);
-        verifyApplicationsPresent(registryFetch.getDeltaChanges(), backendName);
+        Applications fullFetch = secondCopy.getApplications();
+        Applications delta = secondCopy.getDeltaChanges();
+
+        verifyApplicationsPresent(fullFetch, webAppName, backendName);
+        verifyApplicationsPresent(delta, backendName);
+
+        verifyHashCodes(fullFetch, delta);
     }
 
     @Test
@@ -91,14 +104,23 @@ public class Eureka2FullFetchWithDeltaViewTest {
 
         RegistryFetch registryFetch = latestCopy();
 
-        verifyApplicationsPresent(registryFetch.getApplications(), backendName);
-        verifyApplicationsNotPresent(registryFetch.getApplications(), webAppName);
-        verifyApplicationsPresent(registryFetch.getDeltaChanges(), backendName);
+        Applications fullFetch = registryFetch.getApplications();
+        Applications delta = registryFetch.getDeltaChanges();
+
+        verifyApplicationsPresent(fullFetch, backendName);
+        verifyApplicationsNotPresent(fullFetch, webAppName);
+        verifyApplicationsPresent(delta, backendName);
+
+        verifyHashCodes(fullFetch, delta);
     }
 
     private RegistryFetch latestCopy() {
         testScheduler.triggerActions();
         return view.latestCopy().timeout(1, TimeUnit.SECONDS).take(1).toBlocking().first();
+    }
+
+    private static void verifyHashCodes(Applications fullFetch, Applications delta) {
+        assertThat(fullFetch.getAppsHashCode(), is(equalTo(delta.getAppsHashCode())));
     }
 
     private static void verifyApplicationsNotPresent(Applications applications, String... appNames) {

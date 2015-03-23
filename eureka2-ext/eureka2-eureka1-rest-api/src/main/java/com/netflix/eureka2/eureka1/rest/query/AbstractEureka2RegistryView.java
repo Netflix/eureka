@@ -54,7 +54,7 @@ public abstract class AbstractEureka2RegistryView<T> {
     }
 
     public Observable<T> latestCopy() {
-        return latestCopySubject;
+        return latestCopySubject.take(1);
     }
 
     protected abstract T updateSnapshot(Set<InstanceInfo> latestSnapshot);
