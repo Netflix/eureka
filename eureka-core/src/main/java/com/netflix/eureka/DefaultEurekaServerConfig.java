@@ -519,6 +519,13 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     }
 
     @Override
+    public int getRemoteRegionFetchThreadPoolSize() {
+        return configInstance.getIntProperty(
+                namespace + "remoteRegion.fetchThreadPoolSize", 20)
+                .get();
+    }
+
+    @Override
     public String getRemoteRegionTrustStore() {
         return configInstance.getStringProperty(
                 namespace + "remoteRegion.trustStoreFileName", "").get();
