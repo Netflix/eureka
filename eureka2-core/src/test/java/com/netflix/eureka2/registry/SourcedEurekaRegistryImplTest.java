@@ -28,7 +28,6 @@ import rx.Subscription;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
-import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
@@ -397,7 +396,117 @@ public class SourcedEurekaRegistryImplTest {
         assertThat(((Sourced)notification).getSource(), is(equalTo(localSource)));
     }
 
-        @Test(timeout = 60000)
+    @Test(timeout = 60000)
+    public void testUnregisterOfLocalHeadPromoteNonLocalTriggersChangeNotifications() {
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
+
+        InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
+                .withStatus(InstanceInfo.Status.UP)
+                .build();
+
+        // setup the registry data first
+        registry.register(original, localSource);
+        testScheduler.triggerActions();
+
+        registry.register(original, replicatedSource);
+        testScheduler.triggerActions();
+
+        // subscribe to interests
+        registry.forInterest(Interests.forFullRegistry())
+                .filter(new Func1<ChangeNotification<InstanceInfo>, Boolean>() {
+                    @Override
+                    public Boolean call(ChangeNotification<InstanceInfo> notification) {
+                        return notification.isDataNotification();
+                    }
+                }).subscribe(testSubscriber);
+
+        ChangeNotification<InstanceInfo> initial = testSubscriber.takeNext();
+        assertThat(initial, is(instanceOf(Sourced.class)));
+        assertThat(initial.getData(), is(equalTo(original)));
+        assertThat(((Sourced)initial).getSource(), is(equalTo(localSource)));
+
+        registry.unregister(original, localSource);
+        testScheduler.triggerActions();
+
+        List<ChangeNotification<InstanceInfo>> notifications = testSubscriber.takeNext(2);
+
+        assertThat(notifications, is(not(nullValue())));
+        assertThat(notifications.size(), is(2));
+        assertThat(notifications.get(0).getData(), equalTo(notifications.get(1).getData()));
+
+        assertThat(notifications.get(0).getKind(), is(ChangeNotification.Kind.Delete));
+        assertThat(notifications.get(0), is(instanceOf(Sourced.class)));
+        assertThat(((Sourced)notifications.get(0)).getSource(), is(equalTo(localSource)));
+
+        assertThat(notifications.get(1).getKind(), is(ChangeNotification.Kind.Add));
+        assertThat(notifications.get(1), is(instanceOf(Sourced.class)));
+        assertThat(((Sourced)notifications.get(1)).getSource(), is(equalTo(replicatedSource)));
+    }
+
+
+    @Test(timeout = 60000)
+    public void testRegisterAndUnregisterOfMultipleLocalSourcesWithDifferentNames() throws Exception {
+        Source local1 = new Source(Origin.LOCAL, "aaa");
+        Source local2 = new Source(Origin.LOCAL, "bbb");
+        Source local3 = new Source(Origin.LOCAL, "ccc");
+
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
+
+        InstanceInfo copy1 = SampleInstanceInfo.DiscoveryServer.builder()
+                .withStatus(InstanceInfo.Status.UP)
+                .build();
+
+        InstanceInfo copy2 = new InstanceInfo.Builder()
+                .withInstanceInfo(copy1)
+                .withStatus(InstanceInfo.Status.OUT_OF_SERVICE)
+                .build();
+
+        InstanceInfo copy3 = new InstanceInfo.Builder()
+                .withInstanceInfo(copy1)
+                .withStatus(InstanceInfo.Status.DOWN)
+                .build();
+
+        // setup the registry data first
+        registry.register(copy1, local1);
+        testScheduler.triggerActions();
+
+        registry.register(copy2, local2);
+        testScheduler.triggerActions();
+
+        registry.register(copy3, local3);
+        testScheduler.triggerActions();
+
+        // subscribe to interests
+        registry.forInterest(Interests.forFullRegistry())
+                .filter(new Func1<ChangeNotification<InstanceInfo>, Boolean>() {
+                    @Override
+                    public Boolean call(ChangeNotification<InstanceInfo> notification) {
+                        return notification.isDataNotification();
+                    }
+                }).subscribe(testSubscriber);
+
+        ChangeNotification<InstanceInfo> initial = testSubscriber.takeNext();
+        assertThat(initial, is(instanceOf(Sourced.class)));
+        assertThat(initial.getData(), is(equalTo(copy1)));
+        assertThat(((Sourced)initial).getSource(), is(equalTo(local1)));
+
+        registry.unregister(copy2, local2);  // unregister the middle copy that is different from the head
+        testScheduler.triggerActions();
+
+        ChangeNotification<InstanceInfo> notification = testSubscriber.takeNext(100, TimeUnit.MILLISECONDS);
+        assertThat(notification, is(nullValue()));
+
+        registry.unregister(copy1, local1);  // unregister the head
+        testScheduler.triggerActions();
+
+        notification = testSubscriber.takeNext(100, TimeUnit.MILLISECONDS);
+        assertThat(notification, is(instanceOf(Sourced.class)));
+        assertThat(notification.getData(), is(equalTo(copy3)));
+        assertThat(notification.getKind(), is(equalTo(ChangeNotification.Kind.Modify)));
+        assertThat(((Sourced)notification).getSource(), is(equalTo(local3)));
+    }
+
+    @Test(timeout = 60000)
     public void testRegistryShutdownOnCompleteAllInterestStreams() throws Exception {
         InstanceInfo discovery1 = SampleInstanceInfo.DiscoveryServer.build();
         InstanceInfo discovery2 = SampleInstanceInfo.DiscoveryServer.build();
