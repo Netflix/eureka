@@ -45,13 +45,12 @@ public class DnsResolverStep implements HostResolverStep {
                     subscriber.onError(e);
                 }
             }
-        });
+        }).subscribeOn(dnsLoadScheduler);   // async subscribe on an io scheduler
     }
 
     @Override
     public ServerResolver withPort(final int port) {
-        final Observable<ChangeNotification<String>> dnsChangeNotificationSource = createDnsChangeNotificationSource()
-                .subscribeOn(dnsLoadScheduler);   // async subscribe on an io scheduler
+        final Observable<ChangeNotification<String>> dnsChangeNotificationSource = createDnsChangeNotificationSource();
 
         final Observable<ChangeNotification<Server>> serverSource = dnsChangeNotificationSource
                 .map(new Func1<ChangeNotification<String>, ChangeNotification<Server>>() {
