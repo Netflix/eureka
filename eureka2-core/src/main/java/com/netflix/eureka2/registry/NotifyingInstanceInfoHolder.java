@@ -199,9 +199,11 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
     }
 
     /**
-     * If the remove is from the head and there is a new head, send the diff to the old head as a MODIFY notification;
-     * if the remove is of the last copy, send a DELETE notification;
-     * else no-op.
+     * - If the remove is from the head and there is a new head, send the diff to the old head as a MODIFY notification;
+     * - if the remove is of the last copy, send a DELETE notification;
+     * - If the moreve is from the head and the removed is of LOCAL source but the promoted is not, generate a Delete
+     *   notification with LOCAL source followed by an Add notification with the new source.
+     * - else no-op.
      */
     private Status doRemove(final Source source) {
         InstanceInfo removed = dataStore.remove(source);
@@ -226,13 +228,24 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
                 Snapshot<InstanceInfo> newSnapshot = new Snapshot<>(newHead.getKey(), newHead.getValue());
                 snapshot = newSnapshot;
 
-                Set<Delta<?>> delta = newSnapshot.getData().diffOlder(currSnapshot.getData());
-                if (!delta.isEmpty()) {
-                    ChangeNotification<InstanceInfo> modifyNotification
-                            = new SourcedModifyNotification<>(newSnapshot.getData(), delta, newSnapshot.getSource());
-                    pauseableSubject.onNext(modifyNotification);
+                if ((source.getOrigin() == Source.Origin.LOCAL) &&
+                        (snapshot.getSource().getOrigin() != Source.Origin.LOCAL)) {
+                    ChangeNotification<InstanceInfo> deleteNotification
+                            = new SourcedChangeNotification<>(ChangeNotification.Kind.Delete, removed, source);
+                    pauseableSubject.onNext(deleteNotification);
+
+                    ChangeNotification<InstanceInfo> addNotification
+                            = new SourcedChangeNotification<>(ChangeNotification.Kind.Add, snapshot.getData(), snapshot.getSource());
+                    pauseableSubject.onNext(addNotification);
                 } else {
-                    logger.debug("No-change update for {}#{}", currSnapshot.getSource(), currSnapshot.getData().getId());
+                    Set<Delta<?>> delta = newSnapshot.getData().diffOlder(currSnapshot.getData());
+                    if (!delta.isEmpty()) {
+                        ChangeNotification<InstanceInfo> modifyNotification
+                                = new SourcedModifyNotification<>(newSnapshot.getData(), delta, newSnapshot.getSource());
+                        pauseableSubject.onNext(modifyNotification);
+                    } else {
+                        logger.debug("No-change update for {}#{}", currSnapshot.getSource(), currSnapshot.getData().getId());
+                    }
                 }
             }
         } else {  // remove of copy that's not the source of the snapshot, no-op
