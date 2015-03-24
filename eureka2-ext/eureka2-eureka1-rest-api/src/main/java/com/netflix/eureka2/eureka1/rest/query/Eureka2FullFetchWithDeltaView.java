@@ -26,7 +26,7 @@ import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEu
 import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka1xInstanceInfos;
 import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.v1InstanceIdentityComparator;
 import static com.netflix.eureka2.interests.ChangeNotifications.emitAndAggregateChanges;
-import static com.netflix.eureka2.interests.ChangeNotifications.evaluate;
+import static com.netflix.eureka2.interests.ChangeNotifications.collapseAndExtract;
 import static com.netflix.eureka2.interests.ChangeNotifications.instanceInfoIdentityComparator;
 
 /**
@@ -90,7 +90,7 @@ public class Eureka2FullFetchWithDeltaView {
     private RegistryFetch updateSnapshot(List<ChangeNotification<InstanceInfo>> latestUpdates) {
         RegistryFetch newCopy;
         if (latestCopy.get() == null) {
-            SortedSet<InstanceInfo> allInstances = evaluate(latestUpdates, instanceInfoIdentityComparator());
+            SortedSet<InstanceInfo> allInstances = collapseAndExtract(latestUpdates, instanceInfoIdentityComparator());
             newCopy = new RegistryFetch(allInstances);
         } else {
             newCopy = latestCopy.get().apply(latestUpdates);

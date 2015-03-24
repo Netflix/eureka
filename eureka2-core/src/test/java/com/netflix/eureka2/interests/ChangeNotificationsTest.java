@@ -61,7 +61,7 @@ public class ChangeNotificationsTest {
 
     @Test
     public void testChangeNotificationListEvaluation() throws Exception {
-        SortedSet<String> result = ChangeNotifications.evaluate(NOTIFICATION_LIST_1, STRING_COMPARATOR);
+        SortedSet<String> result = ChangeNotifications.collapseAndExtract(NOTIFICATION_LIST_1, STRING_COMPARATOR);
         assertThat(result, hasItems("A", "B"));
     }
 
