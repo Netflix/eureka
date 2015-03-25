@@ -14,6 +14,7 @@ import rx.Observable;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 import rx.subjects.PublishSubject;
+import rx.subjects.ReplaySubject;
 
 import static com.netflix.eureka2.utils.ExtCollections.asSet;
 import static java.util.Arrays.asList;
@@ -36,6 +37,7 @@ public class ChangeNotificationsTest {
     private static final ChangeNotification<String> DELETE_A = new ChangeNotification<>(Kind.Delete, "A");
     private static final ChangeNotification<String> MODIFY_A = new ChangeNotification<>(Kind.Modify, "A");
     private static final ChangeNotification<String> ADD_B = new ChangeNotification<>(Kind.Add, "B");
+    private static final ChangeNotification<String> MODIFY_B = new ChangeNotification<>(Kind.Add, "B");
     private static final ChangeNotification<String> ADD_C = new ChangeNotification<>(Kind.Add, "C");
     private static final ChangeNotification<String> MODIFY_D = new ChangeNotification<>(Kind.Modify, "D");
     private static final ChangeNotification<String> DELETE_E = new ChangeNotification<>(Kind.Delete, "E");
@@ -46,11 +48,11 @@ public class ChangeNotificationsTest {
     private static final List<ChangeNotification<String>> NOTIFICATION_LIST_1 = asList(
             ADD_A, DELETE_A, ADD_A, ADD_B, MODIFY_A, MODIFY_D, DELETE_E
     );
-    private static final List<ChangeNotification<String>> NOTIFICATION_LIST_2 = asList(DELETE_A, ADD_C);
+    private static final List<ChangeNotification<String>> NOTIFICATION_LIST_2 = asList(DELETE_A, MODIFY_B, ADD_C);
 
     private static final List<ChangeNotification<String>> COLLAPSED_NOTIFICATION_LIST_1 = asList(ADD_B, ADD_A, MODIFY_D, DELETE_E);
     private static final List<ChangeNotification<String>> COLLAPSED_NOTIFICATION_LIST_2 = NOTIFICATION_LIST_2;
-    private static final List<ChangeNotification<String>> COLLAPSED_NOTIFICATION_LISTS_1_AND_2 = asList(ADD_B, MODIFY_D, DELETE_E, DELETE_A, ADD_C);
+    private static final List<ChangeNotification<String>> COLLAPSED_NOTIFICATION_LISTS_1_AND_2 = asList(MODIFY_D, DELETE_E, DELETE_A, ADD_B, ADD_C);
 
     private static final Comparator<String> STRING_COMPARATOR = new Comparator<String>() {
         @Override
@@ -149,15 +151,16 @@ public class ChangeNotificationsTest {
 
     @Test
     public void testEmitAndAggregateChangesEmitsFirstItemImmediately() throws Exception {
-        PublishSubject<List<ChangeNotification<String>>> source = PublishSubject.create();
+        ReplaySubject<List<ChangeNotification<String>>> source = ReplaySubject.create();
+        // Emit first item, so it is available at time 0
+        source.onNext(NOTIFICATION_LIST_1);
 
         ExtTestSubscriber<List<ChangeNotification<String>>> testSubscriber = new ExtTestSubscriber<>();
         source.compose(
                 ChangeNotifications.emitAndAggregateChanges(STRING_COMPARATOR, 1, TimeUnit.SECONDS, testScheduler)
         ).subscribe(testSubscriber);
 
-        // Emit first item before interval passes
-        source.onNext(NOTIFICATION_LIST_1);
+        testScheduler.triggerActions();
         assertThat(testSubscriber.takeNext(), is(COLLAPSED_NOTIFICATION_LIST_1));
 
         // Emit another value and pass the interval

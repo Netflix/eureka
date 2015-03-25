@@ -282,40 +282,11 @@ public final class ChangeNotifications {
     public static <T> Transformer<List<ChangeNotification<T>>, List<ChangeNotification<T>>> emitAndAggregateChanges(
             final Comparator<T> identityComparator, final long interval, final TimeUnit timeUnit, final Scheduler scheduler) {
         return new Transformer<List<ChangeNotification<T>>, List<ChangeNotification<T>>>() {
+
             @Override
-            public Observable<List<ChangeNotification<T>>> call(final Observable<List<ChangeNotification<T>>> batchUpdates) {
-                return batchUpdates.lift(new Operator<List<ChangeNotification<T>>, List<ChangeNotification<T>>>() {
-                    @Override
-                    public Subscriber<? super List<ChangeNotification<T>>> call(final Subscriber<? super List<ChangeNotification<T>>> subscriber) {
-                        final AtomicBoolean first = new AtomicBoolean();
-                        final PublishSubject<List<ChangeNotification<T>>> aggregateSubject = PublishSubject.create();
-                        return new Subscriber<List<ChangeNotification<T>>>() {
-                            @Override
-                            public void onCompleted() {
-                                subscriber.onCompleted();
-                            }
+            public Observable<List<ChangeNotification<T>>> call(Observable<List<ChangeNotification<T>>> batchUpdates) {
+                return batchUpdates.buffer(Observable.timer(0, interval, timeUnit, scheduler)).compose(collapseLists(identityComparator));
 
-                            @Override
-                            public void onError(Throwable e) {
-                                subscriber.onError(e);
-                            }
-
-                            @Override
-                            public void onNext(List<ChangeNotification<T>> notifications) {
-                                if (!first.get()) {
-                                    subscriber.onNext(collapse(notifications, identityComparator));
-
-                                    first.set(true);
-                                    Transformer<List<ChangeNotification<T>>, List<ChangeNotification<T>>> transformer =
-                                            aggregateChanges(identityComparator, interval, timeUnit, scheduler);
-                                    aggregateSubject.compose(transformer).subscribe(subscriber);
-                                } else {
-                                    aggregateSubject.onNext(notifications);
-                                }
-                            }
-                        };
-                    }
-                });
             }
         };
     }
@@ -338,15 +309,17 @@ public final class ChangeNotifications {
     private static <T> void collapse(List<ChangeNotification<T>> notifications, Map<T, Integer> markers, List<ChangeNotification<T>> result) {
         for (int i = notifications.size() - 1; i >= 0; i--) {
             ChangeNotification<T> next = notifications.get(i);
-            T data = next.getData();
-            if (markers.keySet().contains(data)) {
-                int idx = markers.get(data);
-                if (next.getKind() == Kind.Add && result.get(idx).getKind() == Kind.Modify) {
-                    result.set(idx, next);
+            if(next.isDataNotification()) {
+                T data = next.getData();
+                if (markers.keySet().contains(data)) {
+                    int idx = markers.get(data);
+                    if (next.getKind() == Kind.Add && result.get(idx).getKind() == Kind.Modify) {
+                        result.set(idx, next);
+                    }
+                } else {
+                    markers.put(data, result.size());
+                    result.add(next);
                 }
-            } else {
-                markers.put(data, result.size());
-                result.add(next);
             }
         }
     }

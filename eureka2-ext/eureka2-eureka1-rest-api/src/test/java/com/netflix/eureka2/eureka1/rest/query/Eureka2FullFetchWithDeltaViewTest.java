@@ -7,6 +7,7 @@ import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka2.eureka1.rest.query.Eureka2FullFetchWithDeltaView.RegistryFetch;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
+import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedRegistryMockResource;
@@ -20,6 +21,7 @@ import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertSame;
@@ -110,6 +112,37 @@ public class Eureka2FullFetchWithDeltaViewTest {
         verifyApplicationsPresent(fullFetch, backendName);
         verifyApplicationsNotPresent(fullFetch, webAppName);
         verifyApplicationsPresent(delta, backendName);
+
+        verifyHashCodes(fullFetch, delta);
+    }
+
+    @Test
+    public void testModifiedElementsUpdatedInApplicationsAndPresentInDelta() throws Exception {
+        InstanceInfo firstInstance = SampleInstanceInfo.WebServer.build();
+        Interest<InstanceInfo> appInterest = Interests.forApplications(firstInstance.getApp());
+
+        // First batch
+        registryMockResource.uploadBatchToRegistry(appInterest, firstInstance);
+        latestCopy();
+
+        // Second batch
+        InstanceInfo secondInstance = new InstanceInfo.Builder().withInstanceInfo(firstInstance).withAppGroup("new_app_group").build();
+        registryMockResource.uploadBatchToRegistry(appInterest, secondInstance);
+
+        testScheduler.advanceTimeBy(REFRESH_INTERVAL, TimeUnit.MILLISECONDS);
+
+        RegistryFetch registryFetch = latestCopy();
+
+        Applications fullFetch = registryFetch.getApplications();
+        Applications delta = registryFetch.getDeltaChanges();
+
+        assertThat(fullFetch.getRegisteredApplications().size(), is(equalTo(1)));
+        Application application = fullFetch.getRegisteredApplications().get(0);
+        assertThat(application.getName(), is(equalToIgnoringCase(secondInstance.getApp())));
+
+        assertThat(application.getInstances().size(), is(equalTo(1)));
+        com.netflix.appinfo.InstanceInfo instanceInfo = application.getInstances().get(0);
+        assertThat(instanceInfo.getAppGroupName(), is(equalToIgnoringCase("new_app_group")));
 
         verifyHashCodes(fullFetch, delta);
     }

@@ -138,17 +138,19 @@ public class Eureka2FullFetchWithDeltaView {
             List<com.netflix.appinfo.InstanceInfo> deltaChanges = new ArrayList<>(updates.size());
 
             for (ChangeNotification<InstanceInfo> update : updates) {
+                com.netflix.appinfo.InstanceInfo v1Update = toEureka1xInstanceInfo(update.getData());
                 switch (update.getKind()) {
                     case Add:
-                        newAllInstances.add(toEureka1xInstanceInfo(update.getData()));
+                        newAllInstances.remove(v1Update);
+                        newAllInstances.add(v1Update);
                         deltaChanges.add(toEureka1xInstanceInfo(update.getData(), ActionType.ADDED));
                         break;
                     case Modify:
-                        newAllInstances.add(toEureka1xInstanceInfo(update.getData()));
+                        newAllInstances.add(v1Update);
                         deltaChanges.add(toEureka1xInstanceInfo(update.getData(), ActionType.MODIFIED));
                         break;
                     case Delete:
-                        newAllInstances.remove(toEureka1xInstanceInfo(update.getData()));
+                        newAllInstances.remove(v1Update);
                         deltaChanges.add(toEureka1xInstanceInfo(update.getData(), ActionType.DELETED));
                         break;
                     default:

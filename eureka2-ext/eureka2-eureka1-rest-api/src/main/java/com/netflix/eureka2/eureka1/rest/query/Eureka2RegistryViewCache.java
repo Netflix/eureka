@@ -1,15 +1,12 @@
 package com.netflix.eureka2.eureka1.rest.query;
 
 import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka2.eureka1.rest.query.Eureka2FullFetchWithDeltaView.RegistryFetch;
 import com.netflix.eureka2.interests.ChangeNotifications;
-import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interest.Operator;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
@@ -30,20 +27,11 @@ public class Eureka2RegistryViewCache {
 
     private static final Logger logger = LoggerFactory.getLogger(Eureka2RegistryViewCache.class);
 
-    private static final long DEFAULT_REFRESH_INTERVAL_MS = 30000;
-
     private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final long refreshIntervalMs;
     private final Scheduler scheduler;
 
     private final AtomicReference<Eureka2FullFetchWithDeltaView> fullFetchWithDeltaView = new AtomicReference<>();
-    private final Map<String, Eureka2ApplicationView> applicationMap = new ConcurrentHashMap<>();
-    private final Map<String, Eureka2ApplicationsView> vipMap = new ConcurrentHashMap<>();
-    private final Map<String, Eureka2ApplicationsView> secureVipMap = new ConcurrentHashMap<>();
-
-    public Eureka2RegistryViewCache(SourcedEurekaRegistry<InstanceInfo> registry) {
-        this(registry, DEFAULT_REFRESH_INTERVAL_MS, Schedulers.computation());
-    }
 
     public Eureka2RegistryViewCache(SourcedEurekaRegistry<InstanceInfo> registry,
                                     long refreshIntervalMs) {
@@ -66,43 +54,59 @@ public class Eureka2RegistryViewCache {
         return getLatestFullFetch().map(REGISTRY_FETCH_TO_DELTA_FUN);
     }
 
-    public Observable<Application> findApplication(String appName) {
-        if (applicationMap.get(appName) == null) {
-            synchronized (applicationMap) {
-                if (applicationMap.get(appName) == null) {
-                    Eureka2ApplicationView applicationView = new Eureka2ApplicationView(
-                            appName,
-                            registry.forInterest(Interests.forApplications(Operator.Equals, appName)),
-                            refreshIntervalMs,
-                            scheduler);
-                    applicationMap.put(appName, applicationView);
-                }
+    public Observable<Application> findApplication(final String appName) {
+        return findAllApplications().flatMap(new Func1<Applications, Observable<Application>>() {
+            @Override
+            public Observable<Application> call(Applications applications) {
+                Application application = applications.getRegisteredApplications(appName);
+                return application == null ? Observable.<Application>empty() : Observable.just(application);
             }
-        }
-        return applicationMap.get(appName).latestCopy();
+        });
     }
 
-    public Observable<Applications> findApplicationsByVip(String vipAddress) {
-        return findApplicationsBy(vipAddress, Interests.forVips(vipAddress), vipMap);
+    public Observable<Applications> findApplicationsByVip(final String vipAddress) {
+        if (vipAddress == null) {
+            return Observable.empty();
+        }
+        return findApplicationsBy(new Func1<com.netflix.appinfo.InstanceInfo, Boolean>() {
+            @Override
+            public Boolean call(com.netflix.appinfo.InstanceInfo instanceInfo) {
+                return vipAddress.equals(instanceInfo.getVIPAddress());
+            }
+        });
     }
 
     public Observable<Applications> findApplicationsBySecureVip(final String secureVipAddress) {
-        return findApplicationsBy(secureVipAddress, Interests.forSecureVips(secureVipAddress), secureVipMap);
+        if (secureVipAddress == null) {
+            return Observable.empty();
+        }
+        return findApplicationsBy(new Func1<com.netflix.appinfo.InstanceInfo, Boolean>() {
+            @Override
+            public Boolean call(com.netflix.appinfo.InstanceInfo instanceInfo) {
+                return secureVipAddress.equals(instanceInfo.getSecureVipAddress());
+            }
+        });
     }
 
-    private Observable<Applications> findApplicationsBy(String id, Interest<InstanceInfo> interest, Map<String, Eureka2ApplicationsView> cache) {
-        if (cache.get(id) == null) {
-            synchronized (cache) {
-                if (cache.get(id) == null) {
-                    Eureka2ApplicationsView applicationsView = new Eureka2ApplicationsView(
-                            registry.forInterest(interest),
-                            refreshIntervalMs,
-                            scheduler);
-                    cache.put(id, applicationsView);
+    private Observable<Applications> findApplicationsBy(final Func1<com.netflix.appinfo.InstanceInfo, Boolean> predicate) {
+        return getLatestFullFetch().map(new Func1<RegistryFetch, Applications>() {
+            @Override
+            public Applications call(RegistryFetch registryFetch) {
+                Applications filteredApps = new Applications();
+                for (Application application : registryFetch.getApplications().getRegisteredApplications()) {
+                    Application filteredApp = new Application(application.getName());
+                    for (com.netflix.appinfo.InstanceInfo instanceInfo : application.getInstances()) {
+                        if (predicate.call(instanceInfo)) {
+                            filteredApp.addInstance(instanceInfo);
+                        }
+                    }
+                    if (!filteredApp.getInstances().isEmpty()) {
+                        filteredApps.addApplication(filteredApp);
+                    }
                 }
+                return filteredApps;
             }
-        }
-        return cache.get(id).latestCopy();
+        });
     }
 
     public Observable<com.netflix.appinfo.InstanceInfo> findInstance(String instanceId) {

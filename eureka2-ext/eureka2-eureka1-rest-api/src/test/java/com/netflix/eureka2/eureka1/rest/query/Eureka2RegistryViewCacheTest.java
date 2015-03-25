@@ -9,6 +9,7 @@ import com.netflix.eureka2.interests.Interest.Operator;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.SourcedRegistryMockResource;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Rule;
 import org.junit.Test;
@@ -18,6 +19,7 @@ import rx.schedulers.TestScheduler;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -48,12 +50,21 @@ public class Eureka2RegistryViewCacheTest {
         registryMockResource.uploadClusterToRegistry(SampleInstanceInfo.Backend, APPLICATION_CLUSTER_SIZE);
         registryMockResource.batchEnd();
 
-        Applications firstCopy = cache.findAllApplications().toBlocking().first();
-        assertThat(firstCopy.getRegisteredApplications().size(), is(equalTo(2)));
+        ExtTestSubscriber<Applications> testSubscriber = new ExtTestSubscriber<>();
+        cache.findAllApplications().subscribe(testSubscriber);
+        testScheduler.triggerActions();
+
+        Applications firstItem = testSubscriber.takeNext();
+        assertThat(firstItem, is(notNullValue()));
+        assertThat(firstItem.getRegisteredApplications().size(), is(equalTo(2)));
 
         // Check the same copy is returned on subsequent call
-        Applications secondCopy = cache.findAllApplications().toBlocking().first();
-        assertThat(secondCopy == firstCopy, is(true));
+        testSubscriber = new ExtTestSubscriber<>();
+        cache.findAllApplications().subscribe(testSubscriber);
+        testScheduler.triggerActions();
+
+        Applications secondItem = testSubscriber.takeNext();
+        assertThat(firstItem == secondItem, is(true));
     }
 
     @Test
@@ -63,8 +74,13 @@ public class Eureka2RegistryViewCacheTest {
         registryMockResource.uploadClusterToRegistry(SampleInstanceInfo.WebServer, APPLICATION_CLUSTER_SIZE);
         registryMockResource.batchEnd();
 
-        Applications firstAppDelta = cache.findAllApplicationsDelta().toBlocking().first();
-        assertThat(firstAppDelta.getRegisteredApplications().size(), is(equalTo(0)));
+        ExtTestSubscriber<Applications> testSubscriber = new ExtTestSubscriber<>();
+        cache.findAllApplicationsDelta().subscribe(testSubscriber);
+        testScheduler.triggerActions();
+
+        Applications firstDelta = testSubscriber.takeNext();
+        assertThat(firstDelta, is(notNullValue()));
+        assertThat(firstDelta.getRegisteredApplications().size(), is(equalTo(0)));
 
         // Generate second copy
         registryMockResource.batchStart();
@@ -72,9 +88,14 @@ public class Eureka2RegistryViewCacheTest {
         registryMockResource.batchEnd();
         testScheduler.advanceTimeBy(REFRESH_INTERVAL, TimeUnit.MILLISECONDS);
 
-        Applications secondAppDelta = cache.findAllApplicationsDelta().toBlocking().first();
-        assertThat(secondAppDelta.getRegisteredApplications().size(), is(equalTo(1)));
-        Application deltaApp = secondAppDelta.getRegisteredApplications().get(0);
+        testSubscriber = new ExtTestSubscriber<>();
+        cache.findAllApplicationsDelta().subscribe(testSubscriber);
+
+        Applications secondDelta = testSubscriber.takeNext();
+        assertThat(secondDelta, is(notNullValue()));
+        assertThat(secondDelta.getRegisteredApplications().size(), is(equalTo(1)));
+
+        Application deltaApp = secondDelta.getRegisteredApplications().get(0);
         assertThat(deltaApp.getName(), is(equalToIgnoringCase(backend)));
     }
 
@@ -82,11 +103,19 @@ public class Eureka2RegistryViewCacheTest {
     public void testApplicationCaching() throws Exception {
         String appName = registryMockResource.uploadClusterBatchToRegistry(SampleInstanceInfo.WebServer, APPLICATION_CLUSTER_SIZE);
 
-        Application firstCopy = cache.findApplication(appName).toBlocking().first();
+        ExtTestSubscriber<Application> testSubscriber = new ExtTestSubscriber<>();
+        cache.findApplication(appName).subscribe(testSubscriber);
+        testScheduler.triggerActions();
+
+        Application firstCopy = testSubscriber.takeNext();
         assertThat(firstCopy.getName(), is(equalToIgnoringCase(appName)));
 
         // Check the same copy is returned on subsequent call
-        Application secondCopy = cache.findApplication(appName).toBlocking().first();
+        testSubscriber = new ExtTestSubscriber<>();
+        cache.findApplication(appName).subscribe(testSubscriber);
+        testScheduler.triggerActions();
+
+        Application secondCopy = testSubscriber.takeNext();
         assertThat(secondCopy == firstCopy, is(true));
     }
 
@@ -99,12 +128,12 @@ public class Eureka2RegistryViewCacheTest {
         registryMockResource.uploadClusterToRegistry(backendTemplate, APPLICATION_CLUSTER_SIZE);
         registryMockResource.batchEnd(VIP_INTEREST);
 
-        Applications firstCopy = cache.findApplicationsByVip(VIP_SERVER_FARM).toBlocking().first();
-        assertThat(firstCopy.getRegisteredApplications().size(), is(equalTo(2)));
+        ExtTestSubscriber<Applications> testSubscriber = new ExtTestSubscriber<>();
+        cache.findApplicationsByVip(VIP_SERVER_FARM).subscribe(testSubscriber);
+        testScheduler.triggerActions();
 
-        // Check the same copy is returned on subsequent call
-        Applications secondCopy = cache.findApplicationsByVip(VIP_SERVER_FARM).toBlocking().first();
-        assertThat(secondCopy == firstCopy, is(true));
+        Applications firstCopy = testSubscriber.takeNext();
+        assertThat(firstCopy.getRegisteredApplications().size(), is(equalTo(2)));
     }
 
     @Test
@@ -116,12 +145,12 @@ public class Eureka2RegistryViewCacheTest {
         registryMockResource.uploadClusterToRegistry(backendTemplate, APPLICATION_CLUSTER_SIZE);
         registryMockResource.batchEnd(SECURE_VIP_INTEREST);
 
-        Applications firstCopy = cache.findApplicationsBySecureVip(SECURE_VIP_SERVER_FARM).toBlocking().first();
-        assertThat(firstCopy.getRegisteredApplications().size(), is(equalTo(2)));
+        ExtTestSubscriber<Applications> testSubscriber = new ExtTestSubscriber<>();
+        cache.findApplicationsBySecureVip(SECURE_VIP_SERVER_FARM).subscribe(testSubscriber);
+        testScheduler.triggerActions();
 
-        // Check the same copy is returned on subsequent call
-        Applications secondCopy = cache.findApplicationsBySecureVip(SECURE_VIP_SERVER_FARM).toBlocking().first();
-        assertThat(secondCopy == firstCopy, is(true));
+        Applications firstCopy = testSubscriber.takeNext();
+        assertThat(firstCopy.getRegisteredApplications().size(), is(equalTo(2)));
     }
 
     @Test
