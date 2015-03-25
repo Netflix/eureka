@@ -28,7 +28,7 @@ import rx.Observable;
 import rx.functions.Func1;
 
 import static com.netflix.eureka2.eureka1.rest.AbstractEureka1RequestHandler.ROOT_PATH;
-import static com.netflix.eureka2.eureka1.rest.model.Eureka1DomainObjectModelMapper.EUREKA_1_MAPPER;
+import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka1xInstanceInfo;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -43,7 +43,7 @@ public class Eureka1RegistrationRequestHandlerTest {
 
     private static final InstanceInfo V2_SAMPLE_INSTANCE = SampleInstanceInfo.WebServer.build();
     private static final com.netflix.appinfo.InstanceInfo V1_SAMPLE_INSTANCE =
-            EUREKA_1_MAPPER.toEureka1xInstanceInfo(V2_SAMPLE_INSTANCE);
+            toEureka1xInstanceInfo(V2_SAMPLE_INSTANCE);
 
     private final EurekaServerConfig config = new EurekaServerConfigBuilder().withHttpPort(0).build();
     private final EurekaHttpServer httpServer = new EurekaHttpServer(config);
@@ -67,7 +67,7 @@ public class Eureka1RegistrationRequestHandlerTest {
 
     @Test
     public void testRegistrationPost() throws Exception {
-        String path = ROOT_PATH + "/apps/" + V1_SAMPLE_INSTANCE.getAppName() + '/' + V1_SAMPLE_INSTANCE.getId();
+        String path = ROOT_PATH + "/apps/" + V1_SAMPLE_INSTANCE.getAppName();
         handleRequestWithBody(HttpMethod.POST, path, V1_SAMPLE_INSTANCE, MediaType.APPLICATION_JSON);
 
         verify(registryProxy, times(1)).register(any(com.netflix.appinfo.InstanceInfo.class));

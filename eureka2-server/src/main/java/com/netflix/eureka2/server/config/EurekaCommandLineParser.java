@@ -47,6 +47,7 @@ public abstract class EurekaCommandLineParser<C extends EurekaCommonConfig, B ex
                 .addOption("n", true, "server instance name")
                 .addOption("d", true, "datacenter type (AWS|Basic). Default Basic")
                 .addOption("q", true, "server resolver type (dns|fixed); default inline")
+                .addOption("b", true, "http port; default 8080")
                 .addOption("s", true, "shutdown port; default 7700")
                 .addOption("a", true, "admin port; default 8077");
     }
@@ -84,6 +85,7 @@ public abstract class EurekaCommandLineParser<C extends EurekaCommonConfig, B ex
                 throw new IllegalArgumentException("missing required server name option ('-n <server_name>')");
             }
             builder.withAppName(cli.getOptionValue("n"));
+            builder.withHttpPort(Integer.parseInt(cli.getOptionValue("b", "8080")));
             builder.withWebAdminPort(Integer.parseInt(cli.getOptionValue("a", "8077")));
             builder.withServerList((((List<String>) cli.getArgList()).toArray(new String[cli.getArgList().size()])));
         }

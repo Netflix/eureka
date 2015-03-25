@@ -75,6 +75,7 @@ public class LeaseExpiryQueue {
         }
     }
 
+    @SuppressWarnings("ComparatorNotSerializable")
     static class CleanupTaskTimeComparator implements Comparator<CleanupTask> {
 
         @Override

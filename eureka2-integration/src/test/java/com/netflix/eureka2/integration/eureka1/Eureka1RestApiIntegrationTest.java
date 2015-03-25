@@ -6,12 +6,12 @@ import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka2.eureka1.rest.Eureka1Configuration;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.junit.categories.LongRunningTest;
+import com.netflix.eureka2.junit.rule.SystemPropertyOverride;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.junit.resources.Eureka1ClientResource;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
 import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -35,17 +35,15 @@ public class Eureka1RestApiIntegrationTest {
     private static final String MY_APP_NAME = "myapp";
     private static final long TIMEOUT_MS = 60000;
 
+    // TODO Via system property until pluggable components configuration is more flexible
+    @Rule
+    public final SystemPropertyOverride override = new SystemPropertyOverride(Eureka1Configuration.CACHE_REFRESH_INTERVAL_KEY, "1000");
+
     @Rule
     public final EurekaDeploymentResource deploymentResource = new EurekaDeploymentResource(1, 1);
 
     @Rule
     public final EurekaExternalResources externalResources = new EurekaExternalResources();
-
-    @Before
-    public void setUp() throws Exception {
-        // TODO Via system property until pluggable components configuration is more flexible
-        System.setProperty(Eureka1Configuration.REFRESH_INTERVAL_KEY, "1");
-    }
 
     @Test
     public void testFullFetch() throws Exception {

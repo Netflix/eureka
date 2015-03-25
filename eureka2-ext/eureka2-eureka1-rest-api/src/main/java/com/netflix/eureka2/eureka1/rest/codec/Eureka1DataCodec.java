@@ -7,7 +7,7 @@ import java.io.IOException;
  */
 public interface Eureka1DataCodec {
 
-    enum EncodingFormat {Json, Xml;}
+    enum EncodingFormat {Json, Xml}
 
     byte[] encode(Object entity, EncodingFormat format, boolean gzip) throws IOException;
 

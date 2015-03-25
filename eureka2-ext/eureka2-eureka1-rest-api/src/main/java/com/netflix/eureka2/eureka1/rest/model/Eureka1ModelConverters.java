@@ -2,15 +2,19 @@ package com.netflix.eureka2.eureka1.rest.model;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
+import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.appinfo.InstanceInfo.Builder;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.InstanceInfo.PortType;
@@ -34,16 +38,29 @@ import static com.netflix.eureka2.utils.ExtCollections.asSet;
  *
  * @author Tomasz Bak
  */
-public class Eureka1DomainObjectModelMapper {
-
-    public static final Eureka1DomainObjectModelMapper EUREKA_1_MAPPER = new Eureka1DomainObjectModelMapper();
+public final class Eureka1ModelConverters {
 
     private static final AddressSelector ADDRESS_SELECTOR = AddressSelector.selectBy()
             .protocolType(ProtocolType.IPv4).publicIp(true).or().any();
 
     private static final MyEureka1xDataCenterInfo MY_OWN_DATA_CENTER_INFO = new MyEureka1xDataCenterInfo();
 
-    public InstanceStatus toEureka1xStatus(Status v2Status) {
+    private static final Comparator<com.netflix.appinfo.InstanceInfo> V1_INSTANCE_IDENTITY_COMPARATOR =
+            new Comparator<com.netflix.appinfo.InstanceInfo>() {
+                @Override
+                public int compare(com.netflix.appinfo.InstanceInfo o1, com.netflix.appinfo.InstanceInfo o2) {
+                    return o1.getId().compareTo(o2.getId());
+                }
+            };
+
+    private Eureka1ModelConverters() {
+    }
+
+    public static Comparator<com.netflix.appinfo.InstanceInfo> v1InstanceIdentityComparator() {
+        return V1_INSTANCE_IDENTITY_COMPARATOR;
+    }
+
+    public static InstanceStatus toEureka1xStatus(Status v2Status) {
         switch (v2Status) {
             case DOWN:
                 return InstanceStatus.DOWN;
@@ -59,15 +76,14 @@ public class Eureka1DomainObjectModelMapper {
         throw new IllegalStateException("Unexpected Eureka 2.x status " + v2Status);
     }
 
-    public com.netflix.appinfo.DataCenterInfo toEureka1xDataCenterInfo(DataCenterInfo v2DataCenterInfo) {
+    public static com.netflix.appinfo.DataCenterInfo toEureka1xDataCenterInfo(DataCenterInfo v2DataCenterInfo) {
         if (v2DataCenterInfo instanceof AwsDataCenterInfo) {
             return toEureka1xDataCenterInfo((AwsDataCenterInfo) v2DataCenterInfo);
         }
         return MY_OWN_DATA_CENTER_INFO;
     }
 
-    // TODO not all meta info data are available in AwsDataCenterInfo
-    public com.netflix.appinfo.AmazonInfo toEureka1xDataCenterInfo(AwsDataCenterInfo v2DataCenterInfo) {
+    public static AmazonInfo toEureka1xDataCenterInfo(AwsDataCenterInfo v2DataCenterInfo) {
         AmazonInfo.Builder builder = AmazonInfo.Builder.newBuilder();
         builder.addMetadata(MetaDataKey.amiId, v2DataCenterInfo.getAmiId());
         builder.addMetadata(MetaDataKey.availabilityZone, v2DataCenterInfo.getZone());
@@ -79,7 +95,7 @@ public class Eureka1DomainObjectModelMapper {
         return builder.build();
     }
 
-    public com.netflix.appinfo.InstanceInfo toEureka1xInstanceInfo(InstanceInfo v2InstanceInfo) {
+    public static com.netflix.appinfo.InstanceInfo toEureka1xInstanceInfo(InstanceInfo v2InstanceInfo, ActionType actionType) {
         Builder builder = Builder.newBuilder();
 
         builder.setAppGroupName(v2InstanceInfo.getAppGroup());
@@ -146,10 +162,24 @@ public class Eureka1DomainObjectModelMapper {
             }
         }
 
-        return builder.build();
+        com.netflix.appinfo.InstanceInfo v1InstanceInfo = builder.build();
+        v1InstanceInfo.setActionType(actionType);
+        return v1InstanceInfo;
     }
 
-    public LeaseInfo createDummyLeaseInfo() {
+    public static com.netflix.appinfo.InstanceInfo toEureka1xInstanceInfo(InstanceInfo v2InstanceInfo) {
+        return toEureka1xInstanceInfo(v2InstanceInfo, null);
+    }
+
+    public static List<com.netflix.appinfo.InstanceInfo> toEureka1xInstanceInfos(Collection<InstanceInfo> v2Instances) {
+        List<com.netflix.appinfo.InstanceInfo> v1Instances = new ArrayList<>(v2Instances.size());
+        for (InstanceInfo v2Instance : v2Instances) {
+            v1Instances.add(toEureka1xInstanceInfo(v2Instance));
+        }
+        return v1Instances;
+    }
+
+    public static LeaseInfo createDummyLeaseInfo() {
         LeaseInfo.Builder leaseBuilder = LeaseInfo.Builder.newBuilder();
         leaseBuilder.setDurationInSecs(30);
         long now = System.currentTimeMillis();
@@ -160,7 +190,7 @@ public class Eureka1DomainObjectModelMapper {
         return leaseBuilder.build();
     }
 
-    public Application toEureka1xApplication(String applicationName, Collection<InstanceInfo> applicationV2Instances) {
+    public static Application toEureka1xApplication(String applicationName, Collection<InstanceInfo> applicationV2Instances) {
         Application application = new Application(applicationName);
         for (InstanceInfo v2Instance : applicationV2Instances) {
             application.addInstance(toEureka1xInstanceInfo(v2Instance));
@@ -173,35 +203,36 @@ public class Eureka1DomainObjectModelMapper {
      * operation as each registry item is mapped to 1.x model, and associated with its corresponding {@link Application}
      * instance.
      */
-    public Applications toEureka1xApplications(Collection<InstanceInfo> v2Instances) {
-        // TODO Eureka 1.x implements complex hash computation algorithm for content diff detection
-        int hash = 0;
+    public static Applications toEureka1xApplicationsFromV2Collection(Collection<InstanceInfo> v2Instances) {
+        return toEureka1xApplications(toEureka1xInstanceInfos(v2Instances));
+    }
 
+    public static Applications toEureka1xApplications(Collection<com.netflix.appinfo.InstanceInfo> v1Instances) {
         Map<String, Application> applicationMap = new HashMap<>();
-        for (InstanceInfo v2Instance : v2Instances) {
-
-            String appName = v2Instance.getApp().toUpperCase(Locale.ROOT);
+        for (com.netflix.appinfo.InstanceInfo v1Instance : v1Instances) {
+            String appName = v1Instance.getAppName().toUpperCase(Locale.ROOT);
             Application application = applicationMap.get(appName);
             if (application == null) {
                 application = new Application(appName);
                 applicationMap.put(appName, application);
             }
 
-            application.addInstance(toEureka1xInstanceInfo(v2Instance));
-            hash ^= v2Instance.hashCode();
+            application.addInstance(v1Instance);
         }
 
         // Do not pass application list to the constructor, as it does not initialize properly Applications
         // data structure.
         Applications applications = new Applications();
-        applications.setAppsHashCode(Integer.toString(hash));
         for (Application app : applicationMap.values()) {
             applications.addApplication(app);
         }
+
+        applications.setAppsHashCode(applications.getReconcileHashCode());
+
         return applications;
     }
 
-    public InstanceInfo.Status tuEureka2xStatus(InstanceStatus v1Status) {
+    public static InstanceInfo.Status tuEureka2xStatus(InstanceStatus v1Status) {
         switch (v1Status) {
             case DOWN:
                 return InstanceInfo.Status.DOWN;
@@ -217,8 +248,8 @@ public class Eureka1DomainObjectModelMapper {
         throw new IllegalStateException("Unexpected Eureka 1.x status " + v1Status);
     }
 
-    public DataCenterInfo toEureka2xDataCenterInfo(com.netflix.appinfo.DataCenterInfo v1DataCenterInfo) {
-        DataCenterInfo.DataCenterInfoBuilder builder;
+    public static DataCenterInfo toEureka2xDataCenterInfo(com.netflix.appinfo.DataCenterInfo v1DataCenterInfo) {
+        DataCenterInfo.DataCenterInfoBuilder<?> builder;
 
         if (v1DataCenterInfo instanceof AmazonInfo) {
             AmazonInfo v1Info = (AmazonInfo) v1DataCenterInfo;
@@ -238,9 +269,9 @@ public class Eureka1DomainObjectModelMapper {
         return builder.build();
     }
 
-    public InstanceInfo toEureka2xInstanceInfo(com.netflix.appinfo.InstanceInfo v1InstanceInfo) {
+    public static InstanceInfo toEureka2xInstanceInfo(com.netflix.appinfo.InstanceInfo v1InstanceInfo) {
         InstanceInfo.Builder builder = new InstanceInfo.Builder()
-                .withId(v1InstanceInfo.getAppName() + "_" + v1InstanceInfo.getId())  // instanceId is not unique for v1Data
+                .withId(v1InstanceInfo.getAppName() + '_' + v1InstanceInfo.getId())  // instanceId is not unique for v1Data
                 .withAppGroup(v1InstanceInfo.getAppGroupName())
                 .withApp(v1InstanceInfo.getAppName())
                 .withAsg(v1InstanceInfo.getASGName())

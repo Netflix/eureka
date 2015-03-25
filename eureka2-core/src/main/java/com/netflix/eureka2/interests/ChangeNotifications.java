@@ -18,19 +18,29 @@ package com.netflix.eureka2.interests;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.StreamStateNotification.BufferState;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.utils.rx.RxFunctions;
 import rx.Observable;
+import rx.Observable.Operator;
 import rx.Observable.Transformer;
+import rx.Scheduler;
+import rx.Subscriber;
 import rx.functions.Func1;
+import rx.schedulers.Schedulers;
+import rx.subjects.PublishSubject;
 
 /**
  * Collection of transformation functions operating on {@link ChangeNotification} data.
@@ -55,7 +65,18 @@ public final class ChangeNotifications {
                 }
             };
 
+    private static final Comparator<InstanceInfo> INSTANCE_INFO_IDENTITY_COMPARATOR = new Comparator<InstanceInfo>() {
+        @Override
+        public int compare(InstanceInfo o1, InstanceInfo o2) {
+            return o1.getId().compareTo(o2.getId());
+        }
+    };
+
     private ChangeNotifications() {
+    }
+
+    public static Comparator<InstanceInfo> instanceInfoIdentityComparator() {
+        return INSTANCE_INFO_IDENTITY_COMPARATOR;
     }
 
     public static <T> Observable<ChangeNotification<T>> from(T... values) {
@@ -75,6 +96,28 @@ public final class ChangeNotifications {
 
     public static Func1<ChangeNotification<?>, Boolean> streamStateFilter() {
         return STREAM_STATE_FILTER_FUNC;
+    }
+
+    /**
+     * Given a list of {@link ChangeNotification}s:
+     * <ul>
+     *     <li>- collapse changes for same items (for example A{ Add Modify } -> A { Add }, B { Add, Delete } -> None )</li>
+     *     <li>- take values from instance add/modify change notifications</li>
+     *     <li>- combine all into set and return to the caller</li>
+     * </ul>
+     * <p>
+     * For example, applying this method to list [ A{Add}, B{Add}, A{Modify}, B{Remove} ] will result in [A].
+     *
+     */
+    public static <T> SortedSet<T> collapseAndExtract(List<ChangeNotification<T>> notifications, Comparator<T> identityComparator) {
+        List<ChangeNotification<T>> collapsed = collapse(notifications, identityComparator);
+        TreeSet<T> result = new TreeSet<T>(identityComparator);
+        for (ChangeNotification<T> item : collapsed) {
+            if (item.getKind() == Kind.Add || item.getKind() == Kind.Modify) {
+                result.add(item.getData());
+            }
+        }
+        return result;
     }
 
     /**
@@ -158,4 +201,126 @@ public final class ChangeNotifications {
         };
     }
 
+    /**
+     * An Rx compose operator that given a list of change notifications, collapses changes for each instance
+     * to its final value. The following rules are applied:
+     * <ul>
+     *     <li>{ Add, Delete } = { Delete }</li>
+     *     <li>{ Add, Modify } = { Add }</li>
+     *     <li>{ Modify, Add } = { Add }</li>
+     *     <li>{ Modify, Delete } = { Delete }</li>
+     *     <li>{ Delete, Add } = { Add }</li>
+     *     <li>{ Delete, Modify } = { Modify }</li>
+     * </ul>
+     * <p>
+     * For example if there is a change notification list [ A{Add}, B{Modify}, A{Modify}, B{Remove}, C{Remove} ],
+     * applying this operator to the list will result in a new list [ A{Add}, B{Remove}, C{Remove}].
+     */
+    public static <T> Transformer<List<ChangeNotification<T>>, List<ChangeNotification<T>>> collapse(final Comparator<T> identityComparator) {
+        return new Transformer<List<ChangeNotification<T>>, List<ChangeNotification<T>>>() {
+            @Override
+            public Observable<List<ChangeNotification<T>>> call(Observable<List<ChangeNotification<T>>> listObservable) {
+                return listObservable.map(new Func1<List<ChangeNotification<T>>, List<ChangeNotification<T>>>() {
+                    @Override
+                    public List<ChangeNotification<T>> call(List<ChangeNotification<T>> notifications) {
+                        return collapse(notifications, identityComparator);
+                    }
+                });
+            }
+
+        };
+    }
+
+    /**
+     * This is a variant of collapse operator (see {@link #collapse(Comparator)}), that accepts nested lists of
+     * change notifications. It is useful in scenarios where batches of change notifications are aggregated over
+     * a specific amount of time, and must be ultimately collapsed. It is equivalent to joining sub lists into
+     * single list and applying {@link #collapse(Comparator)} transformation, but by combining both steps it is
+     * more efficient.
+     */
+    public static <T> Transformer<List<List<ChangeNotification<T>>>, List<ChangeNotification<T>>> collapseLists(final Comparator<T> identityComparator) {
+        return new Transformer<List<List<ChangeNotification<T>>>, List<ChangeNotification<T>>>() {
+            @Override
+            public Observable<List<ChangeNotification<T>>> call(Observable<List<List<ChangeNotification<T>>>> listOfListObservable) {
+                return listOfListObservable.map(new Func1<List<List<ChangeNotification<T>>>, List<ChangeNotification<T>>>() {
+                    @Override
+                    public List<ChangeNotification<T>> call(List<List<ChangeNotification<T>>> notificationLists) {
+                        Map<T, Integer> markers = new TreeMap<>(identityComparator);
+                        List<ChangeNotification<T>> result = new ArrayList<ChangeNotification<T>>();
+                        for (int i = notificationLists.size() - 1; i >= 0; i--) {
+                            collapse(notificationLists.get(i), markers, result);
+                        }
+                        Collections.reverse(result);
+                        return result;
+                    }
+                });
+            }
+        };
+    }
+
+    /**
+     * Aggregate change notifications in the specified time intervals collapsing changes pertaining to same
+     * data objects. Applying this observable on the change notification stream will result in batching all
+     * emitted items/delineated batches for a specific amount of time, after which all the accumulated data
+     * are collapsed into single list of most recently visible updates per each data item.
+     */
+    public static <T> Transformer<List<ChangeNotification<T>>, List<ChangeNotification<T>>> aggregateChanges(
+            final Comparator<T> identityComparator, final long interval, final TimeUnit timeUnit, final Scheduler scheduler) {
+        return new Transformer<List<ChangeNotification<T>>, List<ChangeNotification<T>>>() {
+            @Override
+            public Observable<List<ChangeNotification<T>>> call(Observable<List<ChangeNotification<T>>> batchUpdates) {
+                return batchUpdates.buffer(interval, timeUnit, scheduler).compose(collapseLists(identityComparator));
+            }
+        };
+    }
+
+    /**
+     * It is a version of {@link #aggregateChanges} method, where the first item is emitted eagerly, and aggregation
+     * is applied only afterwards. This fits the Eureka registration model, where first batch will contain the full
+     * current registry content, which is followed by live updates.
+     */
+    public static <T> Transformer<List<ChangeNotification<T>>, List<ChangeNotification<T>>> emitAndAggregateChanges(
+            final Comparator<T> identityComparator, final long interval, final TimeUnit timeUnit, final Scheduler scheduler) {
+        return new Transformer<List<ChangeNotification<T>>, List<ChangeNotification<T>>>() {
+
+            @Override
+            public Observable<List<ChangeNotification<T>>> call(Observable<List<ChangeNotification<T>>> batchUpdates) {
+                return batchUpdates.buffer(Observable.timer(0, interval, timeUnit, scheduler)).compose(collapseLists(identityComparator));
+
+            }
+        };
+    }
+
+    /**
+     * See {@link #emitAndAggregateChanges(Comparator, long, TimeUnit, Scheduler)}.
+     */
+    public static <T> Transformer<List<ChangeNotification<T>>, List<ChangeNotification<T>>> emitAndAggregateChanges(
+            final Comparator<T> identityComparator, final long interval, final TimeUnit timeUnit) {
+        return emitAndAggregateChanges(identityComparator, interval, timeUnit, Schedulers.computation());
+    }
+
+    private static <T> List<ChangeNotification<T>> collapse(List<ChangeNotification<T>> notifications, Comparator<T> identityComparator) {
+        List<ChangeNotification<T>> result = new ArrayList<>();
+        collapse(notifications, new TreeMap<T, Integer>(identityComparator), result);
+        Collections.reverse(result);
+        return result;
+    }
+
+    private static <T> void collapse(List<ChangeNotification<T>> notifications, Map<T, Integer> markers, List<ChangeNotification<T>> result) {
+        for (int i = notifications.size() - 1; i >= 0; i--) {
+            ChangeNotification<T> next = notifications.get(i);
+            if(next.isDataNotification()) {
+                T data = next.getData();
+                if (markers.keySet().contains(data)) {
+                    int idx = markers.get(data);
+                    if (next.getKind() == Kind.Add && result.get(idx).getKind() == Kind.Modify) {
+                        result.set(idx, next);
+                    }
+                } else {
+                    markers.put(data, result.size());
+                    result.add(next);
+                }
+            }
+        }
+    }
 }

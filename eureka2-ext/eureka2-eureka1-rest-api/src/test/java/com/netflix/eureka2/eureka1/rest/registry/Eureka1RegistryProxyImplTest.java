@@ -14,7 +14,7 @@ import rx.Observable;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
-import static com.netflix.eureka2.eureka1.rest.model.Eureka1DomainObjectModelMapper.EUREKA_1_MAPPER;
+import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.*;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
@@ -31,8 +31,7 @@ import static org.mockito.Mockito.when;
 public class Eureka1RegistryProxyImplTest {
 
     private static final InstanceInfo V2_SAMPLE_INSTANCE = SampleInstanceInfo.WebServer.build();
-    private static final com.netflix.appinfo.InstanceInfo V1_SAMPLE_INSTANCE =
-            EUREKA_1_MAPPER.toEureka1xInstanceInfo(V2_SAMPLE_INSTANCE);
+    private static final com.netflix.appinfo.InstanceInfo V1_SAMPLE_INSTANCE = toEureka1xInstanceInfo(V2_SAMPLE_INSTANCE);
 
     private final TestScheduler testScheduler = Schedulers.test();
 

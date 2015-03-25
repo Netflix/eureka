@@ -61,16 +61,20 @@ public abstract class AbstractEureka1RequestHandler implements RequestHandler<By
 
     protected static EncodingFormat getRequestFormat(HttpServerRequest<ByteBuf> request) throws IOException {
         String acceptHeader = request.getHeaders().get(Names.ACCEPT);
+        return parseRequestFormat(acceptHeader);
+    }
+
+    /* Visible for testing */
+    static EncodingFormat parseRequestFormat(String acceptHeader) throws IOException {
         if (acceptHeader == null) {
             return EncodingFormat.Json; // Default to JSON if nothing specified
         }
-        MediaType mediaType;
         try {
-            mediaType = MediaType.valueOf(acceptHeader);
-            if (mediaType.equals(MediaType.APPLICATION_JSON_TYPE)) {
+            MediaType mediaType = MediaType.valueOf(acceptHeader);
+            if (mediaType.isCompatible(MediaType.APPLICATION_JSON_TYPE)) {
                 return EncodingFormat.Json;
             }
-            if (mediaType.equals(MediaType.APPLICATION_XML_TYPE)) {
+            if (mediaType.isCompatible(MediaType.APPLICATION_XML_TYPE)) {
                 return EncodingFormat.Xml;
             }
         } catch (IllegalArgumentException e) {
@@ -84,12 +88,17 @@ public abstract class AbstractEureka1RequestHandler implements RequestHandler<By
         return acceptEncoding != null && acceptEncoding.contains("gzip");
     }
 
-    protected Observable<Void> encodeResponse(EncodingFormat format, boolean gzip, HttpServerResponse<ByteBuf> response, Object entity) throws IOException {
+    protected Observable<Void> encodeResponse(EncodingFormat format, boolean gzip, HttpServerResponse<ByteBuf> response, Object entity) {
         response.getHeaders().add(Names.CONTENT_TYPE, format == EncodingFormat.Json ? MediaType.APPLICATION_JSON : MediaType.APPLICATION_XML);
         if (gzip) {
             response.getHeaders().add(Names.CONTENT_ENCODING, "gzip");
         }
-        byte[] encodedBody = codec.encode(entity, format, gzip);
+        byte[] encodedBody;
+        try {
+            encodedBody = codec.encode(entity, format, gzip);
+        } catch (IOException e) {
+            return Observable.error(e);
+        }
         return response.writeAndFlush(Unpooled.wrappedBuffer(encodedBody));
     }
 

@@ -1,6 +1,7 @@
 package com.netflix.eureka2.eureka1.rest;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -11,8 +12,6 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.eureka2.eureka1.rest.codec.Eureka1DataCodec.EncodingFormat;
 import com.netflix.eureka2.eureka1.rest.registry.Eureka1RegistryProxy;
 import com.netflix.eureka2.eureka1.rest.registry.Eureka1RegistryProxy.Result;
-import com.netflix.eureka2.eureka1.rest.registry.Eureka1RegistryProxyImpl;
-import com.netflix.eureka2.server.EurekaRegistrationClientProvider;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
@@ -21,25 +20,25 @@ import io.reactivex.netty.protocol.http.server.HttpServerRequest;
 import io.reactivex.netty.protocol.http.server.HttpServerResponse;
 import rx.Observable;
 import rx.functions.Func1;
-import rx.schedulers.Schedulers;
 
 /**
  * @author Tomasz Bak
  */
+@Singleton
 public class Eureka1RegistrationRequestHandler extends AbstractEureka1RequestHandler {
 
     private final Eureka1RegistryProxy registryProxy;
 
     /* For testing */
     Eureka1RegistrationRequestHandler(Eureka1RegistryProxy registryProxy,
-                                             EurekaHttpServer httpServer) {
+                                      EurekaHttpServer httpServer) {
         this.registryProxy = registryProxy;
         httpServer.connectHttpEndpoint(ROOT_PATH, this);
     }
 
     @Inject
-    public Eureka1RegistrationRequestHandler(EurekaRegistrationClientProvider registrationClientProvider) {
-        this.registryProxy = new Eureka1RegistryProxyImpl(registrationClientProvider.get(), Schedulers.io());
+    public Eureka1RegistrationRequestHandler(Eureka1RegistryProxy registryProxy) {
+        this.registryProxy = registryProxy;
     }
 
     @Override
@@ -48,7 +47,7 @@ public class Eureka1RegistrationRequestHandler extends AbstractEureka1RequestHan
         String path = request.getPath();
         if (request.getHttpMethod() == HttpMethod.POST) {
             EncodingFormat format = getRequestFormat(request);
-            Matcher matcher = APP_INSTANCE_PATH_RE.matcher(path);
+            Matcher matcher = APP_PATH_RE.matcher(path);
             if (matcher.matches()) {
                 return registerApplication(matcher.group(1), format, request, response);
             }

@@ -2,13 +2,15 @@ package com.netflix.eureka2.eureka1.rest;
 
 import javax.ws.rs.core.MediaType;
 import java.nio.charset.Charset;
+import java.util.List;
 
-import com.netflix.eureka2.registry.SourcedRegistryMockResource;
+import com.netflix.discovery.shared.Application;
+import com.netflix.discovery.shared.Applications;
+import com.netflix.eureka2.eureka1.rest.query.Eureka2RegistryViewCache;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.config.EurekaServerConfig.EurekaServerConfigBuilder;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
-import com.netflix.eureka2.server.spi.ExtensionContext;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpHeaders.Names;
@@ -19,14 +21,13 @@ import io.reactivex.netty.protocol.http.client.HttpClientRequest;
 import io.reactivex.netty.protocol.http.client.HttpClientResponse;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import rx.Observable;
 import rx.functions.Func1;
 import rx.functions.Func2;
 
 import static com.netflix.eureka2.eureka1.rest.AbstractEureka1RequestHandler.ROOT_PATH;
-import static org.hamcrest.Matchers.equalTo;
+import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka1xInstanceInfo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -37,22 +38,32 @@ import static org.mockito.Mockito.when;
  */
 public class Eureka1QueryRequestHandlerTest {
 
-    private static final int APPLICATION_CLUSTER_SIZE = 3;
+    private static final com.netflix.appinfo.InstanceInfo V1_INSTANCE_1;
+    private static final com.netflix.appinfo.InstanceInfo V1_INSTANCE_2;
+    private static final Application V1_APPLICATION_1;
+    private static final Applications V1_APPLICATIONS;
 
-    @Rule
-    public final SourcedRegistryMockResource registryMockResource = new SourcedRegistryMockResource();
+    static {
+        List<InstanceInfo> app1 = SampleInstanceInfo.WebServer.clusterOf(2);
+        V1_INSTANCE_1 = toEureka1xInstanceInfo(app1.get(0));
+        V1_INSTANCE_2 = toEureka1xInstanceInfo(app1.get(1));
+        V1_APPLICATION_1 = new Application("WebServer");
+        V1_APPLICATION_1.addInstance(V1_INSTANCE_1);
+        V1_APPLICATION_1.addInstance(V1_INSTANCE_2);
+
+        V1_APPLICATIONS = new Applications();
+        V1_APPLICATIONS.addApplication(V1_APPLICATION_1);
+        V1_APPLICATIONS.setAppsHashCode("test");
+    }
 
     private final EurekaServerConfig config = new EurekaServerConfigBuilder().withHttpPort(0).build();
     private final EurekaHttpServer httpServer = new EurekaHttpServer(config);
-    private final ExtensionContext context = mock(ExtensionContext.class);
+    private final Eureka2RegistryViewCache registryViewCache = mock(Eureka2RegistryViewCache.class);
     private Eureka1QueryRequestHandler queryResource;
-    private String webAppName;
-    private String backendAppName;
 
     @Before
     public void setUp() throws Exception {
-        when(context.getLocalRegistry()).thenReturn(registryMockResource.registry());
-        queryResource = new Eureka1QueryRequestHandler(new Eureka1Configuration(), context);
+        queryResource = new Eureka1QueryRequestHandler(registryViewCache);
         httpServer.connectHttpEndpoint(ROOT_PATH, queryResource);
         httpServer.start();
     }
@@ -72,12 +83,14 @@ public class Eureka1QueryRequestHandlerTest {
         doTestGetAllApplications(MediaType.APPLICATION_XML_TYPE);
     }
 
-    private void doTestGetAllApplications(MediaType mediaType) {
-        webAppName = registryMockResource.uploadClusterBatchToRegistry(SampleInstanceInfo.WebServer, APPLICATION_CLUSTER_SIZE);
+    @Test
+    public void testGetApplicationsDeltaInJson() throws Exception {
+        doTestGetApplicationsDelta(MediaType.APPLICATION_JSON_TYPE);
+    }
 
-        HttpClientRequest<ByteBuf> request = HttpClientRequest.create(HttpMethod.GET, ROOT_PATH + "/apps");
-        String response = handleGetRequest(request, mediaType);
-        assertThat(response.contains("applications"), is(true));
+    @Test
+    public void testGetApplicationsDeltaInXml() throws Exception {
+        doTestGetApplicationsDelta(MediaType.APPLICATION_XML_TYPE);
     }
 
     @Test
@@ -90,17 +103,6 @@ public class Eureka1QueryRequestHandlerTest {
         doTestGetApplicationsWithVip(MediaType.APPLICATION_XML_TYPE);
     }
 
-    private void doTestGetApplicationsWithVip(MediaType mediaType) {
-        InstanceInfo template = SampleInstanceInfo.WebServer.build();
-        registryMockResource.uploadClusterToRegistry(template, APPLICATION_CLUSTER_SIZE);
-
-        String path = ROOT_PATH + "/vips/" + template.getVipAddress();
-        HttpClientRequest<ByteBuf> request = HttpClientRequest.create(HttpMethod.GET, path);
-
-        String response = handleGetRequest(request, mediaType);
-        assertThat(response.contains("application"), is(true));
-    }
-
     @Test
     public void testGetApplicationsWithSecureVipInJson() throws Exception {
         doTestGetApplicationsWithSecureVip(MediaType.APPLICATION_JSON_TYPE);
@@ -109,26 +111,6 @@ public class Eureka1QueryRequestHandlerTest {
     @Test
     public void testGetApplicationsWithSecureVipInXml() throws Exception {
         doTestGetApplicationsWithSecureVip(MediaType.APPLICATION_XML_TYPE);
-    }
-
-    private void doTestGetApplicationsWithSecureVip(MediaType mediaType) {
-        InstanceInfo template = SampleInstanceInfo.WebServer.build();
-        registryMockResource.uploadClusterToRegistry(template, APPLICATION_CLUSTER_SIZE);
-
-        String path = ROOT_PATH + "/svips/" + template.getSecureVipAddress();
-        HttpClientRequest<ByteBuf> request = HttpClientRequest.create(HttpMethod.GET, path);
-
-        String response = handleGetRequest(request, mediaType);
-        assertThat(response.contains("application"), is(true));
-    }
-
-    @Test
-    public void testDeltaGetReturnsNotImplementedError() throws Exception {
-        String path = ROOT_PATH + "/apps/delta";
-        HttpClientRequest<ByteBuf> request = HttpClientRequest.create(HttpMethod.GET, path);
-        HttpClientResponse<ByteBuf> response = RxNetty.createHttpClient("localhost", httpServer.serverPort())
-                .submit(request).toBlocking().first();
-        assertThat(response.getStatus(), is(equalTo(HttpResponseStatus.NOT_IMPLEMENTED)));
     }
 
     @Test
@@ -141,16 +123,6 @@ public class Eureka1QueryRequestHandlerTest {
         doTestGetApplication(MediaType.APPLICATION_XML_TYPE);
     }
 
-    private void doTestGetApplication(MediaType mediaType) {
-        webAppName = registryMockResource.uploadClusterToRegistry(SampleInstanceInfo.WebServer, APPLICATION_CLUSTER_SIZE);
-
-        String path = ROOT_PATH + "/apps/" + webAppName;
-        HttpClientRequest<ByteBuf> request = HttpClientRequest.create(HttpMethod.GET, path);
-
-        String response = handleGetRequest(request, mediaType);
-        assertThat(response.contains("application"), is(true));
-    }
-
     @Test
     public void testGetByApplicationAndInstanceIdInJson() throws Exception {
         doTestGetByApplicationAndInstanceId(MediaType.APPLICATION_JSON_TYPE);
@@ -159,17 +131,6 @@ public class Eureka1QueryRequestHandlerTest {
     @Test
     public void testGetByApplicationAndInstanceIdInXml() throws Exception {
         doTestGetByApplicationAndInstanceId(MediaType.APPLICATION_XML_TYPE);
-    }
-
-    private void doTestGetByApplicationAndInstanceId(MediaType mediaType) {
-        InstanceInfo webServerInfo = SampleInstanceInfo.WebServer.build();
-        registryMockResource.uploadToRegistry(webServerInfo);
-
-        String path = ROOT_PATH + "/apps/" + webServerInfo.getApp() + '/' + webServerInfo.getId();
-        HttpClientRequest<ByteBuf> request = HttpClientRequest.create(HttpMethod.GET, path);
-
-        String response = handleGetRequest(request, mediaType);
-        assertThat(response.contains("instance"), is(true));
     }
 
     @Test
@@ -182,11 +143,66 @@ public class Eureka1QueryRequestHandlerTest {
         doTestGetByInstanceId(MediaType.APPLICATION_XML_TYPE);
     }
 
-    private void doTestGetByInstanceId(MediaType mediaType) {
-        InstanceInfo webServerInfo = SampleInstanceInfo.WebServer.build();
-        registryMockResource.uploadToRegistry(webServerInfo);
+    private void doTestGetAllApplications(MediaType mediaType) {
+        when(registryViewCache.findAllApplications()).thenReturn(Observable.just(V1_APPLICATIONS));
 
-        String path = ROOT_PATH + "/instances/" + webServerInfo.getId();
+        HttpClientRequest<ByteBuf> request = HttpClientRequest.create(HttpMethod.GET, ROOT_PATH + "/apps");
+        String response = handleGetRequest(request, mediaType);
+        assertThat(response.contains("applications"), is(true));
+    }
+
+    private void doTestGetApplicationsDelta(MediaType mediaType) {
+        when(registryViewCache.findAllApplicationsDelta()).thenReturn(Observable.just(V1_APPLICATIONS));
+
+        HttpClientRequest<ByteBuf> request = HttpClientRequest.create(HttpMethod.GET, ROOT_PATH + "/apps/delta");
+        String response = handleGetRequest(request, mediaType);
+        assertThat(response.contains("applications"), is(true));
+    }
+
+    private void doTestGetApplicationsWithSecureVip(MediaType mediaType) {
+        when(registryViewCache.findApplicationsBySecureVip(V1_INSTANCE_1.getSecureVipAddress())).thenReturn(Observable.just(V1_APPLICATIONS));
+
+        String path = ROOT_PATH + "/svips/" + V1_INSTANCE_1.getSecureVipAddress();
+        HttpClientRequest<ByteBuf> request = HttpClientRequest.create(HttpMethod.GET, path);
+
+        String response = handleGetRequest(request, mediaType);
+        assertThat(response.contains("application"), is(true));
+    }
+
+    private void doTestGetApplicationsWithVip(MediaType mediaType) {
+        when(registryViewCache.findApplicationsByVip(V1_INSTANCE_1.getVIPAddress())).thenReturn(Observable.just(V1_APPLICATIONS));
+
+        String path = ROOT_PATH + "/vips/" + V1_INSTANCE_1.getVIPAddress();
+        HttpClientRequest<ByteBuf> request = HttpClientRequest.create(HttpMethod.GET, path);
+
+        String response = handleGetRequest(request, mediaType);
+        assertThat(response.contains("application"), is(true));
+    }
+
+    private void doTestGetApplication(MediaType mediaType) {
+        when(registryViewCache.findApplication(V1_APPLICATION_1.getName())).thenReturn(Observable.just(V1_APPLICATION_1));
+
+        String path = ROOT_PATH + "/apps/" + V1_APPLICATION_1.getName();
+        HttpClientRequest<ByteBuf> request = HttpClientRequest.create(HttpMethod.GET, path);
+
+        String response = handleGetRequest(request, mediaType);
+        assertThat(response.contains("application"), is(true));
+    }
+
+    private void doTestGetByApplicationAndInstanceId(MediaType mediaType) {
+        when(registryViewCache.findInstance(V1_INSTANCE_1.getId())).thenReturn(Observable.just(V1_INSTANCE_1));
+
+        String path = ROOT_PATH + "/apps/" + V1_INSTANCE_1.getAppName() + '/' + V1_INSTANCE_1.getId();
+        HttpClientRequest<ByteBuf> request = HttpClientRequest.create(HttpMethod.GET, path);
+
+        String response = handleGetRequest(request, mediaType);
+        assertThat(response.contains("instance"), is(true));
+    }
+
+    private void doTestGetByInstanceId(MediaType mediaType) {
+        when(registryViewCache.findInstance(V1_INSTANCE_1.getId())).thenReturn(Observable.just(V1_INSTANCE_1));
+
+        String path = ROOT_PATH + "/instances/" + V1_INSTANCE_1.getId();
         HttpClientRequest<ByteBuf> request = HttpClientRequest.create(HttpMethod.GET, path);
 
         String response = handleGetRequest(request, mediaType);

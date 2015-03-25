@@ -2,15 +2,14 @@ package com.netflix.eureka2.eureka1.rest;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.io.IOException;
+import java.util.List;
 import java.util.regex.Matcher;
 
+import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka2.eureka1.rest.codec.Eureka1DataCodec.EncodingFormat;
 import com.netflix.eureka2.eureka1.rest.query.Eureka2RegistryViewCache;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.spi.ExtensionContext;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
@@ -19,7 +18,10 @@ import io.reactivex.netty.protocol.http.server.HttpServerRequest;
 import io.reactivex.netty.protocol.http.server.HttpServerResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rx.Notification;
+import rx.Notification.Kind;
 import rx.Observable;
+import rx.functions.Func1;
 
 /**
  * This is implementation of Eureka 1.x REST API, as documented on
@@ -32,13 +34,15 @@ public class Eureka1QueryRequestHandler extends AbstractEureka1RequestHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(Eureka1QueryRequestHandler.class);
 
-    private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final Eureka2RegistryViewCache registryViewCache;
 
     @Inject
     public Eureka1QueryRequestHandler(Eureka1Configuration config, ExtensionContext context) {
-        this.registry = context.getLocalRegistry();
-        this.registryViewCache = new Eureka2RegistryViewCache(registry, config.getRefreshIntervalMs(), config.getQueryTimeout());
+        this.registryViewCache = new Eureka2RegistryViewCache(context.getLocalRegistry(), config.getCacheRefreshIntervalMs());
+    }
+
+    /* For testing */Eureka1QueryRequestHandler(Eureka2RegistryViewCache registryViewCache) {
+        this.registryViewCache = registryViewCache;
     }
 
     @Override
@@ -55,7 +59,7 @@ public class Eureka1QueryRequestHandler extends AbstractEureka1RequestHandler {
             }
             matcher = APPS_DELTA_PATH_RE.matcher(path);
             if (matcher.matches()) {
-                return appGetDelta(response);
+                return appGetDelta(format, gzip, response);
             }
             matcher = APP_PATH_RE.matcher(path);
             if (matcher.matches()) {
@@ -81,57 +85,88 @@ public class Eureka1QueryRequestHandler extends AbstractEureka1RequestHandler {
         return returnInvalidUrl(request, response);
     }
 
-    private Observable<Void> appsGET(EncodingFormat format, boolean gzip, HttpServerResponse<ByteBuf> response) throws IOException {
-        Applications applications = registryViewCache.findAllApplications();
-        return encodeResponse(format, gzip, response, applications);
+    private Observable<Void> appsGET(final EncodingFormat format, final boolean gzip, final HttpServerResponse<ByteBuf> response) {
+        return registryViewCache.findAllApplications().flatMap(new Func1<Applications, Observable<Void>>() {
+            @Override
+            public Observable<Void> call(Applications applications) {
+                return encodeResponse(format, gzip, response, applications);
+            }
+        });
     }
 
-    private Observable<Void> appGetDelta(HttpServerResponse<ByteBuf> response) {
-        logger.info("Delta fetches not implemented");
-        response.setStatus(HttpResponseStatus.NOT_IMPLEMENTED);
-        return Observable.empty();
+    private Observable<Void> appGetDelta(final EncodingFormat format, final boolean gzip, final HttpServerResponse<ByteBuf> response) {
+        return registryViewCache.findAllApplicationsDelta().flatMap(new Func1<Applications, Observable<Void>>() {
+            @Override
+            public Observable<Void> call(Applications applications) {
+                return encodeResponse(format, gzip, response, applications);
+            }
+        });
     }
 
-    private Observable<Void> appGET(String appName, EncodingFormat format, boolean gzip, HttpServerResponse<ByteBuf> response) throws IOException {
-        Application application = registryViewCache.findApplication(appName);
-        return encodeResponse(format, gzip, response, application);
+    private Observable<Void> appGET(String appName, final EncodingFormat format, final boolean gzip, final HttpServerResponse<ByteBuf> response) {
+        return registryViewCache.findApplication(appName).flatMap(new Func1<Application, Observable<Void>>() {
+            @Override
+            public Observable<Void> call(Application application) {
+                return encodeResponse(format, gzip, response, application);
+            }
+        });
     }
 
-    private Observable<Void> vipGET(String vip, EncodingFormat format, boolean gzip, HttpServerResponse<ByteBuf> response) throws IOException {
-        Applications applications = registryViewCache.findApplicationsByVip(vip);
-        return encodeResponse(format, gzip, response, applications);
+    private Observable<Void> vipGET(String vip, final EncodingFormat format, final boolean gzip, final HttpServerResponse<ByteBuf> response) {
+        return registryViewCache.findApplicationsByVip(vip).flatMap(new Func1<Applications, Observable<Void>>() {
+            @Override
+            public Observable<Void> call(Applications applications) {
+                return encodeResponse(format, gzip, response, applications);
+            }
+        });
     }
 
-    private Observable<Void> secureVipGET(String secureVip, EncodingFormat format, boolean gzip, HttpServerResponse<ByteBuf> response) throws IOException {
-        Applications applications = registryViewCache.findApplicationsBySecureVip(secureVip);
-        return encodeResponse(format, gzip, response, applications);
+    private Observable<Void> secureVipGET(String secureVip, final EncodingFormat format, final boolean gzip, final HttpServerResponse<ByteBuf> response) {
+        return registryViewCache.findApplicationsBySecureVip(secureVip).flatMap(new Func1<Applications, Observable<Void>>() {
+            @Override
+            public Observable<Void> call(Applications applications) {
+                return encodeResponse(format, gzip, response, applications);
+            }
+        });
     }
 
-    private Observable<Void> instanceGetByAppAndInstanceId(String appName, String instanceId, EncodingFormat format,
-                                                           boolean gzip, HttpServerResponse<ByteBuf> response) throws IOException {
-        com.netflix.appinfo.InstanceInfo v1InstanceInfo = registryViewCache.findInstance(instanceId);
-        if (v1InstanceInfo == null) {
-            logger.info("Instance info with id {} not found", instanceId);
-            response.setStatus(HttpResponseStatus.NOT_FOUND);
-            return Observable.empty();
-        }
-        if (!appName.equalsIgnoreCase(v1InstanceInfo.getAppName())) {
-            logger.info("Instance info with id {} is associated with application {}, not {}",
-                    instanceId, v1InstanceInfo.getAppName(), appName);
-            response.setStatus(HttpResponseStatus.NOT_FOUND);
-            return Observable.empty();
-        }
-        return encodeResponse(format, gzip, response, v1InstanceInfo);
+    private Observable<Void> instanceGetByAppAndInstanceId(final String appName, final String instanceId, final EncodingFormat format,
+                                                           final boolean gzip, final HttpServerResponse<ByteBuf> response) {
+        return registryViewCache.findInstance(instanceId).materialize().toList().flatMap(
+                new Func1<List<Notification<InstanceInfo>>, Observable<Void>>() {
+                    @Override
+                    public Observable<Void> call(List<Notification<InstanceInfo>> notifications) {
+                        // If completed with error propagate it
+                        Notification<InstanceInfo> lastNotification = notifications.get(notifications.size() - 1);
+                        if (lastNotification.getKind() == Kind.OnError) {
+                            return Observable.error(lastNotification.getThrowable());
+                        }
+
+                        // If onComplete only => instance info not found
+                        if (notifications.size() == 1) {
+                            logger.info("Instance info with id {} not found", instanceId);
+                            response.setStatus(HttpResponseStatus.NOT_FOUND);
+                            return Observable.empty();
+                        }
+
+                        // InstanceInfo object found
+                        InstanceInfo v1InstanceInfo = notifications.get(0).getValue();
+
+                        if (appName != null && !appName.equalsIgnoreCase(v1InstanceInfo.getAppName())) {
+                            logger.info("Instance info with id {} is associated with application {}, not {}",
+                                    instanceId, v1InstanceInfo.getAppName(), appName);
+                            response.setStatus(HttpResponseStatus.NOT_FOUND);
+                            return Observable.empty();
+                        }
+
+                        return encodeResponse(format, gzip, response, v1InstanceInfo);
+                    }
+                }
+        );
     }
 
     private Observable<Void> instanceGetByInstanceId(String instanceId, EncodingFormat format, boolean gzip,
-                                                     HttpServerResponse<ByteBuf> response) throws IOException {
-        com.netflix.appinfo.InstanceInfo v1InstanceInfo = registryViewCache.findInstance(instanceId);
-        if (v1InstanceInfo == null) {
-            logger.info("Instance info with id {} not found", instanceId);
-            response.setStatus(HttpResponseStatus.NOT_FOUND);
-            return Observable.empty();
-        }
-        return encodeResponse(format, gzip, response, v1InstanceInfo);
+                                                     HttpServerResponse<ByteBuf> response) {
+        return instanceGetByAppAndInstanceId(null, instanceId, format, gzip, response);
     }
 }
