@@ -6,7 +6,7 @@ import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.transport.TransportClients;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
-import com.netflix.eureka2.registry.PreservableEurekaRegistry;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.transport.TransportClient;
 
@@ -15,20 +15,20 @@ import com.netflix.eureka2.transport.TransportClient;
  */
 public class InterestChannelFactory extends ClientChannelFactory<InterestChannel> {
 
-    private final PreservableEurekaRegistry eurekaRegistry;
+    private final SourcedEurekaRegistry<InstanceInfo> eurekaRegistry;
     private final TransportClient transport;
     private final BatchingRegistry<InstanceInfo> remoteBatchingRegistry;
 
     public InterestChannelFactory(EurekaTransportConfig config,
                                   ServerResolver resolver,
-                                  PreservableEurekaRegistry eurekaRegistry,
+                                  SourcedEurekaRegistry<InstanceInfo> eurekaRegistry,
                                   BatchingRegistry<InstanceInfo> remoteBatchingRegistry,
                                   EurekaClientMetricFactory metricFactory) {
         this(TransportClients.newTcpDiscoveryClient(config, resolver, metricFactory), eurekaRegistry, remoteBatchingRegistry, metricFactory);
     }
 
     public InterestChannelFactory(TransportClient transport,
-                                  PreservableEurekaRegistry eurekaRegistry,
+                                  SourcedEurekaRegistry<InstanceInfo> eurekaRegistry,
                                   BatchingRegistry<InstanceInfo> remoteBatchingRegistry,
                                   EurekaClientMetricFactory metricFactory) {
         super(metricFactory);
