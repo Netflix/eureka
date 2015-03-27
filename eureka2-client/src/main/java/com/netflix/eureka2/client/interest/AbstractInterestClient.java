@@ -68,12 +68,10 @@ public abstract class AbstractInterestClient implements EurekaInterestClient {
                 .subscribe(new Subscriber<Long>() {
                     @Override
                     public void onCompleted() {
-                        logger.info("Completed one round of eviction due to a new interestChannel creation");
                     }
 
                     @Override
                     public void onError(Throwable e) {
-                        logger.warn("OnError in one round of eviction due to a new interestChannel creation");
                     }
 
                     @Override
