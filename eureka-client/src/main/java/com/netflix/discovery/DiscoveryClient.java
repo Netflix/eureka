@@ -16,6 +16,39 @@
 
 package com.netflix.discovery;
 
+import javax.annotation.Nullable;
+import javax.annotation.PreDestroy;
+import javax.naming.directory.DirContext;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.UriBuilder;
+import java.io.IOException;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TimerTask;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -24,7 +57,6 @@ import com.google.inject.Provider;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.ApplicationInfoManager;
-import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.appinfo.EurekaClientIdentity;
 import com.netflix.appinfo.HealthCheckCallback;
@@ -48,38 +80,8 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
-import javax.annotation.PreDestroy;
-import javax.naming.directory.DirContext;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response.Status;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimerTask;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * The class that is instrumental for interactions with <tt>Eureka Server</tt>.
@@ -120,6 +122,8 @@ public class DiscoveryClient implements LookupService {
     private static final String DISCOVERY_APPID = "DISCOVERY";
     private static final String UNKNOWN = "UNKNOWN";
     private static final DirContext dirContext = DiscoveryClient.getDirContext();
+
+    private static final Pattern REDIRECT_PATH_REGEX = Pattern.compile("(.*/v2/)apps(/.*)?$");
 
     // Timers
     private static final String PREFIX = "DiscoveryClient_";
@@ -162,6 +166,7 @@ public class DiscoveryClient implements LookupService {
     private boolean isRegisteredWithDiscovery = false;
     private String discoveryServerAMIId;
     private JerseyClient discoveryJerseyClient;
+    private AtomicReference<String> lastRedirect = new AtomicReference<>();
     private ApacheHttpClient4 discoveryApacheClient;
     protected static EurekaClientConfig clientConfig;
     private final AtomicReference<String> remoteRegionsToFetch;
@@ -270,14 +275,14 @@ public class DiscoveryClient implements LookupService {
                 discoveryJerseyClient = EurekaJerseyClient.createSystemSSLJerseyClient("DiscoveryClient-HTTPClient-System",
                         clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000,
                         clientConfig.getEurekaServerReadTimeoutSeconds() * 1000,
-                        clientConfig.getEurekaServerTotalConnectionsPerHost(), 
+                        clientConfig.getEurekaServerTotalConnectionsPerHost(),
                         clientConfig.getEurekaServerTotalConnections(),
                         clientConfig.getEurekaConnectionIdleTimeoutSeconds());
             } else if (clientConfig.getProxyHost() != null && clientConfig.getProxyPort() != null) {
                 discoveryJerseyClient = EurekaJerseyClient.createProxyJerseyClient("Proxy-DiscoveryClient-HTTPClient",
                         clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000,
                         clientConfig.getEurekaServerReadTimeoutSeconds() * 1000,
-                        clientConfig.getEurekaServerTotalConnectionsPerHost(), 
+                        clientConfig.getEurekaServerTotalConnectionsPerHost(),
                         clientConfig.getEurekaServerTotalConnections(),
                         clientConfig.getEurekaConnectionIdleTimeoutSeconds(),
                         clientConfig.getProxyHost(), clientConfig.getProxyPort(),
@@ -696,7 +701,7 @@ public class DiscoveryClient implements LookupService {
                     + appPathIdentifier
                     + " - deregister  status: "
                     + (response != null ? response.getStatus()
-                            : "not registered"));
+                    : "not registered"));
         } catch (Throwable e) {
             logger.error(PREFIX + appPathIdentifier
                     + " - de-registration failed" + e.getMessage(), e);
@@ -1056,6 +1061,17 @@ public class DiscoveryClient implements LookupService {
      *             on any error.
      */
     private ClientResponse makeRemoteCall(Action action) throws Throwable {
+        if(lastRedirect.get() != null) {
+            String serviceUrl = lastRedirect.get();
+            try {
+                return makeRemoteCall(action, serviceUrl);
+            } catch (Throwable ignored) {
+                logger.warn("Remote call to last redirect address failed; retrying from configured service URL list");
+                SERVER_RETRY_COUNTER.increment();
+                lastRedirect.compareAndSet(serviceUrl, null);
+            }
+        }
+
         return makeRemoteCall(action, 0);
     }
 
@@ -1072,11 +1088,60 @@ public class DiscoveryClient implements LookupService {
      * @throws Throwable
      *             on any error.
      */
-    private ClientResponse makeRemoteCall(Action action, int serviceUrlIndex)
-            throws Throwable {
+    private ClientResponse makeRemoteCall(Action action, int serviceUrlIndex) throws Throwable {
+        String serviceUrl;
+        try {
+            serviceUrl = eurekaServiceUrls.get().get(serviceUrlIndex);
+            return makeRemoteCallWithFollowRedirect(action, serviceUrl);
+        } catch (Throwable t) {
+            if (eurekaServiceUrls.get().size() > ++serviceUrlIndex) {
+                logger.warn("Trying backup: " + eurekaServiceUrls.get().get(serviceUrlIndex));
+                SERVER_RETRY_COUNTER.increment();
+                return makeRemoteCall(action, serviceUrlIndex);
+            } else {
+                ALL_SERVER_FAILURE_COUNT.increment();
+                logger.error("Can't contact any eureka nodes - possibly a security group issue?", t);
+                throw t;
+            }
+        }
+    }
+
+    private ClientResponse makeRemoteCallWithFollowRedirect(Action action, String serviceUrl) throws Throwable {
+        URI targetUrl = new URI(serviceUrl);
+        for(int followRedirectCount = 0; followRedirectCount < 10; followRedirectCount++) {
+            ClientResponse clientResponse = makeRemoteCall(action, targetUrl.toString());
+            if(clientResponse.getStatus() < 300) {
+                if(followRedirectCount > 0) {
+                    Matcher pathMatcher = REDIRECT_PATH_REGEX.matcher(targetUrl.getPath());
+                    if(pathMatcher.matches()) {
+                        URI baseUri = UriBuilder.fromUri(targetUrl).replacePath(pathMatcher.group(1)).replaceQuery(null).build();
+                        lastRedirect.set(baseUri.toString());
+                    } else {
+                        logger.warn("Invalid redirect URL {}; ignoring it", targetUrl);
+                    }
+                }
+                return clientResponse;
+            }
+            targetUrl = clientResponse.getLocation();
+        }
+        String message = "Follow redirect limit crossed for URI " + serviceUrl;
+        logger.warn(message);
+        throw new IOException(message);
+    }
+
+    /**
+     * Makes remote calls with the corresponding action(register,renew etc).
+     *
+     * @param action
+     *            the action to be performed on eureka server.
+     *
+     * @return ClientResponse the HTTP response object.
+     * @throws Throwable
+     *             on any error.
+     */
+    private ClientResponse makeRemoteCall(Action action, String serviceUrl) throws Throwable {
         String urlPath = null;
         Stopwatch tracer = null;
-        String serviceUrl = eurekaServiceUrls.get().get(serviceUrlIndex);
         ClientResponse response = null;
         logger.debug("Discovery Client talking to the server {}", serviceUrl);
         try {
@@ -1090,60 +1155,60 @@ public class DiscoveryClient implements LookupService {
             WebResource r = discoveryApacheClient.resource(serviceUrl);
             String remoteRegionsToFetchStr;
             switch (action) {
-            case Renew:
-                tracer = RENEW_TIMER.start();
-                urlPath = "apps/" + appPathIdentifier;
-                response = r
-                        .path(urlPath)
-                        .queryParam("status",
-                                instanceInfo.getStatus().toString())
-                        .queryParam("lastDirtyTimestamp",
-                                instanceInfo.getLastDirtyTimestamp().toString())
-                        .put(ClientResponse.class);
-                break;
-            case Refresh:
-                tracer = REFRESH_TIMER.start();
-                final String vipAddress = clientConfig.getRegistryRefreshSingleVipAddress();
-                urlPath = vipAddress == null ? "apps/" : "vips/" + vipAddress;
-                remoteRegionsToFetchStr = remoteRegionsToFetch.get();
-                if (!Strings.isNullOrEmpty(remoteRegionsToFetchStr)) {
-                    urlPath += "?regions=" + remoteRegionsToFetchStr;
-                }
-                response = getUrl(serviceUrl + urlPath);
-                break;
-            case Refresh_Delta:
-                tracer = REFRESH_DELTA_TIMER.start();
-                urlPath = "apps/delta";
-                remoteRegionsToFetchStr = remoteRegionsToFetch.get();
-                if (!Strings.isNullOrEmpty(remoteRegionsToFetchStr)) {
-                    urlPath += "?regions=" + remoteRegionsToFetchStr;
-                }
-                response = getUrl(serviceUrl + urlPath);
-                break;
-            case Register:
-                tracer = REGISTER_TIMER.start();
-                urlPath = "apps/" + instanceInfo.getAppName();
-                response = r.path(urlPath)
-                        .type(MediaType.APPLICATION_JSON_TYPE)
-                        .post(ClientResponse.class, instanceInfo);
-                break;
-            case Cancel:
-                tracer = CANCEL_TIMER.start();
-                urlPath = "apps/" + appPathIdentifier;
-                response = r.path(urlPath).delete(ClientResponse.class);
-                // Return without during de-registration if it is not registered
-                // already and if we get a 404
-                if ((!isRegisteredWithDiscovery)
-                        && (response.getStatus() == Status.NOT_FOUND
-                                .getStatusCode())) {
-                    return response;
-                }
-                break;
+                case Renew:
+                    tracer = RENEW_TIMER.start();
+                    urlPath = "apps/" + appPathIdentifier;
+                    response = r
+                            .path(urlPath)
+                            .queryParam("status",
+                                    instanceInfo.getStatus().toString())
+                            .queryParam("lastDirtyTimestamp",
+                                    instanceInfo.getLastDirtyTimestamp().toString())
+                            .put(ClientResponse.class);
+                    break;
+                case Refresh:
+                    tracer = REFRESH_TIMER.start();
+                    final String vipAddress = clientConfig.getRegistryRefreshSingleVipAddress();
+                    urlPath = vipAddress == null ? "apps/" : "vips/" + vipAddress;
+                    remoteRegionsToFetchStr = remoteRegionsToFetch.get();
+                    if (!Strings.isNullOrEmpty(remoteRegionsToFetchStr)) {
+                        urlPath += "?regions=" + remoteRegionsToFetchStr;
+                    }
+                    response = getUrl(serviceUrl + urlPath);
+                    break;
+                case Refresh_Delta:
+                    tracer = REFRESH_DELTA_TIMER.start();
+                    urlPath = "apps/delta";
+                    remoteRegionsToFetchStr = remoteRegionsToFetch.get();
+                    if (!Strings.isNullOrEmpty(remoteRegionsToFetchStr)) {
+                        urlPath += "?regions=" + remoteRegionsToFetchStr;
+                    }
+                    response = getUrl(serviceUrl + urlPath);
+                    break;
+                case Register:
+                    tracer = REGISTER_TIMER.start();
+                    urlPath = "apps/" + instanceInfo.getAppName();
+                    response = r.path(urlPath)
+                            .type(MediaType.APPLICATION_JSON_TYPE)
+                            .post(ClientResponse.class, instanceInfo);
+                    break;
+                case Cancel:
+                    tracer = CANCEL_TIMER.start();
+                    urlPath = "apps/" + appPathIdentifier;
+                    response = r.path(urlPath).delete(ClientResponse.class);
+                    // Return without during de-registration if it is not registered
+                    // already and if we get a 404
+                    if ((!isRegisteredWithDiscovery)
+                            && (response.getStatus() == Status.NOT_FOUND
+                            .getStatusCode())) {
+                        return response;
+                    }
+                    break;
             }
 
             if (logger.isDebugEnabled()) {
                 logger.debug("Finished a call to service url {} and url path {} with status code {}.",
-                            new String[] {serviceUrl, urlPath, String.valueOf(response.getStatus())});
+                        new String[] {serviceUrl, urlPath, String.valueOf(response.getStatus())});
             }
             if (isOk(action, response.getStatus())) {
                 return response;
@@ -1156,21 +1221,8 @@ public class DiscoveryClient implements LookupService {
             }
         } catch (Throwable t) {
             closeResponse(response);
-            String msg = "Can't get a response from " + serviceUrl + urlPath;
-            if (eurekaServiceUrls.get().size() > (++serviceUrlIndex)) {
-                logger.warn(msg, t);
-                logger.warn("Trying backup: "
-                        + eurekaServiceUrls.get().get(serviceUrlIndex));
-                SERVER_RETRY_COUNTER.increment();
-                return makeRemoteCall(action, serviceUrlIndex);
-            } else {
-                ALL_SERVER_FAILURE_COUNT.increment();
-                logger.error(
-                        msg
-                                + "\nCan't contact any eureka nodes - possibly a security group issue?",
-                        t);
-                throw t;
-            }
+            logger.warn("Can't get a response from " + serviceUrl + urlPath, t);
+            throw t;
         } finally {
             if (tracer != null) {
                 tracer.stop();
@@ -1524,7 +1576,7 @@ public class DiscoveryClient implements LookupService {
      *
      */
     private boolean isOk(Action action, int httpStatus) {
-        if (httpStatus >= 200 && httpStatus < 300) {
+        if (httpStatus >= 200 && httpStatus < 300 || httpStatus == 302) {
             return true;
         } else if (Action.Renew == action && httpStatus == 404) {
             return true;
