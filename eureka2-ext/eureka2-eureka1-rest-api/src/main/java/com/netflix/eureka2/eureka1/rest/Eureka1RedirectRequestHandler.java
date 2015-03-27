@@ -60,8 +60,14 @@ public class Eureka1RedirectRequestHandler extends AbstractEureka1RequestHandler
 
     @PostConstruct
     public void start() {
+        String redirectTarget = context.getConfig().getReadClusterVipAddress();
+        if (redirectTarget == null || redirectTarget.isEmpty()) {
+            logger.warn("Not starting Eureka1RedirectRequestHandler, redirect target not available");
+            return;
+        }
+
         subscription = context.getLocalRegistry()
-                .forInterest(Interests.forVips(context.getConfig().getReadClusterVipAddress()))
+                .forInterest(Interests.forVips(redirectTarget))
                 .compose(ChangeNotifications.<InstanceInfo>delineatedBuffers())
                 .compose(ChangeNotifications.<InstanceInfo>snapshots())
                 .subscribe(new Subscriber<Set<InstanceInfo>>() {
