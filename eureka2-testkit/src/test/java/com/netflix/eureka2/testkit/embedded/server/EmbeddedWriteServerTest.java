@@ -2,6 +2,7 @@ package com.netflix.eureka2.testkit.embedded.server;
 
 import java.util.List;
 
+import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
@@ -30,11 +31,11 @@ public class EmbeddedWriteServerTest {
 
     @Test(timeout = 10000)
     public void testRegistrationAndDiscoveryServices() throws Exception {
-        EurekaRegistrationClient registrationClient = new EurekaRegistrationClientBuilder()
+        EurekaRegistrationClient registrationClient = Eureka.newRegistrationClientBuilder()
                 .withServerResolver(ServerResolvers.fromHostname("localhost").withPort(writeServerResource.getRegistrationPort()))
                 .build();
 
-        EurekaInterestClient interestClient = new EurekaInterestClientBuilder()
+        EurekaInterestClient interestClient = Eureka.newInterestClientBuilder()
                 .withServerResolver(ServerResolvers.fromHostname("localhost").withPort(writeServerResource.getDiscoveryPort()))
                 .build();
 

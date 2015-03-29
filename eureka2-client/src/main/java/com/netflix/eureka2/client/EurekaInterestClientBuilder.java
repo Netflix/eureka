@@ -34,6 +34,14 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 public class EurekaInterestClientBuilder
         extends AbstractClientBuilder<EurekaInterestClient, EurekaInterestClientBuilder> {
 
+    /**
+     * @deprecated do not create explicitly, use {@link Eureka#newInterestClientBuilder()}
+     * In future releases access right to this constructor may narrow (after rc.3)
+     */
+    @Deprecated
+    public EurekaInterestClientBuilder() {
+    }
+
     @Override
     protected EurekaInterestClient buildClient() {
         if (serverResolver == null) {

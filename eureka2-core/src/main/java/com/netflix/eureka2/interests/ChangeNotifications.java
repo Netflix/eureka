@@ -33,14 +33,12 @@ import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.StreamStateNotification.BufferState;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.utils.rx.RxFunctions;
+import rx.Notification;
 import rx.Observable;
-import rx.Observable.Operator;
 import rx.Observable.Transformer;
 import rx.Scheduler;
-import rx.Subscriber;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
-import rx.subjects.PublishSubject;
 
 /**
  * Collection of transformation functions operating on {@link ChangeNotification} data.
@@ -159,6 +157,57 @@ public final class ChangeNotifications {
                         return null;
                     }
                 }).filter(RxFunctions.filterNullValuesFunc());
+            }
+        };
+    }
+
+    /**
+     * Convert change notification stream with buffering sentinels into stream of lists, where each
+     * list element contains a batch of data delineated by the markers. Only non-empty lists are
+     * issued, which means that for two successive BufferSentinels from the stream, the second
+     * one will be swallowed.
+     *
+     * an onComplete on the change notification stream is considered as another (the last) BufferSentinel.
+     * an onError will not return any partial buffered data.
+     *
+     * @return observable of non-empty list objects
+     */
+    public static <T> Transformer<ChangeNotification<T>, List<ChangeNotification<T>>> buffers() {
+        return new Transformer<ChangeNotification<T>, List<ChangeNotification<T>>>() {
+            @Override
+            public Observable<List<ChangeNotification<T>>> call(Observable<ChangeNotification<T>> notifications) {
+                final AtomicReference<List<ChangeNotification<T>>> bufferRef = new AtomicReference<>();
+                bufferRef.set(new ArrayList<ChangeNotification<T>>());
+
+                return notifications
+                        .filter(RxFunctions.filterNullValuesFunc())
+                        .materialize()
+                                // concatMap as the internal observables all onComplete immediately
+                        .concatMap(new Func1<Notification<ChangeNotification<T>>, Observable<List<ChangeNotification<T>>>>() {
+                            @Override
+                            public Observable<List<ChangeNotification<T>>> call(Notification<ChangeNotification<T>> rxNotification) {
+                                List<ChangeNotification<T>> buffer = bufferRef.get();
+
+                                switch (rxNotification.getKind()) {
+                                    case OnNext:
+                                        ChangeNotification<T> notification = rxNotification.getValue();
+                                        if (notification.getKind() == Kind.BufferSentinel) {
+                                            bufferRef.set(new ArrayList<ChangeNotification<T>>());
+                                            return Observable.just(buffer);
+                                        }
+                                        buffer.add(notification);
+                                        break;
+                                    case OnCompleted:
+                                        return Observable.just(buffer);  // OnCompleted == BufferSentinel
+                                    case OnError:
+                                        //clear the buffer and onError, don't return partial error buffer
+                                        bufferRef.set(new ArrayList<ChangeNotification<T>>());
+                                        return Observable.error(rxNotification.getThrowable());
+                                }
+
+                                return Observable.empty();
+                            }
+                        });
             }
         };
     }

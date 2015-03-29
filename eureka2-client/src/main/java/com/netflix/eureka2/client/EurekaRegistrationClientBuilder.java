@@ -27,6 +27,14 @@ import com.netflix.eureka2.client.registration.EurekaRegistrationClientImpl;
 public class EurekaRegistrationClientBuilder
         extends AbstractClientBuilder<EurekaRegistrationClient, EurekaRegistrationClientBuilder> {
 
+    /**
+     * @deprecated do not create explicitly, use {@link Eureka#newRegistrationClientBuilder()}
+     * In future releases access right to this constructor may narrow (after rc.3)
+     * */
+    @Deprecated
+    public EurekaRegistrationClientBuilder() {
+    }
+
     @Override
     protected EurekaRegistrationClient buildClient() {
         if (serverResolver == null) {

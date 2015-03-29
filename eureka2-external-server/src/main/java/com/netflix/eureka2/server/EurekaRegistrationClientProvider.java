@@ -3,6 +3,7 @@ package com.netflix.eureka2.server;
 import javax.inject.Provider;
 
 import com.google.inject.Inject;
+import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.EurekaRegistrationClientBuilder;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
@@ -29,7 +30,7 @@ public class EurekaRegistrationClientProvider implements Provider<EurekaRegistra
 
     @Override
     public EurekaRegistrationClient get() {
-        return new EurekaRegistrationClientBuilder()
+        return Eureka.newRegistrationClientBuilder()
                 .withTransportConfig(config)
                 .withRegistryConfig(config)
                 .withClientMetricFactory(clientMetricFactory)

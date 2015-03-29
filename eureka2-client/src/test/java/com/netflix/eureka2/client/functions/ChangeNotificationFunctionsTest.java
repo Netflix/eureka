@@ -17,6 +17,7 @@ import static org.junit.Assert.assertThat;
 /**
  * @author Tomasz Bak
  */
+@Deprecated
 public class ChangeNotificationFunctionsTest {
 
     private static final ChangeNotification<String> ADD_A = new ChangeNotification<>(Kind.Add, "A");

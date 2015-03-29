@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.example.client;
 
+import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
@@ -63,7 +64,7 @@ public final class SimpleApp {
 
     public void run() throws InterruptedException {
 
-        EurekaRegistrationClient registrationClient = new EurekaRegistrationClientBuilder()
+        EurekaRegistrationClient registrationClient = Eureka.newRegistrationClientBuilder()
                 .withServerResolver(fromDnsName(writeServerDns).withPort(writeRegistrationPort))
                 .build();
 
@@ -72,7 +73,7 @@ public final class SimpleApp {
                         fromDnsName(writeServerDns).withPort(writeInterestPort)
                 ).forInterest(forVips(readServerVip));
 
-        EurekaInterestClient interestClient = new EurekaInterestClientBuilder()
+        EurekaInterestClient interestClient = Eureka.newInterestClientBuilder()
                 .withServerResolver(interestClientResolver)
                 .build();
 

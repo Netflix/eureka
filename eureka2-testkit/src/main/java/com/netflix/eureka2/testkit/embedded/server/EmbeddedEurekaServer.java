@@ -25,6 +25,7 @@ import com.netflix.governator.lifecycle.LifecycleManager;
 import com.netflix.spectator.api.Clock;
 import com.netflix.spectator.api.ExtendedRegistry;
 import com.netflix.spectator.metrics3.MetricsRegistry;
+import netflix.admin.AdminConfigImpl;
 import netflix.adminresources.AdminResourcesContainer;
 import netflix.adminresources.resources.Eureka2InterestClientProviderImpl;
 
@@ -158,7 +159,7 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
     }
 
     protected void loadInstanceProperties(Properties props) {
-        props.setProperty(AdminResourcesContainer.CONTAINER_LISTEN_PORT, Integer.toString(config.getWebAdminPort()));
+        props.setProperty(AdminConfigImpl.CONTAINER_LISTEN_PORT, Integer.toString(config.getWebAdminPort()));
         props.setProperty("netflix.platform.admin.pages.packages", "netflix");
 
         // TODO Until admin WEB configuration is more flexible we take port of first write server

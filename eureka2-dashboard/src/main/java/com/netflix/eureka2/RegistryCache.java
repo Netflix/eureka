@@ -2,6 +2,7 @@ package com.netflix.eureka2;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
@@ -83,7 +84,7 @@ public class RegistryCache {
 
     public static void main(String[] args) {
 
-        final EurekaInterestClient interestClient = new EurekaInterestClientBuilder()
+        final EurekaInterestClient interestClient = Eureka.newInterestClientBuilder()
                 .withServerResolver(ServerResolvers.fromHostname("localhost").withPort(13101))
                 .build();
 

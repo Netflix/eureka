@@ -6,6 +6,7 @@ import java.util.Properties;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provider;
 import com.netflix.config.ConfigurationManager;
+import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.client.resolver.ServerResolver;
@@ -90,7 +91,7 @@ public abstract class EmbeddedKaryonAdminModule extends AbstractModule {
             @Override
             public EurekaInterestClient get() {
                 if (interestClient == null) {
-                    interestClient = new EurekaInterestClientBuilder()
+                    interestClient = Eureka.newInterestClientBuilder()
                             .withServerResolver(getInterestResolver())
                             .build();
                 }

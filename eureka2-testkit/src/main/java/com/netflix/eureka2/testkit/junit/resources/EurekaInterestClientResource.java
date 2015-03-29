@@ -1,5 +1,6 @@
 package com.netflix.eureka2.testkit.junit.resources;
 
+import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.client.resolver.ServerResolver;
@@ -20,7 +21,7 @@ public class EurekaInterestClientResource extends EurekaExternalResource {
 
     @Override
     protected void before() throws Throwable {
-        interestClient = new EurekaInterestClientBuilder().withServerResolver(serverResolver).build();
+        interestClient = Eureka.newInterestClientBuilder().withServerResolver(serverResolver).build();
     }
 
     @Override
