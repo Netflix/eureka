@@ -22,7 +22,6 @@ import javax.inject.Singleton;
 
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaInterestClient;
-import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;

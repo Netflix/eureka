@@ -1,28 +1,21 @@
 package com.netflix.eureka2.testkit.embedded.server;
 
-import javax.inject.Inject;
-import java.util.Properties;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Provider;
-import com.netflix.config.ConfigurationManager;
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaInterestClient;
-import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.server.health.KaryonHealthCheckHandler;
-import com.netflix.governator.configuration.ArchaiusConfigurationProvider;
-import com.netflix.governator.configuration.ArchaiusConfigurationProvider.Builder;
-import com.netflix.governator.configuration.ConfigurationOwnershipPolicies;
-import com.netflix.governator.guice.BootstrapBinder;
-import com.netflix.governator.guice.BootstrapModule;
-import com.netflix.governator.guice.LifecycleInjectorBuilder;
-import io.reactivex.netty.RxNetty;
+import netflix.admin.AdminConfigImpl;
+import netflix.admin.AdminContainerConfig;
+import netflix.adminresources.AdminPageRegistry;
 import netflix.adminresources.AdminResourcesContainer;
+import netflix.adminresources.pages.EnvPage;
+import netflix.adminresources.pages.Eureka2Page;
+import netflix.adminresources.pages.Eureka2StatusPage;
 import netflix.adminresources.resources.Eureka2InterestClientProvider;
 import netflix.adminresources.resources.Eureka2InterestClientProviderImpl;
 import netflix.adminresources.resources.StatusRegistry;
-import netflix.karyon.archaius.PropertiesLoader;
 import netflix.karyon.health.HealthCheckHandler;
 import netflix.karyon.health.HealthCheckInvocationStrategy;
 import netflix.karyon.health.SyncHealthCheckInvocationStrategy;
@@ -39,6 +32,13 @@ public abstract class EmbeddedKaryonAdminModule extends AbstractModule {
 
     @Override
     protected void configure() {
+        AdminPageRegistry adminRegistry = new AdminPageRegistry();
+        adminRegistry.add(new EnvPage());
+        adminRegistry.add(new Eureka2Page());
+        adminRegistry.add(new Eureka2StatusPage());
+
+        bind(AdminContainerConfig.class).toInstance(new EmbeddedAdminContainerConfig(getEurekaWebAdminPort()));
+        bind(AdminPageRegistry.class).toInstance(adminRegistry);
         bind(AdminResourcesContainer.class).asEagerSingleton();
 
         bindEureka2RegistryUI();
@@ -47,36 +47,6 @@ public abstract class EmbeddedKaryonAdminModule extends AbstractModule {
         bind(HealthCheckHandler.class).to(KaryonHealthCheckHandler.class).asEagerSingleton();
         bind(HealthCheckInvocationStrategy.class).to(SyncHealthCheckInvocationStrategy.class).asEagerSingleton();
     }
-
-    public void bindKaryonAdminEnvironment(LifecycleInjectorBuilder bootstrapBinder) {
-        bootstrapBinder.withAdditionalBootstrapModules(new BootstrapModule() {
-            @Override
-            public void configure(BootstrapBinder binder) {
-                binder.bind(PropertiesLoader.class).toInstance(new PropertiesLoader() {
-                    @Override
-                    public void load() {
-                        ConfigurationManager.loadProperties(getProperties());
-                    }
-                });
-                binder.bind(PropertiesInitializer.class).asEagerSingleton();
-
-                Builder builder = ArchaiusConfigurationProvider.builder();
-                builder.withOwnershipPolicy(ConfigurationOwnershipPolicies.ownsAll());
-                binder.bindConfigurationProvider().toInstance(builder.build());
-            }
-        });
-    }
-
-    public void connectToAdminUI() {
-        // This is hack to force warming up adminUI singletons, that read Archaius parameters,
-        // which itself is singleton, and changes values for each subsequently created new server.
-        if (getEurekaWebAdminPort() > 0) {
-            RxNetty.createHttpGet("http://localhost:" + getEurekaWebAdminPort() + "/webadmin/eureka2")
-                    .materialize().toBlocking().lastOrDefault(null);
-        }
-    }
-
-    protected abstract Properties getProperties();
 
     protected abstract int getEurekaWebAdminPort();
 
@@ -115,10 +85,42 @@ public abstract class EmbeddedKaryonAdminModule extends AbstractModule {
         });
     }
 
-    private static class PropertiesInitializer {
-        @Inject
-        private PropertiesInitializer(PropertiesLoader loader) {
-            loader.load();
+    public static class EmbeddedAdminContainerConfig implements AdminContainerConfig {
+
+        private final int port;
+
+        public EmbeddedAdminContainerConfig(int port) {
+            this.port = port;
+        }
+
+        @Override
+        public String templateResourceContext() {
+            return AdminConfigImpl.TEMPLATE_CONTEXT_DEFAULT;
+        }
+
+        @Override
+        public String ajaxDataResourceContext() {
+            return AdminConfigImpl.RESOURCE_CONTEXT_DEFAULT;
+        }
+
+        @Override
+        public String jerseyResourcePkgList() {
+            return AdminConfigImpl.JERSEY_CORE_RESOURCES_DEFAULT;
+        }
+
+        @Override
+        public String jerseyViewableResourcePkgList() {
+            return AdminConfigImpl.JERSEY_VIEWABLE_RESOURCES_DEFAULT;
+        }
+
+        @Override
+        public boolean shouldScanClassPathForPluginDiscovery() {
+            return false;
+        }
+
+        @Override
+        public int listenPort() {
+            return port;
         }
     }
 }

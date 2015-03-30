@@ -18,9 +18,7 @@ package com.netflix.eureka2.example.client;
 
 import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaInterestClient;
-import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.client.EurekaRegistrationClientBuilder;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.registry.datacenter.BasicDataCenterInfo;

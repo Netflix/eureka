@@ -25,7 +25,6 @@ import com.netflix.governator.lifecycle.LifecycleManager;
 import com.netflix.spectator.api.Clock;
 import com.netflix.spectator.api.ExtendedRegistry;
 import com.netflix.spectator.metrics3.MetricsRegistry;
-import netflix.admin.AdminConfigImpl;
 import netflix.adminresources.AdminResourcesContainer;
 import netflix.adminresources.resources.Eureka2InterestClientProviderImpl;
 
@@ -86,14 +85,6 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
         // Extensions
         builder.withAdditionalModules(new ExtensionLoader(!withExt).asModuleArray(serverType));
 
-        EmbeddedKaryonAdminModule adminUIModule = null;
-        if (withAdminUI) {
-            adminUIModule = createAdminUIModule(builder);
-            if (adminUIModule != null) {
-                adminUIModule.bindKaryonAdminEnvironment(builder);
-            }
-        }
-
         bindMetricsRegistry(builder);
 
         EurekaHealthStatusModule healthStatusModule = new EurekaHealthStatusModule();
@@ -106,26 +97,17 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
             lifecycleManager.start();
 
             // Admin console
-            if (adminUIModule != null) {
+            if (withAdminUI) {
+                EmbeddedKaryonAdminModule adminUIModule = createAdminUIModule();
                 webAdminInjector = injector.createChildInjector(adminUIModule);
-                // This is hack to force warming up adminUI singletons, that read Archaius parameters,
-                // which itself is singleton, and changes values for each subsequently created new server.
-                adminUIModule.connectToAdminUI();
             }
         } catch (Exception e) {
             throw new RuntimeException("Container setup failure", e);
         }
     }
 
-    protected EmbeddedKaryonAdminModule createAdminUIModule(LifecycleInjectorBuilder builder) {
+    protected EmbeddedKaryonAdminModule createAdminUIModule() {
         return new EmbeddedKaryonAdminModule() {
-
-            @Override
-            protected Properties getProperties() {
-                Properties props = new Properties();
-                loadInstanceProperties(props);
-                return props;
-            }
 
             @Override
             protected int getEurekaWebAdminPort() {
@@ -159,9 +141,6 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
     }
 
     protected void loadInstanceProperties(Properties props) {
-        props.setProperty(AdminConfigImpl.CONTAINER_LISTEN_PORT, Integer.toString(config.getWebAdminPort()));
-        props.setProperty("netflix.platform.admin.pages.packages", "netflix");
-
         // TODO Until admin WEB configuration is more flexible we take port of first write server
         String writeServer = config.getServerList()[0];
         Matcher matcher = Pattern.compile("[^:]+:\\d+:(\\d+):\\d+").matcher(writeServer);
@@ -170,5 +149,4 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
             props.setProperty(Eureka2InterestClientProviderImpl.CONFIG_DISCOVERY_PORT, interestPort);
         }
     }
-
 }

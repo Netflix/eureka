@@ -5,7 +5,6 @@ import java.util.Properties;
 import com.google.inject.Module;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.client.Eureka;
-import com.netflix.eureka2.client.EurekaRegistrationClientBuilder;
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.client.channel.InterestChannelFactory;
 import com.netflix.eureka2.client.interest.BatchAwareIndexRegistry;
