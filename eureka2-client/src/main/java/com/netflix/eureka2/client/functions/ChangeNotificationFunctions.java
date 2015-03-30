@@ -19,7 +19,7 @@ import rx.Observable.Transformer;
 import rx.functions.Func1;
 
 /**
- * @deprecated use {@link com.netflix.eureka2.client.Eureka#interestFunctions()} or
+ * @deprecated use {@link com.netflix.eureka2.client.functions.InterestFunctions} or
  * {@link com.netflix.eureka2.interests.ChangeNotifications} instead
  *
  * To be removed after rc.3

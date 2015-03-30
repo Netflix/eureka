@@ -3,7 +3,7 @@ package com.netflix.eureka2.integration;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.client.Eureka;
+import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.registration.RegistrationObservable;
@@ -56,7 +56,7 @@ public class EurekaClientIntegrationTest {
         EmbeddedWriteCluster writeCluster = deployment.getWriteCluster();
         String readClusterVip = deployment.getReadCluster().getVip();
 
-        EurekaInterestClient interestClient = Eureka.newInterestClientBuilder()
+        EurekaInterestClient interestClient = Eurekas.newInterestClientBuilder()
                 .withServerResolver(ServerResolvers.fromEureka(writeCluster.interestResolver())
                         .forInterest(Interests.forVips(readClusterVip)))
                 .build();
@@ -82,7 +82,7 @@ public class EurekaClientIntegrationTest {
     @Test(timeout = 60000)
     @Ignore
     public void testResolveFromDns() throws Exception {
-        EurekaRegistrationClient registrationClient = Eureka.newRegistrationClientBuilder()
+        EurekaRegistrationClient registrationClient = Eurekas.newRegistrationClientBuilder()
                 .withServerResolver(ServerResolvers.fromDnsName("cluster.domain.name").withPort(12102))
                 .build();
 

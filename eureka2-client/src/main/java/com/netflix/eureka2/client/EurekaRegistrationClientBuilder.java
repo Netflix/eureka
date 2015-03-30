@@ -28,7 +28,7 @@ public class EurekaRegistrationClientBuilder
         extends AbstractClientBuilder<EurekaRegistrationClient, EurekaRegistrationClientBuilder> {
 
     /**
-     * @deprecated do not create explicitly, use {@link Eureka#newRegistrationClientBuilder()}
+     * @deprecated do not create explicitly, use {@link Eurekas#newRegistrationClientBuilder()}
      * In future releases access right to this constructor may narrow (after rc.3)
      * */
     @Deprecated

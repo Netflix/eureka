@@ -35,7 +35,7 @@ public class EurekaInterestClientBuilder
         extends AbstractClientBuilder<EurekaInterestClient, EurekaInterestClientBuilder> {
 
     /**
-     * @deprecated do not create explicitly, use {@link Eureka#newInterestClientBuilder()}
+     * @deprecated do not create explicitly, use {@link Eurekas#newInterestClientBuilder()}
      * In future releases access right to this constructor may narrow (after rc.3)
      */
     @Deprecated

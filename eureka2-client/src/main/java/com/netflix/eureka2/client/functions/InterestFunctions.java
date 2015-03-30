@@ -1,4 +1,4 @@
-package com.netflix.eureka2.client;
+package com.netflix.eureka2.client.functions;
 
 import java.net.InetSocketAddress;
 import java.util.LinkedHashSet;
@@ -32,7 +32,7 @@ public final class InterestFunctions {
      *                        host:port server item
      * @return a ChangeNotification stream of servers
      */
-    public final Func1<ChangeNotification<InstanceInfo>, ChangeNotification<Server>> instanceInfoToServer(final ServiceSelector serviceSelector) {
+    public static Func1<ChangeNotification<InstanceInfo>, ChangeNotification<Server>> instanceInfoToServer(final ServiceSelector serviceSelector) {
         return new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<Server>>() {
             @Override
             public ChangeNotification<Server> call(ChangeNotification<InstanceInfo> notification) {
@@ -77,7 +77,7 @@ public final class InterestFunctions {
      *
      * @return observable of non-empty list objects
      */
-    public final Transformer<ChangeNotification<InstanceInfo>, List<ChangeNotification<InstanceInfo>>> buffers() {
+    public static Transformer<ChangeNotification<InstanceInfo>, List<ChangeNotification<InstanceInfo>>> buffers() {
         return ChangeNotifications.buffers();
     }
 
@@ -91,7 +91,7 @@ public final class InterestFunctions {
      *
      * @return observable of distinct set objects
      */
-    public final Transformer<List<ChangeNotification<InstanceInfo>>, LinkedHashSet<InstanceInfo>> snapshots() {
+    public static Transformer<List<ChangeNotification<InstanceInfo>>, LinkedHashSet<InstanceInfo>> snapshots() {
         return ChangeNotifications.snapshots();
     }
 }

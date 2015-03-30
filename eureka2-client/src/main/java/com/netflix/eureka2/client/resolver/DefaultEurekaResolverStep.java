@@ -2,11 +2,11 @@ package com.netflix.eureka2.client.resolver;
 
 import com.netflix.eureka2.Names;
 import com.netflix.eureka2.channel.InterestChannel;
-import com.netflix.eureka2.client.Eureka;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.client.channel.InterestChannelFactory;
+import com.netflix.eureka2.client.functions.InterestFunctions;
 import com.netflix.eureka2.client.interest.BatchingRegistry;
 import com.netflix.eureka2.client.interest.BatchingRegistryImpl;
 import com.netflix.eureka2.client.interest.EurekaInterestClientImpl;
@@ -85,7 +85,7 @@ class DefaultEurekaResolverStep implements EurekaRemoteResolverStep {
                 });
 
         ServerResolver resolver = ServerResolvers.fromServerSource(
-                instanceInfoSource.map(Eureka.interestFunctions().instanceInfoToServer(serviceSelector))
+                instanceInfoSource.map(InterestFunctions.instanceInfoToServer(serviceSelector))
         );
 
         return resolver;

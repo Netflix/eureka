@@ -20,7 +20,7 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
-import com.netflix.eureka2.client.Eureka;
+import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
@@ -47,7 +47,7 @@ public class EurekaInterestClientProvider implements Provider<EurekaInterestClie
 
     @Override
     public EurekaInterestClient get() {
-        return Eureka.newInterestClientBuilder()
+        return Eurekas.newInterestClientBuilder()
                 .withTransportConfig(config)
                 .withRegistryConfig(config)
                 .withClientMetricFactory(clientMetricFactory)

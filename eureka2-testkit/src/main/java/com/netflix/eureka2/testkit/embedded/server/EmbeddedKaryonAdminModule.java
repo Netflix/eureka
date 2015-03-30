@@ -2,7 +2,7 @@ package com.netflix.eureka2.testkit.embedded.server;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provider;
-import com.netflix.eureka2.client.Eureka;
+import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.server.health.KaryonHealthCheckHandler;
@@ -61,7 +61,7 @@ public abstract class EmbeddedKaryonAdminModule extends AbstractModule {
             @Override
             public EurekaInterestClient get() {
                 if (interestClient == null) {
-                    interestClient = Eureka.newInterestClientBuilder()
+                    interestClient = Eurekas.newInterestClientBuilder()
                             .withServerResolver(getInterestResolver())
                             .build();
                 }

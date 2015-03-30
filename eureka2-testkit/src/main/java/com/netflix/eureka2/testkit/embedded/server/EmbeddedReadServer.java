@@ -4,7 +4,7 @@ import java.util.Properties;
 
 import com.google.inject.Module;
 import com.netflix.eureka2.channel.InterestChannel;
-import com.netflix.eureka2.client.Eureka;
+import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.client.channel.InterestChannelFactory;
 import com.netflix.eureka2.client.interest.BatchAwareIndexRegistry;
@@ -52,7 +52,7 @@ public class EmbeddedReadServer extends EmbeddedEurekaServer<EurekaServerConfig,
 
     @Override
     public void start() {
-        EurekaRegistrationClient registrationClient = Eureka.newRegistrationClientBuilder()
+        EurekaRegistrationClient registrationClient = Eurekas.newRegistrationClientBuilder()
                 .withServerResolver(registrationResolver)
                 .build();
 

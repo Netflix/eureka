@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.netflix.eureka2.client.Eureka;
+import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.registration.RegistrationObservable;
@@ -102,7 +102,7 @@ public class Session {
     }
 
     public void connectToRegister(String host, int port) {
-        registrationClient = Eureka.newRegistrationClientBuilder()
+        registrationClient = Eurekas.newRegistrationClientBuilder()
                 .withTransportConfig(context.getTransportConfig())
                 .withServerResolver(ServerResolvers.fromHostname(host).withPort(port))
                 .build();
@@ -111,7 +111,7 @@ public class Session {
     }
 
     public void connectToRead(String host, int port) {
-        interestClient = Eureka.newInterestClientBuilder()
+        interestClient = Eurekas.newInterestClientBuilder()
                 .withTransportConfig(context.getTransportConfig())
                 .withServerResolver(ServerResolvers.fromHostname(host).withPort(port))
                 .build();
@@ -120,12 +120,12 @@ public class Session {
     }
 
     public void connectToCluster(String host, int registrationPort, int interestPort, String readClusterVip) {
-        registrationClient = Eureka.newRegistrationClientBuilder()
+        registrationClient = Eurekas.newRegistrationClientBuilder()
                 .withTransportConfig(context.getTransportConfig())
                 .withServerResolver(ServerResolvers.fromHostname(host).withPort(registrationPort))
                 .build();
 
-        interestClient = Eureka.newInterestClientBuilder()
+        interestClient = Eurekas.newInterestClientBuilder()
                 .withTransportConfig(context.getTransportConfig())
                 .withServerResolver(ServerResolvers.fromEureka(
                                 ServerResolvers.fromHostname(host).withPort(interestPort))

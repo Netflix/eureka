@@ -1,6 +1,6 @@
 package com.netflix.eureka2.testkit.junit.resources;
 
-import com.netflix.eureka2.client.Eureka;
+import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources.EurekaExternalResource;
@@ -20,7 +20,7 @@ public class EurekaRegistrationClientResource extends EurekaExternalResource {
 
     @Override
     protected void before() throws Throwable {
-        registrationClient = Eureka.newRegistrationClientBuilder().withServerResolver(serverResolver).build();
+        registrationClient = Eurekas.newRegistrationClientBuilder().withServerResolver(serverResolver).build();
     }
 
     @Override

@@ -5,9 +5,7 @@ package com.netflix.eureka2.client;
 *
 * @author David Liu
 */
-public final class Eureka {
-
-    private static final InterestFunctions INTEREST_FUNCTIONS = new InterestFunctions();
+public final class Eurekas {
 
     /**
      * Return a builder for creating eureka clients to read interest from remote eureka servers.
@@ -25,14 +23,5 @@ public final class Eureka {
      */
     public static EurekaRegistrationClientBuilder newRegistrationClientBuilder() {
         return new EurekaRegistrationClientBuilder();
-    }
-
-    /**
-     * Return an entry point class for various useful functions that can be applied to eureka interest streams.
-     *
-     * @return {@link InterestFunctions}
-     */
-    public static InterestFunctions interestFunctions() {
-        return INTEREST_FUNCTIONS;
     }
 }

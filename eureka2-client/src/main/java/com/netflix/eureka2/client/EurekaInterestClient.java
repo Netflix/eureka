@@ -37,8 +37,8 @@ public interface EurekaInterestClient {
      *                 for methods to construct interests.
      * @return an observable of {@link ChangeNotification}s of the interested InstanceInfos. The notifications
      *         returned may contain interleaved data notifications and streamState notifications. Standard
-     *         transformers for transforming the returned stream is available from
-     *         {@link Eureka#interestFunctions()}.
+     *         transformers for transforming the returned stream are available at
+     *         {@link com.netflix.eureka2.client.functions.InterestFunctions}.
      */
     Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest);
 

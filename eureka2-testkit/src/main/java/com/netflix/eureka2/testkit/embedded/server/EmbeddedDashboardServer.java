@@ -5,7 +5,7 @@ import java.util.Properties;
 import com.google.inject.Module;
 import com.netflix.eureka2.DashboardHttpServer;
 import com.netflix.eureka2.EurekaDashboardModule;
-import com.netflix.eureka2.client.Eureka;
+import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.resolver.ServerResolver;
@@ -41,13 +41,13 @@ public class EmbeddedDashboardServer extends EmbeddedEurekaServer<EurekaDashboar
 
     @Override
     public void start() {
-        final EurekaRegistrationClient registrationClient = Eureka.newRegistrationClientBuilder()
+        final EurekaRegistrationClient registrationClient = Eurekas.newRegistrationClientBuilder()
                 .withTransportConfig(config)
                 .withRegistryConfig(config)
                 .withServerResolver(registrationServerResolver)
                 .build();
 
-        final EurekaInterestClient interestClient = Eureka.newInterestClientBuilder()
+        final EurekaInterestClient interestClient = Eurekas.newInterestClientBuilder()
                 .withTransportConfig(config)
                 .withRegistryConfig(config)
                 .withServerResolver(interestServerResolver)
