@@ -1,8 +1,8 @@
 package com.netflix.eureka2.client.resolver;
 
 import com.netflix.eureka2.Server;
-import com.netflix.eureka2.client.functions.ChangeNotificationFunctions;
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.ChangeNotifications;
 import netflix.ocelli.LoadBalancer;
 import netflix.ocelli.loadbalancer.RoundRobinLoadBalancer;
 import org.slf4j.Logger;
@@ -79,8 +79,8 @@ public class OcelliServerResolver implements ServerResolver {
      */
     private Observable<LoadBalancer<Server>> connectLoadBalancer() {
         return serverSource
-                .compose(ChangeNotificationFunctions.<Server>buffers())
-                .compose(ChangeNotificationFunctions.<Server>snapshots())
+                .compose(ChangeNotifications.<Server>buffers())
+                .compose(ChangeNotifications.<Server>snapshots())
                 .materialize()
                 .concatMap(new Func1<Notification<LinkedHashSet<Server>>, Observable<? extends LoadBalancer<Server>>>() {
                     @Override

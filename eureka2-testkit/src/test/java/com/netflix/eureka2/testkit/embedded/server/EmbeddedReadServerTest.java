@@ -2,10 +2,9 @@ package com.netflix.eureka2.testkit.embedded.server;
 
 import java.util.List;
 
+import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.EurekaInterestClient;
-import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.client.EurekaRegistrationClientBuilder;
 import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
@@ -37,11 +36,11 @@ public class EmbeddedReadServerTest {
 
     @Test(timeout = 10000)
     public void testDiscoveryServices() throws Exception {
-        EurekaRegistrationClient registrationClient = new EurekaRegistrationClientBuilder()
+        EurekaRegistrationClient registrationClient = Eurekas.newRegistrationClientBuilder()
                 .withServerResolver(ServerResolvers.fromHostname("localhost").withPort(writeServerResource.getRegistrationPort()))
                 .build();
 
-        EurekaInterestClient interestClient = new EurekaInterestClientBuilder()
+        EurekaInterestClient interestClient = Eurekas.newInterestClientBuilder()
                 .withServerResolver(ServerResolvers.fromHostname("localhost").withPort(readServerResource.getDiscoveryPort()))
                 .build();
 

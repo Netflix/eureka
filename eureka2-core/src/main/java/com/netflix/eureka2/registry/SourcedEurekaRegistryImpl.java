@@ -39,7 +39,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
-import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
@@ -160,30 +159,29 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
      */
     private static Observable<Boolean> subscribeToUpdateResult(Observable<MultiSourcedDataHolder.Status> status) {
         final AsyncSubject<Boolean> result = AsyncSubject.create();  // use an async subject as we only need the last result
-        status.subscribe(new Subscriber<MultiSourcedDataHolder.Status>() {
-            @Override
-            public void onCompleted() {
-                result.onCompleted();
-            }
 
-            @Override
-            public void onError(Throwable e) {
-                logger.error("Registry update failure", e);
-                result.onError(e);
-                e.printStackTrace();
-            }
+        status.take(1).onBackpressureBuffer(1)
+                .map(new Func1<MultiSourcedDataHolder.Status, Boolean>() {
+                    @Override
+                    public Boolean call(MultiSourcedDataHolder.Status status) {
+                        logger.debug("Registry updated completed with status {}", status);
+                        if (status.equals(MultiSourcedDataHolder.Status.AddedFirst)
+                                || status.equals(MultiSourcedDataHolder.Status.RemovedLast)) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
+                })
+                .doOnError(new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable e) {
+                        logger.error("Registry update failure", e);
+                        e.printStackTrace();
+                    }
+                })
+                .subscribe(result);
 
-            @Override
-            public void onNext(MultiSourcedDataHolder.Status status) {
-                logger.debug("Registry updated completed with status {}", status);
-                if (status.equals(MultiSourcedDataHolder.Status.AddedFirst)
-                        || status.equals(MultiSourcedDataHolder.Status.RemovedLast)) {
-                    result.onNext(true);
-                } else {
-                    result.onNext(false);
-                }
-            }
-        });
         return result;
     }
 

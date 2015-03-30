@@ -1,8 +1,8 @@
 package netflix.adminresources.resources;
 
 import com.netflix.config.ConfigurationManager;
+import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.EurekaInterestClient;
-import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +22,7 @@ public class Eureka2InterestClientProviderImpl implements Eureka2InterestClientP
     @Override
     public EurekaInterestClient get() {
         logger.info("Subscribing to Eureka2 server {}:{}", discoveryDNS, port);
-        return new EurekaInterestClientBuilder()
+        return Eurekas.newInterestClientBuilder()
                 .withServerResolver(ServerResolvers.fromDnsName(discoveryDNS).withPort(port))
                 .build();
     }

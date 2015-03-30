@@ -1,35 +1,27 @@
 package com.netflix.eureka2.client.functions;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.ChangeNotifications;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.selector.ServiceSelector;
-import com.netflix.eureka2.utils.rx.RxFunctions;
-import rx.Notification;
-import rx.Observable;
 import rx.Observable.Transformer;
 import rx.functions.Func1;
 
 /**
- * @deprecated use {@link com.netflix.eureka2.client.functions.InterestFunctions} or
- * {@link com.netflix.eureka2.interests.ChangeNotifications} instead
- *
- * To be removed after rc.3
+ * A collection of functions that can be applied to an Eureka interest stream.
+ * For more generic versions of some of these functions that may not be InstanceInfo specific,
+ * see {@link com.netflix.eureka2.interests.ChangeNotifications}
  *
  * @author Tomasz Bak
  */
-@Deprecated
-public final class ChangeNotificationFunctions {
+public final class InterestFunctions {
 
-    private ChangeNotificationFunctions() {
+    /* package private */ InterestFunctions() {
     }
 
     /**
@@ -40,7 +32,6 @@ public final class ChangeNotificationFunctions {
      *                        host:port server item
      * @return a ChangeNotification stream of servers
      */
-    @Deprecated
     public static Func1<ChangeNotification<InstanceInfo>, ChangeNotification<Server>> instanceInfoToServer(final ServiceSelector serviceSelector) {
         return new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<Server>>() {
             @Override
@@ -86,45 +77,8 @@ public final class ChangeNotificationFunctions {
      *
      * @return observable of non-empty list objects
      */
-    @Deprecated
-    public static <T> Transformer<ChangeNotification<T>, List<ChangeNotification<T>>> buffers() {
-        return new Transformer<ChangeNotification<T>, List<ChangeNotification<T>>>() {
-            @Override
-            public Observable<List<ChangeNotification<T>>> call(Observable<ChangeNotification<T>> notifications) {
-                final AtomicReference<List<ChangeNotification<T>>> bufferRef = new AtomicReference<>();
-                bufferRef.set(new ArrayList<ChangeNotification<T>>());
-
-                return notifications
-                        .filter(RxFunctions.filterNullValuesFunc())
-                        .materialize()
-                        // concatMap as the internal observables all onComplete immediately
-                        .concatMap(new Func1<Notification<ChangeNotification<T>>, Observable<List<ChangeNotification<T>>>>() {
-                            @Override
-                            public Observable<List<ChangeNotification<T>>> call(Notification<ChangeNotification<T>> rxNotification) {
-                                List<ChangeNotification<T>> buffer = bufferRef.get();
-
-                                switch (rxNotification.getKind()) {
-                                    case OnNext:
-                                        ChangeNotification<T> notification = rxNotification.getValue();
-                                        if (notification.getKind() == Kind.BufferSentinel) {
-                                            bufferRef.set(new ArrayList<ChangeNotification<T>>());
-                                            return Observable.just(buffer);
-                                        }
-                                        buffer.add(notification);
-                                        break;
-                                    case OnCompleted:
-                                        return Observable.just(buffer);  // OnCompleted == BufferSentinel
-                                    case OnError:
-                                        //clear the buffer and onError, don't return partial error buffer
-                                        bufferRef.set(new ArrayList<ChangeNotification<T>>());
-                                        return Observable.error(rxNotification.getThrowable());
-                                }
-
-                                return Observable.empty();
-                            }
-                        });
-            }
-        };
+    public static Transformer<ChangeNotification<InstanceInfo>, List<ChangeNotification<InstanceInfo>>> buffers() {
+        return ChangeNotifications.buffers();
     }
 
     /**
@@ -137,8 +91,7 @@ public final class ChangeNotificationFunctions {
      *
      * @return observable of distinct set objects
      */
-    @Deprecated
-    public static <T> Transformer<List<ChangeNotification<T>>, LinkedHashSet<T>> snapshots() {
+    public static Transformer<List<ChangeNotification<InstanceInfo>>, LinkedHashSet<InstanceInfo>> snapshots() {
         return ChangeNotifications.snapshots();
     }
 }

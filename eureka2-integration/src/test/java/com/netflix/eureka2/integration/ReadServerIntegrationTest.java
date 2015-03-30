@@ -3,8 +3,9 @@ package com.netflix.eureka2.integration;
 import java.util.Iterator;
 import java.util.Set;
 
+import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.EurekaInterestClient;
-import com.netflix.eureka2.client.functions.ChangeNotificationFunctions;
+import com.netflix.eureka2.client.functions.InterestFunctions;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
@@ -67,8 +68,8 @@ public class ReadServerIntegrationTest {
 
         ExtTestSubscriber<Set<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
         eurekaClient.forInterest(Interests.forFullRegistry())
-                .compose(ChangeNotificationFunctions.<InstanceInfo>buffers())
-                .compose(ChangeNotificationFunctions.<InstanceInfo>snapshots())
+                .compose(InterestFunctions.buffers())
+                .compose(InterestFunctions.snapshots())
                 .subscribe(testSubscriber);
 
         // We should always get in the first batch all entries
@@ -106,8 +107,8 @@ public class ReadServerIntegrationTest {
 
         ExtTestSubscriber<Set<InstanceInfo>> snapshotSubscriber = new ExtTestSubscriber<>();
         eurekaClient.forInterest(Interests.forFullRegistry())
-                .compose(ChangeNotificationFunctions.<InstanceInfo>buffers())
-                .compose(ChangeNotificationFunctions.<InstanceInfo>snapshots())
+                .compose(InterestFunctions.buffers())
+                .compose(InterestFunctions.snapshots())
                 .subscribe(snapshotSubscriber);
 
         // We should always get in the first batch all entries

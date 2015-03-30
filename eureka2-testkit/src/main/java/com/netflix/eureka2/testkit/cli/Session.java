@@ -20,10 +20,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.EurekaInterestClient;
-import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.client.EurekaRegistrationClientBuilder;
 import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
@@ -103,7 +102,7 @@ public class Session {
     }
 
     public void connectToRegister(String host, int port) {
-        registrationClient = new EurekaRegistrationClientBuilder()
+        registrationClient = Eurekas.newRegistrationClientBuilder()
                 .withTransportConfig(context.getTransportConfig())
                 .withServerResolver(ServerResolvers.fromHostname(host).withPort(port))
                 .build();
@@ -112,7 +111,7 @@ public class Session {
     }
 
     public void connectToRead(String host, int port) {
-        interestClient = new EurekaInterestClientBuilder()
+        interestClient = Eurekas.newInterestClientBuilder()
                 .withTransportConfig(context.getTransportConfig())
                 .withServerResolver(ServerResolvers.fromHostname(host).withPort(port))
                 .build();
@@ -121,12 +120,12 @@ public class Session {
     }
 
     public void connectToCluster(String host, int registrationPort, int interestPort, String readClusterVip) {
-        registrationClient = new EurekaRegistrationClientBuilder()
+        registrationClient = Eurekas.newRegistrationClientBuilder()
                 .withTransportConfig(context.getTransportConfig())
                 .withServerResolver(ServerResolvers.fromHostname(host).withPort(registrationPort))
                 .build();
 
-        interestClient = new EurekaInterestClientBuilder()
+        interestClient = Eurekas.newInterestClientBuilder()
                 .withTransportConfig(context.getTransportConfig())
                 .withServerResolver(ServerResolvers.fromEureka(
                                 ServerResolvers.fromHostname(host).withPort(interestPort))

@@ -6,9 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
+import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.EurekaInterestClient;
-import com.netflix.eureka2.client.EurekaInterestClientBuilder;
-import com.netflix.eureka2.client.functions.ChangeNotificationFunctions;
+import com.netflix.eureka2.client.functions.InterestFunctions;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.protocol.registration.Register;
@@ -44,7 +44,7 @@ public class InstanceInfoEncodingEfficiency {
     private final JsonCodec jsonCodec = new JsonCodec(REGISTRATION_PROTOCOL_MODEL_SET);
 
     public InstanceInfoEncodingEfficiency(String writeServerDns) {
-        interestClient = new EurekaInterestClientBuilder().withServerResolver(
+        interestClient = Eurekas.newInterestClientBuilder().withServerResolver(
                 ServerResolvers.fromDnsName(writeServerDns).withPort(EurekaTransports.DEFAULT_DISCOVERY_PORT)
         ).build();
     }
@@ -52,8 +52,8 @@ public class InstanceInfoEncodingEfficiency {
     public void loadData() {
         instanceInfos = new ArrayList<>(
                 interestClient.forInterest(Interests.forFullRegistry())
-                        .compose(ChangeNotificationFunctions.<InstanceInfo>buffers())
-                        .compose(ChangeNotificationFunctions.<InstanceInfo>snapshots())
+                        .compose(InterestFunctions.buffers())
+                        .compose(InterestFunctions.snapshots())
                         .toBlocking().first()
         );
         System.out.printf("Loaded %d instances", instanceInfos.size());
