@@ -3,12 +3,15 @@ package com.netflix.eureka2.server.bridge;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.instance.NetworkAddress;
 import com.netflix.eureka2.registry.instance.ServicePort;
 import com.netflix.eureka2.registry.datacenter.AwsDataCenterInfo;
 import com.netflix.eureka2.registry.datacenter.BasicDataCenterInfo;
 
 import java.util.Collections;
 import java.util.HashSet;
+
+import static com.netflix.eureka2.registry.instance.NetworkAddress.NetworkAddressBuilder.aNetworkAddress;
 
 /**
  * @author David Liu
@@ -30,7 +33,7 @@ public class InstanceInfoConverterImpl implements InstanceInfoConverter {
                 .withStatusPageUrl(v1Info.getStatusPageUrl())
                 .withHealthCheckUrls(new HashSet<>(v1Info.getHealthCheckUrls()))
                 .withMetaData(v1Info.getMetadata())
-                .withDataCenterInfo(fromV1(v1Info.getDataCenterInfo()));
+                .withDataCenterInfo(dataCenterFromV1(v1Info));
 
         return builder.build();
     }
@@ -41,24 +44,34 @@ public class InstanceInfoConverterImpl implements InstanceInfoConverter {
     }
 
     @Override
-    public DataCenterInfo fromV1(com.netflix.appinfo.DataCenterInfo v1DataCenterInfo) {
+    public DataCenterInfo dataCenterFromV1(com.netflix.appinfo.InstanceInfo v1Info) {
         DataCenterInfo.DataCenterInfoBuilder builder;
 
+        com.netflix.appinfo.DataCenterInfo v1DataCenterInfo = v1Info.getDataCenterInfo();
         if (v1DataCenterInfo instanceof AmazonInfo) {
-            AmazonInfo v1Info = (AmazonInfo) v1DataCenterInfo;
+            AmazonInfo v1AmazonInfo = (AmazonInfo) v1DataCenterInfo;
 
             builder = new AwsDataCenterInfo.Builder()
-                    .withZone(v1Info.get(AmazonInfo.MetaDataKey.availabilityZone))
-                    .withAmiId(v1Info.get(AmazonInfo.MetaDataKey.amiId))
-                    .withInstanceId(v1Info.get(AmazonInfo.MetaDataKey.instanceId))
-                    .withInstanceType(v1Info.get(AmazonInfo.MetaDataKey.instanceType))
-                    .withPrivateIPv4(v1Info.get(AmazonInfo.MetaDataKey.localIpv4))
-                    .withPublicIPv4(v1Info.get(AmazonInfo.MetaDataKey.publicIpv4))
-                    .withPublicHostName(v1Info.get(AmazonInfo.MetaDataKey.publicHostname));
+                    .withZone(v1AmazonInfo.get(AmazonInfo.MetaDataKey.availabilityZone))
+                    .withAmiId(v1AmazonInfo.get(AmazonInfo.MetaDataKey.amiId))
+                    .withInstanceId(v1AmazonInfo.get(AmazonInfo.MetaDataKey.instanceId))
+                    .withInstanceType(v1AmazonInfo.get(AmazonInfo.MetaDataKey.instanceType))
+                    .withPrivateIPv4(v1AmazonInfo.get(AmazonInfo.MetaDataKey.localIpv4))
+                    .withPublicIPv4(v1AmazonInfo.get(AmazonInfo.MetaDataKey.publicIpv4))
+                    .withPublicHostName(v1AmazonInfo.get(AmazonInfo.MetaDataKey.publicHostname));
         } else {
-            builder = new BasicDataCenterInfo.BasicDataCenterInfoBuilder()
-                    .withName(v1DataCenterInfo.getName().name());
+            NetworkAddress address = aNetworkAddress()
+                    .withIpAddress(v1Info.getIPAddr())
+                    .withHostName(v1Info.getHostName())
+                    .withLabel(NetworkAddress.PUBLIC_ADDRESS)  // best guess
+                    .withProtocolType(NetworkAddress.ProtocolType.IPv4)  // best guess
+                    .build();
+
+            builder = new BasicDataCenterInfo.Builder<>()
+                    .withName(v1DataCenterInfo.getName().name())
+                    .withAddresses(address);
         }
+
         return builder.build();
     }
 

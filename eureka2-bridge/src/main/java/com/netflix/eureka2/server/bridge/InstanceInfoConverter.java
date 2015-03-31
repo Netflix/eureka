@@ -15,5 +15,5 @@ public interface InstanceInfoConverter {
 
     InstanceInfo.Status fromV1(com.netflix.appinfo.InstanceInfo.InstanceStatus v1Status);
 
-    DataCenterInfo fromV1(com.netflix.appinfo.DataCenterInfo v1DataCenterInfo);
+    DataCenterInfo dataCenterFromV1(com.netflix.appinfo.InstanceInfo v1Info);
 }

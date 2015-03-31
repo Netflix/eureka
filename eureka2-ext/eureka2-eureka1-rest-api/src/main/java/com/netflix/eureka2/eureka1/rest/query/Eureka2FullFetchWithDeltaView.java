@@ -67,7 +67,8 @@ public class Eureka2FullFetchWithDeltaView {
                 .compose(ChangeNotifications.<InstanceInfo>delineatedBuffers())
                 .compose(emitAndAggregateChanges(
                         instanceInfoIdentityComparator(),
-                        refreshIntervalMs, TimeUnit.MILLISECONDS,
+                        refreshIntervalMs,
+                        TimeUnit.MILLISECONDS,
                         scheduler
                 ))
                 .map(new Func1<List<ChangeNotification<InstanceInfo>>, RegistryFetch>() {
@@ -139,19 +140,32 @@ public class Eureka2FullFetchWithDeltaView {
 
             for (ChangeNotification<InstanceInfo> update : updates) {
                 com.netflix.appinfo.InstanceInfo v1Update = toEureka1xInstanceInfo(update.getData());
+                if (v1Update== null) {
+                    continue;  // skip ahead
+                }
+                com.netflix.appinfo.InstanceInfo v1Info;
                 switch (update.getKind()) {
                     case Add:
                         newAllInstances.remove(v1Update);
                         newAllInstances.add(v1Update);
-                        deltaChanges.add(toEureka1xInstanceInfo(update.getData(), ActionType.ADDED));
+                        v1Info = toEureka1xInstanceInfo(update.getData(), ActionType.ADDED);
+                        if (v1Info != null) {
+                            deltaChanges.add(v1Info);
+                        }
                         break;
                     case Modify:
                         newAllInstances.add(v1Update);
-                        deltaChanges.add(toEureka1xInstanceInfo(update.getData(), ActionType.MODIFIED));
+                        v1Info = toEureka1xInstanceInfo(update.getData(), ActionType.MODIFIED);
+                        if (v1Info != null) {
+                            deltaChanges.add(v1Info);
+                        }
                         break;
                     case Delete:
                         newAllInstances.remove(v1Update);
-                        deltaChanges.add(toEureka1xInstanceInfo(update.getData(), ActionType.DELETED));
+                        v1Info = toEureka1xInstanceInfo(update.getData(), ActionType.DELETED);
+                        if (v1Info != null) {
+                            deltaChanges.add(v1Info);
+                        }
                         break;
                     default:
                         logger.error("Unexpected change notification type {}", update.getKind());

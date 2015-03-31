@@ -23,6 +23,7 @@ dependencies {
     compile "org.slf4j:slf4j-simple:${slf4j_version}"
     compile "commons-cli:commons-cli:${commons_cli_version}"
 
+    compile "org.codehaus.jettison:jettison:${jettison_version}"
     compile "com.netflix.governator:governator:${governator_version}"
     compile("io.reactivex:rxnetty-spectator:${rxnetty_version}")
 
