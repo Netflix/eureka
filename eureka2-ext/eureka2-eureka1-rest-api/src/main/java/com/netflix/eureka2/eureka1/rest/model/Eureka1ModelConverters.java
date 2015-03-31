@@ -30,6 +30,8 @@ import com.netflix.eureka2.registry.instance.NetworkAddress;
 import com.netflix.eureka2.registry.instance.NetworkAddress.ProtocolType;
 import com.netflix.eureka2.registry.instance.ServicePort;
 import com.netflix.eureka2.registry.selector.AddressSelector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.netflix.eureka2.utils.ExtCollections.asSet;
 
@@ -39,6 +41,8 @@ import static com.netflix.eureka2.utils.ExtCollections.asSet;
  * @author Tomasz Bak
  */
 public final class Eureka1ModelConverters {
+
+    private static final Logger logger = LoggerFactory.getLogger(Eureka1ModelConverters.class);
 
     private static final AddressSelector ADDRESS_SELECTOR = AddressSelector.selectBy()
             .protocolType(ProtocolType.IPv4).publicIp(true).or().any();
@@ -89,82 +93,104 @@ public final class Eureka1ModelConverters {
         builder.addMetadata(MetaDataKey.availabilityZone, v2DataCenterInfo.getZone());
         builder.addMetadata(MetaDataKey.instanceId, v2DataCenterInfo.getInstanceId());
         builder.addMetadata(MetaDataKey.instanceType, v2DataCenterInfo.getInstanceType());
-        builder.addMetadata(MetaDataKey.localIpv4, v2DataCenterInfo.getPrivateAddress().getIpAddress());
-        builder.addMetadata(MetaDataKey.publicHostname, v2DataCenterInfo.getPublicAddress().getHostName());
-        builder.addMetadata(MetaDataKey.publicIpv4, v2DataCenterInfo.getPublicAddress().getIpAddress());
+
+        builder.addMetadata(MetaDataKey.localIpv4, v2DataCenterInfo.getPrivateAddress() == null
+                ? ""
+                : v2DataCenterInfo.getPrivateAddress().getIpAddress()
+        );
+
+        builder.addMetadata(MetaDataKey.publicHostname, v2DataCenterInfo.getPublicAddress() == null
+                        ? ""
+                        : v2DataCenterInfo.getPublicAddress().getHostName()
+        );
+
+        builder.addMetadata(MetaDataKey.publicIpv4, v2DataCenterInfo.getPublicAddress() == null
+                        ? ""
+                        : v2DataCenterInfo.getPublicAddress().getIpAddress()
+        );
+
         return builder.build();
     }
 
     public static com.netflix.appinfo.InstanceInfo toEureka1xInstanceInfo(InstanceInfo v2InstanceInfo, ActionType actionType) {
-        Builder builder = Builder.newBuilder();
+        try {
+            Builder builder = Builder.newBuilder();
 
-        builder.setAppGroupName(v2InstanceInfo.getAppGroup());
-        builder.setAppName(v2InstanceInfo.getApp());
-        builder.setASGName(v2InstanceInfo.getAsg());
-        builder.setVIPAddress(v2InstanceInfo.getVipAddress());
-        builder.setSecureVIPAddress(v2InstanceInfo.getSecureVipAddress());
-        builder.setStatus(toEureka1xStatus(v2InstanceInfo.getStatus()));
+            builder.setAppGroupName(v2InstanceInfo.getAppGroup());
+            builder.setAppName(v2InstanceInfo.getApp());
+            builder.setASGName(v2InstanceInfo.getAsg());
+            builder.setVIPAddress(v2InstanceInfo.getVipAddress());
+            builder.setSecureVIPAddress(v2InstanceInfo.getSecureVipAddress());
+            builder.setStatus(toEureka1xStatus(v2InstanceInfo.getStatus()));
 
-        // Network addresses
-        NetworkAddress address = ADDRESS_SELECTOR.returnAddress(v2InstanceInfo.getDataCenterInfo().getAddresses());
-        builder.setHostName(address.getHostName() == null ? address.getIpAddress() : address.getHostName());
-        builder.setIPAddr(address.getIpAddress());
+            // Network addresses
+            NetworkAddress address = ADDRESS_SELECTOR.returnAddress(v2InstanceInfo.getDataCenterInfo().getAddresses());
+            if (address != null) {
+                builder.setHostName(address.getHostName() == null ? address.getIpAddress() : address.getHostName());
+                builder.setIPAddr(address.getIpAddress() == null ? "" : address.getIpAddress());
+            } else {
+                logger.warn("Network address is null for {}", v2InstanceInfo);
+            }
 
-        // Home/status URLs
-        if (v2InstanceInfo.getHomePageUrl() != null) {
-            builder.setHomePageUrl(relativeUrlOf(v2InstanceInfo.getHomePageUrl()), v2InstanceInfo.getHomePageUrl());
-        }
-        if (v2InstanceInfo.getStatusPageUrl() != null) {
-            builder.setStatusPageUrl(relativeUrlOf(v2InstanceInfo.getStatusPageUrl()), v2InstanceInfo.getStatusPageUrl());
-        }
+            // Home/status URLs
+            if (v2InstanceInfo.getHomePageUrl() != null) {
+                builder.setHomePageUrl(relativeUrlOf(v2InstanceInfo.getHomePageUrl()), v2InstanceInfo.getHomePageUrl());
+            }
+            if (v2InstanceInfo.getStatusPageUrl() != null) {
+                builder.setStatusPageUrl(relativeUrlOf(v2InstanceInfo.getStatusPageUrl()), v2InstanceInfo.getStatusPageUrl());
+            }
 
-        // Map healthcheck URLs
-        if (v2InstanceInfo.getHealthCheckUrls() != null) {
-            String explicitHealthCheckUrl = null;
-            String explicitSecureHealthCheckUrl = null;
+            // Map healthcheck URLs
+            if (v2InstanceInfo.getHealthCheckUrls() != null) {
+                String explicitHealthCheckUrl = null;
+                String explicitSecureHealthCheckUrl = null;
 
-            for (String url : v2InstanceInfo.getHealthCheckUrls()) {
-                if (url.startsWith("https")) {
-                    if (explicitSecureHealthCheckUrl == null) {
-                        explicitSecureHealthCheckUrl = url;
+                for (String url : v2InstanceInfo.getHealthCheckUrls()) {
+                    if (url.startsWith("https")) {
+                        if (explicitSecureHealthCheckUrl == null) {
+                            explicitSecureHealthCheckUrl = url;
+                        }
+                    } else if (explicitHealthCheckUrl == null) {
+                        explicitHealthCheckUrl = url;
                     }
-                } else if (explicitHealthCheckUrl == null) {
-                    explicitHealthCheckUrl = url;
+                }
+                String relativeHealthCheckUrl = explicitHealthCheckUrl != null ?
+                        relativeUrlOf(explicitHealthCheckUrl) : relativeUrlOf(explicitSecureHealthCheckUrl);
+
+                builder.setHealthCheckUrls(relativeHealthCheckUrl, explicitHealthCheckUrl, explicitSecureHealthCheckUrl);
+            }
+
+            // Lease
+            builder.setLeaseInfo(createDummyLeaseInfo());
+
+            // Map data center
+            builder.setDataCenterInfo(toEureka1xDataCenterInfo(v2InstanceInfo.getDataCenterInfo()));
+
+            // Port mapping
+            for (ServicePort servicePort : v2InstanceInfo.getPorts()) {
+                if (servicePort.isSecure()) {
+                    builder.enablePort(PortType.SECURE, true);
+                    builder.setSecurePort(servicePort.getPort());
+                } else {
+                    builder.enablePort(PortType.UNSECURE, true);
+                    builder.setPort(servicePort.getPort());
                 }
             }
-            String relativeHealthCheckUrl = explicitHealthCheckUrl != null ?
-                    relativeUrlOf(explicitHealthCheckUrl) : relativeUrlOf(explicitSecureHealthCheckUrl);
 
-            builder.setHealthCheckUrls(relativeHealthCheckUrl, explicitHealthCheckUrl, explicitSecureHealthCheckUrl);
-        }
-
-        // Lease
-        builder.setLeaseInfo(createDummyLeaseInfo());
-
-        // Map data center
-        builder.setDataCenterInfo(toEureka1xDataCenterInfo(v2InstanceInfo.getDataCenterInfo()));
-
-        // Port mapping
-        for (ServicePort servicePort : v2InstanceInfo.getPorts()) {
-            if (servicePort.isSecure()) {
-                builder.enablePort(PortType.SECURE, true);
-                builder.setSecurePort(servicePort.getPort());
-            } else {
-                builder.enablePort(PortType.UNSECURE, true);
-                builder.setPort(servicePort.getPort());
+            // Meta data
+            if (v2InstanceInfo.getMetaData() != null) {
+                for (Entry<String, String> entry : v2InstanceInfo.getMetaData().entrySet()) {
+                    builder.add(entry.getKey(), entry.getValue());
+                }
             }
-        }
 
-        // Meta data
-        if (v2InstanceInfo.getMetaData() != null) {
-            for (Entry<String, String> entry : v2InstanceInfo.getMetaData().entrySet()) {
-                builder.add(entry.getKey(), entry.getValue());
-            }
+            com.netflix.appinfo.InstanceInfo v1InstanceInfo = builder.build();
+            v1InstanceInfo.setActionType(actionType);
+            return v1InstanceInfo;
+        } catch (Exception e) {
+            logger.error("failed to convert eureka2 instanceInfo to eureka1: {}", v2InstanceInfo);
+            return null;
         }
-
-        com.netflix.appinfo.InstanceInfo v1InstanceInfo = builder.build();
-        v1InstanceInfo.setActionType(actionType);
-        return v1InstanceInfo;
     }
 
     public static com.netflix.appinfo.InstanceInfo toEureka1xInstanceInfo(InstanceInfo v2InstanceInfo) {
@@ -263,7 +289,7 @@ public final class Eureka1ModelConverters {
                     .withPublicIPv4(v1Info.get(AmazonInfo.MetaDataKey.publicIpv4))
                     .withPublicHostName(v1Info.get(AmazonInfo.MetaDataKey.publicHostname));
         } else {
-            builder = new BasicDataCenterInfo.BasicDataCenterInfoBuilder()
+            builder = new BasicDataCenterInfo.Builder<>()
                     .withName(v1DataCenterInfo.getName().name());
         }
         return builder.build();

@@ -3,7 +3,6 @@ package com.netflix.eureka2.integration;
 import java.util.Iterator;
 import java.util.Set;
 
-import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.functions.InterestFunctions;
 import com.netflix.eureka2.client.resolver.ServerResolver;
@@ -20,6 +19,7 @@ import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources;
 import com.netflix.eureka2.testkit.junit.resources.EurekaInterestClientResource;
 import com.netflix.eureka2.testkit.junit.resources.ReadServerResource;
 import com.netflix.eureka2.testkit.junit.resources.WriteServerResource;
+import com.netflix.eureka2.utils.rx.NoOpSubscriber;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -129,7 +129,7 @@ public class ReadServerIntegrationTest {
         Iterator<InstanceInfo> instanceIt = SampleInstanceInfo.collectionOf("testInstance#", SampleInstanceInfo.CliServer.build());
         Source source = new Source(Origin.LOCAL, "write1");
         for (int i = 0; i < registryInitialSize; i++) {
-            eurekaServerRegistry.register(instanceIt.next(), source).subscribe();
+            eurekaServerRegistry.register(instanceIt.next(), source).subscribe(new NoOpSubscriber<Boolean>());
         }
     }
 }
