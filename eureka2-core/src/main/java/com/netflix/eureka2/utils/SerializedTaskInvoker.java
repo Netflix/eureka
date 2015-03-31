@@ -13,6 +13,7 @@ import rx.Observable;
 import rx.Scheduler;
 import rx.Scheduler.Worker;
 import rx.Subscriber;
+import rx.exceptions.OnErrorNotImplementedException;
 import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
@@ -123,7 +124,11 @@ public abstract class SerializedTaskInvoker {
 
         protected void cancel() {
             logger.info("Cancelling task {}", this.toString());
-            subscriberForThisTask.onError(TASK_CANCELLED);
+            try {
+                subscriberForThisTask.onError(TASK_CANCELLED);
+            } catch (OnErrorNotImplementedException e) {
+                logger.error("Error sending onError to task subscriber", e);
+            }
         }
     }
 
