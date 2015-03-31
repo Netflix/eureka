@@ -18,11 +18,8 @@ package com.netflix.eureka2.server;
 
 import java.util.List;
 
-import com.netflix.eureka2.eureka1.rest.Eureka1Configuration;
-import com.netflix.eureka2.eureka1.rest.Eureka1RestApiModule;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.config.ReadCommandLineParser;
-import com.netflix.eureka2.server.spi.ExtAbstractModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.server.spi.ExtensionLoader;
 import com.netflix.governator.guice.BootstrapBinder;
