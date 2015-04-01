@@ -18,7 +18,6 @@ package com.netflix.discovery;
 
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
-import javax.naming.directory.DirContext;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
@@ -112,16 +111,13 @@ public class DiscoveryClient implements LookupService {
     private static final DynamicPropertyFactory configInstance = DynamicPropertyFactory.getInstance();
 
     // Constants
-    private static final String DNS_PROVIDER_URL = "dns:";
-    private static final String DNS_NAMING_FACTORY = "com.sun.jndi.dns.DnsContextFactory";
-    private static final String JAVA_NAMING_FACTORY_INITIAL = "java.naming.factory.initial";
-    private static final String JAVA_NAMING_PROVIDER_URL = "java.naming.provider.url";
-    private static final String DNS_RECORD_TYPE = "TXT";
+    public static final int MAX_FOLLOWED_REDIRECTS = 10;
+    public static final String HTTP_X_NETFLIX_DISCOVERY_ALLOW_REDIRECT = "X-Netflix-Discovery-AllowRedirect";
+
     private static final String VALUE_DELIMITER = ",";
     private static final String COMMA_STRING = VALUE_DELIMITER;
     private static final String DISCOVERY_APPID = "DISCOVERY";
     private static final String UNKNOWN = "UNKNOWN";
-    private static final DirContext dirContext = DiscoveryClient.getDirContext();
 
     private static final Pattern REDIRECT_PATH_REGEX = Pattern.compile("(.*/v2/)apps(/.*)?$");
 
@@ -226,13 +222,12 @@ public class DiscoveryClient implements LookupService {
 
     @Inject
     DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, DiscoveryClientOptionalArgs args,
-                              Provider<BackupRegistry> backupRegistryProvider) {
+                    Provider<BackupRegistry> backupRegistryProvider) {
         if (args != null) {
             healthCheckHandlerProvider = args.healthCheckHandlerProvider;
             healthCheckCallbackProvider = args.healthCheckCallbackProvider;
             eventBus = args.eventBus;
-        }
-        else {
+        } else {
             healthCheckCallbackProvider = null;
             healthCheckHandlerProvider = null;
             eventBus = null;
@@ -243,15 +238,15 @@ public class DiscoveryClient implements LookupService {
         try {
             scheduler = Executors.newScheduledThreadPool(4,
                     new ThreadFactoryBuilder()
-                        .setNameFormat("DiscoveryClient-%d")
-                        .setDaemon(true)
-                        .build());
+                            .setNameFormat("DiscoveryClient-%d")
+                            .setDaemon(true)
+                            .build());
             clientConfig = config;
             final String zone = getZone(myInfo);
             eurekaServiceUrls.set(getDiscoveryServiceUrls(zone));
             scheduler.scheduleWithFixedDelay(getServiceUrlUpdateTask(zone),
-                                             clientConfig.getEurekaServiceUrlPollIntervalSeconds(),
-                                             clientConfig.getEurekaServiceUrlPollIntervalSeconds(), TimeUnit.SECONDS);
+                    clientConfig.getEurekaServiceUrlPollIntervalSeconds(),
+                    clientConfig.getEurekaServiceUrlPollIntervalSeconds(), TimeUnit.SECONDS);
             localRegionApps.set(new Applications());
 
             heartbeatExecutor = new ThreadPoolExecutor(
@@ -267,7 +262,7 @@ public class DiscoveryClient implements LookupService {
             if (myInfo != null) {
                 instanceInfo = myInfo;
                 appPathIdentifier = instanceInfo.getAppName() + "/"
-                                    + instanceInfo.getId();
+                        + instanceInfo.getId();
             }
 
             if (eurekaServiceUrls.get().get(0).startsWith("https://") &&
@@ -734,11 +729,11 @@ public class DiscoveryClient implements LookupService {
             Applications applications = getApplications();
 
             if (clientConfig.shouldDisableDelta()
-                || (!Strings.isNullOrEmpty(clientConfig.getRegistryRefreshSingleVipAddress()))
-                || forceFullRegistryFetch
-                || (applications == null)
-                || (applications.getRegisteredApplications().size() == 0)
-                || (applications.getVersion() == -1)) //Client application does not have latest library supporting delta
+                    || (!Strings.isNullOrEmpty(clientConfig.getRegistryRefreshSingleVipAddress()))
+                    || forceFullRegistryFetch
+                    || (applications == null)
+                    || (applications.getRegisteredApplications().size() == 0)
+                    || (applications.getVersion() == -1)) //Client application does not have latest library supporting delta
             {
                 logger.info("Disable delta property : {}", clientConfig.shouldDisableDelta());
                 logger.info("Single vip registry refresh property : {}", clientConfig.getRegistryRefreshSingleVipAddress());
@@ -939,7 +934,7 @@ public class DiscoveryClient implements LookupService {
      *             on any error.
      */
     private ClientResponse reconcileAndLogDifference(ClientResponse response,
-            Applications delta, String reconcileHashCode) throws Throwable {
+                                                     Applications delta, String reconcileHashCode) throws Throwable {
         logger.warn(
                 "The Reconcile hashcodes do not match, client : {}, server : {}. Getting the full registry",
                 reconcileHashCode, delta.getAppsHashCode());
@@ -1020,7 +1015,7 @@ public class DiscoveryClient implements LookupService {
                         applications.addApplication(app);
                     }
                     logger.debug("Modified instance {} to the existing apps ",
-                                 instance.getId());
+                            instance.getId());
 
                     applications.getRegisteredApplications(
                             instance.getAppName()).addInstance(instance);
@@ -1032,7 +1027,7 @@ public class DiscoveryClient implements LookupService {
                         applications.addApplication(app);
                     }
                     logger.debug("Deleted instance {} to the existing apps ",
-                                 instance.getId());
+                            instance.getId());
                     applications.getRegisteredApplications(
                             instance.getAppName()).removeInstance(instance);
                 }
@@ -1061,18 +1056,27 @@ public class DiscoveryClient implements LookupService {
      *             on any error.
      */
     private ClientResponse makeRemoteCall(Action action) throws Throwable {
-        if(lastRedirect.get() != null) {
+        if (lastRedirect.get() != null && isQueryAction(action)) {
             String serviceUrl = lastRedirect.get();
             try {
-                return makeRemoteCall(action, serviceUrl);
+                ClientResponse clientResponse = makeRemoteCall(action, serviceUrl);
+                int status = clientResponse.getStatus();
+                if (status >= 200 && status < 300) {
+                    return clientResponse;
+                }
+                SERVER_RETRY_COUNTER.increment();
+                lastRedirect.compareAndSet(serviceUrl, null);
             } catch (Throwable ignored) {
                 logger.warn("Remote call to last redirect address failed; retrying from configured service URL list");
                 SERVER_RETRY_COUNTER.increment();
                 lastRedirect.compareAndSet(serviceUrl, null);
             }
         }
-
         return makeRemoteCall(action, 0);
+    }
+
+    private static boolean isQueryAction(Action action) {
+        return action == Action.Refresh || action == Action.Refresh_Delta;
     }
 
     /**
@@ -1108,25 +1112,35 @@ public class DiscoveryClient implements LookupService {
 
     private ClientResponse makeRemoteCallWithFollowRedirect(Action action, String serviceUrl) throws Throwable {
         URI targetUrl = new URI(serviceUrl);
-        for(int followRedirectCount = 0; followRedirectCount < 10; followRedirectCount++) {
+        for (int followRedirectCount = 0; followRedirectCount < MAX_FOLLOWED_REDIRECTS; followRedirectCount++) {
             ClientResponse clientResponse = makeRemoteCall(action, targetUrl.toString());
-            if(clientResponse.getStatus() < 300) {
-                if(followRedirectCount > 0) {
-                    Matcher pathMatcher = REDIRECT_PATH_REGEX.matcher(targetUrl.getPath());
-                    if(pathMatcher.matches()) {
-                        URI baseUri = UriBuilder.fromUri(targetUrl).replacePath(pathMatcher.group(1)).replaceQuery(null).build();
-                        lastRedirect.set(baseUri.toString());
-                    } else {
-                        logger.warn("Invalid redirect URL {}; ignoring it", targetUrl);
-                    }
+            if (clientResponse.getStatus() != 302) {
+                if (followRedirectCount > 0) {
+                    lastRedirect.set(targetUrl.toString());
                 }
                 return clientResponse;
             }
-            targetUrl = clientResponse.getLocation();
+            targetUrl = getRedirectBaseUri(clientResponse.getLocation());
+            if (targetUrl == null) {
+                throw new IOException("Invalid redirect URL " + clientResponse.getLocation());
+            }
         }
         String message = "Follow redirect limit crossed for URI " + serviceUrl;
         logger.warn(message);
         throw new IOException(message);
+    }
+
+    private static URI getRedirectBaseUri(URI targetUrl) {
+        Matcher pathMatcher = REDIRECT_PATH_REGEX.matcher(targetUrl.getPath());
+        if (pathMatcher.matches()) {
+            return UriBuilder.fromUri(targetUrl)
+                    .host(DnsResolver.resolve(targetUrl.getHost()))
+                    .replacePath(pathMatcher.group(1))
+                    .replaceQuery(null)
+                    .build();
+        }
+        logger.warn("Invalid redirect URL {}", targetUrl);
+        return null;
     }
 
     /**
@@ -1153,6 +1167,9 @@ public class DiscoveryClient implements LookupService {
                 return null;
             }
             WebResource r = discoveryApacheClient.resource(serviceUrl);
+            if (clientConfig.allowRedirects()) {
+                r.header(HTTP_X_NETFLIX_DISCOVERY_ALLOW_REDIRECT, "true");
+            }
             String remoteRegionsToFetchStr;
             switch (action) {
                 case Renew:
@@ -1208,7 +1225,7 @@ public class DiscoveryClient implements LookupService {
 
             if (logger.isDebugEnabled()) {
                 logger.debug("Finished a call to service url {} and url path {} with status code {}.",
-                        new String[] {serviceUrl, urlPath, String.valueOf(response.getStatus())});
+                        new String[]{serviceUrl, urlPath, String.valueOf(response.getStatus())});
             }
             if (isOk(action, response.getStatus())) {
                 return response;
@@ -1288,7 +1305,7 @@ public class DiscoveryClient implements LookupService {
             // InstanceInfo replication timer
             instanceInfoReplicator = new InstanceInfoReplicator();
             scheduler.scheduleWithFixedDelay(instanceInfoReplicator,
-            		clientConfig.getInitialInstanceInfoReplicationIntervalSeconds(),
+                    clientConfig.getInitialInstanceInfoReplicationIntervalSeconds(),
                     clientConfig.getInstanceInfoReplicationIntervalSeconds(), TimeUnit.SECONDS);
 
         } else {
@@ -1317,7 +1334,7 @@ public class DiscoveryClient implements LookupService {
      *         talk to.
      */
     public List<String> getServiceUrlsFromDNS(String instanceZone,
-            boolean preferSameZone) {
+                                              boolean preferSameZone) {
         Stopwatch t = GET_SERVICE_URLS_DNS_TIMER.start();
         String region = getRegion();
         // Get zone-specific DNS names for the given region so that we can get a
@@ -1362,7 +1379,7 @@ public class DiscoveryClient implements LookupService {
                 String zone = zones.remove(0);
                 zones.add(zone);
             }
-         }
+        }
 
         // Now get the eureka urls for all the zones in the order and return it
         List<String> serviceUrls = new ArrayList<String>();
@@ -1376,12 +1393,12 @@ public class DiscoveryClient implements LookupService {
                 if (ec2Urls.size() > 1) {
                     this.arrangeListBasedonHostname(ec2Urls);
                 }
-                 for (String ec2Url : ec2Urls) {
+                for (String ec2Url : ec2Urls) {
                     String serviceUrl = "http://" + ec2Url + ":"
-                    + clientConfig.getEurekaServerPort()
+                            + clientConfig.getEurekaServerPort()
 
-                    + "/" + clientConfig.getEurekaServerURLContext()
-                    + "/";
+                            + "/" + clientConfig.getEurekaServerURLContext()
+                            + "/";
                     logger.debug("The EC2 url is {}", serviceUrl);
                     serviceUrls.add(serviceUrl);
                 }
@@ -1407,7 +1424,7 @@ public class DiscoveryClient implements LookupService {
                     clientConfig.shouldPreferSameZoneEureka());
         }
         return DiscoveryClient.getEurekaServiceUrlsFromConfig(zone,
-                                                              clientConfig.shouldPreferSameZoneEureka());
+                clientConfig.shouldPreferSameZoneEureka());
     }
 
     public enum DiscoveryUrlType {
@@ -1430,7 +1447,7 @@ public class DiscoveryClient implements LookupService {
                 && myInfo.getDataCenterInfo().getName() == Name.Amazon) {
 
             String awsInstanceZone = ((AmazonInfo) myInfo.getDataCenterInfo())
-            .get(MetaDataKey.availabilityZone);
+                    .get(MetaDataKey.availabilityZone);
             if (awsInstanceZone != null) {
                 instanceZone = awsInstanceZone;
             }
@@ -1471,8 +1488,7 @@ public class DiscoveryClient implements LookupService {
             logger.debug("The region url to be looked up is {} :",
                     discoveryDnsName);
             Set<String> zoneCnamesForRegion = new TreeSet<String>(
-                    DiscoveryClient.getCnamesFromDirContext(dirContext,
-                            discoveryDnsName));
+                    DnsResolver.getCNamesFromTxtRecord(discoveryDnsName));
             Map<String, List<String>> zoneCnameMapForRegion = new TreeMap<String, List<String>>();
             for (String zoneCname : zoneCnamesForRegion) {
                 String zone = null;
@@ -1516,13 +1532,12 @@ public class DiscoveryClient implements LookupService {
      * @return - The list of EC2 URLs associated with the dns name
      */
     public static Set<String> getEC2DiscoveryUrlsFromZone(String dnsName,
-            DiscoveryUrlType type) {
+                                                          DiscoveryUrlType type) {
         Set<String> eipsForZone = null;
         try {
             dnsName = "txt." + dnsName;
             logger.debug("The zone url to be looked up is {} :", dnsName);
-            Set<String> ec2UrlsForZone = DiscoveryClient
-                    .getCnamesFromDirContext(dirContext, dnsName);
+            Set<String> ec2UrlsForZone = DnsResolver.getCNamesFromTxtRecord(dnsName);
             for (String ec2Url : ec2UrlsForZone) {
                 logger.debug("The eureka url for the dns name {} is {}",
                         dnsName, ec2Url);
@@ -1558,7 +1573,7 @@ public class DiscoveryClient implements LookupService {
      *
      */
     private static int getZoneOffset(String myZone, boolean preferSameZone,
-            String[] availZones) {
+                                     String[] availZones) {
         for (int i = 0; i < availZones.length; i++) {
             if (myZone != null
                     && (availZones[i].equalsIgnoreCase(myZone.trim()) == preferSameZone)) {
@@ -1567,7 +1582,7 @@ public class DiscoveryClient implements LookupService {
         }
         logger.warn(
                 "DISCOVERY: Could not pick a zone based on preferred zone settings. My zone - {}, preferSameZone- {}. "
-                + "Defaulting to " + availZones[0], myZone, preferSameZone);
+                        + "Defaulting to " + availZones[0], myZone, preferSameZone);
         return 0;
     }
 
@@ -1692,11 +1707,13 @@ public class DiscoveryClient implements LookupService {
         }
     }
 
-    @VisibleForTesting InstanceInfoReplicator getInstanceInfoReplicator() {
+    @VisibleForTesting
+    InstanceInfoReplicator getInstanceInfoReplicator() {
         return instanceInfoReplicator;
     }
 
-    @VisibleForTesting InstanceInfo getInstanceInfo() {
+    @VisibleForTesting
+    InstanceInfo getInstanceInfo() {
         return instanceInfo;
     }
 
@@ -1763,57 +1780,12 @@ public class DiscoveryClient implements LookupService {
                         allAppsHashCodes.append(entry.getValue().getAppsHashCode());
                     }
                     logger.debug("Completed cache refresh task for discovery. All Apps hash code is {} ",
-                                allAppsHashCodes.toString());
+                            allAppsHashCodes.toString());
                 }
             } catch (Throwable th) {
                 logger.error("Cannot fetch registry from server", th);
             }
         }
-    }
-
-    /**
-     * Load up the DNS JNDI context provider.
-     *
-     */
-    private static DirContext getDirContext() {
-        java.util.Hashtable<String, String> env = new java.util.Hashtable<String, String>();
-        env.put(JAVA_NAMING_FACTORY_INITIAL, DNS_NAMING_FACTORY);
-        env.put(JAVA_NAMING_PROVIDER_URL, DNS_PROVIDER_URL);
-
-        DirContext dirContext = null;
-
-        try {
-            dirContext = new javax.naming.directory.InitialDirContext(env);
-        } catch (Throwable e) {
-            throw new RuntimeException(
-                    "Cannot get dir context for some reason", e);
-        }
-        return dirContext;
-    }
-
-    /**
-     * Looks up the DNS name provided in the JNDI context.
-     *
-     */
-    private static Set<String> getCnamesFromDirContext(DirContext dirContext,
-            String discoveryDnsName) throws Throwable {
-        javax.naming.directory.Attributes attrs = dirContext.getAttributes(
-                discoveryDnsName, new String[] {DNS_RECORD_TYPE});
-        javax.naming.directory.Attribute attr = attrs.get(DNS_RECORD_TYPE);
-        String txtRecord = null;
-        if (attr != null) {
-            txtRecord = attr.get().toString();
-        }
-
-        Set<String> cnamesSet = new TreeSet<String>();
-        if ((txtRecord == null) || ("".equals(txtRecord.trim()))) {
-            return cnamesSet;
-        }
-        String[] cnames = txtRecord.split(" ");
-        for (String cname : cnames) {
-            cnamesSet.add(cname);
-        }
-        return cnamesSet;
     }
 
     /**

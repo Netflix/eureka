@@ -200,7 +200,10 @@ public class MockRemoteEurekaServer extends ExternalResource {
                 } else if (pathInfo.startsWith("apps")) {  // assume this is the renewal heartbeat
                     heartbeatCount.getAndIncrement();
 
-                    sendOkResponseWithContent((Request) request, response, new Applications());
+                    Applications apps = new Applications();
+                    apps.setAppsHashCode("");
+                    sendOkResponseWithContent((Request) request, response, apps);
+                    handled = true;
                 } else {
                     System.out.println("Not handling request: " + pathInfo);
                 }

@@ -319,11 +319,16 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 true).get();
     }
 
+    @Override
+    public boolean allowRedirects() {
+        return configInstance.getBooleanProperty(namespace + "allowRedirects", false).get();
+    }
+
     /*
-     * (non-Javadoc)
-     *
-     * @see com.netflix.discovery.EurekaClientConfig#shouldLogDeltaDiff()
-     */
+         * (non-Javadoc)
+         *
+         * @see com.netflix.discovery.EurekaClientConfig#shouldLogDeltaDiff()
+         */
     @Override
     public boolean shouldLogDeltaDiff() {
         return configInstance.getBooleanProperty(
