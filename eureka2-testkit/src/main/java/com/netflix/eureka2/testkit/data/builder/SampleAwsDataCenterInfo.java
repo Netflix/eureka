@@ -39,7 +39,28 @@ public enum SampleAwsDataCenterInfo {
                     .withPrivateHostName("us-east-1a-vm.internal")
                     .withPrivateIPv4("192.168.0.1")
                     .withPublicHostName("us-east-1a-vm.public")
-                    .withPublicIPv4("11.11.0.1");
+                    .withPublicIPv4("11.11.0.1")
+                    .withEth0mac("mac:address")
+                    .withAccountId("myAccount");
+        }
+    },
+    UsEast1aVpc() {
+        @Override
+        public AwsDataCenterInfo.Builder builder() {
+            return new AwsDataCenterInfo.Builder()
+                    .withRegion("US-East-1")
+                    .withZone("US-East-1a")
+                    .withPlacementGroup("pg-1")
+                    .withAmiId("ami-12345678")
+                    .withInstanceId("id-12345678")
+                    .withInstanceType("m1.large")
+                    .withPrivateHostName("us-east-1a-vm.internal")
+                    .withPrivateIPv4("192.168.0.1")
+                    .withPublicHostName("us-east-1a-vm.public")
+                    .withPublicIPv4("11.11.0.1")
+                    .withEth0mac("mac:address")
+                    .withAccountId("myAccount")
+                    .withVpcId("someVpcId");
         }
     },
     UsEast1c() {
@@ -53,7 +74,9 @@ public enum SampleAwsDataCenterInfo {
                     .withInstanceId("id-12345678")
                     .withInstanceType("m1.large")
                     .withPrivateHostName("us-east-1c-vm.test")
-                    .withPrivateIPv4("192.168.1.1");
+                    .withPrivateIPv4("192.168.1.1")
+                    .withEth0mac("mac:address")
+                    .withAccountId("myAccount");
         }
     };
 

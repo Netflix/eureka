@@ -35,7 +35,7 @@ public class PeriodicDataCenterInfoResolver extends ChainableSelfInfoResolver {
             public Observable<? extends DataCenterInfo> call() {
                 return LocalDataCenterInfo.forDataCenterType(config.getMyDataCenterType());
             }
-        }, Schedulers.computation());
+        }, Schedulers.io());
     }
 
     @SuppressWarnings("unchecked")

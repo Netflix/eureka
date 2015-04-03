@@ -40,12 +40,15 @@ public class AwsDataCenterInfo extends DataCenterInfo {
     private final String amiId;
     private final String instanceId;
     private final String instanceType;
+    private final String eth0mac;
+    private final String vpcId;
+    private final String accountId;
     private final NetworkAddress publicAddress;
     private final NetworkAddress privateAddress;
 
     // For object creation via reflection.
     private AwsDataCenterInfo() {
-        name = region = zone = placementGroup = amiId = instanceId = instanceType = null;
+        name = region = zone = placementGroup = amiId = instanceId = instanceType = eth0mac = vpcId = accountId = null;
         publicAddress = privateAddress = null;
     }
 
@@ -56,6 +59,9 @@ public class AwsDataCenterInfo extends DataCenterInfo {
         amiId = builder.amiId;
         name = instanceId = builder.instanceId;
         instanceType = builder.instanceType;
+        eth0mac = builder.eth0mac;
+        vpcId = builder.vpcId;
+        accountId = builder.accountId;
 
         if (builder.privateIP != null || builder.privateHostName != null) {
             privateAddress = aNetworkAddress().withLabel(PRIVATE_ADDRESS).withProtocolType(ProtocolType.IPv4)
@@ -128,44 +134,40 @@ public class AwsDataCenterInfo extends DataCenterInfo {
         return instanceType;
     }
 
+    public String getVpcId() {
+        return vpcId;
+    }
+
+    public String getAccountId() {
+        return accountId;
+    }
+
+    public String getEth0mac() {
+        return eth0mac;
+    }
+
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
+        if (this == o) return true;
+        if (!(o instanceof AwsDataCenterInfo)) return false;
 
         AwsDataCenterInfo that = (AwsDataCenterInfo) o;
 
-        if (amiId != null ? !amiId.equals(that.amiId) : that.amiId != null) {
+        if (accountId != null ? !accountId.equals(that.accountId) : that.accountId != null) return false;
+        if (amiId != null ? !amiId.equals(that.amiId) : that.amiId != null) return false;
+        if (eth0mac != null ? !eth0mac.equals(that.eth0mac) : that.eth0mac != null) return false;
+        if (instanceId != null ? !instanceId.equals(that.instanceId) : that.instanceId != null) return false;
+        if (instanceType != null ? !instanceType.equals(that.instanceType) : that.instanceType != null) return false;
+        if (name != null ? !name.equals(that.name) : that.name != null) return false;
+        if (placementGroup != null ? !placementGroup.equals(that.placementGroup) : that.placementGroup != null)
             return false;
-        }
-        if (instanceId != null ? !instanceId.equals(that.instanceId) : that.instanceId != null) {
+        if (privateAddress != null ? !privateAddress.equals(that.privateAddress) : that.privateAddress != null)
             return false;
-        }
-        if (instanceType != null ? !instanceType.equals(that.instanceType) : that.instanceType != null) {
+        if (publicAddress != null ? !publicAddress.equals(that.publicAddress) : that.publicAddress != null)
             return false;
-        }
-        if (name != null ? !name.equals(that.name) : that.name != null) {
-            return false;
-        }
-        if (placementGroup != null ? !placementGroup.equals(that.placementGroup) : that.placementGroup != null) {
-            return false;
-        }
-        if (privateAddress != null ? !privateAddress.equals(that.privateAddress) : that.privateAddress != null) {
-            return false;
-        }
-        if (publicAddress != null ? !publicAddress.equals(that.publicAddress) : that.publicAddress != null) {
-            return false;
-        }
-        if (region != null ? !region.equals(that.region) : that.region != null) {
-            return false;
-        }
-        if (zone != null ? !zone.equals(that.zone) : that.zone != null) {
-            return false;
-        }
+        if (region != null ? !region.equals(that.region) : that.region != null) return false;
+        if (vpcId != null ? !vpcId.equals(that.vpcId) : that.vpcId != null) return false;
+        if (zone != null ? !zone.equals(that.zone) : that.zone != null) return false;
 
         return true;
     }
@@ -179,6 +181,9 @@ public class AwsDataCenterInfo extends DataCenterInfo {
         result = 31 * result + (amiId != null ? amiId.hashCode() : 0);
         result = 31 * result + (instanceId != null ? instanceId.hashCode() : 0);
         result = 31 * result + (instanceType != null ? instanceType.hashCode() : 0);
+        result = 31 * result + (eth0mac != null ? eth0mac.hashCode() : 0);
+        result = 31 * result + (vpcId != null ? vpcId.hashCode() : 0);
+        result = 31 * result + (accountId != null ? accountId.hashCode() : 0);
         result = 31 * result + (publicAddress != null ? publicAddress.hashCode() : 0);
         result = 31 * result + (privateAddress != null ? privateAddress.hashCode() : 0);
         return result;
@@ -194,9 +199,12 @@ public class AwsDataCenterInfo extends DataCenterInfo {
                 ", amiId='" + amiId + '\'' +
                 ", instanceId='" + instanceId + '\'' +
                 ", instanceType='" + instanceType + '\'' +
+                ", eth0mac='" + eth0mac + '\'' +
+                ", vpcId='" + vpcId + '\'' +
+                ", accountId='" + accountId + '\'' +
                 ", publicAddress=" + publicAddress +
                 ", privateAddress=" + privateAddress +
-                '}';
+                "} " + super.toString();
     }
 
     public static final class Builder extends DataCenterInfoBuilder<AwsDataCenterInfo> {
@@ -210,6 +218,9 @@ public class AwsDataCenterInfo extends DataCenterInfo {
         private String privateHostName;
         private String publicIP;
         private String publicHostName;
+        private String eth0mac;
+        private String vpcId;
+        private String accountId;
 
         public Builder withAwsDataCenter(AwsDataCenterInfo dataCenter) {
             this.region = dataCenter.getRegion();
@@ -222,6 +233,10 @@ public class AwsDataCenterInfo extends DataCenterInfo {
             this.privateHostName = dataCenter.getPrivateAddress().getHostName();
             this.publicIP = dataCenter.getPublicAddress().getIpAddress();
             this.publicHostName = dataCenter.getPublicAddress().getHostName();
+            this.eth0mac = dataCenter.getEth0mac();
+            this.vpcId = dataCenter.getVpcId();
+            this.accountId = dataCenter.getAccountId();
+
             return this;
         }
 
@@ -272,6 +287,21 @@ public class AwsDataCenterInfo extends DataCenterInfo {
 
         public Builder withPublicHostName(String publicHostName) {
             this.publicHostName = publicHostName;
+            return this;
+        }
+
+        public Builder withVpcId(String vpcId) {
+            this.vpcId = vpcId;
+            return this;
+        }
+
+        public Builder withAccountId(String accountId) {
+            this.accountId = accountId;
+            return this;
+        }
+
+        public Builder withEth0mac(String eth0mac) {
+            this.eth0mac = eth0mac;
             return this;
         }
 
