@@ -36,6 +36,9 @@ protocol EurekaRegistryModel {
         union { null, string } amiId;
         union { null, string } instanceId;
         union { null, string } instanceType;
+        union { null, string } eth0mac;
+        union { null, string } vpcId;
+        union { null, string } accountId;
         union { null, com.netflix.eureka2.registry.instance.NetworkAddress } publicAddress;
         union { null, com.netflix.eureka2.registry.instance.NetworkAddress } privateAddress;
     }
