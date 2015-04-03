@@ -121,9 +121,6 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
         this.evictionTimeoutMs = evictionTimeoutMs;
         this.evictionStrategyType = evictionStrategyType == null ? this.evictionStrategyType : evictionStrategyType.name();
         this.evictionStrategyValue = evictionStrategyValue == null ? this.evictionStrategyValue : evictionStrategyValue;
-
-        // use upper case for server appNames
-        this.appName = this.appName.toUpperCase();
     }
 
     public String[] getServerList() {
