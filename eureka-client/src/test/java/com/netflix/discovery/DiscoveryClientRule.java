@@ -1,6 +1,7 @@
 package com.netflix.discovery;
 
 import java.util.UUID;
+import java.util.concurrent.Callable;
 
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.DataCenterInfo;
@@ -19,13 +20,34 @@ public class DiscoveryClientRule extends ExternalResource {
     public static final String REMOTE_ZONE = "myzone";
     public static final int CLIENT_REFRESH_RATE = 10;
 
-    protected int port;
+    private final boolean registrationEnabled;
+    private final boolean registryFetchEnabled;
+    private final Callable<Integer> portResolverCallable;
+    private final InstanceInfo instance;
+
     private DiscoveryClient client;
 
+    DiscoveryClientRule(DiscoveryClientRuleBuilder builder) {
+        this.registrationEnabled = builder.registrationEnabled;
+        this.registryFetchEnabled = builder.registryFetchEnabled;
+        this.portResolverCallable = builder.portResolverCallable;
+        this.instance = builder.instance;
+    }
+
     public DiscoveryClient getClient() {
-        if(client == null) {
+        if (client == null) {
+            int port;
+            try {
+                port = portResolverCallable.call();
+            } catch (Exception e) {
+                throw new RuntimeException("Cannot resolve discovery server port number", e);
+            }
             setupDiscoveryClientConfig(port, "/eureka/v2/");
-            InstanceInfo clientInstanceInfo = newInstanceInfoBuilder(30).build();
+
+            ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", Boolean.valueOf(registrationEnabled));
+            ConfigurationManager.getConfigInstance().setProperty("eureka.shouldFetchRegistry", Boolean.valueOf(registryFetchEnabled));
+
+            InstanceInfo clientInstanceInfo = instance == null ? newInstanceInfoBuilder(30).build() : instance;
             client = setupDiscoveryClient(clientInstanceInfo);
         }
         return client;
@@ -33,10 +55,14 @@ public class DiscoveryClientRule extends ExternalResource {
 
     @Override
     protected void after() {
-        if(client != null) {
+        if (client != null) {
             client.shutdown();
         }
         clearDiscoveryClientConfig();
+    }
+
+    public static DiscoveryClientRuleBuilder newBuilder() {
+        return new DiscoveryClientRuleBuilder();
     }
 
     public static void setupDiscoveryClientConfig(int serverPort, String path) {
@@ -80,5 +106,36 @@ public class DiscoveryClientRule extends ExternalResource {
         });
         builder.setLeaseInfo(LeaseInfo.Builder.newBuilder().setRenewalIntervalInSecs(renewalIntervalInSecs).build());
         return builder;
+    }
+
+    public static class DiscoveryClientRuleBuilder {
+        private boolean registrationEnabled;
+        private boolean registryFetchEnabled;
+        private Callable<Integer> portResolverCallable;
+        private InstanceInfo instance;
+
+        public DiscoveryClientRuleBuilder registration(boolean enabled) {
+            this.registrationEnabled = enabled;
+            return this;
+        }
+
+        public DiscoveryClientRuleBuilder registryFetch(boolean enabled) {
+            this.registryFetchEnabled = enabled;
+            return this;
+        }
+
+        public DiscoveryClientRuleBuilder portResolver(Callable<Integer> portResolverCallable) {
+            this.portResolverCallable = portResolverCallable;
+            return this;
+        }
+
+        public DiscoveryClientRuleBuilder instanceInfo(InstanceInfo instance) {
+            this.instance = instance;
+            return this;
+        }
+
+        public DiscoveryClientRule build() {
+            return new DiscoveryClientRule(this);
+        }
     }
 }

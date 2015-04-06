@@ -112,7 +112,7 @@ public class DiscoveryClient implements LookupService {
 
     // Constants
     public static final int MAX_FOLLOWED_REDIRECTS = 10;
-    public static final String HTTP_X_NETFLIX_DISCOVERY_ALLOW_REDIRECT = "X-Netflix-Discovery-AllowRedirect";
+    public static final String HTTP_X_DISCOVERY_ALLOW_REDIRECT = "X-Discovery-AllowRedirect";
 
     private static final String VALUE_DELIMITER = ",";
     private static final String COMMA_STRING = VALUE_DELIMITER;
@@ -162,7 +162,8 @@ public class DiscoveryClient implements LookupService {
     private boolean isRegisteredWithDiscovery = false;
     private String discoveryServerAMIId;
     private JerseyClient discoveryJerseyClient;
-    private AtomicReference<String> lastRedirect = new AtomicReference<>();
+    private AtomicReference<String> lastQueryRedirect = new AtomicReference<>();
+    private AtomicReference<String> lastRegisterRedirect = new AtomicReference<>();
     private ApacheHttpClient4 discoveryApacheClient;
     protected static EurekaClientConfig clientConfig;
     private final AtomicReference<String> remoteRegionsToFetch;
@@ -1056,23 +1057,36 @@ public class DiscoveryClient implements LookupService {
      *             on any error.
      */
     private ClientResponse makeRemoteCall(Action action) throws Throwable {
-        if (lastRedirect.get() != null && isQueryAction(action)) {
-            String serviceUrl = lastRedirect.get();
+        ClientResponse response;
+        if(isQueryAction(action)) {
+            response = makeRemoteCallToRedirectedServer(lastQueryRedirect, action);
+        } else {
+            response = makeRemoteCallToRedirectedServer(lastRegisterRedirect, action);
+        }
+        if (response == null) {
+            response = makeRemoteCall(action, 0);
+        }
+        return response;
+    }
+
+    private ClientResponse makeRemoteCallToRedirectedServer(AtomicReference<String> lastRedirect, Action action) {
+        String lastRedirectUrl = lastRedirect.get();
+        if (lastRedirectUrl != null) {
             try {
-                ClientResponse clientResponse = makeRemoteCall(action, serviceUrl);
+                ClientResponse clientResponse = makeRemoteCall(action, lastRedirectUrl);
                 int status = clientResponse.getStatus();
                 if (status >= 200 && status < 300) {
                     return clientResponse;
                 }
                 SERVER_RETRY_COUNTER.increment();
-                lastRedirect.compareAndSet(serviceUrl, null);
+                lastRedirect.compareAndSet(lastRedirectUrl, null);
             } catch (Throwable ignored) {
                 logger.warn("Remote call to last redirect address failed; retrying from configured service URL list");
                 SERVER_RETRY_COUNTER.increment();
-                lastRedirect.compareAndSet(serviceUrl, null);
+                lastRedirect.compareAndSet(lastRedirectUrl, null);
             }
         }
-        return makeRemoteCall(action, 0);
+        return null;
     }
 
     private static boolean isQueryAction(Action action) {
@@ -1116,7 +1130,11 @@ public class DiscoveryClient implements LookupService {
             ClientResponse clientResponse = makeRemoteCall(action, targetUrl.toString());
             if (clientResponse.getStatus() != 302) {
                 if (followRedirectCount > 0) {
-                    lastRedirect.set(targetUrl.toString());
+                    if(isQueryAction(action)) {
+                        lastQueryRedirect.set(targetUrl.toString());
+                    } else {
+                        lastRegisterRedirect.set(targetUrl.toString());
+                    }
                 }
                 return clientResponse;
             }
@@ -1168,7 +1186,7 @@ public class DiscoveryClient implements LookupService {
             }
             WebResource r = discoveryApacheClient.resource(serviceUrl);
             if (clientConfig.allowRedirects()) {
-                r.header(HTTP_X_NETFLIX_DISCOVERY_ALLOW_REDIRECT, "true");
+                r.header(HTTP_X_DISCOVERY_ALLOW_REDIRECT, "true");
             }
             String remoteRegionsToFetchStr;
             switch (action) {

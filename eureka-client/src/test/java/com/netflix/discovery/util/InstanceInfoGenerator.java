@@ -23,7 +23,7 @@ import static com.netflix.discovery.util.ApplicationFunctions.toApplications;
  * @author Tomasz Bak
  */
 public class InstanceInfoGenerator {
-    public static final int RENEW_INTERVAL = 30000;
+    public static final int RENEW_INTERVAL = 5;
 
     private final int instanceCount;
     private final int applicationCount;
@@ -85,7 +85,7 @@ public class InstanceInfoGenerator {
         };
     }
 
-    private static InstanceInfo generateInstanceInfo(int appIndex, int appInstanceId) {
+    public static InstanceInfo generateInstanceInfo(int appIndex, int appInstanceId) {
         String hostName = "instance" + appInstanceId + ".application" + appIndex + ".com";
         String publicIp = "20.0." + appIndex + '.' + appInstanceId;
         String privateIp = "192.168." + appIndex + '.' + appInstanceId;

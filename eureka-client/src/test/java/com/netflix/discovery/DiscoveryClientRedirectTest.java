@@ -8,12 +8,14 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.converters.EntityBodyConverter;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.util.ApplicationFunctions;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockserver.client.server.MockServerClient;
@@ -31,10 +33,11 @@ import static org.mockserver.verify.VerificationTimes.exactly;
  */
 public class DiscoveryClientRedirectTest {
 
-
     static class MockClientHolder {
         MockServerClient client;
     }
+
+    private final InstanceInfo myInstanceInfo = InstanceInfoGenerator.generateInstanceInfo(1, 1);
 
     @Rule
     public MockServerRule redirectServerMockRule = new MockServerRule(this);
@@ -45,12 +48,29 @@ public class DiscoveryClientRedirectTest {
     public MockServerRule targetServerMockRule = new MockServerRule(targetServerMockClient);
 
     @Rule
-    public DiscoveryClientRule discoveryClientRule = new DiscoveryClientRule() {
-        @Override
-        protected void before() throws Throwable {
-            this.port = redirectServerMockRule.getHttpPort();
-        }
-    };
+    public DiscoveryClientRule registryFetchClientRule = DiscoveryClientRule.newBuilder()
+            .registration(false)
+            .registryFetch(true)
+            .portResolver(new Callable<Integer>() {
+                @Override
+                public Integer call() throws Exception {
+                    return redirectServerMockRule.getHttpPort();
+                }
+            })
+            .instanceInfo(myInstanceInfo)
+            .build();
+    @Rule
+    public DiscoveryClientRule regiteringClientRule = DiscoveryClientRule.newBuilder()
+            .registration(true)
+            .registryFetch(false)
+            .portResolver(new Callable<Integer>() {
+                @Override
+                public Integer call() throws Exception {
+                    return redirectServerMockRule.getHttpPort();
+                }
+            })
+            .instanceInfo(myInstanceInfo)
+            .build();
 
     private String targetServerBaseUri;
 
@@ -62,7 +82,7 @@ public class DiscoveryClientRedirectTest {
     }
 
     @Test
-    public void testClientFollowsRedirectsAndPinsToTargetServer() throws Exception {
+    public void testClientQueryFollowsRedirectsAndPinsToTargetServer() throws Exception {
         Applications fullFetchApps = dataGenerator.takeDelta(1);
         String fullFetchJson = toJson(fullFetchApps);
         Applications deltaFetchApps = dataGenerator.takeDelta(1);
@@ -98,7 +118,7 @@ public class DiscoveryClientRedirectTest {
                         .withBody(deltaFetchJson)
         );
 
-        final DiscoveryClient client = discoveryClientRule.getClient();
+        final DiscoveryClient client = registryFetchClientRule.getClient();
 
         await(new Callable<Boolean>() {
             @Override
@@ -112,6 +132,12 @@ public class DiscoveryClientRedirectTest {
         redirectServerMockClient.verify(request().withMethod("GET").withPath("/eureka/v2/apps/delta"), exactly(0));
         targetServerMockClient.client.verify(request().withMethod("GET").withPath("/eureka/v2/apps/"), exactly(1));
         targetServerMockClient.client.verify(request().withMethod("GET").withPath("/eureka/v2/apps/delta"), atLeast(1));
+    }
+
+    // There is an issue with using mock-server for this test case.  For now it is verified manually that it works.
+    @Ignore
+    @Test
+    public void testClientRegistrationFollowsRedirectsAndPinsToTargetServer() throws Exception {
     }
 
     @Test
@@ -152,7 +178,7 @@ public class DiscoveryClientRedirectTest {
                         .withBody(fullFetchJson2)
         );
 
-        final DiscoveryClient client = discoveryClientRule.getClient();
+        final DiscoveryClient client = registryFetchClientRule.getClient();
 
         await(new Callable<Boolean>() {
             @Override

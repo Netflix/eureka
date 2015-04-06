@@ -219,6 +219,8 @@ public final class EurekaJerseyClient {
             cm.setDefaultMaxPerRoute(maxConnectionsPerHost);
             cm.setMaxTotal(maxTotalConnections);
             getProperties().put(ApacheHttpClient4Config.PROPERTY_CONNECTION_MANAGER, cm);
+            // To pin a client to specific server in case redirect happens, we handle redirects directly
+            // (see DiscoveryClient.makeRemoteCall methods).
             getProperties().put(PROPERTY_FOLLOW_REDIRECTS, Boolean.FALSE);
             getProperties().put(ClientPNames.HANDLE_REDIRECTS, Boolean.FALSE);
         }
@@ -233,6 +235,8 @@ public final class EurekaJerseyClient {
         cm.setDefaultMaxPerRoute(maxConnectionsPerHost);
         cm.setMaxTotal(maxTotalConnections);
         getProperties().put(ApacheHttpClient4Config.PROPERTY_CONNECTION_MANAGER, cm);
+          // To pin a client to specific server in case redirect happens, we handle redirects directly
+          // (see DiscoveryClient.makeRemoteCall methods).
         getProperties().put(PROPERTY_FOLLOW_REDIRECTS, Boolean.FALSE);
           getProperties().put(ClientPNames.HANDLE_REDIRECTS, Boolean.FALSE);
 
@@ -281,6 +285,8 @@ public final class EurekaJerseyClient {
                 MonitoredConnectionManager cm = new MonitoredConnectionManager(clientName, sslSchemeRegistry);
                 cm.setDefaultMaxPerRoute(maxConnectionsPerHost);
                 cm.setMaxTotal(maxTotalConnections);
+                // To pin a client to specific server in case redirect happens, we handle redirects directly
+                // (see DiscoveryClient.makeRemoteCall methods).
                 getProperties().put(ApacheHttpClient4Config.PROPERTY_CONNECTION_MANAGER, cm);
                 getProperties().put(PROPERTY_FOLLOW_REDIRECTS, Boolean.FALSE);
                 getProperties().put(ClientPNames.HANDLE_REDIRECTS, Boolean.FALSE);
@@ -324,9 +330,10 @@ public final class EurekaJerseyClient {
     		cm.setDefaultMaxPerRoute(maxConnectionsPerHost);
     		cm.setMaxTotal(maxTotalConnections);
     		getProperties().put(ApacheHttpClient4Config.PROPERTY_CONNECTION_MANAGER, cm);
+            // To pin a client to specific server in case redirect happens, we handle redirects directly
+            // (see DiscoveryClient.makeRemoteCall methods).
             getProperties().put(PROPERTY_FOLLOW_REDIRECTS, Boolean.FALSE);
     		getProperties().put(ClientPNames.HANDLE_REDIRECTS, Boolean.FALSE);
-
     	}
     }
 
