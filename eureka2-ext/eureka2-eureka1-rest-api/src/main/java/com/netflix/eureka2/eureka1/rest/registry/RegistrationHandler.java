@@ -9,7 +9,7 @@ import rx.Subscriber;
 import rx.Subscription;
 import rx.subjects.PublishSubject;
 
-import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka2xInstanceInfo;
+import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka2xInstanceInfo;
 
 /**
  * @author Tomasz Bak

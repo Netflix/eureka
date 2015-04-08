@@ -1,4 +1,4 @@
-package com.netflix.eureka2.eureka1.rest.model;
+package com.netflix.eureka2.eureka1.utils;
 
 import java.util.List;
 import java.util.Set;
@@ -20,12 +20,12 @@ import org.junit.Before;
 import org.junit.Test;
 import rx.subjects.ReplaySubject;
 
-import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka1xApplicationsFromV2Collection;
-import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka1xDataCenterInfo;
-import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka1xInstanceInfo;
-import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka1xStatus;
-import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka2xDataCenterInfo;
-import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka2xInstanceInfo;
+import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka1xApplicationsFromV2Collection;
+import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka1xDataCenterInfo;
+import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka1xInstanceInfo;
+import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka1xStatus;
+import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka2xDataCenterInfo;
+import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka2xInstanceInfo;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;

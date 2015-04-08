@@ -21,10 +21,10 @@ import rx.Subscription;
 import rx.functions.Func1;
 import rx.subjects.BehaviorSubject;
 
-import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka1xApplications;
-import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka1xInstanceInfo;
-import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka1xInstanceInfos;
-import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.v1InstanceIdentityComparator;
+import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka1xApplications;
+import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka1xInstanceInfo;
+import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka1xInstanceInfos;
+import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.v1InstanceIdentityComparator;
 import static com.netflix.eureka2.interests.ChangeNotifications.emitAndAggregateChanges;
 import static com.netflix.eureka2.interests.ChangeNotifications.collapseAndExtract;
 import static com.netflix.eureka2.interests.ChangeNotifications.instanceInfoIdentityComparator;

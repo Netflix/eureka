@@ -73,7 +73,9 @@ public class EurekaCLI {
             new UnregisterCommand(),
             new CloseCommand(),
             InterestCommand.forFullRegistry(),
+            InterestCommand.forApps(),
             InterestCommand.forVips(),
+            InterestCommand.forSecureVips(),
             new StatusCommand()
     };
 

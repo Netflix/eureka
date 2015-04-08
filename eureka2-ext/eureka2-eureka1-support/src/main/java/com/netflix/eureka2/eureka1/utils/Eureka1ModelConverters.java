@@ -1,4 +1,4 @@
-package com.netflix.eureka2.eureka1.rest.model;
+package com.netflix.eureka2.eureka1.utils;
 
 import java.net.URI;
 import java.net.URISyntaxException;

@@ -128,7 +128,7 @@ public class Session {
         interestClient = Eurekas.newInterestClientBuilder()
                 .withTransportConfig(context.getTransportConfig())
                 .withServerResolver(ServerResolvers.fromEureka(
-                                ServerResolvers.fromHostname(host).withPort(interestPort))
+                                ServerResolvers.fromDnsName(host).withPort(interestPort))
                                 .forInterest(Interests.forVips(readClusterVip))
                 )
                 .build();

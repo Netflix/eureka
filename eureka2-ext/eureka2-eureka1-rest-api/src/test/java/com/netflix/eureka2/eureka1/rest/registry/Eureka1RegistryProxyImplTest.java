@@ -14,7 +14,7 @@ import rx.Observable;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
-import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.*;
+import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.*;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;

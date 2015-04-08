@@ -13,8 +13,10 @@ public class Eureka2RegistryItemTypeAdapter implements JsonSerializer<InstanceIn
         if (AwsDataCenterInfo.class.isAssignableFrom(instanceInfo.getDataCenterInfo().getClass())) {
             final AwsDataCenterInfo dataCenterInfo = (AwsDataCenterInfo) instanceInfo.getDataCenterInfo();
             result.addProperty("instId", dataCenterInfo.getInstanceId());
-            result.addProperty("ip", dataCenterInfo.getPublicAddress().getIpAddress());
-            result.addProperty("hostname", dataCenterInfo.getPublicAddress().getHostName());
+            if(dataCenterInfo.getPublicAddress() != null) {
+                result.addProperty("ip", dataCenterInfo.getPublicAddress().getIpAddress());
+                result.addProperty("hostname", dataCenterInfo.getPublicAddress().getHostName());
+            }
             result.addProperty("zone", dataCenterInfo.getZone());
             result.addProperty("reg", dataCenterInfo.getRegion());
         }

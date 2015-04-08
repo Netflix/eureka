@@ -61,7 +61,7 @@ public abstract class InterestCommand extends Command {
     }
 
     public static Command forVips() {
-        return new InterestCommand("interest", -1) {
+        return new InterestCommand("interestVip", -1) {
 
             @Override
             public String getInvocationSyntax() {
@@ -70,12 +70,52 @@ public abstract class InterestCommand extends Command {
 
             @Override
             public String getDescription() {
-                return "start interest subscription for given vips";
+                return "start interest subscription for given vip(s)";
             }
 
             @Override
             protected void subscribeToInterest(Session activeSession, String[] args) {
                 activeSession.forInterest(Interests.forVips(Operator.Like, args));
+            }
+        };
+    }
+
+    public static Command forSecureVips() {
+        return new InterestCommand("interestSecureVip", -1) {
+
+            @Override
+            public String getInvocationSyntax() {
+                return getName() + " <vipName> <vipName> ...";
+            }
+
+            @Override
+            public String getDescription() {
+                return "start interest subscription for given vip(s)";
+            }
+
+            @Override
+            protected void subscribeToInterest(Session activeSession, String[] args) {
+                activeSession.forInterest(Interests.forSecureVips(Operator.Like, args));
+            }
+        };
+    }
+
+    public static Command forApps() {
+        return new InterestCommand("interestApp", -1) {
+
+            @Override
+            public String getInvocationSyntax() {
+                return getName() + " <appName> <appName> ...";
+            }
+
+            @Override
+            public String getDescription() {
+                return "start interest subscription for given application(s)";
+            }
+
+            @Override
+            protected void subscribeToInterest(Session activeSession, String[] args) {
+                activeSession.forInterest(Interests.forApplications(Operator.Like, args));
             }
         };
     }
