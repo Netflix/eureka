@@ -1,12 +1,8 @@
 package com.netflix.discovery;
 
 import com.netflix.appinfo.AmazonInfo;
-import com.netflix.appinfo.ApplicationInfoManager;
-import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.LeaseInfo;
-import com.netflix.appinfo.MyDataCenterInstanceConfig;
-import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.shared.Application;
 import org.junit.After;
 import org.junit.Before;
@@ -15,7 +11,6 @@ import org.junit.Rule;
 import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * @author Nitesh Kant
@@ -62,15 +57,8 @@ public class AbstractDiscoveryClientTester {
     }
 
     protected void setupProperties() {
-        ConfigurationManager.getConfigInstance().setProperty("eureka.shouldFetchRegistry", "true");
-        ConfigurationManager.getConfigInstance().setProperty("eureka.responseCacheAutoExpirationInSeconds", "10");
-        ConfigurationManager.getConfigInstance().setProperty("eureka.client.refresh.interval", CLIENT_REFRESH_RATE);
-        ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", "false");
-        ConfigurationManager.getConfigInstance().setProperty("eureka.fetchRemoteRegionsRegistry", REMOTE_REGION);
-        ConfigurationManager.getConfigInstance().setProperty("eureka.myregion.availabilityZones", REMOTE_ZONE);
-        ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default",
-                                                             "http://localhost:" + mockLocalEurekaServer.getPort() +
-                                                             MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
+        DiscoveryClientRule.setupDiscoveryClientConfig(mockLocalEurekaServer.getPort(),
+                MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
     }
 
     protected void setupDiscoveryClient() {
@@ -78,27 +66,12 @@ public class AbstractDiscoveryClientTester {
     }
 
     protected void setupDiscoveryClient(int renewalIntervalInSecs) {
-        InstanceInfo.Builder builder = newInstanceInfoBuilder(renewalIntervalInSecs);
-        DefaultEurekaClientConfig config = new DefaultEurekaClientConfig();
-        // setup config in advance, used in initialize converter
-        DiscoveryManager.getInstance().setEurekaClientConfig(config);
-        client = new DiscoveryClient(builder.build(), config);
-        ApplicationInfoManager.getInstance().initComponent(new MyDataCenterInstanceConfig());
+        InstanceInfo instanceInfo = newInstanceInfoBuilder(renewalIntervalInSecs).build();
+        client = DiscoveryClientRule.setupDiscoveryClient(instanceInfo);
     }
 
     protected InstanceInfo.Builder newInstanceInfoBuilder(int renewalIntervalInSecs) {
-        InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder();
-        builder.setIPAddr("10.10.101.00");
-        builder.setHostName("Hosttt");
-        builder.setAppName("EurekaTestApp-" + UUID.randomUUID());
-        builder.setDataCenterInfo(new DataCenterInfo() {
-            @Override
-            public Name getName() {
-                return Name.MyOwn;
-            }
-        });
-        builder.setLeaseInfo(LeaseInfo.Builder.newBuilder().setRenewalIntervalInSecs(renewalIntervalInSecs).build());
-        return builder;
+        return DiscoveryClientRule.newInstanceInfoBuilder(renewalIntervalInSecs);
     }
 
     protected void shutdownDiscoveryClient() {
@@ -110,12 +83,7 @@ public class AbstractDiscoveryClientTester {
     @After
     public void tearDown() throws Exception {
         shutdownDiscoveryClient();
-
-        ConfigurationManager.getConfigInstance().clearProperty("eureka.client.refresh.interval");
-        ConfigurationManager.getConfigInstance().clearProperty("eureka.registration.enabled");
-        ConfigurationManager.getConfigInstance().clearProperty("eureka.fetchRemoteRegionsRegistry");
-        ConfigurationManager.getConfigInstance().clearProperty("eureka.myregion.availabilityZones");
-        ConfigurationManager.getConfigInstance().clearProperty("eureka.serviceUrl.default");
+        DiscoveryClientRule.clearDiscoveryClientConfig();
     }
 
     protected void addLocalAppDelta() {
