@@ -17,8 +17,8 @@ buildscript {
     repositories { jcenter() }
     dependencies {
         classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:2.2.0'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.1'
     }
-
     if (project.hasProperty('useMavenLocal')) {
         repositories {
             println "Adding mavenLocal()"
@@ -41,7 +41,6 @@ ext {
 allprojects {
     repositories {
         jcenter()
-        maven { url 'http://oss.jfrog.org/oss-snapshot-local' } // Make it default until first rc release
     }
 
     if (project.hasProperty('useMavenLocal')) {
@@ -49,7 +48,7 @@ allprojects {
             mavenLocal()
         }
     }
-    if (project.hasProperty('ossTest')) {
+    if (project.getProperty('status').equals("snapshot")) {
         repositories {
             maven { url 'http://oss.jfrog.org/oss-snapshot-local' }
         }
