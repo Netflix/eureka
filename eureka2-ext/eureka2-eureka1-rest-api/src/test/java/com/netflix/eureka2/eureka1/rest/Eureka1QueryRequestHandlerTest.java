@@ -27,7 +27,7 @@ import rx.functions.Func1;
 import rx.functions.Func2;
 
 import static com.netflix.eureka2.eureka1.rest.AbstractEureka1RequestHandler.ROOT_PATH;
-import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka1xInstanceInfo;
+import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka1xInstanceInfo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;

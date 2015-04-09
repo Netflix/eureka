@@ -38,7 +38,7 @@ import java.util.regex.Pattern;
  */
 public class AwsDataCenterInfoProvider implements DataCenterInfoProvider {
 
-    private static final String AWS_API_VERSION = "latest";
+    private static final String AWS_API_VERSION = "latest/";
     private static final String AWS_METADATA_URI = "http://169.254.169.254/" + AWS_API_VERSION;
     private static final String INSTANCE_DATA = "meta-data/";
     private static final String DYNAMIC_DATA = "dynamic/";

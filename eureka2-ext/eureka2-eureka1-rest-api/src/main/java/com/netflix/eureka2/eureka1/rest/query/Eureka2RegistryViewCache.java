@@ -18,7 +18,7 @@ import rx.Scheduler;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
-import static com.netflix.eureka2.eureka1.rest.model.Eureka1ModelConverters.toEureka1xInstanceInfo;
+import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka1xInstanceInfo;
 
 /**
  * @author Tomasz Bak
