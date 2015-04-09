@@ -15,6 +15,7 @@
  */
 
 apply plugin: 'osgi'
+apply plugin: 'com.github.johnrengelman.shadow'
 
 configurations {
     avroTool
@@ -26,8 +27,17 @@ dependencies {
     compile "javax.inject:javax.inject:${javax_inject_version}"
     compile "io.reactivex:rxjava:${rxjava_version}"
     compile "io.reactivex:rxnetty:${rxnetty_version}"
-    compile "org.apache.avro:avro:${avro_version}"
-    compile "org.apache.commons:commons-compress:${commons_compress_version}"
+
+    // As IDEs do not play well with shadowed dependencies, we should depend on
+    // the original Avro jar when doing development
+    if (project.hasProperty('dev') || System.properties['dev']) {
+        println "In development mode - adding compile level dependency to Avro"
+        compile "org.apache.avro:avro:${avro_version}"
+    } else {
+        println "Shadowing dependency to Avro"
+        provided "org.apache.avro:avro:${avro_version}"
+    }
+
     testCompile project(':eureka2-test-utils')
     testCompile project(':eureka2-testkit')
 }
@@ -43,6 +53,27 @@ jar {
         include("*.avpr")
     }
 }
+
+shadowJar {
+    dependencies {
+        include(dependency('org.apache.avro:avro'))
+        include(dependency('com.thoughtworks.paranamer:paranamer'))
+        include(dependency('org.xerial.snappy:snappy-java'))
+    }
+    classifier 'shadow'
+    relocate 'org.apache.avro', 'com.netflix.shading.apache.avro'
+    relocate 'com.thoughtworks.paranamer', 'com.netflix.shading.thoughtworks.paranamer'
+    relocate 'org.xerial.snappy', 'com.netflix.shading.xerial.snappy'
+}
+task overriteJar << {
+    def jarFile=file("${projectDir}/build/libs/eureka2-core-${version}.jar")
+    def shadowJarFile=file("${projectDir}/build/libs/eureka2-core-${version}-shadow.jar")
+    jarFile.delete();
+    shadowJarFile.renameTo(jarFile)
+}
+jar.finalizedBy shadowJar
+shadowJar.mustRunAfter jar
+shadowJar.finalizedBy overriteJar
 
 // Avro schema processing
 
