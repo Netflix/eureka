@@ -40,9 +40,17 @@ public class ServerListReader {
             new AtomicReference<List<com.netflix.appinfo.InstanceInfo>>(Collections.<com.netflix.appinfo.InstanceInfo>emptyList());
 
     private final CountDownLatch firstBatchLatch = new CountDownLatch(1);
+    private final long firstResolveTimeoutMs;
 
     public ServerListReader(ServerResolver serverResolver, final String[] serviceVips, boolean isSecure) {
+        this(serverResolver, serviceVips, isSecure, FIRST_RESOLVE_TIMEOUT_SEC, TimeUnit.SECONDS);
+    }
+
+    public ServerListReader(ServerResolver serverResolver, final String[] serviceVips, boolean isSecure,
+                            long firstResolveTimeout, TimeUnit timeUnit) {
         this.interestClient = Eurekas.newInterestClientBuilder().withServerResolver(serverResolver).build();
+        this.firstResolveTimeoutMs = timeUnit.toMillis(firstResolveTimeout);
+
         Interest<InstanceInfo> interest = isSecure ? Interests.forSecureVips(serviceVips) : Interests.forVips(serviceVips);
         this.subscription = interestClient.forInterest(interest)
                 .compose(InterestFunctions.buffers())
@@ -72,7 +80,7 @@ public class ServerListReader {
 
     public List<com.netflix.appinfo.InstanceInfo> getLatestServerListOrWait() {
         try {
-            firstBatchLatch.await(FIRST_RESOLVE_TIMEOUT_SEC, TimeUnit.SECONDS);
+            firstBatchLatch.await(firstResolveTimeoutMs, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             // IGNORE
         }
