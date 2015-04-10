@@ -69,11 +69,11 @@ public class ReplicationTransportClient implements TransportClient {
                     @Override
                     public MessageConnection call(ObservableConnection<Object, Object> connection) {
                         return new SelfClosingConnection(
-                            new HeartBeatConnection(
-                                    new BaseMessageConnection("replicationClient", connection, metrics),
-                                    config.getHeartbeatIntervalMs(), 3, Schedulers.computation()
-                            ),
-                            config.getConnectionAutoTimeoutMs()
+                                new HeartBeatConnection(
+                                        new BaseMessageConnection("replicationClient", connection, metrics),
+                                        config.getHeartbeatIntervalMs(), 3, Schedulers.computation()
+                                ),
+                                config.getConnectionAutoTimeoutMs()
                         );
                     }
                 })

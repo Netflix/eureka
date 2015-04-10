@@ -13,15 +13,8 @@ import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.transport.codec.avro.AvroCodec;
-import com.netflix.eureka2.transport.codec.avro.SchemaReflectData;
-import com.netflix.eureka2.transport.codec.json.JsonCodec;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.handler.codec.ByteToMessageCodec;
-
-import static com.netflix.eureka2.transport.EurekaTransports.REGISTRATION_AVRO_SCHEMA;
-import static com.netflix.eureka2.transport.EurekaTransports.REGISTRATION_PROTOCOL_MODEL_SET;
 
 /**
  * Read registry content and examine data encoding efficiency with respect to:
@@ -35,13 +28,8 @@ import static com.netflix.eureka2.transport.EurekaTransports.REGISTRATION_PROTOC
  */
 public class InstanceInfoEncodingEfficiency {
 
-    private final SchemaReflectData avroReflectData = new SchemaReflectData(REGISTRATION_AVRO_SCHEMA);
-
     private final EurekaInterestClient interestClient;
     private List<InstanceInfo> instanceInfos;
-
-    private final AvroCodec avroCodec = new AvroCodec(REGISTRATION_PROTOCOL_MODEL_SET, REGISTRATION_AVRO_SCHEMA, avroReflectData);
-    private final JsonCodec jsonCodec = new JsonCodec(REGISTRATION_PROTOCOL_MODEL_SET);
 
     public InstanceInfoEncodingEfficiency(String writeServerDns) {
         interestClient = Eurekas.newInterestClientBuilder().withServerResolver(
@@ -62,15 +50,15 @@ public class InstanceInfoEncodingEfficiency {
     public void instanceInfoEncoding() throws IOException {
         System.out.println("Avro");
         System.out.println("----------------------------");
-        instanceInfoEncoding(avroCodec);
+        instanceInfoEncoding(EurekaTransports.Codec.Avro);
 
         System.out.println("\nJSON");
         System.out.println("----------------------------");
-        instanceInfoEncoding(jsonCodec);
+        instanceInfoEncoding(EurekaTransports.Codec.Json);
     }
 
-    private void instanceInfoEncoding(ByteToMessageCodec codec) throws IOException {
-        EmbeddedChannel ch = new EmbeddedChannel(codec);
+    private void instanceInfoEncoding(EurekaTransports.Codec codec) throws IOException {
+        EmbeddedChannel ch = new EmbeddedChannel(EurekaTransports.REGISTRATION_CODEC_FUNC.call(codec));
 
         long total = 0;
         long totalGzip = 0;

@@ -1,8 +1,11 @@
 package com.netflix.eureka2.transport.base;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -11,8 +14,13 @@ import java.util.concurrent.TimeoutException;
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.rx.RxBlocking;
+import com.netflix.eureka2.transport.EurekaPipelineConfigurator;
+import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import com.netflix.eureka2.transport.MessageConnection;
-import com.netflix.eureka2.transport.codec.avro.AvroPipelineConfigurator;
+import com.netflix.eureka2.transport.codec.AbstractEurekaCodec;
+import com.netflix.eureka2.transport.codec.DynamicEurekaCodec;
+import com.netflix.eureka2.transport.codec.avro.AvroCodec;
+import com.netflix.eureka2.transport.codec.avro.SchemaReflectData;
 import io.netty.handler.logging.LogLevel;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ConnectionHandler;
@@ -28,6 +36,7 @@ import rx.functions.Func1;
 import rx.observers.TestSubscriber;
 
 import static com.netflix.eureka2.transport.base.SampleObject.CONTENT;
+import static com.netflix.eureka2.transport.base.SampleObject.SAMPLE_OBJECT_MODEL_SET;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -44,7 +53,7 @@ import static org.mockito.Mockito.verify;
  */
 public class BaseMessageConnectionTest {
 
-    private AvroPipelineConfigurator codecPipeline;
+    private EurekaPipelineConfigurator codecPipeline;
 
     private RxServer<Object, Object> server;
 
@@ -56,7 +65,15 @@ public class BaseMessageConnectionTest {
 
     @Before
     public void setUp() throws Exception {
-        codecPipeline = new AvroPipelineConfigurator(SampleObject.SAMPLE_OBJECT_MODEL_SET, SampleObject.rootSchema());
+        Func1<Codec, AbstractEurekaCodec> sampleObjectFunc = new Func1<Codec, AbstractEurekaCodec>() {
+            @Override
+            public AbstractEurekaCodec call(Codec codec) {
+                Map<Byte, AbstractEurekaCodec> map = new HashMap<>();
+                map.put(Codec.Avro.getVersion(), new AvroCodec(SampleObject.SAMPLE_OBJECT_MODEL_SET, SampleObject.rootSchema(), new SchemaReflectData(SampleObject.rootSchema())));
+                return new DynamicEurekaCodec(SAMPLE_OBJECT_MODEL_SET, Collections.unmodifiableMap(map), codec.getVersion());
+            }
+        };
+        codecPipeline = new EurekaPipelineConfigurator(sampleObjectFunc, Codec.Avro);
         setupServerAndClient();
     }
 

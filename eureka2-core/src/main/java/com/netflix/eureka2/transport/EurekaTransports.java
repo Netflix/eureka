@@ -16,10 +16,6 @@
 
 package com.netflix.eureka2.transport;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-
 import com.netflix.eureka2.protocol.Heartbeat;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.DeleteInstance;
@@ -33,11 +29,22 @@ import com.netflix.eureka2.protocol.replication.RegisterCopy;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.protocol.replication.UnregisterCopy;
-import com.netflix.eureka2.transport.codec.avro.AvroPipelineConfigurator;
-import com.netflix.eureka2.transport.codec.json.JsonPipelineConfigurator;
+import com.netflix.eureka2.transport.codec.AbstractEurekaCodec;
+import com.netflix.eureka2.transport.codec.DynamicEurekaCodec;
+import com.netflix.eureka2.transport.codec.avro.AvroCodec;
+import com.netflix.eureka2.transport.codec.avro.SchemaReflectData;
+import com.netflix.eureka2.transport.codec.json.JsonCodec;
 import com.netflix.eureka2.transport.utils.AvroUtils;
 import io.reactivex.netty.pipeline.PipelineConfigurator;
 import org.apache.avro.Schema;
+import rx.functions.Func1;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Communication endpoint factory methods.
@@ -49,6 +56,24 @@ public final class EurekaTransports {
     public static final int DEFAULT_REGISTRATION_PORT = 12102;
     public static final int DEFAULT_DISCOVERY_PORT = 12103;
     public static final int DEFAULT_REPLICATION_PORT = 12104;
+
+    /**
+     * Breaking protocol/codec changes need to define additional codec versions here
+     */
+    public enum Codec {
+        Avro((byte) 1),
+        Json((byte) 2);
+
+        private final byte version;
+
+        Codec(byte version) {
+            this.version = version;
+        }
+
+        public byte getVersion() {
+            return version;
+        }
+    }
 
     /*
      * Registration protocol constants.
@@ -62,16 +87,9 @@ public final class EurekaTransports {
     static final Set<Class<?>> REGISTRATION_PROTOCOL_MODEL_SET = new HashSet<>(Arrays.asList(REGISTRATION_PROTOCOL_MODEL));
     static final Schema REGISTRATION_AVRO_SCHEMA = AvroUtils.loadSchema(REGISTRATION_SCHEMA_FILE, REGISTRATION_ENVELOPE_TYPE);
 
-    static final AvroPipelineConfigurator REGISTRATION_AVRO_PIPELINE_CONFIGURATOR =
-            new AvroPipelineConfigurator(REGISTRATION_PROTOCOL_MODEL_SET, REGISTRATION_AVRO_SCHEMA);
-
-    static final JsonPipelineConfigurator REGISTRATION_JSON_PIPELINE_CONFIGURATOR =
-            new JsonPipelineConfigurator(REGISTRATION_PROTOCOL_MODEL_SET);
-
     /*
      * Replication protocol constants.
      */
-
     static final String REPLICATION_SCHEMA_FILE = "replication-schema.avpr";
     static final String REPLICATION_ENVELOPE_TYPE = "com.netflix.eureka2.protocol.replication.ReplicationMessages";
 
@@ -81,71 +99,67 @@ public final class EurekaTransports {
     static final Set<Class<?>> REPLICATION_PROTOCOL_MODEL_SET = new HashSet<>(Arrays.asList(REPLICATION_PROTOCOL_MODEL));
     static final Schema REPLICATION_AVRO_SCHEMA = AvroUtils.loadSchema(REPLICATION_SCHEMA_FILE, REPLICATION_ENVELOPE_TYPE);
 
-    static final AvroPipelineConfigurator REPLICATION_AVRO_PIPELINE_CONFIGURATOR =
-            new AvroPipelineConfigurator(REPLICATION_PROTOCOL_MODEL_SET, REPLICATION_AVRO_SCHEMA);
-
-    static final JsonPipelineConfigurator REPLICATION_JSON_PIPELINE_CONFIGURATOR =
-            new JsonPipelineConfigurator(REPLICATION_PROTOCOL_MODEL_SET);
-
     /*
      * Discovery protocol constants.
      */
+    static final String INTEREST_SCHEMA_FILE = "discovery-schema.avpr";
+    static final String INTEREST_ENVELOPE_TYPE = "com.netflix.eureka2.protocol.discovery.DiscoveryMessage";
 
-    static final String DISCOVERY_SCHEMA_FILE = "discovery-schema.avpr";
-    static final String DISCOVERY_ENVELOPE_TYPE = "com.netflix.eureka2.protocol.discovery.DiscoveryMessage";
-
-    static final Class<?>[] DISCOVERY_PROTOCOL_MODEL = {
+    static final Class<?>[] INTEREST_PROTOCOL_MODEL = {
             InterestRegistration.class, UnregisterInterestSet.class, Heartbeat.class,
             AddInstance.class, DeleteInstance.class, UpdateInstanceInfo.class, StreamStateUpdate.class
     };
-    static final Set<Class<?>> DISCOVERY_PROTOCOL_MODEL_SET = new HashSet<>(Arrays.asList(DISCOVERY_PROTOCOL_MODEL));
-    static final Schema DISCOVERY_AVRO_SCHEMA = AvroUtils.loadSchema(DISCOVERY_SCHEMA_FILE, DISCOVERY_ENVELOPE_TYPE);
+    static final Set<Class<?>> INTEREST_PROTOCOL_MODEL_SET = new HashSet<>(Arrays.asList(INTEREST_PROTOCOL_MODEL));
+    static final Schema INTEREST_AVRO_SCHEMA = AvroUtils.loadSchema(INTEREST_SCHEMA_FILE, INTEREST_ENVELOPE_TYPE);
 
-    static final AvroPipelineConfigurator DISCOVERY_AVRO_PIPELINE_CONFIGURATOR =
-            new AvroPipelineConfigurator(DISCOVERY_PROTOCOL_MODEL_SET, DISCOVERY_AVRO_SCHEMA);
 
-    static final JsonPipelineConfigurator DISCOVERY_JSON_PIPELINE_CONFIGURATOR =
-            new JsonPipelineConfigurator(DISCOVERY_PROTOCOL_MODEL_SET);
+    /*
+     * func methods for creating protocol specific codecs
+     */
 
-    public enum Codec {
-        Avro,
-        Json
-    }
+    static final Func1<Codec, AbstractEurekaCodec> REGISTRATION_CODEC_FUNC = new Func1<Codec, AbstractEurekaCodec>() {
+        @Override
+        public AbstractEurekaCodec call(Codec codec) {
+            Map<Byte, AbstractEurekaCodec> map = new HashMap<>();
+            map.put(Codec.Avro.getVersion(), new AvroCodec(REGISTRATION_PROTOCOL_MODEL_SET, REGISTRATION_AVRO_SCHEMA, new SchemaReflectData(REGISTRATION_AVRO_SCHEMA)));
+            map.put(Codec.Json.getVersion(), new JsonCodec(REGISTRATION_PROTOCOL_MODEL_SET));
+            return new DynamicEurekaCodec(REGISTRATION_PROTOCOL_MODEL_SET, Collections.unmodifiableMap(map), codec.getVersion());
+        }
+    };
+
+    static final Func1<Codec, AbstractEurekaCodec> REPLICATION_CODEC_FUNC = new Func1<Codec, AbstractEurekaCodec>() {
+        @Override
+        public AbstractEurekaCodec call(Codec codec) {
+            Map<Byte, AbstractEurekaCodec> map = new HashMap<>();
+            map.put(Codec.Avro.getVersion(), new AvroCodec(REGISTRATION_PROTOCOL_MODEL_SET, REPLICATION_AVRO_SCHEMA, new SchemaReflectData(REPLICATION_AVRO_SCHEMA)));
+            map.put(Codec.Json.getVersion(), new JsonCodec(REGISTRATION_PROTOCOL_MODEL_SET));
+            return new DynamicEurekaCodec(REPLICATION_PROTOCOL_MODEL_SET, Collections.unmodifiableMap(map), codec.getVersion());
+        }
+    };
+
+    static final Func1<Codec, AbstractEurekaCodec> INTEREST_CODEC_FUNC = new Func1<Codec, AbstractEurekaCodec>() {
+        @Override
+        public AbstractEurekaCodec call(Codec codec) {
+            Map<Byte, AbstractEurekaCodec> map = new HashMap<>();
+            map.put(Codec.Avro.getVersion(), new AvroCodec(REGISTRATION_PROTOCOL_MODEL_SET, INTEREST_AVRO_SCHEMA, new SchemaReflectData(INTEREST_AVRO_SCHEMA)));
+            map.put(Codec.Json.getVersion(), new JsonCodec(REGISTRATION_PROTOCOL_MODEL_SET));
+            return new DynamicEurekaCodec(INTEREST_PROTOCOL_MODEL_SET, Collections.unmodifiableMap(map), codec.getVersion());
+        }
+    };
+
 
     private EurekaTransports() {
     }
 
     public static PipelineConfigurator<Object, Object> registrationPipeline(Codec codec) {
-        switch (codec) {
-            case Avro:
-                return REGISTRATION_AVRO_PIPELINE_CONFIGURATOR;
-            case Json:
-                return REGISTRATION_JSON_PIPELINE_CONFIGURATOR;
-        }
-        return failOnMissingCodec(codec);
+        return new EurekaPipelineConfigurator(REGISTRATION_CODEC_FUNC, codec);
     }
 
     public static PipelineConfigurator<Object, Object> replicationPipeline(Codec codec) {
-        switch (codec) {
-            case Avro:
-                return REPLICATION_AVRO_PIPELINE_CONFIGURATOR;
-            case Json:
-                return REPLICATION_JSON_PIPELINE_CONFIGURATOR;
-        }
-        return failOnMissingCodec(codec);
+        return new EurekaPipelineConfigurator(REPLICATION_CODEC_FUNC, codec);
     }
 
-    public static PipelineConfigurator<Object, Object> discoveryPipeline(Codec codec) {
-        switch (codec) {
-            case Avro:
-                return DISCOVERY_AVRO_PIPELINE_CONFIGURATOR;
-            case Json:
-                return DISCOVERY_JSON_PIPELINE_CONFIGURATOR;
-        }
-        return failOnMissingCodec(codec);
-    }
-
-    private static PipelineConfigurator<Object, Object> failOnMissingCodec(Codec codec) {
-        throw new IllegalArgumentException("internal error - missing pipeline implementation for codec " + codec);
+    public static PipelineConfigurator<Object, Object> interestPipeline(Codec codec) {
+        return new EurekaPipelineConfigurator(INTEREST_CODEC_FUNC, codec);
     }
 }

@@ -7,11 +7,8 @@ import com.netflix.eureka2.registry.instance.InstanceInfoField;
 import com.netflix.eureka2.registry.instance.ServicePort;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleServicePort;
-import com.netflix.eureka2.transport.codec.avro.AvroCodec;
-import com.netflix.eureka2.transport.utils.AvroUtils;
 import com.netflix.eureka2.utils.ExtCollections;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.apache.avro.Schema;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -30,9 +27,7 @@ public class DeltaSerializationTest {
 
     @Before
     public void setup() {
-        Schema schema = AvroUtils.loadSchema(EurekaTransports.DISCOVERY_SCHEMA_FILE, EurekaTransports.DISCOVERY_ENVELOPE_TYPE);
-        AvroCodec avroCodec = new AvroCodec(EurekaTransports.DISCOVERY_PROTOCOL_MODEL_SET, schema);
-        channel = new EmbeddedChannel(avroCodec);
+        channel = new EmbeddedChannel(EurekaTransports.INTEREST_CODEC_FUNC.call(EurekaTransports.Codec.Avro));
     }
 
     @Test(timeout = 60000)
