@@ -2,12 +2,8 @@ package com.netflix.eureka2.transport;
 
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
-import com.netflix.eureka2.transport.codec.avro.AvroCodec;
-import com.netflix.eureka2.transport.codec.avro.SchemaReflectData;
 import io.netty.channel.embedded.EmbeddedChannel;
 
-import static com.netflix.eureka2.transport.EurekaTransports.REGISTRATION_AVRO_SCHEMA;
-import static com.netflix.eureka2.transport.EurekaTransports.REGISTRATION_PROTOCOL_MODEL_SET;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -27,12 +23,9 @@ public class AvroCodecPerf {
     }
 
     public void runRegistrations() {
-        SchemaReflectData reflectData = new SchemaReflectData(REGISTRATION_AVRO_SCHEMA);
         InstanceInfo instanceInfo = SampleInstanceInfo.EurekaReadServer.build();
         for (int l = 0; l < loops; l++) {
-//            AvroCodec codec = new AvroCodec(REGISTRATION_PROTOCOL_MODEL_SET, REGISTRATION_AVRO_SCHEMA);
-            AvroCodec codec = new AvroCodec(REGISTRATION_PROTOCOL_MODEL_SET, REGISTRATION_AVRO_SCHEMA, reflectData);
-            EmbeddedChannel ch = new EmbeddedChannel(codec);
+            EmbeddedChannel ch = new EmbeddedChannel(EurekaTransports.REGISTRATION_CODEC_FUNC.call(EurekaTransports.Codec.Avro));
 
             for (int i = 0; i < messageCount; i++) {
                 assertTrue("Message should be written successfully to the channel", ch.writeOutbound(instanceInfo));

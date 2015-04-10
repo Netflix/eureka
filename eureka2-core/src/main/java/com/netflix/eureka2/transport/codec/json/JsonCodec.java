@@ -17,10 +17,10 @@
 package com.netflix.eureka2.transport.codec.json;
 
 import com.netflix.eureka2.transport.Acknowledgement;
+import com.netflix.eureka2.transport.codec.AbstractEurekaCodec;
 import com.netflix.eureka2.utils.Json;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageCodec;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParseException;
@@ -65,7 +65,7 @@ import java.util.Set;
  *
  * @author Tomasz Bak
  */
-public class JsonCodec extends ByteToMessageCodec<Object> {
+public class JsonCodec extends AbstractEurekaCodec {
 
     private final ObjectMapper mapper;
     private final Set<Class<?>> protocolTypes;
@@ -99,13 +99,13 @@ public class JsonCodec extends ByteToMessageCodec<Object> {
     }
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, Object msg, ByteBuf out) throws IOException {
+    public void encode(ChannelHandlerContext ctx, Object msg, ByteBuf out) throws IOException {
         byte[] bytes = mapper.writeValueAsBytes(msg);
         out.writeBytes(bytes);
     }
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+    public void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         byte[] array = new byte[in.readableBytes()];
         in.readBytes(array);
 

@@ -55,7 +55,7 @@ public class TcpDiscoveryServer extends AbstractTcpServer {
         server = RxNetty.newTcpServerBuilder(
                 config.getDiscoveryPort(),
                 new TcpDiscoveryHandler(config, eurekaRegistry, metricFactory))
-                .pipelineConfigurator(EurekaTransports.discoveryPipeline(config.getCodec()))
+                .pipelineConfigurator(EurekaTransports.interestPipeline(config.getCodec()))
                 .withMetricEventsListenerFactory(servoEventsListenerFactory)
                 .build()
 //                .withErrorHandler()  TODO use a custom handler (?) as the default emits extraneous error logs

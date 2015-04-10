@@ -21,11 +21,11 @@ import java.util.List;
 import java.util.Set;
 
 import com.netflix.eureka2.transport.Acknowledgement;
+import com.netflix.eureka2.transport.codec.AbstractEurekaCodec;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageCodec;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.EncoderException;
 import org.apache.avro.Schema;
@@ -39,7 +39,7 @@ import org.apache.avro.reflect.ReflectDatumWriter;
 /**
  * @author Tomasz Bak
  */
-public class AvroCodec extends ByteToMessageCodec<Object> {
+public class AvroCodec extends AbstractEurekaCodec {
 
     private final Set<Class<?>> protocolTypes;
 
@@ -68,7 +68,7 @@ public class AvroCodec extends ByteToMessageCodec<Object> {
     }
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, Object msg, ByteBuf out) {
+    public void encode(ChannelHandlerContext ctx, Object msg, ByteBuf out) {
         ByteBufOutputStream os = new ByteBufOutputStream(out);
         encoder = EncoderFactory.get().binaryEncoder(os, encoder);
 
@@ -82,7 +82,7 @@ public class AvroCodec extends ByteToMessageCodec<Object> {
     }
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
+    public void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
         ByteBufInputStream is = new ByteBufInputStream(in);
         decoder = DecoderFactory.get().binaryDecoder(is, decoder);
 
