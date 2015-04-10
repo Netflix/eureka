@@ -7,6 +7,8 @@ import static com.netflix.eureka2.config.ConfigurationNames.TransportNames.conne
 import static com.netflix.eureka2.config.ConfigurationNames.TransportNames.heartbeatIntervalMsName;
 
 /**
+ * See {@link EurekaTransportConfig} for documentation
+ *
  * @author David Liu
  */
 public class BasicEurekaTransportConfig implements EurekaTransportConfig {
