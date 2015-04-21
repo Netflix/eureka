@@ -184,7 +184,7 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATE> imple
      */
     @Override
     public Observable<Void> unregister() {
-        STATE currentState = state.getAndSet(STATE.Closed);
+        STATE currentState = moveToState(STATE.Closed);
 
         logger.debug("Unregistering service in registry: {}", instanceInfoRef.get());
 

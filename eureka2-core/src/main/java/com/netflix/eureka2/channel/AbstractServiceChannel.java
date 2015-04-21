@@ -89,7 +89,7 @@ public abstract class AbstractServiceChannel<STATE extends Enum<STATE>> implemen
         return false;
     }
 
-    protected void moveToState(STATE to) {
+    protected STATE moveToState(STATE to) {
         STATE from = state.getAndSet(to);
         if (metrics != null) {
             // We do not track initState (==idle), only subsequent states that
@@ -102,5 +102,6 @@ public abstract class AbstractServiceChannel<STATE extends Enum<STATE>> implemen
                 metrics.decrementStateCounter(from);
             }
         }
+        return from;
     }
 }

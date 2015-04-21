@@ -48,7 +48,16 @@ public class ServerListReader {
 
     public ServerListReader(ServerResolver serverResolver, final String[] serviceVips, boolean isSecure,
                             long firstResolveTimeout, TimeUnit timeUnit) {
-        this.interestClient = Eurekas.newInterestClientBuilder().withServerResolver(serverResolver).build();
+        this(Eurekas.newInterestClientBuilder().withServerResolver(serverResolver).build(), serviceVips, isSecure, firstResolveTimeout, timeUnit);
+    }
+
+    public ServerListReader(EurekaInterestClient interestClient, final String[] serviceVips, boolean isSecure) {
+        this(interestClient, serviceVips, isSecure, FIRST_RESOLVE_TIMEOUT_SEC, TimeUnit.SECONDS);
+    }
+
+    public ServerListReader(EurekaInterestClient interestClient, final String[] serviceVips, boolean isSecure,
+                            long firstResolveTimeout, TimeUnit timeUnit) {
+        this.interestClient = interestClient;
         this.firstResolveTimeoutMs = timeUnit.toMillis(firstResolveTimeout);
 
         Interest<InstanceInfo> interest = isSecure ? Interests.forSecureVips(serviceVips) : Interests.forVips(serviceVips);
@@ -59,7 +68,7 @@ public class ServerListReader {
                     @Override
                     public void call(LinkedHashSet<InstanceInfo> instanceInfos) {
                         // Legacy code has little tolerance if we start with empty server list
-                        if(!instanceInfos.isEmpty()) {
+                        if (!instanceInfos.isEmpty()) {
                             latestServerList.set(toEureka1xInstanceInfos(instanceInfos));
                             firstBatchLatch.countDown();
                         }
