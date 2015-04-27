@@ -1,5 +1,6 @@
 package com.netflix.eureka2.transport;
 
+import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -27,7 +28,7 @@ public class DeltaSerializationTest {
 
     @Before
     public void setup() {
-        channel = new EmbeddedChannel(EurekaTransports.INTEREST_CODEC_FUNC.call(EurekaTransports.Codec.Avro));
+        channel = new EmbeddedChannel(EurekaTransports.INTEREST_CODEC_FUNC.call(CodecType.Avro));
     }
 
     @Test(timeout = 60000)

@@ -127,9 +127,5 @@ public class FullFetchInterestClient extends AbstractInterestClient implements H
             super(Status.STARTING, DESCRIPTOR);
         }
 
-        @Override
-        public Status toEurekaStatus(Status status) {
-            return status;
-        }
     }
 }

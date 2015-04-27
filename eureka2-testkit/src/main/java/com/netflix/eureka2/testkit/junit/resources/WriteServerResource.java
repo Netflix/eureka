@@ -7,7 +7,7 @@ import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterTyp
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources.EurekaExternalResource;
-import com.netflix.eureka2.transport.EurekaTransports.Codec;
+import com.netflix.eureka2.codec.CodecType;
 import rx.Observable;
 
 /**
@@ -19,7 +19,7 @@ public class WriteServerResource extends EurekaExternalResource {
 
     private final String name;
     private final String readClusterName;
-    private final Codec codec;
+    private final CodecType codec;
 
     private EmbeddedWriteServer server;
 
@@ -28,10 +28,10 @@ public class WriteServerResource extends EurekaExternalResource {
     }
 
     public WriteServerResource(String name, String readClusterName) {
-        this(name, readClusterName, Codec.Avro);
+        this(name, readClusterName, CodecType.Avro);
     }
 
-    public WriteServerResource(String name, String readClusterName, Codec codec) {
+    public WriteServerResource(String name, String readClusterName, CodecType codec) {
         this.name = name;
         this.readClusterName = readClusterName;
         this.codec = codec;
@@ -54,7 +54,8 @@ public class WriteServerResource extends EurekaExternalResource {
                 .withReplicationRetryMillis(1000)
                 .build();
 
-        server = new EmbeddedWriteServer(config, Observable.<ChangeNotification<Server>>never(), false, false);
+        Observable<ChangeNotification<Server>> noPeers = Observable.never();
+        server = new EmbeddedWriteServer(config, noPeers, noPeers, false, false);
         server.start();
     }
 

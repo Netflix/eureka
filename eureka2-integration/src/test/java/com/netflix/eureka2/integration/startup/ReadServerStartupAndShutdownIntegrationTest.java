@@ -3,9 +3,9 @@ package com.netflix.eureka2.integration.startup;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.junit.categories.LongRunningTest;
 import com.netflix.eureka2.server.EurekaReadServer;
-import com.netflix.eureka2.server.config.EurekaCommonConfig.ResolverType;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.config.EurekaServerConfig.EurekaServerConfigBuilder;
+import com.netflix.eureka2.server.resolver.EurekaEndpointResolvers.ResolverType;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -25,7 +25,7 @@ public class ReadServerStartupAndShutdownIntegrationTest extends
     public void testStartsWithCommandLineParameters() throws Exception {
         EurekaServerConfig config = new EurekaServerConfigBuilder()
                 .withAppName(SERVER_NAME)
-                .withResolverType(ResolverType.fixed)
+                .withResolverType(ResolverType.Fixed)
                 .withDiscoveryPort(0)  // use ephemeral port
                 .withWebAdminPort(0)
                 .withShutDownPort(0)

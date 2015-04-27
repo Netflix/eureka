@@ -1,12 +1,14 @@
 package com.netflix.eureka2.server.config;
 
-import com.netflix.eureka2.config.ConfigurationNames.*;
+import com.netflix.eureka2.codec.CodecType;
+import com.netflix.eureka2.config.ConfigurationNames.RegistryNames;
+import com.netflix.eureka2.config.ConfigurationNames.TransportNames;
 import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider.StrategyType;
-import com.netflix.eureka2.transport.EurekaTransports.Codec;
+import com.netflix.eureka2.server.resolver.EurekaEndpointResolvers.ResolverType;
 import com.netflix.governator.annotations.Configuration;
 
 /**
@@ -16,14 +18,12 @@ import com.netflix.governator.annotations.Configuration;
  */
 public abstract class EurekaCommonConfig implements EurekaTransportConfig, EurekaRegistryConfig {
 
-    public enum ResolverType {fixed, dns}
-
     public static final int DEFAULT_SHUTDOWN_PORT = 7700;
     public static final int DEFAULT_ADMIN_PORT = 8077;
     public static final int DEFAULT_HTTP_PORT = 8080;
 
     public static final long DEFAULT_HEARTBEAT_INTERVAL_MS = 30 * 1000;
-    public static final long DEFAULT_CONNECTION_AUTO_TIMEOUT_MS = 30*60*1000;
+    public static final long DEFAULT_CONNECTION_AUTO_TIMEOUT_MS = 30 * 60 * 1000;
 
     public static final String DEFAULT_CODEC = "Avro";
 
@@ -32,7 +32,7 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
     public static final int DEFAULT_DATACENTER_RESOLVE_INTERVAL_SEC = 30;
 
     @Configuration("eureka.common.writeCluster.resolverType")
-    protected String resolverType = ResolverType.fixed.name();
+    protected String resolverType = ResolverType.Fixed.name();
 
     @Configuration("eureka.common.writeCluster.serverList")
     protected String[] serverList = {"localhost:12102:12103:12104"};
@@ -100,7 +100,7 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
             int webAdminPort,
             long heartbeatIntervalMs,
             long connectionAutoTimeoutMs,
-            Codec codec,
+            CodecType codec,
             long evictionTimeoutMs,
             StrategyType evictionStrategyType,
             String evictionStrategyValue
@@ -130,9 +130,9 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
     public ResolverType getServerResolverType() {
         ResolverType result;
         try {
-            result = ResolverType.valueOf(resolverType);
+            result = ResolverType.valueOfIgnoreCase(resolverType);
         } catch (Exception e) {
-            return ResolverType.fixed;
+            return ResolverType.Fixed;
         }
         return result;
     }
@@ -186,12 +186,12 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
     }
 
     @Override
-    public Codec getCodec() {
-        Codec result;
+    public CodecType getCodec() {
+        CodecType result;
         try {
-            result = Codec.valueOf(codec);
+            result = CodecType.valueOf(codec);
         } catch (Exception e) {
-            return Codec.Avro;
+            return CodecType.Avro;
         }
         return result;
     }
@@ -234,7 +234,7 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
 
         protected long heartbeatIntervalMs = DEFAULT_HEARTBEAT_INTERVAL_MS;
         protected long connectionAutoTimeoutMs = DEFAULT_CONNECTION_AUTO_TIMEOUT_MS;
-        protected Codec codec = Codec.Avro;
+        protected CodecType codec = CodecType.Avro;
 
         protected long evictionTimeoutMs = DEFAULT_EVICTION_TIMEOUT;
         protected EvictionStrategyProvider.StrategyType evictionStrategyType;
@@ -246,7 +246,7 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
         }
 
         public B withResolverType(String resolverTypeStr) {
-            this.resolverType = ResolverType.valueOf(resolverTypeStr);
+            this.resolverType = ResolverType.valueOfIgnoreCase(resolverTypeStr);
             return self();
         }
 
@@ -305,7 +305,7 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
             return self();
         }
 
-        public B withCodec(Codec codec) {
+        public B withCodec(CodecType codec) {
             this.codec = codec;
             return self();
         }
@@ -334,47 +334,4 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
     }
 
 
-    // TODO: merge with ServerResolver?
-    public static class ServerBootstrap {
-        private final String hostname;
-        private final Integer registrationPort;
-        private final Integer discoveryPort;
-        private final Integer replicationPort;
-
-        public static ServerBootstrap[] from(String... hostnameAndPortsList) {
-            ServerBootstrap[] servers = new ServerBootstrap[hostnameAndPortsList.length];
-            for (int i = 0; i < hostnameAndPortsList.length; i++) {
-                servers[i] = new ServerBootstrap(hostnameAndPortsList[i]);
-            }
-            return servers;
-        }
-
-        private ServerBootstrap(String hostnameAndPorts) {
-            try {
-                String[] parts = hostnameAndPorts.split(":");
-                hostname = parts[0];
-                registrationPort = Integer.parseInt(parts[1]);
-                discoveryPort = Integer.parseInt(parts[2]);
-                replicationPort = Integer.parseInt(parts[3]);
-            } catch (Exception e) {
-                throw new IllegalArgumentException(e);
-            }
-        }
-
-        public String getHostname() {
-            return hostname;
-        }
-
-        public Integer getRegistrationPort() {
-            return registrationPort;
-        }
-
-        public Integer getDiscoveryPort() {
-            return discoveryPort;
-        }
-
-        public Integer getReplicationPort() {
-            return replicationPort;
-        }
-    }
 }

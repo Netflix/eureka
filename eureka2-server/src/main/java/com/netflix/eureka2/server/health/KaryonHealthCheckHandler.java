@@ -4,6 +4,7 @@ import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.netflix.eureka2.health.EurekaHealthStatusAggregator;
 import com.netflix.eureka2.health.HealthStatusUpdate;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -24,7 +25,7 @@ public class KaryonHealthCheckHandler implements HealthCheckHandler {
     private final AtomicReference<HttpResponseStatus> status = new AtomicReference<>(HttpResponseStatus.SERVICE_UNAVAILABLE);
 
     @Inject
-    public KaryonHealthCheckHandler(EurekaHealthStatusAggregator healthStatusAggregator) {
+    public KaryonHealthCheckHandler(EurekaHealthStatusAggregatorImpl healthStatusAggregator) {
         subscription = healthStatusAggregator.healthStatus().subscribe(new Subscriber<HealthStatusUpdate<EurekaHealthStatusAggregator>>() {
             @Override
             public void onCompleted() {

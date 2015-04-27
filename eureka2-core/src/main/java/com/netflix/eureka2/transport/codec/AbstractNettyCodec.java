@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * @author David Liu
  */
-public abstract class AbstractEurekaCodec extends ByteToMessageCodec<Object> {
+public abstract class AbstractNettyCodec extends ByteToMessageCodec<Object> {
 
     /**
      * Override for public access

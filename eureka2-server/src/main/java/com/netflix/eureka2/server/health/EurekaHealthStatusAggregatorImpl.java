@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.netflix.eureka2.health.HealthStatusAggregator;
+import com.netflix.eureka2.health.EurekaHealthStatusAggregator;
 import com.netflix.eureka2.health.HealthStatusProvider;
 import com.netflix.eureka2.health.HealthStatusUpdate;
 import com.netflix.eureka2.health.SubsystemDescriptor;
@@ -26,9 +26,9 @@ import rx.subjects.BehaviorSubject;
  * @author Tomasz Bak
  */
 @Singleton
-public class EurekaHealthStatusAggregator implements HealthStatusAggregator<EurekaHealthStatusAggregator> {
+public class EurekaHealthStatusAggregatorImpl implements EurekaHealthStatusAggregator {
 
-    private static final Logger logger = LoggerFactory.getLogger(EurekaHealthStatusAggregator.class);
+    private static final Logger logger = LoggerFactory.getLogger(EurekaHealthStatusAggregatorImpl.class);
 
     private static final Map<Status, Integer> STATUS_PRIORITY_MAP;
 
@@ -49,11 +49,11 @@ public class EurekaHealthStatusAggregator implements HealthStatusAggregator<Eure
 
     private final HealthStatusProviderRegistry registry;
 
-    private AtomicReference<Observable<HealthStatusUpdate<EurekaHealthStatusAggregator>>> aggregatedHealthObservable = new AtomicReference<>();
+    private final AtomicReference<Observable<HealthStatusUpdate<EurekaHealthStatusAggregator>>> aggregatedHealthObservable = new AtomicReference<>();
     private Subscription subscription;
 
     @Inject
-    public EurekaHealthStatusAggregator(HealthStatusProviderRegistry registry) {
+    public EurekaHealthStatusAggregatorImpl(HealthStatusProviderRegistry registry) {
         this.registry = registry;
     }
 

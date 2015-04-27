@@ -17,14 +17,14 @@ import java.util.Set;
  *
  * @author David Liu
  */
-public class DynamicEurekaCodec extends AbstractEurekaCodec {
+public class DynamicNettyCodec extends AbstractNettyCodec {
     private final Set<Class<?>> protocolTypes;
-    private final Map<Byte, AbstractEurekaCodec> codecMap;
+    private final Map<Byte, AbstractNettyCodec> codecMap;
 
-    private volatile AbstractEurekaCodec curentCodec;
+    private volatile AbstractNettyCodec curentCodec;
     private volatile byte currentCodecVersion;
 
-    public DynamicEurekaCodec(Set<Class<?>> protocolTypes, Map<Byte, AbstractEurekaCodec> codecMap, byte defaultCodecVersion) {
+    public DynamicNettyCodec(Set<Class<?>> protocolTypes, Map<Byte, AbstractNettyCodec> codecMap, byte defaultCodecVersion) {
         this.protocolTypes = protocolTypes;
         this.codecMap = codecMap;
         this.currentCodecVersion = defaultCodecVersion;

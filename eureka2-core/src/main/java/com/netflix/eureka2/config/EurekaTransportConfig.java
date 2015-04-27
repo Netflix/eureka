@@ -1,6 +1,6 @@
 package com.netflix.eureka2.config;
 
-import com.netflix.eureka2.transport.EurekaTransports.Codec;
+import com.netflix.eureka2.codec.CodecType;
 
 /**
  * Configuration for the transport layer that applies to all channels created
@@ -35,5 +35,5 @@ public interface EurekaTransportConfig {
      *
      * @return the default encoding codec
      */
-    Codec getCodec();
+    CodecType getCodec();
 }

@@ -35,15 +35,15 @@ public class OcelliServerResolver implements ServerResolver {
     private final LoadBalancer<Server> loadBalancer;
 
 
-    OcelliServerResolver(Server... servers) {
+    protected OcelliServerResolver(Server... servers) {
         this(sourceFromList(servers), RoundRobinLoadBalancer.<Server>create(new Random().nextInt(100)), 10, TimeUnit.SECONDS);
     }
 
-    OcelliServerResolver(Observable<ChangeNotification<Server>> serverSource) {
+    protected OcelliServerResolver(Observable<ChangeNotification<Server>> serverSource) {
         this(serverSource, RoundRobinLoadBalancer.<Server>create(new Random().nextInt(100)), 10, TimeUnit.SECONDS);
     }
 
-    private OcelliServerResolver(Observable<ChangeNotification<Server>> serverSource, LoadBalancer<Server> loadBalancer, int warmUpTimeout, TimeUnit timeUnit) {
+    protected OcelliServerResolver(Observable<ChangeNotification<Server>> serverSource, LoadBalancer<Server> loadBalancer, int warmUpTimeout, TimeUnit timeUnit) {
         this.serverSource = serverSource;
         this.warmUpTimeout = warmUpTimeout;
         this.timeUnit = timeUnit;

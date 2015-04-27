@@ -16,52 +16,27 @@
 
 package com.netflix.eureka2.server.transport.tcp.registration;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.transport.tcp.AbstractTcpServer;
 import com.netflix.eureka2.transport.EurekaTransports;
-import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Tomasz Bak
  */
 @Singleton
-public class TcpRegistrationServer extends AbstractTcpServer<WriteServerConfig, WriteServerMetricFactory> {
-
-    private static final Logger logger = LoggerFactory.getLogger(TcpRegistrationServer.class);
-
-    private final EvictionQueue evictionQueue;
+public class TcpRegistrationServer extends AbstractTcpServer {
 
     @Inject
     public TcpRegistrationServer(WriteServerConfig config,
-                                 SourcedEurekaRegistry eurekaRegistry,
-                                 EvictionQueue evictionQueue,
                                  @Named("registration") MetricEventsListenerFactory servoEventsListenerFactory,
-                                 WriteServerMetricFactory metricFactory) {
-        super(eurekaRegistry, servoEventsListenerFactory, config, metricFactory);
-        this.evictionQueue = evictionQueue;
-    }
-
-    @PostConstruct
-    public void start() {
-        server = RxNetty.newTcpServerBuilder(
-                config.getRegistrationPort(),
-                new TcpRegistrationHandler(config, eurekaRegistry, evictionQueue, metricFactory))
-                .pipelineConfigurator(EurekaTransports.registrationPipeline(config.getCodec()))
-                .withMetricEventsListenerFactory(servoEventsListenerFactory)
-                .build()
-                .start();
-
-        logger.info("Starting TCP registration server on port {} with {} encoding...", server.getServerPort(), config.getCodec());
+                                 TcpRegistrationHandler tcpRegistrationHandler) {
+        super(servoEventsListenerFactory, config, config.getRegistrationPort(),
+                EurekaTransports.registrationPipeline(config.getCodec()), tcpRegistrationHandler);
     }
 }

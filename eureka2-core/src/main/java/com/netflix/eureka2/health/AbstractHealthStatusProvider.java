@@ -34,6 +34,4 @@ public abstract class AbstractHealthStatusProvider<SUBSYSTEM> implements HealthS
         healthSubject.onNext(new HealthStatusUpdate<SUBSYSTEM>(newStatus, descriptor));
         return true;
     }
-
-    protected abstract Status toEurekaStatus(Status status);
 }

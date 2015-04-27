@@ -9,12 +9,13 @@ import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
+import com.netflix.eureka2.server.resolver.EurekaEndpoint.ServiceType;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster.WriteClusterReport;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster.WriteServerAddress;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer.WriteServerReport;
-import com.netflix.eureka2.transport.EurekaTransports.Codec;
+import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.utils.rx.RxFunctions;
 import rx.Observable;
 import rx.functions.Func1;
@@ -30,15 +31,15 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
     private final boolean withExt;
     private final boolean withAdminUI;
     private final boolean ephemeralPorts;
-    private final Codec codec;
+    private final CodecType codec;
 
     private int nextAvailablePort = WRITE_SERVER_PORTS_FROM;
 
     public EmbeddedWriteCluster(boolean withExt, boolean withAdminUI, boolean ephemeralPorts) {
-        this(withExt, withAdminUI, ephemeralPorts, Codec.Avro);
+        this(withExt, withAdminUI, ephemeralPorts, CodecType.Avro);
     }
 
-    public EmbeddedWriteCluster(boolean withExt, boolean withAdminUI, boolean ephemeralPorts, Codec codec) {
+    public EmbeddedWriteCluster(boolean withExt, boolean withAdminUI, boolean ephemeralPorts, CodecType codec) {
         super(WRITE_SERVER_NAME);
         this.withExt = withExt;
         this.withAdminUI = withAdminUI;
@@ -86,7 +87,8 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
     protected EmbeddedWriteServer newServer(WriteServerConfig config) {
         return new EmbeddedWriteServer(
                 config,
-                replicationPeers(),
+                resolvePeers(ServiceType.Interest),
+                resolvePeers(ServiceType.Replication),
                 withExt,
                 withAdminUI
         );
@@ -124,7 +126,7 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
         });
     }
 
-    public Observable<ChangeNotification<Server>> replicationPeers() {
+    public Observable<ChangeNotification<Server>> resolvePeers(final ServiceType serviceType) {
         return clusterChangeObservable().map(
                 new Func1<ChangeNotification<WriteServerAddress>, ChangeNotification<Server>>() {
                     @Override
@@ -134,7 +136,18 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
                         }
 
                         WriteServerAddress data = notification.getData();
-                        Server serverAddress = new Server(data.getHostName(), data.getReplicationPort());
+                        int port;
+                        switch (serviceType) {
+                            case Registration:
+                                port = data.getRegistrationPort();
+                                break;
+                            case Interest:
+                                port = data.getDiscoveryPort();
+                                break;
+                            default: // == Replication
+                                port = data.getReplicationPort();
+                        }
+                        Server serverAddress = new Server(data.getHostName(), port);
                         switch (notification.getKind()) {
                             case Add:
                                 return new ChangeNotification<Server>(Kind.Add, serverAddress);

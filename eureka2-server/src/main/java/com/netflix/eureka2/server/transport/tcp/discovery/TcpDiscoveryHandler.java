@@ -16,24 +16,33 @@
 
 package com.netflix.eureka2.server.transport.tcp.discovery;
 
+import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 
 import com.netflix.eureka2.channel.InterestChannel;
+import com.netflix.eureka2.health.EurekaHealthStatusAggregator;
+import com.netflix.eureka2.health.HealthStatusUpdate;
+import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import com.netflix.eureka2.server.channel.InterestChannelFactory;
 import com.netflix.eureka2.server.channel.ServerChannelFactory;
-import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
+import com.netflix.eureka2.utils.rx.RetryStrategyFunc;
 import io.reactivex.netty.channel.ConnectionHandler;
 import io.reactivex.netty.channel.ObservableConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.Scheduler;
 import rx.Subscriber;
+import rx.Subscription;
+import rx.functions.Action1;
+import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
 /**
@@ -43,23 +52,84 @@ public class TcpDiscoveryHandler implements ConnectionHandler<Object, Object> {
 
     private static final Logger logger = LoggerFactory.getLogger(TcpDiscoveryHandler.class);
 
+    /* Visible for testing */ static final int RETRY_INTERVAL_MS = 1000;
+
     private final EurekaCommonConfig config;
     private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final EurekaServerMetricFactory metricFactory;
+    private final Subscription healthStatusSubscription;
+
+    private volatile boolean afterBootstrap;
 
     @Inject
     public TcpDiscoveryHandler(EurekaCommonConfig config,
                                SourcedEurekaRegistry registry,
+                               EurekaHealthStatusAggregator systemHealthStatus,
                                EurekaServerMetricFactory metricFactory) {
+        this(config, registry, systemHealthStatus, metricFactory, Schedulers.computation());
+    }
+
+    public TcpDiscoveryHandler(EurekaCommonConfig config,
+                               SourcedEurekaRegistry registry,
+                               EurekaHealthStatusAggregator systemHealthStatus,
+                               EurekaServerMetricFactory metricFactory,
+                               Scheduler scheduler) {
         this.config = config;
         this.registry = registry;
         this.metricFactory = metricFactory;
+        this.healthStatusSubscription = systemHealthStatus.healthStatus()
+                .filter(new Func1<HealthStatusUpdate<EurekaHealthStatusAggregator>, Boolean>() {
+                    @Override
+                    public Boolean call(HealthStatusUpdate<EurekaHealthStatusAggregator> update) {
+                        return update.getStatus() == Status.UP;
+                    }
+                })
+                .take(1)
+                .doOnError(new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable error) {
+                        logger.error("Healthcheck status stream terminated with an error. Interest connection " +
+                                "will not be accepted yet. Re-subscribing shortly", error);
+                    }
+                })
+                .retryWhen(new RetryStrategyFunc(RETRY_INTERVAL_MS, scheduler), scheduler)
+                .subscribe(
+                        new Subscriber<HealthStatusUpdate<EurekaHealthStatusAggregator>>() {
+                            @Override
+                            public void onCompleted() {
+                                if (!afterBootstrap) {
+                                    logger.error("Healthcheck status stream completed, while it is not yet marked as up.");
+                                }
+                            }
+
+                            @Override
+                            public void onError(Throwable e) {
+                                // This should never happen
+                                logger.error("Healthcheck stream terminated with an error and went out of retry loop", e);
+                            }
+
+                            @Override
+                            public void onNext(HealthStatusUpdate<EurekaHealthStatusAggregator> update) {
+                                afterBootstrap = true;
+                                logger.info("Enabling TCP interest port for service");
+                            }
+                        }
+                );
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        healthStatusSubscription.unsubscribe();
     }
 
     @Override
     public Observable<Void> handle(ObservableConnection<Object, Object> connection) {
         if (logger.isDebugEnabled()) {
             logger.debug("New TCP discovery client connection");
+        }
+        if (!afterBootstrap) {
+            logger.info("Server bootstrap not finished; discarding client connection");
+            return Observable.error(new IllegalStateException("Server bootstrap not finished; discarding client connection"));
         }
 
         MessageConnection broker = new HeartBeatConnection(

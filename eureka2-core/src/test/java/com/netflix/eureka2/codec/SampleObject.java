@@ -1,4 +1,4 @@
-package com.netflix.eureka2.transport.base;
+package com.netflix.eureka2.codec;
 
 import com.netflix.eureka2.transport.Acknowledgement;
 import org.apache.avro.Schema;

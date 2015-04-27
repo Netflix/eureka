@@ -11,14 +11,14 @@ import com.google.inject.matcher.AbstractMatcher;
 import com.google.inject.spi.InjectionListener;
 import com.google.inject.spi.TypeEncounter;
 import com.google.inject.spi.TypeListener;
-import com.netflix.eureka2.health.HealthStatusAggregator;
+import com.netflix.eureka2.health.EurekaHealthStatusAggregator;
 import com.netflix.eureka2.health.HealthStatusProvider;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 
 /**
  * This module injects interceptors that collect all components implementing {@link HealthStatusProvider}
- * interface, excluding {@link HealthStatusAggregator}. The collected components are available via
+ * interface, excluding {@link EurekaHealthStatusAggregator}. The collected components are available via
  * {@link HealthStatusProviderRegistry} that should be injected in places where it is needed.
  *
  * @author Tomasz Bak
@@ -87,6 +87,6 @@ public class EurekaHealthStatusModule extends AbstractModule {
     }
 
     private static boolean isHealthStatusProvider(Class<?> rawType) {
-        return HealthStatusProvider.class.isAssignableFrom(rawType) && !HealthStatusAggregator.class.isAssignableFrom(rawType);
+        return HealthStatusProvider.class.isAssignableFrom(rawType) && !EurekaHealthStatusAggregator.class.isAssignableFrom(rawType);
     }
 }

@@ -16,10 +16,11 @@
 
 package com.netflix.eureka2.config;
 
+import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider.StrategyType;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
-import com.netflix.eureka2.transport.EurekaTransports;
+import com.netflix.eureka2.server.resolver.EurekaEndpointResolvers.ResolverType;
 import com.netflix.governator.annotations.Configuration;
 
 /**
@@ -55,7 +56,7 @@ public class EurekaDashboardConfig extends EurekaCommonConfig {
             int webAdminPort,
             long heartbeatIntervalMs,
             long connectionAutoTimeoutMs,
-            EurekaTransports.Codec codec,
+            CodecType codec,
             long evictionTimeoutMs,
             StrategyType evictionStrategyType,
             String evictionStrategyValue,

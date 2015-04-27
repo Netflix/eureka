@@ -10,7 +10,7 @@ import java.util.Map;
 import com.netflix.eureka2.health.HealthStatusProvider;
 import com.netflix.eureka2.health.HealthStatusUpdate;
 import com.netflix.eureka2.health.SubsystemDescriptor;
-import com.netflix.eureka2.server.health.EurekaHealthStatusAggregator;
+import com.netflix.eureka2.server.health.EurekaHealthStatusAggregatorImpl;
 import com.netflix.eureka2.utils.Json;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
@@ -29,7 +29,7 @@ public class HealthConnectionHandler implements ConnectionHandler<WebSocketFrame
     private final Observable<HealthStatusUpdate<?>> updateObservable;
 
     @Inject
-    public HealthConnectionHandler(final EurekaHealthStatusAggregator aggregatedHealth,
+    public HealthConnectionHandler(final EurekaHealthStatusAggregatorImpl aggregatedHealth,
                                    EurekaHttpServer httpServer) {
         updateObservable = aggregatedHealth.components()
                 .flatMap(new Func1<List<HealthStatusProvider<?>>, Observable<HealthStatusUpdate<?>>>() {

@@ -1,5 +1,6 @@
 package com.netflix.eureka2.transport;
 
+import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -25,7 +26,7 @@ public class AvroCodecPerf {
     public void runRegistrations() {
         InstanceInfo instanceInfo = SampleInstanceInfo.EurekaReadServer.build();
         for (int l = 0; l < loops; l++) {
-            EmbeddedChannel ch = new EmbeddedChannel(EurekaTransports.REGISTRATION_CODEC_FUNC.call(EurekaTransports.Codec.Avro));
+            EmbeddedChannel ch = new EmbeddedChannel(EurekaTransports.REGISTRATION_CODEC_FUNC.call(CodecType.Avro));
 
             for (int i = 0; i < messageCount; i++) {
                 assertTrue("Message should be written successfully to the channel", ch.writeOutbound(instanceInfo));

@@ -16,20 +16,14 @@
 
 package com.netflix.eureka2.server.transport.tcp.discovery;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.transport.tcp.AbstractTcpServer;
 import com.netflix.eureka2.transport.EurekaTransports;
-import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Tomasz Bak
@@ -37,30 +31,11 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class TcpDiscoveryServer extends AbstractTcpServer {
 
-    private static final Logger logger = LoggerFactory.getLogger(TcpDiscoveryServer.class);
-
-    private final EurekaServerMetricFactory metricFactory;
-
     @Inject
     public TcpDiscoveryServer(EurekaServerConfig config,
-                              SourcedEurekaRegistry eurekaRegistry,
                               @Named("discovery") MetricEventsListenerFactory servoEventsListenerFactory,
-                              EurekaServerMetricFactory metricFactory) {
-        super(eurekaRegistry, servoEventsListenerFactory, config, metricFactory);
-        this.metricFactory = metricFactory;
-    }
-
-    @PostConstruct
-    public void start() {
-        server = RxNetty.newTcpServerBuilder(
-                config.getDiscoveryPort(),
-                new TcpDiscoveryHandler(config, eurekaRegistry, metricFactory))
-                .pipelineConfigurator(EurekaTransports.interestPipeline(config.getCodec()))
-                .withMetricEventsListenerFactory(servoEventsListenerFactory)
-                .build()
-//                .withErrorHandler()  TODO use a custom handler (?) as the default emits extraneous error logs
-                .start();
-
-        logger.info("Starting TCP discovery server on port {} with {} encoding...", server.getServerPort(), config.getCodec());
+                              TcpDiscoveryHandler tcpDiscoveryHandler) {
+        super(servoEventsListenerFactory, config, config.getDiscoveryPort(),
+                EurekaTransports.interestPipeline(config.getCodec()), tcpDiscoveryHandler);
     }
 }

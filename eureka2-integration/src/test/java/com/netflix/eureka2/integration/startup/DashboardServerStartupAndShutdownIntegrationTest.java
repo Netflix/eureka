@@ -4,7 +4,7 @@ import com.netflix.eureka2.EurekaDashboardServer;
 import com.netflix.eureka2.config.EurekaDashboardConfig;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.junit.categories.LongRunningTest;
-import com.netflix.eureka2.server.config.EurekaCommonConfig.ResolverType;
+import com.netflix.eureka2.server.resolver.EurekaEndpointResolvers.ResolverType;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -21,7 +21,7 @@ public class DashboardServerStartupAndShutdownIntegrationTest extends
     public void testStartsWithCommandLineParameters() throws Exception {
         EurekaDashboardConfig config = EurekaDashboardConfig.newBuilder()
                 .withAppName(SERVER_NAME)
-                .withResolverType(ResolverType.fixed)
+                .withResolverType(ResolverType.Fixed)
                 .withWebAdminPort(0)
                 .withShutDownPort(0)
                 .withServerList(writeServerList)

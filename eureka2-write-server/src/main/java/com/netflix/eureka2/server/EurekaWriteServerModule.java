@@ -41,6 +41,9 @@ import com.netflix.eureka2.server.service.EurekaWriteServerSelfInfoResolver;
 import com.netflix.eureka2.server.service.EurekaWriteServerSelfRegistrationService;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
+import com.netflix.eureka2.server.service.bootstrap.PeerRegistryBootstrapService;
+import com.netflix.eureka2.server.service.bootstrap.RegistryBootstrapCoordinator;
+import com.netflix.eureka2.server.service.bootstrap.RegistryBootstrapService;
 import com.netflix.eureka2.server.service.replication.ReplicationService;
 import com.netflix.eureka2.server.spi.ExtensionContext;
 import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
@@ -83,6 +86,8 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
         bind(EvictionQueue.class).to(EvictionQueueImpl.class).asEagerSingleton();
         bind(EvictionStrategy.class).toProvider(EvictionStrategyProvider.class);
         bind(AuditServiceController.class).asEagerSingleton();
+        bind(RegistryBootstrapCoordinator.class).asEagerSingleton();
+        bind(RegistryBootstrapService.class).to(PeerRegistryBootstrapService.class);
 
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("registration")).toInstance(new SpectatorEventsListenerFactory("registration-rx-client-", "registration-rx-server-"));
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new SpectatorEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));

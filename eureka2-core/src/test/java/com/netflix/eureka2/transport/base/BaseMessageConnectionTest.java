@@ -11,16 +11,18 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import com.netflix.eureka2.codec.SampleObject;
+import com.netflix.eureka2.codec.avro.EurekaAvroCodec;
+import com.netflix.eureka2.codec.avro.SchemaReflectData;
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.rx.RxBlocking;
 import com.netflix.eureka2.transport.EurekaPipelineConfigurator;
-import com.netflix.eureka2.transport.EurekaTransports.Codec;
+import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.transport.MessageConnection;
-import com.netflix.eureka2.transport.codec.AbstractEurekaCodec;
-import com.netflix.eureka2.transport.codec.DynamicEurekaCodec;
-import com.netflix.eureka2.transport.codec.avro.AvroCodec;
-import com.netflix.eureka2.transport.codec.avro.SchemaReflectData;
+import com.netflix.eureka2.transport.codec.AbstractNettyCodec;
+import com.netflix.eureka2.transport.codec.DynamicNettyCodec;
+import com.netflix.eureka2.transport.codec.EurekaCodecWrapper;
 import io.netty.handler.logging.LogLevel;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ConnectionHandler;
@@ -35,8 +37,8 @@ import rx.Subscriber;
 import rx.functions.Func1;
 import rx.observers.TestSubscriber;
 
-import static com.netflix.eureka2.transport.base.SampleObject.CONTENT;
-import static com.netflix.eureka2.transport.base.SampleObject.SAMPLE_OBJECT_MODEL_SET;
+import static com.netflix.eureka2.codec.SampleObject.CONTENT;
+import static com.netflix.eureka2.codec.SampleObject.SAMPLE_OBJECT_MODEL_SET;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -65,15 +67,15 @@ public class BaseMessageConnectionTest {
 
     @Before
     public void setUp() throws Exception {
-        Func1<Codec, AbstractEurekaCodec> sampleObjectFunc = new Func1<Codec, AbstractEurekaCodec>() {
+        Func1<CodecType, AbstractNettyCodec> sampleObjectFunc = new Func1<CodecType, AbstractNettyCodec>() {
             @Override
-            public AbstractEurekaCodec call(Codec codec) {
-                Map<Byte, AbstractEurekaCodec> map = new HashMap<>();
-                map.put(Codec.Avro.getVersion(), new AvroCodec(SampleObject.SAMPLE_OBJECT_MODEL_SET, SampleObject.rootSchema(), new SchemaReflectData(SampleObject.rootSchema())));
-                return new DynamicEurekaCodec(SAMPLE_OBJECT_MODEL_SET, Collections.unmodifiableMap(map), codec.getVersion());
+            public AbstractNettyCodec call(CodecType codec) {
+                Map<Byte, AbstractNettyCodec> map = new HashMap<>();
+                map.put(CodecType.Avro.getVersion(), new EurekaCodecWrapper(new EurekaAvroCodec(SAMPLE_OBJECT_MODEL_SET, SampleObject.rootSchema(), new SchemaReflectData(SampleObject.rootSchema()))));
+                return new DynamicNettyCodec(SAMPLE_OBJECT_MODEL_SET, Collections.unmodifiableMap(map), codec.getVersion());
             }
         };
-        codecPipeline = new EurekaPipelineConfigurator(sampleObjectFunc, Codec.Avro);
+        codecPipeline = new EurekaPipelineConfigurator(sampleObjectFunc, CodecType.Avro);
         setupServerAndClient();
     }
 

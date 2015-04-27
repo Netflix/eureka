@@ -2,7 +2,7 @@ package com.netflix.eureka2.transport;
 
 import com.netflix.eureka2.metric.noop.NoOpMessageConnectionMetrics;
 import com.netflix.eureka2.rx.RxBlocking;
-import com.netflix.eureka2.transport.EurekaTransports.Codec;
+import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.transport.TransportCompatibilityTestSuite.DiscoveryProtocolTest;
 import com.netflix.eureka2.transport.TransportCompatibilityTestSuite.RegistrationProtocolTest;
 import com.netflix.eureka2.transport.TransportCompatibilityTestSuite.ReplicationProtocolTest;
@@ -50,17 +50,17 @@ public class EurekaTransportsTest {
 
     @Test(timeout = 10000)
     public void testRegistrationProtocolWithAvro() throws Exception {
-        registrationProtocolTest(Codec.Avro, Codec.Avro);
+        registrationProtocolTest(CodecType.Avro, CodecType.Avro);
     }
 
     @Test(timeout = 10000)
     public void testReplicationProtocolWithAvro() throws Exception {
-        replicationProtocolTest(Codec.Avro, Codec.Avro);
+        replicationProtocolTest(CodecType.Avro, CodecType.Avro);
     }
 
     @Test(timeout = 10000)
     public void testDiscoveryProtocolWithAvro() throws Exception {
-        discoveryProtocolTest(Codec.Avro, Codec.Avro);
+        discoveryProtocolTest(CodecType.Avro, CodecType.Avro);
     }
 
 
@@ -70,17 +70,17 @@ public class EurekaTransportsTest {
 
     @Test(timeout = 10000)
     public void testRegistrationProtocolWithJson() throws Exception {
-        registrationProtocolTest(Codec.Json, Codec.Json);
+        registrationProtocolTest(CodecType.Json, CodecType.Json);
     }
 
     @Test(timeout = 10000)
     public void testReplicationProtocolWithJson() throws Exception {
-        replicationProtocolTest(Codec.Json, Codec.Json);
+        replicationProtocolTest(CodecType.Json, CodecType.Json);
     }
 
     @Test(timeout = 10000)
     public void testDiscoveryProtocolWithJson() throws Exception {
-        discoveryProtocolTest(Codec.Json, Codec.Json);
+        discoveryProtocolTest(CodecType.Json, CodecType.Json);
     }
 
 
@@ -90,17 +90,17 @@ public class EurekaTransportsTest {
 
     @Test(timeout = 10000)
     public void testRegistrationProtocolWithAvroJson() throws Exception {
-        registrationProtocolTest(Codec.Avro, Codec.Json);
+        registrationProtocolTest(CodecType.Avro, CodecType.Json);
     }
 
     @Test(timeout = 10000)
     public void testReplicationProtocolWithAvroJson() throws Exception {
-        replicationProtocolTest(Codec.Avro, Codec.Json);
+        replicationProtocolTest(CodecType.Avro, CodecType.Json);
     }
 
     @Test(timeout = 10000)
     public void testDiscoveryProtocolWithAvroJson() throws Exception {
-        discoveryProtocolTest(Codec.Avro, Codec.Json);
+        discoveryProtocolTest(CodecType.Avro, CodecType.Json);
     }
 
 
@@ -110,17 +110,17 @@ public class EurekaTransportsTest {
 
     @Test(timeout = 10000)
     public void testRegistrationProtocolWithJsonAvro() throws Exception {
-        registrationProtocolTest(Codec.Json, Codec.Avro);
+        registrationProtocolTest(CodecType.Json, CodecType.Avro);
     }
 
     @Test(timeout = 10000)
     public void testReplicationProtocolWithJsonAvro() throws Exception {
-        replicationProtocolTest(Codec.Json, Codec.Avro);
+        replicationProtocolTest(CodecType.Json, CodecType.Avro);
     }
 
     @Test(timeout = 10000)
     public void testDiscoveryProtocolWithJsonAvro() throws Exception {
-        discoveryProtocolTest(Codec.Json, Codec.Avro);
+        discoveryProtocolTest(CodecType.Json, CodecType.Avro);
     }
 
 
@@ -128,7 +128,7 @@ public class EurekaTransportsTest {
      * Helpers
      */
 
-    public void registrationProtocolTest(Codec serverCodec, Codec clientCodec) throws Exception {
+    public void registrationProtocolTest(CodecType serverCodec, CodecType clientCodec) throws Exception {
         Iterator<MessageConnection> serverBrokerIterator = RxBlocking.iteratorFrom(
                 1, TimeUnit.SECONDS,
                 serverConnection(registrationPipeline(serverCodec))
@@ -142,7 +142,7 @@ public class EurekaTransportsTest {
         ).runTestSuite();
     }
 
-    public void replicationProtocolTest(Codec serverCodec, Codec clientCodec) throws Exception {
+    public void replicationProtocolTest(CodecType serverCodec, CodecType clientCodec) throws Exception {
         Iterator<MessageConnection> serverBrokerIterator = RxBlocking.iteratorFrom(
                 1, TimeUnit.SECONDS,
                 serverConnection(replicationPipeline(serverCodec))
@@ -156,7 +156,7 @@ public class EurekaTransportsTest {
         ).runTestSuite();
     }
 
-    public void discoveryProtocolTest(Codec serverCodec, Codec clientCodec) throws Exception {
+    public void discoveryProtocolTest(CodecType serverCodec, CodecType clientCodec) throws Exception {
         Iterator<MessageConnection> serverBrokerIterator = RxBlocking.iteratorFrom(
                 1, TimeUnit.SECONDS,
                 serverConnection(interestPipeline(serverCodec))

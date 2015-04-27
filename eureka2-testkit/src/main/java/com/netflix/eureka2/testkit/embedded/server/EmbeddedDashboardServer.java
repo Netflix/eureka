@@ -13,7 +13,7 @@ import com.netflix.eureka2.config.EurekaDashboardConfig;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedDashboardServer.DashboardServerReport;
-import com.netflix.eureka2.transport.EurekaTransports.Codec;
+import com.netflix.eureka2.codec.CodecType;
 
 /**
  * @author Tomasz Bak
@@ -85,7 +85,7 @@ public class EmbeddedDashboardServer extends EmbeddedEurekaServer<EurekaDashboar
                                                        boolean withExt,
                                                        boolean withAdminUI,
                                                        boolean ephemeralPorts,
-                                                       Codec codec) {
+                                                       CodecType codec) {
 
         int dashboardPort = ephemeralPorts ? 0 : DASHBOARD_SERVER_PORTS_FROM;
         int webAdminPort = ephemeralPorts ? 0 : DASHBOARD_SERVER_PORTS_FROM + 1;
