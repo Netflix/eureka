@@ -16,7 +16,6 @@
 
 package com.netflix.eureka2.server.transport.tcp.replication;
 
-import com.google.inject.Inject;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
@@ -33,6 +32,8 @@ import io.reactivex.netty.channel.ConnectionHandler;
 import io.reactivex.netty.channel.ObservableConnection;
 import rx.Observable;
 import rx.schedulers.Schedulers;
+
+import javax.inject.Inject;
 
 /**
  * @author Tomasz Bak

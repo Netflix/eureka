@@ -16,7 +16,6 @@
 
 package com.netflix.eureka2.server.transport.tcp.registration;
 
-import com.google.inject.Inject;
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
@@ -32,6 +31,8 @@ import io.reactivex.netty.channel.ConnectionHandler;
 import io.reactivex.netty.channel.ObservableConnection;
 import rx.Observable;
 import rx.schedulers.Schedulers;
+
+import javax.inject.Inject;
 
 /**
  * @author Tomasz Bak

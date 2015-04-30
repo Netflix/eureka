@@ -18,6 +18,7 @@ package com.netflix.eureka2.server.transport.tcp.discovery;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import com.netflix.eureka2.server.config.EurekaServerConfig;
@@ -34,7 +35,7 @@ public class TcpDiscoveryServer extends AbstractTcpServer {
     @Inject
     public TcpDiscoveryServer(EurekaServerConfig config,
                               @Named("discovery") MetricEventsListenerFactory servoEventsListenerFactory,
-                              TcpDiscoveryHandler tcpDiscoveryHandler) {
+                              Provider<TcpDiscoveryHandler> tcpDiscoveryHandler) {
         super(servoEventsListenerFactory, config, config.getDiscoveryPort(),
                 EurekaTransports.interestPipeline(config.getCodec()), tcpDiscoveryHandler);
     }
