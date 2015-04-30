@@ -154,15 +154,4 @@ public class BackupClusterBootstrapService implements RegistryBootstrapService {
     protected LightEurekaInterestClient createLightEurekaInterestClient(Server server) {
         return new LightEurekaInterestClient(server, scheduler);
     }
-
-    public static void main(String[] args) {
-        EurekaClusterResolver resolver = EurekaClusterResolvers.writeClusterResolverFromConfiguration(
-                "ec2-50-19-255-84.compute-1.amazonaws.com:12102:12103:12104", true, Schedulers.computation()
-//                "txt.us-east-1.eureka2dev.discoverytest.netflix.net:12102:12103:12104", true, Schedulers.computation()
-        );
-        BackupClusterBootstrapService bootstrapService = new BackupClusterBootstrapService(resolver, Schedulers.computation());
-        SourcedEurekaRegistryImpl registry = new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics());
-        Source source = new Source(Origin.BOOTSTRAP, "test");
-        bootstrapService.loadIntoRegistry(registry, source).toBlocking().firstOrDefault(null);
-    }
 }

@@ -146,38 +146,4 @@ public class LightEurekaInterestClient {
         }
         return null;
     }
-
-    public static void main(String[] args) throws InterruptedException {
-        Server server = new Server("ec2-50-19-255-75.compute-1.amazonaws.com", 12103);
-        LightEurekaInterestClient client = new LightEurekaInterestClient(server, Schedulers.computation());
-        final AtomicInteger counter = new AtomicInteger();
-        final CountDownLatch lock = new CountDownLatch(1);
-        client.forInterest(Interests.forFullRegistry()).subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
-            @Override
-            public void onCompleted() {
-                lock.countDown();
-            }
-
-            @Override
-            public void onError(Throwable e) {
-
-            }
-
-            @Override
-            public void onNext(ChangeNotification<InstanceInfo> notification) {
-                switch (notification.getKind()) {
-                    case Add:
-                    case Modify:
-                        counter.incrementAndGet();
-                        break;
-                    case Delete:
-                        counter.decrementAndGet();
-                        break;
-                }
-                System.out.println(notification);
-            }
-        });
-        lock.await();
-        System.out.println("Got total of: " + counter);
-    }
 }

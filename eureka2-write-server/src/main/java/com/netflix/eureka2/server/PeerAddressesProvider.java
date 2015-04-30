@@ -22,8 +22,21 @@ public class PeerAddressesProvider implements Provider<Observable<ChangeNotifica
 
     private final Observable<ChangeNotification<Server>> addressStream;
 
+    public PeerAddressesProvider(Observable<ChangeNotification<Server>> addressStream) {
+        this.addressStream = addressStream;
+    }
+
     public PeerAddressesProvider(EurekaServerConfig config, final ServiceType serviceType) {
-        ResolverType resolverType = config.getServerResolverType();
+        this(addressStreamFromConfig(config, serviceType));
+    }
+
+    @Override
+    public Observable<ChangeNotification<Server>> get() {
+        return addressStream;
+    }
+
+    private static Observable<ChangeNotification<Server>> addressStreamFromConfig(EurekaServerConfig config, final ServiceType serviceType) {
+        Observable<ChangeNotification<Server>> addressStream;ResolverType resolverType = config.getServerResolverType();
         if (resolverType == null) {
             throw new IllegalArgumentException("Write cluster resolver type not defined");
         }
@@ -44,14 +57,6 @@ public class PeerAddressesProvider implements Provider<Observable<ChangeNotifica
                 return new ChangeNotification<Server>(notification.getKind(), server);
             }
         });
-    }
-
-    public PeerAddressesProvider(Observable<ChangeNotification<Server>> addressStream) {
-        this.addressStream = addressStream;
-    }
-
-    @Override
-    public Observable<ChangeNotification<Server>> get() {
         return addressStream;
     }
 }
