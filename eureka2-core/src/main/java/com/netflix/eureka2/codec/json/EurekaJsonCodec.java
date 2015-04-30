@@ -1,26 +1,16 @@
-/*
- * Copyright 2014 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+package com.netflix.eureka2.codec.json;
 
-package com.netflix.eureka2.transport.codec.json;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.reflect.Array;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
-import com.netflix.eureka2.transport.Acknowledgement;
-import com.netflix.eureka2.transport.codec.AbstractEurekaCodec;
+import com.netflix.eureka2.codec.EurekaCodec;
 import com.netflix.eureka2.utils.Json;
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParseException;
@@ -50,28 +40,15 @@ import org.codehaus.jackson.map.ser.BeanSerializerModifier;
 import org.codehaus.jackson.map.ser.std.BeanSerializerBase;
 import org.codehaus.jackson.node.ArrayNode;
 
-import java.io.IOException;
-import java.lang.reflect.Array;
-import java.nio.charset.Charset;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 /**
- * Codec useful for development purposes. It could be also used by WEB browser
- * based clients communicating over WebSocket.
- *
  * @author Tomasz Bak
  */
-public class JsonCodec extends AbstractEurekaCodec {
-
+public class EurekaJsonCodec<T> implements EurekaCodec<T> {
     private final ObjectMapper mapper;
-    private final Set<Class<?>> protocolTypes;
+    private final Set<Class<?>> acceptedTypes;
 
-    public JsonCodec(Set<Class<?>> protocolTypes) {
-        this.protocolTypes = protocolTypes;
+    public EurekaJsonCodec(Set<Class<?>> acceptedTypes) {
+        this.acceptedTypes = acceptedTypes;
         mapper = new ObjectMapper();
 
         SimpleSerializers serializers = new SimpleSerializers();
@@ -94,30 +71,40 @@ public class JsonCodec extends AbstractEurekaCodec {
     }
 
     @Override
-    public boolean acceptOutboundMessage(Object msg) throws Exception {
-        return msg instanceof Acknowledgement || protocolTypes.contains(msg.getClass());
+    public boolean accept(Class<?> valueType) {
+        return acceptedTypes.contains(valueType);
     }
 
     @Override
-    public void encode(ChannelHandlerContext ctx, Object msg, ByteBuf out) throws IOException {
-        byte[] bytes = mapper.writeValueAsBytes(msg);
-        out.writeBytes(bytes);
+    public void encode(T value, OutputStream output) throws IOException {
+        mapper.writeValue(output, value);
+    }
+
+    public <C> void encodeContainer(C container, OutputStream output) throws IOException {
+        mapper.writeValue(output, container);
     }
 
     @Override
-    public void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-        byte[] array = new byte[in.readableBytes()];
-        in.readBytes(array);
+    public T decode(InputStream source) throws IOException {
+        return (T) decodeJson(source);
+    }
 
-        String json = new String(array, Charset.defaultCharset());
-        JsonNode jsonNode = Json.getMapper().readTree(json);
+    public <C> C decodeContainer(Class<C> containerType, InputStream source) throws IOException {
+        return (C) decodeJson(source);
+    }
+
+    private Object decodeJson(InputStream source) throws IOException {
+        JsonNode jsonNode = Json.getMapper().readTree(source);
 
         String messageType = jsonNode.get("_type").asText();
-        Class<?> contentClass = Class.forName(messageType);
-        Object content = mapper.readValue(jsonNode, contentClass);
-        out.add(content);
+        Class<?> contentClass;
+        try {
+            contentClass = Class.forName(messageType);
+        } catch (ClassNotFoundException e) {
+            throw new IOException("Incompatible encoded value format", e);
+        }
+        return mapper.readValue(jsonNode, contentClass);
     }
-
 
     static class EnumSerializer extends JsonSerializer<Enum> {
         @Override
@@ -233,20 +220,11 @@ public class JsonCodec extends AbstractEurekaCodec {
             if (Collection.class.isAssignableFrom(rawClass)) {
                 return true;
             }
-            if(Map.class.isAssignableFrom(rawClass)) {
+            if (Map.class.isAssignableFrom(rawClass)) {
                 return true;
             }
 
             return false;
-        }
-    }
-
-    static class EnumDeserializer extends JsonDeserializer<Enum> {
-
-        @Override
-        public Enum deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
-            JsonNode tree = jp.readValueAsTree();
-            return deserializeEnum(jp, tree);
         }
     }
 

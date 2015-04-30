@@ -34,7 +34,7 @@ public class EurekaRegistrationClientProvider implements Provider<EurekaRegistra
                 .withRegistryConfig(config)
                 .withClientMetricFactory(clientMetricFactory)
                 .withRegistryMetricFactory(registryMetricFactory)
-                .withServerResolver(WriteClusterResolvers.createRegistrationResolver(config))
+                .withServerResolver(WriteClusterResolver.createRegistrationResolver(config))
                 .build();
     }
 }

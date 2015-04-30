@@ -8,7 +8,7 @@ import com.netflix.eureka2.Names;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.ServicePort;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.eureka2.server.health.EurekaHealthStatusAggregator;
+import com.netflix.eureka2.server.health.EurekaHealthStatusAggregatorImpl;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
 import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
 import rx.Observable;
@@ -26,7 +26,7 @@ public class EurekaReadServerSelfInfoResolver implements SelfInfoResolver {
     public EurekaReadServerSelfInfoResolver(final EurekaServerConfig config,
                                             final EurekaHttpServer httpServer,
                                             final TcpDiscoveryServer discoveryServer,
-                                            EurekaHealthStatusAggregator healthStatusAggregator) {
+                                            EurekaHealthStatusAggregatorImpl healthStatusAggregator) {
 
         SelfInfoResolverChain resolverChain = new SelfInfoResolverChain(
                 new ConfigSelfInfoResolver(config),

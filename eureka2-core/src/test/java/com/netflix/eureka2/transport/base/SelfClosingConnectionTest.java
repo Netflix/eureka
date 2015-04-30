@@ -11,7 +11,7 @@ import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 import rx.subjects.PublishSubject;
 
-import static com.netflix.eureka2.transport.base.SampleObject.*;
+import static com.netflix.eureka2.codec.SampleObject.*;
 import static org.mockito.Mockito.*;
 
 /**

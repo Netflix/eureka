@@ -11,6 +11,7 @@ import com.netflix.eureka2.eureka1.rest.Eureka1Configuration;
 import com.netflix.eureka2.eureka1.rest.Eureka1RestApiModule;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.server.EurekaWriteServerModule;
+import com.netflix.eureka2.server.InterestPeerAddressProvider;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
@@ -25,13 +26,16 @@ import rx.Observable;
  */
 public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig, WriteServerReport> {
 
+    private final Observable<ChangeNotification<Server>> interestPeers;
     private final Observable<ChangeNotification<Server>> replicationPeers;
 
     public EmbeddedWriteServer(final WriteServerConfig config,
+                               final Observable<ChangeNotification<Server>> interestPeers,
                                final Observable<ChangeNotification<Server>> replicationPeers,
                                boolean withExt,
                                boolean withDashboards) {
         super(ServerType.Write, config, withExt, withDashboards);
+        this.interestPeers = interestPeers;
         this.replicationPeers = replicationPeers;
     }
 
@@ -42,6 +46,7 @@ public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig,
                 new AbstractModule() {
                     @Override
                     protected void configure() {
+                        bind(InterestPeerAddressProvider.class).toInstance(new InterestPeerAddressProvider(interestPeers));
                         bind(ReplicationPeerAddressesProvider.class).toInstance(new ReplicationPeerAddressesProvider(replicationPeers));
                     }
                 },

@@ -1,8 +1,8 @@
 package com.netflix.eureka2.channel;
 
 import com.netflix.eureka2.metric.StateMachineMetrics;
-import com.netflix.eureka2.transport.TransportClient;
 import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.transport.TransportClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -53,6 +53,19 @@ public abstract class AbstractClientChannel<STATE extends Enum<STATE>> extends A
         if (null != connectionIfConnected) {
             connectionIfConnected.shutdown();
         }
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{channel=").append(name).append(", connection=");
+        if (connectionIfConnected == null) {
+            sb.append("<not connected>");
+        } else {
+            sb.append(connectionIfConnected);
+        }
+        sb.append('}');
+        return sb.toString();
     }
 
     private void subscribeToConnectionLifecycle(MessageConnection connection) {

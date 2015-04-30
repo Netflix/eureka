@@ -16,56 +16,25 @@
 
 package com.netflix.eureka2.server.transport.tcp.replication;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Named;
 
 import com.google.inject.Singleton;
-import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.server.config.WriteServerConfig;
-import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.server.transport.tcp.AbstractTcpServer;
 import com.netflix.eureka2.transport.EurekaTransports;
-import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Tomasz Bak
  */
 @Singleton
-public class TcpReplicationServer extends AbstractTcpServer<WriteServerConfig, WriteServerMetricFactory> {
-
-    private static final Logger logger = LoggerFactory.getLogger(TcpReplicationServer.class);
-
-    private final SelfInfoResolver selfIdentityService;
-    private final EvictionQueue evictionQueue;
+public class TcpReplicationServer extends AbstractTcpServer {
 
     @Inject
     public TcpReplicationServer(WriteServerConfig config,
-                                SourcedEurekaRegistry eurekaRegistry,
-                                SelfInfoResolver selfIdentityService,
-                                EvictionQueue evictionQueue,
-                                @Named("replication") MetricEventsListenerFactory servoEventsListenerFactory,
-                                WriteServerMetricFactory metricFactory) {
-        super(eurekaRegistry, servoEventsListenerFactory, config, metricFactory);
-        this.selfIdentityService = selfIdentityService;
-        this.evictionQueue = evictionQueue;
-    }
-
-    @PostConstruct
-    public void start() {
-        server = RxNetty.newTcpServerBuilder(
-                config.getReplicationPort(),
-                new TcpReplicationHandler(config, selfIdentityService, eurekaRegistry, evictionQueue, metricFactory))
-                .pipelineConfigurator(EurekaTransports.replicationPipeline(config.getCodec()))
-                .withMetricEventsListenerFactory(servoEventsListenerFactory)
-                .build()
-                .start();
-
-        logger.info("Starting TCP replication server on port {} with {} encoding...", server.getServerPort(), config.getCodec());
+                                TcpReplicationHandler tcpReplicationHandler,
+                                @Named("replication") MetricEventsListenerFactory servoEventsListenerFactory) {
+        super(servoEventsListenerFactory, config, config.getReplicationPort(), EurekaTransports.replicationPipeline(config.getCodec()), tcpReplicationHandler);
     }
 }

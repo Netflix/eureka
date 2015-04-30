@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.transport.codec.avro;
+package com.netflix.eureka2.codec.avro;
 
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Field;

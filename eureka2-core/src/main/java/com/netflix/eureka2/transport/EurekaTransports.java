@@ -16,6 +16,17 @@
 
 package com.netflix.eureka2.transport;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import com.netflix.eureka2.codec.CodecType;
+import com.netflix.eureka2.codec.avro.EurekaAvroCodec;
+import com.netflix.eureka2.codec.avro.SchemaReflectData;
+import com.netflix.eureka2.codec.json.EurekaJsonCodec;
 import com.netflix.eureka2.protocol.Heartbeat;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.DeleteInstance;
@@ -29,22 +40,13 @@ import com.netflix.eureka2.protocol.replication.RegisterCopy;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.protocol.replication.UnregisterCopy;
-import com.netflix.eureka2.transport.codec.AbstractEurekaCodec;
-import com.netflix.eureka2.transport.codec.DynamicEurekaCodec;
-import com.netflix.eureka2.transport.codec.avro.AvroCodec;
-import com.netflix.eureka2.transport.codec.avro.SchemaReflectData;
-import com.netflix.eureka2.transport.codec.json.JsonCodec;
+import com.netflix.eureka2.transport.codec.AbstractNettyCodec;
+import com.netflix.eureka2.transport.codec.DynamicNettyCodec;
+import com.netflix.eureka2.transport.codec.EurekaCodecWrapper;
 import com.netflix.eureka2.transport.utils.AvroUtils;
 import io.reactivex.netty.pipeline.PipelineConfigurator;
 import org.apache.avro.Schema;
 import rx.functions.Func1;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Communication endpoint factory methods.
@@ -56,24 +58,6 @@ public final class EurekaTransports {
     public static final int DEFAULT_REGISTRATION_PORT = 12102;
     public static final int DEFAULT_DISCOVERY_PORT = 12103;
     public static final int DEFAULT_REPLICATION_PORT = 12104;
-
-    /**
-     * Breaking protocol/codec changes need to define additional codec versions here
-     */
-    public enum Codec {
-        Avro((byte) 1),
-        Json((byte) 2);
-
-        private final byte version;
-
-        Codec(byte version) {
-            this.version = version;
-        }
-
-        public byte getVersion() {
-            return version;
-        }
-    }
 
     /*
      * Registration protocol constants.
@@ -117,33 +101,33 @@ public final class EurekaTransports {
      * func methods for creating protocol specific codecs
      */
 
-    static final Func1<Codec, AbstractEurekaCodec> REGISTRATION_CODEC_FUNC = new Func1<Codec, AbstractEurekaCodec>() {
+    static final Func1<CodecType, AbstractNettyCodec> REGISTRATION_CODEC_FUNC = new Func1<CodecType, AbstractNettyCodec>() {
         @Override
-        public AbstractEurekaCodec call(Codec codec) {
-            Map<Byte, AbstractEurekaCodec> map = new HashMap<>();
-            map.put(Codec.Avro.getVersion(), new AvroCodec(REGISTRATION_PROTOCOL_MODEL_SET, REGISTRATION_AVRO_SCHEMA, new SchemaReflectData(REGISTRATION_AVRO_SCHEMA)));
-            map.put(Codec.Json.getVersion(), new JsonCodec(REGISTRATION_PROTOCOL_MODEL_SET));
-            return new DynamicEurekaCodec(REGISTRATION_PROTOCOL_MODEL_SET, Collections.unmodifiableMap(map), codec.getVersion());
+        public AbstractNettyCodec call(CodecType codec) {
+            Map<Byte, AbstractNettyCodec> map = new HashMap<>();
+            map.put(CodecType.Avro.getVersion(), new EurekaCodecWrapper(new EurekaAvroCodec(REGISTRATION_PROTOCOL_MODEL_SET, REGISTRATION_AVRO_SCHEMA, new SchemaReflectData(REGISTRATION_AVRO_SCHEMA))));
+            map.put(CodecType.Json.getVersion(), new EurekaCodecWrapper(new EurekaJsonCodec(REGISTRATION_PROTOCOL_MODEL_SET)));
+            return new DynamicNettyCodec(REGISTRATION_PROTOCOL_MODEL_SET, Collections.unmodifiableMap(map), codec.getVersion());
         }
     };
 
-    static final Func1<Codec, AbstractEurekaCodec> REPLICATION_CODEC_FUNC = new Func1<Codec, AbstractEurekaCodec>() {
+    static final Func1<CodecType, AbstractNettyCodec> REPLICATION_CODEC_FUNC = new Func1<CodecType, AbstractNettyCodec>() {
         @Override
-        public AbstractEurekaCodec call(Codec codec) {
-            Map<Byte, AbstractEurekaCodec> map = new HashMap<>();
-            map.put(Codec.Avro.getVersion(), new AvroCodec(REGISTRATION_PROTOCOL_MODEL_SET, REPLICATION_AVRO_SCHEMA, new SchemaReflectData(REPLICATION_AVRO_SCHEMA)));
-            map.put(Codec.Json.getVersion(), new JsonCodec(REGISTRATION_PROTOCOL_MODEL_SET));
-            return new DynamicEurekaCodec(REPLICATION_PROTOCOL_MODEL_SET, Collections.unmodifiableMap(map), codec.getVersion());
+        public AbstractNettyCodec call(CodecType codec) {
+            Map<Byte, AbstractNettyCodec> map = new HashMap<>();
+            map.put(CodecType.Avro.getVersion(), new EurekaCodecWrapper(new EurekaAvroCodec(REGISTRATION_PROTOCOL_MODEL_SET, REPLICATION_AVRO_SCHEMA, new SchemaReflectData(REPLICATION_AVRO_SCHEMA))));
+            map.put(CodecType.Json.getVersion(), new EurekaCodecWrapper(new EurekaJsonCodec(REGISTRATION_PROTOCOL_MODEL_SET)));
+            return new DynamicNettyCodec(REPLICATION_PROTOCOL_MODEL_SET, Collections.unmodifiableMap(map), codec.getVersion());
         }
     };
 
-    static final Func1<Codec, AbstractEurekaCodec> INTEREST_CODEC_FUNC = new Func1<Codec, AbstractEurekaCodec>() {
+    static final Func1<CodecType, AbstractNettyCodec> INTEREST_CODEC_FUNC = new Func1<CodecType, AbstractNettyCodec>() {
         @Override
-        public AbstractEurekaCodec call(Codec codec) {
-            Map<Byte, AbstractEurekaCodec> map = new HashMap<>();
-            map.put(Codec.Avro.getVersion(), new AvroCodec(REGISTRATION_PROTOCOL_MODEL_SET, INTEREST_AVRO_SCHEMA, new SchemaReflectData(INTEREST_AVRO_SCHEMA)));
-            map.put(Codec.Json.getVersion(), new JsonCodec(REGISTRATION_PROTOCOL_MODEL_SET));
-            return new DynamicEurekaCodec(INTEREST_PROTOCOL_MODEL_SET, Collections.unmodifiableMap(map), codec.getVersion());
+        public AbstractNettyCodec call(CodecType codec) {
+            Map<Byte, AbstractNettyCodec> map = new HashMap<>();
+            map.put(CodecType.Avro.getVersion(), new EurekaCodecWrapper(new EurekaAvroCodec(REGISTRATION_PROTOCOL_MODEL_SET, INTEREST_AVRO_SCHEMA, new SchemaReflectData(INTEREST_AVRO_SCHEMA))));
+            map.put(CodecType.Json.getVersion(), new EurekaCodecWrapper(new EurekaJsonCodec(REGISTRATION_PROTOCOL_MODEL_SET)));
+            return new DynamicNettyCodec(INTEREST_PROTOCOL_MODEL_SET, Collections.unmodifiableMap(map), codec.getVersion());
         }
     };
 
@@ -151,15 +135,15 @@ public final class EurekaTransports {
     private EurekaTransports() {
     }
 
-    public static PipelineConfigurator<Object, Object> registrationPipeline(Codec codec) {
+    public static PipelineConfigurator<Object, Object> registrationPipeline(CodecType codec) {
         return new EurekaPipelineConfigurator(REGISTRATION_CODEC_FUNC, codec);
     }
 
-    public static PipelineConfigurator<Object, Object> replicationPipeline(Codec codec) {
+    public static PipelineConfigurator<Object, Object> replicationPipeline(CodecType codec) {
         return new EurekaPipelineConfigurator(REPLICATION_CODEC_FUNC, codec);
     }
 
-    public static PipelineConfigurator<Object, Object> interestPipeline(Codec codec) {
+    public static PipelineConfigurator<Object, Object> interestPipeline(CodecType codec) {
         return new EurekaPipelineConfigurator(INTEREST_CODEC_FUNC, codec);
     }
 }

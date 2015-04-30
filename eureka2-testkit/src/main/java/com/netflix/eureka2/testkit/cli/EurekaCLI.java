@@ -36,7 +36,7 @@ import com.netflix.eureka2.testkit.cli.command.RegisterCommand;
 import com.netflix.eureka2.testkit.cli.command.StatusCommand;
 import com.netflix.eureka2.testkit.cli.command.UnregisterCommand;
 import com.netflix.eureka2.testkit.cli.command.UpdateCommand;
-import com.netflix.eureka2.transport.EurekaTransports.Codec;
+import com.netflix.eureka2.codec.CodecType;
 import jline.Terminal;
 import jline.TerminalFactory;
 import jline.console.ConsoleReader;
@@ -245,14 +245,14 @@ public class EurekaCLI {
     }
 
     public static void main(String[] args) throws IOException {
-        Codec codec = null;
+        CodecType codec = null;
         switch (args.length) {
             case 0:
-                codec = Codec.Avro;
+                codec = CodecType.Avro;
                 break;
             case 2:
                 if ("-c".equals(args[0])) {
-                    codec = Codec.valueOf(args[1]);
+                    codec = CodecType.valueOf(args[1]);
                     break;
                 }
             default:

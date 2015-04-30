@@ -19,7 +19,7 @@ import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedBridgeServer.BridgeServerReport;
-import com.netflix.eureka2.transport.EurekaTransports.Codec;
+import com.netflix.eureka2.codec.CodecType;
 import rx.Observable;
 
 /**
@@ -97,13 +97,13 @@ public class EmbeddedBridgeServer extends EmbeddedEurekaServer<BridgeServerConfi
     public static EmbeddedBridgeServer newBridge(final Observable<ChangeNotification<Server>> replicationPeers,
                                                  boolean withExt,
                                                  boolean withDashboard) {
-        return newBridge(replicationPeers, withExt, withDashboard, Codec.Avro);
+        return newBridge(replicationPeers, withExt, withDashboard, CodecType.Avro);
     }
 
     public static EmbeddedBridgeServer newBridge(final Observable<ChangeNotification<Server>> replicationPeers,
                                                  boolean withExt,
                                                  boolean withDashboard,
-                                                 Codec codec) {
+                                                 CodecType codec) {
         BridgeServerConfig config = BridgeServerConfig.newBuilder()
                 .withAppName(BRIDGE_SERVER_NAME)
                 .withVipAddress(BRIDGE_SERVER_NAME)

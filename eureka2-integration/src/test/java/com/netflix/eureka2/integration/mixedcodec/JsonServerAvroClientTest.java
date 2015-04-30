@@ -6,7 +6,7 @@ import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
-import com.netflix.eureka2.transport.EurekaTransports.Codec;
+import com.netflix.eureka2.codec.CodecType;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -17,8 +17,8 @@ import org.junit.experimental.categories.Category;
 @Category(IntegrationTest.class)
 public class JsonServerAvroClientTest extends AbstractMixedCodecTest {
 
-    private static final BasicEurekaTransportConfig jsonConfig = new BasicEurekaTransportConfig.Builder().withCodec(Codec.Json).build();
-    private static final BasicEurekaTransportConfig avroConfig = new BasicEurekaTransportConfig.Builder().withCodec(Codec.Avro).build();
+    private static final BasicEurekaTransportConfig jsonConfig = new BasicEurekaTransportConfig.Builder().withCodec(CodecType.Json).build();
+    private static final BasicEurekaTransportConfig avroConfig = new BasicEurekaTransportConfig.Builder().withCodec(CodecType.Avro).build();
 
     @Rule
     public final EurekaDeploymentResource jsonServers = new EurekaDeploymentResource(2, 0, jsonConfig);

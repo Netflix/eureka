@@ -1,10 +1,12 @@
 package com.netflix.eureka2.utils.rx;
 
+import java.util.concurrent.TimeUnit;
+
 import rx.Observable;
+import rx.Scheduler;
 import rx.functions.Func1;
 import rx.functions.Func2;
-
-import java.util.concurrent.TimeUnit;
+import rx.schedulers.Schedulers;
 
 /**
  * A Func1 with retry options for use in .retryWhen(new RetryStrategyFunc())
@@ -15,6 +17,7 @@ public class RetryStrategyFunc implements Func1<Observable<? extends Throwable>,
     private final long retryIntervalMillis;
     private final int numRetries;
     private final boolean backoffRetry;
+    private final Scheduler scheduler;
 
     /**
      * Create a retry strategy that retries infinitely with the retryIntervalMillis as the set delay between retries
@@ -25,15 +28,24 @@ public class RetryStrategyFunc implements Func1<Observable<? extends Throwable>,
         this(retryIntervalMillis, -1, false);
     }
 
+    public RetryStrategyFunc(long retryIntervalMillis, Scheduler scheduler) {
+        this(retryIntervalMillis, -1, false, scheduler);
+    }
+
+    public RetryStrategyFunc(long retryIntervalMillis, int totalRetries, boolean exponentialBackoff) {
+        this(retryIntervalMillis, totalRetries, exponentialBackoff, Schedulers.computation());
+    }
+
     /**
      * @param retryIntervalMillis the initial wait between retries in milliseconds
      * @param totalRetries max number of retries to attempt
      * @param exponentialBackoff boolean to denote whether to use exponential backoff
      */
-    public RetryStrategyFunc(long retryIntervalMillis, int totalRetries, boolean exponentialBackoff) {
+    public RetryStrategyFunc(long retryIntervalMillis, int totalRetries, boolean exponentialBackoff, Scheduler scheduler) {
         this.retryIntervalMillis = retryIntervalMillis;
         this.numRetries = totalRetries;
         this.backoffRetry = exponentialBackoff;
+        this.scheduler = scheduler;
     }
 
     @Override
@@ -57,7 +69,7 @@ public class RetryStrategyFunc implements Func1<Observable<? extends Throwable>,
         }).flatMap(new Func1<Long, Observable<Long>>() {
             @Override
             public Observable<Long> call(Long i) {
-                return Observable.timer(i, TimeUnit.MILLISECONDS);
+                return Observable.timer(i, TimeUnit.MILLISECONDS, scheduler);
             }
         });
     }

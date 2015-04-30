@@ -16,10 +16,11 @@
 
 package com.netflix.eureka2.server.config;
 
+import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider.StrategyType;
+import com.netflix.eureka2.server.resolver.EurekaClusterResolvers.ResolverType;
 import com.netflix.eureka2.transport.EurekaTransports;
-import com.netflix.eureka2.transport.EurekaTransports.Codec;
 import com.netflix.governator.annotations.Configuration;
 
 /**
@@ -28,6 +29,8 @@ import com.netflix.governator.annotations.Configuration;
 public class WriteServerConfig extends EurekaServerConfig {
 
     public static final long DEFAULT_REPLICATION_RECONNECT_DELAY_MILLIS = 30000;
+
+    public static final long DEFAULT_BOOTSTRAP_TIMEOUT_MILLIS = 30000;
 
     @Configuration("eureka.services.registration.port")
     protected int registrationPort = EurekaTransports.DEFAULT_REGISTRATION_PORT;
@@ -39,6 +42,17 @@ public class WriteServerConfig extends EurekaServerConfig {
     @Configuration("eureka.services.replication.reconnectDelayMillis")
     protected long replicationReconnectDelayMillis = DEFAULT_REPLICATION_RECONNECT_DELAY_MILLIS;
 
+    @Configuration("eureka.services.bootstrap.enabled")
+    protected boolean bootstrapEnabled;
+
+    @Configuration("eureka.services.bootstrap.resolverType")
+    protected String bootstrapResolverType;
+
+    @Configuration("eureka.services.bootstrap.serverList")
+    protected String[] bootstrapServerList;
+
+    @Configuration("eureka.services.bootstrap.timeoutMillis")
+    protected long bootstrapTimeoutMillis = DEFAULT_BOOTSTRAP_TIMEOUT_MILLIS;
 
     // For property injection
     protected WriteServerConfig() {
@@ -58,23 +72,31 @@ public class WriteServerConfig extends EurekaServerConfig {
             int discoveryPort,
             long heartbeatIntervalMs,
             long connectionAutoTimeoutMs,
-            Codec codec,
+            CodecType codec,
             long evictionTimeoutMs,
             StrategyType evictionStrategyType,
             String evictionStrategyValue,
             // write server configs
             int registrationPort,
             int replicationPort,
-            long replicationReconnectDelayMillis
+            long replicationReconnectDelayMillis,
+            boolean bootstrapEnabled,
+            ResolverType bootstrapResolverType,
+            String[] bootstrapServerList,
+            long bootstrapTimeoutMillis
     ) {
         super(resolverType, serverList, appName, vipAddress, readClusterVipAddress,
                 dataCenterType, dataCenterResolveIntervalSec,
-              httpPort, shutDownPort, webAdminPort, discoveryPort, heartbeatIntervalMs, connectionAutoTimeoutMs, codec,
-              evictionTimeoutMs, evictionStrategyType, evictionStrategyValue);
+                httpPort, shutDownPort, webAdminPort, discoveryPort, heartbeatIntervalMs, connectionAutoTimeoutMs, codec,
+                evictionTimeoutMs, evictionStrategyType, evictionStrategyValue);
 
         this.registrationPort = registrationPort;
         this.replicationPort = replicationPort;
         this.replicationReconnectDelayMillis = replicationReconnectDelayMillis;
+        this.bootstrapEnabled = bootstrapEnabled;
+        this.bootstrapResolverType = bootstrapResolverType == null ? this.bootstrapResolverType : bootstrapResolverType.name();
+        this.bootstrapServerList = bootstrapServerList;
+        this.bootstrapTimeoutMillis = bootstrapTimeoutMillis;
     }
 
     public int getRegistrationPort() {
@@ -87,6 +109,28 @@ public class WriteServerConfig extends EurekaServerConfig {
 
     public long getReplicationReconnectDelayMillis() {
         return replicationReconnectDelayMillis;
+    }
+
+    public boolean isBootstrapEnabled() {
+        return bootstrapEnabled;
+    }
+
+    public ResolverType getBootstrapResolverType() {
+        ResolverType result;
+        try {
+            result = ResolverType.valueOfIgnoreCase(bootstrapResolverType);
+        } catch (Exception e) {
+            return ResolverType.Fixed;
+        }
+        return result;
+    }
+
+    public String[] getBootstrapServerList() {
+        return bootstrapServerList;
+    }
+
+    public long getBootstrapTimeoutMillis() {
+        return bootstrapTimeoutMillis;
     }
 
     public static WriteServerConfigBuilder writeBuilder() {
@@ -120,8 +164,12 @@ public class WriteServerConfig extends EurekaServerConfig {
                     // write server configs
                     registrationPort,
                     replicationPort,
-                    replicationReconnectDelayMillis
-            );
+                    replicationReconnectDelayMillis,
+                    bootstrapEnabled,
+                    bootstrapResolverType,
+                    bootstrapServerList,
+                    bootstrapTimeoutMillis
+                    );
         }
     }
 
@@ -131,6 +179,10 @@ public class WriteServerConfig extends EurekaServerConfig {
         protected int registrationPort = EurekaTransports.DEFAULT_REGISTRATION_PORT;
         protected int replicationPort = EurekaTransports.DEFAULT_REPLICATION_PORT;
         protected long replicationReconnectDelayMillis = DEFAULT_REPLICATION_RECONNECT_DELAY_MILLIS;
+        protected boolean bootstrapEnabled;
+        protected ResolverType bootstrapResolverType;
+        protected String[] bootstrapServerList;
+        protected long bootstrapTimeoutMillis;
 
         protected AbstractWriteServerConfigBuilder() {
         }
@@ -147,6 +199,26 @@ public class WriteServerConfig extends EurekaServerConfig {
 
         public B withReplicationRetryMillis(long replicationReconnectDelayMillis) {
             this.replicationReconnectDelayMillis = replicationReconnectDelayMillis;
+            return self();
+        }
+
+        public B withBootstrapEnabled(boolean enabled) {
+            this.bootstrapEnabled = enabled;
+            return self();
+        }
+
+        public B withBootstrapResolverType(ResolverType bootstrapResolverType) {
+            this.bootstrapResolverType = bootstrapResolverType;
+            return self();
+        }
+
+        public B withBootstrapServerList(String[] bootstrapServerList) {
+            this.bootstrapServerList = bootstrapServerList;
+            return self();
+        }
+
+        public B withBootstrapTimeoutMillis(long bootstrapTimeoutMillis) {
+            this.bootstrapTimeoutMillis = bootstrapTimeoutMillis;
             return self();
         }
     }

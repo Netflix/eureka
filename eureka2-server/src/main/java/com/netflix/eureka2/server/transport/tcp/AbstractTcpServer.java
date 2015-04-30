@@ -16,13 +16,14 @@
 
 package com.netflix.eureka2.server.transport.tcp;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
+import io.reactivex.netty.RxNetty;
+import io.reactivex.netty.channel.ConnectionHandler;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
+import io.reactivex.netty.pipeline.PipelineConfigurator;
 import io.reactivex.netty.server.RxServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,22 +31,39 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Tomasz Bak
  */
-public class AbstractTcpServer<C extends EurekaServerConfig, M extends EurekaServerMetricFactory> {
+public abstract class AbstractTcpServer {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractTcpServer.class);
 
-    protected final C config;
-    protected final SourcedEurekaRegistry<InstanceInfo> eurekaRegistry;
+    protected final EurekaServerConfig config;
     protected final MetricEventsListenerFactory servoEventsListenerFactory;
-    protected final M metricFactory;
+    private final int serverPort;
+    private final PipelineConfigurator<Object, Object> pipelineConfigurator;
+    private final ConnectionHandler<Object, Object> tcpHandler;
     protected RxServer<Object, Object> server;
 
-    public AbstractTcpServer(SourcedEurekaRegistry eurekaRegistry, MetricEventsListenerFactory servoEventsListenerFactory,
-                             C config, M metricFactory) {
-        this.eurekaRegistry = eurekaRegistry;
+    protected AbstractTcpServer(MetricEventsListenerFactory servoEventsListenerFactory,
+                                EurekaServerConfig config,
+                                int serverPort,
+                                PipelineConfigurator<Object, Object> pipelineConfigurator,
+                                ConnectionHandler<Object, Object> tcpHandler) {
         this.servoEventsListenerFactory = servoEventsListenerFactory;
         this.config = config;
-        this.metricFactory = metricFactory;
+        this.serverPort = serverPort;
+        this.pipelineConfigurator = pipelineConfigurator;
+        this.tcpHandler = tcpHandler;
+    }
+
+    @PostConstruct
+    public void start() {
+        server = RxNetty.newTcpServerBuilder(serverPort, tcpHandler)
+                .pipelineConfigurator(pipelineConfigurator)
+                .withMetricEventsListenerFactory(servoEventsListenerFactory)
+                .build()
+//                .withErrorHandler()  TODO use a custom handler (?) as the default emits extraneous error logs
+                .start();
+
+        logger.info("Starting {} on port {} with {} encoding...", getClass().getSimpleName(), server.getServerPort(), config.getCodec());
     }
 
     @PreDestroy

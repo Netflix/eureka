@@ -24,7 +24,7 @@ import com.netflix.eureka2.rx.RxBlocking;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.transport.Acknowledgement;
 import com.netflix.eureka2.transport.EurekaTransports;
-import com.netflix.eureka2.transport.EurekaTransports.Codec;
+import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.Server;
 import io.netty.handler.logging.LogLevel;
@@ -65,7 +65,7 @@ public class ResolverBasedTransportClientTest {
                     }
                 });
             }
-        }).pipelineConfigurator(EurekaTransports.registrationPipeline(Codec.Json))
+        }).pipelineConfigurator(EurekaTransports.registrationPipeline(CodecType.Json))
                 .enableWireLogging(LogLevel.ERROR)
                 .build()
                 .start();
@@ -94,7 +94,7 @@ public class ResolverBasedTransportClientTest {
         };
 
         ResolverBasedTransportClient transportClient =
-                new TcpRegistrationClient(new BasicEurekaTransportConfig.Builder().withCodec(Codec.Json).build(),
+                new TcpRegistrationClient(new BasicEurekaTransportConfig.Builder().withCodec(CodecType.Json).build(),
                                           resolver,
                                           clientMetrics().getRegistrationServerConnectionMetrics());
 

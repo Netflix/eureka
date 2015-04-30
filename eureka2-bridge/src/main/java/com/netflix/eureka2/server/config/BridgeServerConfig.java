@@ -1,8 +1,9 @@
 package com.netflix.eureka2.server.config;
 
+import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider.StrategyType;
-import com.netflix.eureka2.transport.EurekaTransports;
+import com.netflix.eureka2.server.resolver.EurekaClusterResolvers.ResolverType;
 import com.netflix.governator.annotations.Configuration;
 
 /**
@@ -34,13 +35,17 @@ public class BridgeServerConfig extends WriteServerConfig {
             int discoveryPort,
             long heartbeatIntervalMs,
             long connectionAutoTimeoutMs,
-            EurekaTransports.Codec codec,
+            CodecType codec,
             long evictionTimeoutMs,
             StrategyType evictionStrategyType,
             String evictionStrategyValue,
             int registrationPort,
             int replicationPort,
             long replicationReconnectDelayMillis,
+            boolean bootstrapEnabled,
+            ResolverType bootstrapResolverType,
+            String[] bootstrapServerList,
+            long bootstrapTimeoutMillis,
             // bridge server configs
             int refreshRateSec
     ) {
@@ -64,7 +69,11 @@ public class BridgeServerConfig extends WriteServerConfig {
                 evictionStrategyValue,
                 registrationPort,
                 replicationPort,
-                replicationReconnectDelayMillis
+                replicationReconnectDelayMillis,
+                bootstrapEnabled,
+                bootstrapResolverType,
+                bootstrapServerList,
+                bootstrapTimeoutMillis
         );
 
         this.refreshRateSec = refreshRateSec;
@@ -114,6 +123,10 @@ public class BridgeServerConfig extends WriteServerConfig {
                     registrationPort,
                     replicationPort,
                     replicationReconnectDelayMillis,
+                    bootstrapEnabled,
+                    bootstrapResolverType,
+                    bootstrapServerList,
+                    bootstrapTimeoutMillis,
                     // bridge server configs
                     refreshRateSec
             );

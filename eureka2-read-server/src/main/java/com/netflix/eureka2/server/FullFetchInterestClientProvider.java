@@ -56,7 +56,7 @@ public class FullFetchInterestClientProvider implements Provider<FullFetchIntere
                 registryMetricFactory
         );
 
-        ServerResolver discoveryResolver = WriteClusterResolvers.createInterestResolver(config);
+        ServerResolver discoveryResolver = WriteClusterResolver.createInterestResolver(config);
 
         ClientChannelFactory<InterestChannel> channelFactory = new InterestChannelFactory(
                 transportConfig,

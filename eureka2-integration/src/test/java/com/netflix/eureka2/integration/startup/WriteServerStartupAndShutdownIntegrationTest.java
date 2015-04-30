@@ -3,9 +3,9 @@ package com.netflix.eureka2.integration.startup;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.junit.categories.LongRunningTest;
 import com.netflix.eureka2.server.EurekaWriteServer;
-import com.netflix.eureka2.server.config.EurekaCommonConfig.ResolverType;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.config.WriteServerConfig.WriteServerConfigBuilder;
+import com.netflix.eureka2.server.resolver.EurekaClusterResolvers.ResolverType;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -25,7 +25,7 @@ public class WriteServerStartupAndShutdownIntegrationTest
     public void testStartsWithCommandLineParameters() throws Exception {
         WriteServerConfig config = new WriteServerConfigBuilder()
                 .withAppName(SERVER_NAME)
-                .withResolverType(ResolverType.fixed)
+                .withResolverType(ResolverType.Fixed)
                 .withRegistrationPort(0)  // use ephemeral ports
                 .withDiscoveryPort(0)
                 .withReplicationPort(0)

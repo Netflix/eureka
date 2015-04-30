@@ -7,7 +7,6 @@ import rx.Observable;
 /**
  * @author Tomasz Bak
  */
-public interface HealthStatusAggregator<SUBSYSTEM extends HealthStatusAggregator<SUBSYSTEM>>
-        extends HealthStatusProvider<SUBSYSTEM> {
+public interface EurekaHealthStatusAggregator extends HealthStatusProvider<EurekaHealthStatusAggregator> {
     Observable<List<HealthStatusProvider<?>>> components();
 }

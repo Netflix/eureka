@@ -16,31 +16,39 @@
 
 package com.netflix.eureka2.server.transport.tcp.discovery;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import com.netflix.eureka2.health.EurekaHealthStatusAggregator;
+import com.netflix.eureka2.health.HealthStatusUpdate;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.interests.MultipleInterests;
+import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.InterestRegistration;
 import com.netflix.eureka2.protocol.discovery.UnregisterInterestSet;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.rx.RxBlocking;
+import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
+import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.rx.TestableObservableConnection;
-import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
+import rx.Observable.OnSubscribe;
+import rx.Subscriber;
+import rx.schedulers.Schedulers;
+import rx.schedulers.TestScheduler;
+import rx.subjects.ReplaySubject;
 
-import java.util.Iterator;
-import java.util.concurrent.TimeUnit;
-
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -50,23 +58,57 @@ import static org.mockito.Mockito.when;
  */
 public class TcpDiscoveryHandlerTest {
 
+    private final TestScheduler testScheduler = Schedulers.test();
+
     private final SourcedEurekaRegistry<InstanceInfo> registry = mock(SourcedEurekaRegistry.class);
 
-    private TestableObservableConnection<Object, Object> observableConnection;
-    private TcpDiscoveryHandler handler;
+    private final TestableObservableConnection<Object, Object> observableConnection = new TestableObservableConnection<>();
+    private final EurekaHealthStatusAggregator systemHealthStatus = mock(EurekaHealthStatusAggregator.class);
     private final EurekaServerConfig config = EurekaServerConfig.baseBuilder().build();
+
+    private final ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
+
+    private TcpDiscoveryHandler handler;
 
     @Before
     public void setUp() {
-        observableConnection = new TestableObservableConnection<>();
         when(registry.forInterest(any(Interest.class))).thenReturn(Observable.<ChangeNotification<InstanceInfo>>empty());
-        when(registry.forInterest(any(MultipleInterests.class))).thenReturn(Observable.<ChangeNotification<InstanceInfo>>empty());
-        handler = spy(new TcpDiscoveryHandler(config, registry, EurekaServerMetricFactory.serverMetrics()));
+    }
+
+    @Test
+    public void testInterestRegistrationsAreDiscardedIfServerNotUp() throws Exception {
+        when(systemHealthStatus.healthStatus()).thenReturn(Observable.<HealthStatusUpdate<EurekaHealthStatusAggregator>>never());
+        createHandlerAndConnect();
+
+        handler.handle(observableConnection).subscribe(testSubscriber);
+        testSubscriber.assertOnError();
+    }
+
+    @Test
+    public void testRetryOnHealthStatusStream() throws Exception {
+        final AtomicInteger subscribeRound = new AtomicInteger();
+        when(systemHealthStatus.healthStatus()).thenReturn(Observable.create(new OnSubscribe<HealthStatusUpdate<EurekaHealthStatusAggregator>>() {
+            @Override
+            public void call(Subscriber<? super HealthStatusUpdate<EurekaHealthStatusAggregator>> subscriber) {
+                if (subscribeRound.getAndIncrement() == 0) {
+                    subscriber.onError(new Exception("error"));
+                }
+                subscriber.onNext(new HealthStatusUpdate<EurekaHealthStatusAggregator>(Status.UP, null));
+                subscriber.onCompleted();
+            }
+        }));
+
+        // Create handler and advance time to we run through a retry cycle on health check.
+        handler = new TcpDiscoveryHandler(config, registry, systemHealthStatus, EurekaServerMetricFactory.serverMetrics(), testScheduler);
+        testScheduler.advanceTimeBy(TcpDiscoveryHandler.RETRY_INTERVAL_MS, TimeUnit.MILLISECONDS);
+
+        handler.handle(observableConnection).subscribe(testSubscriber);
+        testSubscriber.assertOpen();
     }
 
     @Test(timeout = 60000)
     public void testSuccessfulInterestRegistration() {
-        Observable<Void> lifecycle = handler.handle(observableConnection);
+        emitHealthStatusUpCreateHandlerAndConnect();
 
         Interest<InstanceInfo> interest = Interests.forFullRegistry();
         observableConnection.testableChannelRead().onNext(new InterestRegistration(interest));
@@ -75,27 +117,46 @@ public class TcpDiscoveryHandlerTest {
     }
 
     @Test(timeout = 60000)
-    public void testSuccessfulUnregisterInterestCloseInternalChannel() {
-        Observable<Void> lifecycle = handler.handle(observableConnection);
+    public void testSuccessfulUnregisterInterestCloseInternalChannel() throws Exception {
+        emitHealthStatusUpCreateHandlerAndConnect();
 
         observableConnection.testableChannelRead().onNext(new UnregisterInterestSet());
-        Assert.assertTrue("Channel shall be closed by now", RxBlocking.isCompleted(1, TimeUnit.SECONDS, lifecycle));
+        testSubscriber.assertOnCompleted(1, TimeUnit.SECONDS);
 
         verify(registry, times(1)).forInterest(Interests.forNone());
     }
 
     @Test(timeout = 60000)
     public void testSendingNotificationsOnInterestRegistration() {
-        Observable<Void> lifecycle = handler.handle(observableConnection);
+        emitHealthStatusUpCreateHandlerAndConnect();
 
         ChangeNotification<InstanceInfo> notification = SampleChangeNotification.DiscoveryAdd.newNotification();
 
         Interest<InstanceInfo> interest = Interests.forFullRegistry();
-        when(registry.forInterest(interest)).thenReturn(Observable.just(notification));//.concatWith(Observable.<ChangeNotification<InstanceInfo>>never()));
+        when(registry.forInterest(interest)).thenReturn(Observable.just(notification));
 
         observableConnection.testableChannelRead().onNext(new InterestRegistration(interest));
+        ExtTestSubscriber<Object> outputSubscriber = new ExtTestSubscriber<>();
+        observableConnection.testableChannelWrite().subscribe(outputSubscriber);
 
-        Iterator updatesIterator = RxBlocking.iteratorFrom(5, TimeUnit.SECONDS, observableConnection.testableChannelWrite());
-        Assert.assertEquals(new AddInstance(notification.getData()), updatesIterator.next());
+        Object expected = new AddInstance(notification.getData());
+        assertThat(outputSubscriber.takeNextOrFail(), is(equalTo(expected)));
+    }
+
+    private void emitHealthStatusUpCreateHandlerAndConnect() {
+        ReplaySubject<HealthStatusUpdate<EurekaHealthStatusAggregator>> healthStatusSubject = ReplaySubject.create();
+        healthStatusSubject.onNext(new HealthStatusUpdate<EurekaHealthStatusAggregator>(Status.UP, null));
+
+        when(systemHealthStatus.healthStatus()).thenReturn(healthStatusSubject);
+
+        createHandlerAndConnect();
+
+        testSubscriber.assertOpen();
+    }
+
+    private void createHandlerAndConnect() {
+        handler = new TcpDiscoveryHandler(config, registry, systemHealthStatus, EurekaServerMetricFactory.serverMetrics(), testScheduler);
+        testScheduler.triggerActions();
+        handler.handle(observableConnection).subscribe(testSubscriber);
     }
 }

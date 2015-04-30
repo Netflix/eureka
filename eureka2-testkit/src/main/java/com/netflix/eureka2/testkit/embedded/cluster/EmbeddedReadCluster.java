@@ -11,7 +11,7 @@ import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedReadCluster.ReadClusterReport;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer.ReadServerReport;
-import com.netflix.eureka2.transport.EurekaTransports.Codec;
+import com.netflix.eureka2.codec.CodecType;
 
 /**
  * @author Tomasz Bak
@@ -26,7 +26,7 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
     private final boolean withExt;
     private final boolean withAdminUI;
     private final boolean ephemeralPorts;
-    private final Codec codec;
+    private final CodecType codec;
 
     private int nextAvailablePort = READ_SERVER_PORTS_FROM;
 
@@ -35,7 +35,7 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
                                boolean withExt,
                                boolean withAdminUI,
                                boolean ephemeralPorts) {
-        this(registrationResolver, discoveryResolver, withExt, withAdminUI, ephemeralPorts, Codec.Avro);
+        this(registrationResolver, discoveryResolver, withExt, withAdminUI, ephemeralPorts, CodecType.Avro);
     }
 
     public EmbeddedReadCluster(ServerResolver registrationResolver,
@@ -43,7 +43,7 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
                                boolean withExt,
                                boolean withAdminUI,
                                boolean ephemeralPorts,
-                               Codec codec) {
+                               CodecType codec) {
         super(READ_SERVER_NAME);
         this.registrationResolver = registrationResolver;
         this.discoveryResolver = discoveryResolver;

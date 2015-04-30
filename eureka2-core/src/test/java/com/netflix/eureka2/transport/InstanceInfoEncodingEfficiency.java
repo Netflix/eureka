@@ -10,6 +10,7 @@ import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.functions.InterestFunctions;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
+import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -50,14 +51,14 @@ public class InstanceInfoEncodingEfficiency {
     public void instanceInfoEncoding() throws IOException {
         System.out.println("Avro");
         System.out.println("----------------------------");
-        instanceInfoEncoding(EurekaTransports.Codec.Avro);
+        instanceInfoEncoding(CodecType.Avro);
 
         System.out.println("\nJSON");
         System.out.println("----------------------------");
-        instanceInfoEncoding(EurekaTransports.Codec.Json);
+        instanceInfoEncoding(CodecType.Json);
     }
 
-    private void instanceInfoEncoding(EurekaTransports.Codec codec) throws IOException {
+    private void instanceInfoEncoding(CodecType codec) throws IOException {
         EmbeddedChannel ch = new EmbeddedChannel(EurekaTransports.REGISTRATION_CODEC_FUNC.call(codec));
 
         long total = 0;

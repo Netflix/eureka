@@ -14,10 +14,11 @@ public class Source {
      * <ul>
      * <li>{@link #LOCAL}</li> - there is an opened registration client connection to the write local server
      * <li>{@link #REPLICATED}</li> - replicated entry from another server
+     * <li>{@link #BOOTSTRAP}</li> - entry loaded from external, bootstrap resource
      * <li>{@link #INTERESTED}</li> - entry from a source server specified as an interest
      * </ul>
      */
-    public enum Origin { LOCAL, REPLICATED, INTERESTED }
+    public enum Origin { LOCAL, REPLICATED, BOOTSTRAP, INTERESTED }
 
     private final Origin origin;
     private final String name;  // nullable
