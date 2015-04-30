@@ -4,7 +4,7 @@ import com.netflix.eureka2.EurekaDashboardServer;
 import com.netflix.eureka2.config.EurekaDashboardConfig;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.junit.categories.LongRunningTest;
-import com.netflix.eureka2.server.resolver.EurekaEndpointResolvers.ResolverType;
+import com.netflix.eureka2.server.resolver.EurekaClusterResolvers.ResolverType;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 

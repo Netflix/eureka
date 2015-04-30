@@ -2,7 +2,7 @@ package com.netflix.eureka2.server.config;
 
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider.StrategyType;
-import com.netflix.eureka2.server.resolver.EurekaEndpointResolvers.ResolverType;
+import com.netflix.eureka2.server.resolver.EurekaClusterResolvers.ResolverType;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.codec.CodecType;
 import com.netflix.governator.annotations.Configuration;

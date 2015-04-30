@@ -5,27 +5,27 @@ import javax.inject.Provider;
 import java.util.Arrays;
 
 import com.netflix.eureka2.server.config.WriteServerConfig;
-import com.netflix.eureka2.server.resolver.EurekaEndpointResolver;
-import com.netflix.eureka2.server.resolver.EurekaEndpointResolvers;
+import com.netflix.eureka2.server.resolver.EurekaClusterResolver;
+import com.netflix.eureka2.server.resolver.EurekaClusterResolvers;
 import rx.schedulers.Schedulers;
 
 /**
  * @author Tomasz Bak
  */
-public class PeerBootstrapResolverProvider implements Provider<EurekaEndpointResolver> {
+public class BackupClusterResolverProvider implements Provider<EurekaClusterResolver> {
 
-    private final EurekaEndpointResolver resolver;
+    private final EurekaClusterResolver resolver;
 
     @Inject
-    public PeerBootstrapResolverProvider(WriteServerConfig config) {
+    public BackupClusterResolverProvider(WriteServerConfig config) {
         if (config.getBootstrapServerList() != null) {
-            resolver = EurekaEndpointResolvers.readServerResolverFromConfiguration(
+            resolver = EurekaClusterResolvers.readClusterResolverFromConfiguration(
                     config.getBootstrapResolverType(),
                     Arrays.asList(config.getBootstrapServerList()),
                     Schedulers.computation()
             );
         } else {
-            resolver = EurekaEndpointResolvers.writeServerResolverFromConfiguration(
+            resolver = EurekaClusterResolvers.writeClusterResolverFromConfiguration(
                     config.getServerResolverType(),
                     Arrays.asList(config.getServerList()),
                     Schedulers.computation()
@@ -34,7 +34,7 @@ public class PeerBootstrapResolverProvider implements Provider<EurekaEndpointRes
     }
 
     @Override
-    public EurekaEndpointResolver get() {
+    public EurekaClusterResolver get() {
         return resolver;
     }
 }

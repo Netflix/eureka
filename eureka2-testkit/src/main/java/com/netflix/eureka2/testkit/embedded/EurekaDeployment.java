@@ -4,7 +4,7 @@ import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
-import com.netflix.eureka2.server.resolver.EurekaEndpoint.ServiceType;
+import com.netflix.eureka2.server.resolver.ClusterAddress.ServiceType;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedReadCluster;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedBridgeServer;

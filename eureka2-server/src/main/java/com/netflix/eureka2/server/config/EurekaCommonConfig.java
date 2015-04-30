@@ -8,7 +8,7 @@ import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider.StrategyType;
-import com.netflix.eureka2.server.resolver.EurekaEndpointResolvers.ResolverType;
+import com.netflix.eureka2.server.resolver.EurekaClusterResolvers.ResolverType;
 import com.netflix.governator.annotations.Configuration;
 
 /**

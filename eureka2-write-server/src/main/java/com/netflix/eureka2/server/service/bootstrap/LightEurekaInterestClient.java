@@ -1,11 +1,15 @@
 package com.netflix.eureka2.server.service.bootstrap;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interest;
+import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.interests.StreamStateNotification.BufferState;
 import com.netflix.eureka2.metric.noop.NoOpMessageConnectionMetrics;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
@@ -28,9 +32,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
+import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.schedulers.Schedulers;
 
 /**
  * Light interest client implementation for doing single, one time subscription to full registry
@@ -139,5 +145,39 @@ public class LightEurekaInterestClient {
             return new ChangeNotification<>(Kind.Delete, instanceInfo);
         }
         return null;
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        Server server = new Server("ec2-50-19-255-75.compute-1.amazonaws.com", 12103);
+        LightEurekaInterestClient client = new LightEurekaInterestClient(server, Schedulers.computation());
+        final AtomicInteger counter = new AtomicInteger();
+        final CountDownLatch lock = new CountDownLatch(1);
+        client.forInterest(Interests.forFullRegistry()).subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
+            @Override
+            public void onCompleted() {
+                lock.countDown();
+            }
+
+            @Override
+            public void onError(Throwable e) {
+
+            }
+
+            @Override
+            public void onNext(ChangeNotification<InstanceInfo> notification) {
+                switch (notification.getKind()) {
+                    case Add:
+                    case Modify:
+                        counter.incrementAndGet();
+                        break;
+                    case Delete:
+                        counter.decrementAndGet();
+                        break;
+                }
+                System.out.println(notification);
+            }
+        });
+        lock.await();
+        System.out.println("Got total of: " + counter);
     }
 }

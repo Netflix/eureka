@@ -33,11 +33,6 @@ public class RegistryBootstrapCoordinator extends AbstractHealthStatusProvider<R
             "Bootstrap registry loader from external source"
     );
 
-    /**
-     * TODO Make bootstrap timeout configurable
-     */
-    private static final long BOOTSTRAP_TIMEOUT_MS = 30000;
-
     private final WriteServerConfig config;
     private final RegistryBootstrapService registryBootstrapService;
     private final SourcedEurekaRegistry<InstanceInfo> registry;
@@ -66,7 +61,7 @@ public class RegistryBootstrapCoordinator extends AbstractHealthStatusProvider<R
 
         logger.info("Starting registry bootstrapping using {}...", registryBootstrapService.getClass().getName());
         bootstrapSubscription = registryBootstrapService.loadIntoRegistry(registry, source)
-                .timeout(BOOTSTRAP_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                .timeout(config.getBootstrapTimeoutMillis(), TimeUnit.MILLISECONDS)
                 .subscribe(
                         new Subscriber<Void>() {
                             @Override

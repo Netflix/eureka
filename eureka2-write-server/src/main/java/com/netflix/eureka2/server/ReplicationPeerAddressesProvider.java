@@ -5,7 +5,7 @@ import javax.inject.Singleton;
 
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.server.resolver.EurekaEndpoint.ServiceType;
+import com.netflix.eureka2.server.resolver.ClusterAddress.ServiceType;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import rx.Observable;
 

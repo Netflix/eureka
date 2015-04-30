@@ -4,7 +4,7 @@ import java.util.List;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
-import com.netflix.eureka2.server.resolver.EurekaEndpoint.ServiceType;
+import com.netflix.eureka2.server.resolver.ClusterAddress.ServiceType;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster.WriteClusterReport;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;

@@ -3,7 +3,7 @@ package com.netflix.eureka2.server.config;
 import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider.StrategyType;
-import com.netflix.eureka2.server.resolver.EurekaEndpointResolvers.ResolverType;
+import com.netflix.eureka2.server.resolver.EurekaClusterResolvers.ResolverType;
 import com.netflix.governator.annotations.Configuration;
 
 /**
@@ -45,6 +45,7 @@ public class BridgeServerConfig extends WriteServerConfig {
             boolean bootstrapEnabled,
             ResolverType bootstrapResolverType,
             String[] bootstrapServerList,
+            long bootstrapTimeoutMillis,
             // bridge server configs
             int refreshRateSec
     ) {
@@ -71,7 +72,8 @@ public class BridgeServerConfig extends WriteServerConfig {
                 replicationReconnectDelayMillis,
                 bootstrapEnabled,
                 bootstrapResolverType,
-                bootstrapServerList
+                bootstrapServerList,
+                bootstrapTimeoutMillis
         );
 
         this.refreshRateSec = refreshRateSec;
@@ -124,6 +126,7 @@ public class BridgeServerConfig extends WriteServerConfig {
                     bootstrapEnabled,
                     bootstrapResolverType,
                     bootstrapServerList,
+                    bootstrapTimeoutMillis,
                     // bridge server configs
                     refreshRateSec
             );

@@ -13,6 +13,6 @@ import rx.Observable;
  *
  * @author Tomasz Bak
  */
-public interface EurekaEndpointResolver {
-    Observable<ChangeNotification<EurekaEndpoint>> eurekaEndpoints();
+public interface EurekaClusterResolver {
+    Observable<ChangeNotification<ClusterAddress>> clusterTopologyChanges();
 }
