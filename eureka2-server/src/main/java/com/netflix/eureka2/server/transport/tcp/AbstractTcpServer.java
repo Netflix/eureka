@@ -18,6 +18,7 @@ package com.netflix.eureka2.server.transport.tcp;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.inject.Provider;
 
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import io.reactivex.netty.RxNetty;
@@ -39,24 +40,24 @@ public abstract class AbstractTcpServer {
     protected final MetricEventsListenerFactory servoEventsListenerFactory;
     private final int serverPort;
     private final PipelineConfigurator<Object, Object> pipelineConfigurator;
-    private final ConnectionHandler<Object, Object> tcpHandler;
+    private final Provider<? extends ConnectionHandler<Object, Object>> tcpHandlerProvider;
     protected RxServer<Object, Object> server;
 
     protected AbstractTcpServer(MetricEventsListenerFactory servoEventsListenerFactory,
                                 EurekaServerConfig config,
                                 int serverPort,
                                 PipelineConfigurator<Object, Object> pipelineConfigurator,
-                                ConnectionHandler<Object, Object> tcpHandler) {
+                                Provider<? extends ConnectionHandler<Object, Object>> tcpHandlerProvider) {
         this.servoEventsListenerFactory = servoEventsListenerFactory;
         this.config = config;
         this.serverPort = serverPort;
         this.pipelineConfigurator = pipelineConfigurator;
-        this.tcpHandler = tcpHandler;
+        this.tcpHandlerProvider = tcpHandlerProvider;
     }
 
     @PostConstruct
     public void start() {
-        server = RxNetty.newTcpServerBuilder(serverPort, tcpHandler)
+        server = RxNetty.newTcpServerBuilder(serverPort, tcpHandlerProvider.get())
                 .pipelineConfigurator(pipelineConfigurator)
                 .withMetricEventsListenerFactory(servoEventsListenerFactory)
                 .build()
