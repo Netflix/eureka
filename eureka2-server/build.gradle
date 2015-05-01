@@ -25,7 +25,7 @@ dependencies {
 
     compile "org.codehaus.jettison:jettison:${jettison_version}"
     compile "com.netflix.governator:governator:${governator_version}"
-    compile("io.reactivex:rxnetty-spectator:${rxnetty_version}")
+    compile "io.reactivex:rxnetty-spectator:${rxnetty_version}"
 
     compile "com.netflix.karyon:karyon2-governator:${karyon_version}"
     compile "com.netflix.karyon:karyon2-archaius:${karyon_version}"

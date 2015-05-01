@@ -43,13 +43,13 @@ public class WriteServerConfig extends EurekaServerConfig {
     protected long replicationReconnectDelayMillis = DEFAULT_REPLICATION_RECONNECT_DELAY_MILLIS;
 
     @Configuration("eureka.services.bootstrap.enabled")
-    protected boolean bootstrapEnabled;
+    protected boolean bootstrapEnabled = false;
 
     @Configuration("eureka.services.bootstrap.resolverType")
-    protected String bootstrapResolverType;
+    protected String bootstrapResolverType = ResolverType.Fixed.name();
 
     @Configuration("eureka.services.bootstrap.serverList")
-    protected String[] bootstrapServerList;
+    protected String[] bootstrapServerList = null;
 
     @Configuration("eureka.services.bootstrap.timeoutMillis")
     protected long bootstrapTimeoutMillis = DEFAULT_BOOTSTRAP_TIMEOUT_MILLIS;
