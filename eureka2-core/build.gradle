@@ -30,7 +30,7 @@ dependencies {
 
     // As IDEs do not play well with shadowed dependencies, we should depend on
     // the original Avro jar when doing development
-    if (project.hasProperty('dev') || System.properties['dev']) {
+    if (project.hasProperty('eureka2.devmode') || System.properties['eureka2.devmode']) {
         println "In development mode - adding compile level dependency to Avro"
         compile "org.apache.avro:avro:${avro_version}"
     } else {
@@ -60,20 +60,13 @@ shadowJar {
         include(dependency('com.thoughtworks.paranamer:paranamer'))
         include(dependency('org.xerial.snappy:snappy-java'))
     }
-    classifier 'shadow'
-    relocate 'org.apache.avro', 'com.netflix.shading.apache.avro'
-    relocate 'com.thoughtworks.paranamer', 'com.netflix.shading.thoughtworks.paranamer'
-    relocate 'org.xerial.snappy', 'com.netflix.shading.xerial.snappy'
+    classifier null
+    relocate 'org.apache.avro', 'com.eureka2.shading.apache.avro'
+    relocate 'com.thoughtworks.paranamer', 'com.eureka2.shading.thoughtworks.paranamer'
+    relocate 'org.xerial.snappy', 'com.eureka2.shading.xerial.snappy'
 }
-task overriteJar << {
-    def jarFile=file("${projectDir}/build/libs/eureka2-core-${version}.jar")
-    def shadowJarFile=file("${projectDir}/build/libs/eureka2-core-${version}-shadow.jar")
-    jarFile.delete();
-    shadowJarFile.renameTo(jarFile)
-}
-jar.finalizedBy shadowJar
-shadowJar.mustRunAfter jar
-shadowJar.finalizedBy overriteJar
+jar.deleteAllActions()
+jar.dependsOn shadowJar
 
 // Avro schema processing
 
