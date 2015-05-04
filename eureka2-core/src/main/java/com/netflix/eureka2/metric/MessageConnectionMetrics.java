@@ -31,4 +31,8 @@ public interface MessageConnectionMetrics {
     void incrementIncomingMessageCounter(Class<?> aClass, int amount);
 
     void incrementOutgoingMessageCounter(Class<?> aClass, int amount);
+
+    void incrementPendingAckCounter();
+
+    void decrementPendingAckCounter();
 }

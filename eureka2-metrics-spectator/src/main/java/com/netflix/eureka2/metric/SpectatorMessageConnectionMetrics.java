@@ -35,6 +35,7 @@ public class SpectatorMessageConnectionMetrics extends SpectatorEurekaMetrics im
 
     private final AtomicLong connectedClients = new AtomicLong();
     private final Timer connectionTime;
+    private final AtomicLong pendingAckCounter = new AtomicLong();
 
     /**
      * We could use {@link java.util.concurrent.ConcurrentHashMap} with putIfAbsent method
@@ -48,6 +49,7 @@ public class SpectatorMessageConnectionMetrics extends SpectatorEurekaMetrics im
     public SpectatorMessageConnectionMetrics(ExtendedRegistry registry, String context) {
         super(registry, context);
         newGauge("connectedClients", connectedClients);
+        newGauge("pendingAckCounter", pendingAckCounter);
         this.connectionTime = newTimer("connectionTime");
         this.totalIncomingMessages = newCounter("incoming.total");
         this.totalOutgoingMessages = newCounter("outgoing.total");
@@ -80,6 +82,16 @@ public class SpectatorMessageConnectionMetrics extends SpectatorEurekaMetrics im
         Counter counter = getMessageCounter("outgoing." + aClass.getSimpleName());
         counter.increment(amount);
         totalOutgoingMessages.increment(amount);
+    }
+
+    @Override
+    public void incrementPendingAckCounter() {
+        pendingAckCounter.incrementAndGet();
+    }
+
+    @Override
+    public void decrementPendingAckCounter() {
+        pendingAckCounter.decrementAndGet();
     }
 
     private Counter getMessageCounter(String counterName) {

@@ -24,6 +24,7 @@ import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.registration.RegistrationObservable;
+import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
@@ -102,9 +103,15 @@ public class Session {
     }
 
     public void connectToRegister(String host, int port) {
+        ServerResolver serverResolver;
+        if(host.indexOf('.') == -1) {
+            serverResolver = ServerResolvers.fromHostname(host).withPort(port);
+        } else {
+            serverResolver = ServerResolvers.fromDnsName(host).withPort(port);
+        }
         registrationClient = Eurekas.newRegistrationClientBuilder()
                 .withTransportConfig(context.getTransportConfig())
-                .withServerResolver(ServerResolvers.fromHostname(host).withPort(port))
+                .withServerResolver(serverResolver)
                 .build();
 
         mode = Mode.Write;

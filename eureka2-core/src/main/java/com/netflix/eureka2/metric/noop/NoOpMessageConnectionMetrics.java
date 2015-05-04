@@ -28,4 +28,12 @@ public class NoOpMessageConnectionMetrics implements MessageConnectionMetrics {
     @Override
     public void incrementOutgoingMessageCounter(Class<?> aClass, int amount) {
     }
+
+    @Override
+    public void incrementPendingAckCounter() {
+    }
+
+    @Override
+    public void decrementPendingAckCounter() {
+    }
 }
