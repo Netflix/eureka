@@ -5,7 +5,7 @@ package com.netflix.eureka2;
  *
  * @author David Liu
  */
-public final class Server {
+public final class Server implements Comparable<Server> {
 
     private final String host;
     private final int port;
@@ -51,5 +51,11 @@ public final class Server {
                 "host='" + host + '\'' +
                 ", port=" + port +
                 '}';
+    }
+
+    @Override
+    public int compareTo(Server another) {
+        int hostCompare = this.host.compareTo(another.host);
+        return hostCompare == 0 ? this.port - another.port : hostCompare;
     }
 }

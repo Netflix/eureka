@@ -26,13 +26,13 @@ import static org.hamcrest.Matchers.*;
 /**
  * @author David Liu
  */
-public class OcelliServerResolverTest extends AbstractResolverTest {
+public class RoundRobinServerResolverTest extends AbstractResolverTest {
 
     private TestSubscriber<Server> testSubscriber = new TestSubscriber<>();
 
     @Test
     public void testEmptyLoadBalancer() {
-        ServerResolver resolver = new OcelliServerResolver()
+        ServerResolver resolver = new RoundRobinServerResolver()
                 .withWarmUpConfiguration(10, TimeUnit.MILLISECONDS);
 
         resolver.resolve().subscribe(testSubscriber);
@@ -46,7 +46,7 @@ public class OcelliServerResolverTest extends AbstractResolverTest {
 
     @Test
     public void testSingleElementLoadBalancer() throws Exception {
-        ServerResolver resolver = new OcelliServerResolver(SERVER_A);
+        ServerResolver resolver = new RoundRobinServerResolver(SERVER_A);
 
         ExtTestSubscriber<Server> extTestSubscriber = new ExtTestSubscriber<>();
         resolver.resolve().subscribe(extTestSubscriber);
@@ -91,7 +91,7 @@ public class OcelliServerResolverTest extends AbstractResolverTest {
             }
         });
 
-        ServerResolver resolver = new OcelliServerResolver(serverSource);
+        ServerResolver resolver = new RoundRobinServerResolver(serverSource);
 
         // resolve once
         resolver.resolve().subscribe(testSubscriber);
@@ -122,7 +122,7 @@ public class OcelliServerResolverTest extends AbstractResolverTest {
                 .just(new ChangeNotification<>(ChangeNotification.Kind.Add, SERVER_A))
                 .delay(delayTime, timeUnit);
 
-        ServerResolver resolver = new OcelliServerResolver(serverSource)
+        ServerResolver resolver = new RoundRobinServerResolver(serverSource)
                 .withWarmUpConfiguration(warmUpTimeout, timeUnit);
 
         ExtTestSubscriber<Server> extTestSubscriber = new ExtTestSubscriber<>();
@@ -144,7 +144,7 @@ public class OcelliServerResolverTest extends AbstractResolverTest {
                 .just(new ChangeNotification<>(ChangeNotification.Kind.Add, SERVER_A))
                 .delay(delayTime, timeUnit);
 
-        ServerResolver resolver = new OcelliServerResolver(serverSource)
+        ServerResolver resolver = new RoundRobinServerResolver(serverSource)
                 .withWarmUpConfiguration(warmUpTimeout, timeUnit);
 
         ExtTestSubscriber<Server> extTestSubscriber = new ExtTestSubscriber<>();
@@ -160,7 +160,7 @@ public class OcelliServerResolverTest extends AbstractResolverTest {
         Throwable expected = new Exception("test error");
         Observable<ChangeNotification<Server>> serverSource = Observable.error(expected);
 
-        ServerResolver resolver = new OcelliServerResolver(serverSource);
+        ServerResolver resolver = new RoundRobinServerResolver(serverSource);
 
         resolver.resolve().subscribe(testSubscriber);
         // return empty lb error instead
@@ -172,10 +172,10 @@ public class OcelliServerResolverTest extends AbstractResolverTest {
         Throwable expected = new Exception("test error");
         Observable<ChangeNotification<Server>> errorSource = Observable.error(expected);
         Observable<ChangeNotification<Server>> serverSource = Observable
-                .just(new ChangeNotification<Server>(ChangeNotification.Kind.Add, SERVER_A))
+                .just(new ChangeNotification<>(ChangeNotification.Kind.Add, SERVER_A))
                 .concatWith(errorSource);
 
-        ServerResolver resolver = new OcelliServerResolver(serverSource);
+        ServerResolver resolver = new RoundRobinServerResolver(serverSource);
 
         resolver.resolve().subscribe(testSubscriber);
         assertThat(testSubscriber.getOnNextEvents().size(), is(0));  // when input onError we don't emit buffers
@@ -190,12 +190,12 @@ public class OcelliServerResolverTest extends AbstractResolverTest {
     public void testLoadBalancerFallbackToPreviousIfOnError() throws Exception {
         PublishSubject<ChangeNotification<Server>> serverSubject = PublishSubject.create();
 
-        ServerResolver resolver = new OcelliServerResolver(serverSubject);
+        ServerResolver resolver = new RoundRobinServerResolver(serverSubject);
 
         ExtTestSubscriber<Server> extTestSubscriber = new ExtTestSubscriber<>();
 
         resolver.resolve().subscribe(extTestSubscriber);
-        serverSubject.onNext(new ChangeNotification<Server>(ChangeNotification.Kind.Add, SERVER_A));
+        serverSubject.onNext(new ChangeNotification<>(ChangeNotification.Kind.Add, SERVER_A));
         serverSubject.onNext(ChangeNotification.<Server>bufferSentinel());
 
         Server next = extTestSubscriber.takeNext();
@@ -213,10 +213,10 @@ public class OcelliServerResolverTest extends AbstractResolverTest {
     }
 
     @Test
-    public void testResolverRoundRobin() {  // change if we use a different loadbalancer
+    public void testResolverRoundRobin() {
         Set<Server> fullServerSet = asSet(SERVER_A, SERVER_B, SERVER_C);
 
-        ServerResolver resolver = new OcelliServerResolver(SERVER_A, SERVER_B, SERVER_C);
+        ServerResolver resolver = new RoundRobinServerResolver(SERVER_A, SERVER_B, SERVER_C);
 
         Map<Server, AtomicInteger> roundRobinCount = new HashMap<>();
         for (int i = 0; i < 6; i++) {

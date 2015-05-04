@@ -97,6 +97,21 @@ public final class ChangeNotifications {
     }
 
     /**
+     * Return a function that maps data to Add ChangeNotification of the data.
+     *
+     * @param <T> type of the data to wrap in a ChangeNotification
+     * @return an Add ChangeNotification of the data
+     */
+    public static <T> Func1<T, ChangeNotification<T>> toAddChangeNotification() {
+        return new Func1<T, ChangeNotification<T>>() {
+            @Override
+            public ChangeNotification<T> call(T data) {
+                return new ChangeNotification<>(Kind.Add, data);
+            }
+        };
+    }
+
+    /**
      * Given a list of {@link ChangeNotification}s:
      * <ul>
      *     <li>- collapse changes for same items (for example A{ Add Modify } -> A { Add }, B { Add, Delete } -> None )</li>

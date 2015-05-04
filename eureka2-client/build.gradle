@@ -15,21 +15,10 @@
  */
 
 apply plugin: 'osgi'
-apply plugin: 'com.github.johnrengelman.shadow'
 
 dependencies {
     compile project(':eureka2-core')
     compile "javax.inject:javax.inject:1"
-
-    // As IDEs do not play well with shadowed dependencies, we should depend on
-    // the original jar when doing development
-    if (project.hasProperty('eureka2.devmode') || System.properties['eureka2.devmode']) {
-        println "In development mode - adding compile level dependency to Ocelli"
-        compile "com.netflix.ocelli:ocelli-core:${ocelli_version}"
-    } else {
-        println "Shadowing dependency to Ocelli"
-        provided "com.netflix.ocelli:ocelli-core:${ocelli_version}"
-    }
 
     testCompile project(':eureka2-test-utils')
 }
@@ -42,13 +31,3 @@ jar {
         instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
     }
 }
-
-shadowJar {
-    dependencies {
-        include(dependency('com.netflix.ocelli:ocelli-core'))
-    }
-    classifier null
-    relocate 'netflix.ocelli', 'com.eureka2.shading.netflix.ocelli'
-}
-jar.deleteAllActions()
-jar.dependsOn shadowJar
