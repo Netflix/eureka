@@ -34,7 +34,7 @@ public class RoundRobinServerResolver implements ServerResolver {
 
     private static final Exception SERVER_CACHE_EMPTY_EXCEPTION = new NoSuchElementException("No servers available for this resolver");
 
-    private final int warmUpTimeout;
+    private final int cacheRefreshTimeout;
     private final TimeUnit timeUnit;
 
     private final Observable<ChangeNotification<Server>> serverSource;
@@ -42,16 +42,16 @@ public class RoundRobinServerResolver implements ServerResolver {
     private final AtomicInteger positionRef;
 
     protected RoundRobinServerResolver(Server... servers) {
-        this(sourceFromList(servers), 10, TimeUnit.SECONDS);
+        this(Observable.from(servers).map(ChangeNotifications.<Server>toAddChangeNotification()), 10, TimeUnit.SECONDS);
     }
 
     protected RoundRobinServerResolver(Observable<ChangeNotification<Server>> serverSource) {
         this(serverSource, 10, TimeUnit.SECONDS);
     }
 
-    protected RoundRobinServerResolver(Observable<ChangeNotification<Server>> serverSource, int warmUpTimeout, TimeUnit timeUnit) {
+    protected RoundRobinServerResolver(Observable<ChangeNotification<Server>> serverSource, int cacheRefreshTimeout, TimeUnit timeUnit) {
         this.serverSource = serverSource;
-        this.warmUpTimeout = warmUpTimeout;
+        this.cacheRefreshTimeout = cacheRefreshTimeout;
         this.timeUnit = timeUnit;
         this.serverCacheRef = new AtomicReference<List<Server>>(new ArrayList<Server>());
         this.positionRef = new AtomicInteger(new Random().nextInt(100));
@@ -117,7 +117,7 @@ public class RoundRobinServerResolver implements ServerResolver {
                         return Observable.just(serverCacheRef.get());
                     }
                 })
-                .timeout(warmUpTimeout, timeUnit)
+                .timeout(cacheRefreshTimeout, timeUnit)
                 .onErrorResumeNext(new Func1<Throwable, Observable<? extends List<Server>>>() {
                     @Override
                     public Observable<? extends List<Server>> call(Throwable throwable) {
@@ -129,15 +129,4 @@ public class RoundRobinServerResolver implements ServerResolver {
                 })
                 .take(1);
     }
-
-    private static Observable<ChangeNotification<Server>> sourceFromList(Server... servers) {
-        return Observable.from(servers)
-                .map(new Func1<Server, ChangeNotification<Server>>() {
-                    @Override
-                    public ChangeNotification<Server> call(Server server) {
-                        return new ChangeNotification<>(ChangeNotification.Kind.Add, server);
-                    }
-                });
-    }
-
 }
