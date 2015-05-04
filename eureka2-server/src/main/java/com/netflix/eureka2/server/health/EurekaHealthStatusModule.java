@@ -25,8 +25,6 @@ import org.aopalliance.intercept.MethodInvocation;
  */
 public class EurekaHealthStatusModule extends AbstractModule {
 
-    public static final Class[] EMPTY_PARAMETER_LIST = new Class[]{};
-
     private final HealthStatusProviderRegistry registry = new HealthStatusProviderRegistry();
 
     @Override
@@ -36,8 +34,13 @@ public class EurekaHealthStatusModule extends AbstractModule {
             @Override
             public boolean matches(Class<?> aClass) {
                 if (Provider.class.isAssignableFrom(aClass)) {
-                    Type type = ((ParameterizedType) aClass.getGenericInterfaces()[0]).getActualTypeArguments()[0];
-                    if(type instanceof Class) {
+                    Class<?> baseGeneric = aClass;
+                    while (baseGeneric.getGenericInterfaces().length == 0) {
+                        baseGeneric = (Class<?>) baseGeneric.getGenericSuperclass();
+                    }
+
+                    Type type = ((ParameterizedType) baseGeneric.getGenericInterfaces()[0]).getActualTypeArguments()[0];
+                    if (type instanceof Class) {
                         Class<?> typeParameter = (Class<?>) type;
                         return isHealthStatusProvider(typeParameter);
                     }
@@ -51,10 +54,11 @@ public class EurekaHealthStatusModule extends AbstractModule {
             }
         }, new MethodInterceptor() {
             boolean nested;
+
             @Override
             public Object invoke(MethodInvocation invocation) throws Throwable {
                 // For some reason the same invocation is passed twice via this interceptor
-                if(nested) {
+                if (nested) {
                     return invocation.proceed();
                 }
                 nested = true;

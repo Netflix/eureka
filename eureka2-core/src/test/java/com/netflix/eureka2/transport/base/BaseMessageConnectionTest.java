@@ -6,11 +6,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.codec.SampleObject;
 import com.netflix.eureka2.codec.avro.EurekaAvroCodec;
 import com.netflix.eureka2.codec.avro.SchemaReflectData;
@@ -18,7 +18,6 @@ import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.rx.RxBlocking;
 import com.netflix.eureka2.transport.EurekaPipelineConfigurator;
-import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.codec.AbstractNettyCodec;
 import com.netflix.eureka2.transport.codec.DynamicNettyCodec;
@@ -33,7 +32,7 @@ import org.junit.Before;
 import org.junit.Test;
 import rx.Notification;
 import rx.Observable;
-import rx.Subscriber;
+import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.observers.TestSubscriber;
 
@@ -86,7 +85,7 @@ public class BaseMessageConnectionTest {
             public Observable<Void> handle(ObservableConnection<Object, Object> connection) {
                 MessageConnection messageBroker = new BaseMessageConnection("testServer", connection, serverMetrics);
                 queue.add(messageBroker);
-                return messageBroker.lifecycleObservable();
+                return messageBroker.lifecycleObservable().materialize().ignoreElements().cast(Void.class);
             }
         }).pipelineConfigurator(codecPipeline).enableWireLogging(LogLevel.ERROR).build().start();
 
@@ -163,37 +162,23 @@ public class BaseMessageConnectionTest {
 
     @Test(timeout = 10000)
     public void testMultipleSubscriptionToSingleResultOnlyWriteAndFlushOnce() throws Exception {
-        final SampleObject completionObj = new SampleObject(new SampleObject.Internal("STOP"));
-
         final List<Object> serverIncoming = new ArrayList<>();
-        final CountDownLatch completionLatch = new CountDownLatch(1);
-        serverBroker.incoming().subscribe(new Subscriber<Object>() {
+        serverBroker.incoming().doOnNext(new Action1<Object>() {
             @Override
-            public void onCompleted() {
+            public void call(Object o) {
+                serverIncoming.add(o);
+                serverBroker.acknowledge();
             }
+        }).subscribe();
 
-            @Override
-            public void onError(Throwable e) {
-
-            }
-
-            @Override
-            public void onNext(Object o) {
-                if (o.equals(completionObj)) {
-                    completionLatch.countDown();
-                } else {
-                    serverIncoming.add(o);
-                }
-            }
-        });
-
+        ExtTestSubscriber<Void> ackSubscriber1 = new ExtTestSubscriber<>();
+        ExtTestSubscriber<Void> ackSubscriber2 = new ExtTestSubscriber<>();
         Observable<Void> ackObservable = clientBroker.submitWithAck(CONTENT);
-        Observable<Void> completionObservable = clientBroker.submitWithAck(completionObj);
-        ackObservable.subscribe();
-        ackObservable.subscribe();
-        completionObservable.subscribe();
+        ackObservable.subscribe(ackSubscriber1);
+        ackObservable.subscribe(ackSubscriber2);
 
-        assertTrue(completionLatch.await(10, TimeUnit.SECONDS));
+        ackSubscriber1.assertOnCompleted(1, TimeUnit.SECONDS);
+        ackSubscriber2.assertOnCompleted(1, TimeUnit.SECONDS);
 
         assertEquals(1, serverIncoming.size());
         assertNotNull("expected message on server side", serverIncoming.get(0));
