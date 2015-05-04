@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Tomasz Bak
  */
-public class FileServerResolver extends OcelliServerResolver {
+public class FileServerResolver extends RoundRobinServerResolver {
 
     private final File textFile;
     private final Configuration configuration;

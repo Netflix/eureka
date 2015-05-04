@@ -76,7 +76,7 @@ public class DnsResolverStep implements HostResolverStep {
                     }
                 });
 
-        ServerResolver resolver = new OcelliServerResolver(serverSource);
+        ServerResolver resolver = new RoundRobinServerResolver(serverSource);
 
         return resolver;
     }

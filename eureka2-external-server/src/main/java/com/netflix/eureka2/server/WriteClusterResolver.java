@@ -3,7 +3,7 @@ package com.netflix.eureka2.server;
 import java.util.Arrays;
 
 import com.netflix.eureka2.Server;
-import com.netflix.eureka2.client.resolver.OcelliServerResolver;
+import com.netflix.eureka2.client.resolver.RoundRobinServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
@@ -19,7 +19,7 @@ import rx.schedulers.Schedulers;
 /**
  * @author Tomasz Bak
  */
-public class WriteClusterResolver extends OcelliServerResolver {
+public class WriteClusterResolver extends RoundRobinServerResolver {
 
     private WriteClusterResolver(EurekaClusterResolver endpointResolver, final ServiceType serviceType) {
         super(toServerResolver(endpointResolver, serviceType));

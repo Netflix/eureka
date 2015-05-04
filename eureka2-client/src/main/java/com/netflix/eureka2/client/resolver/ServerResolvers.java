@@ -20,7 +20,7 @@ public class ServerResolvers {
      * @return {@link ServerResolver}
      */
     public static ServerResolver from(final Server... servers) {
-        return new OcelliServerResolver(servers);
+        return new RoundRobinServerResolver(servers);
     }
 
     /**
@@ -31,7 +31,7 @@ public class ServerResolvers {
      * @return {@link ServerResolver}
      */
     public static ServerResolver fromServerSource(final Observable<ChangeNotification<Server>> serverSource) {
-        return new OcelliServerResolver(serverSource);
+        return new RoundRobinServerResolver(serverSource);
     }
 
     /**
