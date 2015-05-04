@@ -54,7 +54,7 @@ public class RoundRobinServerResolver implements ServerResolver {
         this.cacheRefreshTimeout = cacheRefreshTimeout;
         this.timeUnit = timeUnit;
         this.serverCacheRef = new AtomicReference<List<Server>>(new ArrayList<Server>());
-        this.positionRef = new AtomicInteger(new Random().nextInt(100));
+        this.positionRef = new AtomicInteger(new Random().nextInt(1000));
     }
 
     public RoundRobinServerResolver withWarmUpConfiguration(int newWarmUpTimeout, TimeUnit newTimeUnit) {
@@ -75,7 +75,7 @@ public class RoundRobinServerResolver implements ServerResolver {
                     return Observable.error(SERVER_CACHE_EMPTY_EXCEPTION);
                 }
 
-                int currentPos = positionRef.getAndIncrement();
+                int currentPos = Math.abs(positionRef.getAndIncrement());
                 Server toReturn = servers.get(currentPos % servers.size());
                 return Observable.just(toReturn);
             }
