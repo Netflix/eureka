@@ -27,16 +27,7 @@ dependencies {
     compile "javax.inject:javax.inject:${javax_inject_version}"
     compile "io.reactivex:rxjava:${rxjava_version}"
     compile "io.reactivex:rxnetty:${rxnetty_version}"
-
-    // As IDEs do not play well with shadowed dependencies, we should depend on
-    // the original Avro jar when doing development
-    if (project.hasProperty('eureka2.devmode') || System.properties['eureka2.devmode']) {
-        println "In development mode - adding compile level dependency to Avro"
-        compile "org.apache.avro:avro:${avro_version}"
-    } else {
-        println "Shadowing dependency to Avro"
-        provided "org.apache.avro:avro:${avro_version}"
-    }
+    compile "org.apache.avro:avro:${avro_version}"
 
     testCompile project(':eureka2-test-utils')
     testCompile project(':eureka2-testkit')
@@ -56,17 +47,31 @@ jar {
 
 shadowJar {
     dependencies {
+        // avro dependencies
         include(dependency('org.apache.avro:avro'))
         include(dependency('com.thoughtworks.paranamer:paranamer'))
         include(dependency('org.xerial.snappy:snappy-java'))
+        include(dependency('org.apache.commons:commons-compress'))
+        include(dependency('org.codehaus.jackson:jackson-core-asl'))
+        include(dependency('org.codehaus.jackson:jackson-mapper-asl'))
+        include(dependency('org.tukaani:xz'))
+
+        // rxNetty
+        include(dependency('io.reactivex:rxnetty'))
     }
-    classifier null
+    classifier 'shadow'
     relocate 'org.apache.avro', 'com.eureka2.shading.apache.avro'
     relocate 'com.thoughtworks.paranamer', 'com.eureka2.shading.thoughtworks.paranamer'
     relocate 'org.xerial.snappy', 'com.eureka2.shading.xerial.snappy'
+    relocate 'org.apache.commons.compress', 'com.eureka2.shading.apache.commons.compress'
+    relocate 'org.codehaus.jackson', 'com.eureka2.shading.codehaus.jackson'
+    relocate 'org.tukaani.xz', 'com.eureka2.shading.tukaani.xz'
+
+    relocate 'io.reactivex.netty', 'com.eureka2.shading.reactivex.netty'
 }
-jar.deleteAllActions()
-jar.dependsOn shadowJar
+
+jar.finalizedBy shadowJar
+shadowJar.mustRunAfter jar
 
 // Avro schema processing
 

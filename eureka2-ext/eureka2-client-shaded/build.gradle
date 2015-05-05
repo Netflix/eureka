@@ -15,31 +15,34 @@
  */
 
 apply plugin: 'osgi'
-apply plugin: 'com.github.johnrengelman.shadow'
 
 dependencies {
-    compile project(':eureka2-core')
-    compile "javax.inject:javax.inject:1"
+    compile(project(path:':eureka2-client', configuration:'shadow')) {
+        exclude group: 'com.netflix.eureka2', module: ':eureka2-core'
+        exclude group: 'io.reactivex', module: ':rxnetty'
+    }
 
-    testCompile project(':eureka2-test-utils')
+    compile(project(path:':eureka2-core', configuration:'shadow')) {
+        exclude group: 'io.reactivex', module: ':rxnetty'
+    }
+
+    compile "org.slf4j:slf4j-api:${slf4j_version}"
+    compile "javax.inject:javax.inject:${javax_inject_version}"
+
+    compile "io.reactivex:rxjava:${rxjava_version}"
+    compile "io.netty:netty-codec-http:4.0.25.Final"
+    compile "io.netty:netty-transport-native-epoll:4.0.25.Final"
 }
 
 jar {
     manifest {
-        name = 'eureka2-client'
+        name = 'eureka2-client-shaded'
         instruction 'Bundle-Vendor', 'Netflix'
         instruction 'Bundle-DocURL', 'https://github.com/Netflix/eureka'
         instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
     }
 }
 
-shadowJar {
-    dependencies {
-        include(dependency('io.reactivex:rxnetty'))
-    }
-    classifier 'shadow'
-    relocate 'io.reactivex.netty', 'com.eureka2.shading.reactivex.netty'
+test {
+    useJUnit()
 }
-
-jar.finalizedBy shadowJar
-shadowJar.mustRunAfter jar
