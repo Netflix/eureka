@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.transport.base;
 
+import java.lang.reflect.Constructor;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
@@ -51,11 +52,6 @@ public class BaseMessageConnection implements MessageConnection {
 
     private static final Pattern NETTY_CHANNEL_NAME_RE = Pattern.compile("\\[.*=>\\s*(.*)\\]");
 
-    private static final Exception CONNECTION_CLOSED_EXCEPTION = new IllegalStateException("Connection closed");
-    private static final Exception CONNECTION_INPUT_ONCOMPLETE_EXCEPTION = new IllegalStateException("connection input onCompleted");
-    private static final Exception ACKNOWLEDGEMENT_TIMEOUT_EXCEPTION = new TimeoutException("acknowledgement timeout");
-    private static final Exception UNEXPECTED_ACKNOWLEDGEMENT_EXCEPTION = new IllegalStateException("received acknowledgment while non expected");
-
     private final String name;
     private final ObservableConnection<Object, Object> connection;
     private final MessageConnectionMetrics metrics;
@@ -80,7 +76,7 @@ public class BaseMessageConnection implements MessageConnection {
                 long currentTime = schedulerWorker.now();
                 PendingAck latestAck = pendingAckQueue.peek();
                 if (latestAck != null && latestAck.getExpiryTime() <= currentTime) {
-                    doShutdown(ACKNOWLEDGEMENT_TIMEOUT_EXCEPTION);
+                    doShutdown(createException(TimeoutException.class, "acknowledgement timeout"));
                 } else {
                     schedulerWorker.schedule(ackTimeoutTask, 1, TimeUnit.SECONDS);
                 }
@@ -131,7 +127,7 @@ public class BaseMessageConnection implements MessageConnection {
                         PendingAck pending = pendingAckQueue.poll();
                         metrics.decrementPendingAckCounter();
                         if (pending == null) {
-                            shutdown(UNEXPECTED_ACKNOWLEDGEMENT_EXCEPTION);
+                            shutdown(createException(IllegalStateException.class, "unexpected acknowledgment"));
                         } else {
                             pending.ackSubject.onCompleted();
                         }
@@ -149,7 +145,7 @@ public class BaseMessageConnection implements MessageConnection {
     @Override
     public Observable<Void> submit(Object message) {
         if (closed.get()) {
-            return Observable.error(CONNECTION_CLOSED_EXCEPTION);
+            return createOnError(IllegalStateException.class, "connection closed");
         }
         return writeWhenSubscribed(message);
     }
@@ -162,7 +158,7 @@ public class BaseMessageConnection implements MessageConnection {
     @Override
     public Observable<Void> submitWithAck(final Object message, final long timeout) {
         if (closed.get()) {
-            return Observable.error(CONNECTION_CLOSED_EXCEPTION);
+            return createOnError(IllegalStateException.class, "connection closed");
         }
         long expiryTime = timeout <= 0 ? Long.MAX_VALUE : schedulerWorker.now() + timeout;
         return writeWhenSubscribed(message, PendingAck.create(expiryTime));
@@ -171,7 +167,7 @@ public class BaseMessageConnection implements MessageConnection {
     @Override
     public Observable<Void> acknowledge() {
         if (closed.get()) {
-            return Observable.error(CONNECTION_CLOSED_EXCEPTION);
+            return createOnError(IllegalStateException.class, "connection closed");
         }
         return writeWhenSubscribed(Acknowledgement.INSTANCE);
     }
@@ -193,7 +189,7 @@ public class BaseMessageConnection implements MessageConnection {
             @Override
             public void call() {
                 // always close with an exception here as the underlying connection never onError
-                shutdown(CONNECTION_INPUT_ONCOMPLETE_EXCEPTION);
+                shutdown(createException(IllegalStateException.class, "connection input onCompleted"));
             }
         });
     }
@@ -221,6 +217,7 @@ public class BaseMessageConnection implements MessageConnection {
     private void doShutdown(final Throwable throwable) {
         boolean wasClosed = closed.getAndSet(true);
         if (!wasClosed) {
+            logger.info("Shutting down connection {}", name);
             drainPendingAckQueue();
 
             metrics.decrementConnectionCounter();
@@ -251,6 +248,22 @@ public class BaseMessageConnection implements MessageConnection {
         }
     }
 
+    private <E extends Exception> E createException(Class<E> type, String message) {
+        String enrichedMessage = "{connection=" + name + "} " + message;
+        E exception;
+        try {
+            Constructor<E> constructor = type.getConstructor(String.class);
+            exception = constructor.newInstance(enrichedMessage);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Cannot instantiate an exception of class " + type, e);
+        }
+        return exception;
+    }
+
+    private <E extends Exception> Observable<Void> createOnError(Class<E> type, String message) {
+        return Observable.error(createException(type, message));
+    }
+
     /**
      * This method is thread safe, and it may be called concurrently.
      */
@@ -259,7 +272,7 @@ public class BaseMessageConnection implements MessageConnection {
         while ((pendingAck = pendingAckQueue.poll()) != null) {
             metrics.decrementPendingAckCounter();
             try {
-                pendingAck.onError(ACKNOWLEDGEMENT_TIMEOUT_EXCEPTION);
+                pendingAck.onError(createException(TimeoutException.class, "acknowledgement timeout"));
             } catch (Exception e) {
                 logger.warn("Acknowledgement subscriber hasn't handled properly onError", e);
             }

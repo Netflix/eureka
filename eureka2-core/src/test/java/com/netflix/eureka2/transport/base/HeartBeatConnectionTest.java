@@ -16,6 +16,9 @@
 
 package com.netflix.eureka2.transport.base;
 
+import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
+
 import com.netflix.eureka2.protocol.Heartbeat;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.junit.Before;
@@ -27,11 +30,8 @@ import rx.Observable;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 import rx.subjects.PublishSubject;
+import rx.subjects.ReplaySubject;
 
-import java.util.Iterator;
-import java.util.concurrent.TimeUnit;
-
-import static org.hamcrest.CoreMatchers.any;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -53,6 +53,8 @@ public class HeartBeatConnectionTest {
     @Mock
     private MessageConnection delegate;
 
+    private final ReplaySubject<Void> delegateLifecycleSubject = ReplaySubject.create();
+
     private final TestScheduler scheduler = Schedulers.test();
 
     private HeartBeatConnection heartBeatConnection;
@@ -61,6 +63,8 @@ public class HeartBeatConnectionTest {
     @Before
     public void setUp() throws Exception {
         when(delegate.incoming()).thenReturn(mockedIncomingStream);
+        when(delegate.lifecycleObservable()).thenReturn(delegateLifecycleSubject);
+
         heartBeatConnection = new HeartBeatConnection(delegate, HEART_BEAT_INTERVAL, TOLERANCE, scheduler);
 
         when(delegate.submit(Heartbeat.INSTANCE)).thenReturn(Observable.<Void>empty());
@@ -105,5 +109,16 @@ public class HeartBeatConnectionTest {
         mockedIncomingStream.onCompleted();
         assertThat(input.next(), is(equalTo(MESSAGE)));
         assertThat(input.hasNext(), is(false));
+    }
+
+    @Test
+    public void testHeartbeatsAreStoppedIfLifecycleStateChangesToClosed() throws Exception {
+        delegateLifecycleSubject.onCompleted(); // Simulate connection disconnect
+
+        // Advance time to cross tolerance level
+        scheduler.advanceTimeBy(HEART_BEAT_INTERVAL * (TOLERANCE + 1), TimeUnit.MILLISECONDS);
+
+        // Check that no heartbeat message was sent
+        verify(delegate, times(0)).submit(Heartbeat.INSTANCE);
     }
 }

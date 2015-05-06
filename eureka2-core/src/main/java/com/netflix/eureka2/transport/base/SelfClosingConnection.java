@@ -1,5 +1,8 @@
 package com.netflix.eureka2.transport.base;
 
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
+
 import com.netflix.eureka2.transport.MessageConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,9 +11,7 @@ import rx.Scheduler;
 import rx.functions.Action0;
 import rx.schedulers.Schedulers;
 
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
-
+import static com.netflix.eureka2.utils.ExceptionUtils.detachedExceptionOf;
 import static rx.Scheduler.Worker;
 
 /**
@@ -21,7 +22,7 @@ public class SelfClosingConnection implements MessageConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(SelfClosingConnection.class);
 
-    private static final SelfClosingException CLOSING_EXCEPTION = new SelfClosingException("Connection self-closing");
+    private static final SelfClosingException CLOSING_EXCEPTION = detachedExceptionOf(SelfClosingException.class, "Connection self-closing");
 
     private final Action0 selfTerminateTask = new Action0() {
         @Override
