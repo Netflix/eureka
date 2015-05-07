@@ -20,6 +20,7 @@ apply plugin: 'com.github.johnrengelman.shadow'
 dependencies {
     provided project(':eureka2-core')
     provided project(':eureka2-client')
+    provided project(':eureka2-ext:eureka2-eureka1-support')
 
     // transitive dependencies from the shaded packages that needs to be explicitly specified
     // from eureka2-core
@@ -35,12 +36,16 @@ dependencies {
 
     // from eureka2-client
     compile "javax.inject:javax.inject:1"
+
+    // from eureka2-eureka1-support
+    compile "com.netflix.eureka:eureka-client:${eureka_v1_version}"
 }
 
 shadowJar {
     dependencies {
         include(project(':eureka2-core'))
         include(project(':eureka2-client'))
+        include(project(':eureka2-ext:eureka2-eureka1-support'))
 
         // avro and dependencies
         include(dependency('org.apache.avro:avro'))
