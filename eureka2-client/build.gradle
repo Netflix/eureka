@@ -31,3 +31,4 @@ jar {
         instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
     }
 }
+

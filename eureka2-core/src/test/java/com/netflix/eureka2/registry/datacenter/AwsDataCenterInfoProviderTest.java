@@ -31,8 +31,6 @@ import org.junit.Test;
 import rx.Notification;
 import rx.Notification.Kind;
 import rx.Observable;
-import rx.Subscriber;
-import rx.observers.TestSubscriber;
 
 import java.util.HashMap;
 import java.util.Map;
