@@ -15,7 +15,6 @@
  */
 
 apply plugin: 'osgi'
-apply plugin: 'com.github.johnrengelman.shadow'
 
 configurations {
     avroTool
@@ -27,16 +26,7 @@ dependencies {
     compile "javax.inject:javax.inject:${javax_inject_version}"
     compile "io.reactivex:rxjava:${rxjava_version}"
     compile "io.reactivex:rxnetty:${rxnetty_version}"
-
-    // As IDEs do not play well with shadowed dependencies, we should depend on
-    // the original Avro jar when doing development
-    if (project.hasProperty('eureka2.devmode') || System.properties['eureka2.devmode']) {
-        println "In development mode - adding compile level dependency to Avro"
-        compile "org.apache.avro:avro:${avro_version}"
-    } else {
-        println "Shadowing dependency to Avro"
-        provided "org.apache.avro:avro:${avro_version}"
-    }
+    compile "org.apache.avro:avro:${avro_version}"
 
     testCompile project(':eureka2-test-utils')
     testCompile project(':eureka2-testkit')
@@ -53,20 +43,6 @@ jar {
         include("*.avpr")
     }
 }
-
-shadowJar {
-    dependencies {
-        include(dependency('org.apache.avro:avro'))
-        include(dependency('com.thoughtworks.paranamer:paranamer'))
-        include(dependency('org.xerial.snappy:snappy-java'))
-    }
-    classifier null
-    relocate 'org.apache.avro', 'com.eureka2.shading.apache.avro'
-    relocate 'com.thoughtworks.paranamer', 'com.eureka2.shading.thoughtworks.paranamer'
-    relocate 'org.xerial.snappy', 'com.eureka2.shading.xerial.snappy'
-}
-jar.deleteAllActions()
-jar.dependsOn shadowJar
 
 // Avro schema processing
 
