@@ -15,7 +15,6 @@
  */
 
 apply plugin: 'osgi'
-apply plugin: 'com.github.johnrengelman.shadow'
 
 dependencies {
     compile project(':eureka2-core')
@@ -33,13 +32,3 @@ jar {
     }
 }
 
-shadowJar {
-    dependencies {
-        include(dependency('io.reactivex:rxnetty'))
-    }
-    classifier 'shadow'
-    relocate 'io.reactivex.netty', 'com.eureka2.shading.reactivex.netty'
-}
-
-jar.finalizedBy shadowJar
-shadowJar.mustRunAfter jar

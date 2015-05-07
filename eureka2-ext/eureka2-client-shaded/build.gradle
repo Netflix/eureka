@@ -15,33 +15,60 @@
  */
 
 apply plugin: 'osgi'
+apply plugin: 'com.github.johnrengelman.shadow'
 
 dependencies {
-    compile(project(path:':eureka2-client', configuration:'shadow')) {
-        exclude group: 'com.netflix.eureka2', module: ':eureka2-core'
-        exclude group: 'io.reactivex', module: ':rxnetty'
-    }
+    provided project(':eureka2-core')
+    provided project(':eureka2-client')
 
-    compile(project(path:':eureka2-core', configuration:'shadow')) {
-        exclude group: 'io.reactivex', module: ':rxnetty'
-    }
-
+    // transitive dependencies from the shaded packages that needs to be explicitly specified
+    // from eureka2-core
     compile "org.slf4j:slf4j-api:${slf4j_version}"
-    compile "javax.inject:javax.inject:${javax_inject_version}"
-
     compile "io.reactivex:rxjava:${rxjava_version}"
-    compile "io.netty:netty-codec-http:4.0.25.Final"
-    compile "io.netty:netty-transport-native-epoll:4.0.25.Final"
+
+    // from eureka2-core -> rxNetty
+    compile "io.netty:netty-codec-http:${shaded_netty_version}"
+    compile "io.netty:netty-transport-native-epoll:${shaded_netty_version}"
+
+    // from eureka2-core -> avro
+    // none as all are shaded
+
+    // from eureka2-client
+    compile "javax.inject:javax.inject:1"
 }
 
-jar {
-    manifest {
-        name = 'eureka2-client-shaded'
-        instruction 'Bundle-Vendor', 'Netflix'
-        instruction 'Bundle-DocURL', 'https://github.com/Netflix/eureka'
-        instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
+shadowJar {
+    dependencies {
+        include(project(':eureka2-core'))
+        include(project(':eureka2-client'))
+
+        // avro and dependencies
+        include(dependency('org.apache.avro:avro'))
+        include(dependency('com.thoughtworks.paranamer:paranamer'))
+        include(dependency('org.xerial.snappy:snappy-java'))
+        include(dependency('org.apache.commons:commons-compress'))
+        include(dependency('org.codehaus.jackson:jackson-core-asl'))
+        include(dependency('org.codehaus.jackson:jackson-mapper-asl'))
+        include(dependency('org.tukaani:xz'))
+
+        // rxNetty
+        include(dependency('io.reactivex:rxnetty'))
     }
+
+    classifier null
+
+    relocate 'org.apache.avro', 'com.eureka2.shading.apache.avro'
+    relocate 'com.thoughtworks.paranamer', 'com.eureka2.shading.thoughtworks.paranamer'
+    relocate 'org.xerial.snappy', 'com.eureka2.shading.xerial.snappy'
+    relocate 'org.apache.commons.compress', 'com.eureka2.shading.apache.commons.compress'
+    relocate 'org.codehaus.jackson', 'com.eureka2.shading.codehaus.jackson'
+    relocate 'org.tukaani.xz', 'com.eureka2.shading.tukaani.xz'
+
+    relocate 'io.reactivex.netty', 'com.eureka2.shading.reactivex.netty'
 }
+
+jar.deleteAllActions()
+jar.dependsOn shadowJar
 
 test {
     useJUnit()

@@ -15,7 +15,6 @@
  */
 
 apply plugin: 'osgi'
-apply plugin: 'com.github.johnrengelman.shadow'
 
 configurations {
     avroTool
@@ -44,34 +43,6 @@ jar {
         include("*.avpr")
     }
 }
-
-shadowJar {
-    dependencies {
-        // avro dependencies
-        include(dependency('org.apache.avro:avro'))
-        include(dependency('com.thoughtworks.paranamer:paranamer'))
-        include(dependency('org.xerial.snappy:snappy-java'))
-        include(dependency('org.apache.commons:commons-compress'))
-        include(dependency('org.codehaus.jackson:jackson-core-asl'))
-        include(dependency('org.codehaus.jackson:jackson-mapper-asl'))
-        include(dependency('org.tukaani:xz'))
-
-        // rxNetty
-        include(dependency('io.reactivex:rxnetty'))
-    }
-    classifier 'shadow'
-    relocate 'org.apache.avro', 'com.eureka2.shading.apache.avro'
-    relocate 'com.thoughtworks.paranamer', 'com.eureka2.shading.thoughtworks.paranamer'
-    relocate 'org.xerial.snappy', 'com.eureka2.shading.xerial.snappy'
-    relocate 'org.apache.commons.compress', 'com.eureka2.shading.apache.commons.compress'
-    relocate 'org.codehaus.jackson', 'com.eureka2.shading.codehaus.jackson'
-    relocate 'org.tukaani.xz', 'com.eureka2.shading.tukaani.xz'
-
-    relocate 'io.reactivex.netty', 'com.eureka2.shading.reactivex.netty'
-}
-
-jar.finalizedBy shadowJar
-shadowJar.mustRunAfter jar
 
 // Avro schema processing
 
