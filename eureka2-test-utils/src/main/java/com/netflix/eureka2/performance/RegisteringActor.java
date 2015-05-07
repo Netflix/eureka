@@ -74,7 +74,7 @@ public class RegisteringActor extends ClientActor {
         final AtomicBoolean connectedFlag = new AtomicBoolean(true);
 
         scoreBoard.registeringActorIncrement();
-        registrationPublishSubject.onNext(new ChangeNotification<>(Kind.Add, this.selfInfo));
+        registrationPublishSubject.onNext(new ChangeNotification<>(Kind.Add, taggedInstanceInfo));
         RegistrationObservable registrationObservable = registrationClient.register(Observable.just(this.selfInfo));
         firstRegistrationSubscription = registrationObservable.initialRegistrationResult()
                 .subscribe(new Subscriber<Void>() {

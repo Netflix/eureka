@@ -7,7 +7,9 @@ import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.connection.RetryableConnection;
 import com.netflix.eureka2.connection.RetryableConnectionFactory;
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.EmptyRegistryInterest;
 import com.netflix.eureka2.interests.Interest;
+import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
@@ -70,6 +72,16 @@ public class EurekaInterestClientImpl extends AbstractInterestClient {
     public Observable<ChangeNotification<InstanceInfo>> forInterest(final Interest<InstanceInfo> interest) {
         if (isShutdown.get()) {
             return Observable.error(new IllegalStateException("InterestHandler has shutdown"));
+        }
+
+        if (interest instanceof EmptyRegistryInterest) {
+            return Observable.empty();
+        }
+        if (interest instanceof MultipleInterests) {
+            MultipleInterests<InstanceInfo> multiple = (MultipleInterests<InstanceInfo>) interest;
+            if (multiple.flatten().isEmpty()) {
+                return Observable.empty();
+            }
         }
 
         Observable<Void> appendInterest = Observable.create(new Observable.OnSubscribe<Void>() {

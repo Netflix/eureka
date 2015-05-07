@@ -1,10 +1,12 @@
 package com.netflix.eureka2.client.registration;
 
+import javax.inject.Inject;
+
 import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.connection.RetryableConnectionFactory;
 import com.netflix.eureka2.connection.RetryableConnection;
+import com.netflix.eureka2.connection.RetryableConnectionFactory;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.utils.rx.NoOpSubscriber;
 import com.netflix.eureka2.utils.rx.RetryStrategyFunc;
@@ -14,14 +16,13 @@ import rx.Observable;
 import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.functions.Func2;
-
-import javax.inject.Inject;
+import rx.subjects.AsyncSubject;
 
 /**
-* TODO: use a more sophisticated retry policy that creates channels that connects to different write servers?
-*
-* @author David Liu
-*/
+ * TODO: use a more sophisticated retry policy that creates channels that connects to different write servers?
+ *
+ * @author David Liu
+ */
 public class EurekaRegistrationClientImpl implements EurekaRegistrationClient {
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaRegistrationClientImpl.class);
@@ -30,6 +31,8 @@ public class EurekaRegistrationClientImpl implements EurekaRegistrationClient {
 
     private final RetryableConnectionFactory<RegistrationChannel> retryableConnectionFactory;
     private final int retryWaitMillis;
+
+    private final AsyncSubject<Void> shutdownSubject = AsyncSubject.create();
 
     @Inject
     public EurekaRegistrationClientImpl(ChannelFactory<RegistrationChannel> channelFactory) {
@@ -59,6 +62,7 @@ public class EurekaRegistrationClientImpl implements EurekaRegistrationClient {
 
         Observable<Void> lifecycle = retryableConnection.getRetryableLifecycle()
                 .retryWhen(new RetryStrategyFunc(retryWaitMillis))
+                .takeUntil(shutdownSubject)
                 .doOnUnsubscribe(new Action0() {
                     @Override
                     public void call() {
@@ -84,6 +88,6 @@ public class EurekaRegistrationClientImpl implements EurekaRegistrationClient {
     @Override
     public void shutdown() {
         logger.info("Shutting down RegistrationClient");
-        // nothing to shutdown
+        shutdownSubject.onCompleted();
     }
 }

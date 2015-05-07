@@ -57,8 +57,9 @@ public final class TopologyFunctions {
         }
     }
 
-    public static String getTimestamp(ChangeNotification<InstanceInfo> notification) {
-        return notification.getData().getMetaData().get(TIME_STAMP_KEY);
+    public static Long getTimestamp(ChangeNotification<InstanceInfo> notification) {
+        String valueString = notification.getData().getMetaData().get(TIME_STAMP_KEY);
+        return valueString == null ? null : Long.parseLong(valueString);
     }
 
     public static Iterator<ChangeNotification<InstanceInfo>> changeNotificationIteratorOf(final Iterator<InstanceInfo> instanceInfoIterator) {

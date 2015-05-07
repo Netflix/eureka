@@ -313,6 +313,31 @@ public class EurekaRegistrationClientImplTest {
     }
 
     @Test
+    public void testUnregisterOnClientShutdown() throws Exception {
+        when(mockFactory.newChannel()).then(new Answer<RegistrationChannel>() {
+            @Override
+            public RegistrationChannel answer(InvocationOnMock invocation) throws Throwable {
+                return newAlwaysSuccessChannel(channelId.getAndIncrement());
+            }
+        });
+
+        RegistrationObservable response = client.register(registrationSubject);
+        response.initialRegistrationResult().subscribe(initSubscriber);
+        response.subscribe(testSubscriber);
+
+        // send the first registration information
+        registrationSubject.onNext(infos.get(0));
+
+        initSubscriber.assertTerminalEvent();   // now the init ob will onComplete
+        initSubscriber.assertNoErrors();
+        assertThat(testSubscriber.isUnsubscribed(), is(false));
+
+        // Now shutdown and check
+        client.shutdown();
+        assertThat(testSubscriber.isUnsubscribed(), is(true));
+    }
+
+    @Test
     public void testMultipleSubscriberOnSameRegistrationLifecycle() {
         TestSubscriber<Void> anotherSubscriber = new TestSubscriber<>();
 

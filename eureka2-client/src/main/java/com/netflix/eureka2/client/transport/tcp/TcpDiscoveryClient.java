@@ -29,7 +29,7 @@ import com.netflix.eureka2.transport.TransportClient;
  * @author Tomasz Bak
  */
 public class TcpDiscoveryClient extends ResolverBasedTransportClient {
-    public TcpDiscoveryClient(EurekaTransportConfig config, ServerResolver resolver, MessageConnectionMetrics metrics) {
-        super(config, resolver, EurekaTransports.interestPipeline(config.getCodec()), metrics);
+    public TcpDiscoveryClient(String clientId, EurekaTransportConfig config, ServerResolver resolver, MessageConnectionMetrics metrics) {
+        super(clientId, config, resolver, EurekaTransports.interestPipeline(config.getCodec()), metrics);
     }
 }

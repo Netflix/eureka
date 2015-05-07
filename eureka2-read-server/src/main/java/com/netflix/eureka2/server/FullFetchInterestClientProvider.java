@@ -22,11 +22,14 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.interest.FullFetchBatchingRegistry;
 import com.netflix.eureka2.server.interest.FullFetchInterestClient;
+import com.netflix.eureka2.transport.TransportClient;
 
 /**
  * @author Tomasz Bak
  */
 public class FullFetchInterestClientProvider implements Provider<FullFetchInterestClient> {
+
+    private static final String EUREKA_READ_CLIENT_ID = "eurekaReadClient";
 
     private final EurekaCommonConfig config;
     private final EurekaClientMetricFactory clientMetricFactory;
@@ -59,6 +62,7 @@ public class FullFetchInterestClientProvider implements Provider<FullFetchIntere
         ServerResolver discoveryResolver = WriteClusterResolver.createInterestResolver(config);
 
         ClientChannelFactory<InterestChannel> channelFactory = new InterestChannelFactory(
+                EUREKA_READ_CLIENT_ID,
                 transportConfig,
                 discoveryResolver,
                 registry,

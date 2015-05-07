@@ -23,6 +23,8 @@ public abstract class EmbeddedEurekaCluster<S extends EmbeddedEurekaServer, A, R
     private final List<ChangeNotification<A>> clusterAddresses = new ArrayList<>();
     private final PublishSubject<ChangeNotification<A>> clusterAddressUpdates = PublishSubject.create();
 
+    private int nextServerIdx;
+
     protected EmbeddedEurekaCluster(String clusterVip) {
         this.clusterVip = clusterVip;
     }
@@ -91,6 +93,10 @@ public abstract class EmbeddedEurekaCluster<S extends EmbeddedEurekaServer, A, R
     }
 
     public abstract R clusterReport();
+
+    protected String nextAvailableServerId() {
+        return clusterVip + '#' + nextServerIdx++;
+    }
 
     protected Observable<ChangeNotification<A>> clusterChangeObservable() {
         ChangeNotification<A> sentinel = ChangeNotification.bufferSentinel();

@@ -12,7 +12,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import com.netflix.eureka2.data.toplogy.TopologyFunctions;
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,10 +34,11 @@ class NotificationTracker {
 
     private static final Logger logger = LoggerFactory.getLogger(NotificationTracker.class);
 
+    private final long startTime;
     private final int latencyThreshold;
     private final PerformanceScoreBoard scoreBoard;
-    private final Scheduler scheduler;
 
+    private final Scheduler scheduler;
     private final PriorityBlockingQueue<Holder> expiryQueue = new PriorityBlockingQueue<>(256, HOLDER_TIMESTAMP_COMPARATOR);
     private final ConcurrentMap<String, List<Holder>> expectedNotificationsById = new ConcurrentHashMap<>();
     private final Subscription latentTrackerSubscription;
@@ -43,6 +46,7 @@ class NotificationTracker {
     NotificationTracker(int latencyThreshold,
                         PerformanceScoreBoard scoreBoard,
                         Scheduler scheduler) {
+        this.startTime = scheduler.now();
         this.latencyThreshold = latencyThreshold;
         this.scoreBoard = scoreBoard;
         this.scheduler = scheduler;
@@ -66,7 +70,7 @@ class NotificationTracker {
         if (getTimestamp(expectedNotification) == null) {
             throw new IllegalStateException("Expected notification added with no timestamp");
         }
-        Holder holder = new Holder(scheduler.now(), expectedNotification);
+        Holder holder = new Holder(expectedNotification);
         expiryQueue.add(holder);
         String id = expectedNotification.getData().getId();
         List<Holder> holders = expectedNotificationsById.get(id);
@@ -84,8 +88,18 @@ class NotificationTracker {
      * {@link #addExpectation(ChangeNotification)} that modifies the same data structures.
      */
     void verifyWithExpectations(ChangeNotification<InstanceInfo> notification) {
-        scoreBoard.notificationIncrement();
         String id = notification.getData().getId();
+
+        Long timestamp = getTimestamp(notification);
+        if (timestamp == null) {
+            logger.warn("Received notification with id={} without timestamp tag", id);
+            return;
+        }
+        if (timestamp <= startTime) { // Notification before this tracker was created
+            return;
+        }
+
+        scoreBoard.notificationIncrement();
 
         List<Holder> holders = expectedNotificationsById.get(id);
         if (holders != null) {
@@ -115,13 +129,13 @@ class NotificationTracker {
                 logger.debug("Releasing instance {}", System.identityHashCode(holder.getNotification().getData()));
             }
         }
-        logger.warn("Left {} notifications when stopped", left);
+        logger.info("Left {} notifications when stopped", left);
     }
 
 
     private static boolean isMatching(ChangeNotification<InstanceInfo> notification, Holder holder) {
-        String expectedTimestamp = getTimestamp(holder.getNotification());
-        String incomingTimestamp = getTimestamp(notification);
+        Long expectedTimestamp = getTimestamp(holder.getNotification());
+        Long incomingTimestamp = getTimestamp(notification);
         if (incomingTimestamp == null) {
             return false;
         }
@@ -133,29 +147,40 @@ class NotificationTracker {
         for (Holder next = expiryQueue.peek(); next != null; next = expiryQueue.peek()) {
             if (next.isDelivered()) {
                 expiryQueue.poll();
-            } else if (next.getTimestamp() + latencyThreshold <= now) {
-                InstanceInfo instance = next.getNotification().getData();
-                logger.warn("Latent notification for instance {}={}", instance.getId(), now - next.getTimestamp());
-                scoreBoard.latentNotificationIncrement();
+            } else if (next.getExpiryTime() <= now) {
+                ChangeNotification<InstanceInfo> notification = next.getNotification();
+                logger.warn("Latent {} notification with id {} by {}ms", notification.getKind(), notification.getData().getId(), next.getLatency());
                 expiryQueue.poll();
+                scoreBoard.latentNotificationIncrement();
             } else {
                 break;
             }
         }
     }
 
-    static class Holder {
-        private final long timestamp;
+    class Holder {
         private final ChangeNotification<InstanceInfo> notification;
+        private final long timestamp;
+        private final long startTime;
+
         private volatile boolean delivered;
 
-        Holder(long timestamp, ChangeNotification<InstanceInfo> notification) {
-            this.timestamp = timestamp;
+        Holder(ChangeNotification<InstanceInfo> notification) {
             this.notification = notification;
+            this.timestamp = TopologyFunctions.getTimestamp(notification);
+            this.startTime = notification.getKind() == Kind.Add ? timestamp : scheduler.now();
+        }
+
+        public long getExpiryTime() {
+            return startTime + latencyThreshold;
         }
 
         public long getTimestamp() {
             return timestamp;
+        }
+
+        public long getLatency() {
+            return scheduler.now() - startTime;
         }
 
         public ChangeNotification<InstanceInfo> getNotification() {

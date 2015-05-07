@@ -17,15 +17,17 @@ public final class TransportClients {
     private TransportClients() {
     }
 
-    public static TransportClient newTcpDiscoveryClient(EurekaTransportConfig config,
+    public static TransportClient newTcpDiscoveryClient(String clientId,
+                                                        EurekaTransportConfig config,
                                                         ServerResolver resolver,
                                                         EurekaClientMetricFactory metricFactory) {
-        return new TcpDiscoveryClient(config, resolver, metricFactory.getDiscoveryServerConnectionMetrics());
+        return new TcpDiscoveryClient(clientId, config, resolver, metricFactory.getDiscoveryServerConnectionMetrics());
     }
 
-    public static TransportClient newTcpRegistrationClient(EurekaTransportConfig config,
+    public static TransportClient newTcpRegistrationClient(String clientId,
+                                                           EurekaTransportConfig config,
                                                            ServerResolver resolver,
                                                            EurekaClientMetricFactory metricFactory) {
-        return new TcpRegistrationClient(config, resolver, metricFactory.getRegistrationServerConnectionMetrics());
+        return new TcpRegistrationClient(clientId, config, resolver, metricFactory.getRegistrationServerConnectionMetrics());
     }
 }

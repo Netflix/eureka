@@ -27,6 +27,8 @@ import com.netflix.eureka2.client.registration.EurekaRegistrationClientImpl;
 public class EurekaRegistrationClientBuilder
         extends AbstractClientBuilder<EurekaRegistrationClient, EurekaRegistrationClientBuilder> {
 
+    private static final String REGISTRATION_CLIENT_ID = "registrationClient";
+
     /**
      * @deprecated do not create explicitly, use {@link Eurekas#newRegistrationClientBuilder()}
      * In future releases access right to this constructor may narrow (after rc.3)
@@ -40,9 +42,12 @@ public class EurekaRegistrationClientBuilder
         if (serverResolver == null) {
             throw new IllegalArgumentException("Cannot build client for registration without write server resolver");
         }
+        if(clientId == null) {
+            clientId = REGISTRATION_CLIENT_ID;
+        }
 
         ClientChannelFactory<RegistrationChannel> channelFactory
-                = new RegistrationChannelFactory(transportConfig, serverResolver, clientMetricFactory);
+                = new RegistrationChannelFactory(clientId, transportConfig, serverResolver, clientMetricFactory);
 
         return new EurekaRegistrationClientImpl(channelFactory);
     }

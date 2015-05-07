@@ -44,6 +44,9 @@ abstract class AbstractClientBuilder<CLIENT, T extends AbstractClientBuilder<CLI
     protected EurekaClientMetricFactory clientMetricFactory;
     protected EurekaRegistryMetricFactory registryMetricFactory;
 
+    // Client identifier used to tag log entries originating from this client instance.
+    protected String clientId;
+
     /**
      * Connect to eureka servers specified by the given server resolver.
      *
@@ -72,6 +75,11 @@ abstract class AbstractClientBuilder<CLIENT, T extends AbstractClientBuilder<CLI
 
     public T withRegistryMetricFactory(EurekaRegistryMetricFactory registryMetricFactory) {
         this.registryMetricFactory = registryMetricFactory;
+        return self();
+    }
+
+    public T withClientId(String clientId) {
+        this.clientId = clientId;
         return self();
     }
 

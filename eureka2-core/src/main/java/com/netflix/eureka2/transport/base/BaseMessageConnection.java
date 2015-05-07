@@ -76,7 +76,16 @@ public class BaseMessageConnection implements MessageConnection {
                 long currentTime = schedulerWorker.now();
                 PendingAck latestAck = pendingAckQueue.peek();
                 if (latestAck != null && latestAck.getExpiryTime() <= currentTime) {
-                    doShutdown(createException(TimeoutException.class, "acknowledgement timeout"));
+                    latestAck = pendingAckQueue.peek();
+                    TimeoutException timeoutException = createException(TimeoutException.class, "acknowledgement timeout");
+                    // Only item that caused the timeout will receive timeout exception
+                    // In shutdown -> drainPendingAckQueue we onComplete pending acks to avoid excessive noise
+                    // This is not easy to fix with current implementation, and should be handled during planned
+                    // transport refactoring.
+                    if (latestAck != null) {
+                        latestAck.onError(timeoutException);
+                    }
+                    doShutdown(timeoutException);
                 } else {
                     schedulerWorker.schedule(ackTimeoutTask, 1, TimeUnit.SECONDS);
                 }
@@ -217,7 +226,11 @@ public class BaseMessageConnection implements MessageConnection {
     private void doShutdown(final Throwable throwable) {
         boolean wasClosed = closed.getAndSet(true);
         if (!wasClosed) {
-            logger.info("Shutting down connection {}", name);
+            if (throwable == null) {
+                logger.info("Shutting down connection {}", name);
+            } else {
+                logger.info("Shutting down connection {} because of an exception {}:{}", name, throwable.getClass().getName(), throwable.getMessage());
+            }
             drainPendingAckQueue();
 
             metrics.decrementConnectionCounter();
@@ -272,7 +285,11 @@ public class BaseMessageConnection implements MessageConnection {
         while ((pendingAck = pendingAckQueue.poll()) != null) {
             metrics.decrementPendingAckCounter();
             try {
-                pendingAck.onError(createException(TimeoutException.class, "acknowledgement timeout"));
+                /**
+                 * TODO Although send onError here is what we should do, in current code it produces a lot misleading noise.
+                 */
+                pendingAck.onCompleted();
+//                pendingAck.onError(createException(CancellationException.class, "request cancelled"));
             } catch (Exception e) {
                 logger.warn("Acknowledgement subscriber hasn't handled properly onError", e);
             }

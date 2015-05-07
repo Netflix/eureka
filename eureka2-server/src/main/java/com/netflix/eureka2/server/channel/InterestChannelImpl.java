@@ -102,11 +102,14 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
             initializeNotificationMultiplexer();
         }
 
+        // We acknowledge before subscription, as subscribing may generate notification stream
+        // that will be delivered prior this subscription is acknowledged.
+        Observable<Void> toReturn = transport.acknowledge();
+        subscribeToTransportSend(toReturn, "acknowledgment"); // Subscribe eagerly and not require the caller to subscribe.
+
         channelSubscriptionMonitor.update(newInterest);
         notificationMultiplexer.update(newInterest);
 
-        Observable<Void> toReturn = transport.acknowledge();
-        subscribeToTransportSend(toReturn, "acknowledgment"); // Subscribe eagerly and not require the caller to subscribe.
         return toReturn;
     }
 

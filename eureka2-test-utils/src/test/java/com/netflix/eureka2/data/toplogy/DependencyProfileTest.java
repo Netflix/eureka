@@ -22,7 +22,7 @@ public class DependencyProfileTest {
         Iterator<DependencyProfile> iterator = DependencyProfile.streamFrom(Arrays.asList(rare, frequent));
         int rareCounter = 0;
         int frequentCounter = 0;
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < 100; i++) {
             DependencyProfile next = iterator.next();
             if (next == rare) {
                 rareCounter++;

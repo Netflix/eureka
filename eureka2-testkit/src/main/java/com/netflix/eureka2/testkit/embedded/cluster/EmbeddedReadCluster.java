@@ -6,12 +6,12 @@ import java.util.List;
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
+import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedReadCluster.ReadClusterReport;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer.ReadServerReport;
-import com.netflix.eureka2.codec.CodecType;
 
 /**
  * @author Tomasz Bak
@@ -84,7 +84,7 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
     }
 
     protected EmbeddedReadServer newServer(EurekaServerConfig config) {
-        return new EmbeddedReadServer(config, registrationResolver, discoveryResolver, withExt, withAdminUI);
+        return new EmbeddedReadServer(nextAvailableServerId(), config, registrationResolver, discoveryResolver, withExt, withAdminUI);
     }
 
     @Override

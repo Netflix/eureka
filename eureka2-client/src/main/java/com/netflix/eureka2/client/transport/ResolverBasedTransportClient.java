@@ -30,16 +30,19 @@ public abstract class ResolverBasedTransportClient implements TransportClient {
 
     private static final Logger logger = LoggerFactory.getLogger(ResolverBasedTransportClient.class);
 
+    private final String clientId;
     private final EurekaTransportConfig config;
     private final ServerResolver resolver;
     private final PipelineConfigurator<Object, Object> pipelineConfigurator;
     private final MessageConnectionMetrics metrics;
     private final ConcurrentHashMap<Server, RxClient<Object, Object>> clients;
 
-    protected ResolverBasedTransportClient(EurekaTransportConfig config,
+    protected ResolverBasedTransportClient(String clientId,
+                                           EurekaTransportConfig config,
                                            ServerResolver resolver,
                                            PipelineConfigurator<Object, Object> pipelineConfigurator,
                                            MessageConnectionMetrics metrics) {
+        this.clientId = clientId;
         this.config = config;
         this.resolver = resolver;
         this.pipelineConfigurator = pipelineConfigurator;
@@ -76,7 +79,7 @@ public abstract class ResolverBasedTransportClient implements TransportClient {
                                             ObservableConnection<Object, Object> conn) {
                                         return new SelfClosingConnection(
                                                 new HeartBeatConnection(
-                                                        new BaseMessageConnection("client", conn, metrics),
+                                                        new BaseMessageConnection(clientId, conn, metrics),
                                                             config.getHeartbeatIntervalMs(), 3, Schedulers.computation()
                                                 ),
                                                 config.getConnectionAutoTimeoutMs()

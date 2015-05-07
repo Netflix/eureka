@@ -4,13 +4,13 @@ import java.util.Properties;
 
 import com.google.inject.Module;
 import com.netflix.eureka2.channel.InterestChannel;
+import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.client.channel.InterestChannelFactory;
 import com.netflix.eureka2.client.interest.BatchAwareIndexRegistry;
 import com.netflix.eureka2.client.interest.BatchingRegistry;
-import com.netflix.eureka2.client.EurekaInterestClient;
-import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.config.BasicEurekaRegistryConfig;
@@ -37,15 +37,18 @@ import static com.netflix.eureka2.metric.client.EurekaClientMetricFactory.client
  * @author Tomasz Bak
  */
 public class EmbeddedReadServer extends EmbeddedEurekaServer<EurekaServerConfig, ReadServerReport> {
+    private final String serverId;
     private final ServerResolver registrationResolver;
     private final ServerResolver discoveryResolver;
 
-    public EmbeddedReadServer(EurekaServerConfig config,
+    public EmbeddedReadServer(String serverId,
+                              EurekaServerConfig config,
                               ServerResolver registrationResolver,
                               ServerResolver discoveryResolver,
                               boolean withExt,
                               boolean withDashboard) {
         super(ServerType.Read, config, withExt, withDashboard);
+        this.serverId = serverId;
         this.registrationResolver = registrationResolver;
         this.discoveryResolver = discoveryResolver;
     }
@@ -71,6 +74,7 @@ public class EmbeddedReadServer extends EmbeddedEurekaServer<EurekaServerConfig,
         );
 
         ClientChannelFactory<InterestChannel> channelFactory = new InterestChannelFactory(
+                serverId,
                 transportConfig,
                 discoveryResolver,
                 registry,
