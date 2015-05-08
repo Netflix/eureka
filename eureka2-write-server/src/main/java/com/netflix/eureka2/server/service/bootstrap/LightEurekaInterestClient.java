@@ -1,15 +1,11 @@
 package com.netflix.eureka2.server.service.bootstrap;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.interests.StreamStateNotification.BufferState;
 import com.netflix.eureka2.metric.noop.NoOpMessageConnectionMetrics;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
@@ -32,11 +28,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
-import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
-import rx.schedulers.Schedulers;
 
 /**
  * Light interest client implementation for doing single, one time subscription to full registry
@@ -79,7 +73,7 @@ public class LightEurekaInterestClient {
                 }).flatMap(new Func1<MessageConnection, Observable<ChangeNotification<InstanceInfo>>>() {
                     @Override
                     public Observable<ChangeNotification<InstanceInfo>> call(final MessageConnection connection) {
-                        Observable<Void> submitObservable = connection.submit(new InterestRegistration(interest));
+                        Observable<Void> submitObservable = connection.submitWithAck(new InterestRegistration(interest));
 
                         Observable<ChangeNotification<InstanceInfo>> notificationObservable = connection.
                                 incoming().
@@ -96,19 +90,23 @@ public class LightEurekaInterestClient {
                                 flatMap(new Func1<Object, Observable<ChangeNotification<InstanceInfo>>>() {
                                     @Override
                                     public Observable<ChangeNotification<InstanceInfo>> call(Object message) {
+                                        Observable ackObservable = connection.acknowledge();
+
                                         boolean isKnown = message instanceof InterestSetNotification;
                                         if (!isKnown) {
                                             logger.warn("Unrecognized discovery protocol message of type " + message.getClass());
-                                            return Observable.empty();
+                                            return ackObservable;
                                         }
                                         ChangeNotification<InstanceInfo> notification = toChangeNotification((InterestSetNotification) message);
-                                        return notification == null ? Observable.<ChangeNotification<InstanceInfo>>empty() : Observable.just(notification);
+                                        return notification == null ? ackObservable : ackObservable.concatWith(Observable.just(notification));
                                     }
                                 });
 
-                        Observable result = submitObservable
-                                .cast(ChangeNotification.class)
-                                .concatWith(notificationObservable)
+                        /**
+                         * We need to subscribe eagerly to input stream, prior to submitting interest, so we do not
+                         * loose notifications.
+                         */
+                        Observable result = Observable.merge(notificationObservable, submitObservable)
                                 .doOnError(new Action1<Throwable>() {
                                     @Override
                                     public void call(Throwable error) {

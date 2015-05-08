@@ -14,10 +14,17 @@
  * limitations under the License.
  */
 
+apply plugin: 'application'
+
 dependencies {
     compile project(':eureka2-testkit')
 
     compile "junit:junit:${junit_version}"
     compile "org.mockito:mockito-core:${mockito_version}"
     compile "org.hamcrest:hamcrest-library:${hamcrest_version}"
+    compile "org.hdrhistogram:HdrHistogram:${hdrhistogram_version}"
 }
+
+// This simplistic setup is enough while we have single script.
+mainClassName = "com.netflix.eureka2.performance.EurekaPerf"
+applicationName = "eureka-perf"

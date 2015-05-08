@@ -16,17 +16,20 @@
 
 package com.netflix.eureka2.client.transport;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+import com.netflix.eureka2.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.transport.tcp.TcpRegistrationClient;
+import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.rx.RxBlocking;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.transport.Acknowledgement;
 import com.netflix.eureka2.transport.EurekaTransports;
-import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.transport.MessageConnection;
-import com.netflix.eureka2.Server;
 import io.netty.handler.logging.LogLevel;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ConnectionHandler;
@@ -37,9 +40,6 @@ import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
 import rx.functions.Func1;
-
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static com.netflix.eureka2.metric.client.EurekaClientMetricFactory.clientMetrics;
 import static org.junit.Assert.assertNotNull;
@@ -94,9 +94,10 @@ public class ResolverBasedTransportClientTest {
         };
 
         ResolverBasedTransportClient transportClient =
-                new TcpRegistrationClient(new BasicEurekaTransportConfig.Builder().withCodec(CodecType.Json).build(),
-                                          resolver,
-                                          clientMetrics().getRegistrationServerConnectionMetrics());
+                new TcpRegistrationClient("testClient",
+                        new BasicEurekaTransportConfig.Builder().withCodec(CodecType.Json).build(),
+                        resolver,
+                        clientMetrics().getRegistrationServerConnectionMetrics());
 
         // Single, non-existent server - should fail on it
         try {

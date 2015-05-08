@@ -86,6 +86,6 @@ public class InterestRegistration {
 
     @Override
     public String toString() {
-        return "RegisterInterestSet{interests=" + Arrays.toString(interests) + '}';
+        return "InterestRegistration{interests=" + Arrays.toString(interests) + '}';
     }
 }

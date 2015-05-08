@@ -16,6 +16,9 @@
 
 package com.netflix.eureka2.transport.base;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import com.netflix.eureka2.protocol.Heartbeat;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.slf4j.Logger;
@@ -23,11 +26,11 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
 import rx.Subscriber;
+import rx.Subscription;
 import rx.functions.Func1;
 import rx.subjects.PublishSubject;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import static com.netflix.eureka2.utils.ExceptionUtils.trimStackTraceof;
 
 /**
  * A decorator for {@link MessageConnection} which sends heartbeat messages, to monitor
@@ -53,7 +56,7 @@ public class HeartBeatConnection implements MessageConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(HeartBeatConnection.class);
 
-    protected static final IllegalStateException MISSING_HEARTBEAT_EXCEPTION = new IllegalStateException("too many heartbeats missed");
+    protected static final IllegalStateException MISSING_HEARTBEAT_EXCEPTION = trimStackTraceof(new IllegalStateException("too many heartbeats missed"));
 
     private final MessageConnection delegate;
     private final long heartbeatIntervalMs;
@@ -62,6 +65,8 @@ public class HeartBeatConnection implements MessageConnection {
 
     private final HeartbeatSenderReceiver heartbeatSenderReceiver;
     private final PublishSubject<Object> filteredInput;
+
+    private final Subscription ackInputSubscription;
 
     public HeartBeatConnection(MessageConnection delegate, long heartbeatIntervalMs, long tolerance, Scheduler scheduler) {
         this.delegate = delegate;
@@ -72,7 +77,7 @@ public class HeartBeatConnection implements MessageConnection {
         this.filteredInput = PublishSubject.create();
         this.heartbeatSenderReceiver = new HeartbeatSenderReceiver();
 
-        delegate.incoming()
+        ackInputSubscription = delegate.incoming()
                 .filter(new Func1<Object, Boolean>() {
                     @Override
                     public Boolean call(Object o) {
@@ -84,6 +89,23 @@ public class HeartBeatConnection implements MessageConnection {
                     }
                 })
                 .subscribe(filteredInput);
+
+        delegate.lifecycleObservable().subscribe(new Subscriber<Void>() {
+            @Override
+            public void onCompleted() {
+                internalShutdown();
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                internalShutdown();
+            }
+
+            @Override
+            public void onNext(Void aVoid) {
+                // No-op
+            }
+        });
     }
 
     @Override
@@ -135,8 +157,13 @@ public class HeartBeatConnection implements MessageConnection {
 
     @Override
     public void shutdown(Throwable e) {
-        heartbeatSenderReceiver.unsubscribe();
+        internalShutdown();
         delegate.shutdown(e);
+    }
+
+    private void internalShutdown() {
+        ackInputSubscription.unsubscribe();
+        heartbeatSenderReceiver.unsubscribe();
     }
 
     @Override

@@ -51,11 +51,6 @@ public class BaseMessageConnection implements MessageConnection {
 
     private static final Pattern NETTY_CHANNEL_NAME_RE = Pattern.compile("\\[.*=>\\s*(.*)\\]");
 
-    private static final Exception CONNECTION_CLOSED_EXCEPTION = new IllegalStateException("Connection closed");
-    private static final Exception CONNECTION_INPUT_ONCOMPLETE_EXCEPTION = new IllegalStateException("connection input onCompleted");
-    private static final Exception ACKNOWLEDGEMENT_TIMEOUT_EXCEPTION = new TimeoutException("acknowledgement timeout");
-    private static final Exception UNEXPECTED_ACKNOWLEDGEMENT_EXCEPTION = new IllegalStateException("received acknowledgment while non expected");
-
     private final String name;
     private final ObservableConnection<Object, Object> connection;
     private final MessageConnectionMetrics metrics;
@@ -80,7 +75,16 @@ public class BaseMessageConnection implements MessageConnection {
                 long currentTime = schedulerWorker.now();
                 PendingAck latestAck = pendingAckQueue.peek();
                 if (latestAck != null && latestAck.getExpiryTime() <= currentTime) {
-                    doShutdown(ACKNOWLEDGEMENT_TIMEOUT_EXCEPTION);
+                    latestAck = pendingAckQueue.peek();
+                    TimeoutException timeoutException = new TimeoutException("{connection=" + name + "}: acknowledgement timeout");
+                    // Only item that caused the timeout will receive timeout exception
+                    // In shutdown -> drainPendingAckQueue we onComplete pending acks to avoid excessive noise
+                    // This is not easy to fix with current implementation, and should be handled during planned
+                    // transport refactoring.
+                    if (latestAck != null) {
+                        latestAck.onError(timeoutException);
+                    }
+                    doShutdown(timeoutException);
                 } else {
                     schedulerWorker.schedule(ackTimeoutTask, 1, TimeUnit.SECONDS);
                 }
@@ -131,7 +135,7 @@ public class BaseMessageConnection implements MessageConnection {
                         PendingAck pending = pendingAckQueue.poll();
                         metrics.decrementPendingAckCounter();
                         if (pending == null) {
-                            shutdown(UNEXPECTED_ACKNOWLEDGEMENT_EXCEPTION);
+                            shutdown(new IllegalStateException("{connection=" + name + "}: unexpected acknowledgment"));
                         } else {
                             pending.ackSubject.onCompleted();
                         }
@@ -149,7 +153,7 @@ public class BaseMessageConnection implements MessageConnection {
     @Override
     public Observable<Void> submit(Object message) {
         if (closed.get()) {
-            return Observable.error(CONNECTION_CLOSED_EXCEPTION);
+            return Observable.error(new IllegalStateException("{connection=" + name + "}: connection closed"));
         }
         return writeWhenSubscribed(message);
     }
@@ -162,7 +166,7 @@ public class BaseMessageConnection implements MessageConnection {
     @Override
     public Observable<Void> submitWithAck(final Object message, final long timeout) {
         if (closed.get()) {
-            return Observable.error(CONNECTION_CLOSED_EXCEPTION);
+            return Observable.error(new IllegalStateException("{connection=" + name + "}: connection closed"));
         }
         long expiryTime = timeout <= 0 ? Long.MAX_VALUE : schedulerWorker.now() + timeout;
         return writeWhenSubscribed(message, PendingAck.create(expiryTime));
@@ -171,7 +175,7 @@ public class BaseMessageConnection implements MessageConnection {
     @Override
     public Observable<Void> acknowledge() {
         if (closed.get()) {
-            return Observable.error(CONNECTION_CLOSED_EXCEPTION);
+            return Observable.error(new IllegalStateException("{connection=" + name + "}: connection closed"));
         }
         return writeWhenSubscribed(Acknowledgement.INSTANCE);
     }
@@ -193,7 +197,7 @@ public class BaseMessageConnection implements MessageConnection {
             @Override
             public void call() {
                 // always close with an exception here as the underlying connection never onError
-                shutdown(CONNECTION_INPUT_ONCOMPLETE_EXCEPTION);
+                shutdown(new IllegalStateException("{connection=" + name + "}: connection input onCompleted"));
             }
         });
     }
@@ -221,6 +225,11 @@ public class BaseMessageConnection implements MessageConnection {
     private void doShutdown(final Throwable throwable) {
         boolean wasClosed = closed.getAndSet(true);
         if (!wasClosed) {
+            if (throwable == null) {
+                logger.info("Shutting down connection {}", name);
+            } else {
+                logger.info("Shutting down connection {} because of an exception {}:{}", name, throwable.getClass().getName(), throwable.getMessage());
+            }
             drainPendingAckQueue();
 
             metrics.decrementConnectionCounter();
@@ -259,7 +268,11 @@ public class BaseMessageConnection implements MessageConnection {
         while ((pendingAck = pendingAckQueue.poll()) != null) {
             metrics.decrementPendingAckCounter();
             try {
-                pendingAck.onError(ACKNOWLEDGEMENT_TIMEOUT_EXCEPTION);
+                /**
+                 * TODO Although send onError here is what we should do, in current code it produces a lot misleading noise.
+                 */
+                pendingAck.onCompleted();
+//                pendingAck.onError(createException(CancellationException.class, "request cancelled"));
             } catch (Exception e) {
                 logger.warn("Acknowledgement subscriber hasn't handled properly onError", e);
             }

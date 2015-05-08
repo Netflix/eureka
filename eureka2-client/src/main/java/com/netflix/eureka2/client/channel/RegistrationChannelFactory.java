@@ -14,10 +14,11 @@ public class RegistrationChannelFactory extends ClientChannelFactory<Registratio
 
     private final TransportClient transport;
 
-    public RegistrationChannelFactory(EurekaTransportConfig config,
+    public RegistrationChannelFactory(String clientId,
+                                      EurekaTransportConfig config,
                                       ServerResolver resolver,
                                       EurekaClientMetricFactory metricFactory) {
-        this(TransportClients.newTcpRegistrationClient(config, resolver, metricFactory), metricFactory);
+        this(TransportClients.newTcpRegistrationClient(clientId, config, resolver, metricFactory), metricFactory);
     }
 
     public RegistrationChannelFactory(TransportClient transport,

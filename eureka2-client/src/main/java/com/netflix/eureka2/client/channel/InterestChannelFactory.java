@@ -19,12 +19,13 @@ public class InterestChannelFactory extends ClientChannelFactory<InterestChannel
     private final TransportClient transport;
     private final BatchingRegistry<InstanceInfo> remoteBatchingRegistry;
 
-    public InterestChannelFactory(EurekaTransportConfig config,
+    public InterestChannelFactory(String clientId,
+                                  EurekaTransportConfig config,
                                   ServerResolver resolver,
                                   SourcedEurekaRegistry<InstanceInfo> eurekaRegistry,
                                   BatchingRegistry<InstanceInfo> remoteBatchingRegistry,
                                   EurekaClientMetricFactory metricFactory) {
-        this(TransportClients.newTcpDiscoveryClient(config, resolver, metricFactory), eurekaRegistry, remoteBatchingRegistry, metricFactory);
+        this(TransportClients.newTcpDiscoveryClient(clientId, config, resolver, metricFactory), eurekaRegistry, remoteBatchingRegistry, metricFactory);
     }
 
     public InterestChannelFactory(TransportClient transport,

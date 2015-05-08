@@ -1,5 +1,8 @@
 package com.netflix.eureka2.server.channel;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.netflix.eureka2.channel.InterestChannel.STATE;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
@@ -9,17 +12,25 @@ import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics;
 import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics.AtomicInterest;
+import com.netflix.eureka2.protocol.discovery.AddInstance;
 import com.netflix.eureka2.protocol.discovery.InterestRegistration;
 import com.netflix.eureka2.protocol.discovery.StreamStateUpdate;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
+import com.netflix.eureka2.transport.Acknowledgement;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import rx.Observable;
 import rx.subjects.PublishSubject;
+import rx.subjects.ReplaySubject;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
@@ -34,7 +45,6 @@ import static org.mockito.Mockito.when;
 public class InterestChannelImplTest {
 
     public static final Interest<InstanceInfo> CLIENT_INTEREST = Interests.forFullRegistry();
-    public static final Interest<InstanceInfo> SNAPSHOT_INTEREST = Interests.forFullRegistry();
 
     private final SourcedEurekaRegistry<InstanceInfo> registry = mock(SourcedEurekaRegistry.class);
     private final ServerInterestChannelMetrics interestChannelMetrics = mock(ServerInterestChannelMetrics.class);
@@ -43,7 +53,7 @@ public class InterestChannelImplTest {
     private final PublishSubject<Object> incomingSubject = PublishSubject.create();
 
     private InterestChannelImpl channel;
-    private final PublishSubject<ChangeNotification<InstanceInfo>> notificationSubject = PublishSubject.create();
+    private final ReplaySubject<ChangeNotification<InstanceInfo>> notificationSubject = ReplaySubject.create();
 
     @Before
     public void setUp() throws Exception {
@@ -71,10 +81,40 @@ public class InterestChannelImplTest {
         verify(connection, times(1)).submitWithAck(new StreamStateUpdate(stateNotification));
 
         // Trigger BufferEnd state change notification
-         stateNotification = StreamStateNotification.bufferEndNotification(CLIENT_INTEREST);
+        stateNotification = StreamStateNotification.bufferEndNotification(CLIENT_INTEREST);
 
         notificationSubject.onNext(stateNotification);
         verify(connection, times(1)).submitWithAck(new StreamStateUpdate(stateNotification));
+    }
+
+    @Test
+    public void testInterestAckIsDeliveredBeforeChangeNotifications() throws Exception {
+        final List<Class<?>> outputs = new ArrayList<>();
+        when(connection.submitWithAck(any(AddInstance.class))).then(new Answer<Object>() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                outputs.add(AddInstance.class);
+                return Observable.empty();
+            }
+        });
+        when(connection.acknowledge()).then(new Answer<Object>() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                outputs.add(Acknowledgement.class);
+                return Observable.empty();
+            }
+        });
+
+        // Make content available prior to interest subscription
+        InstanceInfo info = SampleInstanceInfo.DiscoveryServer.build();
+        notificationSubject.onNext(new ChangeNotification<InstanceInfo>(Kind.Add, info));
+
+        // Send interest subscription first
+        incomingSubject.onNext(new InterestRegistration(CLIENT_INTEREST));
+
+        assertThat(outputs.size(), is(equalTo(2)));
+        assertThat(outputs.get(0) == Acknowledgement.class, is(true));
+        assertThat(outputs.get(1) == AddInstance.class, is(true));
     }
 
     @Test(timeout = 60000)

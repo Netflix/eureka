@@ -42,6 +42,8 @@ class DefaultEurekaResolverStep implements EurekaRemoteResolverStep {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultEurekaResolverStep.class);
 
+    public static final String RESOLVER_CLIENT_ID = "resolverClient";
+
     private final ServiceSelector serviceSelector = ServiceSelector.selectBy()
             .serviceLabel(Names.DISCOVERY).protocolType(NetworkAddress.ProtocolType.IPv4).publicIp(true)
             .or()
@@ -105,7 +107,7 @@ class DefaultEurekaResolverStep implements EurekaRemoteResolverStep {
             SourcedEurekaRegistry<InstanceInfo> registry = new PassThroughRegistry(remoteBatchingRegistry);
 
             ClientChannelFactory<InterestChannel> channelFactory
-                    = new InterestChannelFactory(transportConfig, serverResolver, registry, remoteBatchingRegistry, clientMetricFactory);
+                    = new InterestChannelFactory(RESOLVER_CLIENT_ID, transportConfig, serverResolver, registry, remoteBatchingRegistry, clientMetricFactory);
 
             return new EurekaInterestClientImpl(registry, channelFactory);
         }

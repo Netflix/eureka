@@ -29,7 +29,7 @@ import com.netflix.eureka2.transport.TransportClient;
  * @author Tomasz Bak
  */
 public class TcpRegistrationClient extends ResolverBasedTransportClient {
-    public TcpRegistrationClient(EurekaTransportConfig config, ServerResolver resolver, MessageConnectionMetrics metrics) {
-        super(config, resolver, EurekaTransports.registrationPipeline(config.getCodec()), metrics);
+    public TcpRegistrationClient(String clientId, EurekaTransportConfig config, ServerResolver resolver, MessageConnectionMetrics metrics) {
+        super(clientId, config, resolver, EurekaTransports.registrationPipeline(config.getCodec()), metrics);
     }
 }

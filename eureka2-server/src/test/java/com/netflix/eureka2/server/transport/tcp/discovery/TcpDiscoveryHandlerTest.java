@@ -35,6 +35,7 @@ import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.rx.TestableObservableConnection;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
+import com.netflix.eureka2.transport.Acknowledgement;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
@@ -140,6 +141,7 @@ public class TcpDiscoveryHandlerTest {
         observableConnection.testableChannelWrite().subscribe(outputSubscriber);
 
         Object expected = new AddInstance(notification.getData());
+        assertThat(outputSubscriber.takeNextOrFail(), is(equalTo((Object) Acknowledgement.INSTANCE)));
         assertThat(outputSubscriber.takeNextOrFail(), is(equalTo(expected)));
     }
 

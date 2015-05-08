@@ -15,6 +15,7 @@ import com.netflix.eureka2.codec.CodecType;
 public class ReadServerResource extends EurekaExternalResource {
 
     public static final String DEFAULT_READ_CLUSTER_NAME = "read-test";
+    public static final String EMBEDDED_READ_CLIENT_ID = "embeddedReadClient";
 
     private final String name;
     private final WriteServerResource writeServerResource;
@@ -51,7 +52,7 @@ public class ReadServerResource extends EurekaExternalResource {
                 .build();
         ServerResolver registrationResolver = ServerResolvers.fromHostname("localhost").withPort(writeServerResource.getRegistrationPort());
         ServerResolver discoveryResolver = ServerResolvers.fromHostname("localhost").withPort(writeServerResource.getDiscoveryPort());
-        server = new EmbeddedReadServer(config, registrationResolver, discoveryResolver, false, false);
+        server = new EmbeddedReadServer(EMBEDDED_READ_CLIENT_ID, config, registrationResolver, discoveryResolver, false, false);
         server.start();
 
         // Find ephemeral port numbers
