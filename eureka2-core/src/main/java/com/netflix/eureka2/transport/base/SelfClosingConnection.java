@@ -11,7 +11,7 @@ import rx.Scheduler;
 import rx.functions.Action0;
 import rx.schedulers.Schedulers;
 
-import static com.netflix.eureka2.utils.ExceptionUtils.detachedExceptionOf;
+import static com.netflix.eureka2.utils.ExceptionUtils.trimStackTraceof;
 import static rx.Scheduler.Worker;
 
 /**
@@ -22,7 +22,7 @@ public class SelfClosingConnection implements MessageConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(SelfClosingConnection.class);
 
-    private static final SelfClosingException CLOSING_EXCEPTION = detachedExceptionOf(SelfClosingException.class, "Connection self-closing");
+    private static final SelfClosingException CLOSING_EXCEPTION = trimStackTraceof(new SelfClosingException("Connection self-closing"));
 
     private final Action0 selfTerminateTask = new Action0() {
         @Override

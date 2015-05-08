@@ -20,6 +20,7 @@ import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Convenience base implementation for {@link com.netflix.eureka2.transport.TransportClient} that reads the server list from a {@link ServerResolver}
@@ -31,6 +32,7 @@ public abstract class ResolverBasedTransportClient implements TransportClient {
     private static final Logger logger = LoggerFactory.getLogger(ResolverBasedTransportClient.class);
 
     private final String clientId;
+    private final AtomicInteger clientInstanceIdx = new AtomicInteger();
     private final EurekaTransportConfig config;
     private final ServerResolver resolver;
     private final PipelineConfigurator<Object, Object> pipelineConfigurator;
@@ -77,9 +79,10 @@ public abstract class ResolverBasedTransportClient implements TransportClient {
                                     @Override
                                     public MessageConnection call(
                                             ObservableConnection<Object, Object> conn) {
+                                        String clientInstanceId = clientId + '#' + clientInstanceIdx.incrementAndGet();
                                         return new SelfClosingConnection(
                                                 new HeartBeatConnection(
-                                                        new BaseMessageConnection(clientId, conn, metrics),
+                                                        new BaseMessageConnection(clientInstanceId, conn, metrics),
                                                             config.getHeartbeatIntervalMs(), 3, Schedulers.computation()
                                                 ),
                                                 config.getConnectionAutoTimeoutMs()

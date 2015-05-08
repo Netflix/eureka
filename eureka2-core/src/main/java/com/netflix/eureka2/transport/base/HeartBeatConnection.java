@@ -30,7 +30,7 @@ import rx.Subscription;
 import rx.functions.Func1;
 import rx.subjects.PublishSubject;
 
-import static com.netflix.eureka2.utils.ExceptionUtils.detachedExceptionOf;
+import static com.netflix.eureka2.utils.ExceptionUtils.trimStackTraceof;
 
 /**
  * A decorator for {@link MessageConnection} which sends heartbeat messages, to monitor
@@ -56,7 +56,7 @@ public class HeartBeatConnection implements MessageConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(HeartBeatConnection.class);
 
-    protected static final IllegalStateException MISSING_HEARTBEAT_EXCEPTION = detachedExceptionOf(IllegalStateException.class, "too many heartbeats missed");
+    protected static final IllegalStateException MISSING_HEARTBEAT_EXCEPTION = trimStackTraceof(new IllegalStateException("too many heartbeats missed"));
 
     private final MessageConnection delegate;
     private final long heartbeatIntervalMs;

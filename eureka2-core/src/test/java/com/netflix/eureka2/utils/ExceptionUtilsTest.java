@@ -12,9 +12,8 @@ import static org.junit.Assert.assertThat;
 public class ExceptionUtilsTest {
 
     @Test
-    public void testDetachedExceptionContainsOnlyCallersFrame() throws Exception {
-        IllegalStateException exception = ExceptionUtils.detachedExceptionOf(IllegalStateException.class, "test");
-        assertThat(exception.getMessage(), is(equalTo("test")));
+    public void testStackTraceTrimming() throws Exception {
+        IllegalStateException exception = ExceptionUtils.trimStackTraceof(new IllegalStateException("test"));
         assertThat(exception.getStackTrace()[0].getClassName(), is(equalTo(ExceptionUtilsTest.class.getName())));
     }
 }

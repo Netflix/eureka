@@ -16,7 +16,6 @@
 
 package com.netflix.eureka2.transport.base;
 
-import java.lang.reflect.Constructor;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
@@ -77,7 +76,7 @@ public class BaseMessageConnection implements MessageConnection {
                 PendingAck latestAck = pendingAckQueue.peek();
                 if (latestAck != null && latestAck.getExpiryTime() <= currentTime) {
                     latestAck = pendingAckQueue.peek();
-                    TimeoutException timeoutException = createException(TimeoutException.class, "acknowledgement timeout");
+                    TimeoutException timeoutException = new TimeoutException("{connection=" + name + "}: acknowledgement timeout");
                     // Only item that caused the timeout will receive timeout exception
                     // In shutdown -> drainPendingAckQueue we onComplete pending acks to avoid excessive noise
                     // This is not easy to fix with current implementation, and should be handled during planned
@@ -136,7 +135,7 @@ public class BaseMessageConnection implements MessageConnection {
                         PendingAck pending = pendingAckQueue.poll();
                         metrics.decrementPendingAckCounter();
                         if (pending == null) {
-                            shutdown(createException(IllegalStateException.class, "unexpected acknowledgment"));
+                            shutdown(new IllegalStateException("{connection=" + name + "}: unexpected acknowledgment"));
                         } else {
                             pending.ackSubject.onCompleted();
                         }
@@ -154,7 +153,7 @@ public class BaseMessageConnection implements MessageConnection {
     @Override
     public Observable<Void> submit(Object message) {
         if (closed.get()) {
-            return createOnError(IllegalStateException.class, "connection closed");
+            return Observable.error(new IllegalStateException("{connection=" + name + "}: connection closed"));
         }
         return writeWhenSubscribed(message);
     }
@@ -167,7 +166,7 @@ public class BaseMessageConnection implements MessageConnection {
     @Override
     public Observable<Void> submitWithAck(final Object message, final long timeout) {
         if (closed.get()) {
-            return createOnError(IllegalStateException.class, "connection closed");
+            return Observable.error(new IllegalStateException("{connection=" + name + "}: connection closed"));
         }
         long expiryTime = timeout <= 0 ? Long.MAX_VALUE : schedulerWorker.now() + timeout;
         return writeWhenSubscribed(message, PendingAck.create(expiryTime));
@@ -176,7 +175,7 @@ public class BaseMessageConnection implements MessageConnection {
     @Override
     public Observable<Void> acknowledge() {
         if (closed.get()) {
-            return createOnError(IllegalStateException.class, "connection closed");
+            return Observable.error(new IllegalStateException("{connection=" + name + "}: connection closed"));
         }
         return writeWhenSubscribed(Acknowledgement.INSTANCE);
     }
@@ -198,7 +197,7 @@ public class BaseMessageConnection implements MessageConnection {
             @Override
             public void call() {
                 // always close with an exception here as the underlying connection never onError
-                shutdown(createException(IllegalStateException.class, "connection input onCompleted"));
+                shutdown(new IllegalStateException("{connection=" + name + "}: connection input onCompleted"));
             }
         });
     }
@@ -259,22 +258,6 @@ public class BaseMessageConnection implements MessageConnection {
 
             schedulerWorker.unsubscribe();
         }
-    }
-
-    private <E extends Exception> E createException(Class<E> type, String message) {
-        String enrichedMessage = "{connection=" + name + "} " + message;
-        E exception;
-        try {
-            Constructor<E> constructor = type.getConstructor(String.class);
-            exception = constructor.newInstance(enrichedMessage);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Cannot instantiate an exception of class " + type, e);
-        }
-        return exception;
-    }
-
-    private <E extends Exception> Observable<Void> createOnError(Class<E> type, String message) {
-        return Observable.error(createException(type, message));
     }
 
     /**
