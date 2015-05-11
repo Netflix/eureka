@@ -249,7 +249,7 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     @Override
     public int getPeerNodeTotalConnectionsPerHost() {
         return configInstance.getIntProperty(
-                namespace + "peerNodeTotalConnections", 500).get();
+                namespace + "peerNodeTotalConnectionsPerHost", 500).get();
     }
 
     @Override
@@ -312,8 +312,7 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     public long getMaxIdleThreadInMinutesAgeForStatusReplication() {
         return configInstance
         .getLongProperty(
-                namespace
-                        + "maxIdleThreadAgeInMinutesForStatusReplication",
+                namespace + "maxIdleThreadAgeInMinutesForStatusReplication",
                 10).get();
     }
 
@@ -412,7 +411,7 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     @Override
     public int getRemoteRegionTotalConnectionsPerHost() {
         return configInstance.getIntProperty(
-                namespace + "remoteRegionTotalConnections", 500).get();
+                namespace + "remoteRegionTotalConnectionsPerHost", 500).get();
     }
 
     @Override
