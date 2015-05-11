@@ -8,6 +8,7 @@ import java.nio.charset.Charset;
 import java.util.Iterator;
 
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.discovery.converters.envelope.ApplicationEnvelope;
 import com.netflix.discovery.converters.envelope.ApplicationsEnvelope;
 import com.netflix.discovery.converters.envelope.InstanceInfoEnvelope;
@@ -33,9 +34,13 @@ public class EurekaJacksonCodecTest {
     static {
         Iterator<InstanceInfo> infoIterator = new InstanceInfoGenerator(4, 2).serviceIterator();
         INSTANCE_INFO_1_A1 = infoIterator.next();
+        INSTANCE_INFO_1_A1.setActionType(ActionType.ADDED);
         INSTANCE_INFO_1_A2 = infoIterator.next();
+        INSTANCE_INFO_1_A2.setActionType(ActionType.ADDED);
         INSTANCE_INFO_2_A1 = infoIterator.next();
+        INSTANCE_INFO_1_A2.setActionType(ActionType.ADDED);
         INSTANCE_INFO_2_A2 = infoIterator.next();
+        INSTANCE_INFO_2_A2.setActionType(ActionType.ADDED);
 
         APPLICATION_1 = new Application(INSTANCE_INFO_1_A1.getAppName());
         APPLICATION_1.addInstance(INSTANCE_INFO_1_A1);

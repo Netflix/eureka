@@ -88,6 +88,7 @@ public class InstanceInfoGenerator {
                 .setIPAddr(publicIp)
                 .setPort(8080)
                 .setSecurePort(8081)
+                .enablePort(PortType.SECURE, true)
                 .setHealthCheckUrls("/healthcheck", unsecureURL + "/healthcheck", secureURL + "/healthcheck")
                 .setHomePageUrl("/homepage", unsecureURL + "/homepage")
                 .setStatusPageUrl("/status", unsecureURL + "/status")

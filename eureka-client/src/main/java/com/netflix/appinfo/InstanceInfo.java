@@ -23,9 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.inject.ProvidedBy;
 import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
 import com.netflix.config.DynamicPropertyFactory;
@@ -33,6 +30,8 @@ import com.netflix.discovery.converters.Auto;
 import com.netflix.discovery.provider.Serializer;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The class that holds information required for registration with
@@ -244,6 +243,9 @@ public class InstanceInfo {
         private InstanceInfo result;
 
         private String namespace;
+        private boolean isCoordinatingDiscoveryServer;
+        private long lastDirtyTimestamp;
+        private ActionType actionType;
 
         private Builder() {
             result = new InstanceInfo();
@@ -437,6 +439,15 @@ public class InstanceInfo {
         }
 
         /**
+         * {@link #setHomePageUrl(String, String)} has complex logic that should not be invoked when
+         * we deserialize {@link InstanceInfo} object, or home page URL is formatted already by the client.
+         */
+        public Builder setHomePageUrlForDeser(String homePageUrl) {
+            result.homePageUrl = homePageUrl;
+            return this;
+        }
+
+        /**
          * Sets the absolute status page {@link java.net.URL} for this instance. The
          * users can provide the <code>statusPageUrlPath</code> if the status
          * page resides in the same instance talking to discovery, else in the
@@ -467,6 +478,15 @@ public class InstanceInfo {
                 result.statusPageUrl = HTTP_PROTOCOL + result.hostName + COLON
                 + result.port + relativeUrl;
             }
+            return this;
+        }
+
+        /**
+         * {@link #setStatusPageUrl(String, String)} has complex logic that should not be invoked when
+         * we deserialize {@link InstanceInfo} object, or status page URL is formatted already by the client.
+         */
+        public Builder setStatusPageUrlForDeser(String statusPageUrl) {
+            result.statusPageUrl = statusPageUrl;
             return this;
         }
 
@@ -513,6 +533,20 @@ public class InstanceInfo {
             } else if (result.isSecurePortEnabled) {
                 result.secureHealthCheckUrl = HTTPS_PROTOCOL + result.hostName
                 + COLON + result.securePort + relativeUrl;
+            }
+            return this;
+        }
+
+        /**
+         * {@link #setHealthCheckUrls(String, String, String)} has complex logic that should not be invoked when
+         * we deserialize {@link InstanceInfo} object, or health check URLs are formatted already by the client.
+         */
+        public Builder setHealthCheckUrlsForDeser(String healthCheckUrl, String secureHealthCheckUrl) {
+            if (healthCheckUrl != null) {
+                result.healthCheckUrl = healthCheckUrl;
+            }
+            if (secureHealthCheckUrl != null) {
+                result.secureHealthCheckUrl = secureHealthCheckUrl;
             }
             return this;
         }
@@ -661,9 +695,19 @@ public class InstanceInfo {
             return this;
         }
 
+        public Builder setLastDirtyTimestamp(long lastDirtyTimestamp) {
+            result.lastDirtyTimestamp = lastDirtyTimestamp;
+            return this;
+        }
+
+        public Builder setActionType(ActionType actionType) {
+            result.actionType = actionType;
+            return this;
+        }
+
         public Builder setNamespace(String namespace) {
-                this.namespace = namespace;
-                return this;
+            this.namespace = namespace;
+            return this;
         }
     }
 

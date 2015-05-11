@@ -11,31 +11,34 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.Version;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.InstanceInfo.PortType;
 import com.netflix.appinfo.LeaseInfo;
+import com.netflix.discovery.DiscoveryManager;
+import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.converters.envelope.ApplicationEnvelope;
 import com.netflix.discovery.converters.envelope.ApplicationsEnvelope;
 import com.netflix.discovery.converters.envelope.InstanceInfoEnvelope;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonProcessingException;
-import org.codehaus.jackson.Version;
-import org.codehaus.jackson.map.DeserializationContext;
-import org.codehaus.jackson.map.JsonDeserializer;
-import org.codehaus.jackson.map.JsonSerializer;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializerProvider;
-import org.codehaus.jackson.map.annotate.JsonSerialize.Inclusion;
-import org.codehaus.jackson.map.module.SimpleModule;
-import org.codehaus.jackson.node.ArrayNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,22 +69,44 @@ public class EurekaJacksonCodec {
     private static final String ELEM_SECURE_PORT = "securePort";
     private static final String ELEM_COUNTRY_ID = "countryId";
     private static final String ELEM_IDENTIFYING_ATTR = "identifyingAttribute";
-
+    private static final String ELEM_HEALTHCHECKURL = "healthCheckUrl";
+    private static final String ELEM_SECHEALTHCHECKURL = "secureHealthCheckUrl";
+    private static final String ELEM_APPGROUPNAME = "appGroupName";
+    private static final String ELEM_HOMEPAGEURL = "homePageUrl";
+    private static final String ELEM_STATUSPAGEURL = "statusPageUrl";
+    private static final String ELEM_VIPADDRESS = "vipAddress";
+    private static final String ELEM_SECVIPADDRESS = "secureVipAddress";
+    private static final String ELEM_ISCOORDINATINGDISCSOERVER = "isCoordinatingDiscoveryServer";
+    private static final String ELEM_LASTUPDATEDTS = "lastUpdatedTimestamp";
+    private static final String ELEM_LASTDIRTYTS = "lastDirtyTimestamp";
+    private static final String ELEM_ACTIONTYPE = "actionType";
+    private static final String ELEM_ASGNAME = "asgName";
     private static final String ELEM_NAME = "name";
     private static final String DATACENTER_METADATA = "metadata";
 
-    private static final String VERSIONS_DELTA = "versions_delta";
-    private static final String APPS_HASHCODE = "apps_hashcode";
+    private static final String VERSIONS_DELTA_TEMPLATE = "versions_delta";
+    private static final String APPS_HASHCODE_TEMPTE = "apps_hashcode";
 
     public static final EurekaJacksonCodec INSTANCE = new EurekaJacksonCodec();
+
+    /**
+     * XStream codec supports character replacement in field names to generate XML friendly
+     * names. This feature is also configurable, and replacement strings can be provided by a user.
+     * To obey these rules, version and apppsHash key field names must be formatted according to the provided
+     * configuration, which by default replaces '_' with '__' (double underscores).
+     */
+    private final String versionDeltaKey;
+    private final String appHashCodeKey;
 
     private final StringCache cache = new StringCache();
     private final ObjectMapper mapper;
 
     public EurekaJacksonCodec() {
+        this.versionDeltaKey = formatKey(VERSIONS_DELTA_TEMPLATE);
+        this.appHashCodeKey = formatKey(APPS_HASHCODE_TEMPTE);
         this.mapper = new ObjectMapper();
 
-        this.mapper.setSerializationInclusion(Inclusion.NON_NULL);
+        this.mapper.setSerializationInclusion(Include.NON_NULL);
 
         SimpleModule module = new SimpleModule("eureka1.x", VERSION);
         module.addSerializer(DataCenterInfo.class, new DataCenterInfoSerializer());
@@ -97,6 +122,25 @@ public class EurekaJacksonCodec {
         module.addDeserializer(Applications.class, new ApplicationsDeserializer());
 
         this.mapper.registerModule(module);
+    }
+
+    private static String formatKey(String keyTemplate) {
+        EurekaClientConfig clientConfig = DiscoveryManager.getInstance().getEurekaClientConfig();
+        String replacement;
+        if (clientConfig == null) {
+            replacement = "__";
+        } else {
+            replacement = clientConfig.getEscapeCharReplacement();
+        }
+        StringBuilder sb = new StringBuilder(keyTemplate.length() + 1);
+        for (char c : keyTemplate.toCharArray()) {
+            if (c == '_') {
+                sb.append(replacement);
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
     }
 
     public <T> T readFrom(Class<T> type, InputStream entityStream) throws IOException {
@@ -188,7 +232,7 @@ public class EurekaJacksonCodec {
 
             Map<String, String> metaData = new HashMap<>();
             JsonNode metaNode = node.get(DATACENTER_METADATA);
-            Iterator<String> metaNamesIt = metaNode.getFieldNames();
+            Iterator<String> metaNamesIt = metaNode.fieldNames();
             while (metaNamesIt.hasNext()) {
                 String key = metaNamesIt.next();
                 String value = metaNode.get(key).asText();
@@ -216,7 +260,7 @@ public class EurekaJacksonCodec {
             LeaseInfo.Builder builder = LeaseInfo.Builder.newBuilder();
 
             JsonNode node = jp.getCodec().readTree(jp);
-            Iterator<String> fieldNames = node.getFieldNames();
+            Iterator<String> fieldNames = node.fieldNames();
             while (fieldNames.hasNext()) {
                 String nodeName = fieldNames.next();
                 if (!node.get(nodeName).isNull()) {
@@ -335,7 +379,14 @@ public class EurekaJacksonCodec {
 
             JsonNode node = jp.getCodec().readTree(jp);
 
-            Iterator<String> fieldNames = node.getFieldNames();
+            /**
+             * These are set via single call to
+             * {@link com.netflix.appinfo.InstanceInfo.Builder#setHealthCheckUrlsForDeser(String, String, String)}.
+             */
+            String healthChecUrl = null;
+            String healthCheckSecureUrl = null;
+
+            Iterator<String> fieldNames = node.fieldNames();
             while (fieldNames.hasNext()) {
                 String fieldName = fieldNames.next();
                 JsonNode fieldNode = node.get(fieldName);
@@ -373,18 +424,43 @@ public class EurekaJacksonCodec {
                         builder.setLeaseInfo(mapper.treeToValue(fieldNode, LeaseInfo.class));
                     } else if (NODE_METADATA.equals(fieldName)) {
                         Map<String, String> meta = new ConcurrentHashMap<>();
-                        Iterator<String> metaNameIt = fieldNode.getFieldNames();
+                        Iterator<String> metaNameIt = fieldNode.fieldNames();
                         while (metaNameIt.hasNext()) {
                             String key = cache.cachedValueOf(metaNameIt.next());
                             String value = cache.cachedValueOf(fieldNode.get(key).asText());
                             meta.put(key, value);
                         }
                         builder.setMetadata(meta);
+                    } else if (ELEM_HEALTHCHECKURL.equals(fieldName)) {
+                        healthChecUrl = fieldNode.asText();
+                    } else if (ELEM_SECHEALTHCHECKURL.equals(fieldName)) {
+                        healthCheckSecureUrl = fieldNode.asText();
+                    } else if (ELEM_APPGROUPNAME.equals(fieldName)) {
+                        builder.setAppGroupName(fieldNode.asText());
+                    } else if (ELEM_HOMEPAGEURL.equals(fieldName)) {
+                        builder.setHomePageUrlForDeser(fieldNode.asText());
+                    } else if (ELEM_STATUSPAGEURL.equals(fieldName)) {
+                        builder.setStatusPageUrlForDeser(fieldNode.asText());
+                    } else if (ELEM_VIPADDRESS.equals(fieldName)) {
+                        builder.setVIPAddress(fieldNode.asText());
+                    } else if (ELEM_SECVIPADDRESS.equals(fieldName)) {
+                        builder.setSecureVIPAddress(fieldNode.asText());
+                    } else if (ELEM_ISCOORDINATINGDISCSOERVER.equals(fieldName)) {
+                        // Ignore, as this flag is determined on the client side
+                    } else if (ELEM_LASTUPDATEDTS.equals(fieldName)) {
+                        // Ignore this value, as it is reset by discovery servers, and client should not care about it
+                    } else if (ELEM_LASTDIRTYTS.equals(fieldName)) {
+                        builder.setLastDirtyTimestamp(fieldNode.asLong());
+                    } else if (ELEM_ACTIONTYPE.equals(fieldName)) {
+                        builder.setActionType(ActionType.valueOf(fieldNode.asText()));
+                    } else if (ELEM_ASGNAME.equals(fieldName)) {
+                        builder.setASGName(fieldNode.asText());
                     } else {
                         autoUnmarshalEligible(fieldName, fieldNode.asText(), builder.getRawInstance());
                     }
                 }
             }
+            builder.setHealthCheckUrlsForDeser(healthChecUrl, healthCheckSecureUrl);
 
             return builder.build();
         }
@@ -461,12 +537,12 @@ public class EurekaJacksonCodec {
         }
     }
 
-    private static class ApplicationsSerializer extends JsonSerializer<Applications> {
+    private class ApplicationsSerializer extends JsonSerializer<Applications> {
         @Override
         public void serialize(Applications applications, JsonGenerator jgen, SerializerProvider provider) throws IOException {
             jgen.writeStartObject();
-            jgen.writeStringField(VERSIONS_DELTA, applications.getVersion().toString());
-            jgen.writeStringField(APPS_HASHCODE, applications.getAppsHashCode());
+            jgen.writeStringField(versionDeltaKey, applications.getVersion().toString());
+            jgen.writeStringField(appHashCodeKey, applications.getAppsHashCode());
             jgen.writeObjectField(NODE_APP, applications.getRegisteredApplications());
         }
     }
@@ -478,11 +554,11 @@ public class EurekaJacksonCodec {
 
             JsonNode node = jp.getCodec().readTree(jp);
 
-            if (node.get(VERSIONS_DELTA) != null) {
-                apps.setVersion(node.get(VERSIONS_DELTA).asLong());
+            if (node.get(versionDeltaKey) != null) {
+                apps.setVersion(node.get(versionDeltaKey).asLong());
             }
-            if (node.get(APPS_HASHCODE) != null) {
-                apps.setAppsHashCode(node.get(APPS_HASHCODE).asText());
+            if (node.get(appHashCodeKey) != null) {
+                apps.setAppsHashCode(node.get(appHashCodeKey).asText());
             }
             JsonNode appNode = node.get(NODE_APP);
             if (appNode != null) {
