@@ -482,6 +482,12 @@ public interface EurekaServerConfig {
     int getRemoteRegionRegistryFetchInterval();
 
     /**
+     * Size of a thread pool used to execute remote region registry fetch requests. Delegating these requests
+     * to internal threads is necessary workaround to https://bugs.openjdk.java.net/browse/JDK-8049846 bug.
+     */
+    int getRemoteRegionFetchThreadPoolSize();
+
+    /**
      * Gets the fully qualified trust store file that will be used for remote region registry fetches.
      * @return
      */

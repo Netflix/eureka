@@ -167,7 +167,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
         };
 
         ThreadPoolExecutor remoteRegionFetchExecutor = new ThreadPoolExecutor(
-                1, 2, 0, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());  // use direct handoff
+                1, EUREKA_SERVER_CONFIG.getRemoteRegionFetchThreadPoolSize(), 0, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());  // use direct handoff
 
         scheduler = Executors.newScheduledThreadPool(1,
                 new ThreadFactoryBuilder()

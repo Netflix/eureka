@@ -6,7 +6,7 @@ package com.netflix.appinfo;
 public class EurekaClientIdentity extends AbstractEurekaIdentity {
     public static final String DEFAULT_CLIENT_NAME = "DefaultClient";
 
-    private final String clientVersion = "1.0";
+    private final String clientVersion = "1.1";
     private final String id;
 
     public EurekaClientIdentity(String id) {

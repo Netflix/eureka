@@ -301,6 +301,15 @@ public interface EurekaClientConfig {
     boolean shouldPreferSameZoneEureka();
 
     /**
+     * Indicates whether server can redirect a client request to a backup server/cluster.
+     * If set to false, the server will handle the request directly, If set to true, it may
+     * send HTTP redirect to the client, with a new server location.
+     *
+     * @return true if HTTP redirects are allowed
+     */
+    boolean allowRedirects();
+
+    /**
      * Indicates whether to log differences between the eureka server and the
      * eureka client in terms of registry information.
      *

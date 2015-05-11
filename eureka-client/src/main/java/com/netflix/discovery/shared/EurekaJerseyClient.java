@@ -29,6 +29,7 @@ import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import com.sun.jersey.client.apache4.config.ApacheHttpClient4Config;
 import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
+import org.apache.http.client.params.ClientPNames;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.ssl.SSLSocketFactory;
@@ -218,6 +219,10 @@ public final class EurekaJerseyClient {
             cm.setDefaultMaxPerRoute(maxConnectionsPerHost);
             cm.setMaxTotal(maxTotalConnections);
             getProperties().put(ApacheHttpClient4Config.PROPERTY_CONNECTION_MANAGER, cm);
+            // To pin a client to specific server in case redirect happens, we handle redirects directly
+            // (see DiscoveryClient.makeRemoteCall methods).
+            getProperties().put(PROPERTY_FOLLOW_REDIRECTS, Boolean.FALSE);
+            getProperties().put(ClientPNames.HANDLE_REDIRECTS, Boolean.FALSE);
         }
     }
 
@@ -230,7 +235,11 @@ public final class EurekaJerseyClient {
         cm.setDefaultMaxPerRoute(maxConnectionsPerHost);
         cm.setMaxTotal(maxTotalConnections);
         getProperties().put(ApacheHttpClient4Config.PROPERTY_CONNECTION_MANAGER, cm);
-        
+          // To pin a client to specific server in case redirect happens, we handle redirects directly
+          // (see DiscoveryClient.makeRemoteCall methods).
+        getProperties().put(PROPERTY_FOLLOW_REDIRECTS, Boolean.FALSE);
+          getProperties().put(ClientPNames.HANDLE_REDIRECTS, Boolean.FALSE);
+
         if (proxyUserName != null && proxyPassword != null) {
           getProperties().put(ApacheHttpClient4Config.PROPERTY_PROXY_USERNAME, proxyUserName);
           getProperties().put(ApacheHttpClient4Config.PROPERTY_PROXY_PASSWORD, proxyPassword);
@@ -276,8 +285,11 @@ public final class EurekaJerseyClient {
                 MonitoredConnectionManager cm = new MonitoredConnectionManager(clientName, sslSchemeRegistry);
                 cm.setDefaultMaxPerRoute(maxConnectionsPerHost);
                 cm.setMaxTotal(maxTotalConnections);
-                getProperties()
-                .put(ApacheHttpClient4Config.PROPERTY_CONNECTION_MANAGER, cm);
+                // To pin a client to specific server in case redirect happens, we handle redirects directly
+                // (see DiscoveryClient.makeRemoteCall methods).
+                getProperties().put(ApacheHttpClient4Config.PROPERTY_CONNECTION_MANAGER, cm);
+                getProperties().put(PROPERTY_FOLLOW_REDIRECTS, Boolean.FALSE);
+                getProperties().put(ClientPNames.HANDLE_REDIRECTS, Boolean.FALSE);
             } finally {
                 if (fin != null) {
                     fin.close();
@@ -318,7 +330,10 @@ public final class EurekaJerseyClient {
     		cm.setDefaultMaxPerRoute(maxConnectionsPerHost);
     		cm.setMaxTotal(maxTotalConnections);
     		getProperties().put(ApacheHttpClient4Config.PROPERTY_CONNECTION_MANAGER, cm);
-    		
+            // To pin a client to specific server in case redirect happens, we handle redirects directly
+            // (see DiscoveryClient.makeRemoteCall methods).
+            getProperties().put(PROPERTY_FOLLOW_REDIRECTS, Boolean.FALSE);
+    		getProperties().put(ClientPNames.HANDLE_REDIRECTS, Boolean.FALSE);
     	}
     }
 

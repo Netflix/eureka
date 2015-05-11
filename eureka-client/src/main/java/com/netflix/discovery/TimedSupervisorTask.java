@@ -10,6 +10,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.netflix.servo.monitor.Counter;
+import com.netflix.servo.monitor.LongGauge;
+import com.netflix.servo.monitor.MonitorConfig;
 import com.netflix.servo.monitor.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,10 +26,10 @@ import org.slf4j.LoggerFactory;
 public class TimedSupervisorTask extends TimerTask {
     private static final Logger logger = LoggerFactory.getLogger(TimedSupervisorTask.class);
 
-    private static final String PREFIX = "TimedSupervisorTask_";
     private final Counter timeoutCounter;
     private final Counter rejectedCounter;
     private final Counter throwableCounter;
+    private final LongGauge threadPoolLevelGauge;
 
     private final ScheduledExecutorService scheduler;
     private final ThreadPoolExecutor executor;
@@ -47,18 +49,21 @@ public class TimedSupervisorTask extends TimerTask {
         this.maxDelay = timeoutMillis * expBackOffBound;
 
         // Initialize the counters and register.
-        timeoutCounter = Monitors.newCounter(PREFIX + '_' + name + "_timeouts");
-        rejectedCounter = Monitors.newCounter(PREFIX + '_' + name + "_rejectedExecutions");
-        throwableCounter = Monitors.newCounter(PREFIX + '_' + name + "_throwables");
-        Monitors.registerObject(this);
+        timeoutCounter = Monitors.newCounter("timeouts");
+        rejectedCounter = Monitors.newCounter("rejectedExecutions");
+        throwableCounter = Monitors.newCounter("throwables");
+        threadPoolLevelGauge = new LongGauge(MonitorConfig.builder("threadPoolUsed").build());
+        Monitors.registerObject(name, this);
     }
 
     public void run() {
         Future future = null;
         try {
             future = executor.submit(task);
+            threadPoolLevelGauge.set((long) executor.getActiveCount());
             future.get(timeoutMillis, TimeUnit.MILLISECONDS);  // block until done or timeout
             delay.set(timeoutMillis);
+            threadPoolLevelGauge.set((long) executor.getActiveCount());
         } catch (TimeoutException e) {
             logger.error("task supervisor timed out", e);
             timeoutCounter.increment();

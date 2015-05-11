@@ -12,6 +12,7 @@ ext {
     ribbonVersion='2.0.0'
     blitzVersion='1.34'
     jacksonVersion='1.9.13'
+    mockserverVersion='3.9.2'
 }
 
 subprojects {

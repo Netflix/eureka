@@ -17,4 +17,5 @@ dependencies {
 
     testCompile 'junit:junit:4.10'
     testCompile 'org.mortbay.jetty:jetty:6.1H.22'
+    testCompile "org.mock-server:mockserver-netty:${mockserverVersion}"
 }
