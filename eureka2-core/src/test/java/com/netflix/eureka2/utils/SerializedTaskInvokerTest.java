@@ -17,7 +17,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 /**
- * TODO
  * @author David Liu
  */
 public class SerializedTaskInvokerTest {
@@ -37,21 +36,15 @@ public class SerializedTaskInvokerTest {
         invoker.submitForAck(new SyncAckTask(true));
     }
 
-    public void testAsyncTasksExecutedInOrder() {
-    }
-
     @Test(timeout = 60000)
     public void testMetrics() throws Exception {
         // Successful task
         TestSubscriber<Void> testSubscriber = new TestSubscriber<>();
         invoker.submitForAck(new SyncAckTask(true)).subscribe(testSubscriber);
 
-        verify(metrics, times(1)).setQueueSize(1);
         testScheduler.triggerActions();
         testSubscriber.awaitTerminalEvent();
-        verify(metrics, times(1)).setQueueSize(0);
 
-        verify(metrics, times(1)).incrementInputSuccess();
         verify(metrics, times(1)).incrementOutputSuccess();
         reset(metrics);
 
@@ -59,14 +52,11 @@ public class SerializedTaskInvokerTest {
         testSubscriber = new TestSubscriber<>();
         invoker.submitForAck(new SyncAckTask(false)).subscribe(testSubscriber);
 
-        verify(metrics, times(1)).setQueueSize(1);
         testScheduler.triggerActions();
         testSubscriber.awaitTerminalEvent();
-        verify(metrics, times(1)).setQueueSize(0);
 
         testScheduler.triggerActions();
 
-        verify(metrics, times(1)).incrementInputSuccess();
         verify(metrics, times(1)).incrementOutputFailure();
     }
 
