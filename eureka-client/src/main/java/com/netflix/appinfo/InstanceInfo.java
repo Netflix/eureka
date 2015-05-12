@@ -568,6 +568,14 @@ public class InstanceInfo {
         }
 
         /**
+         * Setter used during deserialization process, that does not do macro expansion on the provided value.
+         */
+        public Builder setVIPAddressDeser(String vipAddress) {
+            result.vipAddress = vipAddress;
+            return this;
+        }
+
+        /**
          * Sets the Secure Virtual Internet Protocol address for this instance.
          * The address should follow the format <hostname:port> This address
          * needs to be resolved into a real address for communicating with this
@@ -581,6 +589,14 @@ public class InstanceInfo {
         public Builder setSecureVIPAddress(String secureVIPAddress) {
             result.secureVipAddressUnresolved = secureVIPAddress;
             result.secureVipAddress = resolveDeploymentContextBasedVipAddresses(secureVIPAddress);
+            return this;
+        }
+
+        /**
+         * Setter used during deserialization process, that does not do macro expansion on the provided value.
+         */
+        public Builder setSecureVIPAddressDeser(String secureVIPAddress) {
+            result.secureVipAddress = secureVIPAddress;
             return this;
         }
 

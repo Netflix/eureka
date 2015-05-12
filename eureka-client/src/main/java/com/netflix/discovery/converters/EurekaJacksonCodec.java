@@ -442,9 +442,9 @@ public class EurekaJacksonCodec {
                     } else if (ELEM_STATUSPAGEURL.equals(fieldName)) {
                         builder.setStatusPageUrlForDeser(fieldNode.asText());
                     } else if (ELEM_VIPADDRESS.equals(fieldName)) {
-                        builder.setVIPAddress(fieldNode.asText());
+                        builder.setVIPAddressDeser(fieldNode.asText());
                     } else if (ELEM_SECVIPADDRESS.equals(fieldName)) {
-                        builder.setSecureVIPAddress(fieldNode.asText());
+                        builder.setSecureVIPAddressDeser(fieldNode.asText());
                     } else if (ELEM_ISCOORDINATINGDISCSOERVER.equals(fieldName)) {
                         // Ignore, as this flag is determined on the client side
                     } else if (ELEM_LASTUPDATEDTS.equals(fieldName)) {
