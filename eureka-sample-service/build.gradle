@@ -1,0 +1,9 @@
+apply plugin: 'application'
+
+mainClassName = "com.netflix.eureka.SampleEurekaService"
+
+dependencies {
+    compile project(':eureka-client')
+    compile 'org.slf4j:slf4j-log4j12:1.6.1'
+    runtime "com.netflix.blitz4j:blitz4j:$blitzVersion"
+}
