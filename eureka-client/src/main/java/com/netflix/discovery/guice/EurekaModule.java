@@ -13,9 +13,9 @@ public class EurekaModule extends AbstractModule {
         bind(ApplicationInfoManager.class).asEagerSingleton();
 
         // default bindings that can be overridden are:
-        //  - EurekaInstanceConfig to CloudInstanceConfig
-        //  - Provider<InstanceInfo> to EurekaConfigBasedInstanceInfoProvider
-        //  - EurekaClientConfig to DefaultEurekaClientConfig
-        //  - EurekaClient to DiscoveryClient
+        //  - EurekaInstanceConfig -> CloudInstanceConfig
+        //  - Provider<InstanceInfo> -> EurekaConfigBasedInstanceInfoProvider
+        //  - EurekaClientConfig -> DefaultEurekaClientConfig
+        //  - EurekaClient -> DiscoveryClient
     }
 }

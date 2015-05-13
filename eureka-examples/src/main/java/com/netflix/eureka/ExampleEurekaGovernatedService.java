@@ -24,7 +24,7 @@ public class ExampleEurekaGovernatedService {
         }
     }
 
-    private static Injector init() throws Exception {
+    private static ExampleServiceBase init() throws Exception {
         System.out.println("Creating injector for Example Service");
         LifecycleInjectorBuilder builder = LifecycleInjector.builder();
         builder.withModules(
@@ -46,14 +46,13 @@ public class ExampleEurekaGovernatedService {
         lifecycleManager.start();
 
         System.out.println("Done creating the injector");
-        return injector;
+        return injector.getInstance(ExampleServiceBase.class);
     }
 
     public static void main(String[] args) throws Exception {
         ExampleServiceBase exampleServiceBase = null;
         try {
-            Injector injector = init();
-            exampleServiceBase = injector.getInstance(ExampleServiceBase.class);
+            exampleServiceBase = init();
             exampleServiceBase.start();
         } catch (Exception e) {
             System.out.println("Error starting the sample service: " + e);

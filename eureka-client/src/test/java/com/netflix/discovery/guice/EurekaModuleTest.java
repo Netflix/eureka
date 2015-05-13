@@ -1,0 +1,74 @@
+package com.netflix.discovery.guice;
+
+import com.google.inject.AbstractModule;
+import com.google.inject.Injector;
+import com.netflix.appinfo.ApplicationInfoManager;
+import com.netflix.appinfo.EurekaInstanceConfig;
+import com.netflix.appinfo.InstanceInfo;
+import com.netflix.appinfo.MyDataCenterInstanceConfig;
+import com.netflix.config.ConfigurationManager;
+import com.netflix.discovery.DiscoveryClient;
+import com.netflix.discovery.DiscoveryManager;
+import com.netflix.discovery.EurekaClient;
+import com.netflix.governator.guice.LifecycleInjector;
+import com.netflix.governator.guice.LifecycleInjectorBuilder;
+import com.netflix.governator.lifecycle.LifecycleManager;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+/**
+ * @author David Liu
+ */
+public class EurekaModuleTest {
+
+    private Injector injector;
+    private LifecycleManager lifecycleManager;
+
+    @Before
+    public void setUp() throws Exception {
+        ConfigurationManager.getConfigInstance().setProperty("eureka.region", "default");
+        ConfigurationManager.getConfigInstance().setProperty("eureka.shouldFetchRegistry", "false");
+        ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", "false");
+        ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default", "http://localhost:8080/eureka/v2");
+
+        LifecycleInjectorBuilder builder = LifecycleInjector.builder();
+        builder.withModules(
+                new AbstractModule() {
+                    @Override
+                    protected void configure() {
+                        // the default impl of EurekaInstanceConfig is CloudInstanceConfig, which we only want in an AWS
+                        // environment. Here we override that by binding MyDataCenterInstanceConfig to EurekaInstanceConfig.
+                        bind(EurekaInstanceConfig.class).to(MyDataCenterInstanceConfig.class);
+                    }
+                },
+                new EurekaModule());
+
+        injector = builder.build().createInjector();
+        lifecycleManager = injector.getInstance(LifecycleManager.class);
+        lifecycleManager.start();
+    }
+
+    @After
+    public void tearDown() {
+        if (lifecycleManager != null) {
+            lifecycleManager.close();
+        }
+
+        ConfigurationManager.getConfigInstance().clear();
+    }
+
+    @Test
+    public void testDI() {
+        EurekaClient eurekaClient = injector.getInstance(EurekaClient.class);
+        DiscoveryClient discoveryClient = injector.getInstance(DiscoveryClient.class);
+
+        Assert.assertEquals(DiscoveryManager.getInstance().getEurekaClient(), eurekaClient);
+        Assert.assertEquals(DiscoveryManager.getInstance().getDiscoveryClient(), discoveryClient);
+        Assert.assertEquals(eurekaClient, discoveryClient);
+
+        InstanceInfo instanceInfo = injector.getInstance(InstanceInfo.class);
+        Assert.assertEquals(ApplicationInfoManager.getInstance().getInfo(), instanceInfo);
+    }
+}

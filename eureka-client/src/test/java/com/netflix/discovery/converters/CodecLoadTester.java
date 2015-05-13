@@ -19,8 +19,8 @@ import rx.functions.Action1;
  */
 public class CodecLoadTester {
 
-    private final List<InstanceInfo> instanceInfoList = new ArrayList<>();
-    private final List<Application> applicationList = new ArrayList<>();
+    private final List<InstanceInfo> instanceInfoList = new ArrayList<InstanceInfo>();
+    private final List<Application> applicationList = new ArrayList<Application>();
     private final Applications applications = new Applications();
 
     private final EntityBodyConverter xstreamCodec = new EntityBodyConverter();

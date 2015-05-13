@@ -230,7 +230,7 @@ public class EurekaJacksonCodec {
                 };
             }
 
-            Map<String, String> metaData = new HashMap<>();
+            Map<String, String> metaData = new HashMap<String, String>();
             JsonNode metaNode = node.get(DATACENTER_METADATA);
             Iterator<String> metaNamesIt = metaNode.fieldNames();
             while (metaNamesIt.hasNext()) {
@@ -423,7 +423,7 @@ public class EurekaJacksonCodec {
                     } else if (NODE_LEASE.equals(fieldName)) {
                         builder.setLeaseInfo(mapper.treeToValue(fieldNode, LeaseInfo.class));
                     } else if (NODE_METADATA.equals(fieldName)) {
-                        Map<String, String> meta = new ConcurrentHashMap<>();
+                        Map<String, String> meta = new ConcurrentHashMap<String, String>();
                         Iterator<String> metaNameIt = fieldNode.fieldNames();
                         while (metaNameIt.hasNext()) {
                             String key = cache.cachedValueOf(metaNameIt.next());
