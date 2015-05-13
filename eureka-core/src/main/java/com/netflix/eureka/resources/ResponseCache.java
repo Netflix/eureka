@@ -16,6 +16,21 @@
 
 package com.netflix.eureka.resources;
 
+import javax.annotation.Nullable;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.zip.GZIPOutputStream;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
 import com.google.common.cache.CacheBuilder;
@@ -26,8 +41,10 @@ import com.google.common.cache.RemovalNotification;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.discovery.converters.JsonXStream;
+import com.netflix.discovery.converters.EurekaJacksonCodec;
 import com.netflix.discovery.converters.XmlXStream;
+import com.netflix.discovery.converters.envelope.ApplicationEnvelope;
+import com.netflix.discovery.converters.envelope.ApplicationsEnvelope;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka.CurrentRequestVersion;
@@ -43,21 +60,6 @@ import com.netflix.servo.monitor.Stopwatch;
 import com.netflix.servo.monitor.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.TimerTask;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.zip.GZIPOutputStream;
 
 /**
  * The class that is responsible for caching registry information that will be
@@ -127,37 +129,37 @@ public class ResponseCache {
 
     private final LoadingCache<Key, Value> readWriteCacheMap =
             CacheBuilder.newBuilder().initialCapacity(1000)
-                        .expireAfterWrite(eurekaConfig.getResponseCacheAutoExpirationInSeconds(), TimeUnit.SECONDS)
-                        .removalListener(new RemovalListener<Key, Value>() {
-                            @Override
-                            public void onRemoval(RemovalNotification<Key, Value> notification) {
-                                Key removedKey = notification.getKey();
-                                if (removedKey.hasRegions()) {
-                                    Key cloneWithNoRegions = removedKey.cloneWithoutRegions();
-                                    regionSpecificKeys.remove(cloneWithNoRegions, removedKey);
-                                }
+                    .expireAfterWrite(eurekaConfig.getResponseCacheAutoExpirationInSeconds(), TimeUnit.SECONDS)
+                    .removalListener(new RemovalListener<Key, Value>() {
+                        @Override
+                        public void onRemoval(RemovalNotification<Key, Value> notification) {
+                            Key removedKey = notification.getKey();
+                            if (removedKey.hasRegions()) {
+                                Key cloneWithNoRegions = removedKey.cloneWithoutRegions();
+                                regionSpecificKeys.remove(cloneWithNoRegions, removedKey);
                             }
-                        })
-                        .build(new CacheLoader<Key, Value>() {
-                            @Override
-                            public Value load(Key key) throws Exception {
-                                if (key.hasRegions()) {
-                                    Key cloneWithNoRegions = key.cloneWithoutRegions();
-                                    regionSpecificKeys.put(cloneWithNoRegions, key);
-                                }
-                                Value value = generatePayload(key);
-                                return value;
+                        }
+                    })
+                    .build(new CacheLoader<Key, Value>() {
+                        @Override
+                        public Value load(Key key) throws Exception {
+                            if (key.hasRegions()) {
+                                Key cloneWithNoRegions = key.cloneWithoutRegions();
+                                regionSpecificKeys.put(cloneWithNoRegions, key);
                             }
-                        });
+                            Value value = generatePayload(key);
+                            return value;
+                        }
+                    });
 
     private static final ResponseCache s_instance = new ResponseCache();
 
     private ResponseCache() {
         long responseCacheUpdateIntervalMs = eurekaConfig.getResponseCacheUpdateIntervalMs();
         timer.schedule(getCacheUpdateTask(),
-                       new Date(((System.currentTimeMillis() / responseCacheUpdateIntervalMs) * responseCacheUpdateIntervalMs)
-                                + responseCacheUpdateIntervalMs),
-                       responseCacheUpdateIntervalMs);
+                new Date(((System.currentTimeMillis() / responseCacheUpdateIntervalMs) * responseCacheUpdateIntervalMs)
+                        + responseCacheUpdateIntervalMs),
+                responseCacheUpdateIntervalMs);
         try {
             Monitors.registerObject(this);
 
@@ -215,7 +217,8 @@ public class ResponseCache {
         return get(key, false);
     }
 
-    @VisibleForTesting String get(final Key key, boolean ignoreReadOnlyCache) {
+    @VisibleForTesting
+    String get(final Key key, boolean ignoreReadOnlyCache) {
         Value payload = getValue(key, ignoreReadOnlyCache);
         if (payload == null || payload.getPayload() == EMPTY_PAYLOAD) {
             return null;
@@ -251,8 +254,8 @@ public class ResponseCache {
         for (KeyType type : KeyType.values()) {
             for (Version v : Version.values()) {
                 invalidate(new Key(Key.EntityType.Application, appName, type, v),
-                           new Key(Key.EntityType.Application, ALL_APPS, type, v),
-                           new Key(Key.EntityType.Application, ALL_APPS_DELTA, type, v));
+                        new Key(Key.EntityType.Application, ALL_APPS, type, v),
+                        new Key(Key.EntityType.Application, ALL_APPS_DELTA, type, v));
                 if (null != vipAddress) {
                     invalidate(new Key(Key.EntityType.VIP, vipAddress, type, v));
                 }
@@ -316,7 +319,8 @@ public class ResponseCache {
     /**
      * Get the payload in both compressed and uncompressed form.
      */
-    @VisibleForTesting Value getValue(final Key key, boolean ignoreReadOnlyCache) {
+    @VisibleForTesting
+    Value getValue(final Key key, boolean ignoreReadOnlyCache) {
         Value payload = null;
         try {
             if (ignoreReadOnlyCache) {
@@ -341,7 +345,7 @@ public class ResponseCache {
      */
     private static String getPayLoad(Key key, Applications apps) {
         if (key.getType() == KeyType.JSON) {
-            return JsonXStream.getInstance().toXML(apps);
+            return EurekaJacksonCodec.getInstance().writeToString(new ApplicationsEnvelope(apps));
         } else {
             return XmlXStream.getInstance().toXML(apps);
         }
@@ -356,7 +360,7 @@ public class ResponseCache {
         }
 
         if (key.getType() == KeyType.JSON) {
-            return JsonXStream.getInstance().toXML(app);
+            return EurekaJacksonCodec.getInstance().writeToString(new ApplicationEnvelope(app));
         } else {
             return XmlXStream.getInstance().toXML(app);
         }
@@ -450,7 +454,7 @@ public class ResponseCache {
             }
         }
         toReturn.setAppsHashCode(toReturn.getReconcileHashCode());
-        args = new Object[] {key.getEntityType(), key.getName(), key.getVersion(), key.getType(),
+        args = new Object[]{key.getEntityType(), key.getName(), key.getVersion(), key.getType(),
                 toReturn.getReconcileHashCode()};
         logger.debug(
                 "Retrieved applications from registry for key : {} {} {} {}, reconcile hashcode: {}",
@@ -466,7 +470,9 @@ public class ResponseCache {
         /**
          * An enum to define the entity that is stored in this cache for this key.
          */
-        public enum EntityType { Application, VIP, SVIP }
+        public enum EntityType {
+            Application, VIP, SVIP
+        }
 
         private final String entityName;
         private final String[] regions;

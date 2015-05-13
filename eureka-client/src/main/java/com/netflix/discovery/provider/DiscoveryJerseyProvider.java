@@ -33,6 +33,7 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
 
+import com.netflix.discovery.converters.EurekaJacksonCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,6 +89,20 @@ MessageBodyReader {
             Annotation[] annotations, MediaType mediaType,
             MultivaluedMap headers, InputStream inputStream)
     throws IOException, WebApplicationException {
+
+        // Use Jackson for JSON
+        if(mediaType.equals(MediaType.APPLICATION_JSON_TYPE)) {
+            try {
+                return EurekaJacksonCodec.getInstance().readFromEnvelope(serializableClass, inputStream);
+            } catch(Error e) {
+                LOGGER.error("Unexpected error occured during de-serialization of discovery data, doing connection "
+                        + "cleanup.", e);
+                inputStream.close();
+                throw e;
+            }
+        }
+
+        // XML encoded with XStream
         ISerializer serializer = getSerializer(serializableClass);
         if (null != serializer) {
             try {
@@ -149,13 +164,18 @@ MessageBodyReader {
             Type type, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap headers, OutputStream outputStream)
     throws IOException, WebApplicationException {
-        ISerializer serializer = getSerializer(serializableClass);
-        if (null != serializer) {
-            serializer.write(serializableObject, outputStream, mediaType);
+
+        if(mediaType.equals(MediaType.APPLICATION_JSON_TYPE)) {
+            EurekaJacksonCodec.getInstance().writeWithEnvelopeTo(serializableObject, outputStream);
         } else {
-            LOGGER.error("No serializer available for serializable class: " + serializableClass
-                    + ", serialization will fail.");
-            throw new IOException("No serializer available for serializable class: " + serializableClass);
+            ISerializer serializer = getSerializer(serializableClass);
+            if (null != serializer) {
+                serializer.write(serializableObject, outputStream, mediaType);
+            } else {
+                LOGGER.error("No serializer available for serializable class: " + serializableClass
+                        + ", serialization will fail.");
+                throw new IOException("No serializer available for serializable class: " + serializableClass);
+            }
         }
     }
 

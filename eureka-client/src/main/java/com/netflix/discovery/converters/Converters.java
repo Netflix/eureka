@@ -377,7 +377,7 @@ public final class Converters {
                 String nodeName = reader.getNodeName();
 
                 if (ELEM_HOST.equals(nodeName)) {
-                    builder.setHostName(cache.cachedValueOf(reader.getValue()));
+                    builder.setHostName(reader.getValue());
                 } else if (ELEM_APP.equals(nodeName)) {
                     builder.setAppName(cache.cachedValueOf(reader.getValue()));
                 } else if (ELEM_IP.equals(nodeName)) {
