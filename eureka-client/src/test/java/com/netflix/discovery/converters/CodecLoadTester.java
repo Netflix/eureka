@@ -12,7 +12,6 @@ import java.util.List;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
-import rx.functions.Action1;
 
 /**
  * @author Tomasz Bak
@@ -166,5 +165,9 @@ public class CodecLoadTester {
     public static void main(String[] args) {
 //        new CodecLoadTester(10000, 100).runFullSpeed();
         new CodecLoadTester(10000, 100).runIntervals();
+    }
+
+    interface Action1<T> {
+        void call(T data);
     }
 }
