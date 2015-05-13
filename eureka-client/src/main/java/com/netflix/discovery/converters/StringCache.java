@@ -14,7 +14,7 @@ public class StringCache {
     public static final int LENGTH_LIMIT = 38;
 
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
-    private final Map<String, WeakReference<String>> cache = new WeakHashMap<>();
+    private final Map<String, WeakReference<String>> cache = new WeakHashMap<String, WeakReference<String>>();
     private final int lengthLimit;
 
     public StringCache() {

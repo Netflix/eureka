@@ -106,7 +106,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 @FineGrainedLazySingleton
-public class DiscoveryClient implements LookupService {
+public class DiscoveryClient implements EurekaClient {
     private static final Logger logger = LoggerFactory.getLogger(DiscoveryClient.class);
     private static final DynamicPropertyFactory configInstance = DynamicPropertyFactory.getInstance();
 
@@ -162,8 +162,8 @@ public class DiscoveryClient implements LookupService {
     private boolean isRegisteredWithDiscovery = false;
     private String discoveryServerAMIId;
     private JerseyClient discoveryJerseyClient;
-    private AtomicReference<String> lastQueryRedirect = new AtomicReference<>();
-    private AtomicReference<String> lastRegisterRedirect = new AtomicReference<>();
+    private AtomicReference<String> lastQueryRedirect = new AtomicReference<String>();
+    private AtomicReference<String> lastRegisterRedirect = new AtomicReference<String>();
     private ApacheHttpClient4 discoveryApacheClient;
     protected static EurekaClientConfig clientConfig;
     private final AtomicReference<String> remoteRegionsToFetch;
@@ -341,6 +341,7 @@ public class DiscoveryClient implements LookupService {
      * (non-Javadoc)
      * @see com.netflix.discovery.shared.LookupService#getApplication(java.lang.String)
      */
+    @Override
     public Application getApplication(String appName) {
         return getApplications().getRegisteredApplications(appName);
     }
@@ -350,10 +351,12 @@ public class DiscoveryClient implements LookupService {
      *
      * @see com.netflix.discovery.shared.LookupService#getApplications()
      */
+    @Override
     public Applications getApplications() {
         return localRegionApps.get();
     }
 
+    @Override
     public Applications getApplicationsForARegion(@Nullable String region) {
         if (instanceRegionChecker.isLocalRegion(region)) {
             return localRegionApps.get();
@@ -378,6 +381,7 @@ public class DiscoveryClient implements LookupService {
      * (non-Javadoc)
      * @see com.netflix.discovery.shared.LookupService#getInstancesById(java.lang.String)
      */
+    @Override
     public List<InstanceInfo> getInstancesById(String id) {
         List<InstanceInfo> instancesList = new ArrayList<InstanceInfo>();
         for (Application app : this.getApplications()
@@ -402,6 +406,7 @@ public class DiscoveryClient implements LookupService {
      * @deprecated Use
      */
     @Deprecated
+    @Override
     public void registerHealthCheckCallback(HealthCheckCallback callback) {
         if (instanceInfo == null) {
             logger.error("Cannot register a listener for instance info since it is null!");
@@ -411,6 +416,7 @@ public class DiscoveryClient implements LookupService {
         }
     }
 
+    @Override
     public void registerHealthCheck(HealthCheckHandler healthCheckHandler) {
         if (instanceInfo == null) {
             logger.error("Cannot register a healthcheck handler when instance info is null!");
@@ -429,6 +435,7 @@ public class DiscoveryClient implements LookupService {
      *            - true if it is a secure vip address, false otherwise
      * @return - The list of {@link InstanceInfo} objects matching the criteria
      */
+    @Override
     public List<InstanceInfo> getInstancesByVipAddress(String vipAddress, boolean secure) {
         return getInstancesByVipAddress(vipAddress, secure, instanceRegionChecker.getLocalRegion());
     }
@@ -443,6 +450,7 @@ public class DiscoveryClient implements LookupService {
      *
      * @return - The list of {@link InstanceInfo} objects matching the criteria, empty list if not instances found.
      */
+    @Override
     public List<InstanceInfo> getInstancesByVipAddress(String vipAddress, boolean secure,
                                                        @Nullable String region) {
         if (vipAddress == null) {
@@ -483,6 +491,7 @@ public class DiscoveryClient implements LookupService {
      *            - true if it is a secure vip address, false otherwise.
      * @return - The list of {@link InstanceInfo} objects matching the criteria.
      */
+    @Override
     public List<InstanceInfo> getInstancesByVipAddressAndAppName(
             String vipAddress, String appName, boolean secure) {
 
@@ -537,6 +546,7 @@ public class DiscoveryClient implements LookupService {
      * com.netflix.discovery.shared.LookupService#getNextServerFromEureka(java
      * .lang.String, boolean)
      */
+    @Override
     public InstanceInfo getNextServerFromEureka(String virtualHostname, boolean secure) {
         List<InstanceInfo> instanceInfoList = this.getInstancesByVipAddress(
                 virtualHostname, secure);
@@ -557,6 +567,7 @@ public class DiscoveryClient implements LookupService {
      *            - The string representation of the service url.
      * @return - The registry information containing all applications.
      */
+    @Override
     public Applications getApplications(String serviceUrl) {
         ClientResponse response = null;
         Applications apps = null;
@@ -618,19 +629,58 @@ public class DiscoveryClient implements LookupService {
     }
 
     /**
-     * Get the list of all eureka service urls from properties file for the
-     * eureka client to talk to.
+     * Get the list of all eureka service urls from properties file for the eureka client to talk to.
      *
-     * @param instanceZone
-     *            - The zone in which the client resides
-     * @param preferSameZone
-     *            - true if we have to prefer the same zone as the client, false
-     *            otherwise
-     * @return - The list of all eureka service urls for the eureka client to
-     *         talk to
+     * @param instanceZone The zone in which the client resides
+     * @param preferSameZone true if we have to prefer the same zone as the client, false otherwise
+     * @return The list of all eureka service urls for the eureka client to talk to
      */
-    public static List<String> getEurekaServiceUrlsFromConfig(
-            String instanceZone, boolean preferSameZone) {
+    @Override
+    public List<String> getServiceUrlsFromConfig(String instanceZone, boolean preferSameZone) {
+        List<String> orderedUrls = new ArrayList<String>();
+        String region = getRegion();
+        String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
+        if (availZones == null || availZones.length == 0) {
+            availZones = new String[1];
+            availZones[0] = "default";
+        }
+        logger.debug("The availability zone for the given region {} are {}",
+                region, Arrays.toString(availZones));
+        int myZoneOffset = getZoneOffset(instanceZone, preferSameZone,
+                availZones);
+
+        List<String> serviceUrls = clientConfig
+                .getEurekaServerServiceUrls(availZones[myZoneOffset]);
+        if (serviceUrls != null) {
+            orderedUrls.addAll(serviceUrls);
+        }
+        int currentOffset = myZoneOffset == (availZones.length - 1) ? 0
+                : (myZoneOffset + 1);
+        while (currentOffset != myZoneOffset) {
+            serviceUrls = clientConfig
+                    .getEurekaServerServiceUrls(availZones[currentOffset]);
+            if (serviceUrls != null) {
+                orderedUrls.addAll(serviceUrls);
+            }
+            if (currentOffset == (availZones.length - 1)) {
+                currentOffset = 0;
+            } else {
+                currentOffset++;
+            }
+        }
+
+        if (orderedUrls.size() < 1) {
+            throw new IllegalArgumentException(
+                    "DiscoveryClient: invalid serviceUrl specified!");
+        }
+        return orderedUrls;
+    }
+
+    /**
+     * @deprecated use {@link #getServiceUrlsFromConfig(String, boolean)} instead.
+     */
+    @Deprecated
+    public static List<String> getEurekaServiceUrlsFromConfig(String instanceZone, boolean preferSameZone) {
         List<String> orderedUrls = new ArrayList<String>();
         String region = getRegion();
         String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
@@ -675,6 +725,7 @@ public class DiscoveryClient implements LookupService {
      * eureka server.
      */
     @PreDestroy
+    @Override
     public void shutdown() {
         cancelScheduledTasks();
 
@@ -803,6 +854,7 @@ public class DiscoveryClient implements LookupService {
     /**
      * @return Return he current instance status as seen on the Eureka server.
      */
+    @Override
     public InstanceInfo.InstanceStatus getInstanceRemoteStatus() {
         return lastRemoteInstanceStatus;
     }
@@ -1343,16 +1395,12 @@ public class DiscoveryClient implements LookupService {
      * other zones randomly. If there are multiple servers in the same zone, the client once
      * again picks one randomly. This way the traffic will be distributed in the case of failures.
      *
-     * @param instanceZone
-     *            - The zone in which the client resides.
-     * @param preferSameZone
-     *            - true if we have to prefer the same zone as the client, false
-     *            otherwise.
-     * @return - The list of all eureka service urls for the eureka client to
-     *         talk to.
+     * @param instanceZone The zone in which the client resides.
+     * @param preferSameZone true if we have to prefer the same zone as the client, false otherwise.
+     * @return The list of all eureka service urls for the eureka client to talk to.
      */
-    public List<String> getServiceUrlsFromDNS(String instanceZone,
-                                              boolean preferSameZone) {
+    @Override
+    public List<String> getServiceUrlsFromDNS(String instanceZone, boolean preferSameZone) {
         Stopwatch t = GET_SERVICE_URLS_DNS_TIMER.start();
         String region = getRegion();
         // Get zone-specific DNS names for the given region so that we can get a
@@ -1434,15 +1482,13 @@ public class DiscoveryClient implements LookupService {
         return serviceUrls;
     }
 
-
+    @Override
     public List<String> getDiscoveryServiceUrls(String zone) {
         boolean shouldUseDns = clientConfig.shouldUseDnsForFetchingServiceUrls();
         if (shouldUseDns) {
-            return getServiceUrlsFromDNS(zone,
-                    clientConfig.shouldPreferSameZoneEureka());
+            return getServiceUrlsFromDNS(zone, clientConfig.shouldPreferSameZoneEureka());
         }
-        return DiscoveryClient.getEurekaServiceUrlsFromConfig(zone,
-                clientConfig.shouldPreferSameZoneEureka());
+        return getServiceUrlsFromConfig(zone, clientConfig.shouldPreferSameZoneEureka());
     }
 
     public enum DiscoveryUrlType {
@@ -1450,28 +1496,18 @@ public class DiscoveryClient implements LookupService {
     }
 
     /**
+     * @deprecated see {@link com.netflix.appinfo.InstanceInfo#getZone(String[], com.netflix.appinfo.InstanceInfo)}
+     *
      * Get the zone that a particular instance is in.
      *
      * @param myInfo
      *            - The InstanceInfo object of the instance.
      * @return - The zone in which the particular instance belongs to.
      */
+    @Deprecated
     public static String getZone(InstanceInfo myInfo) {
-        String[] availZones = clientConfig.getAvailabilityZones(clientConfig
-                .getRegion());
-        String instanceZone = ((availZones == null || availZones.length == 0) ? "default"
-                : availZones[0]);
-        if (myInfo != null
-                && myInfo.getDataCenterInfo().getName() == Name.Amazon) {
-
-            String awsInstanceZone = ((AmazonInfo) myInfo.getDataCenterInfo())
-                    .get(MetaDataKey.availabilityZone);
-            if (awsInstanceZone != null) {
-                instanceZone = awsInstanceZone;
-            }
-
-        }
-        return instanceZone;
+        String[] availZones = clientConfig.getAvailabilityZones(clientConfig .getRegion());
+        return InstanceInfo.getZone(availZones, myInfo);
     }
 
     /**
@@ -1735,6 +1771,7 @@ public class DiscoveryClient implements LookupService {
         return instanceInfo;
     }
 
+    @Override
     public HealthCheckHandler getHealthCheckHandler() {
         if (healthCheckHandler == null) {
             if (null != healthCheckHandlerProvider) {

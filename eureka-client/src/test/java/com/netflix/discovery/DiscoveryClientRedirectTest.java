@@ -118,7 +118,7 @@ public class DiscoveryClientRedirectTest {
                         .withBody(deltaFetchJson)
         );
 
-        final DiscoveryClient client = registryFetchClientRule.getClient();
+        final EurekaClient client = registryFetchClientRule.getClient();
 
         await(new Callable<Boolean>() {
             @Override
@@ -178,7 +178,7 @@ public class DiscoveryClientRedirectTest {
                         .withBody(fullFetchJson2)
         );
 
-        final DiscoveryClient client = registryFetchClientRule.getClient();
+        final EurekaClient client = registryFetchClientRule.getClient();
 
         await(new Callable<Boolean>() {
             @Override

@@ -24,9 +24,16 @@ import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.shared.LookupService;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * <tt>Discovery Manager</tt> configures <tt>Discovery Client</tt> based on the
  * properties specified.
+ * <p>
+ * Note that this DiscoveryManager is specific to the default implementation ({@link DiscoveryClient}
+ * of {@link EurekaClient}.
  *
  * <p>
  * The configuration file is searched for in the classpath with the name
@@ -107,7 +114,16 @@ public class DiscoveryManager {
      * Get the {@link DiscoveryClient}.
      * @return the client that is used to talk to eureka.
      */
+    @Deprecated
     public DiscoveryClient getDiscoveryClient() {
+        return discoveryClient;
+    }
+
+    /**
+     * Get the {@link EurekaClient} implementation.
+     * @return the client that is used to talk to eureka.
+     */
+    public EurekaClient getEurekaClient() {
         return discoveryClient;
     }
 
@@ -126,5 +142,4 @@ public class DiscoveryManager {
     public EurekaInstanceConfig getEurekaInstanceConfig() {
         return eurekaInstanceConfig;
     }
-
 }

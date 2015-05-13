@@ -35,7 +35,7 @@ public class BackUpRegistryTest {
     public static final int CLIENT_REFRESH_RATE = 10;
     public static final int NOT_AVAILABLE_EUREKA_PORT = 756473;
 
-    private DiscoveryClient client;
+    private EurekaClient client;
     private MockBackupRegistry backupRegistry;
 
     public void setUp(boolean enableRemote) throws Exception {

@@ -11,6 +11,7 @@ import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.DiscoveryManager;
+import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Pair;
 import com.netflix.eureka.mock.MockRemoteEurekaServer;
@@ -45,7 +46,7 @@ public class AbstractTester {
     protected final Map<String, Application> remoteRegionAppsDelta = new HashMap<String, Application>();
     protected MockRemoteEurekaServer mockRemoteEurekaServer;
     protected PeerAwareInstanceRegistry registry;
-    protected DiscoveryClient client;
+    protected EurekaClient client;
     public static final String REMOTE_ZONE = "us-east-1c";
 
     @Before

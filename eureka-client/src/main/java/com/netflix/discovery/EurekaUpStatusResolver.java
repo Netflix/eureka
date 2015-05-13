@@ -28,17 +28,15 @@ public class EurekaUpStatusResolver  {
 
     private volatile InstanceInfo.InstanceStatus currentStatus = InstanceInfo.InstanceStatus.UNKNOWN;
     private final EventBus eventBus;
-    private final DiscoveryClient client;
+    private final EurekaClient client;
     private final AtomicLong counter = new AtomicLong();
     
     /**
-     * @param executor
-     * @param upStatus
-     * @param discoveryClientProvider Provider that returns a discovery client.  We use a provider
-     *  because the DiscoveryClient reference may not exist at bootstrap time
+     * @param client the eurekaClient
+     * @param eventBus the eventBus to publish eureka status change events
      */
     @Inject
-    public EurekaUpStatusResolver(DiscoveryClient client, EventBus eventBus) {
+    public EurekaUpStatusResolver(EurekaClient client, EventBus eventBus) {
         this.eventBus = eventBus;
         this.client   = client;
     }

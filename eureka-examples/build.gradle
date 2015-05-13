@@ -1,0 +1,77 @@
+apply plugin: 'application'
+
+dependencies {
+    compile project(':eureka-client')
+    compile files('conf')
+}
+
+startScripts.enabled = false
+run.enabled = false
+
+task runExampleService (dependsOn: [classes], type: JavaExec) {
+    group = "Run tasks"
+    description = "Run the example service"
+
+    main = "com.netflix.eureka.ExampleEurekaService"
+    classpath = sourceSets.main.runtimeClasspath
+    jvmArgs(["-Deureka.client.props=sample-eureka-service"])
+}
+
+task runExampleGovernatedService (dependsOn: [classes], type: JavaExec) {
+    group = "Run tasks"
+    description = "Run the example service"
+
+    main = "com.netflix.eureka.ExampleEurekaGovernatedService"
+    classpath = sourceSets.main.runtimeClasspath
+    jvmArgs(["-Deureka.client.props=sample-eureka-service"])
+}
+
+task runExampleClient (dependsOn: [classes], type: JavaExec) {
+    group = "Run tasks"
+    description = "Run the example client"
+
+    main = "com.netflix.eureka.ExampleEurekaClient"
+    classpath = sourceSets.main.runtimeClasspath
+    jvmArgs(["-Deureka.client.props=sample-eureka-client"])
+}
+
+
+task ExampleServiceStartScript(type: CreateStartScripts) {
+    mainClassName = "com.netflix.eureka.ExampleEurekaService"
+    applicationName = "ExampleEurekaService"
+    outputDir = new File(project.buildDir, 'scripts')
+    classpath = jar.outputs.files + project.configurations.runtime
+    defaultJvmOpts = ["-Deureka.client.props=sample-eureka-service"]
+}
+
+task ExampleGovernatedServiceStartScript(type: CreateStartScripts) {
+    mainClassName = "com.netflix.eureka.ExampleEurekaGovernatedService"
+    applicationName = "ExampleEurekaGovernatedService"
+    outputDir = new File(project.buildDir, 'scripts')
+    classpath = jar.outputs.files + project.configurations.runtime
+    defaultJvmOpts = ["-Deureka.client.props=sample-eureka-service"]
+}
+
+task ExampleClientStartScript(type: CreateStartScripts) {
+    mainClassName = "com.netflix.eureka.ExampleEurekaClient"
+    applicationName = "ExampleEurekaClient"
+    outputDir = new File(project.buildDir, 'scripts')
+    classpath = jar.outputs.files + project.configurations.runtime
+    defaultJvmOpts = ["-Deureka.client.props=sample-eureka-client"]
+}
+
+applicationDistribution.into("bin") {
+    from(ExampleServiceStartScript)
+    fileMode = 0755
+
+    from(ExampleGovernatedServiceStartScript)
+    fileMode = 0755
+
+    from(ExampleClientStartScript)
+    fileMode = 0755
+}
+
+applicationDistribution.into("lib/conf") {
+    from("conf")
+    fileMode = 0755
+}

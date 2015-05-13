@@ -33,50 +33,63 @@ import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.DiscoveryManager;
 
 /**
- * Sample Eureka client that discovers the service using Eureka and sends
- * requests.
+ * Sample Eureka client that discovers the example service using Eureka and sends requests.
+ *
+ * In this example, the program tries to get the example from the EurekaClient, and then
+ * makes a REST call to a supported service endpoint
  *
  * @author Karthik Ranganathan
- *
  */
-public class SampleEurekaClient {
-    private static final DynamicPropertyFactory configInstance = com.netflix.config.DynamicPropertyFactory
-            .getInstance();
+public class ExampleEurekaClient {
+    private static final DynamicPropertyFactory configInstance = com.netflix.config.DynamicPropertyFactory.getInstance();
 
     public void sendRequestToServiceUsingEureka() {
         // Register with Eureka
         DiscoveryManager.getInstance().initComponent(
                 new MyDataCenterInstanceConfig(),
                 new DefaultEurekaClientConfig());
-        ApplicationInfoManager.getInstance().setInstanceStatus(
-                InstanceStatus.UP);
-        String vipAddress = configInstance.getStringProperty(
-                "eureka.vipAddress", "sampleservice.mydomain.net").get();
-        InstanceInfo nextServerInfo = DiscoveryManager.getInstance()
-                .getDiscoveryClient()
-                .getNextServerFromEureka(vipAddress, false);
+
+        ApplicationInfoManager.getInstance().setInstanceStatus(InstanceStatus.UP);
+
+        // this is the vip address for the example service to talk to as defined in conf/sample-eureka-service.properties
+        String vipAddress = "sampleservice.mydomain.net";
+
+        InstanceInfo nextServerInfo = null;
+        try {
+            nextServerInfo = DiscoveryManager.getInstance()
+                    .getEurekaClient()
+                    .getNextServerFromEureka(vipAddress, false);
+        } catch (Exception e) {
+            System.err.println("Cannot get an instance of example service to talk to from eureka");
+            System.exit(-1);
+        }
+
+        System.out.println("Found an instance of example service to talk to from eureka: "
+                + nextServerInfo.getVIPAddress() + ":" + nextServerInfo.getPort());
 
         Socket s = new Socket();
         int serverPort = nextServerInfo.getPort();
         try {
-            s.connect(new InetSocketAddress(nextServerInfo.getHostName(),
-                    serverPort));
+            s.connect(new InetSocketAddress(nextServerInfo.getHostName(), serverPort));
         } catch (IOException e) {
             System.err.println("Could not connect to the server :"
                     + nextServerInfo.getHostName() + " at port " + serverPort);
+        } catch (Exception e) {
+            System.err.println("Could not connect to the server :"
+                    + nextServerInfo.getHostName() + " at port " + serverPort + "due to Exception " + e);
         }
         try {
-            System.out.println("Connected to server. Sending a sample request");
+            String request = "FOO " + new Date();
+            System.out.println("Connected to server. Sending a sample request: " + request);
+
             PrintStream out = new PrintStream(s.getOutputStream());
-            out.println("Sample request " + new Date());
-            String str = null;
+            out.println(request);
+
             System.out.println("Waiting for server response..");
-            BufferedReader rd = new BufferedReader(new InputStreamReader(
-                    s.getInputStream()));
-            str = rd.readLine();
+            BufferedReader rd = new BufferedReader(new InputStreamReader(s.getInputStream()));
+            String str = rd.readLine();
             if (str != null) {
-                System.out
-                        .println("Received response from server. Communication all fine using Eureka :");
+                System.out.println("Received response from server: " + str);
                 System.out.println("Exiting the client. Demo over..");
             }
             rd.close();
@@ -92,7 +105,7 @@ public class SampleEurekaClient {
     }
 
     public static void main(String[] args) {
-        SampleEurekaClient sampleEurekaService = new SampleEurekaClient();
+        ExampleEurekaClient sampleEurekaService = new ExampleEurekaClient();
         sampleEurekaService.sendRequestToServiceUsingEureka();
 
     }
