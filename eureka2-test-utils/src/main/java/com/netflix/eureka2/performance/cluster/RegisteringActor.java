@@ -1,4 +1,4 @@
-package com.netflix.eureka2.performance;
+package com.netflix.eureka2.performance.cluster;
 
 import java.util.Random;
 import java.util.concurrent.TimeUnit;

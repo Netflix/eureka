@@ -5,7 +5,11 @@ package com.netflix.eureka2.metric;
  */
 public interface SerializedTaskInvokerMetrics {
 
-    void incrementOutputSuccess();
+    void incrementScheduledTasks();
 
-    void incrementOutputFailure();
+    void decrementScheduledTasks();
+
+    void incrementSubscribedTasks();
+
+    void decrementSubscribedTasks();
 }

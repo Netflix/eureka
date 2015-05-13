@@ -12,6 +12,7 @@ import rx.schedulers.Schedulers;
 
 /**
  * An abstract implementation that allows extending classes to be able to serialize operations without need for locking.
+ * Associated metrics give insight into scheduled task queue length, and active tasks count.
  *
  * @author Nitesh Kant
  */
@@ -19,6 +20,19 @@ public abstract class SerializedTaskInvoker {
 
     private final SerializedTaskInvokerMetrics metrics;
     private final Worker worker;
+
+    private final Action0 incrementSubscribedTaskFun = new Action0() {
+        @Override
+        public void call() {
+            metrics.incrementSubscribedTasks();
+        }
+    };
+    private final Action0 decrementSubscribedTaskFun = new Action0() {
+        @Override
+        public void call() {
+            metrics.decrementSubscribedTasks();
+        }
+    };
 
     protected SerializedTaskInvoker(SerializedTaskInvokerMetrics metrics) {
         this(metrics, Schedulers.computation());
@@ -30,69 +44,39 @@ public abstract class SerializedTaskInvoker {
     }
 
     protected Observable<Void> submitForAck(final Callable<Observable<Void>> task) {
-        return Observable.create(new Observable.OnSubscribe<Void>() {
-            @Override
-            public void call(final Subscriber<? super Void> subscriber) {
-                worker.schedule(new Action0() {
-                    @Override
-                    public void call() {
-                        try {
-                            task.call().subscribe(new Subscriber<Void>() {
-                                @Override
-                                public void onCompleted() {
-                                    metrics.incrementOutputSuccess();
-                                    subscriber.onCompleted();
-                                }
-
-                                @Override
-                                public void onError(Throwable e) {
-                                    metrics.incrementOutputFailure();
-                                    subscriber.onError(e);
-                                }
-
-                                @Override
-                                public void onNext(Void aVoid) {
-                                    // No-op
-                                }
-                            });
-                        } catch (Exception e) {
-                            metrics.incrementOutputFailure();
-                            subscriber.onError(e);
-                        }
-                    }
-                });
-            }
-        });
+        return submitForResult(task);
     }
 
     protected <T> Observable<T> submitForResult(final Callable<Observable<T>> task) {
         return Observable.create(new Observable.OnSubscribe<T>() {
             @Override
             public void call(final Subscriber<? super T> subscriber) {
+                metrics.incrementScheduledTasks();
                 worker.schedule(new Action0() {
                     @Override
                     public void call() {
+                        metrics.decrementScheduledTasks();
                         try {
-                            task.call().subscribe(new Subscriber<T>() {
-                                @Override
-                                public void onCompleted() {
-                                    metrics.incrementOutputSuccess();
-                                    subscriber.onCompleted();
-                                }
+                            task.call()
+                                    .doOnSubscribe(incrementSubscribedTaskFun)
+                                    .doOnUnsubscribe(decrementSubscribedTaskFun)
+                                    .subscribe(new Subscriber<T>() {
+                                        @Override
+                                        public void onCompleted() {
+                                            subscriber.onCompleted();
+                                        }
 
-                                @Override
-                                public void onError(Throwable e) {
-                                    metrics.incrementOutputFailure();
-                                    subscriber.onError(e);
-                                }
+                                        @Override
+                                        public void onError(Throwable e) {
+                                            subscriber.onError(e);
+                                        }
 
-                                @Override
-                                public void onNext(T value) {
-                                    subscriber.onNext(value);
-                                }
-                            });
+                                        @Override
+                                        public void onNext(T value) {
+                                            subscriber.onNext(value);
+                                        }
+                                    });
                         } catch (Exception e) {
-                            metrics.incrementOutputFailure();
                             subscriber.onError(e);
                         }
                     }

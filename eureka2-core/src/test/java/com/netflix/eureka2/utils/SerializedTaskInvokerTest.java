@@ -12,7 +12,6 @@ import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -31,33 +30,39 @@ public class SerializedTaskInvokerTest {
         invoker = new TestInvoker();
     }
 
-    @Test(timeout = 60000)
+    @Test(timeout = 10000)
     public void testSyncTasksExecutedInOrder() {
         invoker.submitForAck(new SyncAckTask(true));
     }
 
-    @Test(timeout = 60000)
-    public void testMetrics() throws Exception {
-        // Successful task
+    @Test(timeout = 10000)
+    public void testMetricsForSuccessfulTask() throws Exception {
         TestSubscriber<Void> testSubscriber = new TestSubscriber<>();
         invoker.submitForAck(new SyncAckTask(true)).subscribe(testSubscriber);
 
+        verify(metrics, times(1)).incrementScheduledTasks();
+
         testScheduler.triggerActions();
         testSubscriber.awaitTerminalEvent();
 
-        verify(metrics, times(1)).incrementOutputSuccess();
-        reset(metrics);
+        verify(metrics, times(1)).decrementScheduledTasks();
+        verify(metrics, times(1)).incrementSubscribedTasks();
+        verify(metrics, times(1)).decrementSubscribedTasks();
+    }
 
-        // Successful task
-        testSubscriber = new TestSubscriber<>();
+    @Test(timeout = 10000)
+    public void testMetricsForFailedTask() throws Exception {
+        TestSubscriber<Void> testSubscriber = new TestSubscriber<>();
         invoker.submitForAck(new SyncAckTask(false)).subscribe(testSubscriber);
 
+        verify(metrics, times(1)).incrementScheduledTasks();
+
         testScheduler.triggerActions();
         testSubscriber.awaitTerminalEvent();
 
-        testScheduler.triggerActions();
-
-        verify(metrics, times(1)).incrementOutputFailure();
+        verify(metrics, times(1)).decrementScheduledTasks();
+        verify(metrics, times(0)).incrementSubscribedTasks();
+        verify(metrics, times(0)).decrementSubscribedTasks();
     }
 
     static class SyncAckTask implements Callable<Observable<Void>> {

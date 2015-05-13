@@ -9,23 +9,33 @@ import com.netflix.spectator.api.ExtendedRegistry;
  */
 public class SpectatorSerializedTaskInvokerMetrics extends SpectatorEurekaMetrics implements SerializedTaskInvokerMetrics {
 
-    private final Counter outputSuccess;
-    private final Counter outputFailure;
+    private final Counter scheduledTasks;
+    private final Counter subscribedTasks;
 
     public SpectatorSerializedTaskInvokerMetrics(ExtendedRegistry registry, String name) {
         super(registry, name);
 
-        outputSuccess = newCounter("outputSuccess");
-        outputFailure = newCounter("outputFailure");
+        scheduledTasks = newCounter("scheduledTasks");
+        subscribedTasks = newCounter("subscribedTasks");
     }
 
     @Override
-    public void incrementOutputSuccess() {
-        outputSuccess.increment();
+    public void incrementScheduledTasks() {
+        scheduledTasks.increment();
     }
 
     @Override
-    public void incrementOutputFailure() {
-        outputFailure.increment();
+    public void decrementScheduledTasks() {
+        scheduledTasks.increment(-1);
+    }
+
+    @Override
+    public void incrementSubscribedTasks() {
+        subscribedTasks.increment();
+    }
+
+    @Override
+    public void decrementSubscribedTasks() {
+        subscribedTasks.increment(-1);
     }
 }

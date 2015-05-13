@@ -10,10 +10,18 @@ public class NoOpSerializedTaskInvokerMetrics implements SerializedTaskInvokerMe
     public static final NoOpSerializedTaskInvokerMetrics INSTANCE = new NoOpSerializedTaskInvokerMetrics();
 
     @Override
-    public void incrementOutputSuccess() {
+    public void incrementScheduledTasks() {
     }
 
     @Override
-    public void incrementOutputFailure() {
+    public void decrementScheduledTasks() {
+    }
+
+    @Override
+    public void incrementSubscribedTasks() {
+    }
+
+    @Override
+    public void decrementSubscribedTasks() {
     }
 }
