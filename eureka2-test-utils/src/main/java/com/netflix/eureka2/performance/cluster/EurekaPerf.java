@@ -1,4 +1,4 @@
-package com.netflix.eureka2.performance;
+package com.netflix.eureka2.performance.cluster;
 
 import java.util.Iterator;
 import java.util.Set;
@@ -38,6 +38,8 @@ import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
 
 /**
+ * Eureka2 embedded cluster performance benchmarking tool.
+ *
  * @author Tomasz Bak
  */
 public class EurekaPerf {
