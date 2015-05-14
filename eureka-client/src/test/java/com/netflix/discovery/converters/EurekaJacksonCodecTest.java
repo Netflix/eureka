@@ -32,7 +32,7 @@ public class EurekaJacksonCodecTest {
     public static final Applications APPLICATIONS;
 
     static {
-        Iterator<InstanceInfo> infoIterator = new InstanceInfoGenerator(4, 2).serviceIterator();
+        Iterator<InstanceInfo> infoIterator = new InstanceInfoGenerator(4, 2, true).serviceIterator();
         INSTANCE_INFO_1_A1 = infoIterator.next();
         INSTANCE_INFO_1_A1.setActionType(ActionType.ADDED);
         INSTANCE_INFO_1_A2 = infoIterator.next();
@@ -60,6 +60,23 @@ public class EurekaJacksonCodecTest {
     @Test
     public void testInstanceInfoJacksonEncodeDecode() throws Exception {
         InstanceInfoEnvelope original = new InstanceInfoEnvelope(INSTANCE_INFO_1_A1);
+
+        // Encode
+        ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
+        codec.writeTo(original, captureStream);
+        byte[] encoded = captureStream.toByteArray();
+
+        // Decode
+        InputStream source = new ByteArrayInputStream(encoded);
+        InstanceInfoEnvelope decoded = codec.readFrom(InstanceInfoEnvelope.class, source);
+
+        assertTrue(EurekaEntityComparators.equal(decoded.getInstance(), original.getInstance()));
+    }
+
+    @Test
+    public void testInstanceInfoJacksonEncodeDecodeWithoutMetaData() throws Exception {
+        InstanceInfo noMetaDataInfo = new InstanceInfoGenerator(1, 1, false).serviceIterator().next();
+        InstanceInfoEnvelope original = new InstanceInfoEnvelope(noMetaDataInfo);
 
         // Encode
         ByteArrayOutputStream captureStream = new ByteArrayOutputStream();

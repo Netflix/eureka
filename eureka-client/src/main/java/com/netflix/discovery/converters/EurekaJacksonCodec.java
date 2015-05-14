@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -200,9 +201,9 @@ public class EurekaJacksonCodec {
 
             // XStream encoded adds this for backwards compatibility issue. Not sure if needed anymore
             if (dataCenterInfo.getName() == Name.Amazon) {
-                jgen.writeStringField("class", "com.netflix.appinfo.AmazonInfo");
+                jgen.writeStringField("@class", "com.netflix.appinfo.AmazonInfo");
             } else {
-                jgen.writeStringField("class", "com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo");
+                jgen.writeStringField("@class", "com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo");
             }
 
             jgen.writeStringField(ELEM_NAME, dataCenterInfo.getName().name());
@@ -285,6 +286,9 @@ public class EurekaJacksonCodec {
     }
 
     private static class InstanceInfoSerializer extends JsonSerializer<InstanceInfo> {
+        // For backwards compatibility
+        private static final Object EMPTY_METADATA = Collections.singletonMap("@class", "java.util.Collections$EmptyMap");
+
         @Override
         public void serialize(InstanceInfo info, JsonGenerator jgen, SerializerProvider provider) throws IOException {
             jgen.writeStartObject();
@@ -321,8 +325,13 @@ public class EurekaJacksonCodec {
                 jgen.writeObjectField(NODE_LEASE, info.getLeaseInfo());
             }
 
-            if (info.getMetadata() != null) {
-                jgen.writeObjectField(NODE_METADATA, info.getMetadata());
+            Map<String, String> metadata = info.getMetadata();
+            if (metadata != null) {
+                if (metadata.isEmpty()) {
+                    jgen.writeObjectField(NODE_METADATA, EMPTY_METADATA);
+                } else {
+                    jgen.writeObjectField(NODE_METADATA, metadata);
+                }
             }
             autoMarshalEligible(info, jgen);
 
@@ -423,12 +432,21 @@ public class EurekaJacksonCodec {
                     } else if (NODE_LEASE.equals(fieldName)) {
                         builder.setLeaseInfo(mapper.treeToValue(fieldNode, LeaseInfo.class));
                     } else if (NODE_METADATA.equals(fieldName)) {
-                        Map<String, String> meta = new ConcurrentHashMap<>();
+                        Map<String, String> meta = null;
                         Iterator<String> metaNameIt = fieldNode.fieldNames();
                         while (metaNameIt.hasNext()) {
                             String key = cache.cachedValueOf(metaNameIt.next());
-                            String value = cache.cachedValueOf(fieldNode.get(key).asText());
-                            meta.put(key, value);
+                            if (key.equals("@class")) { // For backwards compatibility
+                                if (meta == null && !metaNameIt.hasNext()) { // Optimize for empty maps
+                                    meta = Collections.emptyMap();
+                                }
+                            } else {
+                                if (meta == null) {
+                                    meta = new ConcurrentHashMap<>();
+                                }
+                                String value = cache.cachedValueOf(fieldNode.get(key).asText());
+                                meta.put(key, value);
+                            }
                         }
                         builder.setMetadata(meta);
                     } else if (ELEM_HEALTHCHECKURL.equals(fieldName)) {

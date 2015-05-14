@@ -26,7 +26,7 @@ public class CodecLoadTester {
     private final EurekaJacksonCodec jacksonCodec = new EurekaJacksonCodec();
 
     public CodecLoadTester(int instanceCount, int appCount) {
-        Iterator<InstanceInfo> instanceIt = new InstanceInfoGenerator(instanceCount, appCount).serviceIterator();
+        Iterator<InstanceInfo> instanceIt = new InstanceInfoGenerator(instanceCount, appCount, true).serviceIterator();
         int appIdx = 0;
         while (instanceIt.hasNext()) {
             InstanceInfo next = instanceIt.next();
