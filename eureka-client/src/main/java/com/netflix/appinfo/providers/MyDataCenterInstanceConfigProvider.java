@@ -6,6 +6,9 @@ import com.netflix.appinfo.MyDataCenterInstanceConfig;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaNamespace;
 
+import javax.inject.Singleton;
+
+@Singleton
 public class MyDataCenterInstanceConfigProvider implements Provider<MyDataCenterInstanceConfig> {
     @Inject(optional = true)
     @EurekaNamespace

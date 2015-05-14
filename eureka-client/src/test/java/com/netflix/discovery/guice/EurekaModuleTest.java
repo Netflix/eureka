@@ -10,6 +10,7 @@ import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaClient;
+import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.governator.guice.LifecycleInjector;
 import com.netflix.governator.guice.LifecycleInjectorBuilder;
 import com.netflix.governator.lifecycle.LifecycleManager;
@@ -59,8 +60,12 @@ public class EurekaModuleTest {
         ConfigurationManager.getConfigInstance().clear();
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void testDI() {
+        InstanceInfo instanceInfo = injector.getInstance(InstanceInfo.class);
+        Assert.assertEquals(ApplicationInfoManager.getInstance().getInfo(), instanceInfo);
+
         EurekaClient eurekaClient = injector.getInstance(EurekaClient.class);
         DiscoveryClient discoveryClient = injector.getInstance(DiscoveryClient.class);
 
@@ -68,7 +73,10 @@ public class EurekaModuleTest {
         Assert.assertEquals(DiscoveryManager.getInstance().getDiscoveryClient(), discoveryClient);
         Assert.assertEquals(eurekaClient, discoveryClient);
 
-        InstanceInfo instanceInfo = injector.getInstance(InstanceInfo.class);
-        Assert.assertEquals(ApplicationInfoManager.getInstance().getInfo(), instanceInfo);
+        EurekaClientConfig eurekaClientConfig = injector.getInstance(EurekaClientConfig.class);
+        Assert.assertEquals(DiscoveryManager.getInstance().getEurekaClientConfig(), eurekaClientConfig);
+
+        EurekaInstanceConfig eurekaInstanceConfig = injector.getInstance(EurekaInstanceConfig.class);
+        Assert.assertEquals(DiscoveryManager.getInstance().getEurekaInstanceConfig(), eurekaInstanceConfig);
     }
 }
