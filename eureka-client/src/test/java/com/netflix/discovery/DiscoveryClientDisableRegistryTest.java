@@ -17,7 +17,7 @@ import java.util.UUID;
  */
 public class DiscoveryClientDisableRegistryTest {
 
-    private DiscoveryClient client;
+    private EurekaClient client;
     private MockRemoteEurekaServer mockLocalEurekaServer;
 
     @Before

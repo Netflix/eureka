@@ -41,7 +41,7 @@ public class InstanceInfoGenerator {
             currentIt = serviceIterator();
             allApplications = new Applications();
         }
-        List<InstanceInfo> instanceBatch = new ArrayList<>();
+        List<InstanceInfo> instanceBatch = new ArrayList<InstanceInfo>();
         for (int i = 0; i < count; i++) {
             InstanceInfo next = currentIt.next();
             next.setActionType(ActionType.ADDED);

@@ -86,12 +86,12 @@ public class DiscoveryStatusCheckerTest {
     public static class Service {
         final Supplier<Boolean> upStatusSupplier;
         final Supplier<Boolean> dnStatusSupplier;
-        final DiscoveryClient client;
+        final EurekaClient client;
         final EurekaUpStatusResolver status;
         
         @Inject
         public Service(
-                DiscoveryClient client,
+                EurekaClient client,
                 @UpStatus   Supplier<Boolean> upStatusSupplier,
                 @DownStatus Supplier<Boolean> dnStatusSupplier,
                 EurekaUpStatusResolver status
@@ -143,7 +143,7 @@ public class DiscoveryStatusCheckerTest {
         Service service = injector.getInstance(Service.class);
         mockLocalEurekaServer.waitForDeltaToBeRetrieved(CLIENT_REFRESH_RATE);
         service.assertState(true);
-        
+
         DiscoveryClient client = injector.getInstance(DiscoveryClient.class);
         client.unregister();
         mockLocalEurekaServer.waitForDeltaToBeRetrieved(CLIENT_REFRESH_RATE);

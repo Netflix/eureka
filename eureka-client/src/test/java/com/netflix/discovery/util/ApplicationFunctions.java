@@ -22,7 +22,7 @@ public final class ApplicationFunctions {
     }
 
     public static Map<String, Application> toApplicationMap(List<InstanceInfo> instances) {
-        Map<String, Application> applicationMap = new HashMap<>();
+        Map<String, Application> applicationMap = new HashMap<String, Application>();
         for (InstanceInfo instance : instances) {
             String appName = instance.getAppName();
             Application application = applicationMap.get(appName);
@@ -43,7 +43,7 @@ public final class ApplicationFunctions {
     }
 
     public static Set<String> applicationNames(Applications applications) {
-        Set<String> names = new HashSet<>();
+        Set<String> names = new HashSet<String>();
         for (Application application : applications.getRegisteredApplications()) {
             names.add(application.getName());
         }
@@ -72,7 +72,7 @@ public final class ApplicationFunctions {
     public static Applications merge(Applications first, Applications second) {
         Set<String> firstNames = applicationNames(first);
         Set<String> secondNames = applicationNames(second);
-        Set<String> allNames = new HashSet<>(firstNames);
+        Set<String> allNames = new HashSet<String>(firstNames);
         allNames.addAll(secondNames);
 
         Applications merged = new Applications();

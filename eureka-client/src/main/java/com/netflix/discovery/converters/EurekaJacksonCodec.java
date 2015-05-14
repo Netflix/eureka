@@ -231,7 +231,7 @@ public class EurekaJacksonCodec {
                 };
             }
 
-            Map<String, String> metaData = new HashMap<>();
+            Map<String, String> metaData = new HashMap<String, String>();
             JsonNode metaNode = node.get(DATACENTER_METADATA);
             Iterator<String> metaNamesIt = metaNode.fieldNames();
             while (metaNamesIt.hasNext()) {
@@ -442,7 +442,7 @@ public class EurekaJacksonCodec {
                                 }
                             } else {
                                 if (meta == null) {
-                                    meta = new ConcurrentHashMap<>();
+                                    meta = new ConcurrentHashMap<String, String>();
                                 }
                                 String value = cache.cachedValueOf(fieldNode.get(key).asText());
                                 meta.put(key, value);

@@ -24,7 +24,13 @@ import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.shared.LookupService;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 /**
+ * @deprecated use EurekaModule and DI.
+ *
  * <tt>Discovery Manager</tt> configures <tt>Discovery Client</tt> based on the
  * properties specified.
  *
@@ -37,6 +43,7 @@ import com.netflix.discovery.shared.LookupService;
  * @author Karthik Ranganathan
  *
  */
+@Deprecated
 public class DiscoveryManager {
     private static final Logger logger = LoggerFactory.getLogger(DiscoveryManager.class);
     private DiscoveryClient discoveryClient;
@@ -104,10 +111,22 @@ public class DiscoveryManager {
     }
 
     /**
+     * @deprecated use {@link #getEurekaClient()}
+     *
      * Get the {@link DiscoveryClient}.
      * @return the client that is used to talk to eureka.
      */
+    @Deprecated
     public DiscoveryClient getDiscoveryClient() {
+        return discoveryClient;
+    }
+
+    /**
+     *
+     * Get the {@link EurekaClient} implementation.
+     * @return the client that is used to talk to eureka.
+     */
+    public EurekaClient getEurekaClient() {
         return discoveryClient;
     }
 
@@ -126,5 +145,4 @@ public class DiscoveryManager {
     public EurekaInstanceConfig getEurekaInstanceConfig() {
         return eurekaInstanceConfig;
     }
-
 }

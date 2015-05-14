@@ -1011,7 +1011,7 @@ public class InstanceInfo {
     }
 
     /**
-     * Returns whether any state changed so that {@link DiscoveryClient} can
+     * Returns whether any state changed so that {@link com.netflix.discovery.EurekaClient} can
      * check whether to retransmit info or not on the next heartbeat.
      *
      * @return true if the {@link InstanceInfo} is dirty, false otherwise.
@@ -1061,7 +1061,7 @@ public class InstanceInfo {
 
     /**
      * Returns the type of action done on the instance in the server.Primarily
-     * used for updating deltas in the {@link com.netflix.discovery.DiscoveryClient}
+     * used for updating deltas in the {@link com.netflix.discovery.EurekaClient}
      * instance.
      *
      * @return action type done on the instance.
@@ -1151,6 +1151,32 @@ public class InstanceInfo {
         }
 
         return result;
+    }
+
+    /**
+     * Get the zone that a particular instance is in.
+     * Note that for AWS deployments, myInfo should contain AWS dataCenterInfo which should contain
+     * the AWS zone of the instance, and availZones is ignored.
+     *
+     * @param availZones the list of available zones for non-AWS deployments
+     * @param myInfo
+     *            - The InstanceInfo object of the instance.
+     * @return - The zone in which the particular instance belongs to.
+     */
+    public static String getZone(String[] availZones, InstanceInfo myInfo) {
+        String instanceZone = ((availZones == null || availZones.length == 0) ? "default"
+                : availZones[0]);
+        if (myInfo != null
+                && myInfo.getDataCenterInfo().getName() == DataCenterInfo.Name.Amazon) {
+
+            String awsInstanceZone = ((AmazonInfo) myInfo.getDataCenterInfo())
+                    .get(AmazonInfo.MetaDataKey.availabilityZone);
+            if (awsInstanceZone != null) {
+                instanceZone = awsInstanceZone;
+            }
+
+        }
+        return instanceZone;
     }
 
 }

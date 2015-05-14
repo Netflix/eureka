@@ -25,7 +25,7 @@ public class DiscoveryClientRule extends ExternalResource {
     private final Callable<Integer> portResolverCallable;
     private final InstanceInfo instance;
 
-    private DiscoveryClient client;
+    private EurekaClient client;
 
     DiscoveryClientRule(DiscoveryClientRuleBuilder builder) {
         this.registrationEnabled = builder.registrationEnabled;
@@ -34,7 +34,7 @@ public class DiscoveryClientRule extends ExternalResource {
         this.instance = builder.instance;
     }
 
-    public DiscoveryClient getClient() {
+    public EurekaClient getClient() {
         if (client == null) {
             int port;
             try {
@@ -84,11 +84,11 @@ public class DiscoveryClientRule extends ExternalResource {
         ConfigurationManager.getConfigInstance().clearProperty("eureka.serviceUrl.default");
     }
 
-    public static DiscoveryClient setupDiscoveryClient(InstanceInfo clientInstanceInfo) {
+    public static EurekaClient setupDiscoveryClient(InstanceInfo clientInstanceInfo) {
         DefaultEurekaClientConfig config = new DefaultEurekaClientConfig();
         // setup config in advance, used in initialize converter
         DiscoveryManager.getInstance().setEurekaClientConfig(config);
-        DiscoveryClient client = new DiscoveryClient(clientInstanceInfo, config);
+        EurekaClient client = new DiscoveryClient(clientInstanceInfo, config);
         ApplicationInfoManager.getInstance().initComponent(new MyDataCenterInstanceConfig());
         return client;
     }

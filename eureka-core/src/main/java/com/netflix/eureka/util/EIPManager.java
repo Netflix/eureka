@@ -254,9 +254,11 @@ public class EIPManager {
 
         if (myZone == null) {
             myZone = "us-east-1d";
-       }
-        Collection<String> eipCandidates = (DiscoveryManager.getInstance()
-                .getEurekaClientConfig().shouldUseDnsForFetchingServiceUrls() ? getEIPsForZoneFromDNS(myZone)
+        }
+
+        Collection<String> eipCandidates =
+                (DiscoveryManager.getInstance().getEurekaClientConfig().shouldUseDnsForFetchingServiceUrls()
+                        ? getEIPsForZoneFromDNS(myZone)
                         : getEIPsForZoneFromConfig(myZone));
 
         if (eipCandidates == null || eipCandidates.size() == 0) {
@@ -313,8 +315,9 @@ public class EIPManager {
      * looking up the DNS name <code>{zone}.{region}.{domainName}</code>. The
      * zone is fetched from the {@link InstanceInfo} object;the region is picked
      * up from the specified configuration
-     * {@link com.netflix.eureka.EurekaServerConfig#getRegion()};the domain name is picked up from
-     * the specified configuration {@link com.netflix.eureka.EurekaServerConfig#getDomainName()}.
+     * {@link com.netflix.discovery.EurekaClientConfig#getRegion()};the domain name is picked up from
+     * the specified configuration {@link com.netflix.discovery.EurekaClientConfig#getEurekaServerDNSName()}
+     * with a "txt." prefix (see {@link com.netflix.discovery.DiscoveryClient#getZoneBasedDiscoveryUrlsFromRegion}).
      * </p>
      *
      * @param myZone
@@ -324,7 +327,7 @@ public class EIPManager {
      */
     private Collection<String> getEIPsForZoneFromDNS(String myZone) {
         List<String> ec2Urls = DiscoveryManager.getInstance()
-        .getDiscoveryClient().getServiceUrlsFromDNS(myZone, true);
+        .getEurekaClient().getServiceUrlsFromDNS(myZone, true);
         return getEIPsFromServiceUrls(ec2Urls);
     }
 

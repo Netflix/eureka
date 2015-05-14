@@ -22,7 +22,7 @@ import com.google.inject.ImplementedBy;
 /**
  * Configuration information required by the instance to register with Eureka
  * server. Once registered, users can look up information from
- * {@link com.netflix.discovery.DiscoveryClient} based on virtual hostname (also called VIPAddress),
+ * {@link com.netflix.discovery.EurekaClient} based on virtual hostname (also called VIPAddress),
  * the most common way of doing it or by other means to get the information
  * necessary to talk to other instances registered with <em>Eureka</em>.
  *
