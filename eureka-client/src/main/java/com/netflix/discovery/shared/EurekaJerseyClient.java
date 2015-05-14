@@ -18,7 +18,6 @@ package com.netflix.discovery.shared;
 
 import com.google.common.base.Preconditions;
 import com.netflix.discovery.provider.DiscoveryJerseyProvider;
-import com.netflix.http4.MonitoredConnectionManager;
 import com.netflix.servo.monitor.BasicCounter;
 import com.netflix.servo.monitor.BasicTimer;
 import com.netflix.servo.monitor.Counter;
