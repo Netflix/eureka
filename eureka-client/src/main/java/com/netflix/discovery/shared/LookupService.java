@@ -62,10 +62,12 @@ public interface LookupService<T> {
      * information received from eureka.
      *
      * <p>
-     * The next server is picked on a round-robin fashion.By default, this
+     * The next server is picked on a round-robin fashion. By default, this
      * method just returns the servers that are currently with
-     * {@link com.netflix.appinfo.InstanceInfo.InstanceStatus#UP} status. This configuration can be controlled by
-     * overriding the {@link com.netflix.discovery.EurekaClientConfig#shouldFilterOnlyUpInstances()}.
+     * {@link com.netflix.appinfo.InstanceInfo.InstanceStatus#UP} status.
+     * This configuration can be controlled by overriding the
+     * {@link com.netflix.discovery.EurekaClientConfig#shouldFilterOnlyUpInstances()}.
+     *
      * Note that in some cases (Eureka emergency mode situation), the instances
      * that are returned may not be unreachable, it is solely up to the client
      * at that point to timeout quickly and retry the next server.
@@ -79,7 +81,7 @@ public interface LookupService<T> {
      * @return the {@link InstanceInfo} information which contains the public
      *         host name of the next server in line to process the request based
      *         on the round-robin algorithm.
+     * @throws java.lang.RuntimeException if the virtualHostname does not exist
      */
-    InstanceInfo getNextServerFromEureka(String virtualHostname,
-            boolean secure);
+    InstanceInfo getNextServerFromEureka(String virtualHostname, boolean secure);
 }

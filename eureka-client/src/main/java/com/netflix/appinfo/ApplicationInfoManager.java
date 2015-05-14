@@ -64,6 +64,10 @@ public class ApplicationInfoManager {
         instance = this;
     }
 
+    /**
+     * @deprecated please use DI instead
+     */
+    @Deprecated
     public static ApplicationInfoManager getInstance() {
         return instance;
     }

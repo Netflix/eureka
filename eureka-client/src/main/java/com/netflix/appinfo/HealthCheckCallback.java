@@ -18,7 +18,7 @@ package com.netflix.appinfo;
 
 /**
  * Applications can implement this interface and register a callback with the
- * {@link com.netflix.discovery.DiscoveryClient#registerHealthCheckCallback(HealthCheckCallback)}.
+ * {@link com.netflix.discovery.EurekaClient#registerHealthCheckCallback(HealthCheckCallback)}.
  *
  * <p>
  * Your callback will be invoked every

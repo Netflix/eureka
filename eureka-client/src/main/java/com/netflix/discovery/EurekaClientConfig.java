@@ -38,7 +38,7 @@ import javax.annotation.Nullable;
  *
  *
  * Once the client is registered, users can look up information from
- * {@link DiscoveryClient} based on <em>virtual hostname</em> (also called
+ * {@link EurekaClient} based on <em>virtual hostname</em> (also called
  * VIPAddress), the most common way of doing it or by other means to get the
  * information necessary to talk to other instances registered with
  * <em>Eureka</em>.

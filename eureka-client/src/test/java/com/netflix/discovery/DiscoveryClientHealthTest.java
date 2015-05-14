@@ -30,30 +30,33 @@ public class DiscoveryClientHealthTest extends AbstractDiscoveryClientTester {
         MyHealthCheckCallback myCallback = new MyHealthCheckCallback(true);
         client.registerHealthCheckCallback(myCallback);
 
-        DiscoveryClient.InstanceInfoReplicator instanceInfoReplicator = client.getInstanceInfoReplicator();
+        Assert.assertTrue(client instanceof DiscoveryClient);
+        DiscoveryClient clientImpl = (DiscoveryClient) client;
+
+        DiscoveryClient.InstanceInfoReplicator instanceInfoReplicator = clientImpl.getInstanceInfoReplicator();
         instanceInfoReplicator.run();
 
         Assert.assertEquals("Instance info status not as expected.", InstanceInfo.InstanceStatus.STARTING,
-                            client.getInstanceInfo().getStatus());
+                clientImpl.getInstanceInfo().getStatus());
         Assert.assertFalse("Healthcheck callback invoked when status is STARTING.", myCallback.isInvoked());
 
-        client.getInstanceInfo().setStatus(InstanceInfo.InstanceStatus.OUT_OF_SERVICE);
+        clientImpl.getInstanceInfo().setStatus(InstanceInfo.InstanceStatus.OUT_OF_SERVICE);
         Assert.assertEquals("Instance info status not as expected.", InstanceInfo.InstanceStatus.OUT_OF_SERVICE,
-                            client.getInstanceInfo().getStatus());
+                clientImpl.getInstanceInfo().getStatus());
 
         myCallback.reset();
         instanceInfoReplicator.run();
         Assert.assertFalse("Healthcheck callback invoked when status is OOS.", myCallback.isInvoked());
 
-        client.getInstanceInfo().setStatus(InstanceInfo.InstanceStatus.DOWN);
+        clientImpl.getInstanceInfo().setStatus(InstanceInfo.InstanceStatus.DOWN);
         Assert.assertEquals("Instance info status not as expected.", InstanceInfo.InstanceStatus.DOWN,
-                            client.getInstanceInfo().getStatus());
+                clientImpl.getInstanceInfo().getStatus());
         myCallback.reset();
         instanceInfoReplicator.run();
 
         Assert.assertTrue("Healthcheck callback not invoked.", myCallback.isInvoked());
         Assert.assertEquals("Instance info status not as expected.", InstanceInfo.InstanceStatus.UP,
-                            client.getInstanceInfo().getStatus());
+                clientImpl.getInstanceInfo().getStatus());
     }
 
     @Test
@@ -61,35 +64,38 @@ public class DiscoveryClientHealthTest extends AbstractDiscoveryClientTester {
         MyHealthCheckHandler myHealthCheckHandler = new MyHealthCheckHandler(InstanceInfo.InstanceStatus.UP);
         client.registerHealthCheck(myHealthCheckHandler);
 
-        DiscoveryClient.InstanceInfoReplicator instanceInfoReplicator = client.getInstanceInfoReplicator();
+        Assert.assertTrue(client instanceof DiscoveryClient);
+        DiscoveryClient clientImpl = (DiscoveryClient) client;
+
+        DiscoveryClient.InstanceInfoReplicator instanceInfoReplicator = clientImpl.getInstanceInfoReplicator();
 
         Assert.assertEquals("Instance info status not as expected.", InstanceInfo.InstanceStatus.STARTING,
-                            client.getInstanceInfo().getStatus());
+                clientImpl.getInstanceInfo().getStatus());
         instanceInfoReplicator.run();
 
         Assert.assertTrue("Healthcheck callback not invoked when status is STARTING.", myHealthCheckHandler.isInvoked());
         Assert.assertEquals("Instance info status not as expected post healthcheck.", InstanceInfo.InstanceStatus.UP,
-                            client.getInstanceInfo().getStatus());
+                clientImpl.getInstanceInfo().getStatus());
 
-        client.getInstanceInfo().setStatus(InstanceInfo.InstanceStatus.OUT_OF_SERVICE);
+        clientImpl.getInstanceInfo().setStatus(InstanceInfo.InstanceStatus.OUT_OF_SERVICE);
         Assert.assertEquals("Instance info status not as expected.", InstanceInfo.InstanceStatus.OUT_OF_SERVICE,
-                            client.getInstanceInfo().getStatus());
+                clientImpl.getInstanceInfo().getStatus());
         myHealthCheckHandler.reset();
         instanceInfoReplicator.run();
 
         Assert.assertTrue("Healthcheck callback not invoked when status is OUT_OF_SERVICE.", myHealthCheckHandler.isInvoked());
         Assert.assertEquals("Instance info status not as expected post healthcheck.", InstanceInfo.InstanceStatus.UP,
-                            client.getInstanceInfo().getStatus());
+                clientImpl.getInstanceInfo().getStatus());
 
-        client.getInstanceInfo().setStatus(InstanceInfo.InstanceStatus.DOWN);
+        clientImpl.getInstanceInfo().setStatus(InstanceInfo.InstanceStatus.DOWN);
         Assert.assertEquals("Instance info status not as expected.", InstanceInfo.InstanceStatus.DOWN,
-                            client.getInstanceInfo().getStatus());
+                clientImpl.getInstanceInfo().getStatus());
         myHealthCheckHandler.reset();
         instanceInfoReplicator.run();
 
         Assert.assertTrue("Healthcheck callback not invoked when status is DOWN.", myHealthCheckHandler.isInvoked());
         Assert.assertEquals("Instance info status not as expected post healthcheck.", InstanceInfo.InstanceStatus.UP,
-                            client.getInstanceInfo().getStatus());
+                clientImpl.getInstanceInfo().getStatus());
     }
 
     private static class MyHealthCheckCallback implements HealthCheckCallback {

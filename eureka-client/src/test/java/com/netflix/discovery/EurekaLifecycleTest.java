@@ -30,8 +30,8 @@ public class EurekaLifecycleTest {
                 .build()
                 .createInjector();
         
-        DiscoveryClient client = injector.getInstance(DiscoveryClient.class);
-        Assert.assertEquals(client, DiscoveryManager.getInstance().getDiscoveryClient());
+        EurekaClient client = injector.getInstance(EurekaClient.class);
+        Assert.assertEquals(client, DiscoveryManager.getInstance().getEurekaClient());
     }
 
     @Test
@@ -58,9 +58,9 @@ public class EurekaLifecycleTest {
         dummyapp.addInstance(InstanceInfo.Builder.newBuilder().setHostName("host").setAppName(dummyappName).build());
         backupRegistry.setLocalRegionApps(apps);
 
-        DiscoveryClient client = injector.getInstance(DiscoveryClient.class);
+        EurekaClient client = injector.getInstance(EurekaClient.class);
 
-        Assert.assertEquals(client, DiscoveryManager.getInstance().getDiscoveryClient());
+        Assert.assertEquals(client, DiscoveryManager.getInstance().getEurekaClient());
         Assert.assertNotNull("Application not returned from the backup.", client.getApplication(dummyappName));
     }
 
@@ -80,8 +80,8 @@ public class EurekaLifecycleTest {
                 })
                 .build()
                 .createInjector();
-        
-        DiscoveryClient client = injector.getInstance(DiscoveryClient.class);
-        Assert.assertEquals(client, DiscoveryManager.getInstance().getDiscoveryClient());
+
+        EurekaClient client = injector.getInstance(EurekaClient.class);
+        Assert.assertEquals(client, DiscoveryManager.getInstance().getEurekaClient());
     }
 }

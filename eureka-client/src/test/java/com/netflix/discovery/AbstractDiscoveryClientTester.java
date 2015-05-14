@@ -43,7 +43,7 @@ public class AbstractDiscoveryClientTester {
 
     @Rule
     public MockRemoteEurekaServer mockLocalEurekaServer= new MockRemoteEurekaServer();
-    protected DiscoveryClient client;
+    protected EurekaClient client;
 
     @Before
     public void setUp() throws Exception {

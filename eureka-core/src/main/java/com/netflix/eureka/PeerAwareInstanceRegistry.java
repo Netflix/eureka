@@ -37,7 +37,6 @@ import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.LeaseInfo;
-import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.Application;
@@ -209,9 +208,14 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
      */
     private void updatePeerEurekaNodes() {
         InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
-        List<String> replicaUrls = DiscoveryManager.getInstance()
-                .getDiscoveryClient()
-                .getDiscoveryServiceUrls(DiscoveryClient.getZone(myInfo));
+
+        EurekaClientConfig clientConfig = DiscoveryManager.getInstance().getEurekaClientConfig();
+        String zone = InstanceInfo.getZone(
+                clientConfig.getAvailabilityZones(clientConfig.getRegion()),
+                myInfo);
+
+        List<String> replicaUrls = DiscoveryManager.getInstance().getEurekaClient().getDiscoveryServiceUrls(zone);
+
         List<PeerEurekaNode> replicaNodes = new ArrayList<PeerEurekaNode>();
         for (String replicaUrl : replicaUrls) {
             if (!isThisMe(replicaUrl)) {

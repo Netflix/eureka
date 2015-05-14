@@ -4,7 +4,7 @@ import com.netflix.appinfo.InstanceInfo;
 
 /**
  * Event containing the latest instance status information.  This event
- * is sent to the {@link EventBus} by {@link DiscoveryClient) whenever
+ * is sent to the {@link EventBus} by {@link EurekaClient) whenever
  * a status change is identified from the remote Eureka server response.
  *
  * @author elandau
