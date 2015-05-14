@@ -2,10 +2,13 @@ package com.netflix.discovery.guice;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
+import com.google.inject.Module;
+import com.google.inject.Scopes;
+import com.google.inject.util.Modules;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.appinfo.MyDataCenterInstanceConfig;
+import com.netflix.appinfo.providers.MyDataCenterInstanceConfigProvider;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.DiscoveryManager;
@@ -35,16 +38,17 @@ public class EurekaModuleTest {
         ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default", "http://localhost:8080/eureka/v2");
 
         LifecycleInjectorBuilder builder = LifecycleInjector.builder();
-        builder.withModules(
-                new AbstractModule() {
-                    @Override
-                    protected void configure() {
-                        // the default impl of EurekaInstanceConfig is CloudInstanceConfig, which we only want in an AWS
-                        // environment. Here we override that by binding MyDataCenterInstanceConfig to EurekaInstanceConfig.
-                        bind(EurekaInstanceConfig.class).to(MyDataCenterInstanceConfig.class);
-                    }
-                },
-                new EurekaModule());
+
+        Module testModule = Modules.override(new EurekaModule()).with(new AbstractModule() {
+            @Override
+            protected void configure() {
+                // the default impl of EurekaInstanceConfig is CloudInstanceConfig, which we only want in an AWS
+                // environment. Here we override that by binding MyDataCenterInstanceConfig to EurekaInstanceConfig.
+                bind(EurekaInstanceConfig.class).toProvider(MyDataCenterInstanceConfigProvider.class).in(Scopes.SINGLETON);
+            }
+        });
+
+        builder.withModules(testModule);
 
         injector = builder.build().createInjector();
         lifecycleManager = injector.getInstance(LifecycleManager.class);
