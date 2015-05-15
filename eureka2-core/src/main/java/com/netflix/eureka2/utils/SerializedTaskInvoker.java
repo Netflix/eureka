@@ -24,13 +24,13 @@ public abstract class SerializedTaskInvoker {
     private final Action0 incrementSubscribedTaskFun = new Action0() {
         @Override
         public void call() {
-            metrics.incrementSubscribedTasks();
+            metrics.incrementRunningTasks();
         }
     };
     private final Action0 decrementSubscribedTaskFun = new Action0() {
         @Override
         public void call() {
-            metrics.decrementSubscribedTasks();
+            metrics.decrementRunningTasks();
         }
     };
 
@@ -51,11 +51,11 @@ public abstract class SerializedTaskInvoker {
         return Observable.create(new Observable.OnSubscribe<T>() {
             @Override
             public void call(final Subscriber<? super T> subscriber) {
-                metrics.incrementScheduledTasks();
+                metrics.incrementSchedulerTaskQueue();
                 worker.schedule(new Action0() {
                     @Override
                     public void call() {
-                        metrics.decrementScheduledTasks();
+                        metrics.decrementSchedulerTaskQueue();
                         try {
                             task.call()
                                     .doOnSubscribe(incrementSubscribedTaskFun)
