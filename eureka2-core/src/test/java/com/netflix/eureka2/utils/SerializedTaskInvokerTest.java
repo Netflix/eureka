@@ -40,14 +40,14 @@ public class SerializedTaskInvokerTest {
         TestSubscriber<Void> testSubscriber = new TestSubscriber<>();
         invoker.submitForAck(new SyncAckTask(true)).subscribe(testSubscriber);
 
-        verify(metrics, times(1)).incrementScheduledTasks();
+        verify(metrics, times(1)).incrementSchedulerTaskQueue();
 
         testScheduler.triggerActions();
         testSubscriber.awaitTerminalEvent();
 
-        verify(metrics, times(1)).decrementScheduledTasks();
-        verify(metrics, times(1)).incrementSubscribedTasks();
-        verify(metrics, times(1)).decrementSubscribedTasks();
+        verify(metrics, times(1)).decrementSchedulerTaskQueue();
+        verify(metrics, times(1)).incrementRunningTasks();
+        verify(metrics, times(1)).decrementRunningTasks();
     }
 
     @Test(timeout = 10000)
@@ -55,14 +55,14 @@ public class SerializedTaskInvokerTest {
         TestSubscriber<Void> testSubscriber = new TestSubscriber<>();
         invoker.submitForAck(new SyncAckTask(false)).subscribe(testSubscriber);
 
-        verify(metrics, times(1)).incrementScheduledTasks();
+        verify(metrics, times(1)).incrementSchedulerTaskQueue();
 
         testScheduler.triggerActions();
         testSubscriber.awaitTerminalEvent();
 
-        verify(metrics, times(1)).decrementScheduledTasks();
-        verify(metrics, times(0)).incrementSubscribedTasks();
-        verify(metrics, times(0)).decrementSubscribedTasks();
+        verify(metrics, times(1)).decrementSchedulerTaskQueue();
+        verify(metrics, times(0)).incrementRunningTasks();
+        verify(metrics, times(0)).decrementRunningTasks();
     }
 
     static class SyncAckTask implements Callable<Observable<Void>> {

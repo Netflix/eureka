@@ -19,7 +19,6 @@ import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.observables.ConnectableObservable;
-import rx.subjects.PublishSubject;
 
 /**
  * Index registry implementation that merges batching hints information from
@@ -127,9 +126,7 @@ public class BatchAwareIndexRegistry<T> implements IndexRegistry<T> {
                             }
                         });
 
-                PublishSubject<ChangeNotification<T>> resultSubject = PublishSubject.create();
-                resultSubject.subscribe(subscriber);
-                finishBatchingObservable.mergeWith(dataNotifications).subscribe(resultSubject);
+                finishBatchingObservable.mergeWith(dataNotifications).subscribe(subscriber);
 
                 // Two subscribers are watching it: localBatchingRegistry and resultSubject
                 notifications.connect();
