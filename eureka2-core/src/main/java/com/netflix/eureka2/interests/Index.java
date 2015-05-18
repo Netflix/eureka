@@ -5,6 +5,7 @@ import java.util.Iterator;
 import com.netflix.eureka2.utils.rx.PauseableSubject;
 import rx.Observable;
 import rx.Subscriber;
+import rx.Subscription;
 import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.subjects.PublishSubject;
@@ -82,14 +83,19 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
                 // TODO can we make this buffering cheaper?
                 final PauseableSubject<ChangeNotification<T>> realTimeSubject = PauseableSubject.create();
                 realTimeSubject.pause();
-                realTimeSource.subscribe(realTimeSubject);
+                final Subscription realTimeSubscription = realTimeSource.subscribe(realTimeSubject);
 
                 realTimeSubject.mergeWith(Observable.from(initStateHolder).doOnCompleted(new Action0() {
                     @Override
                     public void call() {
                         realTimeSubject.resume();
                     }
-                })).subscribe(subscriber);
+                })).doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        realTimeSubscription.unsubscribe();
+                    }
+                }).subscribe(subscriber);
             }
         });
 
