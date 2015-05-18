@@ -293,8 +293,8 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
         }
 
         @Override
-        public void shutdown() {
-            super.shutdown();
+        public void shutdownTaskInvoker() {
+            super.shutdownTaskInvoker();
         }
     }
 

@@ -2,6 +2,7 @@ package com.netflix.eureka2.metric.noop;
 
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.metric.RegistrationChannelMetrics;
+import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.metric.server.BridgeChannelMetrics;
 import com.netflix.eureka2.metric.server.BridgeServerMetricFactory;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
@@ -49,5 +50,10 @@ public class NoOpBridgeServerMetricFactory extends BridgeServerMetricFactory {
     @Override
     public ServerInterestChannelMetrics getInterestChannelMetrics() {
         return NoOpServerInterestChannelMetrics.INSTANCE;
+    }
+
+    @Override
+    public SerializedTaskInvokerMetrics getOverrideServiceTaskInvokerMetrics() {
+        return NoOpSerializedTaskInvokerMetrics.INSTANCE;
     }
 }

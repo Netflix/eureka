@@ -57,7 +57,7 @@ import rx.Observable;
     @Override
     public void close() {
         try {
-            shutdown();
+            shutdownTaskInvoker();
         } finally {
             delegate.close();
         }
@@ -66,7 +66,7 @@ import rx.Observable;
     @Override
     public void close(Throwable error) {
         try {
-            shutdown();
+            shutdownTaskInvoker();
         } finally {
             delegate.close(error);
         }

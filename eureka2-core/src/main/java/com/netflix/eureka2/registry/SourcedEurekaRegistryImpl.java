@@ -306,7 +306,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     @Override
     public Observable<Void> shutdown() {
         logger.info("Shutting down the eureka registry");
-        invoker.shutdown();
+        invoker.shutdownTaskInvoker();
         pauseableSubject.onCompleted();
         internalStore.clear();
         return indexRegistry.shutdown();
@@ -314,7 +314,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
 
     @Override
     public Observable<Void> shutdown(Throwable cause) {
-        invoker.shutdown();
+        invoker.shutdownTaskInvoker();
         pauseableSubject.onCompleted();
         return indexRegistry.shutdown(cause);
     }

@@ -5,8 +5,10 @@ import javax.inject.Singleton;
 
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.metric.RegistrationChannelMetrics;
+import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.metric.SpectatorMessageConnectionMetrics;
 import com.netflix.eureka2.metric.SpectatorRegistrationChannelMetrics;
+import com.netflix.eureka2.metric.SpectatorSerializedTaskInvokerMetrics;
 import com.netflix.spectator.api.ExtendedRegistry;
 
 /**
@@ -21,6 +23,7 @@ public class SpectatorWriteServerMetricFactory extends WriteServerMetricFactory 
     private final SpectatorRegistrationChannelMetrics registrationChannelMetrics;
     private final SpectatorReplicationChannelMetrics replicationChannelMetrics;
     private final SpectatorServerInterestChannelMetrics interestChannelMetrics;
+    private final SerializedTaskInvokerMetrics overrideServiceTaskInvokerMetrics;
 
     @Inject
     public SpectatorWriteServerMetricFactory(ExtendedRegistry registry) {
@@ -31,6 +34,7 @@ public class SpectatorWriteServerMetricFactory extends WriteServerMetricFactory 
         this.registrationChannelMetrics = new SpectatorRegistrationChannelMetrics(registry, "server");
         this.replicationChannelMetrics = new SpectatorReplicationChannelMetrics(registry, "server");
         this.interestChannelMetrics = new SpectatorServerInterestChannelMetrics(registry);
+        this.overrideServiceTaskInvokerMetrics = new SpectatorSerializedTaskInvokerMetrics(registry, "overrideService");
     }
 
     @Override
@@ -66,5 +70,10 @@ public class SpectatorWriteServerMetricFactory extends WriteServerMetricFactory 
     @Override
     public ServerInterestChannelMetrics getInterestChannelMetrics() {
         return interestChannelMetrics;
+    }
+
+    @Override
+    public SerializedTaskInvokerMetrics getOverrideServiceTaskInvokerMetrics() {
+        return overrideServiceTaskInvokerMetrics;
     }
 }

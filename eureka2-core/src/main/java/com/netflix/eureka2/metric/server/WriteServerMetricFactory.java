@@ -2,6 +2,7 @@ package com.netflix.eureka2.metric.server;
 
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.metric.RegistrationChannelMetrics;
+import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.metric.noop.NoOpWriteServerMetricFactory;
 
 /**
@@ -19,6 +20,8 @@ public abstract class WriteServerMetricFactory extends EurekaServerMetricFactory
 
     public abstract ReplicationChannelMetrics getReplicationChannelMetrics();
 
+    public abstract SerializedTaskInvokerMetrics getOverrideServiceTaskInvokerMetrics();
+
     public static WriteServerMetricFactory writeServerMetrics() {
         return defaultFactory;
     }
@@ -26,4 +29,5 @@ public abstract class WriteServerMetricFactory extends EurekaServerMetricFactory
     public static void setDefaultWriteMetricFactory(WriteServerMetricFactory newFactory) {
         defaultFactory = newFactory;
     }
+
 }

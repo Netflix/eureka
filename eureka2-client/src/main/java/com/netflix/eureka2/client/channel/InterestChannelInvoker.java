@@ -48,7 +48,7 @@ public class InterestChannelInvoker extends SerializedTaskInvoker implements Int
     @Override
     public void close() {
         try {
-            shutdown();
+            shutdownTaskInvoker();
         } finally {
             delegate.close();
         }
@@ -57,7 +57,7 @@ public class InterestChannelInvoker extends SerializedTaskInvoker implements Int
     @Override
     public void close(Throwable error) {
         try {
-            shutdown();
+            shutdownTaskInvoker();
         } finally {
             delegate.close(error);
         }
