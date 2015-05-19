@@ -56,7 +56,7 @@ public class ApplicationInfoManager {
     }
 
     @Inject
-    ApplicationInfoManager(EurekaInstanceConfig config, InstanceInfo instanceInfo) {
+    public ApplicationInfoManager(EurekaInstanceConfig config, InstanceInfo instanceInfo) {
         this.config = config;
         this.instanceInfo = instanceInfo;
 
