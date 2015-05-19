@@ -19,6 +19,9 @@ import com.netflix.appinfo.InstanceInfo.PortType;
  * InstanceInfo provider that constructs the InstanceInfo this this instance using
  * EurekaInstanceConfig.
  *
+ * This provider is @Singleton scope as it provides the InstanceInfo for both DiscoveryClient
+ * and ApplicationInfoManager, and need to provide the same InstanceInfo to both.
+ *
  * @author elandau
  *
  */
