@@ -729,13 +729,14 @@ public class DiscoveryClient implements EurekaClient {
     public void shutdown() {
         cancelScheduledTasks();
 
-        if (discoveryJerseyClient != null) {
-            discoveryJerseyClient.destroyResources();
-        }
         // If APPINFO was registered
         if (instanceInfo != null && shouldRegister(instanceInfo)) {
             instanceInfo.setStatus(InstanceStatus.DOWN);
             unregister();
+        }
+
+        if (discoveryJerseyClient != null) {
+            discoveryJerseyClient.destroyResources();
         }
     }
 
