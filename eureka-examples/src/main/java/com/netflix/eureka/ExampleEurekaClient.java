@@ -24,9 +24,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Date;
 
-import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.MyDataCenterInstanceConfig;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.discovery.DefaultEurekaClientConfig;
@@ -44,12 +42,10 @@ public class ExampleEurekaClient {
     private static final DynamicPropertyFactory configInstance = com.netflix.config.DynamicPropertyFactory.getInstance();
 
     public void sendRequestToServiceUsingEureka() {
-        // Register with Eureka
+        // initialize the client
         DiscoveryManager.getInstance().initComponent(
                 new MyDataCenterInstanceConfig(),
                 new DefaultEurekaClientConfig());
-
-        ApplicationInfoManager.getInstance().setInstanceStatus(InstanceStatus.UP);
 
         // this is the vip address for the example service to talk to as defined in conf/sample-eureka-service.properties
         String vipAddress = "sampleservice.mydomain.net";
@@ -96,18 +92,14 @@ public class ExampleEurekaClient {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        this.unRegisterWithEureka();
-    }
 
-    public void unRegisterWithEureka() {
-        // Un register from eureka.
-        DiscoveryManager.getInstance().shutdownComponent();
+        // finally shutdown
+        DiscoveryManager.getInstance().getEurekaClient().shutdown();
     }
 
     public static void main(String[] args) {
-        ExampleEurekaClient sampleEurekaService = new ExampleEurekaClient();
-        sampleEurekaService.sendRequestToServiceUsingEureka();
-
+        ExampleEurekaClient sampleClient = new ExampleEurekaClient();
+        sampleClient.sendRequestToServiceUsingEureka();
     }
 
 }
