@@ -64,7 +64,7 @@ public class InstanceInfoGenerator {
     }
 
     public Applications toApplications() {
-        Map<String, Application> appsByName = new HashMap<>();
+        Map<String, Application> appsByName = new HashMap<String, Application>();
         Iterator<InstanceInfo> it = serviceIterator();
         while (it.hasNext()) {
             InstanceInfo instanceInfo = it.next();

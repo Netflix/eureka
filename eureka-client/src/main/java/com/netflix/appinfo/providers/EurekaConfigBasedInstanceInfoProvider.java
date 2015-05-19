@@ -4,6 +4,7 @@ import java.util.Map;
 
 import javax.inject.Inject;
 
+import com.netflix.governator.guice.lazy.LazySingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,9 +19,13 @@ import com.netflix.appinfo.InstanceInfo.PortType;
  * InstanceInfo provider that constructs the InstanceInfo this this instance using
  * EurekaInstanceConfig.
  *
+ * This provider is @Singleton scope as it provides the InstanceInfo for both DiscoveryClient
+ * and ApplicationInfoManager, and need to provide the same InstanceInfo to both.
+ *
  * @author elandau
  *
  */
+@LazySingleton
 public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceInfo> {
     private static final Logger LOG = LoggerFactory.getLogger(EurekaConfigBasedInstanceInfoProvider.class);
 
