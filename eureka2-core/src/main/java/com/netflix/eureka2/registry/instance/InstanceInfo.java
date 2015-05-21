@@ -16,8 +16,6 @@
 
 package com.netflix.eureka2.registry.instance;
 
-import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+
+import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
 
 /**
  * JavaBean for InstanceInfo.
@@ -247,6 +247,18 @@ public class InstanceInfo {
                 '}';
     }
 
+    public String toStringSummary() {
+        boolean hasMeta = metaData != null && !metaData.isEmpty();
+        return "InstanceInfo{" +
+                "id='" + id + '\'' +
+                ", app='" + app + '\'' +
+                ", asg='" + asg + '\'' +
+                ", status=" + status +
+                ", metaData={" + (hasMeta ? metaData.size() + " items}" : "no items}") +
+                ", dataCenterInfo=" + (dataCenterInfo == null ? "null" : "{name=" + dataCenterInfo.getName() + '}') +
+                '}';
+    }
+
     /**
      * Apply the delta instance to the current InstanceInfo
      *
@@ -442,7 +454,7 @@ public class InstanceInfo {
         }
 
         public Builder withPorts(ServicePort... ports) {
-            if(ports == null || ports.length == 0) {
+            if (ports == null || ports.length == 0) {
                 this.ports = null;
             }
             this.ports = new HashSet<>();
@@ -476,7 +488,7 @@ public class InstanceInfo {
         }
 
         public Builder withMetaData(String key, String value) {
-            if(metaData == null) {
+            if (metaData == null) {
                 metaData = new HashMap<>();
             }
             metaData.put(key, value);

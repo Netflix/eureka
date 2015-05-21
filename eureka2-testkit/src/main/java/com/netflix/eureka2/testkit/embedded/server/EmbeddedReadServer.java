@@ -13,13 +13,11 @@ import com.netflix.eureka2.client.interest.BatchAwareIndexRegistry;
 import com.netflix.eureka2.client.interest.BatchingRegistry;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
-import com.netflix.eureka2.config.BasicEurekaRegistryConfig;
-import com.netflix.eureka2.config.BasicEurekaRegistryConfig.Builder;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.eureka1.rest.Eureka1Configuration;
 import com.netflix.eureka2.eureka1.rest.Eureka1RestApiModule;
 import com.netflix.eureka2.interests.IndexRegistryImpl;
-import com.netflix.eureka2.registry.PreservableEurekaRegistry;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.EurekaReadServerModule;
@@ -64,15 +62,8 @@ public class EmbeddedReadServer extends EmbeddedEurekaServer<EurekaServerConfig,
         BatchAwareIndexRegistry<InstanceInfo> indexRegistry = new BatchAwareIndexRegistry<>(
                 new IndexRegistryImpl<InstanceInfo>(), remoteBatchingRegistry);
 
-        BasicEurekaRegistryConfig registryConfig = new Builder().build();
         BasicEurekaTransportConfig transportConfig = new BasicEurekaTransportConfig.Builder().build();
-
-        PreservableEurekaRegistry registry = new PreservableEurekaRegistry(
-                new SourcedEurekaRegistryImpl(indexRegistry, registryMetrics()),
-                registryConfig,
-                registryMetrics()
-        );
-
+        SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(indexRegistry, registryMetrics());
         ClientChannelFactory<InterestChannel> channelFactory = new InterestChannelFactory(
                 serverId,
                 transportConfig,

@@ -21,7 +21,7 @@ import javax.inject.Singleton;
 import java.util.Properties;
 import java.util.ServiceLoader;
 
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 
@@ -38,12 +38,12 @@ public class ExtensionContext {
     public static final String PROPERTY_KEYS_PREFIX = "eureka.ext";
 
     private final EurekaServerConfig config;
-    private final SourcedEurekaRegistry<InstanceInfo> localRegistry;
+    private final EurekaRegistryView<InstanceInfo> localRegistryView;
 
     @Inject
-    protected ExtensionContext(EurekaServerConfig config, SourcedEurekaRegistry localRegistry) {
+    protected ExtensionContext(EurekaServerConfig config, EurekaRegistryView localRegistryView) {
         this.config = config;
-        this.localRegistry = localRegistry;
+        this.localRegistryView = localRegistryView;
     }
 
     public EurekaServerConfig getConfig() {
@@ -57,8 +57,8 @@ public class ExtensionContext {
         return config.getAppName();
     }
 
-    public SourcedEurekaRegistry<InstanceInfo> getLocalRegistry() {
-        return localRegistry;
+    public EurekaRegistryView<InstanceInfo> getLocalRegistryView() {
+        return localRegistryView;
     }
 
     public static class ExtensionContextBuilder {

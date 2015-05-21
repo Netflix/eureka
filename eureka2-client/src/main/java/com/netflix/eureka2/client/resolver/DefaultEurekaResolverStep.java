@@ -1,5 +1,8 @@
 package com.netflix.eureka2.client.resolver;
 
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+
 import com.netflix.eureka2.Names;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.client.EurekaInterestClient;
@@ -28,9 +31,6 @@ import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
-
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * This resolver uses a custom, light weight eureka interest client for reading eureka read server data from
@@ -129,14 +129,19 @@ class DefaultEurekaResolverStep implements EurekaRemoteResolverStep {
         }
 
         @Override
+        public Observable<Void> register(Observable<InstanceInfo> registrationUpdates, Source source) {
+            throw new IllegalStateException("method not supported");
+        }
+
+        @Override
         public Observable<Boolean> register(InstanceInfo instanceInfo, Source source) {
-            relay.onNext(new ChangeNotification<>(ChangeNotification.Kind.Add ,instanceInfo));
+            relay.onNext(new ChangeNotification<>(ChangeNotification.Kind.Add, instanceInfo));
             return Observable.just(true);
         }
 
         @Override
         public Observable<Boolean> unregister(InstanceInfo instanceInfo, Source source) {
-            relay.onNext(new ChangeNotification<>(ChangeNotification.Kind.Delete ,instanceInfo));
+            relay.onNext(new ChangeNotification<>(ChangeNotification.Kind.Delete, instanceInfo));
             return Observable.just(true);
         }
 

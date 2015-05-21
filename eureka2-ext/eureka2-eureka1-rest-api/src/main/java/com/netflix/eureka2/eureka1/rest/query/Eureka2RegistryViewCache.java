@@ -9,7 +9,7 @@ import com.netflix.eureka2.eureka1.rest.query.Eureka2FullFetchWithDeltaView.Regi
 import com.netflix.eureka2.interests.ChangeNotifications;
 import com.netflix.eureka2.interests.Interest.Operator;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,21 +27,21 @@ public class Eureka2RegistryViewCache {
 
     private static final Logger logger = LoggerFactory.getLogger(Eureka2RegistryViewCache.class);
 
-    private final SourcedEurekaRegistry<InstanceInfo> registry;
+    private final EurekaRegistryView<InstanceInfo> registryView;
     private final long refreshIntervalMs;
     private final Scheduler scheduler;
 
     private final AtomicReference<Eureka2FullFetchWithDeltaView> fullFetchWithDeltaView = new AtomicReference<>();
 
-    public Eureka2RegistryViewCache(SourcedEurekaRegistry<InstanceInfo> registry,
+    public Eureka2RegistryViewCache(EurekaRegistryView<InstanceInfo> registryView,
                                     long refreshIntervalMs) {
-        this(registry, refreshIntervalMs, Schedulers.computation());
+        this(registryView, refreshIntervalMs, Schedulers.computation());
     }
 
-    public Eureka2RegistryViewCache(SourcedEurekaRegistry<InstanceInfo> registry,
+    public Eureka2RegistryViewCache(EurekaRegistryView<InstanceInfo> registryView,
                                     long refreshIntervalMs,
                                     Scheduler scheduler) {
-        this.registry = registry;
+        this.registryView = registryView;
         this.refreshIntervalMs = refreshIntervalMs;
         this.scheduler = scheduler;
     }
@@ -110,7 +110,7 @@ public class Eureka2RegistryViewCache {
     }
 
     public Observable<com.netflix.appinfo.InstanceInfo> findInstance(String instanceId) {
-        return registry.forInterest(Interests.forInstance(Operator.Equals, instanceId))
+        return registryView.forInterest(Interests.forInstance(Operator.Equals, instanceId))
                 .compose(ChangeNotifications.<InstanceInfo>delineatedBuffers())
                 .compose(ChangeNotifications.<InstanceInfo>snapshots())
                 .flatMap(new Func1<LinkedHashSet<InstanceInfo>, Observable<com.netflix.appinfo.InstanceInfo>>() {
@@ -133,7 +133,7 @@ public class Eureka2RegistryViewCache {
             synchronized (fullFetchWithDeltaView) {
                 if (fullFetchWithDeltaView.get() == null) {
                     Eureka2FullFetchWithDeltaView newView = new Eureka2FullFetchWithDeltaView(
-                            registry.forInterest(Interests.forFullRegistry()),
+                            registryView.forInterest(Interests.forFullRegistry()),
                             refreshIntervalMs,
                             scheduler
                     );

@@ -5,21 +5,16 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
-import com.netflix.eureka2.registry.instance.Delta;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.interests.SourcedChangeNotification;
 import com.netflix.eureka2.interests.SourcedModifyNotification;
-import com.netflix.eureka2.utils.SerializedTaskInvoker;
-import com.netflix.eureka2.utils.rx.PauseableSubject;
+import com.netflix.eureka2.metric.EurekaRegistryMetrics;
+import com.netflix.eureka2.registry.instance.Delta;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rx.Observable;
-import rx.Scheduler;
-import rx.functions.Action1;
+import rx.subjects.Subject;
 
 /**
  * This holder maintains the data copies in a list ordered by write time. It also maintains a consistent "snapshot"
@@ -39,24 +34,21 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
 
     private static final Logger logger = LoggerFactory.getLogger(NotifyingInstanceInfoHolder.class);
 
-    private final PauseableSubject<ChangeNotification<InstanceInfo>> pauseableSubject;  // subject for all changes in the registry
+    private final Subject<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>> notificationSubject;  // subject for all changes in the registry
 
-    private final HolderStoreAccessor<NotifyingInstanceInfoHolder> holderStoreAccessor;
     private final DataStore dataStore;
-    private final NotificationTaskInvoker invoker;
     private final String id;
+    private final EurekaRegistryMetrics metrics;
+
     private Snapshot<InstanceInfo> snapshot;
 
     public NotifyingInstanceInfoHolder(
-            HolderStoreAccessor<NotifyingInstanceInfoHolder> holderStoreAccessor,
-            PauseableSubject<ChangeNotification<InstanceInfo>> pauseableSubject,
-            NotificationTaskInvoker invoker,
-            String id)
-    {
-        this.holderStoreAccessor = holderStoreAccessor;
-        this.pauseableSubject = pauseableSubject;
-        this.invoker = invoker;
+            Subject<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>> notificationSubject,
+            String id,
+            EurekaRegistryMetrics metrics) {
+        this.notificationSubject = notificationSubject;
         this.id = id;
+        this.metrics = metrics;
         this.dataStore = new DataStore();
     }
 
@@ -104,26 +96,6 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
         return dataStore.getAllSources();
     }
 
-    @Override
-    public Observable<Status> update(final Source source, final InstanceInfo data) {
-        return invoker.submitTask(new Callable<Observable<Status>>() {
-            @Override
-            public Observable<Status> call() throws Exception {
-                Status status = doUpdate(source, data);
-                return Observable.just(status);
-            }
-            @Override
-            public String toString() {
-                return "NotifyingInstanceInfoHolder - Update: " + data;
-            }
-        }).doOnError(new Action1<Throwable>() {
-            @Override
-            public void call(Throwable throwable) {
-                logger.error("Error updating instance copy");
-            }
-        });
-    }
-
     /**
      * - if the update is an add at the head, send an ADD notification of the data;
      * - if the update is an add to an existing head, send the diff as a MODIFY notification;
@@ -131,29 +103,23 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
      *   promote the new update to the snapshot and generate notification regardless of whether they diff;
      * - else no-op.
      */
-    protected Status doUpdate(final Source source, final InstanceInfo data) {
-        // add self to the holder datastore if not already there, else delegate to existing one
-        NotifyingInstanceInfoHolder existing = holderStoreAccessor.get(id);
-        if (existing == null) {
-            holderStoreAccessor.add(NotifyingInstanceInfoHolder.this);
-        } else if (existing != NotifyingInstanceInfoHolder.this) {
-            return existing.doUpdate(source, data);  // execute inline instead of reschedule as task
+    @Override
+    public void update(final Source source, final InstanceInfo data) {
+        if (dataStore.getMatching(source) == null) {
+            metrics.incrementRegistrationCounter(source.getOrigin());
         }
-
         dataStore.put(source, data);
 
         Snapshot<InstanceInfo> currSnapshot = snapshot;
         Snapshot<InstanceInfo> newSnapshot = new Snapshot<>(source, data);
-        Status result = Status.AddedChange;
 
         if (currSnapshot == null) {  // real add to the head
             snapshot = newSnapshot;
-            pauseableSubject.onNext(newSnapshot.getNotification());
-            result = Status.AddedFirst;
+            notificationSubject.onNext(newSnapshot.getNotification());
         } else if ((currSnapshot.getSource().getOrigin() != Source.Origin.LOCAL) &&
                 (source.getOrigin() == Source.Origin.LOCAL)) {  // promote new update from local to snapshot
             snapshot = newSnapshot;
-            pauseableSubject.onNext(newSnapshot.getNotification());
+            notificationSubject.onNext(newSnapshot.getNotification());
         } else {
             if (matches(currSnapshot.getSource(), newSnapshot.getSource())) {  // modify to current snapshot
                 snapshot = newSnapshot;
@@ -162,7 +128,7 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
                 if (!delta.isEmpty()) {
                     ChangeNotification<InstanceInfo> modifyNotification
                             = new SourcedModifyNotification<>(newSnapshot.getData(), delta, newSnapshot.getSource());
-                    pauseableSubject.onNext(modifyNotification);
+                    notificationSubject.onNext(modifyNotification);
                 } else {
                     logger.debug("No-change update for {}#{}", currSnapshot.getSource(), currSnapshot.getData().getId());
                 }
@@ -174,28 +140,7 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
             }
         }
 
-        logger.debug("CHANGE result: {}, data: {}", result, data);
-        return result;
-    }
-
-    @Override
-    public Observable<Status> remove(final Source source) {
-        return invoker.submitTask(new Callable<Observable<Status>>() {
-            @Override
-            public Observable<Status> call() throws Exception {
-                Status status = doRemove(source);
-                return Observable.just(status);
-            }
-            @Override
-            public String toString() {
-                return "NotifyingInstanceInfoHolder - Remove All For Source: " + source;
-            }
-        }).doOnError(new Action1<Throwable>() {
-            @Override
-            public void call(Throwable throwable) {
-                logger.error("Error removing instance copy");
-            }
-        });
+        logger.debug("Updated instance {} for source {}", data.getId(), source);
     }
 
     /**
@@ -205,65 +150,83 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
      *   notification with LOCAL source followed by an Add notification with the new source.
      * - else no-op.
      */
-    private Status doRemove(final Source source) {
+    @Override
+    public boolean remove(final Source source) {
         InstanceInfo removed = dataStore.remove(source);
         Snapshot<InstanceInfo> currSnapshot = snapshot;
-        Status result = Status.RemovedFragment;
 
         if (removed == null) {  // nothing removed, no-op
             logger.debug("source:data does not exist, no-op");
-            result = Status.RemoveExpired;
-        } else if (matches(source, currSnapshot.getSource())) {  // remove of current snapshot
-            Map.Entry<Source, InstanceInfo> newHead = dataStore.nextEntry();
-            if (newHead == null) {  // removed last copy
-                snapshot = null;
-                ChangeNotification<InstanceInfo> deleteNotification
-                        = new SourcedChangeNotification<>(ChangeNotification.Kind.Delete, removed, source);
-                pauseableSubject.onNext(deleteNotification);
+        } else {
+            metrics.incrementUnregistrationCounter(source.getOrigin());
 
-                // remove self from the holder datastore if empty
-                holderStoreAccessor.remove(id);
-                result = Status.RemovedLast;
-            } else {  // promote the newHead as the snapshot and publish a modify notification
-                Snapshot<InstanceInfo> newSnapshot = new Snapshot<>(newHead.getKey(), newHead.getValue());
-                snapshot = newSnapshot;
-
-                if ((source.getOrigin() == Source.Origin.LOCAL) &&
-                        (snapshot.getSource().getOrigin() != Source.Origin.LOCAL)) {
+            if (matches(source, currSnapshot.getSource())) {  // remove of current snapshot
+                Map.Entry<Source, InstanceInfo> newHead = dataStore.nextEntry();
+                if (newHead == null) {  // removed last copy
+                    snapshot = null;
                     ChangeNotification<InstanceInfo> deleteNotification
                             = new SourcedChangeNotification<>(ChangeNotification.Kind.Delete, removed, source);
-                    pauseableSubject.onNext(deleteNotification);
+                    notificationSubject.onNext(deleteNotification);
 
-                    ChangeNotification<InstanceInfo> addNotification
-                            = new SourcedChangeNotification<>(ChangeNotification.Kind.Add, snapshot.getData(), snapshot.getSource());
-                    pauseableSubject.onNext(addNotification);
-                } else {
-                    Set<Delta<?>> delta = newSnapshot.getData().diffOlder(currSnapshot.getData());
-                    if (!delta.isEmpty()) {
-                        ChangeNotification<InstanceInfo> modifyNotification
-                                = new SourcedModifyNotification<>(newSnapshot.getData(), delta, newSnapshot.getSource());
-                        pauseableSubject.onNext(modifyNotification);
+                    // remove self from the holder datastore if empty
+                    return true;
+                } else {  // promote the newHead as the snapshot and publish a modify notification
+                    Snapshot<InstanceInfo> newSnapshot = new Snapshot<>(newHead.getKey(), newHead.getValue());
+                    snapshot = newSnapshot;
+
+                    if (source.getOrigin() == Source.Origin.LOCAL && snapshot.getSource().getOrigin() != Source.Origin.LOCAL) {
+                        ChangeNotification<InstanceInfo> deleteNotification
+                                = new SourcedChangeNotification<>(ChangeNotification.Kind.Delete, removed, source);
+                        notificationSubject.onNext(deleteNotification);
+
+                        ChangeNotification<InstanceInfo> addNotification
+                                = new SourcedChangeNotification<>(ChangeNotification.Kind.Add, snapshot.getData(), snapshot.getSource());
+                        notificationSubject.onNext(addNotification);
                     } else {
-                        logger.debug("No-change update for {}#{}", currSnapshot.getSource(), currSnapshot.getData().getId());
+                        Set<Delta<?>> delta = newSnapshot.getData().diffOlder(currSnapshot.getData());
+                        if (!delta.isEmpty()) {
+                            ChangeNotification<InstanceInfo> modifyNotification
+                                    = new SourcedModifyNotification<>(newSnapshot.getData(), delta, newSnapshot.getSource());
+                            notificationSubject.onNext(modifyNotification);
+                        } else {
+                            logger.debug("No-change update for {}#{}", currSnapshot.getSource(), currSnapshot.getData().getId());
+                        }
                     }
                 }
+                logger.debug("Removed head of instance {} for source {}", removed.getId(), source);
+            } else {  // remove of copy that's not the source of the snapshot, no-op
+                logger.debug("Removed non-head of instance {} for source {}", removed.getId(), source);
             }
-        } else {  // remove of copy that's not the source of the snapshot, no-op
-            logger.debug("removed non-head (head={}, received={})", currSnapshot.getSource(), source);
         }
-
-        logger.debug("REMOVE result: {}, source: {}", result, source);
-        return result;
+        return false;
     }
 
     @Override
     public String toString() {
         return "NotifyingInstanceInfoHolder{" +
-                "pauseableSubject=" + pauseableSubject +
-                ", dataStore=" + dataStore +
                 ", id='" + id + '\'' +
                 ", snapshot=" + snapshot +
-                "} " + super.toString();
+                ", dataStore=" + dataStore +
+                '}';
+    }
+
+    public String toStringSummary() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("NotifyingInstanceInfoHolder{");
+        sb.append(", id='").append(id).append('\'');
+
+        sb.append(", snapshot=");
+        if (snapshot == null) {
+            sb.append("null");
+        } else {
+            sb.append("{data=").append(snapshot.getData().toStringSummary())
+                    .append(", source=").append(snapshot.getSource()).append('}');
+        }
+
+        sb.append(", dataStore={size=").append(dataStore.size()).append('}');
+        sb.append('}');
+
+        return sb.toString();
     }
 
     /**
@@ -279,22 +242,6 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
             return originMatches && nameMatches;
         } else {
             return one == null && two == null;
-        }
-    }
-
-    static class NotificationTaskInvoker extends SerializedTaskInvoker {
-
-        NotificationTaskInvoker(SerializedTaskInvokerMetrics metrics, Scheduler scheduler) {
-            super(metrics, scheduler);
-        }
-
-        Observable<Status> submitTask(Callable<Observable<Status>> task) {
-            return submitForResult(task);
-        }
-
-        @Override
-        public void shutdownTaskInvoker() {
-            super.shutdownTaskInvoker();
         }
     }
 

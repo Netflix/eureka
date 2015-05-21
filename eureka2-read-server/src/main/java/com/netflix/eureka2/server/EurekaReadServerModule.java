@@ -25,10 +25,10 @@ import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.metric.client.SpectatorEurekaClientMetricFactory;
 import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
 import com.netflix.eureka2.metric.server.SpectatorEurekaServerMetricFactory;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.eureka2.server.registry.EurekaReadServerRegistry;
+import com.netflix.eureka2.server.registry.EurekaReadServerRegistryView;
 import com.netflix.eureka2.server.service.EurekaReadServerSelfInfoResolver;
 import com.netflix.eureka2.server.service.EurekaReadServerSelfRegistrationService;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
@@ -85,7 +85,7 @@ public class EurekaReadServerModule extends AbstractEurekaServerModule {
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new SpectatorEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
         bind(TcpDiscoveryServer.class).asEagerSingleton();
 
-        bind(SourcedEurekaRegistry.class).to(EurekaReadServerRegistry.class);
+        bind(EurekaRegistryView.class).to(EurekaReadServerRegistryView.class);
 
         // Metrics
         bind(EurekaClientMetricFactory.class).to(SpectatorEurekaClientMetricFactory.class).asEagerSingleton();

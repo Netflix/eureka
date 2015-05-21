@@ -19,15 +19,13 @@ package com.netflix.eureka2.server.transport.tcp.discovery;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 
-import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.health.EurekaHealthStatusAggregator;
 import com.netflix.eureka2.health.HealthStatusUpdate;
 import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import com.netflix.eureka2.server.channel.InterestChannelFactory;
-import com.netflix.eureka2.server.channel.ServerChannelFactory;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
@@ -55,7 +53,7 @@ public class TcpDiscoveryHandler implements ConnectionHandler<Object, Object> {
     /* Visible for testing */ static final int RETRY_INTERVAL_MS = 1000;
 
     private final EurekaCommonConfig config;
-    private final SourcedEurekaRegistry<InstanceInfo> registry;
+    private final EurekaRegistryView<InstanceInfo> registry;
     private final EurekaServerMetricFactory metricFactory;
     private final Subscription healthStatusSubscription;
 
@@ -63,14 +61,14 @@ public class TcpDiscoveryHandler implements ConnectionHandler<Object, Object> {
 
     @Inject
     public TcpDiscoveryHandler(EurekaCommonConfig config,
-                               SourcedEurekaRegistry registry,
+                               EurekaRegistryView registry,
                                EurekaHealthStatusAggregator systemHealthStatus,
                                EurekaServerMetricFactory metricFactory) {
         this(config, registry, systemHealthStatus, metricFactory, Schedulers.computation());
     }
 
     public TcpDiscoveryHandler(EurekaCommonConfig config,
-                               SourcedEurekaRegistry registry,
+                               EurekaRegistryView registry,
                                EurekaHealthStatusAggregator systemHealthStatus,
                                EurekaServerMetricFactory metricFactory,
                                Scheduler scheduler) {
@@ -137,8 +135,7 @@ public class TcpDiscoveryHandler implements ConnectionHandler<Object, Object> {
                 config.getHeartbeatIntervalMs(), 3,
                 Schedulers.computation()
         );
-        final ServerChannelFactory<InterestChannel> channelFactory
-                = new InterestChannelFactory(registry, broker, metricFactory);
+        final InterestChannelFactory channelFactory = new InterestChannelFactory(registry, broker, metricFactory);
 
         // Since this is a discovery handler which only handles interest subscriptions,
         // the channel is created on connection accept. We subscribe here for the sake

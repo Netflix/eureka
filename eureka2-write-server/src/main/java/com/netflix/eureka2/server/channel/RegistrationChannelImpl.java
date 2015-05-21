@@ -30,12 +30,14 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATE> imple
 
     private final Source selfSource;
     private final AtomicReference<InstanceInfo> instanceInfoRef;
+    private final SourcedEurekaRegistry registry;
 
     public RegistrationChannelImpl(SourcedEurekaRegistry registry,
                                    final EvictionQueue evictionQueue,
                                    MessageConnection transport,
                                    RegistrationChannelMetrics metrics) {
-        super(STATE.Idle, transport, registry, metrics);
+        super(STATE.Idle, transport, metrics);
+        this.registry = registry;
 
         selfSource = new Source(Source.Origin.LOCAL);
         instanceInfoRef = new AtomicReference<>();

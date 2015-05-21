@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.server.registry;
 
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,7 +28,7 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.StreamStateNotification;
-import com.netflix.eureka2.registry.MultiSourcedDataHolder;
+import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -52,28 +53,14 @@ import rx.functions.Func1;
  *
  * @author Tomasz Bak
  */
-public class EurekaReadServerRegistry implements SourcedEurekaRegistry<InstanceInfo> {
+@Singleton
+public class EurekaReadServerRegistryView implements EurekaRegistryView<InstanceInfo> {
 
     private final EurekaInterestClient interestClient;
 
     @Inject
-    public EurekaReadServerRegistry(EurekaInterestClient interestClient) {
+    public EurekaReadServerRegistryView(EurekaInterestClient interestClient) {
         this.interestClient = interestClient;
-    }
-
-    @Override
-    public Observable<Boolean> register(InstanceInfo instanceInfo, Source source) {
-        throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
-    }
-
-    @Override
-    public Observable<Boolean> unregister(InstanceInfo instanceInfo, Source source) {
-        throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
-    }
-
-    @Override
-    public int size() {
-        throw new UnsupportedOperationException("method not supported by EurekaReadServerRegistry");
     }
 
     @Override
@@ -97,26 +84,6 @@ public class EurekaReadServerRegistry implements SourcedEurekaRegistry<InstanceI
     @Override
     public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, Source.SourceMatcher sourceMatcher) {
         throw new UnsupportedOperationException("Origin filtering not supported by EurekaReadServerRegistry");
-    }
-
-    @Override
-    public Observable<Long> evictAllExcept(Source.SourceMatcher retainMatcher) {
-        throw new UnsupportedOperationException("evictAllExcept not supported by EurekaReadServerRegistry");
-    }
-
-    @Override
-    public Observable<? extends MultiSourcedDataHolder<InstanceInfo>> getHolders() {
-        throw new UnsupportedOperationException("Origin filtering not supported by EurekaReadServerRegistry");
-    }
-
-    @Override
-    public Observable<Void> shutdown() {
-        return Observable.empty();
-    }
-
-    @Override
-    public Observable<Void> shutdown(Throwable cause) {
-        return Observable.error(cause);
     }
 
     @Override

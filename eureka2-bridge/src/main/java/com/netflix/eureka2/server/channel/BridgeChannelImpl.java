@@ -62,7 +62,7 @@ public class BridgeChannelImpl extends AbstractHandlerChannel<STATE> implements 
                              InstanceInfo self,
                              BridgeChannelMetrics metrics,
                              Scheduler scheduler) {
-        super(STATE.Idle, null, registry, metrics);
+        super(STATE.Idle, null, metrics);
         this.registry = registry;
         this.discoveryClient = discoveryClient;
         this.refreshRateSec = refreshRateSec;

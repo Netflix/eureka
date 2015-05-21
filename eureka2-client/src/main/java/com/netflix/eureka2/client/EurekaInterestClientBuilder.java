@@ -24,7 +24,7 @@ import com.netflix.eureka2.client.interest.BatchingRegistry;
 import com.netflix.eureka2.client.interest.BatchingRegistryImpl;
 import com.netflix.eureka2.client.interest.EurekaInterestClientImpl;
 import com.netflix.eureka2.interests.IndexRegistryImpl;
-import com.netflix.eureka2.registry.PreservableEurekaRegistry;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 
@@ -57,10 +57,7 @@ public class EurekaInterestClientBuilder
         BatchAwareIndexRegistry<InstanceInfo> indexRegistry = new BatchAwareIndexRegistry<>(
                 new IndexRegistryImpl<InstanceInfo>(), remoteBatchingRegistry);
 
-        PreservableEurekaRegistry registry = new PreservableEurekaRegistry(
-                new SourcedEurekaRegistryImpl(indexRegistry, registryMetricFactory),
-                registryConfig,
-                registryMetricFactory);
+        SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(indexRegistry, registryMetricFactory);
 
         ClientChannelFactory<InterestChannel> channelFactory
                 = new InterestChannelFactory(clientId, transportConfig, serverResolver, registry, remoteBatchingRegistry, clientMetricFactory);

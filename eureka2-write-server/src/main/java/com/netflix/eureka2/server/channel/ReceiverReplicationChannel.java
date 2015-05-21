@@ -37,6 +37,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATE> im
     static final Exception REPLICATION_LOOP_EXCEPTION = new Exception("Self replicating to itself");
 
     private final SelfInfoResolver selfIdentityService;
+    private final SourcedEurekaRegistry<InstanceInfo> registry;
     private Source replicationSource;
 
     // A loop is detected by comparing hello message source id with local instance id.
@@ -49,8 +50,9 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATE> im
                                       SourcedEurekaRegistry<InstanceInfo> registry,
                                       final EvictionQueue evictionQueue,
                                       ReplicationChannelMetrics metrics) {
-        super(STATE.Idle, transport, registry, metrics);
+        super(STATE.Idle, transport, metrics);
         this.selfIdentityService = selfIdentityService;
+        this.registry = registry;
 
         subscribeToTransportInput(new Action1<Object>() {
             @Override

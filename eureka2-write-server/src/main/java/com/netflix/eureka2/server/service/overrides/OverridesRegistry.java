@@ -14,15 +14,6 @@ import java.util.Set;
 public interface OverridesRegistry {
 
     /**
-     * Get all overrides for a given id
-     *
-     * @param id
-     * @return
-     */
-    Set<Delta<?>> get(String id);
-
-
-    /**
      * Set all overrides for the given id. If there are any previous overrides, they are discarded.
      *
      * Implementations will need to deal with concurrency between set and remove, if any.
@@ -45,10 +36,10 @@ public interface OverridesRegistry {
     Observable<Void> remove(String id);
 
     /**
+     * On subscribe emits latest override for the given instance id, or if no override present
+     * emits delete override notification.
      *
      * @return a stream of updates on additions and removals for overrides
      */
-    Observable<ChangeNotification<Overrides>> forUpdates();
-
-
+    Observable<ChangeNotification<Overrides>> forUpdates(String id);
 }

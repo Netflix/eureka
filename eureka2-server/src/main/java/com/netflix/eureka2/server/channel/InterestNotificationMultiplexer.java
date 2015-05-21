@@ -16,19 +16,19 @@
 
 package com.netflix.eureka2.server.channel;
 
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.MultipleInterests;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.utils.rx.BreakerSwitchOperator;
-import rx.Observable;
-import rx.subjects.PublishSubject;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.Interest;
+import com.netflix.eureka2.interests.MultipleInterests;
+import com.netflix.eureka2.registry.EurekaRegistryView;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.utils.rx.BreakerSwitchOperator;
+import rx.Observable;
+import rx.subjects.PublishSubject;
 
 /**
  * Interest notification multiplexer is channel scoped object, so we can depend here on its
@@ -45,14 +45,14 @@ import java.util.Set;
  */
 public class InterestNotificationMultiplexer {
 
-    private final SourcedEurekaRegistry<InstanceInfo> eurekaRegistry;
+    private final EurekaRegistryView<InstanceInfo> eurekaRegistry;
 
     private final Map<Interest<InstanceInfo>, BreakerSwitchOperator> subscriptionBreakers = new HashMap<>();
 
     private final PublishSubject<Observable<ChangeNotification<InstanceInfo>>> upgrades = PublishSubject.create();
     private final Observable<ChangeNotification<InstanceInfo>> aggregatedStream = Observable.merge(upgrades);
 
-    public InterestNotificationMultiplexer(SourcedEurekaRegistry<InstanceInfo> eurekaRegistry) {
+    public InterestNotificationMultiplexer(EurekaRegistryView<InstanceInfo> eurekaRegistry) {
         this.eurekaRegistry = eurekaRegistry;
     }
 

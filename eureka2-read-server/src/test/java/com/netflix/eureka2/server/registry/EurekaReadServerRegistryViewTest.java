@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Tomasz Bak
  */
-public class EurekaReadServerRegistryTest {
+public class EurekaReadServerRegistryViewTest {
 
     private static final Interest<InstanceInfo> INTEREST = Interests.forVips("testVip");
     private static final ChangeNotification<InstanceInfo> BUFFER_START = StreamStateNotification.bufferStartNotification(INTEREST);
@@ -36,7 +36,7 @@ public class EurekaReadServerRegistryTest {
     private final EurekaInterestClient interestClient = mock(EurekaInterestClient.class);
     private final PublishSubject<ChangeNotification<InstanceInfo>> interestSubject = PublishSubject.create();
 
-    private final EurekaReadServerRegistry registry = new EurekaReadServerRegistry(interestClient);
+    private final EurekaReadServerRegistryView registry = new EurekaReadServerRegistryView(interestClient);
 
     private final ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
 

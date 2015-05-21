@@ -57,7 +57,7 @@ public class KafkaServersProvider implements Provider<StreamedDataCollector<Inet
         StreamedDataCollector<InetSocketAddress> delegate;
         if (config.getKafkaServerList() == null) {
             delegate = StreamedDataCollector.from(
-                    context.getLocalRegistry().forInterest(Interests.forVips(config.getKafkaVip())),
+                    context.getLocalRegistryView().forInterest(Interests.forVips(config.getKafkaVip())),
                     new Func1<InstanceInfo, InetSocketAddress>() {
                         @Override
                         public InetSocketAddress call(InstanceInfo instanceInfo) {

@@ -17,13 +17,14 @@
 package com.netflix.eureka2.registry;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.IndexRegistry;
 import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.interests.InstanceInfoInitStateHolder;
@@ -32,18 +33,21 @@ import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.EurekaRegistryMetrics;
+import com.netflix.eureka2.registry.EurekaRegistrationFunctions.InstanceInfoWithSource;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.utils.rx.NoOpSubscriber;
 import com.netflix.eureka2.utils.rx.PauseableSubject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
-import rx.functions.Action0;
-import rx.functions.Action1;
+import rx.Subscriber;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
-import rx.subjects.AsyncSubject;
+import rx.subjects.PublishSubject;
+import rx.subjects.SerializedSubject;
+import rx.subjects.Subject;
+
+import static com.netflix.eureka2.registry.EurekaRegistrationFunctions.toSourcedChangeNotificationStream;
 
 /**
  * An implementation of {@link com.netflix.eureka2.registry.SourcedEurekaRegistry} that uses a
@@ -53,19 +57,18 @@ import rx.subjects.AsyncSubject;
  *
  * @author David Liu
  */
+@Singleton
 public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<InstanceInfo> {
 
     private static final Logger logger = LoggerFactory.getLogger(SourcedEurekaRegistryImpl.class);
 
-    /**
-     * TODO: define a better contract for base implementation and decorators
-     */
     protected final ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore;
-    private final MultiSourcedDataHolder.HolderStoreAccessor<NotifyingInstanceInfoHolder> internalStoreAccessor;
     private final PauseableSubject<ChangeNotification<InstanceInfo>> pauseableSubject;  // subject for all changes in the registry
     private final IndexRegistry<InstanceInfo> indexRegistry;
     private final EurekaRegistryMetrics metrics;
-    private final NotifyingInstanceInfoHolder.NotificationTaskInvoker invoker;
+
+    private final Subject<Observable<ChangeNotification<InstanceInfoWithSource>>, Observable<ChangeNotification<InstanceInfoWithSource>>>
+            registrationSubject = new SerializedSubject(PublishSubject.create());
 
     public SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory metricsFactory) {
         this(new IndexRegistryImpl<InstanceInfo>(), metricsFactory, Schedulers.computation());
@@ -84,105 +87,75 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
         this.indexRegistry = indexRegistry;
         this.metrics = metricsFactory.getEurekaServerRegistryMetrics();
 
-        invoker = new NotifyingInstanceInfoHolder.NotificationTaskInvoker(
-                metricsFactory.getRegistryTaskInvokerMetrics(),
-                scheduler);
-
         internalStore = new ConcurrentHashMap<>();
         pauseableSubject = PauseableSubject.create();
 
-        internalStoreAccessor = new MultiSourcedDataHolder.HolderStoreAccessor<NotifyingInstanceInfoHolder>() {
-            @Override
-            public void add(NotifyingInstanceInfoHolder holder) {
-                internalStore.put(holder.getId(), holder);
-                metrics.setRegistrySize(internalStore.size());
-            }
+        Observable.merge(registrationSubject).observeOn(scheduler).subscribe(
+                new Subscriber<ChangeNotification<InstanceInfoWithSource>>() {
+                    @Override
+                    public void onCompleted() {
+                        logger.info("Registration subject onCompleted");
+                    }
 
-            @Override
-            public NotifyingInstanceInfoHolder get(String id) {
-                return internalStore.get(id);
-            }
+                    @Override
+                    public void onError(Throwable e) {
+                        logger.error("Registration subject terminated with an error", e);
+                    }
 
-            @Override
-            public void remove(String id) {
-                internalStore.remove(id);
-                metrics.setRegistrySize(internalStore.size());
-            }
-
-            @Override
-            public boolean contains(String id) {
-                return internalStore.containsKey(id);
-            }
-        };
+                    @Override
+                    public void onNext(ChangeNotification<InstanceInfoWithSource> notification) {
+                        InstanceInfo instanceInfo = notification.getData().getInstanceInfo();
+                        Source source = notification.getData().getSource();
+                        NotifyingInstanceInfoHolder holder = internalStore.get(instanceInfo.getId());
+                        switch (notification.getKind()) {
+                            case Add:
+                                if (holder == null) {
+                                    holder = new NotifyingInstanceInfoHolder(pauseableSubject, instanceInfo.getId(), metrics);
+                                    internalStore.put(instanceInfo.getId(), holder);
+                                    metrics.setRegistrySize(internalStore.size());
+                                }
+                                holder.update(source, instanceInfo);
+                                break;
+                            case Delete:
+                                if (holder != null && holder.remove(source)) {
+                                    internalStore.remove(instanceInfo.getId());
+                                    metrics.setRegistrySize(internalStore.size());
+                                }
+                                break;
+                            default:
+                                logger.error("Unexpected notification type {}", notification.getKind());
+                        }
+                    }
+                }
+        );
     }
 
     // -------------------------------------------------
     // Registry manipulation
     // -------------------------------------------------
 
+    public Observable<Void> register(Observable<InstanceInfo> registrationUpdates, final Source source) {
+        Observable<ChangeNotification<InstanceInfoWithSource>> changeNotifications =
+                toSourcedChangeNotificationStream(registrationUpdates, source).share();
+
+        registrationSubject.onNext(changeNotifications);
+        return changeNotifications.ignoreElements().cast(Void.class);
+    }
+
     @Override
     public Observable<Boolean> register(final InstanceInfo instanceInfo, final Source source) {
-        MultiSourcedDataHolder<InstanceInfo> holder = new NotifyingInstanceInfoHolder(
-                internalStoreAccessor, pauseableSubject, invoker, instanceInfo.getId());
-
-        Observable<MultiSourcedDataHolder.Status> result = holder.update(source, instanceInfo).doOnNext(new Action1<MultiSourcedDataHolder.Status>() {
-            @Override
-            public void call(MultiSourcedDataHolder.Status status) {
-                if (status != MultiSourcedDataHolder.Status.AddExpired) {
-                    metrics.incrementRegistrationCounter(source.getOrigin());
-                }
-            }
-        });
-        return subscribeToUpdateResult(result);
+        registrationSubject.onNext(Observable.just(
+                new ChangeNotification<InstanceInfoWithSource>(Kind.Add, new InstanceInfoWithSource(instanceInfo, source))
+        ));
+        return Observable.just(true);
     }
 
     @Override
     public Observable<Boolean> unregister(final InstanceInfo instanceInfo, final Source source) {
-        final MultiSourcedDataHolder<InstanceInfo> currentHolder = internalStore.get(instanceInfo.getId());
-        if (currentHolder == null) {
-            return Observable.just(false);
-        }
-
-        Observable<MultiSourcedDataHolder.Status> result = currentHolder.remove(source).doOnNext(new Action1<MultiSourcedDataHolder.Status>() {
-            @Override
-            public void call(MultiSourcedDataHolder.Status status) {
-                if (status != MultiSourcedDataHolder.Status.RemoveExpired) {
-                    metrics.incrementUnregistrationCounter(source.getOrigin());
-                }
-            }
-        });
-        return subscribeToUpdateResult(result);
-    }
-
-    /**
-     * TODO: do we have to eagerly subscribe? This code is inefficient.
-     */
-    private static Observable<Boolean> subscribeToUpdateResult(Observable<MultiSourcedDataHolder.Status> status) {
-        final AsyncSubject<Boolean> result = AsyncSubject.create();  // use an async subject as we only need the last result
-
-        status.take(1).onBackpressureBuffer(1)
-                .map(new Func1<MultiSourcedDataHolder.Status, Boolean>() {
-                    @Override
-                    public Boolean call(MultiSourcedDataHolder.Status status) {
-                        logger.debug("Registry updated completed with status {}", status);
-                        if (status.equals(MultiSourcedDataHolder.Status.AddedFirst)
-                                || status.equals(MultiSourcedDataHolder.Status.RemovedLast)) {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-                })
-                .doOnError(new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable e) {
-                        logger.error("Registry update failure", e);
-                        e.printStackTrace();
-                    }
-                })
-                .subscribe(result);
-
-        return result;
+        registrationSubject.onNext(Observable.just(
+                new ChangeNotification<InstanceInfoWithSource>(Kind.Delete, new InstanceInfoWithSource(instanceInfo, source))
+        ));
+        return Observable.just(true);
     }
 
     @Override
@@ -272,30 +245,17 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
 
     @Override
     public Observable<Long> evictAllExcept(final Source.SourceMatcher retainMatcher) {
-        return getHolders()
-                .doOnNext(new Action1<MultiSourcedDataHolder<InstanceInfo>>() {
-                    @Override
-                    public void call(MultiSourcedDataHolder<InstanceInfo> holder) {
-                        for (Source source : holder.getAllSources()) {
-                            if (!retainMatcher.match(source)) {
-                                holder.remove(source).subscribe(new NoOpSubscriber<MultiSourcedDataHolder.Status>());
-                            }
-                        }
-                    }
-                })
-                .countLong()
-                .doOnError(new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable throwable) {
-                        logger.error("Error evicting registry", throwable);
-                    }
-                })
-                .doOnCompleted(new Action0() {
-                    @Override
-                    public void call() {
-                        logger.info("Completed evicting registry");
-                    }
-                });
+        long count = 0;
+        for (MultiSourcedDataHolder<InstanceInfo> holder : internalStore.values()) {
+            for (Source source : holder.getAllSources()) {
+                if (!retainMatcher.match(source)) {
+                    unregister(holder.get(source), source);
+                    count++;
+                }
+            }
+        }
+        logger.info("Completed evicting registry with source retain matcher {}; removed {} copies", retainMatcher, count);
+        return Observable.just(count);
     }
 
     @Override
@@ -306,7 +266,8 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     @Override
     public Observable<Void> shutdown() {
         logger.info("Shutting down the eureka registry");
-        invoker.shutdownTaskInvoker();
+
+        registrationSubject.onCompleted();
         pauseableSubject.onCompleted();
         internalStore.clear();
         return indexRegistry.shutdown();
@@ -314,9 +275,19 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
 
     @Override
     public Observable<Void> shutdown(Throwable cause) {
-        invoker.shutdownTaskInvoker();
+        registrationSubject.onCompleted();
         pauseableSubject.onCompleted();
         return indexRegistry.shutdown(cause);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("SourcedEurekaRegistryImpl{\n");
+        for (NotifyingInstanceInfoHolder holder : internalStore.values()) {
+            sb.append(holder.toStringSummary()).append(",\n");
+        }
+        sb.append('}');
+        return sb.toString();
     }
 
     private Iterator<ChangeNotification<InstanceInfo>> getSnapshotForInterest(final Interest<InstanceInfo> interest) {
@@ -366,21 +337,5 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
         public void remove() {
             throw new UnsupportedOperationException("Remove not supported for this iterator.");
         }
-    }
-
-    // pretty print for debugging
-    @Override
-    public String toString() {
-        return prettyString();
-    }
-
-    private String prettyString() {
-        StringBuilder sb = new StringBuilder("EurekaRegistryImpl\n");
-        for (Map.Entry<String, NotifyingInstanceInfoHolder> entry : internalStore.entrySet()) {
-            sb.append(entry).append("\n");
-        }
-        sb.append(indexRegistry.toString());
-
-        return sb.toString();
     }
 }

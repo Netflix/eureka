@@ -38,7 +38,7 @@ public class Eureka1QueryRequestHandler extends AbstractEureka1RequestHandler {
 
     @Inject
     public Eureka1QueryRequestHandler(Eureka1Configuration config, ExtensionContext context) {
-        this.registryViewCache = new Eureka2RegistryViewCache(context.getLocalRegistry(), config.getCacheRefreshIntervalMs());
+        this.registryViewCache = new Eureka2RegistryViewCache(context.getLocalRegistryView(), config.getCacheRefreshIntervalMs());
     }
 
     /* For testing */Eureka1QueryRequestHandler(Eureka2RegistryViewCache registryViewCache) {
