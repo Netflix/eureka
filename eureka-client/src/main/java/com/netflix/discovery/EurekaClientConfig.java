@@ -498,4 +498,9 @@ public interface EurekaClientConfig {
      * @return Replacement string for underscore sign <code>_</code>.
      */
     String getEscapeCharReplacement();
+
+    /**
+     *
+     */
+    boolean getUsesExplicitEventsForInitialDiscoveryCalls();
 }

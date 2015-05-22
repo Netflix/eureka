@@ -157,6 +157,16 @@ public interface EurekaClient extends LookupService {
      */
     public HealthCheckHandler getHealthCheckHandler();
 
+    /**
+     * Event to indicate current instance should register in discovery immediately
+     */
+    public void registerInDiscovery();
+
+    /**
+     * Event to indicate current instance should be marked as up in discovery immediately
+     */
+    public void markAsUpInDiscovery();
+
     // =============
     // other methods
     // =============
