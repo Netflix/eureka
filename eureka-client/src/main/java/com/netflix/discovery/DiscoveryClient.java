@@ -326,10 +326,14 @@ public class DiscoveryClient implements EurekaClient {
         }
 
         initRegistryFetchPoller();
-        boolean eventsForInstanceInfoUpdaters = clientConfig.getUsesExplicitEventsForInitialDiscoveryCalls();
+        boolean eventsForInstanceInfoUpdaters = clientConfig.getUseExplicitEventsForInitialDiscoveryCalls();
         if (!eventsForInstanceInfoUpdaters) {
-            initInstanceHeartBeatUpdater(eventsForInstanceInfoUpdaters);
-            initInstanceInfoRefreshUpdater(eventsForInstanceInfoUpdaters);
+            if (shouldRegister()) {
+                initInstanceHeartBeatUpdater(eventsForInstanceInfoUpdaters);
+                initInstanceInfoRefreshUpdater(eventsForInstanceInfoUpdaters);
+            } else {
+                logger.info("Not registering with Eureka server per configuration");
+            }
         }
 
         try {
@@ -1875,18 +1879,18 @@ public class DiscoveryClient implements EurekaClient {
     }
 
     @Override
-    public void registerInDiscovery() {
-        boolean eventsForInstanceInfoUpdaters = clientConfig.getUsesExplicitEventsForInitialDiscoveryCalls();
-        if (eventsForInstanceInfoUpdaters) {
+    public void startInstanceInfoHeartBeatNow() {
+        boolean eventsForInstanceInfoUpdaters = clientConfig.getUseExplicitEventsForInitialDiscoveryCalls();
+        if (shouldRegister() && eventsForInstanceInfoUpdaters) {
             initInstanceHeartBeatUpdater(true);
         }
         // else expected that DiscoveryClient initialization already initialized heartbeat
     }
 
     @Override
-    public void markAsUpInDiscovery() {
-        boolean eventsForInstanceInfoUpdaters = clientConfig.getUsesExplicitEventsForInitialDiscoveryCalls();
-        if (eventsForInstanceInfoUpdaters) {
+    public void startInstanceInfoRefreshNow() {
+        boolean eventsForInstanceInfoUpdaters = clientConfig.getUseExplicitEventsForInitialDiscoveryCalls();
+        if (shouldRegister() && eventsForInstanceInfoUpdaters) {
             initInstanceInfoRefreshUpdater(true);
         }
         // else expected that DiscoveryClient initialization already initialized instanceinforefresher

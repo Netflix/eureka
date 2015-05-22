@@ -502,5 +502,5 @@ public interface EurekaClientConfig {
     /**
      *
      */
-    boolean getUsesExplicitEventsForInitialDiscoveryCalls();
+    boolean getUseExplicitEventsForInitialDiscoveryCalls();
 }

@@ -489,7 +489,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     }
 
     @Override
-    public boolean getUsesExplicitEventsForInitialDiscoveryCalls() {
-        return configInstance.getBooleanProperty(namespace + "client.useExplicitEventsForInitialDiscoveryCalls", false).get();
+    public boolean getUseExplicitEventsForInitialDiscoveryCalls() {
+        return configInstance.getBooleanProperty(namespace + "appinfo.useExplicitEventsForInitialDiscoveryCalls", false).get();
     }
 }
