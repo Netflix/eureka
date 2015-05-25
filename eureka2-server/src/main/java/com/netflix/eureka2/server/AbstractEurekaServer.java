@@ -30,6 +30,7 @@ import com.netflix.config.ConfigurationManager;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.health.EurekaHealthStatusModule;
 import com.netflix.eureka2.server.health.KaryonHealthCheckHandler;
+import com.netflix.eureka2.server.http.EurekaHttpServer;
 import com.netflix.eureka2.server.utils.guice.PostInjectorModule;
 import com.netflix.governator.configuration.ArchaiusConfigurationProvider;
 import com.netflix.governator.configuration.ArchaiusConfigurationProvider.Builder;
@@ -79,6 +80,14 @@ public abstract class AbstractEurekaServer<C extends EurekaCommonConfig> {
     protected AbstractEurekaServer(C config) {
         this.config = config;
         this.name = null;
+    }
+
+    public int getHttpServerPort() {
+        EurekaHttpServer httpServer = injector.getInstance(EurekaHttpServer.class);
+        if (httpServer != null) {
+            return httpServer.serverPort();
+        }
+        return -1;
     }
 
     public int getShutdownPort() {
