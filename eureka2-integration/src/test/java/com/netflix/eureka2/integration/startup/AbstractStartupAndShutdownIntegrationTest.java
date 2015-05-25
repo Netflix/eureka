@@ -1,19 +1,27 @@
 package com.netflix.eureka2.integration.startup;
 
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+
 import com.netflix.config.ConfigurationManager;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.server.AbstractEurekaServer;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
+import com.netflix.eureka2.utils.Json;
 import io.netty.buffer.ByteBuf;
+import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ObservableConnection;
+import org.codehaus.jackson.JsonNode;
 import org.junit.Before;
 import org.junit.Rule;
 import org.slf4j.Logger;
@@ -64,6 +72,9 @@ public abstract class AbstractStartupAndShutdownIntegrationTest<C extends Eureka
     protected void executeAndVerifyLifecycle(S server, String applicationName) throws Exception {
         server.start();
 
+        // Verify that server health status is up
+        verifyHealthStatusIsUp(server);
+
         // Subscribe to write cluster and verify that read server connected properly
         EurekaInterestClient interestClient = eurekaDeploymentResource.interestClientToWriteCluster();
 
@@ -80,6 +91,39 @@ public abstract class AbstractStartupAndShutdownIntegrationTest<C extends Eureka
         // Verify that read server registry entry is removed
         notification = testSubscriber.takeNextOrWait();
         assertThat(notification.getKind(), is(equalTo(Kind.Delete)));
+    }
+
+    private void verifyHealthStatusIsUp(S server) {
+        RxNetty.newWebSocketClientBuilder("localhost", server.getHttpServerPort()).withWebSocketURI("/health").build()
+                .connect()
+                .flatMap(new Func1<ObservableConnection<WebSocketFrame, WebSocketFrame>, Observable<Status>>() {
+                    @Override
+                    public Observable<Status> call(ObservableConnection<WebSocketFrame, WebSocketFrame> connection) {
+                        return connection.getInput().flatMap(new Func1<WebSocketFrame, Observable<Status>>() {
+                            @Override
+                            public Observable<Status> call(WebSocketFrame webSocketFrame) {
+                                String body = ((TextWebSocketFrame) webSocketFrame).text();
+                                try {
+                                    JsonNode jsonNode = Json.getMapper().readTree(body);
+                                    Status status = Status.toEnum(jsonNode.get("status").asText());
+                                    return Observable.just(status);
+                                } catch (IOException e) {
+                                    return Observable.error(e);
+                                }
+                            }
+                        });
+                    }
+                })
+                .filter(new Func1<Status, Boolean>() {
+                    @Override
+                    public Boolean call(Status status) {
+                        return status == Status.UP;
+                    }
+                })
+                .take(1)
+                .timeout(30, TimeUnit.SECONDS)
+                .toBlocking()
+                .first();
     }
 
     protected void sendShutdownCommand(final int port) {
