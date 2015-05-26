@@ -1,16 +1,8 @@
 package com.netflix.discovery;
 
+import javax.annotation.Nullable;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
-
-import javax.annotation.Nullable;
-
-import junit.framework.Assert;
-
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
 
 import com.google.common.base.Supplier;
 import com.google.inject.AbstractModule;
@@ -31,9 +23,14 @@ import com.netflix.governator.guice.BootstrapBinder;
 import com.netflix.governator.guice.BootstrapModule;
 import com.netflix.governator.guice.LifecycleInjector;
 import com.netflix.governator.guice.LifecycleInjectorMode;
+import junit.framework.Assert;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class DiscoveryStatusCheckerTest {
-    
+
     public static final String ALL_REGIONS_VIP_ADDR = "myvip";
     public static final String REMOTE_REGION_INSTANCE_1_HOSTNAME = "blah";
     public static final String REMOTE_REGION_INSTANCE_2_HOSTNAME = "blah2";
@@ -50,10 +47,10 @@ public class DiscoveryStatusCheckerTest {
 
     @Rule
     public MockRemoteEurekaServer mockLocalEurekaServer = new MockRemoteEurekaServer();
-    
+
     private InstanceInfo instanceInfo;
     private static EventBus eventBus = new EventBusImpl();
-    
+
     @Before
     public void setUp() throws Exception {
         final int eurekaPort = mockLocalEurekaServer.getPort();
@@ -62,8 +59,8 @@ public class DiscoveryStatusCheckerTest {
         ConfigurationManager.getConfigInstance().setProperty("eureka.fetchRemoteRegionsRegistry", REMOTE_REGION);
         ConfigurationManager.getConfigInstance().setProperty("eureka.myregion.availabilityZones", REMOTE_ZONE);
         ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default",
-                                                             "http://localhost:" + eurekaPort +
-                                                             MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
+                "http://localhost:" + eurekaPort +
+                        MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
         populateLocalRegistryAtStartup();
         populateRemoteRegistryAtStartup();
 
@@ -78,41 +75,41 @@ public class DiscoveryStatusCheckerTest {
                 return Name.MyOwn;
             }
         });
-        
+
         instanceInfo = builder.build();
     }
-    
-    
+
+
     public static class Service {
         final Supplier<Boolean> upStatusSupplier;
         final Supplier<Boolean> dnStatusSupplier;
         final EurekaClient client;
         final EurekaUpStatusResolver status;
-        
+
         @Inject
         public Service(
                 EurekaClient client,
-                @UpStatus   Supplier<Boolean> upStatusSupplier,
+                @UpStatus Supplier<Boolean> upStatusSupplier,
                 @DownStatus Supplier<Boolean> dnStatusSupplier,
                 EurekaUpStatusResolver status
-                ) {
+        ) {
             this.client = client;
             this.status = status;
             this.upStatusSupplier = upStatusSupplier;
             this.dnStatusSupplier = dnStatusSupplier;
-            
+
             assertState(true);
         }
-        
+
         public void assertState(boolean state) {
             System.out.println("EurekaStatus update count: " + status.getChangeCount());
             System.out.println("Status: " + upStatusSupplier.get());
             System.out.println("!Status: " + dnStatusSupplier.get());
-            Assert.assertEquals(state, (boolean)upStatusSupplier.get());
+            Assert.assertEquals(state, (boolean) upStatusSupplier.get());
             Assert.assertEquals(state, !dnStatusSupplier.get());
         }
     }
-    
+
     @Test
     @Ignore
     public void testStatus() throws Exception {
@@ -129,17 +126,17 @@ public class DiscoveryStatusCheckerTest {
                 })
                 .withRootModule(InternalEurekaStatusModule.class)
                 .withModules(
-                    new AbstractModule() {
-                        @Override
-                        protected void configure() {
-                            bind(EventBus.class).toInstance(eventBus);
-                            bind(Service.class);
-                            bind(InstanceInfo.class).toInstance(instanceInfo);
-                        }
-                    })
+                        new AbstractModule() {
+                            @Override
+                            protected void configure() {
+                                bind(EventBus.class).toInstance(eventBus);
+                                bind(Service.class);
+                                bind(InstanceInfo.class).toInstance(instanceInfo);
+                            }
+                        })
                 .build()
                 .createInjector();
-        
+
         Service service = injector.getInstance(Service.class);
         mockLocalEurekaServer.waitForDeltaToBeRetrieved(CLIENT_REFRESH_RATE);
         service.assertState(true);
@@ -148,9 +145,9 @@ public class DiscoveryStatusCheckerTest {
         client.unregister();
         mockLocalEurekaServer.waitForDeltaToBeRetrieved(CLIENT_REFRESH_RATE);
         TimeUnit.SECONDS.sleep(CLIENT_REFRESH_RATE * 2);
-        
+
         service.assertState(false);
-        
+
         // TODO: More work needs to be done on the MockEurekaServer to properly support this
         //       This is disabled for now until MockEurekaServer can be updated
 //        System.out.println("****** Re-register");
@@ -159,7 +156,7 @@ public class DiscoveryStatusCheckerTest {
 //        TimeUnit.SECONDS.sleep(CLIENT_REFRESH_RATE * 2);
 //        service.assertState(true);
     }
-    
+
     private void populateLocalRegistryAtStartup() {
         Application myapp = createLocalApps();
         Application myappDelta = createLocalAppsDelta();
@@ -205,7 +202,7 @@ public class DiscoveryStatusCheckerTest {
         azBuilder.addMetadata(AmazonInfo.MetaDataKey.publicHostname, instanceHostName);
         return azBuilder.build();
     }
-    
+
     private void populateRemoteRegistryAtStartup() {
         Application myapp = createRemoteApps();
         Application myappDelta = createRemoteAppsDelta();

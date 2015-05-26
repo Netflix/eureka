@@ -13,7 +13,7 @@ public class MyDataCenterInstanceConfigProvider implements Provider<EurekaInstan
     private String namespace;
 
     private MyDataCenterInstanceConfig config;
-    
+
     @Override
     public synchronized MyDataCenterInstanceConfig get() {
         if (config == null) {

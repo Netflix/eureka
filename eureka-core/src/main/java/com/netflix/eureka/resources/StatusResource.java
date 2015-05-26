@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2012 Netflix, Inc.
  *
@@ -17,16 +16,12 @@
 
 package com.netflix.eureka.resources;
 
-import java.net.URI;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.net.URI;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.InstanceInfo;
@@ -35,6 +30,8 @@ import com.netflix.eureka.PeerAwareInstanceRegistry;
 import com.netflix.eureka.cluster.PeerEurekaNode;
 import com.netflix.eureka.util.StatusInfo;
 import com.netflix.eureka.util.StatusInfo.Builder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An utility class for exposing information about peer nodes.
@@ -42,14 +39,14 @@ import com.netflix.eureka.util.StatusInfo.Builder;
  * @author Karthik Ranganathan, Greg Kim
  */
 @Path("/{version}/status")
-@Produces({ "application/xml", "application/json" })
+@Produces({"application/xml", "application/json"})
 public class StatusResource {
     private static final Logger logger = LoggerFactory
-    .getLogger(StatusResource.class);
+            .getLogger(StatusResource.class);
     private static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss Z";
 
     private final PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry
-    .getInstance();
+            .getInstance();
 
     @GET
     public StatusInfo getStatusInfo() {
@@ -60,7 +57,7 @@ public class StatusResource {
 
         StringBuilder replicaHostNames = new StringBuilder();
         String myAppName = ApplicationInfoManager.getInstance().getInfo()
-        .getAppName();
+                .getAppName();
 
         for (PeerEurekaNode node : registry.getReplicaNodes()) {
             if (replicaHostNames.length() > 0) {
@@ -86,7 +83,7 @@ public class StatusResource {
         try {
             String givenHostName = new URI(url).getHost();
             Application app = PeerAwareInstanceRegistry.getInstance()
-            .getApplication(myAppName, false);
+                    .getApplication(myAppName, false);
             for (InstanceInfo info : app.getInstances()) {
                 if (info.getHostName().equals(givenHostName)) {
                     return true;

@@ -16,16 +16,11 @@
 
 package com.netflix.eureka;
 
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
-
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-
-import com.netflix.discovery.converters.StringCache;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.CloudInstanceConfig;
@@ -38,11 +33,14 @@ import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.converters.JsonXStream;
+import com.netflix.discovery.converters.StringCache;
 import com.netflix.discovery.converters.XmlXStream;
 import com.netflix.eureka.cluster.PeerEurekaNode;
 import com.netflix.eureka.util.EIPManager;
 import com.netflix.eureka.util.EurekaMonitors;
 import com.thoughtworks.xstream.XStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The class that kick starts the eureka server.
@@ -135,7 +133,7 @@ public class EurekaBootStrap implements ServletContextListener {
                 eurekaServerConfig);
 
         String dataCenter = ConfigurationManager.getConfigInstance()
-        .getString(EUREKA_DATACENTER);
+                .getString(EUREKA_DATACENTER);
         if (dataCenter == null) {
             logger.info("Eureka data center value eureka.datacenter is not set, defaulting to default");
             ConfigurationManager.getConfigInstance().setProperty(
@@ -210,24 +208,24 @@ public class EurekaBootStrap implements ServletContextListener {
      * @throws InterruptedException
      */
     private void handleEIPBinding(PeerAwareInstanceRegistry registry)
-    throws InterruptedException {
+            throws InterruptedException {
         EurekaServerConfig eurekaServerConfig = EurekaServerConfigurationManager.getInstance().getConfiguration();
         int retries = eurekaServerConfig.getEIPBindRebindRetries();
-         // Bind to EIP if needed
+        // Bind to EIP if needed
         EIPManager eipManager = EIPManager.getInstance();
         for (int i = 0; i < retries; i++) {
-               try {
-                    if (eipManager.isEIPBound()) {
-                        break;
-                    } else {
-                        eipManager.bindEIP();
-                    }
-                } catch (Throwable e) {
-                    logger.error("Cannot bind to EIP", e);
-                    Thread.sleep(EIP_BIND_SLEEP_TIME_MS);
+            try {
+                if (eipManager.isEIPBound()) {
+                    break;
+                } else {
+                    eipManager.bindEIP();
                 }
+            } catch (Throwable e) {
+                logger.error("Cannot bind to EIP", e);
+                Thread.sleep(EIP_BIND_SLEEP_TIME_MS);
+            }
         }
-       // Schedule a timer which periodically checks for EIP binding.
+        // Schedule a timer which periodically checks for EIP binding.
         scheduleEIPBindTask(eurekaServerConfig, registry);
     }
 
@@ -244,28 +242,28 @@ public class EurekaBootStrap implements ServletContextListener {
             EurekaServerConfig eurekaServerConfig, final PeerAwareInstanceRegistry registry) {
         timer.schedule(new TimerTask() {
 
-            @Override
-            public void run() {
-                try {
-                    // If the EIP is not bound, the registry could  be stale
-                    // First sync up the registry from the neighboring node before
-                    // trying to bind the EIP
-                    EIPManager eipManager = EIPManager.getInstance();
-                    if (!eipManager.isEIPBound()) {
-                        registry.clearRegistry();
-                        int count = registry.syncUp();
-                        registry.openForTraffic(count);
-                    } else {
-                        // An EIP is already bound
-                        return;
-                    }
-                    eipManager.bindEIP();
-                } catch (Throwable e) {
-                    logger.error("Could not bind to EIP", e);
-                }
-            }
-        }, eurekaServerConfig.getEIPBindingRetryIntervalMs(),
-        eurekaServerConfig.getEIPBindingRetryIntervalMs());
+                           @Override
+                           public void run() {
+                               try {
+                                   // If the EIP is not bound, the registry could  be stale
+                                   // First sync up the registry from the neighboring node before
+                                   // trying to bind the EIP
+                                   EIPManager eipManager = EIPManager.getInstance();
+                                   if (!eipManager.isEIPBound()) {
+                                       registry.clearRegistry();
+                                       int count = registry.syncUp();
+                                       registry.openForTraffic(count);
+                                   } else {
+                                       // An EIP is already bound
+                                       return;
+                                   }
+                                   eipManager.bindEIP();
+                               } catch (Throwable e) {
+                                   logger.error("Could not bind to EIP", e);
+                               }
+                           }
+                       }, eurekaServerConfig.getEIPBindingRetryIntervalMs(),
+                eurekaServerConfig.getEIPBindingRetryIntervalMs());
     }
 
 

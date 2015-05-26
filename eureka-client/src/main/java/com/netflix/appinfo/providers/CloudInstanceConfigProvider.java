@@ -16,7 +16,7 @@ public class CloudInstanceConfigProvider implements Provider<CloudInstanceConfig
     private String namespace;
 
     private CloudInstanceConfig config;
-    
+
     @Override
     public synchronized CloudInstanceConfig get() {
         if (config == null) {
@@ -25,7 +25,7 @@ public class CloudInstanceConfigProvider implements Provider<CloudInstanceConfig
             } else {
                 config = new CloudInstanceConfig(namespace);
             }
-    
+
             // TODO: Remove this when DiscoveryManager is finally no longer used
             DiscoveryManager.getInstance().setEurekaInstanceConfig(config);
         }

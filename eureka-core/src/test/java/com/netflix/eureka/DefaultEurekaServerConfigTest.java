@@ -1,11 +1,11 @@
 package com.netflix.eureka;
 
+import java.util.Map;
+import java.util.Set;
+
 import com.netflix.config.ConfigurationManager;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.Map;
-import java.util.Set;
 
 /**
  * @author Nitesh Kant
@@ -19,11 +19,11 @@ public class DefaultEurekaServerConfigTest {
         String region2 = "myregion2";
         String region2url = "http://local:888/eee";
         ConfigurationManager.getConfigInstance().setProperty("eureka.remoteRegionUrlsWithName", region1
-                                                                                                + ';' + region1url
-                                                                                                + ',' + region2
-                                                                                                + ';' + region2url);
+                + ';' + region1url
+                + ',' + region2
+                + ';' + region2url);
         DefaultEurekaServerConfig config = new DefaultEurekaServerConfig();
-        Map<String,String> remoteRegionUrlsWithName = config.getRemoteRegionUrlsWithName();
+        Map<String, String> remoteRegionUrlsWithName = config.getRemoteRegionUrlsWithName();
 
         Assert.assertEquals("Unexpected remote region url count.", 2, remoteRegionUrlsWithName.size());
         Assert.assertTrue("Remote region 1 not found.", remoteRegionUrlsWithName.containsKey(region1));
@@ -38,9 +38,9 @@ public class DefaultEurekaServerConfigTest {
         String region1 = "myregion1";
         String region1url = "http://local:888/eee";
         ConfigurationManager.getConfigInstance().setProperty("eureka.remoteRegionUrlsWithName", region1
-                                                                                                + ';' + region1url);
+                + ';' + region1url);
         DefaultEurekaServerConfig config = new DefaultEurekaServerConfig();
-        Map<String,String> remoteRegionUrlsWithName = config.getRemoteRegionUrlsWithName();
+        Map<String, String> remoteRegionUrlsWithName = config.getRemoteRegionUrlsWithName();
 
         Assert.assertEquals("Unexpected remote region url count.", 1, remoteRegionUrlsWithName.size());
         Assert.assertTrue("Remote region 1 not found.", remoteRegionUrlsWithName.containsKey(region1));

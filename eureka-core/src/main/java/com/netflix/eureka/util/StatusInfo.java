@@ -73,10 +73,10 @@ public class StatusInfo {
                     String.valueOf(totalMem) + "mb");
             result.generalStats.put("current-memory-usage",
                     String.valueOf(totalMem - freeMem) + "mb" + " ("
-                    + usedPercent + "%)");
+                            + usedPercent + "%)");
 
             result.instanceInfo = ApplicationInfoManager.getInstance()
-            .getInfo();
+                    .getInfo();
 
             return result;
         }
@@ -129,7 +129,7 @@ public class StatusInfo {
         DecimalFormat format = new DecimalFormat();
         format.setMinimumIntegerDigits(2);
         buf.append(format.format(hours)).append(":")
-        .append(format.format(minutes));
+                .append(format.format(minutes));
         return buf.toString();
     }
 

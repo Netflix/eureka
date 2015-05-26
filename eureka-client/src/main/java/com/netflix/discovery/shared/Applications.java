@@ -16,6 +16,7 @@
 
 package com.netflix.discovery.shared;
 
+import javax.annotation.Nullable;
 import java.util.AbstractQueue;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,20 +33,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.netflix.discovery.InstanceRegionChecker;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.EurekaClientConfig;
+import com.netflix.discovery.InstanceRegionChecker;
 import com.netflix.discovery.provider.Serializer;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamImplicit;
-
-import javax.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The class that wraps all the registry information returned by eureka server.
@@ -148,8 +145,8 @@ public class Applications {
      * @return list of <em>instances</em>.
      */
     public List<InstanceInfo> getInstancesByVirtualHostName(String virtualHostName) {
-	AtomicReference<List<InstanceInfo>> ref = this.shuffleVirtualHostNameMap
-		.get(virtualHostName.toUpperCase(Locale.ROOT));
+        AtomicReference<List<InstanceInfo>> ref = this.shuffleVirtualHostNameMap
+                .get(virtualHostName.toUpperCase(Locale.ROOT));
         if (ref == null || ref.get() == null) {
             return new ArrayList<InstanceInfo>();
         } else {
@@ -479,7 +476,7 @@ public class Applications {
      *
      */
     private void addInstanceToMap(InstanceInfo info, String vipAddresses,
-            Map<String, AbstractQueue<InstanceInfo>> vipMap) {
+                                  Map<String, AbstractQueue<InstanceInfo>> vipMap) {
         if (vipAddresses != null) {
             String[] vipAddressArray = vipAddresses.split(",");
             for (String vipAddress : vipAddressArray) {

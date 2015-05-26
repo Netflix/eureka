@@ -1,16 +1,14 @@
 package com.netflix.discovery;
 
+import java.util.List;
+import java.util.Set;
+
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.config.ConfigurationManager;
-import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
 
 /**
  * @author Nitesh Kant
@@ -81,7 +79,7 @@ public class DiscoveryClientRegistryTest extends AbstractDiscoveryClientTester {
             Assert.assertEquals(0, mockLocalEurekaServer.heartbeatCount.get());
 
             // let the test run for just over 6 seconds to get two heartbeats
-            Thread.sleep(7*1000);
+            Thread.sleep(7 * 1000);
 
             Assert.assertEquals(2, mockLocalEurekaServer.heartbeatCount.get());
 
@@ -112,7 +110,7 @@ public class DiscoveryClientRegistryTest extends AbstractDiscoveryClientTester {
             Assert.assertEquals(0, mockLocalEurekaServer.getDeltaCount.get());
 
             // let the test run for just over 6 seconds to get two registry (delta) fetches
-            Thread.sleep(7*1000);
+            Thread.sleep(7 * 1000);
 
             Assert.assertEquals(2, mockLocalEurekaServer.getFullRegistryCount.get());  // assert no more calls
             Assert.assertEquals(2, mockLocalEurekaServer.getDeltaCount.get());
@@ -132,9 +130,9 @@ public class DiscoveryClientRegistryTest extends AbstractDiscoveryClientTester {
     @Test
     public void testGetInvalidVIPForRemoteRegion() throws Exception {
         List<InstanceInfo> instancesByVipAddress = client.getInstancesByVipAddress("XYZ", false,
-                                                                                   REMOTE_REGION);
+                REMOTE_REGION);
         Assert.assertEquals("Unexpected number of instances found for local region.", 0,
-                            instancesByVipAddress.size());
+                instancesByVipAddress.size());
     }
 
     @Test
@@ -173,7 +171,7 @@ public class DiscoveryClientRegistryTest extends AbstractDiscoveryClientTester {
             instancesByVipAddress = client.getInstancesByVipAddress(ALL_REGIONS_VIP1_ADDR, false, region);
         }
         Assert.assertEquals("Unexpected number of instances found for " + region + " region.", 2,
-                            instancesByVipAddress.size());
+                instancesByVipAddress.size());
         InstanceInfo localInstance1 = null;
         InstanceInfo localInstance2 = null;
         for (InstanceInfo instance : instancesByVipAddress) {

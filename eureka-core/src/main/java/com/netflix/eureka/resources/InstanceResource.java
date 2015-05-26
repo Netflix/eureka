@@ -16,13 +16,6 @@
 
 package com.netflix.eureka.resources;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
@@ -35,15 +28,20 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.eureka.EurekaServerConfigurationManager;
 import com.netflix.eureka.PeerAwareInstanceRegistry;
 import com.netflix.eureka.cluster.PeerEurekaNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A <em>jersey</em> resource that handles operations for a particular instance.
@@ -51,7 +49,7 @@ import com.netflix.eureka.cluster.PeerEurekaNode;
  * @author Karthik Ranganathan, Greg Kim
  *
  */
-@Produces({ "application/xml", "application/json" })
+@Produces({"application/xml", "application/json"})
 public class InstanceResource {
     private static final Logger logger = LoggerFactory
             .getLogger(InstanceResource.class);
@@ -126,7 +124,7 @@ public class InstanceResource {
         Response response = null;
         if (lastDirtyTimestamp != null
                 && EurekaServerConfigurationManager.getInstance()
-                        .getConfiguration().shouldSyncWhenTimestampDiffers()) {
+                .getConfiguration().shouldSyncWhenTimestampDiffers()) {
             response = this.validateDirtyTimestamp(
                     Long.valueOf(lastDirtyTimestamp), isFromReplicaNode);
             // Store the overridden status since the validation found out the
@@ -173,7 +171,7 @@ public class InstanceResource {
             @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication,
             @QueryParam("lastDirtyTimestamp") String lastDirtyTimestamp) {
         try {
-            if(registry.getInstanceByAppAndId(app.getName(), id) == null) {
+            if (registry.getInstanceByAppAndId(app.getName(), id) == null) {
                 logger.warn("Instance not found: {}/{}", app.getName(), id);
                 return Response.status(Status.NOT_FOUND).build();
             }
@@ -216,7 +214,7 @@ public class InstanceResource {
             @QueryParam("value") String newStatusValue,
             @QueryParam("lastDirtyTimestamp") String lastDirtyTimestamp) {
         try {
-            if(registry.getInstanceByAppAndId(app.getName(), id) == null) {
+            if (registry.getInstanceByAppAndId(app.getName(), id) == null) {
                 logger.warn("Instance not found: {}/{}", app.getName(), id);
                 return Response.status(Status.NOT_FOUND).build();
             }
@@ -303,13 +301,13 @@ public class InstanceResource {
     }
 
     private Response validateDirtyTimestamp(Long lastDirtyTimestamp,
-            boolean isReplication) {
+                                            boolean isReplication) {
         InstanceInfo appInfo = registry.getInstanceByAppAndId(app.getName(),
                 id, false);
         if (appInfo != null) {
             if ((lastDirtyTimestamp != null)
                     && (!lastDirtyTimestamp.equals(appInfo
-                            .getLastDirtyTimestamp()))) {
+                    .getLastDirtyTimestamp()))) {
                 Object[] args = {id, appInfo.getLastDirtyTimestamp(),
                         lastDirtyTimestamp, isReplication};
                 if (lastDirtyTimestamp > appInfo.getLastDirtyTimestamp()) {

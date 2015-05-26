@@ -1,11 +1,5 @@
 package com.netflix.discovery;
 
-import com.google.common.base.Supplier;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -14,6 +8,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.google.common.base.Supplier;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.netflix.discovery.DefaultEurekaClientConfig.DEFAULT_ZONE;
 
@@ -54,8 +54,8 @@ public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
             for (String remoteRegion : regionsToFetch) {
                 Set<String> availabilityZones = getZonesForARegion(remoteRegion);
                 if (null == availabilityZones
-                    || (availabilityZones.size() == 1 && availabilityZones.iterator().next().equals(DEFAULT_ZONE))
-                    || availabilityZones.isEmpty()) {
+                        || (availabilityZones.size() == 1 && availabilityZones.iterator().next().equals(DEFAULT_ZONE))
+                        || availabilityZones.isEmpty()) {
                     logger.info("No availability zone information available for remote region: " + remoteRegion
                             + ". Now checking in the default mapping.");
                     if (defaultRegionVsAzMap.containsKey(remoteRegion)) {

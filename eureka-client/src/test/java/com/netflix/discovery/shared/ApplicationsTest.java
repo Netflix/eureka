@@ -1,13 +1,12 @@
 package com.netflix.discovery.shared;
 
 
+import java.util.List;
+
 import com.google.common.collect.Iterables;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
-
 import org.junit.Test;
-
-import java.util.List;
 
 import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
@@ -22,14 +21,16 @@ public class ApplicationsTest {
      */
     @Test
     public void shuffleVirtualHostNameMapLastInstanceTest() {
-        DataCenterInfo myDCI = new DataCenterInfo(){
-            public DataCenterInfo.Name getName(){return DataCenterInfo.Name.MyOwn;}
+        DataCenterInfo myDCI = new DataCenterInfo() {
+            public DataCenterInfo.Name getName() {
+                return DataCenterInfo.Name.MyOwn;
+            }
         };
         InstanceInfo instanceInfo = InstanceInfo.Builder.newBuilder()
-                                                        .setAppName("test")
-                                                        .setVIPAddress("test.testname:1")
-                                                        .setDataCenterInfo(myDCI)
-                                                        .setHostName("test.hostname").build();
+                .setAppName("test")
+                .setVIPAddress("test.testname:1")
+                .setDataCenterInfo(myDCI)
+                .setHostName("test.hostname").build();
 
         Application application = new Application("TestApp");
         application.addInstance(instanceInfo);
@@ -39,7 +40,7 @@ public class ApplicationsTest {
         List<InstanceInfo> testApp = applications.getInstancesByVirtualHostName("test.testname:1");
 
         assertEquals(Iterables.getOnlyElement(testApp),
-                     application.getByInstanceId("test.hostname"));
+                application.getByInstanceId("test.hostname"));
 
         application.removeInstance(instanceInfo);
         applications.shuffleInstances(true);

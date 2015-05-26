@@ -26,9 +26,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.ApplicationInfoManager;
@@ -50,6 +47,8 @@ import com.netflix.servo.DefaultMonitorRegistry;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handles replication of all operations to {@link InstanceRegistry} to peer
@@ -166,13 +165,13 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
     private void scheduleRenewalThresholdUpdateTask() {
         timer.schedule(new TimerTask() {
 
-            @Override
-            public void run() {
-                updateRenewalThreshold();
+                           @Override
+                           public void run() {
+                               updateRenewalThreshold();
 
-            }
+                           }
 
-        }, EUREKA_SERVER_CONFIG.getRenewalThresholdUpdateIntervalMs(),
+                       }, EUREKA_SERVER_CONFIG.getRenewalThresholdUpdateIntervalMs(),
                 EUREKA_SERVER_CONFIG.getRenewalThresholdUpdateIntervalMs());
     }
 
@@ -186,16 +185,16 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
             updatePeerEurekaNodes();
             timerReplicaNodes.schedule(new TimerTask() {
 
-                @Override
-                public void run() {
-                    try {
-                        updatePeerEurekaNodes();
-                    } catch (Throwable e) {
-                        logger.error("Cannot update the replica Nodes", e);
-                    }
+                                           @Override
+                                           public void run() {
+                                               try {
+                                                   updatePeerEurekaNodes();
+                                               } catch (Throwable e) {
+                                                   logger.error("Cannot update the replica Nodes", e);
+                                               }
 
-                }
-            }, EUREKA_SERVER_CONFIG.getPeerEurekaNodesUpdateIntervalMs(),
+                                           }
+                                       }, EUREKA_SERVER_CONFIG.getPeerEurekaNodesUpdateIntervalMs(),
                     EUREKA_SERVER_CONFIG.getPeerEurekaNodesUpdateIntervalMs());
 
         } catch (Exception e) {
@@ -356,7 +355,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
                         peerHostName = peerInstanceInfo.getHostName();
                         logger.info(
                                 "Trying to send heartbeat for the eureka server at {} to make sure the network "
-                                + "channels are open", peerHostName);
+                                        + "channels are open", peerHostName);
                         // Only try to contact the eureka nodes that are in this
                         // instance's registry - because
                         // the other instances may be legitimately down
@@ -395,7 +394,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
     public boolean shouldAllowAccess(boolean remoteRegionRequired) {
         if (this.peerInstancesTransferEmptyOnStartup) {
             if (!(System.currentTimeMillis() > this.startupTime
-                                               + EUREKA_SERVER_CONFIG.getWaitTimeInMsWhenSyncEmpty())) {
+                    + EUREKA_SERVER_CONFIG.getWaitTimeInMsWhenSyncEmpty())) {
                 return false;
             }
         }
@@ -431,7 +430,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
      */
     @Override
     public boolean cancel(final String appName, final String id,
-            final boolean isReplication) {
+                          final boolean isReplication) {
         if (super.cancel(appName, id, isReplication)) {
             replicateToPeers(Action.Cancel, appName, id, null, null,
                     isReplication);
@@ -479,7 +478,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
      * java.lang.String, long, boolean)
      */
     public boolean renew(final String appName, final String id,
-            final boolean isReplication) {
+                         final boolean isReplication) {
         if (super.renew(appName, id, isReplication)) {
             replicateToPeers(Action.Heartbeat, appName, id, null, null,
                     isReplication);
@@ -496,8 +495,8 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
      * java.lang.String, boolean)
      */
     public boolean statusUpdate(final String appName, final String id,
-            final InstanceStatus newStatus, String lastDirtyTimestamp,
-            final boolean isReplication) {
+                                final InstanceStatus newStatus, String lastDirtyTimestamp,
+                                final boolean isReplication) {
         if (super.statusUpdate(appName, id, newStatus, lastDirtyTimestamp,
                 isReplication)) {
             replicateToPeers(Action.StatusUpdate, appName, id, null, newStatus,
@@ -533,7 +532,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
      *            otherwise.
      */
     public void statusUpdate(final String asgName, final ASGStatus newStatus,
-            final boolean isReplication) {
+                             final boolean isReplication) {
         // If this is replicated from an other node, do not try to replicate
         // again.
         if (isReplication) {
@@ -606,7 +605,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
 
     @Override
     public InstanceInfo getNextServerFromEureka(String virtualHostname,
-            boolean secure) {
+                                                boolean secure) {
         // TODO Auto-generated method stub
         return null;
     }
@@ -633,7 +632,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
             synchronized (lock) {
                 // Update threshold only if the threshold is greater than the
                 // current expected threshold of if the self preservation is disabled.
-               if ((count * 2) > (EUREKA_SERVER_CONFIG
+                if ((count * 2) > (EUREKA_SERVER_CONFIG
                         .getRenewalPercentThreshold() * numberOfRenewsPerMinThreshold)
                         || (!this.isSelfPreservationModeEnabled())) {
                     this.expectedNumberOfRenewsPerMin = count * 2;
@@ -684,7 +683,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
     public int isBelowRenewThresold() {
         if ((getNumOfRenewsInLastMin() < numberOfRenewsPerMinThreshold)
                 && ((this.startupTime > 0) && (System.currentTimeMillis() > this.startupTime
-                        + (EUREKA_SERVER_CONFIG.getWaitTimeInMsWhenSyncEmpty())))) {
+                + (EUREKA_SERVER_CONFIG.getWaitTimeInMsWhenSyncEmpty())))) {
             return 1;
         } else {
             return 0;
@@ -760,8 +759,8 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
      *
      */
     private void replicateToPeers(Action action, String appName, String id,
-            InstanceInfo info /* optional */,
-            InstanceStatus newStatus /* optional */, boolean isReplication) {
+                                  InstanceInfo info /* optional */,
+                                  InstanceStatus newStatus /* optional */, boolean isReplication) {
         Stopwatch tracer = action.getTimer().start();
         try {
 
@@ -794,33 +793,33 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
      *
      */
     private void replicateInstanceActionsToPeers(Action action, String appName,
-            String id, InstanceInfo info, InstanceStatus newStatus,
-            PeerEurekaNode node) {
+                                                 String id, InstanceInfo info, InstanceStatus newStatus,
+                                                 PeerEurekaNode node) {
         try {
             InstanceInfo infoFromRegistry = null;
             CurrentRequestVersion.set(Version.V2);
             switch (action) {
-            case Cancel:
-                node.cancel(appName, id);
-                break;
-            case Heartbeat:
-                InstanceStatus overriddenStatus = overriddenInstanceStatusMap
-                        .get(id);
-                infoFromRegistry = getInstanceByAppAndId(appName, id, false);
-                node.heartbeat(appName, id, infoFromRegistry, overriddenStatus,
-                        false);
-                break;
-            case Register:
-                node.register(info);
-                break;
-            case StatusUpdate:
-                infoFromRegistry = getInstanceByAppAndId(appName, id, false);
-                node.statusUpdate(appName, id, newStatus, infoFromRegistry);
-                break;
-            case DeleteStatusOverride:
-                infoFromRegistry = getInstanceByAppAndId(appName, id, false);
-                node.deleteStatusOverride(appName, id, infoFromRegistry);
-                break;
+                case Cancel:
+                    node.cancel(appName, id);
+                    break;
+                case Heartbeat:
+                    InstanceStatus overriddenStatus = overriddenInstanceStatusMap
+                            .get(id);
+                    infoFromRegistry = getInstanceByAppAndId(appName, id, false);
+                    node.heartbeat(appName, id, infoFromRegistry, overriddenStatus,
+                            false);
+                    break;
+                case Register:
+                    node.register(info);
+                    break;
+                case StatusUpdate:
+                    infoFromRegistry = getInstanceByAppAndId(appName, id, false);
+                    node.statusUpdate(appName, id, newStatus, infoFromRegistry);
+                    break;
+                case DeleteStatusOverride:
+                    infoFromRegistry = getInstanceByAppAndId(appName, id, false);
+                    node.deleteStatusOverride(appName, id, infoFromRegistry);
+                    break;
             }
         } catch (Throwable t) {
             logger.error(
@@ -835,7 +834,7 @@ public class PeerAwareInstanceRegistry extends InstanceRegistry {
      *
      */
     private void replicateASGInfoToReplicaNodes(final String asgName,
-            final ASGStatus newStatus, final PeerEurekaNode node) {
+                                                final ASGStatus newStatus, final PeerEurekaNode node) {
         CurrentRequestVersion.set(Version.V2);
         try {
             node.statusUpdate(asgName, newStatus);

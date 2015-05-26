@@ -16,22 +16,20 @@
 
 package com.netflix.discovery;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import com.netflix.governator.guice.lazy.FineGrainedLazySingleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.inject.ProvidedBy;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.config.DynamicStringProperty;
 import com.netflix.discovery.providers.DefaultEurekaClientConfigProvider;
-
-import javax.annotation.Nullable;
+import com.netflix.governator.guice.lazy.FineGrainedLazySingleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -96,7 +94,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
         } catch (IOException e) {
             logger.warn(
                     "Cannot find the properties specified : {}. This may be okay if there are other environment "
-                    + "specific properties or the configuration is installed with a different mechanism.",
+                            + "specific properties or the configuration is installed with a different mechanism.",
                     eurekaPropsFile);
 
         }
@@ -126,12 +124,12 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
         return configInstance.getIntProperty(
                 namespace + "appinfo.replicate.interval", 30).get();
     }
-    
-	@Override
-	public int getInitialInstanceInfoReplicationIntervalSeconds() {
+
+    @Override
+    public int getInitialInstanceInfoReplicationIntervalSeconds() {
         return configInstance.getIntProperty(
                 namespace + "appinfo.initial.replicate.time", 40).get();
-	}
+    }
 
     /*
      * (non-Javadoc)

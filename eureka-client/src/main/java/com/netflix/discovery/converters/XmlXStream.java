@@ -53,7 +53,7 @@ public class XmlXStream extends XStream {
         registerConverter(new Converters.LeaseInfoConverter());
         registerConverter(new Converters.MetadataConverter(cache));
         setMode(XStream.NO_REFERENCES);
-        processAnnotations(new Class[] {InstanceInfo.class, Application.class,
+        processAnnotations(new Class[]{InstanceInfo.class, Application.class,
                 Applications.class});
     }
 
@@ -61,7 +61,7 @@ public class XmlXStream extends XStream {
         return s_instance;
     }
 
-    private static XmlFriendlyNameCoder initializeNameCoder(){
+    private static XmlFriendlyNameCoder initializeNameCoder() {
         EurekaClientConfig clientConfig = DiscoveryManager
                 .getInstance().getEurekaClientConfig();
         if (clientConfig == null) {

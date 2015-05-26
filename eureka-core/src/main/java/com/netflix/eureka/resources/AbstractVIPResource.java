@@ -16,13 +16,13 @@
 
 package com.netflix.eureka.resources;
 
+import javax.ws.rs.core.Response;
+
 import com.netflix.eureka.CurrentRequestVersion;
 import com.netflix.eureka.PeerAwareInstanceRegistry;
 import com.netflix.eureka.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.ws.rs.core.Response;
 
 /**
  * Abstract class for the common functionality of a VIP/SVIP resource.

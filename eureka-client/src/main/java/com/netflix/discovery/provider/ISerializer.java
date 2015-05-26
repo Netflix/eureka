@@ -16,11 +16,10 @@
 
 package com.netflix.discovery.provider;
 
+import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
-import javax.ws.rs.core.MediaType;
 
 /**
  * A contract for dispatching to a custom serialization/de-serialization mechanism from jersey.
