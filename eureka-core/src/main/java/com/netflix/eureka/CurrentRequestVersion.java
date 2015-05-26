@@ -17,7 +17,6 @@
 package com.netflix.eureka;
 
 
-
 /**
  * A thread-scoped value that holds the "current {@link Version}" for the
  * request.
@@ -32,9 +31,10 @@ package com.netflix.eureka;
 public final class CurrentRequestVersion {
 
     private static final ThreadLocal<Version> CURRENT_REQ_VERSION =
-        new ThreadLocal<Version>();
+            new ThreadLocal<Version>();
 
-    private CurrentRequestVersion() { }
+    private CurrentRequestVersion() {
+    }
 
     /**
      * Gets the current {@link Version}

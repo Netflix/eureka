@@ -1,11 +1,11 @@
 package com.netflix.discovery;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.google.inject.Singleton;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @author Nitesh Kant

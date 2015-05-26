@@ -16,23 +16,21 @@
 
 package com.netflix.eureka.resources;
 
-import java.util.List;
-
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.List;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.eureka.CurrentRequestVersion;
 import com.netflix.eureka.InstanceRegistry;
 import com.netflix.eureka.PeerAwareInstanceRegistry;
 import com.netflix.eureka.Version;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A <em>jersey</em> resource that gets information about a particular instance.
@@ -40,7 +38,7 @@ import com.netflix.eureka.Version;
  * @author Karthik Ranganathan, Greg Kim
  *
  */
-@Produces({ "application/xml", "application/json" })
+@Produces({"application/xml", "application/json"})
 @Path("/{version}/instances")
 public class InstancesResource {
     private static final Logger logger = LoggerFactory
@@ -52,7 +50,7 @@ public class InstancesResource {
     @GET
     @Path("{id}")
     public Response getById(@PathParam("version") String version,
-            @PathParam("id") String id) {
+                            @PathParam("id") String id) {
         CurrentRequestVersion.set(Version.toEnum(version));
         List<InstanceInfo> list = registry.getInstancesById(id);
         if (list != null && list.size() > 0) {

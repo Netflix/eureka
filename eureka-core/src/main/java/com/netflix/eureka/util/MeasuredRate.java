@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
  */
 public class MeasuredRate {
     private static final Logger logger = LoggerFactory
-    .getLogger(MeasuredRate.class);
+            .getLogger(MeasuredRate.class);
     private final AtomicLong lastBucket = new AtomicLong(0);
     private final AtomicLong currentBucket = new AtomicLong(0);
     private final long sampleInterval;

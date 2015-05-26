@@ -28,12 +28,11 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.netflix.config.DynamicBooleanProperty;
 import com.netflix.config.DynamicIntProperty;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An AWS specific {@link DataCenterInfo} implementation.
@@ -75,6 +74,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
         },
         accountId("accountId") {
             private Pattern pattern = Pattern.compile("\"accountId\"\\s?:\\s?\\\"([A-Za-z0-9]*)\\\"");
+
             @Override
             public URL getURL(String prepend, String append) throws MalformedURLException {
                 return new URL("http://169.254.169.254/" + AWS_API_VERSION + "/dynamic/instance-identity/document");
@@ -130,7 +130,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
                 String line = br.readLine();
                 toReturn = line;
 
-                while(line != null) {  // need to read all the buffer for a clean connection close
+                while (line != null) {  // need to read all the buffer for a clean connection close
                     line = br.readLine();
                 }
 
@@ -144,7 +144,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
 
     public static final class Builder {
         private static final Logger logger = LoggerFactory
-        .getLogger(Builder.class);
+                .getLogger(Builder.class);
         private static final int SLEEP_TIME_MS = 100;
 
         @XStreamOmitField
@@ -193,10 +193,10 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
                         uc.setConnectTimeout(awsMetaDataConnectTimeout.get());
                         uc.setReadTimeout(awsMetaDataReadTimeout.get());
 
-                        if (uc.getResponseCode() != HttpURLConnection.HTTP_OK ) {  // need to read the error for clean connection close
+                        if (uc.getResponseCode() != HttpURLConnection.HTTP_OK) {  // need to read the error for clean connection close
                             BufferedReader br = new BufferedReader(new InputStreamReader(uc.getErrorStream()));
                             try {
-                                while(br.readLine() != null) {
+                                while (br.readLine() != null) {
                                     // do nothing but keep reading the line
                                 }
                             } finally {
@@ -231,23 +231,23 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
         private void initProperties(String namespace) {
             if (shouldLogAWSMetadataError == null) {
                 shouldLogAWSMetadataError = com.netflix.config.DynamicPropertyFactory
-            .getInstance().getBooleanProperty(
-                    namespace + "logAmazonMetadataErrors", false);
+                        .getInstance().getBooleanProperty(
+                                namespace + "logAmazonMetadataErrors", false);
             }
             if (awsMetaDataReadTimeout == null) {
                 awsMetaDataReadTimeout = com.netflix.config.DynamicPropertyFactory
-            .getInstance().getIntProperty(
-                    namespace + "mt.read_timeout", 8000);
+                        .getInstance().getIntProperty(
+                                namespace + "mt.read_timeout", 8000);
             }
             if (awsMetaDataConnectTimeout == null) {
                 awsMetaDataConnectTimeout = com.netflix.config.DynamicPropertyFactory
-            .getInstance().getIntProperty(
-                    namespace + "mt.connect_timeout", 3000);
+                        .getInstance().getIntProperty(
+                                namespace + "mt.connect_timeout", 3000);
             }
             if (awsMetaDataRetries == null) {
                 awsMetaDataRetries = com.netflix.config.DynamicPropertyFactory
-            .getInstance().getIntProperty(namespace + "mt.num_retries",
-                    3);
+                        .getInstance().getIntProperty(namespace + "mt.num_retries",
+                                3);
             }
         }
     }

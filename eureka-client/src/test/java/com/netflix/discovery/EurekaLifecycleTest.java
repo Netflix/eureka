@@ -18,18 +18,18 @@ public class EurekaLifecycleTest {
     public void afterEachTest() {
         ConfigurationManager.getConfigInstance().clear();
     }
-    
+
     @Test
     public void testDefaultInstanceConfig() {
         ConfigurationManager.getConfigInstance().setProperty("eureka.validateInstanceId", "false");
         ConfigurationManager.getConfigInstance().setProperty("eureka.shouldFetchRegistry", "false");
         ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", "false");
         ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default", "http://localhost:8080/");
-        
+
         Injector injector = LifecycleInjector.builder()
                 .build()
                 .createInjector();
-        
+
         EurekaClient client = injector.getInstance(EurekaClient.class);
         Assert.assertEquals(client, DiscoveryManager.getInstance().getEurekaClient());
     }
@@ -42,13 +42,13 @@ public class EurekaLifecycleTest {
         ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default", "http://localhost:8080/");
 
         Injector injector = LifecycleInjector.builder()
-                                             .withAdditionalModules(new AbstractModule() {
-                                                 @Override
-                                                 protected void configure() {
-                                                     bind(BackupRegistry.class).to(MockBackupRegistry.class);
-                                                 }
-                                             }).build()
-                                             .createInjector();
+                .withAdditionalModules(new AbstractModule() {
+                    @Override
+                    protected void configure() {
+                        bind(BackupRegistry.class).to(MockBackupRegistry.class);
+                    }
+                }).build()
+                .createInjector();
 
         MockBackupRegistry backupRegistry = (MockBackupRegistry) injector.getInstance(BackupRegistry.class);
         Applications apps = new Applications();
@@ -70,7 +70,7 @@ public class EurekaLifecycleTest {
         ConfigurationManager.getConfigInstance().setProperty("testnamespace.shouldFetchRegistry", "false");
         ConfigurationManager.getConfigInstance().setProperty("testnamespace.registration.enabled", "false");
         ConfigurationManager.getConfigInstance().setProperty("testnamespace.serviceUrl.default", "http://localhost:8080/");
-        
+
         Injector injector = LifecycleInjector.builder()
                 .withBootstrapModule(new BootstrapModule() {
                     @Override

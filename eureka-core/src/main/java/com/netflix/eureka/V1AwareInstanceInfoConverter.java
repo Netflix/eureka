@@ -40,14 +40,14 @@ public class V1AwareInstanceInfoConverter extends InstanceInfoConverter {
         if (version == null || version == Version.V1) {
             InstanceStatus status = info.getStatus();
             switch (status) {
-            case DOWN:
-            case STARTING:
-            case UP:
-                break;
-            default:
-                // otherwise return DOWN
-                status = InstanceStatus.DOWN;
-                break;
+                case DOWN:
+                case STARTING:
+                case UP:
+                    break;
+                default:
+                    // otherwise return DOWN
+                    status = InstanceStatus.DOWN;
+                    break;
             }
             return status.name();
         } else {

@@ -1,5 +1,14 @@
 package com.netflix.eureka.mock;
 
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Map;
+
 import com.netflix.appinfo.AbstractEurekaIdentity;
 import com.netflix.discovery.converters.XmlXStream;
 import com.netflix.discovery.shared.Application;
@@ -12,15 +21,6 @@ import org.mortbay.jetty.Request;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.FilterHolder;
 import org.mortbay.jetty.servlet.ServletHandler;
-
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.Map;
 
 /**
  * @author Nitesh Kant
@@ -89,7 +89,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
         StringBuilder builder = new StringBuilder();
         for (Map.Entry<String, Application> entry : applicationMap.entrySet()) {
             String entryAsString = String.format("{ name : %s , instance count: %d }", entry.getKey(),
-                                                 entry.getValue().getInstances().size());
+                    entry.getValue().getInstances().size());
             builder.append(entryAsString);
         }
         return builder.toString();
@@ -156,7 +156,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
 
             if (!handled) {
                 response.sendError(HttpServletResponse.SC_NOT_FOUND,
-                                   "Request path: " + pathInfo + " not supported by eureka resource mock.");
+                        "Request path: " + pathInfo + " not supported by eureka resource mock.");
             }
         }
 
@@ -168,7 +168,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
             response.getWriter().flush();
             request.setHandled(true);
             System.out.println("Eureka resource mock, sent response for request path: " + request.getPathInfo() +
-                               " with content" + content);
+                    " with content" + content);
         }
     }
 

@@ -25,9 +25,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.DataCenterInfo.Name;
@@ -44,6 +41,8 @@ import com.thoughtworks.xstream.converters.MarshallingContext;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The custom {@link com.netflix.discovery.provider.Serializer} for serializing and deserializing the registry
@@ -66,7 +65,7 @@ import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 public final class Converters {
     private static final String UNMARSHAL_ERROR = "UNMARSHAL_ERROR";
     private static final Counter UNMARSHALL_ERROR_COUNTER = Monitors
-    .newCounter(UNMARSHAL_ERROR);
+            .newCounter(UNMARSHAL_ERROR);
     public static final String NODE_LEASE = "leaseInfo";
     public static final String NODE_METADATA = "metadata";
     public static final String NODE_DATACENTER = "dataCenterInfo";
@@ -75,7 +74,7 @@ public final class Converters {
     public static final String NODE_APPS = "applications";
 
     private static final Logger logger = LoggerFactory
-    .getLogger(Converters.class);
+            .getLogger(Converters.class);
 
     /**
      * Serialize/deserialize {@link Applications} object types.
@@ -107,7 +106,7 @@ public final class Converters {
          */
         @Override
         public void marshal(Object source, HierarchicalStreamWriter writer,
-                MarshallingContext context) {
+                            MarshallingContext context) {
             Applications apps = (Applications) source;
             writer.startNode(VERSIONS_DELTA);
             writer.setValue(apps.getVersion().toString());
@@ -132,7 +131,7 @@ public final class Converters {
          */
         @Override
         public Object unmarshal(HierarchicalStreamReader reader,
-                UnmarshallingContext context) {
+                                UnmarshallingContext context) {
             Applications apps = new Applications();
             while (reader.hasMoreChildren()) {
                 reader.moveDown();
@@ -186,7 +185,7 @@ public final class Converters {
          */
         @Override
         public void marshal(Object source, HierarchicalStreamWriter writer,
-                MarshallingContext context) {
+                            MarshallingContext context) {
             Application app = (Application) source;
 
             writer.startNode(ELEM_NAME);
@@ -210,7 +209,7 @@ public final class Converters {
          */
         @Override
         public Object unmarshal(HierarchicalStreamReader reader,
-                UnmarshallingContext context) {
+                                UnmarshallingContext context) {
             Application app = new Application();
 
             while (reader.hasMoreChildren()) {
@@ -275,7 +274,7 @@ public final class Converters {
          */
         @Override
         public void marshal(Object source, HierarchicalStreamWriter writer,
-                MarshallingContext context) {
+                            MarshallingContext context) {
             InstanceInfo info = (InstanceInfo) source;
 
             writer.startNode(ELEM_HOST);
@@ -325,10 +324,10 @@ public final class Converters {
                 // This is needed for backward compat. for now.
                 if (info.getDataCenterInfo().getName() == Name.Amazon) {
                     writer.addAttribute("class",
-                    "com.netflix.appinfo.AmazonInfo");
+                            "com.netflix.appinfo.AmazonInfo");
                 } else {
                     writer.addAttribute("class",
-                    "com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo");
+                            "com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo");
                 }
                 context.convertAnother(info.getDataCenterInfo());
                 writer.endNode();
@@ -345,7 +344,7 @@ public final class Converters {
                 // for backward compat. for now
                 if (info.getMetadata().size() == 0) {
                     writer.addAttribute("class",
-                    "java.util.Collections$EmptyMap");
+                            "java.util.Collections$EmptyMap");
                 }
                 context.convertAnother(info.getMetadata());
                 writer.endNode();
@@ -368,7 +367,7 @@ public final class Converters {
         @Override
         @SuppressWarnings("unchecked")
         public Object unmarshal(HierarchicalStreamReader reader,
-                UnmarshallingContext context) {
+                                UnmarshallingContext context) {
             InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder();
 
             while (reader.hasMoreChildren()) {
@@ -460,7 +459,7 @@ public final class Converters {
          */
         @Override
         public void marshal(Object source, HierarchicalStreamWriter writer,
-                MarshallingContext context) {
+                            MarshallingContext context) {
             DataCenterInfo info = (DataCenterInfo) source;
 
             writer.startNode(ELEM_NAME);
@@ -474,7 +473,7 @@ public final class Converters {
                 // for backward compat. for now
                 if (aInfo.getMetadata().size() == 0) {
                     writer.addAttribute("class",
-                    "java.util.Collections$EmptyMap");
+                            "java.util.Collections$EmptyMap");
                 }
                 context.convertAnother(aInfo.getMetadata());
                 writer.endNode();
@@ -492,7 +491,7 @@ public final class Converters {
         @Override
         @SuppressWarnings("unchecked")
         public Object unmarshal(HierarchicalStreamReader reader,
-                UnmarshallingContext context) {
+                                UnmarshallingContext context) {
             DataCenterInfo info = null;
             while (reader.hasMoreChildren()) {
                 reader.moveDown();
@@ -518,7 +517,7 @@ public final class Converters {
                         Map<String, String> metadataMap = (Map<String, String>) context
                                 .convertAnother(info, Map.class);
                         Map<String, String> metadataMapInter = new HashMap<String, String>(metadataMap.size());
-                        for(Map.Entry<String, String> entry: metadataMap.entrySet()) {
+                        for (Map.Entry<String, String> entry : metadataMap.entrySet()) {
                             metadataMapInter.put(cache.cachedValueOf(entry.getKey()), cache.cachedValueOf(entry.getValue()));
                         }
                         ((AmazonInfo) info).setMetadata(metadataMapInter);
@@ -566,7 +565,7 @@ public final class Converters {
          */
         @Override
         public void marshal(Object source, HierarchicalStreamWriter writer,
-                MarshallingContext context) {
+                            MarshallingContext context) {
             LeaseInfo info = (LeaseInfo) source;
 
             writer.startNode(ELEM_RENEW_INT);
@@ -605,7 +604,7 @@ public final class Converters {
          */
         @Override
         public Object unmarshal(HierarchicalStreamReader reader,
-                UnmarshallingContext context) {
+                                UnmarshallingContext context) {
 
             LeaseInfo.Builder builder = LeaseInfo.Builder.newBuilder();
 
@@ -678,11 +677,11 @@ public final class Converters {
         @Override
         @SuppressWarnings("unchecked")
         public void marshal(Object source, HierarchicalStreamWriter writer,
-                MarshallingContext context) {
+                            MarshallingContext context) {
             Map<String, String> map = (Map<String, String>) source;
 
             for (Iterator<Entry<String, String>> iter = map.entrySet()
-                    .iterator(); iter.hasNext();) {
+                    .iterator(); iter.hasNext(); ) {
                 Entry<String, String> entry = iter.next();
 
                 writer.startNode(entry.getKey());
@@ -701,7 +700,7 @@ public final class Converters {
          */
         @Override
         public Object unmarshal(HierarchicalStreamReader reader,
-                UnmarshallingContext context) {
+                                UnmarshallingContext context) {
             return unmarshalMap(reader, context);
         }
 
@@ -736,7 +735,7 @@ public final class Converters {
      *            - The writer for which to write the information to.
      */
     private static void autoMarshalEligible(Object o,
-            HierarchicalStreamWriter writer) {
+                                            HierarchicalStreamWriter writer) {
         try {
             Class c = o.getClass();
             Field[] fields = c.getDeclaredFields();
@@ -769,7 +768,7 @@ public final class Converters {
      *            populated.
      */
     private static void autoUnmarshalEligible(HierarchicalStreamReader reader,
-            Object o) {
+                                              Object o) {
         try {
             String nodeName = reader.getNodeName();
             Class c = o.getClass();

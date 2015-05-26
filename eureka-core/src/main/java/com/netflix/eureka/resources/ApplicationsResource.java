@@ -16,8 +16,6 @@
 
 package com.netflix.eureka.resources;
 
-import java.util.Arrays;
-
 import javax.annotation.Nullable;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
@@ -29,6 +27,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
+import java.util.Arrays;
 
 import com.netflix.eureka.CurrentRequestVersion;
 import com.netflix.eureka.EurekaServerConfig;
@@ -47,7 +46,7 @@ import com.netflix.eureka.util.EurekaMonitors;
  *
  */
 @Path("/{version}/apps")
-@Produces({ "application/xml", "application/json" })
+@Produces({"application/xml", "application/json"})
 public class ApplicationsResource {
     private static final String HEADER_ACCEPT = "Accept";
     private static final String HEADER_ACCEPT_ENCODING = "Accept-Encoding";
@@ -55,7 +54,7 @@ public class ApplicationsResource {
     private static final String HEADER_GZIP_VALUE = "gzip";
     private static final String HEADER_JSON_VALUE = "json";
     private final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
-    .getInstance().getConfiguration();
+            .getInstance().getConfiguration();
 
     /**
      * Gets information about a particular {@link com.netflix.discovery.shared.Application}.
@@ -98,9 +97,9 @@ public class ApplicationsResource {
      */
     @GET
     public Response getContainers(@PathParam("version") String version,
-            @HeaderParam(HEADER_ACCEPT) String acceptHeader,
-            @HeaderParam(HEADER_ACCEPT_ENCODING) String acceptEncoding,
-            @Context UriInfo uriInfo, @Nullable @QueryParam("regions") String regionsStr) {
+                                  @HeaderParam(HEADER_ACCEPT) String acceptHeader,
+                                  @HeaderParam(HEADER_ACCEPT_ENCODING) String acceptEncoding,
+                                  @Context UriInfo uriInfo, @Nullable @QueryParam("regions") String regionsStr) {
 
         boolean isRemoteRegionRequested = null != regionsStr && !regionsStr.isEmpty();
         String[] regions = null;
@@ -125,15 +124,15 @@ public class ApplicationsResource {
         }
 
         Key cacheKey = new Key(Key.EntityType.Application, ResponseCache.ALL_APPS, regions, keyType,
-                               CurrentRequestVersion.get());
+                CurrentRequestVersion.get());
 
         if (acceptEncoding != null
-            && acceptEncoding.contains(HEADER_GZIP_VALUE)) {
+                && acceptEncoding.contains(HEADER_GZIP_VALUE)) {
             return Response.ok(ResponseCache.getInstance().getGZIP(cacheKey))
-                           .header(HEADER_CONTENT_ENCODING, HEADER_GZIP_VALUE).build();
+                    .header(HEADER_CONTENT_ENCODING, HEADER_GZIP_VALUE).build();
         } else {
             return Response.ok(ResponseCache.getInstance().get(cacheKey))
-                           .build();
+                    .build();
         }
     }
 
@@ -184,7 +183,7 @@ public class ApplicationsResource {
         // If the delta flag is disabled in discovery or if the lease expiration
         // has been disabled, redirect clients to get all instances
         if ((eurekaConfig.shouldDisableDelta())
-            ||  (!PeerAwareInstanceRegistry.getInstance().shouldAllowAccess(isRemoteRegionRequested))) {
+                || (!PeerAwareInstanceRegistry.getInstance().shouldAllowAccess(isRemoteRegionRequested))) {
             return Response.status(Status.FORBIDDEN).build();
         }
 
@@ -203,14 +202,14 @@ public class ApplicationsResource {
             keyType = KeyType.XML;
         }
         Key cacheKey = new Key(Key.EntityType.Application, ResponseCache.ALL_APPS_DELTA, regions, keyType,
-                               CurrentRequestVersion.get());
+                CurrentRequestVersion.get());
         if (acceptEncoding != null
                 && acceptEncoding.contains(HEADER_GZIP_VALUE)) {
             return Response.ok(ResponseCache.getInstance().getGZIP(cacheKey))
-            .header(HEADER_CONTENT_ENCODING, HEADER_GZIP_VALUE).build();
+                    .header(HEADER_CONTENT_ENCODING, HEADER_GZIP_VALUE).build();
         } else {
             return Response.ok(ResponseCache.getInstance().get(cacheKey))
-            .build();
+                    .build();
         }
     }
- }
+}

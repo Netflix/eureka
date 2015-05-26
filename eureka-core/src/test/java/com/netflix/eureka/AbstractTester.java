@@ -1,5 +1,12 @@
 package com.netflix.eureka;
 
+import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.DataCenterInfo;
@@ -17,13 +24,6 @@ import com.netflix.discovery.shared.Pair;
 import com.netflix.eureka.mock.MockRemoteEurekaServer;
 import org.junit.After;
 import org.junit.Before;
-
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * @author Nitesh Kant
@@ -56,11 +56,11 @@ public class AbstractTester {
         ConfigurationManager.getConfigInstance().clearProperty("eureka.remoteRegion." + REMOTE_REGION_NAME + ".appWhiteList");
         ConfigurationManager.getConfigInstance().setProperty("eureka.deltaRetentionTimerIntervalInMs", "600000");
         ConfigurationManager.getConfigInstance().setProperty("eureka.remoteRegion.registryFetchIntervalInSeconds",
-                                                             "5");
+                "5");
         ConfigurationManager.getConfigInstance().setProperty("eureka.remoteRegionUrlsWithName",
-                                                             REMOTE_REGION_NAME + ";http://localhost:"
-                                                             + REMOTE_REGION_PORT + '/' +
-                                                             MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
+                REMOTE_REGION_NAME + ";http://localhost:"
+                        + REMOTE_REGION_PORT + '/' +
+                        MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
         populateRemoteRegistryAtStartup();
         mockRemoteEurekaServer = newMockRemoteServer();
         mockRemoteEurekaServer.start();
@@ -80,8 +80,8 @@ public class AbstractTester {
         });
 
         ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default",
-                                                             "http://localhost:" + mockRemoteEurekaServer.getPort() +
-                                                             MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
+                "http://localhost:" + mockRemoteEurekaServer.getPort() +
+                        MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
 
         DefaultEurekaClientConfig config = new DefaultEurekaClientConfig();
         // setup config in advance, used in initialize converter

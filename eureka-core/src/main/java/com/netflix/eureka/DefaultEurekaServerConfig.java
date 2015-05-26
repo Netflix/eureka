@@ -16,6 +16,7 @@
 
 package com.netflix.eureka;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -24,17 +25,14 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DynamicBooleanProperty;
 import com.netflix.config.DynamicIntProperty;
+import com.netflix.config.DynamicPropertyFactory;
+import com.netflix.config.DynamicStringProperty;
 import com.netflix.config.DynamicStringSetProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.netflix.config.ConfigurationManager;
-import com.netflix.config.DynamicPropertyFactory;
-import com.netflix.config.DynamicStringProperty;
-
-import javax.annotation.Nullable;
 
 /**
  *
@@ -64,12 +62,12 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     private static final String TEST = "test";
     private static final String EUREKA_ENVIRONMENT = "eureka.environment";
     private static final Logger logger = LoggerFactory
-    .getLogger(DefaultEurekaServerConfig.class);
+            .getLogger(DefaultEurekaServerConfig.class);
     private static final DynamicPropertyFactory configInstance = com.netflix.config.DynamicPropertyFactory
-    .getInstance();
+            .getInstance();
     private static final DynamicStringProperty EUREKA_PROPS_FILE = DynamicPropertyFactory
-    .getInstance().getStringProperty("eureka.server.props",
-    "eureka-server");
+            .getInstance().getStringProperty("eureka.server.props",
+                    "eureka-server");
     private static final int TIME_TO_WAIT_FOR_REPLICATION = 30000;
 
     private String namespace = "eureka.";
@@ -104,11 +102,11 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
             // ConfigurationManager
             // .loadPropertiesFromResources(eurekaPropsFile);
             ConfigurationManager
-            .loadCascadedPropertiesFromResources(eurekaPropsFile);
+                    .loadCascadedPropertiesFromResources(eurekaPropsFile);
         } catch (IOException e) {
             logger.warn(
                     "Cannot find the properties specified : {}. This may be okay if there are other environment "
-                    + "specific properties or the configuration is installed with a different mechanism.",
+                            + "specific properties or the configuration is installed with a different mechanism.",
                     eurekaPropsFile);
         }
     }
@@ -192,8 +190,8 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     @Override
     public int getPeerEurekaNodesUpdateIntervalMs() {
         return configInstance
-        .getIntProperty(namespace + "peerEurekaNodesUpdateIntervalMs",
-                (10 * 60 * 1000)).get();
+                .getIntProperty(namespace + "peerEurekaNodesUpdateIntervalMs",
+                        (10 * 60 * 1000)).get();
     }
 
     @Override
@@ -311,9 +309,9 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     @Override
     public long getMaxIdleThreadInMinutesAgeForStatusReplication() {
         return configInstance
-        .getLongProperty(
-                namespace + "maxIdleThreadAgeInMinutesForStatusReplication",
-                10).get();
+                .getLongProperty(
+                        namespace + "maxIdleThreadAgeInMinutesForStatusReplication",
+                        10).get();
     }
 
     @Override
@@ -432,12 +430,12 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
      * list of region name & remote url pairs, separated with a ";". <br/>
      * So, if you wish to specify two regions with name region1 & region2, the property value will be:
      <PRE>
-        eureka.remoteRegionUrlsWithName=region1;http://region1host/eureka/v2,region2;http://region2host/eureka/v2
+     eureka.remoteRegionUrlsWithName=region1;http://region1host/eureka/v2,region2;http://region2host/eureka/v2
      </PRE>
      * The above property will result in the following map:
      <PRE>
-        region1->"http://region1host/eureka/v2"
-        region2->"http://region2host/eureka/v2"
+     region1->"http://region1host/eureka/v2"
+     region2->"http://region2host/eureka/v2"
      </PRE>
      * @return A map of region name to remote region URL parsed from the property specified above. If there is no
      * property available, then an empty map is returned.
@@ -460,7 +458,7 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
                 logger.error("Error reading eureka remote region urls from property {}. "
                                 + "Invalid entry {} for remote region url. The entry must contain region name and url "
                                 + "separated by a {}. Ignoring this entry.",
-                             new String[]{propName, remoteRegionUrlWithNamePair, pairSplitChar});
+                        new String[]{propName, remoteRegionUrlWithNamePair, pairSplitChar});
             } else {
                 String regionName = pairSplit[0];
                 String regionUrl = pairSplit[1];

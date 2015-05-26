@@ -68,7 +68,7 @@ public interface LeaseManager<T> {
      *            - whether this is a replicated entry from another ds node
      * @return whether the operation of successful
      */
-    boolean renew(String appName, String id,  boolean isReplication);
+    boolean renew(String appName, String id, boolean isReplication);
 
     /**
      * Evict {@link T}s with expired {@link Lease}(s).

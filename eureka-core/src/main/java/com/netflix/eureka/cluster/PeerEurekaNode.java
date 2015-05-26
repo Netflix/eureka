@@ -16,6 +16,8 @@
 
 package com.netflix.eureka.cluster;
 
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response.Status;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
@@ -25,23 +27,17 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response.Status;
-
-import com.netflix.discovery.EurekaIdentityHeaderFilter;
-import com.netflix.eureka.EurekaServerIdentity;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.config.ConfigurationManager;
+import com.netflix.discovery.EurekaIdentityHeaderFilter;
 import com.netflix.discovery.provider.Serializer;
 import com.netflix.discovery.shared.EurekaJerseyClient;
 import com.netflix.discovery.shared.EurekaJerseyClient.JerseyClient;
 import com.netflix.eureka.CurrentRequestVersion;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfigurationManager;
+import com.netflix.eureka.EurekaServerIdentity;
 import com.netflix.eureka.PeerAwareInstanceRegistry;
 import com.netflix.eureka.PeerAwareInstanceRegistry.Action;
 import com.netflix.eureka.Version;
@@ -55,6 +51,8 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The <code>PeerEurekaNode</code> represents a peer node to which information
@@ -111,21 +109,21 @@ public class PeerEurekaNode {
                         hostname = serviceUrl;
                     }
                     String jerseyClientName = "Discovery-PeerNodeClient-" + hostname;
-                    if (serviceUrl.startsWith("https://") && 
-                    		"true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
-	                    jerseyClient = EurekaJerseyClient.createSystemSSLJerseyClient(jerseyClientName,
-	                            config.getPeerNodeConnectTimeoutMs(),
-	                            config.getPeerNodeReadTimeoutMs(),
-	                            config.getPeerNodeTotalConnections(),
-	                            config.getPeerNodeTotalConnectionsPerHost(),
-	                            config.getPeerNodeConnectionIdleTimeoutSeconds());
-                    }else{
-	                    jerseyClient = EurekaJerseyClient.createJerseyClient(jerseyClientName,
-	                            config.getPeerNodeConnectTimeoutMs(),
-	                            config.getPeerNodeReadTimeoutMs(),
-	                            config.getPeerNodeTotalConnections(),
-	                            config.getPeerNodeTotalConnectionsPerHost(),
-	                            config.getPeerNodeConnectionIdleTimeoutSeconds());
+                    if (serviceUrl.startsWith("https://") &&
+                            "true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
+                        jerseyClient = EurekaJerseyClient.createSystemSSLJerseyClient(jerseyClientName,
+                                config.getPeerNodeConnectTimeoutMs(),
+                                config.getPeerNodeReadTimeoutMs(),
+                                config.getPeerNodeTotalConnections(),
+                                config.getPeerNodeTotalConnectionsPerHost(),
+                                config.getPeerNodeConnectionIdleTimeoutSeconds());
+                    } else {
+                        jerseyClient = EurekaJerseyClient.createJerseyClient(jerseyClientName,
+                                config.getPeerNodeConnectTimeoutMs(),
+                                config.getPeerNodeReadTimeoutMs(),
+                                config.getPeerNodeTotalConnections(),
+                                config.getPeerNodeTotalConnectionsPerHost(),
+                                config.getPeerNodeConnectionIdleTimeoutSeconds());
                     }
                     jerseyApacheClient = jerseyClient.getClient();
                 } catch (Throwable e) {
@@ -136,7 +134,7 @@ public class PeerEurekaNode {
 
             String ip = null;
             try {
-               ip = InetAddress.getLocalHost().getHostAddress();
+                ip = InetAddress.getLocalHost().getHostAddress();
             } catch (UnknownHostException e) {
                 logger.warn("Cannot find localhost ip", e);
             }
@@ -262,8 +260,8 @@ public class PeerEurekaNode {
      * @throws Throwable
      */
     public void heartbeat(final String appName, final String id,
-            final InstanceInfo info, final InstanceStatus overriddenStatus,
-            boolean primeConnection) throws Throwable {
+                          final InstanceInfo info, final InstanceStatus overriddenStatus,
+                          boolean primeConnection) throws Throwable {
         if (primeConnection) {
             sendHeartBeat(appName, id, info, overriddenStatus, null);
             return;
@@ -276,20 +274,20 @@ public class PeerEurekaNode {
             }
 
             @Override
-            public void handleFailure(int statusCode) throws Throwable  {
-               super.handleFailure(statusCode);
-               if (statusCode == 404) {
-                   logger.warn(name + appName + "/" + id
-                           + " : heartbeat: missing entry.");
-                   if (info != null) {
-                       logger.warn(
-                               "Cannot find instance id {} and hence replicating the instance with status {}",
-                               info.getId(), info.getStatus().toString());
-                       register(info);
-                   }
-               } else if (config.shouldSyncWhenTimestampDiffers() && this.getPeerInstanceInfo() != null) {
-                   syncInstancesIfTimestampDiffers(id, info, this.getPeerInstanceInfo());
-               }
+            public void handleFailure(int statusCode) throws Throwable {
+                super.handleFailure(statusCode);
+                if (statusCode == 404) {
+                    logger.warn(name + appName + "/" + id
+                            + " : heartbeat: missing entry.");
+                    if (info != null) {
+                        logger.warn(
+                                "Cannot find instance id {} and hence replicating the instance with status {}",
+                                info.getId(), info.getStatus().toString());
+                        register(info);
+                    }
+                } else if (config.shouldSyncWhenTimestampDiffers() && this.getPeerInstanceInfo() != null) {
+                    syncInstancesIfTimestampDiffers(id, info, this.getPeerInstanceInfo());
+                }
             }
 
         };
@@ -365,7 +363,7 @@ public class PeerEurekaNode {
      *            the instance information of the instance.
      */
     public void statusUpdate(final String appName, final String id,
-            final InstanceStatus newStatus, final InstanceInfo info) {
+                             final InstanceStatus newStatus, final InstanceInfo info) {
         boolean success = statusBatcher.process(new ReplicationTask(appName,
                 id, Action.StatusUpdate) {
 
@@ -383,7 +381,7 @@ public class PeerEurekaNode {
                                     info.getLastDirtyTimestamp().toString())
                             .header(HEADER_REPLICATION, "true")
                             .put(ClientResponse.class);
-                   return response.getStatus();
+                    return response.getStatus();
                 } finally {
                     if (response != null) {
                         response.close();
@@ -532,7 +530,7 @@ public class PeerEurekaNode {
      * @throws Throwable
      */
     private int sendHeartBeat(final String appName, final String id,
-            final InstanceInfo info, final InstanceStatus overriddenStatus, ReplicationTask task)
+                              final InstanceInfo info, final InstanceStatus overriddenStatus, ReplicationTask task)
             throws Throwable {
         ClientResponse response = null;
         try {
@@ -541,7 +539,7 @@ public class PeerEurekaNode {
                     .resource(serviceUrl)
                     .path(urlPath)
                     .queryParam("status", info.getStatus().toString())
-                .queryParam("lastDirtyTimestamp",
+                    .queryParam("lastDirtyTimestamp",
                             info.getLastDirtyTimestamp().toString());
             if (overriddenStatus != null) {
                 r = r.queryParam("overriddenstatus", overriddenStatus.name());
@@ -549,7 +547,7 @@ public class PeerEurekaNode {
             response = r.accept(MediaType.APPLICATION_JSON_TYPE).header(HEADER_REPLICATION, "true").put(
                     ClientResponse.class);
             InstanceInfo infoFromPeer = null;
-            if ((response.getStatus() == Status.OK.getStatusCode())  && response.hasEntity()) {
+            if ((response.getStatus() == Status.OK.getStatusCode()) && response.hasEntity()) {
                 infoFromPeer = response
                         .getEntity(InstanceInfo.class);
 
@@ -697,7 +695,7 @@ public class PeerEurekaNode {
 
     @Serializer("com.netflix.discovery.converters.EntityBodyConverter")
     @XStreamAlias("instanceresponse")
-     /**
+    /**
      * The jersey resource class that generates the replication indivdiual response.
      */
     public static class ReplicationInstanceResponse {
@@ -735,7 +733,7 @@ public class PeerEurekaNode {
 
     @Serializer("com.netflix.discovery.converters.EntityBodyConverter")
     @XStreamAlias("replinstance")
-     /**
+    /**
      * The jersey resource class that generates a particular replication event
      */
     public static class ReplicationInstance {
@@ -810,30 +808,30 @@ public class PeerEurekaNode {
      * this node and the peer eureka nodes vary.
      */
     private void syncInstancesIfTimestampDiffers(String id, InstanceInfo info, InstanceInfo infoFromPeer
-           ) {
+    ) {
         try {
-                if (infoFromPeer != null) {
-                    Object[] args = {id, info.getLastDirtyTimestamp(), infoFromPeer.getLastDirtyTimestamp()};
+            if (infoFromPeer != null) {
+                Object[] args = {id, info.getLastDirtyTimestamp(), infoFromPeer.getLastDirtyTimestamp()};
 
+                logger.warn(
+                        "Peer wants us to take the instance information from it, since the timestamp differs,"
+                                + "Id : {} My Timestamp : {}, Peer's timestamp: {}", args);
+                if ((infoFromPeer.getOverriddenStatus() != null)
+                        && !(InstanceStatus.UNKNOWN.equals(infoFromPeer
+                        .getOverriddenStatus()))) {
+                    Object[] args1 = {id, info.getOverriddenStatus(), infoFromPeer.getOverriddenStatus()};
                     logger.warn(
-                            "Peer wants us to take the instance information from it, since the timestamp differs,"
-                            + "Id : {} My Timestamp : {}, Peer's timestamp: {}", args);
-                    if ((infoFromPeer.getOverriddenStatus() != null)
-                            && !(InstanceStatus.UNKNOWN.equals(infoFromPeer
-                                    .getOverriddenStatus()))) {
-                        Object[] args1 = {id, info.getOverriddenStatus(), infoFromPeer.getOverriddenStatus()};
-                        logger.warn(
-                                "Overridden Status info -id {}, mine {}, peer's {}",
-                                args1);
+                            "Overridden Status info -id {}, mine {}, peer's {}",
+                            args1);
 
-                        PeerAwareInstanceRegistry.getInstance()
-                                .storeOverriddenStatusIfRequired(id,
-                                        infoFromPeer.getOverriddenStatus());
-                    }
-                    PeerAwareInstanceRegistry.getInstance().register(
-                            infoFromPeer, true);
-
+                    PeerAwareInstanceRegistry.getInstance()
+                            .storeOverriddenStatusIfRequired(id,
+                                    infoFromPeer.getOverriddenStatus());
                 }
+                PeerAwareInstanceRegistry.getInstance().register(
+                        infoFromPeer, true);
+
+            }
 
         } catch (Throwable e) {
             logger.warn("Exception when trying to get information from peer :",
@@ -864,7 +862,7 @@ public class PeerEurekaNode {
                 config.getMaxElementsInPeerReplicationPool());
         ConfigurationManager.getConfigInstance().setProperty(
                 "batcher." + absoluteBatcherName + ".batch.maxMessages",
-                 250);
+                250);
         ConfigurationManager.getConfigInstance().setProperty(
                 "batcher." + absoluteBatcherName + ".keepAliveTime",
                 config.getMaxIdleThreadAgeInMinutesForPeerReplication() * 60);
@@ -875,199 +873,200 @@ public class PeerEurekaNode {
         return BatcherFactory.createBatcher(absoluteBatcherName,
                 new MessageProcessor<ReplicationTask>() {
 
-            private String BATCH_URL_PATH = "peerreplication/batch/";;
+                    private String BATCH_URL_PATH = "peerreplication/batch/";
+                    ;
 
-            @Override
-            public void process(List<ReplicationTask> tasks) {
-                if (!tasks.get(0).isBatchingSupported()) {
-                    executeSingle(tasks);
-                } else if (!executeBatch(tasks)) {
-                    executeSingle(tasks);
-                }
-            }
-
-            private boolean executeBatch(List<ReplicationTask> tasks) {
-                boolean success = true;
-                boolean done = true;
-                PeerEurekaNode.ReplicationList list = new PeerEurekaNode.ReplicationList();
-                for (ReplicationTask task : tasks) {
-                   if (System.currentTimeMillis()
-                            - config.getMaxTimeForReplication() > task
-                            .getSubmitTime()) {
-                       Object[] args = {task.getAppName(), task.getId(),
-                               task.getAction(),
-                               new Date(System.currentTimeMillis()),
-                               new Date(task.getSubmitTime())};
-
-                        logger.warn(
-                                "Replication events older than the threshold. AppName : {}, Id: {}, Action : {}, "
-                                + "Current Time : {}, Submit Time :{}", args);
-
-                       continue;
-                    }
-                    PeerEurekaNode.ReplicationInstance instance = new PeerEurekaNode.ReplicationInstance();
-                    instance.setAppName(task.getAppName());
-                    instance.setId(task.getId());
-                    InstanceInfo instanceInfo = task.getInstanceInfo();
-                    if (instanceInfo != null) {
-                        String overriddenStatus = (task
-                                .getOverriddenStatus() == null ? null
-                                        : task.getOverriddenStatus().name());
-                        instance.setOverriddenStatus(overriddenStatus);
-                        instance.setLastDirtyTimestamp(instanceInfo
-                                .getLastDirtyTimestamp());
-                        if (task.shouldReplicateInstanceInfo()) {
-                            instance.setInstanceInfo(instanceInfo);
-                        }
-                        String instanceStatus = instanceInfo
-                        .getStatus() == null ? null
-                                : instanceInfo.getStatus().name();
-                        instance.setStatus(instanceStatus);
-                    }
-                    instance.setAction(task.getAction());
-                    list.addReplicationInstance(instance);
-                }
-                if (list.getList().size() == 0) {
-                    return true;
-                }
-                Action action = list.getList().get(0).action;
-                DynamicCounter.increment("Batch_"
-                        + action
-
-                        + "_tries");
-
-                do {
-                    done = true;
-                    ClientResponse response = null;
-                    try {
-                        response = jerseyApacheClient
-                        .resource(serviceUrl)
-                        .path(BATCH_URL_PATH)
-                        .accept(MediaType.APPLICATION_JSON_TYPE)
-                        .type(MediaType.APPLICATION_JSON_TYPE)
-                        .post(ClientResponse.class, list);
-                        if (!isSuccess(response.getStatus())) {
-                            return false;
-                        }
-                        DynamicCounter.increment("Batch_"
-                                + action
-
-                                + "_success");
-
-                        PeerEurekaNode.ReplicationListResponse batchResponse = response
-                        .getEntity(PeerEurekaNode.ReplicationListResponse.class);
-                        int ctr = 0;
-                        for (PeerEurekaNode.ReplicationInstanceResponse singleResponse : batchResponse
-                                .getResponseList()) {
-                            int statusCode = singleResponse
-                            .getStatusCode();
-                            if ((!isSuccess(statusCode))
-                                    || (singleResponse
-                                    .getResponseEntity() != null)) {
-                                if (singleResponse.getResponseEntity() != null) {
-                                    tasks.get(ctr)
-                                    .setPeerInstanceInfo(
-                                            singleResponse
-                                            .getResponseEntity());
-                                }
-                                tasks.get(ctr)
-                                .handleFailure(statusCode);
-                            }
-
-                            ++ctr;
-                        }
-                        done = true;
-
-                    } catch (Throwable e) {
-
-                        if ((isNetworkConnectException(e))) {
-                            DynamicCounter.increment("Batch_"
-                                    + action
-                              + "_retries");
-                            done = false;
-                        } else {
-                            success = false;
-                            logger.info(
-                                    "Not re-trying this exception because it does not seem to be a network exception",
-                                    e);
-                        }
-                    } finally {
-                        if (response != null) {
-                            response.close();
+                    @Override
+                    public void process(List<ReplicationTask> tasks) {
+                        if (!tasks.get(0).isBatchingSupported()) {
+                            executeSingle(tasks);
+                        } else if (!executeBatch(tasks)) {
+                            executeSingle(tasks);
                         }
                     }
-                } while (!done);
-                return success;
-            }
 
-
-            private void executeSingle(List<ReplicationTask> tasks) {
-                for (ReplicationTask task : tasks) {
-                    boolean done = true;
-                    do {
-                        done = true;
-                        try {
-                              if (System.currentTimeMillis()
+                    private boolean executeBatch(List<ReplicationTask> tasks) {
+                        boolean success = true;
+                        boolean done = true;
+                        PeerEurekaNode.ReplicationList list = new PeerEurekaNode.ReplicationList();
+                        for (ReplicationTask task : tasks) {
+                            if (System.currentTimeMillis()
                                     - config.getMaxTimeForReplication() > task
                                     .getSubmitTime()) {
-                                  Object[] args = {
-                                          task.getAppName(),
-                                          task.getId(),
-                                          task.getAction(),
-                                          new Date(System.currentTimeMillis()),
-                                          new Date(task.getSubmitTime()) };
+                                Object[] args = {task.getAppName(), task.getId(),
+                                        task.getAction(),
+                                        new Date(System.currentTimeMillis()),
+                                        new Date(task.getSubmitTime())};
 
                                 logger.warn(
-                                        "Replication events older than the threshold. AppName : {}, Id: {}, Action : {}, Current Time : {}, Submit Time :{}",
-                                        args);
+                                        "Replication events older than the threshold. AppName : {}, Id: {}, Action : {}, "
+                                                + "Current Time : {}, Submit Time :{}", args);
 
                                 continue;
                             }
-                            DynamicCounter.increment("Single_"
-                                    + task.getAction().name()
-
-                                    + "_tries");
-
-                            int statusCode = task.execute();
-                            if (!isSuccess(statusCode)) {
-                                task.handleFailure(statusCode);
+                            PeerEurekaNode.ReplicationInstance instance = new PeerEurekaNode.ReplicationInstance();
+                            instance.setAppName(task.getAppName());
+                            instance.setId(task.getId());
+                            InstanceInfo instanceInfo = task.getInstanceInfo();
+                            if (instanceInfo != null) {
+                                String overriddenStatus = (task
+                                        .getOverriddenStatus() == null ? null
+                                        : task.getOverriddenStatus().name());
+                                instance.setOverriddenStatus(overriddenStatus);
+                                instance.setLastDirtyTimestamp(instanceInfo
+                                        .getLastDirtyTimestamp());
+                                if (task.shouldReplicateInstanceInfo()) {
+                                    instance.setInstanceInfo(instanceInfo);
+                                }
+                                String instanceStatus = instanceInfo
+                                        .getStatus() == null ? null
+                                        : instanceInfo.getStatus().name();
+                                instance.setStatus(instanceStatus);
                             }
-                            DynamicCounter.increment("Single_"
-                                    + task.getAction().name()
-
-                                    + "_success");
-
-                        } catch (Throwable e) {
-                            logger.error(
-                                    name + task.getAppName() + "/"
-                                    + task.getId() + ":"
-                                    + task.getAction(), e);
-                            try {
-                                Thread.sleep(RETRY_SLEEP_TIME_MS);
-                            } catch (InterruptedException e1) {
-
-                            }
-                            if ((isNetworkConnectException(e))) {
-                                DynamicCounter.increment(task
-                                        .getAction().name()
-                                        + "_retries");
-                                done = false;
-                            } else {
-                                logger.info(
-                                        "Not re-trying this exception because it does not seem to be a network "
-                                        + "exception", e);
-                            }
+                            instance.setAction(task.getAction());
+                            list.addReplicationInstance(instance);
                         }
-                    } while (!done);
-                }
-            }
-        });
+                        if (list.getList().size() == 0) {
+                            return true;
+                        }
+                        Action action = list.getList().get(0).action;
+                        DynamicCounter.increment("Batch_"
+                                + action
+
+                                + "_tries");
+
+                        do {
+                            done = true;
+                            ClientResponse response = null;
+                            try {
+                                response = jerseyApacheClient
+                                        .resource(serviceUrl)
+                                        .path(BATCH_URL_PATH)
+                                        .accept(MediaType.APPLICATION_JSON_TYPE)
+                                        .type(MediaType.APPLICATION_JSON_TYPE)
+                                        .post(ClientResponse.class, list);
+                                if (!isSuccess(response.getStatus())) {
+                                    return false;
+                                }
+                                DynamicCounter.increment("Batch_"
+                                        + action
+
+                                        + "_success");
+
+                                PeerEurekaNode.ReplicationListResponse batchResponse = response
+                                        .getEntity(PeerEurekaNode.ReplicationListResponse.class);
+                                int ctr = 0;
+                                for (PeerEurekaNode.ReplicationInstanceResponse singleResponse : batchResponse
+                                        .getResponseList()) {
+                                    int statusCode = singleResponse
+                                            .getStatusCode();
+                                    if ((!isSuccess(statusCode))
+                                            || (singleResponse
+                                            .getResponseEntity() != null)) {
+                                        if (singleResponse.getResponseEntity() != null) {
+                                            tasks.get(ctr)
+                                                    .setPeerInstanceInfo(
+                                                            singleResponse
+                                                                    .getResponseEntity());
+                                        }
+                                        tasks.get(ctr)
+                                                .handleFailure(statusCode);
+                                    }
+
+                                    ++ctr;
+                                }
+                                done = true;
+
+                            } catch (Throwable e) {
+
+                                if ((isNetworkConnectException(e))) {
+                                    DynamicCounter.increment("Batch_"
+                                            + action
+                                            + "_retries");
+                                    done = false;
+                                } else {
+                                    success = false;
+                                    logger.info(
+                                            "Not re-trying this exception because it does not seem to be a network exception",
+                                            e);
+                                }
+                            } finally {
+                                if (response != null) {
+                                    response.close();
+                                }
+                            }
+                        } while (!done);
+                        return success;
+                    }
+
+
+                    private void executeSingle(List<ReplicationTask> tasks) {
+                        for (ReplicationTask task : tasks) {
+                            boolean done = true;
+                            do {
+                                done = true;
+                                try {
+                                    if (System.currentTimeMillis()
+                                            - config.getMaxTimeForReplication() > task
+                                            .getSubmitTime()) {
+                                        Object[] args = {
+                                                task.getAppName(),
+                                                task.getId(),
+                                                task.getAction(),
+                                                new Date(System.currentTimeMillis()),
+                                                new Date(task.getSubmitTime())};
+
+                                        logger.warn(
+                                                "Replication events older than the threshold. AppName : {}, Id: {}, Action : {}, Current Time : {}, Submit Time :{}",
+                                                args);
+
+                                        continue;
+                                    }
+                                    DynamicCounter.increment("Single_"
+                                            + task.getAction().name()
+
+                                            + "_tries");
+
+                                    int statusCode = task.execute();
+                                    if (!isSuccess(statusCode)) {
+                                        task.handleFailure(statusCode);
+                                    }
+                                    DynamicCounter.increment("Single_"
+                                            + task.getAction().name()
+
+                                            + "_success");
+
+                                } catch (Throwable e) {
+                                    logger.error(
+                                            name + task.getAppName() + "/"
+                                                    + task.getId() + ":"
+                                                    + task.getAction(), e);
+                                    try {
+                                        Thread.sleep(RETRY_SLEEP_TIME_MS);
+                                    } catch (InterruptedException e1) {
+
+                                    }
+                                    if ((isNetworkConnectException(e))) {
+                                        DynamicCounter.increment(task
+                                                .getAction().name()
+                                                + "_retries");
+                                        done = false;
+                                    } else {
+                                        logger.info(
+                                                "Not re-trying this exception because it does not seem to be a network "
+                                                        + "exception", e);
+                                    }
+                                }
+                            } while (!done);
+                        }
+                    }
+                });
     }
 
 
     private boolean isSuccess(int statusCode) {
         return statusCode >= 200
-                &&  statusCode < 300;
+                && statusCode < 300;
     }
 
 }

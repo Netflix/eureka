@@ -30,7 +30,7 @@ import javax.ws.rs.core.Response;
  *
  */
 @Path("/{version}/svips")
-@Produces({ "application/xml", "application/json" })
+@Produces({"application/xml", "application/json"})
 public class SecureVIPResource extends AbstractVIPResource {
 
     @GET

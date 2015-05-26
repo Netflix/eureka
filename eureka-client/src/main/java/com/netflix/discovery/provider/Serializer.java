@@ -37,7 +37,7 @@ import java.lang.annotation.Target;
  *
  */
 @Documented
-@Target({ ElementType.TYPE, ElementType.METHOD })
+@Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Serializer {
     String value() default "";

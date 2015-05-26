@@ -26,10 +26,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import com.netflix.eureka.util.EurekaMonitors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.eureka.CurrentRequestVersion;
 import com.netflix.eureka.PeerAwareInstanceRegistry;
@@ -37,6 +33,9 @@ import com.netflix.eureka.Version;
 import com.netflix.eureka.cluster.PeerEurekaNode;
 import com.netflix.eureka.resources.ResponseCache.Key;
 import com.netflix.eureka.resources.ResponseCache.KeyType;
+import com.netflix.eureka.util.EurekaMonitors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A <em>jersey</em> resource that handles request related to a particular
@@ -45,7 +44,7 @@ import com.netflix.eureka.resources.ResponseCache.KeyType;
  * @author Karthik Ranganathan, Greg Kim
  *
  */
-@Produces({ "application/xml", "application/json" })
+@Produces({"application/xml", "application/json"})
 public class ApplicationResource {
     private static final Logger logger = LoggerFactory
             .getLogger(ApplicationResource.class);
@@ -72,7 +71,7 @@ public class ApplicationResource {
      */
     @GET
     public Response getApplication(@PathParam("version") String version,
-            @HeaderParam("Accept") final String acceptHeader) {
+                                   @HeaderParam("Accept") final String acceptHeader) {
         if (!PeerAwareInstanceRegistry.getInstance().shouldAllowAccess(false)) {
             return Response.status(Status.FORBIDDEN).build();
         }
@@ -121,9 +120,9 @@ public class ApplicationResource {
      *            replicated from other nodes.
      */
     @POST
-    @Consumes({ "application/json", "application/xml" })
+    @Consumes({"application/json", "application/xml"})
     public void addInstance(InstanceInfo info,
-            @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication) {
+                            @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication) {
         registry.register(info, "true".equals(isReplication));
     }
 

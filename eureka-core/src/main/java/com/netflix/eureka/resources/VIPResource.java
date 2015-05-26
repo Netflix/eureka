@@ -30,7 +30,7 @@ import javax.ws.rs.core.Response;
  *
  */
 @Path("/{version}/vips")
-@Produces({ "application/xml", "application/json" })
+@Produces({"application/xml", "application/json"})
 public class VIPResource extends AbstractVIPResource {
 
     @GET

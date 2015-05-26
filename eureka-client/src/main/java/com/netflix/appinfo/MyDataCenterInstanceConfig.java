@@ -28,7 +28,7 @@ import com.netflix.governator.guice.lazy.FineGrainedLazySingleton;
 @FineGrainedLazySingleton
 @ProvidedBy(MyDataCenterInstanceConfigProvider.class)
 public class MyDataCenterInstanceConfig extends PropertiesInstanceConfig
-implements EurekaInstanceConfig {
+        implements EurekaInstanceConfig {
 
     public MyDataCenterInstanceConfig() {
     }
@@ -38,7 +38,7 @@ implements EurekaInstanceConfig {
     }
 
     public MyDataCenterInstanceConfig(String namespace,
-            DataCenterInfo dataCenterInfo) {
+                                      DataCenterInfo dataCenterInfo) {
         super(namespace, dataCenterInfo);
     }
 

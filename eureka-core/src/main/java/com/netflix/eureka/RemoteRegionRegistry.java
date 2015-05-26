@@ -15,6 +15,8 @@
  */
 package com.netflix.eureka;
 
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response.Status;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -29,17 +31,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response.Status;
-
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.netflix.discovery.EurekaIdentityHeaderFilter;
-import com.netflix.discovery.TimedSupervisorTask;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
+import com.netflix.discovery.EurekaIdentityHeaderFilter;
+import com.netflix.discovery.TimedSupervisorTask;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.EurekaJerseyClient;
@@ -50,6 +46,8 @@ import com.netflix.servo.monitor.Stopwatch;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handles all registry operations that needs to be done on a eureka service running in an other region.
@@ -407,7 +405,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
      * @throws Throwable
      */
     private ClientResponse reconcileAndLogDifference(ClientResponse response,
-            Applications delta, String reconcileHashCode) throws Throwable {
+                                                     Applications delta, String reconcileHashCode) throws Throwable {
         logger.warn(
                 "The Reconcile hashcodes do not match, client : {}, server : {}. Getting the full registry",
                 reconcileHashCode, delta.getAppsHashCode());
