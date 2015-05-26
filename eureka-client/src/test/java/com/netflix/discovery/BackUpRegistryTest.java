@@ -1,5 +1,9 @@
 package com.netflix.discovery;
 
+import javax.annotation.Nullable;
+import java.util.List;
+import java.util.UUID;
+
 import com.google.inject.Provider;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.DataCenterInfo;
@@ -10,10 +14,6 @@ import com.netflix.discovery.shared.Applications;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
-
-import javax.annotation.Nullable;
-import java.util.List;
-import java.util.UUID;
 
 /**
  * @author Nitesh Kant
@@ -47,9 +47,9 @@ public class BackUpRegistryTest {
         ConfigurationManager.getConfigInstance().setProperty("eureka.myregion.availabilityZones", REMOTE_ZONE);
         ConfigurationManager.getConfigInstance().setProperty("eureka.backupregistry", MockBackupRegistry.class.getName());
         ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default",
-                                                             "http://localhost:" + NOT_AVAILABLE_EUREKA_PORT /*Should always be unavailable*/
-                                                             +
-                                                             MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
+                "http://localhost:" + NOT_AVAILABLE_EUREKA_PORT /*Should always be unavailable*/
+                        +
+                        MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
 
         InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder();
         builder.setIPAddr("10.10.101.00");
@@ -65,12 +65,12 @@ public class BackUpRegistryTest {
         backupRegistry = new MockBackupRegistry();
         setupBackupMock();
         client = new DiscoveryClient(builder.build(), new DefaultEurekaClientConfig(), null,
-                                     new Provider<BackupRegistry>() {
-                                         @Override
-                                         public BackupRegistry get() {
-                                             return backupRegistry;
-                                         }
-                                     });
+                new Provider<BackupRegistry>() {
+                    @Override
+                    public BackupRegistry get() {
+                        return backupRegistry;
+                    }
+                });
     }
 
     @After
@@ -102,7 +102,7 @@ public class BackUpRegistryTest {
         for (Application registeredApplication : registeredApplications) {
             if (registeredApplication.getName().equals(LOCAL_REGION_APP_NAME)) {
                 localRegionApp = registeredApplication;
-            } else if(registeredApplication.getName().equals(REMOTE_REGION_APP_NAME)) {
+            } else if (registeredApplication.getName().equals(REMOTE_REGION_APP_NAME)) {
                 remoteRegionApp = registeredApplication;
             }
         }

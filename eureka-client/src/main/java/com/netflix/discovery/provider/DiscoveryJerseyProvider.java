@@ -16,13 +16,6 @@
 
 package com.netflix.discovery.provider;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Type;
-import java.util.concurrent.ConcurrentHashMap;
-
 import javax.annotation.Nullable;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
@@ -32,6 +25,12 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.discovery.converters.EurekaJacksonCodec;
 import org.slf4j.Logger;
@@ -55,9 +54,9 @@ import org.slf4j.LoggerFactory;
 @Produces("*/*")
 @Consumes("*/*")
 public class DiscoveryJerseyProvider implements MessageBodyWriter,
-MessageBodyReader {
+        MessageBodyReader {
     private static final Logger LOGGER = LoggerFactory
-    .getLogger(DiscoveryJerseyProvider.class);
+            .getLogger(DiscoveryJerseyProvider.class);
 
     // Cache the serializers so that they don't have to be instantiated every
     // time/
@@ -72,7 +71,7 @@ MessageBodyReader {
      */
     @Override
     public boolean isReadable(Class serializableClass, Type type,
-            Annotation[] annotations, MediaType mediaType) {
+                              Annotation[] annotations, MediaType mediaType) {
         return checkForAnnotation(serializableClass);
     }
 
@@ -86,15 +85,15 @@ MessageBodyReader {
      */
     @Override
     public Object readFrom(Class serializableClass, Type type,
-            Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap headers, InputStream inputStream)
-    throws IOException, WebApplicationException {
+                           Annotation[] annotations, MediaType mediaType,
+                           MultivaluedMap headers, InputStream inputStream)
+            throws IOException, WebApplicationException {
 
         // Use Jackson for JSON
-        if(mediaType.equals(MediaType.APPLICATION_JSON_TYPE)) {
+        if (mediaType.equals(MediaType.APPLICATION_JSON_TYPE)) {
             try {
                 return EurekaJacksonCodec.getInstance().readFromEnvelope(serializableClass, inputStream);
-            } catch(Error e) {
+            } catch (Error e) {
                 LOGGER.error("Unexpected error occured during de-serialization of discovery data, doing connection "
                         + "cleanup.", e);
                 inputStream.close();
@@ -133,7 +132,7 @@ MessageBodyReader {
      */
     @Override
     public long getSize(Object serializableObject, Class serializableClass,
-            Type type, Annotation[] annotations, MediaType mediaType) {
+                        Type type, Annotation[] annotations, MediaType mediaType) {
         // TODO Auto-generated method stub
         return -1;
     }
@@ -147,7 +146,7 @@ MessageBodyReader {
      */
     @Override
     public boolean isWriteable(Class serializableClass, Type type,
-            Annotation[] annotations, MediaType mediaType) {
+                               Annotation[] annotations, MediaType mediaType) {
         return checkForAnnotation(serializableClass);
     }
 
@@ -161,11 +160,11 @@ MessageBodyReader {
      */
     @Override
     public void writeTo(Object serializableObject, Class serializableClass,
-            Type type, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap headers, OutputStream outputStream)
-    throws IOException, WebApplicationException {
+                        Type type, Annotation[] annotations, MediaType mediaType,
+                        MultivaluedMap headers, OutputStream outputStream)
+            throws IOException, WebApplicationException {
 
-        if(mediaType.equals(MediaType.APPLICATION_JSON_TYPE)) {
+        if (mediaType.equals(MediaType.APPLICATION_JSON_TYPE)) {
             EurekaJacksonCodec.getInstance().writeWithEnvelopeTo(serializableObject, outputStream);
         } else {
             ISerializer serializer = getSerializer(serializableClass);
@@ -189,7 +188,7 @@ MessageBodyReader {
     private boolean checkForAnnotation(Class serializableClass) {
         try {
             Annotation annotation = serializableClass
-            .getAnnotation(Serializer.class);
+                    .getAnnotation(Serializer.class);
             if (annotation != null) {
                 return true;
             }
@@ -214,7 +213,7 @@ MessageBodyReader {
      *         deserializing objects.
      */
     @Nullable
-    private static ISerializer getSerializer(@SuppressWarnings("rawtypes")Class serializableClass) {
+    private static ISerializer getSerializer(@SuppressWarnings("rawtypes") Class serializableClass) {
         ISerializer converter = null;
         Annotation annotation = serializableClass.getAnnotation(Serializer.class);
         if (annotation != null) {

@@ -56,7 +56,8 @@ public class InstanceInfo {
     public static final int DEFAULT_COUNTRY_ID = 1; // US
 
     private volatile String appName;
-    @Auto private volatile String appGroupName;
+    @Auto
+    private volatile String appGroupName;
 
     private volatile String ipAddr;
     private volatile String sid = "na";
@@ -181,7 +182,6 @@ public class InstanceInfo {
     }
 
 
-
     public enum InstanceStatus {
         UP, // Ready to receive traffic
         DOWN, // Do not send traffic- healthcheck callback failed
@@ -300,7 +300,7 @@ public class InstanceInfo {
             if ((existingHostName != null)
                     && !(hostName.equals(existingHostName))) {
                 refreshStatusPageUrl().refreshHealthCheckUrl()
-                .refreshVIPAddress().refreshSecureVIPAddress();
+                        .refreshVIPAddress().refreshSecureVIPAddress();
             }
             return this;
         }
@@ -433,7 +433,7 @@ public class InstanceInfo {
                         hostNameInterpolationExpression, result.hostName);
             } else if (relativeUrl != null) {
                 result.homePageUrl = HTTP_PROTOCOL + result.hostName + COLON
-                + result.port + relativeUrl;
+                        + result.port + relativeUrl;
             }
             return this;
         }
@@ -476,7 +476,7 @@ public class InstanceInfo {
                         hostNameInterpolationExpression, result.hostName);
             } else if (relativeUrl != null) {
                 result.statusPageUrl = HTTP_PROTOCOL + result.hostName + COLON
-                + result.port + relativeUrl;
+                        + result.port + relativeUrl;
             }
             return this;
         }
@@ -514,7 +514,7 @@ public class InstanceInfo {
          * @return the instance builder
          */
         public Builder setHealthCheckUrls(String relativeUrl,
-                String explicitUrl, String secureExplicitUrl) {
+                                          String explicitUrl, String secureExplicitUrl) {
             String hostNameInterpolationExpression = "${" + namespace + "hostname}";
             result.healthCheckRelativeUrl = relativeUrl;
             result.healthCheckExplicitUrl = explicitUrl;
@@ -524,7 +524,7 @@ public class InstanceInfo {
                         hostNameInterpolationExpression, result.hostName);
             } else if (result.isUnsecurePortEnabled) {
                 result.healthCheckUrl = HTTP_PROTOCOL + result.hostName + COLON
-                + result.port + relativeUrl;
+                        + result.port + relativeUrl;
             }
 
             if (secureExplicitUrl != null) {
@@ -532,7 +532,7 @@ public class InstanceInfo {
                         hostNameInterpolationExpression, result.hostName);
             } else if (result.isSecurePortEnabled) {
                 result.secureHealthCheckUrl = HTTPS_PROTOCOL + result.hostName
-                + COLON + result.securePort + relativeUrl;
+                        + COLON + result.securePort + relativeUrl;
             }
             return this;
         }
@@ -1042,7 +1042,7 @@ public class InstanceInfo {
         String instanceId = getId();
         if ((instanceId != null)
                 && (instanceId.equals(ApplicationInfoManager.getInstance()
-                        .getInfo().getId()))) {
+                .getInfo().getId()))) {
             isCoordinatingDiscoveryServer = Boolean.TRUE;
         } else {
             isCoordinatingDiscoveryServer = Boolean.FALSE;
@@ -1140,7 +1140,7 @@ public class InstanceInfo {
         while (matcher.find()) {
             String key = matcher.group(1);
             String value = DynamicPropertyFactory.getInstance()
-            .getStringProperty(key, "").get();
+                    .getStringProperty(key, "").get();
 
             logger.debug("att:" + matcher.group());
             logger.debug(", att key:" + key);

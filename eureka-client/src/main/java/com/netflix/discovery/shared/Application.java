@@ -16,6 +16,7 @@
 
 package com.netflix.discovery.shared;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -34,8 +35,6 @@ import com.netflix.discovery.provider.Serializer;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamImplicit;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
-
-import javax.annotation.Nullable;
 
 /**
  * The application class holds the list of instances for a particular
@@ -179,7 +178,7 @@ public class Application {
     public void shuffleAndStoreInstances(Map<String, Applications> remoteRegionsRegistry,
                                          EurekaClientConfig clientConfig, InstanceRegionChecker instanceRegionChecker) {
         _shuffleAndStoreInstances(clientConfig.shouldFilterOnlyUpInstances(), true, remoteRegionsRegistry, clientConfig,
-                                  instanceRegionChecker);
+                instanceRegionChecker);
     }
 
     private void _shuffleAndStoreInstances(boolean filterUpInstances, boolean indexByRemoteRegions,
@@ -197,7 +196,7 @@ public class Application {
                 if (filterUpInstances && !InstanceStatus.UP.equals(instanceInfo.getStatus())) {
                     it.remove();
                 } else if (indexByRemoteRegions && null != instanceRegionChecker && null != clientConfig
-                           && null != remoteRegionsRegistry) {
+                        && null != remoteRegionsRegistry) {
                     String instanceRegion = instanceRegionChecker.getInstanceRegion(instanceInfo);
                     if (!instanceRegionChecker.isLocalRegion(instanceRegion)) {
                         Applications appsForRemoteRegion = remoteRegionsRegistry.get(instanceRegion);

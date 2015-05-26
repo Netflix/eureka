@@ -43,18 +43,18 @@ public class HealthCheckResource {
                     .getInfo();
 
             switch (myInfo.getStatus()) {
-            case UP:
-                // Return status 200
-                return Response.status(Status.OK).build();
-            case STARTING:
-                // Return status 204
-                return Response.status(Status.NO_CONTENT).build();
-            case OUT_OF_SERVICE:
-                // Return 503
-                return Response.status(Status.SERVICE_UNAVAILABLE).build();
-            default:
-                // Return status 500
-                return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                case UP:
+                    // Return status 200
+                    return Response.status(Status.OK).build();
+                case STARTING:
+                    // Return status 204
+                    return Response.status(Status.NO_CONTENT).build();
+                case OUT_OF_SERVICE:
+                    // Return 503
+                    return Response.status(Status.SERVICE_UNAVAILABLE).build();
+                default:
+                    // Return status 500
+                    return Response.status(Status.INTERNAL_SERVER_ERROR).build();
             }
         } catch (Throwable th) {
             s_logger.error("Error doing healthceck", th);

@@ -24,12 +24,11 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.netflix.eureka.PeerAwareInstanceRegistry;
 import com.netflix.eureka.cluster.PeerEurekaNode;
 import com.netflix.eureka.util.AwsAsgUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A <em>jersey</em> resource for handling updates to {@link ASGStatus}.
@@ -54,11 +53,11 @@ import com.netflix.eureka.util.AwsAsgUtil;
  *
  */
 @Path("/{version}/asg")
-@Produces({ "application/xml", "application/json" })
+@Produces({"application/xml", "application/json"})
 public class ASGResource {
 
     private static final Logger logger = LoggerFactory
-    .getLogger(ASGResource.class);
+            .getLogger(ASGResource.class);
 
     public enum ASGStatus {
 
@@ -91,8 +90,8 @@ public class ASGResource {
     @PUT
     @Path("{asgName}/status")
     public Response statusUpdate(@PathParam("asgName") String asgName,
-            @QueryParam("value") String newStatus,
-            @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication) {
+                                 @QueryParam("value") String newStatus,
+                                 @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication) {
         try {
             logger.info("Trying to update ASG Status for ASG {} to {}",
                     asgName, newStatus);

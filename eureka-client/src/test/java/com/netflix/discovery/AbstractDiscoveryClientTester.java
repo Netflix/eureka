@@ -1,5 +1,9 @@
 package com.netflix.discovery;
 
+import javax.annotation.Nullable;
+import java.util.Arrays;
+import java.util.List;
+
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.LeaseInfo;
@@ -7,10 +11,6 @@ import com.netflix.discovery.shared.Application;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
-
-import javax.annotation.Nullable;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * @author Nitesh Kant
@@ -42,7 +42,7 @@ public class AbstractDiscoveryClientTester {
     public static final String LOCAL_REGION_APP3_INSTANCE1_HOSTNAME = "blahloc3-1";
 
     @Rule
-    public MockRemoteEurekaServer mockLocalEurekaServer= new MockRemoteEurekaServer();
+    public MockRemoteEurekaServer mockLocalEurekaServer = new MockRemoteEurekaServer();
     protected EurekaClient client;
 
     @Before

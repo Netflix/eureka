@@ -16,8 +16,6 @@
 
 package com.netflix.eureka;
 
-import java.io.IOException;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -25,6 +23,7 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.InstanceInfo;
@@ -55,7 +54,7 @@ public class StatusFilter implements Filter {
      * javax.servlet.ServletResponse, javax.servlet.FilterChain)
      */
     public void doFilter(ServletRequest request, ServletResponse response,
-            FilterChain chain) throws IOException, ServletException {
+                         FilterChain chain) throws IOException, ServletException {
         InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
         InstanceStatus status = myInfo.getStatus();
         if (status != InstanceStatus.UP
@@ -63,7 +62,7 @@ public class StatusFilter implements Filter {
             HttpServletResponse httpRespone = (HttpServletResponse) response;
             httpRespone.sendError(SC_TEMPORARY_REDIRECT,
                     "Current node is currently not ready to serve requests -- current status: "
-                    + status + " - try another DS node: ");
+                            + status + " - try another DS node: ");
         }
         chain.doFilter(request, response);
     }

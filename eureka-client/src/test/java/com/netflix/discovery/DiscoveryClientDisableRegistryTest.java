@@ -1,16 +1,13 @@
 package com.netflix.discovery;
 
+import java.util.UUID;
+
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.config.ConfigurationManager;
-import com.netflix.discovery.shared.Application;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.Collections;
-import java.util.Properties;
-import java.util.UUID;
 
 /**
  * @author Nitesh Kant
@@ -29,7 +26,7 @@ public class DiscoveryClientDisableRegistryTest {
         ConfigurationManager.getConfigInstance().setProperty("eureka.shouldFetchRegistry", "false");
         ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default",
                 "http://localhost:" + mockLocalEurekaServer.getPort() +
-                MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
+                        MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
 
         InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder();
         builder.setIPAddr("10.10.101.00");
@@ -47,6 +44,6 @@ public class DiscoveryClientDisableRegistryTest {
     @Test
     public void testDisableFetchRegistry() throws Exception {
         Assert.assertFalse("Registry fetch disabled but eureka server recieved a registry fetch.",
-                           mockLocalEurekaServer.isSentRegistry());
+                mockLocalEurekaServer.isSentRegistry());
     }
 }

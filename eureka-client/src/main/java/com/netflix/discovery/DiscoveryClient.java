@@ -53,10 +53,7 @@ import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.netflix.appinfo.AmazonInfo;
-import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.ApplicationInfoManager;
-import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.appinfo.EurekaClientIdentity;
 import com.netflix.appinfo.HealthCheckCallback;
 import com.netflix.appinfo.HealthCheckCallbackToHandlerBridge;
@@ -69,7 +66,6 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.EurekaJerseyClient;
 import com.netflix.discovery.shared.EurekaJerseyClient.JerseyClient;
-import com.netflix.discovery.shared.LookupService;
 import com.netflix.eventbus.spi.EventBus;
 import com.netflix.governator.guice.lazy.FineGrainedLazySingleton;
 import com.netflix.servo.monitor.Counter;
@@ -1114,7 +1110,7 @@ public class DiscoveryClient implements EurekaClient {
      */
     private ClientResponse makeRemoteCall(Action action) throws Throwable {
         ClientResponse response;
-        if(isQueryAction(action)) {
+        if (isQueryAction(action)) {
             response = makeRemoteCallToRedirectedServer(lastQueryRedirect, action);
         } else {
             response = makeRemoteCallToRedirectedServer(lastRegisterRedirect, action);
@@ -1186,7 +1182,7 @@ public class DiscoveryClient implements EurekaClient {
             ClientResponse clientResponse = makeRemoteCall(action, targetUrl.toString());
             if (clientResponse.getStatus() != 302) {
                 if (followRedirectCount > 0) {
-                    if(isQueryAction(action)) {
+                    if (isQueryAction(action)) {
                         lastQueryRedirect.set(targetUrl.toString());
                     } else {
                         lastRegisterRedirect.set(targetUrl.toString());
@@ -1510,7 +1506,7 @@ public class DiscoveryClient implements EurekaClient {
      */
     @Deprecated
     public static String getZone(InstanceInfo myInfo) {
-        String[] availZones = clientConfig.getAvailabilityZones(clientConfig .getRegion());
+        String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
         return InstanceInfo.getZone(availZones, myInfo);
     }
 

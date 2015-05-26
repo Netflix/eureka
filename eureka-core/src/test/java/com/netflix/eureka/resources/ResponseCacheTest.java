@@ -33,7 +33,7 @@ public class ResponseCacheTest extends AbstractTester {
         EurekaServerConfigurationManager.getInstance().setConfiguration(serverConfig);
         ResponseCache cache = ResponseCache.getInstance();
         ResponseCache.Key key = new ResponseCache.Key(ResponseCache.Key.EntityType.Application, REMOTE_REGION_APP_NAME,
-                                                      ResponseCache.KeyType.JSON, Version.V1);
+                ResponseCache.KeyType.JSON, Version.V1);
         String response = cache.get(key, true);
         Assert.assertNotNull("Cache get returned null.", response);
 
@@ -48,8 +48,8 @@ public class ResponseCacheTest extends AbstractTester {
         EurekaServerConfigurationManager.getInstance().setConfiguration(serverConfig);
         ResponseCache cache = ResponseCache.getInstance();
         ResponseCache.Key key = new ResponseCache.Key(ResponseCache.Key.EntityType.Application, REMOTE_REGION_APP_NAME,
-                                                      new String[] {REMOTE_REGION},
-                                                      ResponseCache.KeyType.JSON, Version.V1);
+                new String[]{REMOTE_REGION},
+                ResponseCache.KeyType.JSON, Version.V1);
 
         Assert.assertNotNull("Cache get returned null.", cache.get(key, true));
 
@@ -64,11 +64,11 @@ public class ResponseCacheTest extends AbstractTester {
         EurekaServerConfigurationManager.getInstance().setConfiguration(serverConfig);
         ResponseCache cache = ResponseCache.getInstance();
         ResponseCache.Key key1 = new ResponseCache.Key(ResponseCache.Key.EntityType.Application, REMOTE_REGION_APP_NAME,
-                                                      new String[] {REMOTE_REGION, "myregion2"},
-                                                      ResponseCache.KeyType.JSON, Version.V1);
+                new String[]{REMOTE_REGION, "myregion2"},
+                ResponseCache.KeyType.JSON, Version.V1);
         ResponseCache.Key key2 = new ResponseCache.Key(ResponseCache.Key.EntityType.Application, REMOTE_REGION_APP_NAME,
-                                                      new String[] {REMOTE_REGION},
-                                                      ResponseCache.KeyType.JSON, Version.V1);
+                new String[]{REMOTE_REGION},
+                ResponseCache.KeyType.JSON, Version.V1);
 
         Assert.assertNotNull("Cache get returned null.", cache.get(key1, true));
         Assert.assertNotNull("Cache get returned null.", cache.get(key2, true));

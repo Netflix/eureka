@@ -1,16 +1,15 @@
 package com.netflix.discovery;
 
+import javax.annotation.Nullable;
+import java.util.List;
+import java.util.Set;
+
 import com.google.inject.ImplementedBy;
 import com.netflix.appinfo.HealthCheckCallback;
 import com.netflix.appinfo.HealthCheckHandler;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.LookupService;
-
-import javax.annotation.Nullable;
-
-import java.util.List;
-import java.util.Set;
 
 /**
  * Define a simple interface over the current DiscoveryClient implementation.

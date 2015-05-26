@@ -1,10 +1,5 @@
 package com.netflix.eureka;
 
-import com.google.common.base.Strings;
-import com.netflix.appinfo.AbstractEurekaIdentity;
-import com.netflix.servo.monitor.DynamicCounter;
-import com.netflix.servo.monitor.MonitorConfig;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -13,6 +8,11 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+
+import com.google.common.base.Strings;
+import com.netflix.appinfo.AbstractEurekaIdentity;
+import com.netflix.servo.monitor.DynamicCounter;
+import com.netflix.servo.monitor.MonitorConfig;
 
 /**
  * An auth filter for client requests. For now, it only logs supported client identification data from header info
@@ -40,7 +40,7 @@ public class ServerRequestAuthFilter implements Filter {
     }
 
     protected void logAuth(ServletRequest request) {
-        if ( EurekaServerConfigurationManager.getInstance().getConfiguration().shouldLogIdentityHeaders() ) {
+        if (EurekaServerConfigurationManager.getInstance().getConfiguration().shouldLogIdentityHeaders()) {
             if (request instanceof HttpServletRequest) {
                 HttpServletRequest httpRequest = (HttpServletRequest) request;
 

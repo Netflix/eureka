@@ -2,6 +2,13 @@ package com.netflix.discovery.shared;
 
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.base.Preconditions;
+import com.netflix.servo.annotations.DataSourceType;
+import com.netflix.servo.annotations.Monitor;
+import com.netflix.servo.monitor.Counter;
+import com.netflix.servo.monitor.Monitors;
+import com.netflix.servo.monitor.Stopwatch;
+import com.netflix.servo.monitor.Timer;
 import org.apache.http.conn.ClientConnectionOperator;
 import org.apache.http.conn.ConnectionPoolTimeoutException;
 import org.apache.http.conn.params.ConnPerRoute;
@@ -12,14 +19,6 @@ import org.apache.http.impl.conn.tsccm.PoolEntryRequest;
 import org.apache.http.impl.conn.tsccm.RouteSpecificPool;
 import org.apache.http.impl.conn.tsccm.WaitingThreadAborter;
 import org.apache.http.params.HttpParams;
-
-import com.google.common.base.Preconditions;
-import com.netflix.servo.annotations.DataSourceType;
-import com.netflix.servo.annotations.Monitor;
-import com.netflix.servo.monitor.Counter;
-import com.netflix.servo.monitor.Monitors;
-import com.netflix.servo.monitor.Stopwatch;
-import com.netflix.servo.monitor.Timer;
 
 /**
  * A connection pool that provides Servo counters to monitor the efficiency.
@@ -160,7 +159,7 @@ public class NamedConnectionPool extends ConnPoolByRoute {
         return deleteCounter.getValue().longValue();
     }
 
-    @Monitor(name="connectionCount", type=DataSourceType.GAUGE)
+    @Monitor(name = "connectionCount", type = DataSourceType.GAUGE)
     public int getConnectionCount() {
         return this.getConnectionsInPool();
     }

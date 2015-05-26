@@ -1,12 +1,8 @@
 package com.netflix.discovery;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.inject.Inject;
 import com.netflix.appinfo.InstanceInfo;
@@ -14,6 +10,8 @@ import com.netflix.eventbus.spi.EventBus;
 import com.netflix.eventbus.spi.InvalidSubscriberException;
 import com.netflix.eventbus.spi.Subscribe;
 import com.netflix.governator.guice.lazy.LazySingleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Singleton that manages the state of @UpStatus/@DownStatus Supplier<Boolean>
@@ -23,14 +21,14 @@ import com.netflix.governator.guice.lazy.LazySingleton;
  *
  */
 @LazySingleton
-public class EurekaUpStatusResolver  {
+public class EurekaUpStatusResolver {
     private static Logger LOG = LoggerFactory.getLogger(EurekaUpStatusResolver.class);
 
     private volatile InstanceInfo.InstanceStatus currentStatus = InstanceInfo.InstanceStatus.UNKNOWN;
     private final EventBus eventBus;
     private final EurekaClient client;
     private final AtomicLong counter = new AtomicLong();
-    
+
     /**
      * @param client the eurekaClient
      * @param eventBus the eventBus to publish eureka status change events
@@ -38,7 +36,7 @@ public class EurekaUpStatusResolver  {
     @Inject
     public EurekaUpStatusResolver(EurekaClient client, EventBus eventBus) {
         this.eventBus = eventBus;
-        this.client   = client;
+        this.client = client;
     }
 
     @Subscribe
@@ -53,7 +51,7 @@ public class EurekaUpStatusResolver  {
         try {
             // Must set the initial status
             currentStatus = client.getInstanceRemoteStatus();
-            
+
             LOG.info("Initial status set to " + currentStatus);
             eventBus.registerSubscriber(this);
         } catch (InvalidSubscriberException e) {
@@ -72,7 +70,7 @@ public class EurekaUpStatusResolver  {
     public InstanceInfo.InstanceStatus getStatus() {
         return currentStatus;
     }
-    
+
     public long getChangeCount() {
         return counter.get();
     }

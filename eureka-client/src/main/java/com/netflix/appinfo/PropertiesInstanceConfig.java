@@ -20,13 +20,12 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.apache.commons.configuration.Configuration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.config.DynamicStringProperty;
+import org.apache.commons.configuration.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A properties based {@link InstanceInfo} configuration.
@@ -50,19 +49,19 @@ import com.netflix.config.DynamicStringProperty;
  *
  */
 public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig
-implements EurekaInstanceConfig {
+        implements EurekaInstanceConfig {
     private static final String TEST = "test";
     private static final String ARCHAIUS_DEPLOYMENT_ENVIRONMENT = "archaius.deployment.environment";
     private static final String EUREKA_ENVIRONMENT = "eureka.environment";
     private static final String APP_GROUP_ENV_VAR_NAME = "NETFLIX_APP_GROUP";
     private static final Logger logger = LoggerFactory
-    .getLogger(PropertiesInstanceConfig.class);
+            .getLogger(PropertiesInstanceConfig.class);
     protected String namespace = "eureka.";
     private static final DynamicStringProperty EUREKA_PROPS_FILE = DynamicPropertyFactory
-    .getInstance().getStringProperty("eureka.client.props",
-    "eureka-client");
+            .getInstance().getStringProperty("eureka.client.props",
+                    "eureka-client");
     private static final DynamicPropertyFactory INSTANCE = com.netflix.config.DynamicPropertyFactory
-    .getInstance();
+            .getInstance();
     private static final String UNKNOWN_APPLICATION = "unknown";
 
 
@@ -105,7 +104,7 @@ implements EurekaInstanceConfig {
     @Override
     public boolean isInstanceEnabledOnit() {
         return INSTANCE.getBooleanProperty(namespace + "traffic.enabled",
-                                           super.isInstanceEnabledOnit()).get();
+                super.isInstanceEnabledOnit()).get();
     }
 
     /*
@@ -127,7 +126,7 @@ implements EurekaInstanceConfig {
     @Override
     public int getSecurePort() {
         return INSTANCE.getIntProperty(propSecurePort, super.getSecurePort())
-        .get();
+                .get();
     }
 
     /*
@@ -149,7 +148,7 @@ implements EurekaInstanceConfig {
     @Override
     public boolean getSecurePortEnabled() {
         return INSTANCE.getBooleanProperty(propSecurePortEnabled,
-                                           super.getSecurePortEnabled()).get();
+                super.getSecurePortEnabled()).get();
     }
 
     /*
@@ -216,7 +215,7 @@ implements EurekaInstanceConfig {
     @Override
     public String getASGName() {
         return INSTANCE.getStringProperty(propASGName, super.getASGName())
-        .get();
+                .get();
     }
 
     /**
@@ -233,14 +232,14 @@ implements EurekaInstanceConfig {
     public Map<String, String> getMetadataMap() {
         Map<String, String> metadataMap = new LinkedHashMap<String, String>();
         Configuration config = (Configuration) INSTANCE
-        .getBackingConfigurationSource();
+                .getBackingConfigurationSource();
         String subsetPrefix = propMetadataNamespace.charAt(propMetadataNamespace.length() - 1) == '.'
                 ? propMetadataNamespace.substring(0, propMetadataNamespace.length() - 1)
                 : propMetadataNamespace;
         for (Iterator<String> iter = config.subset(subsetPrefix)
                 .getKeys();
 
-        iter.hasNext();) {
+             iter.hasNext(); ) {
 
             String key = iter.next();
             String value = config.getString(subsetPrefix + "." + key);
@@ -276,21 +275,21 @@ implements EurekaInstanceConfig {
 
     @Override
     public String getStatusPageUrlPath() {
-                return INSTANCE.getStringProperty(namespace + "statusPageUrlPath",
-                        DEFAULT_STATUSPAGE_URLPATH).get();
+        return INSTANCE.getStringProperty(namespace + "statusPageUrlPath",
+                DEFAULT_STATUSPAGE_URLPATH).get();
     }
 
     @Override
     public String getStatusPageUrl() {
-       return INSTANCE.getStringProperty(namespace + "statusPageUrl", null)
-        .get();
+        return INSTANCE.getStringProperty(namespace + "statusPageUrl", null)
+                .get();
     }
 
 
     @Override
     public String getHomePageUrlPath() {
         return INSTANCE.getStringProperty(namespace + "homePageUrlPath",
-            DEFAULT_HOMEPAGE_URLPATH).get();
+                DEFAULT_HOMEPAGE_URLPATH).get();
     }
 
     @Override
@@ -298,6 +297,7 @@ implements EurekaInstanceConfig {
         return INSTANCE.getStringProperty(namespace + "homePageUrl", null)
                 .get();
     }
+
     @Override
     public String getHealthCheckUrlPath() {
         return INSTANCE.getStringProperty(namespace + "healthCheckUrlPath",
@@ -307,14 +307,14 @@ implements EurekaInstanceConfig {
     @Override
     public String getHealthCheckUrl() {
         return INSTANCE.getStringProperty(namespace + "healthCheckUrl", null)
-        .get();
-     }
+                .get();
+    }
 
     @Override
     public String getSecureHealthCheckUrl() {
         return INSTANCE.getStringProperty(namespace + "secureHealthCheckUrl",
                 null).get();
-     }
+    }
 
     @Override
     public String getNamespace() {
@@ -338,7 +338,7 @@ implements EurekaInstanceConfig {
         propASGName = namespace + "asgName";
         propAppGroupName = namespace + "appGroup";
         appGrpNameFromEnv = ConfigurationManager.getConfigInstance().getString(APP_GROUP_ENV_VAR_NAME,
-                                                                               UNKNOWN_APPLICATION);
+                UNKNOWN_APPLICATION);
 
         String env = ConfigurationManager.getConfigInstance().getString(EUREKA_ENVIRONMENT, TEST);
         ConfigurationManager.getConfigInstance().setProperty(ARCHAIUS_DEPLOYMENT_ENVIRONMENT, env);
@@ -348,7 +348,7 @@ implements EurekaInstanceConfig {
         } catch (IOException e) {
             logger.warn(
                     "Cannot find the properties specified : {}. This may be okay if there are other environment "
-                    + "specific properties or the configuration is installed with a different mechanism.",
+                            + "specific properties or the configuration is installed with a different mechanism.",
                     eurekaPropsFile);
 
         }

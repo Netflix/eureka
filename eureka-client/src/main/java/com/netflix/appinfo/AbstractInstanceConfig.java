@@ -19,10 +19,9 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Map;
 
+import com.netflix.discovery.shared.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.netflix.discovery.shared.Pair;
 
 /**
  * An abstract instance info configuration with some defaults to get the users
@@ -34,7 +33,7 @@ import com.netflix.discovery.shared.Pair;
  */
 public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
     private static final Logger logger = LoggerFactory
-    .getLogger(AbstractInstanceConfig.class);
+            .getLogger(AbstractInstanceConfig.class);
 
     private static final int LEASE_EXPIRATION_DURATION_SECONDS = 90;
     private static final int LEASE_RENEWAL_INTERVAL_SECONDS = 30;

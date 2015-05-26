@@ -22,12 +22,11 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.eureka.PeerAwareInstanceRegistry.Action;
 import com.netflix.eureka.cluster.PeerEurekaNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A <em>jersey</em> resource that handles requests for replication purposes.
@@ -36,11 +35,10 @@ import com.netflix.eureka.cluster.PeerEurekaNode;
  *
  */
 @Path("/{version}/peerreplication")
-@Produces({ "application/xml", "application/json" })
+@Produces({"application/xml", "application/json"})
 public class PeerReplicationResource {
     private static final String REPLICATION = "true";
     private static final Logger logger = LoggerFactory.getLogger(PeerReplicationResource.class);
-
 
 
     /**
@@ -53,7 +51,7 @@ public class PeerReplicationResource {
      *
      * @param replicationList
      *            The List of replication events from peer eureka nodes
-      * @return A batched response containing the information about the responses of individual events
+     * @return A batched response containing the information about the responses of individual events
      */
     @Path("batch")
     @POST
@@ -71,7 +69,7 @@ public class PeerReplicationResource {
                         applicationResource, instanceInfo.getId());
                 String lastDirtyTimestamp = (instanceInfo
                         .getLastDirtyTimestamp() == null ? null : instanceInfo
-                                .getLastDirtyTimestamp().toString());
+                        .getLastDirtyTimestamp().toString());
                 String overriddenStatus = (instanceInfo.getOverriddenStatus() == null ? null
                         : instanceInfo.getOverriddenStatus());
                 String instanceStatus = (instanceInfo.getStatus() == null ? null
@@ -86,33 +84,33 @@ public class PeerReplicationResource {
                     if (response.getStatus() == Response.Status.OK
                             .getStatusCode() && response.getEntity() != null) {
                         singleResponseBuilder
-                        .setResponseEntity((InstanceInfo) response
-                                .getEntity());
+                                .setResponseEntity((InstanceInfo) response
+                                        .getEntity());
                     }
                 } else if (instanceInfo.getAction() == Action.Register) {
                     applicationResource.addInstance(
                             instanceInfo.getInstanceInfo(), REPLICATION);
 
                     singleResponseBuilder = new PeerEurekaNode.ReplicationInstanceResponse.Builder()
-                    .setStatusCode(Status.OK.getStatusCode());
+                            .setStatusCode(Status.OK.getStatusCode());
                 } else if (instanceInfo.getAction() == Action.StatusUpdate) {
                     response = resource.statusUpdate(instanceInfo.getStatus(),
                             REPLICATION, instanceInfo.getLastDirtyTimestamp()
-                            .toString());
+                                    .toString());
 
                     singleResponseBuilder = new PeerEurekaNode.ReplicationInstanceResponse.Builder()
-                    .setStatusCode(response.getStatus());
+                            .setStatusCode(response.getStatus());
                 } else if (instanceInfo.getAction() == Action.DeleteStatusOverride) {
                     response = resource.deleteStatusUpdate(REPLICATION, instanceInfo.getStatus(),
                             instanceInfo.getLastDirtyTimestamp().toString());
 
                     singleResponseBuilder = new PeerEurekaNode.ReplicationInstanceResponse.Builder()
-                    .setStatusCode(response.getStatus());
+                            .setStatusCode(response.getStatus());
                 } else if (instanceInfo.getAction() == Action.Cancel) {
                     response = resource.cancelLease(REPLICATION);
 
                     singleResponseBuilder = new PeerEurekaNode.ReplicationInstanceResponse.Builder()
-                    .setStatusCode(response.getStatus());
+                            .setStatusCode(response.getStatus());
                 }
 
                 batchResponse.addResponse(singleResponseBuilder.build());

@@ -19,9 +19,6 @@ package com.netflix.appinfo;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.inject.ProvidedBy;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.DataCenterInfo.Name;
@@ -29,6 +26,8 @@ import com.netflix.appinfo.providers.CloudInstanceConfigProvider;
 import com.netflix.config.DynamicBooleanProperty;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.governator.guice.lazy.FineGrainedLazySingleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An {@link InstanceInfo} configuration for AWS cloud deployments.
@@ -61,6 +60,7 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
         super(namespace);
         initCloudInstanceConfig(namespace);
     }
+
     private void initCloudInstanceConfig(String namespace) {
         propValidateInstanceId = INSTANCE.getBooleanProperty(namespace
                 + "validateInstanceId", true);
@@ -82,8 +82,8 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
             if (propValidateInstanceId.get()) {
                 throw new RuntimeException(
                         "Your datacenter is defined as cloud but we are not able to get the amazon metadata to "
-                        + "register. \nSet the property " + namespace + "validateInstanceId to false to ignore the"
-                        + "metadata call");
+                                + "register. \nSet the property " + namespace + "validateInstanceId to false to ignore the"
+                                + "metadata call");
             } else {
                 // The property to not validate instance ids may be set for
                 // development and in that scenario, populate instance id
@@ -132,19 +132,19 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
      */
     public synchronized void refreshAmazonInfo() {
         try {
-                AmazonInfo newInfo = AmazonInfo.Builder.newBuilder()
-                .autoBuild(namespace);
-                String newHostname = newInfo.get(MetaDataKey.publicHostname);
-                String existingHostname = ((AmazonInfo) info)
-                .get(MetaDataKey.publicHostname);
-                if (newHostname != null
-                        && !newHostname.equals(existingHostname)) {
-                    // public dns has changed on us, re-sync it
-                    logger.warn("The public hostname changed from : "
-                            + existingHostname + " => " + newHostname);
-                    this.info = newInfo;
-                }
-       } catch (Throwable t) {
+            AmazonInfo newInfo = AmazonInfo.Builder.newBuilder()
+                    .autoBuild(namespace);
+            String newHostname = newInfo.get(MetaDataKey.publicHostname);
+            String existingHostname = ((AmazonInfo) info)
+                    .get(MetaDataKey.publicHostname);
+            if (newHostname != null
+                    && !newHostname.equals(existingHostname)) {
+                // public dns has changed on us, re-sync it
+                logger.warn("The public hostname changed from : "
+                        + existingHostname + " => " + newHostname);
+                this.info = newInfo;
+            }
+        } catch (Throwable t) {
             logger.error("Cannot refresh the Amazon Info ", t);
         }
     }

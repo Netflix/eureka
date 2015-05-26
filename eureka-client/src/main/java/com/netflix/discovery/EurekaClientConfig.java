@@ -16,11 +16,10 @@
 
 package com.netflix.discovery;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 import com.google.inject.ImplementedBy;
-
-import javax.annotation.Nullable;
 
 /**
  * Configuration information required by the eureka clients to register an
@@ -69,7 +68,7 @@ public interface EurekaClientConfig {
      * @return the instance replication interval in seconds.
      */
     int getInstanceInfoReplicationIntervalSeconds();
-    
+
     /**
      * Indicates how long initially (in seconds) to replicate instance info
      * to the eureka server

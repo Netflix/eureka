@@ -16,11 +16,10 @@
 
 package com.netflix.discovery.converters;
 
+import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
-import javax.ws.rs.core.MediaType;
 
 import com.netflix.discovery.provider.ISerializer;
 import com.thoughtworks.xstream.XStream;
@@ -51,7 +50,7 @@ public class EntityBodyConverter implements ISerializer {
      * java.lang.Class, javax.ws.rs.core.MediaType)
      */
     public Object read(InputStream is, Class type, MediaType mediaType)
-    throws IOException {
+            throws IOException {
         XStream xstream = getXStreamInstance(mediaType);
         if (xstream != null) {
             return xstream.fromXML(is);
@@ -69,7 +68,7 @@ public class EntityBodyConverter implements ISerializer {
      * java.io.OutputStream, javax.ws.rs.core.MediaType)
      */
     public void write(Object object, OutputStream os, MediaType mediaType)
-    throws IOException {
+            throws IOException {
         XStream xstream = getXStreamInstance(mediaType);
         if (xstream != null) {
             xstream.toXML(object, os);

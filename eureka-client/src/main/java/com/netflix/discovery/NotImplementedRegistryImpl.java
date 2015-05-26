@@ -1,8 +1,8 @@
 package com.netflix.discovery;
 
-import com.netflix.discovery.shared.Applications;
-
 import javax.inject.Singleton;
+
+import com.netflix.discovery.shared.Applications;
 
 /**
  * @author Nitesh Kant
