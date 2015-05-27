@@ -45,7 +45,7 @@ public class OverridesServiceImpl implements OverridesService {
                     }
                 });
 
-        Observable<InstanceInfo> overridenUpdates = Observable.combineLatest(registrationUpdates, instanceOverrides,
+        Observable<InstanceInfo> overriddenUpdates = Observable.combineLatest(registrationUpdates, instanceOverrides,
                 new Func2<InstanceInfo, ChangeNotification<Overrides>, InstanceInfo>() {
                     @Override
                     public InstanceInfo call(InstanceInfo instanceInfo, ChangeNotification<Overrides> overrideNotification) {
@@ -60,7 +60,7 @@ public class OverridesServiceImpl implements OverridesService {
                     }
                 });
 
-        return delegate.register(overridenUpdates, source);
+        return delegate.register(overriddenUpdates, source);
     }
 
     @Override

@@ -31,6 +31,12 @@ public class Delta<ValueType> {
 
     private Delta()  {} // for serializer
 
+    private Delta(String id, InstanceInfoField<ValueType> field, ValueType value) {
+        this.id = id;
+        this.field = field;
+        this.value = value;
+    }
+
     InstanceInfo.Builder applyTo(InstanceInfo.Builder instanceInfoBuilder) {
         return field.update(instanceInfoBuilder, value);
     }
@@ -90,7 +96,8 @@ public class Delta<ValueType> {
 
     public static final class Builder {
         private String id;
-        Delta<?> delta;
+        InstanceInfoField<?> field;
+        Object value;
 
         public Builder() {
         }
@@ -101,19 +108,17 @@ public class Delta<ValueType> {
         }
 
         public <T> Builder withDelta(InstanceInfoField<T> field, T value) {
-            Delta<T> delta = new Delta<T>();
-            delta.field = field;
-            delta.value = value;
-            this.delta = delta;
+            this.field = field;
+            this.value = value;
             return this;
         }
 
+        @SuppressWarnings("unchecked")
         public Delta<?> build() {
-            delta.id = this.id;
-            if (delta.id == null || delta.field == null) {  // null data.value is ok
+            if (id == null || field == null) {  // null data.value is ok
                 throw new IllegalStateException("Incomplete delta information");
             }
-            return delta;
+            return new Delta(id, field, value);
         }
     }
 }
