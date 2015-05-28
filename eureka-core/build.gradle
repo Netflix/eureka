@@ -9,9 +9,11 @@ dependencies {
     compile 'javax.ws.rs:jsr311-api:1.1.1'
     compile "com.netflix.blitz4j:blitz4j:$blitzVersion"
 
-    testCompile 'junit:junit:4.10'
+    testCompile project(':eureka-test-utils')
+    testCompile "junit:junit:${junit_version}"
     testCompile 'org.mortbay.jetty:jetty:6.1H.22'
-    testCompile 'org.mockito:mockito-all:1.8.5'
+    testCompile "org.mock-server:mockserver-netty:${mockserverVersion}"
+    testCompile "com.jcraft:jzlib:1.1.3" // netty dependency
+    testCompile 'org.mockito:mockito-core:1.10.19'
     testRuntime 'org.slf4j:slf4j-simple:1.7.10'
-    testCompile project(':eureka-client')
 }

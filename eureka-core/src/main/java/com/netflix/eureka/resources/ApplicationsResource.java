@@ -29,10 +29,11 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 import java.util.Arrays;
 
+import com.netflix.eureka.AbstractInstanceRegistry;
 import com.netflix.eureka.CurrentRequestVersion;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfigurationManager;
-import com.netflix.eureka.PeerAwareInstanceRegistry;
+import com.netflix.eureka.PeerAwareInstanceRegistryImpl;
 import com.netflix.eureka.Version;
 import com.netflix.eureka.resources.ResponseCache.Key;
 import com.netflix.eureka.resources.ResponseCache.KeyType;
@@ -93,7 +94,7 @@ public class ApplicationsResource {
      *                from the remote region can be limited to the applications
      *                returned by {@link EurekaServerConfig#getRemoteRegionAppWhitelist(String)}
      * @return response containing information about all {@link com.netflix.discovery.shared.Applications}
-     *         from the {@link com.netflix.eureka.InstanceRegistry}.
+     *         from the {@link AbstractInstanceRegistry}.
      */
     @GET
     public Response getContainers(@PathParam("version") String version,
@@ -114,7 +115,7 @@ public class ApplicationsResource {
         // Check if the server allows the access to the registry. The server can
         // restrict access if it is not
         // ready to serve traffic depending on various reasons.
-        if (!PeerAwareInstanceRegistry.getInstance().shouldAllowAccess(isRemoteRegionRequested)) {
+        if (!PeerAwareInstanceRegistryImpl.getInstance().shouldAllowAccess(isRemoteRegionRequested)) {
             return Response.status(Status.FORBIDDEN).build();
         }
         CurrentRequestVersion.set(Version.toEnum(version));
@@ -168,7 +169,7 @@ public class ApplicationsResource {
      * @param uriInfo
      *            the {@link java.net.URI} information of the request made.
      * @return response containing the delta information of the
-     *         {@link com.netflix.eureka.InstanceRegistry}.
+     *         {@link AbstractInstanceRegistry}.
      */
     @Path("delta")
     @GET
@@ -183,7 +184,7 @@ public class ApplicationsResource {
         // If the delta flag is disabled in discovery or if the lease expiration
         // has been disabled, redirect clients to get all instances
         if ((eurekaConfig.shouldDisableDelta())
-                || (!PeerAwareInstanceRegistry.getInstance().shouldAllowAccess(isRemoteRegionRequested))) {
+                || (!PeerAwareInstanceRegistryImpl.getInstance().shouldAllowAccess(isRemoteRegionRequested))) {
             return Response.status(Status.FORBIDDEN).build();
         }
 

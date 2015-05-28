@@ -97,7 +97,7 @@ public class EurekaBootStrap implements ServletContextListener {
                     XStream.PRIORITY_VERY_HIGH);
             InstanceInfo info = ApplicationInfoManager.getInstance().getInfo();
 
-            PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry.getInstance();
+            PeerAwareInstanceRegistryImpl registry = PeerAwareInstanceRegistryImpl.getInstance();
 
             // Copy registry from neighboring eureka node
             int registryCount = registry.syncUp();
@@ -108,7 +108,7 @@ public class EurekaBootStrap implements ServletContextListener {
                 handleEIPBinding(registry);
             }
             // Initialize available remote registry
-            PeerAwareInstanceRegistry.getInstance().initRemoteRegionRegistry();
+            PeerAwareInstanceRegistryImpl.getInstance().initRemoteRegionRegistry();
             // Register all monitoring statistics.
             EurekaMonitors.registerAllStats();
 
@@ -185,7 +185,7 @@ public class EurekaBootStrap implements ServletContextListener {
                     Thread.sleep(1000);
                 }
             }
-            PeerAwareInstanceRegistry.getInstance().shutdown();
+            PeerAwareInstanceRegistryImpl.getInstance().shutdown();
             destroyEurekaEnvironment();
 
         } catch (Throwable e) {
@@ -207,7 +207,7 @@ public class EurekaBootStrap implements ServletContextListener {
      *
      * @throws InterruptedException
      */
-    private void handleEIPBinding(PeerAwareInstanceRegistry registry)
+    private void handleEIPBinding(PeerAwareInstanceRegistryImpl registry)
             throws InterruptedException {
         EurekaServerConfig eurekaServerConfig = EurekaServerConfigurationManager.getInstance().getConfiguration();
         int retries = eurekaServerConfig.getEIPBindRebindRetries();
@@ -239,7 +239,7 @@ public class EurekaBootStrap implements ServletContextListener {
      *            the Eureka Server Configuration.
      */
     private void scheduleEIPBindTask(
-            EurekaServerConfig eurekaServerConfig, final PeerAwareInstanceRegistry registry) {
+            EurekaServerConfig eurekaServerConfig, final PeerAwareInstanceRegistryImpl registry) {
         timer.schedule(new TimerTask() {
 
                            @Override

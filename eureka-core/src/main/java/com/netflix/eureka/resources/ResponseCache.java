@@ -50,8 +50,8 @@ import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka.CurrentRequestVersion;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfigurationManager;
-import com.netflix.eureka.InstanceRegistry;
-import com.netflix.eureka.PeerAwareInstanceRegistry;
+import com.netflix.eureka.AbstractInstanceRegistry;
+import com.netflix.eureka.PeerAwareInstanceRegistryImpl;
 import com.netflix.eureka.Version;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.annotations.Monitor;
@@ -371,7 +371,7 @@ public class ResponseCache {
      */
     private Value generatePayload(Key key) {
         Stopwatch tracer = null;
-        InstanceRegistry registry = PeerAwareInstanceRegistry.getInstance();
+        AbstractInstanceRegistry registry = PeerAwareInstanceRegistryImpl.getInstance();
         try {
             String payload;
             switch (key.getEntityType()) {
@@ -420,7 +420,7 @@ public class ResponseCache {
         }
     }
 
-    private static Applications getApplicationsForVip(Key key, InstanceRegistry registry) {
+    private static Applications getApplicationsForVip(Key key, AbstractInstanceRegistry registry) {
         Object[] args = {key.getEntityType(), key.getName(), key.getVersion(), key.getType()};
         logger.debug(
                 "Retrieving applications from registry for key : {} {} {} {}",

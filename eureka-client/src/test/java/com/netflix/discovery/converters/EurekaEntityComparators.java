@@ -124,9 +124,9 @@ public final class EurekaEntityComparators {
         if (!equal(first.getMetadata(), second.getMetadata())) {
             return false;
         }
-//        if (first.getMetadata() != null ? !first.getMetadata().equals(second.getMetadata()) : second.getMetadata() != null) {
-//            return false;
-//        }
+        if (first.getMetadata() != null ? !first.getMetadata().equals(second.getMetadata()) : second.getMetadata() != null) {
+            return false;
+        }
         if (first.getHealthCheckUrls() != null ? !first.getHealthCheckUrls().equals(second.getHealthCheckUrls()) : second.getHealthCheckUrls() != null) {
             return false;
         }

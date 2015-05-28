@@ -5,7 +5,7 @@ import com.netflix.eureka.AbstractTester;
 import com.netflix.eureka.DefaultEurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfigurationManager;
-import com.netflix.eureka.PeerAwareInstanceRegistry;
+import com.netflix.eureka.PeerAwareInstanceRegistryImpl;
 import com.netflix.eureka.Version;
 import org.junit.Assert;
 import org.junit.Before;
@@ -24,7 +24,7 @@ public class ResponseCacheTest extends AbstractTester {
         super.setUp();
         EurekaServerConfigurationManager.getInstance().setConfiguration(new DefaultEurekaServerConfig());
         LoggingConfiguration.getInstance().configure();
-        PeerAwareInstanceRegistry.getInstance().syncUp();
+        PeerAwareInstanceRegistryImpl.getInstance().syncUp();
     }
 
     @Test
@@ -37,7 +37,7 @@ public class ResponseCacheTest extends AbstractTester {
         String response = cache.get(key, true);
         Assert.assertNotNull("Cache get returned null.", response);
 
-        PeerAwareInstanceRegistry.getInstance().cancel(REMOTE_REGION_APP_NAME, REMOTE_REGION_INSTANCE_1_HOSTNAME, true);
+        PeerAwareInstanceRegistryImpl.getInstance().cancel(REMOTE_REGION_APP_NAME, REMOTE_REGION_INSTANCE_1_HOSTNAME, true);
 
         Assert.assertNull("Cache after invalidate did not return null.", cache.get(key, true));
     }
@@ -53,7 +53,7 @@ public class ResponseCacheTest extends AbstractTester {
 
         Assert.assertNotNull("Cache get returned null.", cache.get(key, true));
 
-        PeerAwareInstanceRegistry.getInstance().cancel(REMOTE_REGION_APP_NAME, REMOTE_REGION_INSTANCE_1_HOSTNAME, true);
+        PeerAwareInstanceRegistryImpl.getInstance().cancel(REMOTE_REGION_APP_NAME, REMOTE_REGION_INSTANCE_1_HOSTNAME, true);
 
         Assert.assertNull("Cache after invalidate did not return null.", cache.get(key, true));
     }
@@ -73,7 +73,7 @@ public class ResponseCacheTest extends AbstractTester {
         Assert.assertNotNull("Cache get returned null.", cache.get(key1, true));
         Assert.assertNotNull("Cache get returned null.", cache.get(key2, true));
 
-        PeerAwareInstanceRegistry.getInstance().cancel(REMOTE_REGION_APP_NAME, REMOTE_REGION_INSTANCE_1_HOSTNAME, true);
+        PeerAwareInstanceRegistryImpl.getInstance().cancel(REMOTE_REGION_APP_NAME, REMOTE_REGION_INSTANCE_1_HOSTNAME, true);
 
         Assert.assertNull("Cache after invalidate did not return null.", cache.get(key1, true));
         Assert.assertNull("Cache after invalidate did not return null.", cache.get(key2, true));

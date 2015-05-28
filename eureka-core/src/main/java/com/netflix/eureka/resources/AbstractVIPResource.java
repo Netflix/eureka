@@ -19,7 +19,7 @@ package com.netflix.eureka.resources;
 import javax.ws.rs.core.Response;
 
 import com.netflix.eureka.CurrentRequestVersion;
-import com.netflix.eureka.PeerAwareInstanceRegistry;
+import com.netflix.eureka.PeerAwareInstanceRegistryImpl;
 import com.netflix.eureka.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +35,7 @@ abstract class AbstractVIPResource {
 
     protected Response getVipResponse(String version, String entityName, String acceptHeader,
                                       ResponseCache.Key.EntityType entityType) {
-        if (!PeerAwareInstanceRegistry.getInstance().shouldAllowAccess(false)) {
+        if (!PeerAwareInstanceRegistryImpl.getInstance().shouldAllowAccess(false)) {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
         CurrentRequestVersion.set(Version.toEnum(version));

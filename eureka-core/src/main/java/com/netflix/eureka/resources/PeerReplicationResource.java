@@ -23,8 +23,11 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.eureka.PeerAwareInstanceRegistry.Action;
-import com.netflix.eureka.cluster.PeerEurekaNode;
+import com.netflix.eureka.PeerAwareInstanceRegistryImpl.Action;
+import com.netflix.eureka.cluster.protocol.ReplicationInstance;
+import com.netflix.eureka.cluster.protocol.ReplicationInstanceResponse;
+import com.netflix.eureka.cluster.protocol.ReplicationList;
+import com.netflix.eureka.cluster.protocol.ReplicationListResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +49,7 @@ public class PeerReplicationResource {
      *
      * <p>
      *  The batched events are delegated to underlying resources to generate a
-     *  {@link PeerEurekaNode.ReplicationListResponse} containing the individual responses to the batched events
+     *  {@link ReplicationListResponse} containing the individual responses to the batched events
      * </p>
      *
      * @param replicationList
@@ -56,13 +59,13 @@ public class PeerReplicationResource {
     @Path("batch")
     @POST
     public Response batchReplication(
-            PeerEurekaNode.ReplicationList replicationList) {
+            ReplicationList replicationList) {
         Response response = null;
         try {
 
-            PeerEurekaNode.ReplicationListResponse batchResponse = new PeerEurekaNode.ReplicationListResponse();
-            for (PeerEurekaNode.ReplicationInstance instanceInfo : replicationList
-                    .getList()) {
+            ReplicationListResponse batchResponse = new ReplicationListResponse();
+            for (ReplicationInstance instanceInfo : replicationList
+                    .getReplicationList()) {
                 ApplicationResource applicationResource = new ApplicationResource(
                         instanceInfo.getAppName());
                 InstanceResource resource = new InstanceResource(
@@ -74,8 +77,8 @@ public class PeerReplicationResource {
                         : instanceInfo.getOverriddenStatus());
                 String instanceStatus = (instanceInfo.getStatus() == null ? null
                         : instanceInfo.getStatus());
-                PeerEurekaNode.ReplicationInstanceResponse.Builder singleResponseBuilder =
-                        new PeerEurekaNode.ReplicationInstanceResponse.Builder();
+                ReplicationInstanceResponse.Builder singleResponseBuilder =
+                        new ReplicationInstanceResponse.Builder();
                 if (instanceInfo.getAction() == Action.Heartbeat) {
                     response = resource.renewLease(REPLICATION, overriddenStatus,
                             instanceStatus, lastDirtyTimestamp);
@@ -91,25 +94,25 @@ public class PeerReplicationResource {
                     applicationResource.addInstance(
                             instanceInfo.getInstanceInfo(), REPLICATION);
 
-                    singleResponseBuilder = new PeerEurekaNode.ReplicationInstanceResponse.Builder()
+                    singleResponseBuilder = new ReplicationInstanceResponse.Builder()
                             .setStatusCode(Status.OK.getStatusCode());
                 } else if (instanceInfo.getAction() == Action.StatusUpdate) {
                     response = resource.statusUpdate(instanceInfo.getStatus(),
                             REPLICATION, instanceInfo.getLastDirtyTimestamp()
                                     .toString());
 
-                    singleResponseBuilder = new PeerEurekaNode.ReplicationInstanceResponse.Builder()
+                    singleResponseBuilder = new ReplicationInstanceResponse.Builder()
                             .setStatusCode(response.getStatus());
                 } else if (instanceInfo.getAction() == Action.DeleteStatusOverride) {
                     response = resource.deleteStatusUpdate(REPLICATION, instanceInfo.getStatus(),
                             instanceInfo.getLastDirtyTimestamp().toString());
 
-                    singleResponseBuilder = new PeerEurekaNode.ReplicationInstanceResponse.Builder()
+                    singleResponseBuilder = new ReplicationInstanceResponse.Builder()
                             .setStatusCode(response.getStatus());
                 } else if (instanceInfo.getAction() == Action.Cancel) {
                     response = resource.cancelLease(REPLICATION);
 
-                    singleResponseBuilder = new PeerEurekaNode.ReplicationInstanceResponse.Builder()
+                    singleResponseBuilder = new ReplicationInstanceResponse.Builder()
                             .setStatusCode(response.getStatus());
                 }
 

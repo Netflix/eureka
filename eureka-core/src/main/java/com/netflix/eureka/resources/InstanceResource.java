@@ -38,7 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.eureka.EurekaServerConfigurationManager;
-import com.netflix.eureka.PeerAwareInstanceRegistry;
+import com.netflix.eureka.PeerAwareInstanceRegistryImpl;
 import com.netflix.eureka.cluster.PeerEurekaNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,19 +54,19 @@ public class InstanceResource {
     private static final Logger logger = LoggerFactory
             .getLogger(InstanceResource.class);
 
-    private final PeerAwareInstanceRegistry registry;
+    private final PeerAwareInstanceRegistryImpl registry;
 
     String id;
     ApplicationResource app;
 
-    /* For testing */ InstanceResource(ApplicationResource app, String id, PeerAwareInstanceRegistry registry) {
+    /* For testing */ InstanceResource(ApplicationResource app, String id, PeerAwareInstanceRegistryImpl registry) {
         this.app = app;
         this.id = id;
         this.registry = registry;
     }
 
     public InstanceResource(ApplicationResource app, String id) {
-        this(app, id, PeerAwareInstanceRegistry.getInstance());
+        this(app, id, PeerAwareInstanceRegistryImpl.getInstance());
     }
 
     /**

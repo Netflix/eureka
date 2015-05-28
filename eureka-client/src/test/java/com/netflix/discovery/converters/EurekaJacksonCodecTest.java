@@ -68,7 +68,7 @@ public class EurekaJacksonCodecTest {
 
         // Decode
         InputStream source = new ByteArrayInputStream(encoded);
-        InstanceInfoEnvelope decoded = codec.readFrom(InstanceInfoEnvelope.class, source);
+        InstanceInfoEnvelope decoded = codec.readValue(InstanceInfoEnvelope.class, source);
 
         assertTrue(EurekaEntityComparators.equal(decoded.getInstance(), original.getInstance()));
     }
@@ -85,7 +85,7 @@ public class EurekaJacksonCodecTest {
 
         // Decode
         InputStream source = new ByteArrayInputStream(encoded);
-        InstanceInfoEnvelope decoded = codec.readFrom(InstanceInfoEnvelope.class, source);
+        InstanceInfoEnvelope decoded = codec.readValue(InstanceInfoEnvelope.class, source);
 
         assertTrue(EurekaEntityComparators.equal(decoded.getInstance(), original.getInstance()));
     }
@@ -101,7 +101,7 @@ public class EurekaJacksonCodecTest {
 
         // Decode
         InputStream source = new ByteArrayInputStream(encoded);
-        InstanceInfoEnvelope decoded = codec.readFrom(InstanceInfoEnvelope.class, source);
+        InstanceInfoEnvelope decoded = codec.readValue(InstanceInfoEnvelope.class, source);
 
         assertTrue(EurekaEntityComparators.equal(decoded.getInstance(), original));
     }
@@ -133,7 +133,7 @@ public class EurekaJacksonCodecTest {
 
         // Decode
         InputStream source = new ByteArrayInputStream(encoded);
-        ApplicationEnvelope decoded = codec.readFrom(ApplicationEnvelope.class, source);
+        ApplicationEnvelope decoded = codec.readValue(ApplicationEnvelope.class, source);
 
         assertTrue(EurekaEntityComparators.equal(decoded.getApplication(), original.getApplication()));
     }
@@ -149,7 +149,7 @@ public class EurekaJacksonCodecTest {
 
         // Decode
         InputStream source = new ByteArrayInputStream(encoded);
-        ApplicationEnvelope decoded = codec.readFrom(ApplicationEnvelope.class, source);
+        ApplicationEnvelope decoded = codec.readValue(ApplicationEnvelope.class, source);
 
         assertTrue(EurekaEntityComparators.equal(decoded.getApplication(), original));
     }
@@ -181,7 +181,7 @@ public class EurekaJacksonCodecTest {
 
         // Decode
         InputStream source = new ByteArrayInputStream(encoded);
-        ApplicationsEnvelope decoded = codec.readFrom(ApplicationsEnvelope.class, source);
+        ApplicationsEnvelope decoded = codec.readValue(ApplicationsEnvelope.class, source);
 
         assertTrue(EurekaEntityComparators.equal(decoded.getApplications(), original.getApplications()));
     }
@@ -197,7 +197,7 @@ public class EurekaJacksonCodecTest {
 
         // Decode
         InputStream source = new ByteArrayInputStream(encoded);
-        ApplicationsEnvelope decoded = codec.readFrom(ApplicationsEnvelope.class, source);
+        ApplicationsEnvelope decoded = codec.readValue(ApplicationsEnvelope.class, source);
 
         assertTrue(EurekaEntityComparators.equal(decoded.getApplications(), original));
     }
@@ -221,7 +221,7 @@ public class EurekaJacksonCodecTest {
     @Test
     public void testJacksonWriteToString() throws Exception {
         String jsonValue = codec.writeToString(INSTANCE_INFO_1_A1);
-        InstanceInfo decoded = codec.readFrom(InstanceInfo.class, new ByteArrayInputStream(jsonValue.getBytes(Charset.defaultCharset())));
+        InstanceInfo decoded = codec.readValue(InstanceInfo.class, new ByteArrayInputStream(jsonValue.getBytes(Charset.defaultCharset())));
 
         assertTrue(EurekaEntityComparators.equal(decoded, INSTANCE_INFO_1_A1));
     }
@@ -235,7 +235,7 @@ public class EurekaJacksonCodecTest {
 
         // Decode value wrapped in envelope
         InputStream source = new ByteArrayInputStream(encoded);
-        InstanceInfoEnvelope decoded = codec.readFrom(InstanceInfoEnvelope.class, source);
+        InstanceInfoEnvelope decoded = codec.readValue(InstanceInfoEnvelope.class, source);
 
         assertTrue(EurekaEntityComparators.equal(decoded.getInstance(), INSTANCE_INFO_1_A1));
     }

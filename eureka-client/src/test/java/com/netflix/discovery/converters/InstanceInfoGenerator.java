@@ -88,6 +88,10 @@ public class InstanceInfoGenerator {
         return applications;
     }
 
+    public static InstanceInfo takeOne() {
+        return new InstanceInfoGenerator(1, 1, true).serviceIterator().next();
+    }
+
     private InstanceInfo generateInstanceInfo(int appIndex, int appInstanceId) {
         String hostName = "instance" + appInstanceId + ".application" + appIndex + ".com";
         String publicIp = "20.0." + appIndex + '.' + appInstanceId;

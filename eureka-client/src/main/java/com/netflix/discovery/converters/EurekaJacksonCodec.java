@@ -144,17 +144,21 @@ public class EurekaJacksonCodec {
         return sb.toString();
     }
 
-    public <T> T readFrom(Class<T> type, InputStream entityStream) throws IOException {
+    public <T> T readValue(Class<T> type, InputStream entityStream) throws IOException {
         return mapper.readValue(entityStream, type);
+    }
+
+    public <T> T readValue(Class<T> type, String text) throws IOException {
+        return mapper.readValue(text, type);
     }
 
     public <T> T readFromEnvelope(Class<T> type, InputStream entityStream) throws IOException {
         if (type.isAssignableFrom(Applications.class)) {
-            return (T) readFrom(ApplicationsEnvelope.class, entityStream).getApplications();
+            return (T) readValue(ApplicationsEnvelope.class, entityStream).getApplications();
         } else if (type.isAssignableFrom(Application.class)) {
-            return (T) readFrom(ApplicationEnvelope.class, entityStream).getApplication();
+            return (T) readValue(ApplicationEnvelope.class, entityStream).getApplication();
         } else if (type.isAssignableFrom(InstanceInfo.class)) {
-            return (T) readFrom(InstanceInfoEnvelope.class, entityStream).getInstance();
+            return (T) readValue(InstanceInfoEnvelope.class, entityStream).getInstance();
         }
         throw new IllegalArgumentException("Unsupported type " + type);
     }

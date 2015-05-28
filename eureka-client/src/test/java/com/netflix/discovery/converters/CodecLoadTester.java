@@ -110,7 +110,7 @@ public class CodecLoadTester {
                 jacksonCodec.writeTo(object, captureStream);
                 byte[] bytes = captureStream.toByteArray();
                 InputStream source = new ByteArrayInputStream(bytes);
-                jacksonCodec.readFrom(object.getClass(), source);
+                jacksonCodec.readValue(object.getClass(), source);
             } catch (IOException e) {
                 throw new RuntimeException("unexpected", e);
             }

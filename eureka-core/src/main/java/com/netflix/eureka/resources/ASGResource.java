@@ -24,7 +24,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
-import com.netflix.eureka.PeerAwareInstanceRegistry;
+import com.netflix.eureka.PeerAwareInstanceRegistryImpl;
 import com.netflix.eureka.cluster.PeerEurekaNode;
 import com.netflix.eureka.util.AwsAsgUtil;
 import org.slf4j.Logger;
@@ -98,7 +98,7 @@ public class ASGResource {
             ASGStatus asgStatus = ASGStatus.valueOf(newStatus.toUpperCase());
             AwsAsgUtil.getInstance().setStatus(asgName,
                     (ASGStatus.DISABLED.equals(asgStatus) ? false : true));
-            PeerAwareInstanceRegistry.getInstance().statusUpdate(asgName,
+            PeerAwareInstanceRegistryImpl.getInstance().statusUpdate(asgName,
                     asgStatus, Boolean.valueOf(isReplication));
             logger.debug("Updated ASG Status for ASG {} to {}", asgName,
                     asgStatus);
