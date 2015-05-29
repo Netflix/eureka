@@ -16,12 +16,7 @@
 
 package com.netflix.eureka.util;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -29,6 +24,7 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
 import com.amazonaws.services.securitytoken.model.AssumeRoleResult;
+import com.amazonaws.services.securitytoken.model.Credentials;
 import com.google.common.base.Strings;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
@@ -75,6 +71,9 @@ public class AwsAsgUtil {
     private static final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
             .getInstance().getConfiguration();
     private static final AmazonAutoScaling client = getAmazonAutoScalingClient();
+
+    private Map<String, Credentials> stsCredentials = new HashMap<String, Credentials>();
+
     private static final String accountId = getAccountId();
     // Cache for the AWS ASG information
     private final LoadingCache<String, Boolean> asgCache = CacheBuilder
@@ -212,10 +211,8 @@ public class AwsAsgUtil {
         }
     }
 
-    private AutoScalingGroup retrieveAutoScalingGroupCrossAccount(String asgAccount, String asgName) {
-        logger.debug("Getting cross account ASG for asgName: " + asgName + ", asgAccount: " + asgAccount);
-
-        final AWSSecurityTokenService sts = new AWSSecurityTokenServiceClient(new InstanceProfileCredentialsProvider());
+    private Credentials initializeStsSession(String asgAccount) {
+        AWSSecurityTokenService sts = new AWSSecurityTokenServiceClient(new InstanceProfileCredentialsProvider());
         String region = DiscoveryManager.getInstance().getEurekaClientConfig()
                 .getRegion();
         if (!region.equals("us-east-1")) {
@@ -224,22 +221,39 @@ public class AwsAsgUtil {
 
         String roleArn = "arn:aws:iam::" + asgAccount + ":role/ListAutoScalingGroups";
 
-        final AssumeRoleResult assumeRoleResult = sts.assumeRole(new AssumeRoleRequest()
+        AssumeRoleResult assumeRoleResult = sts.assumeRole(new AssumeRoleRequest()
                         .withRoleArn(roleArn)
-                        .withRoleSessionName("session-name-here")
+                        .withRoleSessionName("sts-session-" + asgAccount)
         );
+
+        return assumeRoleResult.getCredentials();
+    }
+
+    private AutoScalingGroup retrieveAutoScalingGroupCrossAccount(String asgAccount, String asgName) {
+        logger.debug("Getting cross account ASG for asgName: " + asgName + ", asgAccount: " + asgAccount);
+
+        Credentials credentials = stsCredentials.get(asgAccount);
+
+        if (credentials == null || credentials.getExpiration().getTime() < System.currentTimeMillis() + 1000) {
+            stsCredentials.put(asgAccount, initializeStsSession(asgAccount));
+        }
 
         ClientConfiguration clientConfiguration = new ClientConfiguration()
                 .withConnectionTimeout(eurekaConfig.getASGQueryTimeoutMs());
 
         AmazonAutoScaling autoScalingClient = new AmazonAutoScalingClient(
                 new BasicSessionCredentials(
-                        assumeRoleResult.getCredentials().getAccessKeyId(),
-                        assumeRoleResult.getCredentials().getSecretAccessKey(),
-                        assumeRoleResult.getCredentials().getSessionToken()
+                        credentials.getAccessKeyId(),
+                        credentials.getSecretAccessKey(),
+                        credentials.getSessionToken()
                 ),
                 clientConfiguration
         );
+
+        String region = DiscoveryManager.getInstance().getEurekaClientConfig().getRegion();
+        if (!region.equals("us-east-1")) {
+            autoScalingClient.setEndpoint("autoscaling." + region + ".amazonaws.com");
+        }
 
         DescribeAutoScalingGroupsRequest request = new DescribeAutoScalingGroupsRequest()
                 .withAutoScalingGroupNames(asgName);
