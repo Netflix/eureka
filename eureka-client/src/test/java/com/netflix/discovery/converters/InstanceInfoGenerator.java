@@ -129,6 +129,9 @@ public class InstanceInfoGenerator {
                 .setVIPAddress(hostName + ":8080")
                 .setSecureVIPAddress(hostName + ":8081")
                 .setDataCenterInfo(dataCenterInfo)
+                .setLastUpdatedTimestamp(System.currentTimeMillis() - 100)
+                .setLastDirtyTimestamp(System.currentTimeMillis() - 100)
+                .setIsCoordinatingDiscoveryServer(true)
                 .enablePort(PortType.UNSECURE, true);
         if (withMetaData) {
             builder.add("appKey" + appIndex, Integer.toString(appInstanceId));
