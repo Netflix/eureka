@@ -1,6 +1,7 @@
 package com.netflix.eureka.cluster.protocol;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -19,6 +20,10 @@ public class ReplicationList {
     @JsonCreator
     public ReplicationList(@JsonProperty("replicationList") List<ReplicationInstance> replicationList) {
         this.replicationList = replicationList;
+    }
+
+    public ReplicationList(ReplicationInstance replicationInstance) {
+        this(Collections.singletonList(replicationInstance));
     }
 
     public void addReplicationInstance(ReplicationInstance instance) {

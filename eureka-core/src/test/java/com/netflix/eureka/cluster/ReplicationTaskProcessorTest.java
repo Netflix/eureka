@@ -3,7 +3,7 @@ package com.netflix.eureka.cluster;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.discovery.converters.InstanceInfoGenerator;
+import com.netflix.discovery.util.InstanceInfoGenerator;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.PeerAwareInstanceRegistryImpl.Action;
 import com.netflix.eureka.cluster.ReplicationTask.ProcessingState;
@@ -11,10 +11,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static com.netflix.eureka.cluster.ReplicationSampleData.MAX_PROCESSING_DELAY_MS;
-import static com.netflix.eureka.cluster.ReplicationSampleData.REPLICATION_EXPIRY_TIME_MS;
-import static com.netflix.eureka.cluster.ReplicationSampleData.RETRY_SLEEP_TIME_MS;
-import static com.netflix.eureka.cluster.ReplicationSampleData.SERVER_UNAVAILABLE_SLEEP_TIME_MS;
+import static com.netflix.eureka.cluster.ClusterSampleData.MAX_PROCESSING_DELAY_MS;
+import static com.netflix.eureka.cluster.ClusterSampleData.REPLICATION_EXPIRY_TIME_MS;
+import static com.netflix.eureka.cluster.ClusterSampleData.RETRY_SLEEP_TIME_MS;
+import static com.netflix.eureka.cluster.ClusterSampleData.SERVER_UNAVAILABLE_SLEEP_TIME_MS;
 import static com.netflix.eureka.cluster.TestableReplicationTask.aBatchableTask;
 import static com.netflix.eureka.cluster.TestableReplicationTask.aNonBatchableTask;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -28,7 +28,7 @@ public class ReplicationTaskProcessorTest {
 
     private final TestableHttpReplicationClient replicationClient = new TestableHttpReplicationClient();
 
-    private final EurekaServerConfig config = ReplicationSampleData.newEurekaServerConfig(true);
+    private final EurekaServerConfig config = ClusterSampleData.newEurekaServerConfig(true);
 
     private ReplicationTaskProcessor replicationTaskProcessor;
 

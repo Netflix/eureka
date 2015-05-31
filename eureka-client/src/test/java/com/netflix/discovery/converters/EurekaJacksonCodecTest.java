@@ -14,6 +14,7 @@ import com.netflix.discovery.converters.envelope.ApplicationsEnvelope;
 import com.netflix.discovery.converters.envelope.InstanceInfoEnvelope;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.discovery.util.InstanceInfoGenerator;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;

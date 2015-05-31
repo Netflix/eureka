@@ -17,9 +17,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static com.netflix.eureka.cluster.ReplicationSampleData.MAX_PROCESSING_DELAY_MS;
-import static com.netflix.eureka.cluster.ReplicationSampleData.RETRY_SLEEP_TIME_MS;
-import static com.netflix.eureka.cluster.ReplicationSampleData.SERVER_UNAVAILABLE_SLEEP_TIME_MS;
+import static com.netflix.eureka.cluster.ClusterSampleData.MAX_PROCESSING_DELAY_MS;
+import static com.netflix.eureka.cluster.ClusterSampleData.RETRY_SLEEP_TIME_MS;
+import static com.netflix.eureka.cluster.ClusterSampleData.SERVER_UNAVAILABLE_SLEEP_TIME_MS;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -39,7 +39,7 @@ public class PeerEurekaNodeTest {
 
     private final TestableHttpReplicationClient httpReplicationClient = new TestableHttpReplicationClient();
 
-    private final InstanceInfo instanceInfo = ReplicationSampleData.newInstanceInfo(1);
+    private final InstanceInfo instanceInfo = ClusterSampleData.newInstanceInfo(1);
     private PeerEurekaNode peerEurekaNode;
 
     @Before
@@ -105,6 +105,7 @@ public class PeerEurekaNodeTest {
 
     @Test
     public void testHeartbeatFailureInBatchMode() throws Throwable {
+        httpReplicationClient.withNetworkStatusCode(200, 200);
         httpReplicationClient.withBatchReply(404); // Not found, to trigger registration
         createPeerEurekaNode(true).heartbeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null, false);
 
@@ -131,7 +132,7 @@ public class PeerEurekaNodeTest {
 
     @Test
     public void testHeartbeatWithInstanceInfoFromPeer() throws Throwable {
-        InstanceInfo instanceInfoFromPeer = ReplicationSampleData.newInstanceInfo(2);
+        InstanceInfo instanceInfoFromPeer = ClusterSampleData.newInstanceInfo(2);
 
         httpReplicationClient.withNetworkStatusCode(400);
         httpReplicationClient.withInstanceInfo(instanceInfoFromPeer);
@@ -183,7 +184,7 @@ public class PeerEurekaNodeTest {
     }
 
     private PeerEurekaNode createPeerEurekaNode(boolean batchEnabled) {
-        EurekaServerConfig config = ReplicationSampleData.newEurekaServerConfig(batchEnabled);
+        EurekaServerConfig config = ClusterSampleData.newEurekaServerConfig(batchEnabled);
 
         peerEurekaNode = new PeerEurekaNode(
                 registry, "test", "http://test.host.com",

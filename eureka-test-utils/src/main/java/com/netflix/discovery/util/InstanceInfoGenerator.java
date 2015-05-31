@@ -1,21 +1,24 @@
 package com.netflix.discovery.util;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
+import com.netflix.appinfo.InstanceInfo.Builder;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.InstanceInfo.PortType;
 import com.netflix.appinfo.LeaseInfo;
+import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 
 import static com.netflix.discovery.util.ApplicationFunctions.toApplicationMap;
-import static com.netflix.discovery.util.ApplicationFunctions.toApplications;
 
 /**
  * Test data generator.
@@ -30,10 +33,12 @@ public class InstanceInfoGenerator {
 
     private Iterator<InstanceInfo> currentIt;
     private Applications allApplications = new Applications();
+    private final boolean withMetaData;
 
-    public InstanceInfoGenerator(int instanceCount, int applicationCount) {
+    public InstanceInfoGenerator(int instanceCount, int applicationCount, boolean withMetaData) {
         this.instanceCount = instanceCount;
         this.applicationCount = applicationCount;
+        this.withMetaData = withMetaData;
     }
 
     public Applications takeDelta(int count) {
@@ -47,7 +52,7 @@ public class InstanceInfoGenerator {
             next.setActionType(ActionType.ADDED);
             instanceBatch.add(next);
         }
-        Applications nextBatch = toApplications(toApplicationMap(instanceBatch));
+        Applications nextBatch = ApplicationFunctions.toApplications(toApplicationMap(instanceBatch));
         allApplications = ApplicationFunctions.merge(allApplications, nextBatch);
         nextBatch.setAppsHashCode(allApplications.getAppsHashCode());
 
@@ -85,7 +90,36 @@ public class InstanceInfoGenerator {
         };
     }
 
-    public static InstanceInfo generateInstanceInfo(int appIndex, int appInstanceId) {
+    public Applications toApplications() {
+        Map<String, Application> appsByName = new HashMap<>();
+        Iterator<InstanceInfo> it = serviceIterator();
+        while (it.hasNext()) {
+            InstanceInfo instanceInfo = it.next();
+            Application instanceApp = appsByName.get(instanceInfo.getAppName());
+            if (instanceApp == null) {
+                instanceApp = new Application(instanceInfo.getAppName());
+                appsByName.put(instanceInfo.getAppName(), instanceApp);
+            }
+            instanceApp.addInstance(instanceInfo);
+        }
+
+        // Do not pass application list to the constructor, as it does not initialize properly Applications
+        // data structure.
+        Applications applications = new Applications();
+        for (Application app : appsByName.values()) {
+            applications.addApplication(app);
+        }
+
+        applications.setAppsHashCode(applications.getReconcileHashCode());
+
+        return applications;
+    }
+
+    public static InstanceInfo takeOne() {
+        return new InstanceInfoGenerator(1, 1, true).serviceIterator().next();
+    }
+
+    private InstanceInfo generateInstanceInfo(int appIndex, int appInstanceId) {
         String hostName = "instance" + appInstanceId + ".application" + appIndex + ".com";
         String publicIp = "20.0." + appIndex + '.' + appInstanceId;
         String privateIp = "192.168." + appIndex + '.' + appInstanceId;
@@ -109,7 +143,7 @@ public class InstanceInfoGenerator {
                 .setRenewalIntervalInSecs(RENEW_INTERVAL)
                 .build();
 
-        return InstanceInfo.Builder.newBuilder()
+        Builder builder = InstanceInfo.Builder.newBuilder()
                 .setAppGroupName("AppGroup" + appIndex)
                 .setAppName("App" + appIndex)
                 .setASGName("ASG" + appIndex)
@@ -117,6 +151,7 @@ public class InstanceInfoGenerator {
                 .setIPAddr(publicIp)
                 .setPort(8080)
                 .setSecurePort(8081)
+                .enablePort(PortType.SECURE, true)
                 .setHealthCheckUrls("/healthcheck", unsecureURL + "/healthcheck", secureURL + "/healthcheck")
                 .setHomePageUrl("/homepage", unsecureURL + "/homepage")
                 .setStatusPageUrl("/status", unsecureURL + "/status")
@@ -125,8 +160,10 @@ public class InstanceInfoGenerator {
                 .setVIPAddress(hostName + ":8080")
                 .setSecureVIPAddress(hostName + ":8081")
                 .setDataCenterInfo(dataCenterInfo)
-                .enablePort(PortType.UNSECURE, true)
-                .add("appKey" + appIndex, Integer.toString(appInstanceId))
-                .build();
+                .enablePort(PortType.UNSECURE, true);
+        if (withMetaData) {
+            builder.add("appKey" + appIndex, Integer.toString(appInstanceId));
+        }
+        return builder.build();
     }
 }

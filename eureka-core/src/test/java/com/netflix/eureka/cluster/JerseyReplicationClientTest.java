@@ -44,7 +44,7 @@ public class JerseyReplicationClientTest {
 
     private final EurekaServerConfig config = new DefaultEurekaServerConfig();
 
-    private final InstanceInfo instanceInfo = ReplicationSampleData.newInstanceInfo(1);
+    private final InstanceInfo instanceInfo = ClusterSampleData.newInstanceInfo(1);
 
     @Before
     public void setUp() throws Exception {

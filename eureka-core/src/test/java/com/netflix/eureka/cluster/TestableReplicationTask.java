@@ -21,13 +21,14 @@ class TestableReplicationTask extends ReplicationTask {
     private volatile int triggeredNetworkFailures;
 
     TestableReplicationTask(boolean batchable,
+                            String peerNodeName,
                             String appName,
                             String id,
                             Action action,
                             int replyStatusCode,
                             long processingDelayMs,
                             int networkFailuresRepeatCount) {
-        super(appName, id, action);
+        super(peerNodeName, appName, id, action);
         this.batchable = batchable;
         this.replyStatusCode = replyStatusCode;
         this.processingDelayMs = processingDelayMs;
@@ -110,6 +111,7 @@ class TestableReplicationTask extends ReplicationTask {
         public TestableReplicationTask build() {
             return new TestableReplicationTask(
                     batchable,
+                    "peerNodeName#test",
                     APP_NAME,
                     id == null ? "id#" + autoId++ : id,
                     action,

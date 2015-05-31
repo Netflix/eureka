@@ -1,7 +1,7 @@
 package com.netflix.eureka.cluster.protocol;
 
 import com.netflix.discovery.converters.EurekaJacksonCodec;
-import com.netflix.eureka.cluster.ReplicationSampleData;
+import com.netflix.eureka.cluster.ClusterSampleData;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -17,7 +17,7 @@ public class JacksonEncodingTest {
 
     @Test
     public void testReplicationInstanceEncoding() throws Exception {
-        ReplicationInstance replicationInstance = ReplicationSampleData.newReplicationInstance();
+        ReplicationInstance replicationInstance = ClusterSampleData.newReplicationInstance();
 
         // Encode / decode
         String jsonText = jacksonCodec.writeToString(replicationInstance);
@@ -28,7 +28,7 @@ public class JacksonEncodingTest {
 
     @Test
     public void testReplicationInstanceResponseEncoding() throws Exception {
-        ReplicationInstanceResponse replicationInstanceResponse = ReplicationSampleData.newReplicationInstanceResponse(true);
+        ReplicationInstanceResponse replicationInstanceResponse = ClusterSampleData.newReplicationInstanceResponse(true);
 
         // Encode / decode
         String jsonText = jacksonCodec.writeToString(replicationInstanceResponse);
@@ -40,7 +40,7 @@ public class JacksonEncodingTest {
     @Test
     public void testReplicationListEncoding() throws Exception {
         ReplicationList replicationList = new ReplicationList();
-        replicationList.addReplicationInstance(ReplicationSampleData.newReplicationInstance());
+        replicationList.addReplicationInstance(ClusterSampleData.newReplicationInstance());
 
         // Encode / decode
         String jsonText = jacksonCodec.writeToString(replicationList);
@@ -52,7 +52,7 @@ public class JacksonEncodingTest {
     @Test
     public void testReplicationListResponseEncoding() throws Exception {
         ReplicationListResponse replicationListResponse = new ReplicationListResponse();
-        replicationListResponse.addResponse(ReplicationSampleData.newReplicationInstanceResponse(false));
+        replicationListResponse.addResponse(ClusterSampleData.newReplicationInstanceResponse(false));
 
         // Encode / decode
         String jsonText = jacksonCodec.writeToString(replicationListResponse);

@@ -17,14 +17,12 @@
 package com.netflix.eureka;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
@@ -40,6 +38,7 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.LookupService;
 import com.netflix.eureka.cluster.PeerEurekaNode;
+import com.netflix.eureka.cluster.PeerEurekaNodes;
 import com.netflix.eureka.lease.Lease;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;
 import com.netflix.eureka.util.MeasuredRate;
@@ -49,6 +48,8 @@ import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static com.netflix.eureka.cluster.PeerEurekaNodes.isThisMe;
 
 /**
  * Handles replication of all operations to {@link AbstractInstanceRegistry} to peer
@@ -95,8 +96,6 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
 
     private long startupTime = 0;
     private boolean peerInstancesTransferEmptyOnStartup = true;
-    private static final Timer timerReplicaNodes = new Timer(
-            "Eureka-PeerNodesUpdater", true);
 
     public enum Action {
         Heartbeat, Register, Cancel, StatusUpdate, DeleteStatusOverride;
@@ -120,7 +119,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
             1000 * 60 * 1);
 
 
-    private AtomicReference<List<PeerEurekaNode>> peerEurekaNodes;
+    private final PeerEurekaNodes peerEurekaNodes;
 
     private Timer timer = new Timer(
             "ReplicaAwareInstanceRegistry - RenewalThresholdUpdater", true);
@@ -128,10 +127,8 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
     private static final PeerAwareInstanceRegistryImpl instance = new PeerAwareInstanceRegistryImpl();
 
     PeerAwareInstanceRegistryImpl() {
-        // Make it an atomic reference since this could be updated in the
-        // background.
-        peerEurekaNodes = new AtomicReference<List<PeerEurekaNode>>();
-        peerEurekaNodes.set(new ArrayList<PeerEurekaNode>());
+        this.peerEurekaNodes = new PeerEurekaNodes(this, EUREKA_SERVER_CONFIG);
+
         try {
             Monitors.registerObject(this);
         } catch (Throwable e) {
@@ -151,7 +148,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
      * periodically.
      */
     private void init() {
-        setupPeerEurekaNodes();
+        peerEurekaNodes.start();
         scheduleRenewalThresholdUpdateTask();
     }
 
@@ -173,81 +170,6 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
 
                        }, EUREKA_SERVER_CONFIG.getRenewalThresholdUpdateIntervalMs(),
                 EUREKA_SERVER_CONFIG.getRenewalThresholdUpdateIntervalMs());
-    }
-
-    /**
-     * Set up a schedule task to update peer eureka node information
-     * periodically to determine if a node has been removed or added to the
-     * list.
-     */
-    private void setupPeerEurekaNodes() {
-        try {
-            updatePeerEurekaNodes();
-            timerReplicaNodes.schedule(new TimerTask() {
-
-                                           @Override
-                                           public void run() {
-                                               try {
-                                                   updatePeerEurekaNodes();
-                                               } catch (Throwable e) {
-                                                   logger.error("Cannot update the replica Nodes", e);
-                                               }
-
-                                           }
-                                       }, EUREKA_SERVER_CONFIG.getPeerEurekaNodesUpdateIntervalMs(),
-                    EUREKA_SERVER_CONFIG.getPeerEurekaNodesUpdateIntervalMs());
-
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    /**
-     * Update information about peer eureka nodes.
-     */
-    private void updatePeerEurekaNodes() {
-        InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
-
-        EurekaClientConfig clientConfig = DiscoveryManager.getInstance().getEurekaClientConfig();
-        String zone = InstanceInfo.getZone(
-                clientConfig.getAvailabilityZones(clientConfig.getRegion()),
-                myInfo);
-
-        List<String> replicaUrls = DiscoveryManager.getInstance().getEurekaClient().getDiscoveryServiceUrls(zone);
-
-        List<PeerEurekaNode> replicaNodes = new ArrayList<PeerEurekaNode>();
-        for (String replicaUrl : replicaUrls) {
-            if (!isThisMe(replicaUrl)) {
-                logger.info("Adding replica node: " + replicaUrl);
-                replicaNodes.add(new PeerEurekaNode(this, null, replicaUrl, null, null));
-            }
-        }
-        if (replicaNodes.isEmpty()) {
-            logger.warn("The replica size seems to be empty. Check the route 53 DNS Registry");
-            return;
-        }
-        List<PeerEurekaNode> existingReplicaNodes = peerEurekaNodes.get();
-        if (!replicaNodes.equals(existingReplicaNodes)) {
-            List<String> previousServiceUrls = new ArrayList<String>();
-            for (PeerEurekaNode node : existingReplicaNodes) {
-                previousServiceUrls.add(node.getServiceUrl());
-            }
-            List<String> currentServiceUrls = new ArrayList<String>();
-            for (PeerEurekaNode node : replicaNodes) {
-                currentServiceUrls.add(node.getServiceUrl());
-            }
-            logger.info(
-                    "Updating the replica nodes as they seem to have changed from {} to {} ",
-                    previousServiceUrls, currentServiceUrls);
-            peerEurekaNodes.set(replicaNodes);
-            for (PeerEurekaNode existingReplicaNode : existingReplicaNodes) {
-                existingReplicaNode.destroyResources();
-            }
-        } else {
-            for (PeerEurekaNode replicaNode : replicaNodes) {
-                replicaNode.destroyResources();
-            }
-        }
     }
 
     /**
@@ -341,7 +263,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                 if (eurekaApps == null) {
                     areAllPeerNodesPrimed = true;
                 }
-                for (PeerEurekaNode node : peerEurekaNodes.get()) {
+                for (PeerEurekaNode node : peerEurekaNodes.getPeerEurekaNodes()) {
                     for (InstanceInfo peerInstanceInfo : eurekaApps
                             .getInstances()) {
                         LeaseInfo leaseInfo = peerInstanceInfo.getLeaseInfo();
@@ -419,7 +341,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
      * @return the list of replica nodes.
      */
     public List<PeerEurekaNode> getReplicaNodes() {
-        return Collections.unmodifiableList(peerEurekaNodes.get());
+        return Collections.unmodifiableList(peerEurekaNodes.getPeerEurekaNodes());
     }
 
     /*
@@ -539,7 +461,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         if (isReplication) {
             return;
         }
-        for (final PeerEurekaNode node : peerEurekaNodes.get()) {
+        for (final PeerEurekaNode node : peerEurekaNodes.getPeerEurekaNodes()) {
             replicateASGInfoToReplicaNodes(asgName, newStatus, node);
 
         }
@@ -596,7 +518,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
             logger.error("Cannot shutdown monitor registry", t);
         }
         try {
-            for (PeerEurekaNode node : this.peerEurekaNodes.get()) {
+            for (PeerEurekaNode node : this.peerEurekaNodes.getPeerEurekaNodes()) {
                 node.shutDown();
             }
         } catch (Throwable t) {
@@ -733,28 +655,6 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
     }
 
     /**
-     * Checks if the given service url contains the current host which is trying
-     * to replicate. Only after the EIP binding is done the host has a chance to
-     * identify itself in the list of replica nodes and needs to take itself out
-     * of replication traffic.
-     *
-     * @param url
-     *            the service url of the replica node that the check is made.
-     * @return true, if the url represents the current node which is trying to
-     *         replicate, false otherwise.
-     */
-    private boolean isThisMe(String url) {
-        InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
-        try {
-            URI uri = new URI(url);
-            return (uri.getHost().equals(myInfo.getHostName()));
-        } catch (URISyntaxException e) {
-            logger.error("Error in syntax", e);
-            return false;
-        }
-    }
-
-    /**
      * Replicates all eureka actions to peer eureka nodes except for replication
      * traffic to this node.
      *
@@ -774,7 +674,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                 return;
             }
 
-            for (final PeerEurekaNode node : peerEurekaNodes.get()) {
+            for (final PeerEurekaNode node : peerEurekaNodes.getPeerEurekaNodes()) {
                 // If the url represents this host, do not replicate
                 // to yourself.
                 if (isThisMe(node.getServiceUrl())) {
@@ -845,7 +745,5 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                     "Cannot replicate ASG status information to "
                             + node.getServiceUrl(), e);
         }
-
     }
-
 }

@@ -37,7 +37,7 @@ public class DiscoveryClientRedirectTest {
         MockServerClient client;
     }
 
-    private final InstanceInfo myInstanceInfo = InstanceInfoGenerator.generateInstanceInfo(1, 1);
+    private final InstanceInfo myInstanceInfo = InstanceInfoGenerator.takeOne();
 
     @Rule
     public MockServerRule redirectServerMockRule = new MockServerRule(this);
@@ -74,7 +74,7 @@ public class DiscoveryClientRedirectTest {
 
     private String targetServerBaseUri;
 
-    private final InstanceInfoGenerator dataGenerator = new InstanceInfoGenerator(2, 1);
+    private final InstanceInfoGenerator dataGenerator = new InstanceInfoGenerator(2, 1, true);
 
     @Before
     public void setUp() throws Exception {

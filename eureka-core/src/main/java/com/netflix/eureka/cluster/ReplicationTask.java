@@ -20,6 +20,7 @@ abstract class ReplicationTask {
     public enum ProcessingState {Pending, Finished, Failed, Cancelled}
 
     private final long submitTime = System.currentTimeMillis();
+    private final String peerNodeName;
     private final String appName;
     private final String id;
     private final Action action;
@@ -30,14 +31,15 @@ abstract class ReplicationTask {
 
     private final AtomicReference<ProcessingState> processingState = new AtomicReference<>(ProcessingState.Pending);
 
-    ReplicationTask(String appName, String id, Action action) {
+    ReplicationTask(String peerNodeName, String appName, String id, Action action) {
+        this.peerNodeName = peerNodeName;
         this.appName = appName;
         this.id = id;
         this.action = action;
     }
 
     public String getTaskName() {
-        return appName + '/' + id + ':' + action;
+        return appName + '/' + id + ':' + action + '@' + peerNodeName;
     }
 
     public String getAppName() {
@@ -96,8 +98,8 @@ abstract class ReplicationTask {
      */
     public void handleFailure(int statusCode, Object responseEntity) throws Throwable {
         processingState.compareAndSet(ProcessingState.Pending, ProcessingState.Failed);
-        Object[] args = {this.appName, this.id, this.action.name(), statusCode};
-        logger.warn("The replication of {}/{}/{} failed with response code {}", args);
+        Object[] args = {this.appName, this.id, this.action.name(), peerNodeName, statusCode};
+        logger.warn("The replication of {}/{}/{} to peer {} failed with response code {}", args);
     }
 
     /**
@@ -115,8 +117,8 @@ abstract class ReplicationTask {
 
         private final EurekaServerConfig config;
 
-        BatchableReplicationTask(EurekaServerConfig config, String appName, String id, Action action) {
-            super(appName, id, action);
+        BatchableReplicationTask(String peerNodeName, String appName, String id, Action action, EurekaServerConfig config) {
+            super(peerNodeName, appName, id, action);
             this.config = config;
         }
 

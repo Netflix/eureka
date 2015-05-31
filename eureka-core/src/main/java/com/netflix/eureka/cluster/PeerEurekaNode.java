@@ -99,7 +99,7 @@ public class PeerEurekaNode {
      * @throws Exception
      */
     public void register(final InstanceInfo info) throws Exception {
-        ReplicationTask replicationTask = new BatchableReplicationTask(config, info.getAppName(), info.getId(), Action.Register) {
+        ReplicationTask replicationTask = new BatchableReplicationTask(name, info.getAppName(), info.getId(), Action.Register, config) {
             public HttpResponse<Void> execute() {
                 return replicationClient.register(info);
             }
@@ -121,7 +121,7 @@ public class PeerEurekaNode {
      * @throws Exception
      */
     public void cancel(final String appName, final String id) throws Exception {
-        cancelProcessor.process(new BatchableReplicationTask(config, appName, id, Action.Cancel) {
+        cancelProcessor.process(new BatchableReplicationTask(name, appName, id, Action.Cancel, config) {
             @Override
             public HttpResponse<Void> execute() {
                 return replicationClient.cancel(appName, id);
@@ -131,7 +131,7 @@ public class PeerEurekaNode {
             public void handleFailure(int statusCode, Object responseEntity) throws Throwable {
                 super.handleFailure(statusCode, responseEntity);
                 if (statusCode == 404) {
-                    logger.warn(name + appName + '/' + id + " : delete: missing entry.");
+                    logger.warn("{}: missing entry.", getTaskName());
                 }
             }
         });
@@ -160,7 +160,7 @@ public class PeerEurekaNode {
             replicationClient.sendHeartBeat(appName, id, info, overriddenStatus);
             return;
         }
-        ReplicationTask replicationTask = new BatchableReplicationTask(config, appName, id, Action.Heartbeat) {
+        ReplicationTask replicationTask = new BatchableReplicationTask(name, appName, id, Action.Heartbeat, config) {
             @Override
             public HttpResponse<InstanceInfo> execute() throws Throwable {
                 return replicationClient.sendHeartBeat(appName, id, info, overriddenStatus);
@@ -170,10 +170,10 @@ public class PeerEurekaNode {
             public void handleFailure(int statusCode, Object responseEntity) throws Throwable {
                 super.handleFailure(statusCode, responseEntity);
                 if (statusCode == 404) {
-                    logger.warn(name + appName + '/' + id + " : heartbeat: missing entry.");
+                    logger.warn("{}: missing entry.", getTaskName());
                     if (info != null) {
-                        logger.warn("Cannot find instance id {} and hence replicating the instance with status {}",
-                                info.getId(), info.getStatus());
+                        logger.warn("{}: cannot find instance id {} and hence replicating the instance with status {}",
+                                getTaskName(), info.getId(), info.getStatus());
                         register(info);
                     }
                 } else if (config.shouldSyncWhenTimestampDiffers()) {
@@ -203,7 +203,7 @@ public class PeerEurekaNode {
      *            the new status of the ASG.
      */
     public void statusUpdate(final String asgName, final ASGStatus newStatus) {
-        asgStatusProcessor.process(new ReplicationTask(asgName, asgName, Action.StatusUpdate) {
+        asgStatusProcessor.process(new ReplicationTask(name, asgName, asgName, Action.StatusUpdate) {
             public HttpResponse<?> execute() {
                 return replicationClient.statusUpdate(asgName, newStatus);
             }
@@ -225,7 +225,7 @@ public class PeerEurekaNode {
      */
     public void statusUpdate(final String appName, final String id,
                              final InstanceStatus newStatus, final InstanceInfo info) {
-        statusProcessor.process(new BatchableReplicationTask(config, appName, id, Action.StatusUpdate) {
+        statusProcessor.process(new BatchableReplicationTask(name, appName, id, Action.StatusUpdate, config) {
             @Override
             public HttpResponse<Void> execute() {
                 return replicationClient.statusUpdate(appName, id, newStatus, info);
@@ -244,7 +244,7 @@ public class PeerEurekaNode {
      *            the instance information of the instance.
      */
     public void deleteStatusOverride(final String appName, final String id, final InstanceInfo info) {
-        statusProcessor.process(new BatchableReplicationTask(config, appName, id, Action.DeleteStatusOverride) {
+        statusProcessor.process(new BatchableReplicationTask(name, appName, id, Action.DeleteStatusOverride, config) {
             @Override
             public HttpResponse<Void> execute() {
                 return replicationClient.deleteStatusOverride(appName, id, info);
@@ -265,8 +265,7 @@ public class PeerEurekaNode {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result
-                + ((serviceUrl == null) ? 0 : serviceUrl.hashCode());
+        result = prime * result + ((serviceUrl == null) ? 0 : serviceUrl.hashCode());
         return result;
     }
 
@@ -290,14 +289,6 @@ public class PeerEurekaNode {
             return false;
         }
         return true;
-    }
-
-    /**
-     * Destroy the resources created for communication with the Peer Eureka
-     * Server.
-     */
-    public void destroyResources() {
-        replicationClient.shutdown();
     }
 
     /**

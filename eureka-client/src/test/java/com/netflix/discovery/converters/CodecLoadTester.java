@@ -12,6 +12,7 @@ import java.util.List;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.discovery.util.InstanceInfoGenerator;
 
 /**
  * @author Tomasz Bak

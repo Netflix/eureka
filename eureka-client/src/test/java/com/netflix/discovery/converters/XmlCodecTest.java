@@ -1,6 +1,7 @@
 package com.netflix.discovery.converters;
 
 import com.netflix.discovery.shared.Applications;
+import com.netflix.discovery.util.InstanceInfoGenerator;
 import com.thoughtworks.xstream.XStream;
 import org.junit.Test;
 
