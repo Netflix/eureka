@@ -243,9 +243,6 @@ public class InstanceInfo {
         private InstanceInfo result;
 
         private String namespace;
-        private boolean isCoordinatingDiscoveryServer;
-        private long lastDirtyTimestamp;
-        private ActionType actionType;
 
         private Builder() {
             result = new InstanceInfo();
@@ -708,6 +705,16 @@ public class InstanceInfo {
 
         private Builder refreshVIPAddress() {
             setVIPAddress(result.vipAddressUnresolved);
+            return this;
+        }
+
+        public Builder setIsCoordinatingDiscoveryServer(boolean isCoordinatingDiscoveryServer) {
+            result.isCoordinatingDiscoveryServer = isCoordinatingDiscoveryServer;
+            return this;
+        }
+
+        public Builder setLastUpdatedTimestamp(long lastUpdatedTimestamp) {
+            result.lastUpdatedTimestamp = lastUpdatedTimestamp;
             return this;
         }
 

@@ -468,9 +468,9 @@ public class EurekaJacksonCodec {
                     } else if (ELEM_SECVIPADDRESS.equals(fieldName)) {
                         builder.setSecureVIPAddressDeser(fieldNode.asText());
                     } else if (ELEM_ISCOORDINATINGDISCSOERVER.equals(fieldName)) {
-                        // Ignore, as this flag is determined on the client side
+                        builder.setIsCoordinatingDiscoveryServer(fieldNode.asBoolean());
                     } else if (ELEM_LASTUPDATEDTS.equals(fieldName)) {
-                        // Ignore this value, as it is reset by discovery servers, and client should not care about it
+                        builder.setLastUpdatedTimestamp(fieldNode.asLong());
                     } else if (ELEM_LASTDIRTYTS.equals(fieldName)) {
                         builder.setLastDirtyTimestamp(fieldNode.asLong());
                     } else if (ELEM_ACTIONTYPE.equals(fieldName)) {

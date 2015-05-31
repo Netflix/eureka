@@ -145,7 +145,15 @@ public final class EurekaEntityComparators {
         if (first.getStatusPageUrl() != null ? !first.getStatusPageUrl().equals(second.getStatusPageUrl()) : second.getStatusPageUrl() != null) {
             return false;
         }
-
+        if (first.getLastDirtyTimestamp() != null ? !first.getLastDirtyTimestamp().equals(second.getLastDirtyTimestamp()) : second.getLastDirtyTimestamp() != null) {
+            return false;
+        }
+        if (first.getLastUpdatedTimestamp()!= second.getLastUpdatedTimestamp()) {
+            return false;
+        }
+        if (first.isCoordinatingDiscoveryServer() != null ? !first.isCoordinatingDiscoveryServer().equals(second.isCoordinatingDiscoveryServer()) : second.isCoordinatingDiscoveryServer() != null) {
+            return false;
+        }
         return true;
     }
 
