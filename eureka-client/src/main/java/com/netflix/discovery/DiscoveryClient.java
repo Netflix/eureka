@@ -320,7 +320,18 @@ public class DiscoveryClient implements EurekaClient {
         if (clientConfig.shouldFetchRegistry() && !fetchRegistry(false)) {
             fetchRegistryFromBackup();
         }
-        initScheduledTasks();
+
+        initRegistryFetchPoller();
+        boolean eventsForInstanceInfoUpdaters = clientConfig.getUseExplicitEventsForInitialDiscoveryCalls();
+        if (!eventsForInstanceInfoUpdaters) {
+            if (shouldRegister()) {
+                initInstanceHeartBeatUpdater(eventsForInstanceInfoUpdaters);
+                initInstanceInfoRefreshUpdater(eventsForInstanceInfoUpdaters);
+            } else {
+                logger.info("Not registering with Eureka server per configuration");
+            }
+        }
+
         try {
             Monitors.registerObject(this);
         } catch (Throwable e) {
@@ -590,17 +601,11 @@ public class DiscoveryClient implements EurekaClient {
     /**
      * Checks to see if the eureka client registration is enabled.
      *
-     * @param myInfo
-     *            - The instance info object
      * @return - true, if the instance should be registered with eureka, false
      *         otherwise
      */
-    private boolean shouldRegister(InstanceInfo myInfo) {
-        if (!clientConfig.shouldRegisterWithEureka()) {
-            return false;
-        }
-
-        return true;
+    private boolean shouldRegister() {
+        return clientConfig.shouldRegisterWithEureka();
     }
 
     /**
@@ -726,7 +731,7 @@ public class DiscoveryClient implements EurekaClient {
         cancelScheduledTasks();
 
         // If APPINFO was registered
-        if (instanceInfo != null && shouldRegister(instanceInfo)) {
+        if (instanceInfo != null && shouldRegister()) {
             instanceInfo.setStatus(InstanceStatus.DOWN);
             unregister();
         }
@@ -1333,10 +1338,64 @@ public class DiscoveryClient implements EurekaClient {
         }
     }
 
+    private void initRegistryFetchPoller() {
+        if (clientConfig.shouldFetchRegistry()) {
+            // registry cache refresh timer
+            int registryFetchIntervalSeconds = clientConfig.getRegistryFetchIntervalSeconds();
+            int expBackOffBound = clientConfig.getCacheRefreshExecutorExponentialBackOffBound();
+            scheduler.schedule(
+                    new TimedSupervisorTask(
+                            "cacheRefresh",
+                            scheduler,
+                            cacheRefreshExecutor,
+                            registryFetchIntervalSeconds,
+                            TimeUnit.SECONDS,
+                            expBackOffBound,
+                            new CacheRefreshThread()
+                    ),
+                    registryFetchIntervalSeconds, TimeUnit.SECONDS);
+        }
+    }
+
+    private void initInstanceHeartBeatUpdater(boolean startNow) {
+        int renewalIntervalInSecs = instanceInfo.getLeaseInfo().getRenewalIntervalInSecs();
+        long startDelay = startNow ? 0 : renewalIntervalInSecs;
+        int expBackOffBound = clientConfig.getHeartbeatExecutorExponentialBackOffBound();
+        logger.info("Starting heartbeat executor: " + "renew interval is: " + renewalIntervalInSecs);
+
+        // Heartbeat timer
+        scheduler.schedule(
+                new TimedSupervisorTask(
+                        "heartbeat",
+                        scheduler,
+                        heartbeatExecutor,
+                        renewalIntervalInSecs,
+                        TimeUnit.SECONDS,
+                        expBackOffBound,
+                        new HeartbeatThread()
+                ),
+                startDelay, TimeUnit.SECONDS);
+    }
+
+    private void initInstanceInfoRefreshUpdater(boolean startNow) {
+        long startDelay = startNow ? 0 :  clientConfig.getInitialInstanceInfoReplicationIntervalSeconds();
+
+        // InstanceInfo replication timer
+        instanceInfoReplicator = new InstanceInfoReplicator();
+        scheduler.scheduleWithFixedDelay(instanceInfoReplicator,
+                startDelay,
+                clientConfig.getInstanceInfoReplicationIntervalSeconds(), TimeUnit.SECONDS);
+
+    }
+
     /**
      * Initializes all scheduled tasks.
      */
-    private void initScheduledTasks() {
+    private void initScheduledTasks(boolean usesEventForStartingInstanceInfoUpdates, boolean eventForStartingInstanceFired) {
+        if (!usesEventForStartingInstanceInfoUpdates && eventForStartingInstanceFired) {
+            throw new UnsupportedOperationException("invalid argument combination");
+        }
+
         if (clientConfig.shouldFetchRegistry()) {
             // registry cache refresh timer
             int registryFetchIntervalSeconds = clientConfig.getRegistryFetchIntervalSeconds();
@@ -1354,7 +1413,12 @@ public class DiscoveryClient implements EurekaClient {
                     registryFetchIntervalSeconds, TimeUnit.SECONDS);
         }
 
-        if (shouldRegister(instanceInfo)) {
+        if (!shouldRegister()) {
+            logger.info("Not registering with Eureka server per configuration");
+            return;
+        }
+
+        if (!usesEventForStartingInstanceInfoUpdates) {
             int renewalIntervalInSecs = instanceInfo.getLeaseInfo().getRenewalIntervalInSecs();
             int expBackOffBound = clientConfig.getHeartbeatExecutorExponentialBackOffBound();
             logger.info("Starting heartbeat executor: " + "renew interval is: " + renewalIntervalInSecs);
@@ -1378,8 +1442,30 @@ public class DiscoveryClient implements EurekaClient {
                     clientConfig.getInitialInstanceInfoReplicationIntervalSeconds(),
                     clientConfig.getInstanceInfoReplicationIntervalSeconds(), TimeUnit.SECONDS);
 
-        } else {
-            logger.info("Not registering with Eureka server per configuration");
+        }
+        else {
+            int renewalIntervalInSecs = instanceInfo.getLeaseInfo().getRenewalIntervalInSecs();
+            int expBackOffBound = clientConfig.getHeartbeatExecutorExponentialBackOffBound();
+            logger.info("Starting heartbeat executor: " + "renew interval is: " + renewalIntervalInSecs);
+
+            // Heartbeat timer
+            scheduler.schedule(
+                    new TimedSupervisorTask(
+                            "heartbeat",
+                            scheduler,
+                            heartbeatExecutor,
+                            renewalIntervalInSecs,
+                            TimeUnit.SECONDS,
+                            expBackOffBound,
+                            new HeartbeatThread()
+                    ),
+                    eventForStartingInstanceFired ? 0 : renewalIntervalInSecs, TimeUnit.SECONDS);
+
+            // InstanceInfo replication timer
+            instanceInfoReplicator = new InstanceInfoReplicator();
+            scheduler.scheduleWithFixedDelay(instanceInfoReplicator,
+                    eventForStartingInstanceFired ? 0 : clientConfig.getInitialInstanceInfoReplicationIntervalSeconds(),
+                    clientConfig.getInstanceInfoReplicationIntervalSeconds(), TimeUnit.SECONDS);
         }
     }
 
@@ -1786,6 +1872,24 @@ public class DiscoveryClient implements EurekaClient {
         }
 
         return healthCheckHandler;
+    }
+
+    @Override
+    public void startInstanceInfoHeartBeatNow() {
+        boolean eventsForInstanceInfoUpdaters = clientConfig.getUseExplicitEventsForInitialDiscoveryCalls();
+        if (shouldRegister() && eventsForInstanceInfoUpdaters) {
+            initInstanceHeartBeatUpdater(true);
+        }
+        // else expected that DiscoveryClient initialization already initialized heartbeat
+    }
+
+    @Override
+    public void startInstanceInfoRefreshNow() {
+        boolean eventsForInstanceInfoUpdaters = clientConfig.getUseExplicitEventsForInitialDiscoveryCalls();
+        if (shouldRegister() && eventsForInstanceInfoUpdaters) {
+            initInstanceInfoRefreshUpdater(true);
+        }
+        // else expected that DiscoveryClient initialization already initialized instanceinforefresher
     }
 
     /**

@@ -156,6 +156,16 @@ public interface EurekaClient extends LookupService {
      */
     public HealthCheckHandler getHealthCheckHandler();
 
+    /**
+     * Start the instance info heart beat executions
+     */
+    public void startInstanceInfoHeartBeatNow();
+
+    /**
+     * Start the instance info refresh executions, likely with instanceInfo went to UP status
+     */
+    public void startInstanceInfoRefreshNow();
+
     // =============
     // other methods
     // =============

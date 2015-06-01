@@ -485,4 +485,9 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
         return configInstance.getStringProperty(
                 namespace + "escapeCharReplacement", "__").get();
     }
+
+    @Override
+    public boolean getUseExplicitEventsForInitialDiscoveryCalls() {
+        return configInstance.getBooleanProperty(namespace + "appinfo.useExplicitEventsForInitialDiscoveryCalls", false).get();
+    }
 }
