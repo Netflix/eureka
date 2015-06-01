@@ -127,9 +127,7 @@ public class InstanceResource {
                 .getConfiguration().shouldSyncWhenTimestampDiffers()) {
             response = this.validateDirtyTimestamp(
                     Long.valueOf(lastDirtyTimestamp), isFromReplicaNode);
-            // Store the overridden status since the validation found out the
-            // node that
-            // replicates wins
+            // Store the overridden status since the validation found out the node that replicates wins
             if (response.getStatus() == Response.Status.NOT_FOUND
                     .getStatusCode()
                     && (overriddenStatus != null)
@@ -302,14 +300,11 @@ public class InstanceResource {
 
     private Response validateDirtyTimestamp(Long lastDirtyTimestamp,
                                             boolean isReplication) {
-        InstanceInfo appInfo = registry.getInstanceByAppAndId(app.getName(),
-                id, false);
+        InstanceInfo appInfo = registry.getInstanceByAppAndId(app.getName(), id, false);
         if (appInfo != null) {
-            if ((lastDirtyTimestamp != null)
-                    && (!lastDirtyTimestamp.equals(appInfo
-                    .getLastDirtyTimestamp()))) {
-                Object[] args = {id, appInfo.getLastDirtyTimestamp(),
-                        lastDirtyTimestamp, isReplication};
+            if ((lastDirtyTimestamp != null) && (!lastDirtyTimestamp.equals(appInfo.getLastDirtyTimestamp()))) {
+                Object[] args = {id, appInfo.getLastDirtyTimestamp(), lastDirtyTimestamp, isReplication};
+
                 if (lastDirtyTimestamp > appInfo.getLastDirtyTimestamp()) {
                     logger.warn(
                             "Time to sync, since the last dirty timestamp differs -"

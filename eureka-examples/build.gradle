@@ -3,6 +3,8 @@ apply plugin: 'application'
 dependencies {
     compile project(':eureka-client')
     compile files('conf')
+
+    compile 'org.slf4j:slf4j-simple:1.7.7'
 }
 
 startScripts.enabled = false

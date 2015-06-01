@@ -497,4 +497,13 @@ public interface EurekaClientConfig {
      * @return Replacement string for underscore sign <code>_</code>.
      */
     String getEscapeCharReplacement();
+
+    /**
+     * If set to true, local status updates via
+     * {@link com.netflix.appinfo.ApplicationInfoManager#setInstanceStatus(com.netflix.appinfo.InstanceInfo.InstanceStatus)}
+     * will trigger on-demand (but rate limited) register/updates to remote eureka servers
+     *
+     * @return true or false for whether local status updates should be updated to remote servers on-demand
+     */
+    boolean shouldOnDemandUpdateStatusChange();
 }

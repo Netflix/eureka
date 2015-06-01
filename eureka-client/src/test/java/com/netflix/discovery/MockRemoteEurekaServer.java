@@ -3,11 +3,16 @@ package com.netflix.discovery;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.netflix.appinfo.AbstractEurekaIdentity;
 import com.netflix.appinfo.EurekaClientIdentity;
@@ -28,6 +33,8 @@ public class MockRemoteEurekaServer extends ExternalResource {
 
     public static final String EUREKA_API_BASE_PATH = "/eureka/v2/";
 
+    private static Pattern STATUS_PATTERN = Pattern.compile("\"status\"\\s?:\\s?\\\"([A-Z_]*)\\\"");
+
     private int port;
     private final Map<String, Application> applicationMap = new HashMap<String, Application>();
     private final Map<String, Application> remoteRegionApps = new HashMap<String, Application>();
@@ -37,10 +44,13 @@ public class MockRemoteEurekaServer extends ExternalResource {
     private final AtomicBoolean sentDelta = new AtomicBoolean();
     private final AtomicBoolean sentRegistry = new AtomicBoolean();
 
-    public AtomicLong heartbeatCount = new AtomicLong(0);
-    public AtomicLong getFullRegistryCount = new AtomicLong(0);
-    public AtomicLong getSingleVipCount = new AtomicLong(0);
-    public AtomicLong getDeltaCount = new AtomicLong(0);
+    public final List<String> registrationStatuses = new ArrayList<String>();
+
+    public final AtomicLong registerCount = new AtomicLong(0);
+    public final AtomicLong heartbeatCount = new AtomicLong(0);
+    public final AtomicLong getFullRegistryCount = new AtomicLong(0);
+    public final AtomicLong getSingleVipCount = new AtomicLong(0);
+    public final AtomicLong getDeltaCount = new AtomicLong(0);
 
     @Override
     protected void before() throws Throwable {
@@ -71,6 +81,8 @@ public class MockRemoteEurekaServer extends ExternalResource {
         server.stop();
         server = null;
         port = 0;
+
+        registrationStatuses.clear();
 
         applicationMap.clear();
         remoteRegionApps.clear();
@@ -197,8 +209,23 @@ public class MockRemoteEurekaServer extends ExternalResource {
                     sendOkResponseWithContent((Request) request, response, apps);
                     handled = true;
                 } else if (pathInfo.startsWith("apps")) {  // assume this is the renewal heartbeat
-                    heartbeatCount.getAndIncrement();
-
+                    if (request.getMethod().equals("PUT")) {  // this is the renewal heartbeat
+                        heartbeatCount.getAndIncrement();
+                    } else if (request.getMethod().equals("POST")) {  // this is a register request
+                        registerCount.getAndIncrement();
+                        String result = null;
+                        String line;
+                        BufferedReader reader = request.getReader();
+                        while ((line = reader.readLine()) != null) {
+                            Matcher matcher = STATUS_PATTERN.matcher(line);
+                            if (result == null && matcher.find()) {
+                                result = matcher.group(1);
+                                // don't break here as we want to read the full buffer for a clean connection close
+                            }
+                        }
+                        System.out.println("Matched status to: " + result);
+                        registrationStatuses.add(result);
+                    }
                     Applications apps = new Applications();
                     apps.setAppsHashCode("");
                     sendOkResponseWithContent((Request) request, response, apps);
