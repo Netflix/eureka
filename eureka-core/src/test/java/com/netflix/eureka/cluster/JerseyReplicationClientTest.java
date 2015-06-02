@@ -8,9 +8,9 @@ import java.util.zip.GZIPOutputStream;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.converters.EurekaJacksonCodec;
+import com.netflix.discovery.shared.EurekaHttpClient.HttpResponse;
 import com.netflix.eureka.DefaultEurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfig;
-import com.netflix.eureka.cluster.HttpReplicationClient.HttpResponse;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;
 import org.junit.Before;
 import org.junit.Rule;
@@ -162,7 +162,7 @@ public class JerseyReplicationClientTest {
     private static byte[] toGzippedJson(InstanceInfo remoteInfo) throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         GZIPOutputStream gos = new GZIPOutputStream(bos);
-        EurekaJacksonCodec.getInstance().writeWithEnvelopeTo(remoteInfo, gos);
+        EurekaJacksonCodec.getInstance().writeTo(remoteInfo, gos);
         gos.flush();
         return bos.toByteArray();
     }

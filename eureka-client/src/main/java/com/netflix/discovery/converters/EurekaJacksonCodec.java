@@ -22,6 +22,8 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -35,9 +37,6 @@ import com.netflix.appinfo.InstanceInfo.PortType;
 import com.netflix.appinfo.LeaseInfo;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaClientConfig;
-import com.netflix.discovery.converters.envelope.ApplicationEnvelope;
-import com.netflix.discovery.converters.envelope.ApplicationsEnvelope;
-import com.netflix.discovery.converters.envelope.InstanceInfoEnvelope;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import org.slf4j.Logger;
@@ -55,9 +54,7 @@ public class EurekaJacksonCodec {
     public static final String NODE_LEASE = "leaseInfo";
     public static final String NODE_METADATA = "metadata";
     public static final String NODE_DATACENTER = "dataCenterInfo";
-    public static final String NODE_INSTANCE = "instance";
     public static final String NODE_APP = "application";
-    public static final String NODE_APPS = "applications";
 
     private static final String ELEM_INSTANCE = "instance";
     private static final String ELEM_OVERRIDDEN_STATUS = "overriddenstatus";
@@ -102,6 +99,9 @@ public class EurekaJacksonCodec {
     private final StringCache cache = new StringCache();
     private final ObjectMapper mapper;
 
+    private final Map<Class<?>, ObjectReader> objectReaderByClass;
+    private final Map<Class<?>, ObjectWriter> objectWriterByClass;
+
     public EurekaJacksonCodec() {
         this.versionDeltaKey = formatKey(VERSIONS_DELTA_TEMPLATE);
         this.appHashCodeKey = formatKey(APPS_HASHCODE_TEMPTE);
@@ -118,11 +118,22 @@ public class EurekaJacksonCodec {
         module.addDeserializer(DataCenterInfo.class, new DataCenterInfoDeserializer());
         module.addDeserializer(LeaseInfo.class, new LeaseInfoDeserializer());
         module.addDeserializer(InstanceInfo.class, new InstanceInfoDeserializer(cache));
-        module.addDeserializer(InstanceInfoEnvelope.class, new InstanceInfoEnvelopeDeserializer());
         module.addDeserializer(Application.class, new ApplicationDeserializer());
         module.addDeserializer(Applications.class, new ApplicationsDeserializer());
 
         this.mapper.registerModule(module);
+
+        HashMap<Class<?>, ObjectReader> readers = new HashMap<>();
+        readers.put(InstanceInfo.class, mapper.reader().withType(InstanceInfo.class).withRootName("instance"));
+        readers.put(Application.class, mapper.reader().withType(Application.class).withRootName("application"));
+        readers.put(Applications.class, mapper.reader().withType(Applications.class).withRootName("applications"));
+        this.objectReaderByClass = readers;
+
+        HashMap<Class<?>, ObjectWriter> writers = new HashMap<>();
+        writers.put(InstanceInfo.class, mapper.writer().withType(InstanceInfo.class).withRootName("instance"));
+        writers.put(Application.class, mapper.writer().withType(Application.class).withRootName("application"));
+        writers.put(Applications.class, mapper.writer().withType(Applications.class).withRootName("applications"));
+        this.objectWriterByClass = writers;
     }
 
     private static String formatKey(String keyTemplate) {
@@ -145,50 +156,37 @@ public class EurekaJacksonCodec {
     }
 
     public <T> T readValue(Class<T> type, InputStream entityStream) throws IOException {
-        return mapper.readValue(entityStream, type);
+        ObjectReader reader = objectReaderByClass.get(type);
+        if (reader == null) {
+            return mapper.readValue(entityStream, type);
+        }
+        return reader.readValue(entityStream);
     }
 
     public <T> T readValue(Class<T> type, String text) throws IOException {
-        return mapper.readValue(text, type);
-    }
-
-    public <T> T readFromEnvelope(Class<T> type, InputStream entityStream) throws IOException {
-        if (type.isAssignableFrom(Applications.class)) {
-            return (T) readValue(ApplicationsEnvelope.class, entityStream).getApplications();
-        } else if (type.isAssignableFrom(Application.class)) {
-            return (T) readValue(ApplicationEnvelope.class, entityStream).getApplication();
-        } else if (type.isAssignableFrom(InstanceInfo.class)) {
-            return (T) readValue(InstanceInfoEnvelope.class, entityStream).getInstance();
+        ObjectReader reader = objectReaderByClass.get(type);
+        if (reader == null) {
+            return mapper.readValue(text, type);
         }
-        throw new IllegalArgumentException("Unsupported type " + type);
+        return reader.readValue(text);
     }
 
     public <T> void writeTo(T object, OutputStream entityStream) throws IOException {
-        mapper.writeValue(entityStream, object);
+        ObjectWriter writer = objectWriterByClass.get(object.getClass());
+        if (writer == null) {
+            mapper.writeValue(entityStream, object);
+        } else {
+            writer.writeValue(entityStream, object);
+        }
     }
 
     public <T> String writeToString(T object) {
         try {
-            return mapper.writeValueAsString(object);
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Cannot encode provided object", e);
-        }
-    }
-
-    public <T> void writeWithEnvelopeTo(T object, OutputStream entityStream) {
-        Object toEncode;
-        if (object instanceof Applications) {
-            toEncode = new ApplicationsEnvelope((Applications) object);
-        } else if (object instanceof Application) {
-            toEncode = new ApplicationEnvelope((Application) object);
-        } else if (object instanceof InstanceInfo) {
-            toEncode = new InstanceInfoEnvelope((InstanceInfo) object);
-        } else {
-            throw new IllegalArgumentException("Unsupported type " + object.getClass());
-        }
-
-        try {
-            mapper.writeValue(entityStream, toEncode);
+            ObjectWriter writer = objectWriterByClass.get(object.getClass());
+            if (writer == null) {
+                return mapper.writeValueAsString(object);
+            }
+            return writer.writeValueAsString(object);
         } catch (IOException e) {
             throw new IllegalArgumentException("Cannot encode provided object", e);
         }
@@ -361,22 +359,6 @@ public class EurekaJacksonCodec {
                 logger.error("Error in marshalling the object", th);
             }
         }
-    }
-
-    private class InstanceInfoEnvelopeDeserializer extends JsonDeserializer<InstanceInfoEnvelope> {
-        @Override
-        public InstanceInfoEnvelope deserialize(JsonParser jp, DeserializationContext context) throws IOException {
-            JsonNode node = jp.getCodec().readTree(jp);
-
-            // Envelope {"instance": { ... } }
-            JsonNode instanceNode = node.get(ELEM_INSTANCE);
-            if (instanceNode == null) {
-                throw new IOException("Expected field 'instance'");
-            }
-
-            return new InstanceInfoEnvelope(mapper.treeToValue(instanceNode, InstanceInfo.class));
-        }
-
     }
 
     private class InstanceInfoDeserializer extends JsonDeserializer<InstanceInfo> {

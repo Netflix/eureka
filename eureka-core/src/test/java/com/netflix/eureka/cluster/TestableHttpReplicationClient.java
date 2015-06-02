@@ -97,6 +97,11 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
     }
 
     @Override
+    public HttpResponse<InstanceInfo> getInstance(String appName, String id) {
+        throw new IllegalStateException("method not supported");
+    }
+
+    @Override
     public HttpResponse<ReplicationListResponse> submitBatchUpdates(ReplicationList replicationList) {
         if (networkFailureCounter.get() < networkFailuresRepeatCount) {
             networkFailureCounter.incrementAndGet();

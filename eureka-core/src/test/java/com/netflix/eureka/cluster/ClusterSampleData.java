@@ -51,7 +51,8 @@ public final class ClusterSampleData {
     }
 
     public static InstanceInfo newInstanceInfo(int index) {
-        Iterator<InstanceInfo> instanceGenerator = new InstanceInfoGenerator(10, 10, true).serviceIterator();
+        Iterator<InstanceInfo> instanceGenerator = InstanceInfoGenerator.newBuilder(10, 10)
+                .withMetaData(true).build().serviceIterator();
         // Skip to the requested index
         for (int i = 0; i < index; i++) {
             instanceGenerator.next();

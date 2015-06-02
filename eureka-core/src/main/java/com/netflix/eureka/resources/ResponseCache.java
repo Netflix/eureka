@@ -43,14 +43,12 @@ import com.google.common.collect.Multimaps;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.converters.EurekaJacksonCodec;
 import com.netflix.discovery.converters.XmlXStream;
-import com.netflix.discovery.converters.envelope.ApplicationEnvelope;
-import com.netflix.discovery.converters.envelope.ApplicationsEnvelope;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.eureka.AbstractInstanceRegistry;
 import com.netflix.eureka.CurrentRequestVersion;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfigurationManager;
-import com.netflix.eureka.AbstractInstanceRegistry;
 import com.netflix.eureka.PeerAwareInstanceRegistryImpl;
 import com.netflix.eureka.Version;
 import com.netflix.servo.annotations.DataSourceType;
@@ -345,7 +343,7 @@ public class ResponseCache {
      */
     private static String getPayLoad(Key key, Applications apps) {
         if (key.getType() == KeyType.JSON) {
-            return EurekaJacksonCodec.getInstance().writeToString(new ApplicationsEnvelope(apps));
+            return EurekaJacksonCodec.getInstance().writeToString(apps);
         } else {
             return XmlXStream.getInstance().toXML(apps);
         }
@@ -360,7 +358,7 @@ public class ResponseCache {
         }
 
         if (key.getType() == KeyType.JSON) {
-            return EurekaJacksonCodec.getInstance().writeToString(new ApplicationEnvelope(app));
+            return EurekaJacksonCodec.getInstance().writeToString(app);
         } else {
             return XmlXStream.getInstance().toXML(app);
         }

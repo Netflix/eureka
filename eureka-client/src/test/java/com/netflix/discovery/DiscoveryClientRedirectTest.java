@@ -74,7 +74,7 @@ public class DiscoveryClientRedirectTest {
 
     private String targetServerBaseUri;
 
-    private final InstanceInfoGenerator dataGenerator = new InstanceInfoGenerator(2, 1, true);
+    private final InstanceInfoGenerator dataGenerator = InstanceInfoGenerator.newBuilder(2, 1).withMetaData(true).build();
 
     @Before
     public void setUp() throws Exception {

@@ -5,9 +5,9 @@ import java.util.Date;
 import java.util.List;
 
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.discovery.shared.EurekaHttpClient.HttpResponse;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.PeerAwareInstanceRegistryImpl.Action;
-import com.netflix.eureka.cluster.HttpReplicationClient.HttpResponse;
 import com.netflix.eureka.cluster.protocol.ReplicationInstance;
 import com.netflix.eureka.cluster.protocol.ReplicationInstance.ReplicationInstanceBuilder;
 import com.netflix.eureka.cluster.protocol.ReplicationInstanceResponse;

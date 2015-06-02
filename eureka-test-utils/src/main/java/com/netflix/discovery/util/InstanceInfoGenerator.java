@@ -34,11 +34,13 @@ public class InstanceInfoGenerator {
     private Iterator<InstanceInfo> currentIt;
     private Applications allApplications = new Applications();
     private final boolean withMetaData;
+    private final boolean includeAsg;
 
-    public InstanceInfoGenerator(int instanceCount, int applicationCount, boolean withMetaData) {
-        this.instanceCount = instanceCount;
-        this.applicationCount = applicationCount;
-        this.withMetaData = withMetaData;
+    InstanceInfoGenerator(InstanceInfoGeneratorBuilder builder) {
+        this.instanceCount = builder.instanceCount;
+        this.applicationCount = builder.applicationCount;
+        this.withMetaData = builder.includeMetaData;
+        this.includeAsg = builder.includeAsg;
     }
 
     public Applications takeDelta(int count) {
@@ -116,7 +118,11 @@ public class InstanceInfoGenerator {
     }
 
     public static InstanceInfo takeOne() {
-        return new InstanceInfoGenerator(1, 1, true).serviceIterator().next();
+        return newBuilder(1, 1).withMetaData(true).build().serviceIterator().next();
+    }
+
+    public static InstanceInfoGeneratorBuilder newBuilder(int instanceCount, int applicationCount) {
+        return new InstanceInfoGeneratorBuilder(instanceCount, applicationCount);
     }
 
     private InstanceInfo generateInstanceInfo(int appIndex, int appInstanceId) {
@@ -146,7 +152,6 @@ public class InstanceInfoGenerator {
         Builder builder = InstanceInfo.Builder.newBuilder()
                 .setAppGroupName("AppGroup" + appIndex)
                 .setAppName("App" + appIndex)
-                .setASGName("ASG" + appIndex)
                 .setHostName(hostName)
                 .setIPAddr(publicIp)
                 .setPort(8080)
@@ -164,9 +169,40 @@ public class InstanceInfoGenerator {
                 .setLastDirtyTimestamp(System.currentTimeMillis() - 100)
                 .setIsCoordinatingDiscoveryServer(true)
                 .enablePort(PortType.UNSECURE, true);
+        if (includeAsg) {
+            builder.setASGName("ASG" + appIndex);
+        }
         if (withMetaData) {
             builder.add("appKey" + appIndex, Integer.toString(appInstanceId));
         }
         return builder.build();
+    }
+
+    public static class InstanceInfoGeneratorBuilder {
+
+        private final int instanceCount;
+        private final int applicationCount;
+
+        private boolean includeMetaData;
+        private boolean includeAsg = true;
+
+        public InstanceInfoGeneratorBuilder(int instanceCount, int applicationCount) {
+            this.instanceCount = instanceCount;
+            this.applicationCount = applicationCount;
+        }
+
+        public InstanceInfoGeneratorBuilder withMetaData(boolean includeMetaData) {
+            this.includeMetaData = includeMetaData;
+            return this;
+        }
+
+        public InstanceInfoGeneratorBuilder withAsg(boolean includeAsg) {
+            this.includeAsg = includeAsg;
+            return this;
+        }
+
+        public InstanceInfoGenerator build() {
+            return new InstanceInfoGenerator(this);
+        }
     }
 }

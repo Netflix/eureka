@@ -4,9 +4,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
+import com.netflix.discovery.shared.EurekaHttpClient.HttpResponse;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.PeerAwareInstanceRegistryImpl.Action;
-import com.netflix.eureka.cluster.HttpReplicationClient.HttpResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

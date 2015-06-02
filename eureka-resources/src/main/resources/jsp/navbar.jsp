@@ -10,7 +10,7 @@
   <dt> &nbsp;</dt> 
   <dd><b>DS Replicas: <b>
   <%
-   List<PeerEurekaNode> list = PeerAwareInstanceRegistry.getInstance().getReplicaNodes();
+   List<PeerEurekaNode> list = PeerAwareInstanceRegistryImpl.getInstance().getReplicaNodes();
    int i=0;
    for(PeerEurekaNode node : list){
      try{
