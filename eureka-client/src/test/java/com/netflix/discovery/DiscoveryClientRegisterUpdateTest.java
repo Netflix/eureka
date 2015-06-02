@@ -26,7 +26,7 @@ public class DiscoveryClientRegisterUpdateTest {
 
         ConfigurationManager.getConfigInstance().setProperty("eureka.name", "EurekaTestApp-" + UUID.randomUUID());
         ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", "true");
-        ConfigurationManager.getConfigInstance().setProperty("eureka.appinfo.replicate.interval", 10);
+        ConfigurationManager.getConfigInstance().setProperty("eureka.appinfo.replicate.interval", 2);
         ConfigurationManager.getConfigInstance().setProperty("eureka.shouldFetchRegistry", "false");
         ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default",
                 "http://localhost:" + mockLocalEurekaServer.getPort() +
@@ -40,12 +40,12 @@ public class DiscoveryClientRegisterUpdateTest {
     @Test
     public void registerUpdateLifecycleTest() throws Exception {
         applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.UP);
-        Thread.sleep(1000);  // give some execution time
+        Thread.sleep(400);  // give some execution time
         applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.UNKNOWN);
-        Thread.sleep(1000);  // give some execution time
+        Thread.sleep(400);  // give some execution time
         applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.DOWN);
 
-        Thread.sleep(10 * 1000);
+        Thread.sleep(2400);
 
         Assert.assertEquals(Arrays.asList("UP", "UNKNOWN", "DOWN"), mockLocalEurekaServer.registrationStatuses);
         Assert.assertEquals(3, mockLocalEurekaServer.registerCount.get());
@@ -59,10 +59,10 @@ public class DiscoveryClientRegisterUpdateTest {
         applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.UP);
         applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.UNKNOWN);
         applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.DOWN);
-        Thread.sleep(1 * 1000);
+        Thread.sleep(400);
         // this call will be rate limited, but will be transmitted by the automatic update after 10s
         applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.UP);
-        Thread.sleep(15 * 1000);
+        Thread.sleep(2400);
 
         Assert.assertEquals(Arrays.asList("DOWN", "UP"), mockLocalEurekaServer.registrationStatuses);
         Assert.assertEquals(2, mockLocalEurekaServer.registerCount.get());
