@@ -399,7 +399,10 @@ public class AwsAsgUtil {
             for (InstanceInfo instanceInfo : app.getInstances()) {
                 String thisAsgName = instanceInfo.getASGName();
                 if (thisAsgName != null && thisAsgName.equals(asgName)) {
-                    return ((AmazonInfo) instanceInfo.getDataCenterInfo()).get(MetaDataKey.accountId);
+                    String accountId = ((AmazonInfo) instanceInfo.getDataCenterInfo()).get(MetaDataKey.accountId);
+                    if (accountId != null) {
+                        return accountId;
+                    }
                 }
             }
         }
