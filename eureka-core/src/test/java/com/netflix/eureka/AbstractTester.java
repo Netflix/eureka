@@ -34,7 +34,6 @@ public class AbstractTester {
         LoggingConfiguration.getInstance().configure();
     }
 
-    public static final int REMOTE_REGION_PORT = 7777;
     public static final String REMOTE_REGION_NAME = "us-east-1";
     public static final String REMOTE_REGION_APP_NAME = "MYAPP";
     public static final String REMOTE_REGION_INSTANCE_1_HOSTNAME = "blah";
@@ -56,15 +55,13 @@ public class AbstractTester {
         ConfigurationManager.getConfigInstance().setProperty("eureka.responseCacheAutoExpirationInSeconds", "10");
         ConfigurationManager.getConfigInstance().clearProperty("eureka.remoteRegion." + REMOTE_REGION_NAME + ".appWhiteList");
         ConfigurationManager.getConfigInstance().setProperty("eureka.deltaRetentionTimerIntervalInMs", "600000");
-        ConfigurationManager.getConfigInstance().setProperty("eureka.remoteRegion.registryFetchIntervalInSeconds",
-                "5");
-        ConfigurationManager.getConfigInstance().setProperty("eureka.remoteRegionUrlsWithName",
-                REMOTE_REGION_NAME + ";http://localhost:"
-                        + REMOTE_REGION_PORT + '/' +
-                        MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
+        ConfigurationManager.getConfigInstance().setProperty("eureka.remoteRegion.registryFetchIntervalInSeconds", "5");
         populateRemoteRegistryAtStartup();
         mockRemoteEurekaServer = newMockRemoteServer();
         mockRemoteEurekaServer.start();
+
+        ConfigurationManager.getConfigInstance().setProperty("eureka.remoteRegionUrlsWithName",
+                REMOTE_REGION_NAME + ";http://localhost:" + mockRemoteEurekaServer.getPort() + MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
 
         EurekaServerConfig serverConfig = new DefaultEurekaServerConfig();
         EurekaServerConfigurationManager.getInstance().setConfiguration(serverConfig);
@@ -89,23 +86,12 @@ public class AbstractTester {
         DiscoveryManager.getInstance().setEurekaClientConfig(config);
         client = new DiscoveryClient(builder.build(), config);
         ApplicationInfoManager.getInstance().initComponent(new MyDataCenterInstanceConfig());
-        registry = new PeerAwareInstanceRegistry() {
-
-            @Override
-            public boolean isLeaseExpirationEnabled() {
-                return false;
-            }
-
-            @Override
-            public InstanceInfo getNextServerFromEureka(String virtualHostname, boolean secure) {
-                return null;
-            }
-        };
+        registry = new TestPeerAwareInstanceRegistry();
         registry.initRemoteRegionRegistry();
     }
 
     protected MockRemoteEurekaServer newMockRemoteServer() {
-        return new MockRemoteEurekaServer(REMOTE_REGION_PORT, remoteRegionApps, remoteRegionAppsDelta);
+        return new MockRemoteEurekaServer(0 /* use ephemeral */, remoteRegionApps, remoteRegionAppsDelta);
     }
 
     @After
@@ -174,5 +160,18 @@ public class AbstractTester {
         Application myappDelta = createRemoteAppsDelta();
         remoteRegionApps.put(REMOTE_REGION_APP_NAME, myapp);
         remoteRegionAppsDelta.put(REMOTE_REGION_APP_NAME, myappDelta);
+    }
+
+    private static class TestPeerAwareInstanceRegistry extends PeerAwareInstanceRegistry {
+
+        @Override
+        public boolean isLeaseExpirationEnabled() {
+            return false;
+        }
+
+        @Override
+        public InstanceInfo getNextServerFromEureka(String virtualHostname, boolean secure) {
+            return null;
+        }
     }
 }

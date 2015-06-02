@@ -43,19 +43,19 @@ public class InstanceRegistryTest extends AbstractTester {
         Applications appDelta = registry.getApplicationDeltasFromMultipleRegions(null);
         List<Application> registeredApplications = appDelta.getRegisteredApplications();
         Assert.assertEquals("Apps size from remote regions do not match", 2, registeredApplications.size());
-        Application locaApplication = null;
+        Application localApplication = null;
         Application remApplication = null;
         for (Application registeredApplication : registeredApplications) {
             if (registeredApplication.getName().equalsIgnoreCase(LOCAL_REGION_APP_NAME)) {
-                locaApplication = registeredApplication;
+                localApplication = registeredApplication;
             }
             if (registeredApplication.getName().equalsIgnoreCase(REMOTE_REGION_APP_NAME)) {
                 remApplication = registeredApplication;
             }
         }
-        Assert.assertNotNull("Did not find local registry app in delta.", locaApplication);
+        Assert.assertNotNull("Did not find local registry app in delta.", localApplication);
         Assert.assertEquals("Local registry app instance count in delta not as expected.", 1,
-                locaApplication.getInstances().size());
+                localApplication.getInstances().size());
         Assert.assertNotNull("Did not find remote registry app in delta", remApplication);
         Assert.assertEquals("Remote registry app instance count  in delta not as expected.", 1,
                 remApplication.getInstances().size());
@@ -98,7 +98,7 @@ public class InstanceRegistryTest extends AbstractTester {
 
     @Test
     public void testGetAppsFromBothRegions() throws Exception {
-        registerInstanceLocally(createLocalInstance(LOCAL_REGION_INSTANCE_2_HOSTNAME));
+        registerInstanceLocally(createRemoteInstance(LOCAL_REGION_INSTANCE_2_HOSTNAME));
         registerInstanceLocally(createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME));
 
         Applications apps = registry.getApplicationsFromAllRemoteRegions();
@@ -115,10 +115,10 @@ public class InstanceRegistryTest extends AbstractTester {
             }
         }
         Assert.assertNotNull("Did not find local registry app", locaApplication);
-        Assert.assertEquals("Local registry app instance count not as expected.", 2,
+        Assert.assertEquals("Local registry app instance count not as expected.", 1,
                 locaApplication.getInstances().size());
         Assert.assertNotNull("Did not find remote registry app", remApplication);
-        Assert.assertEquals("Remote registry app instance count not as expected.", 1,
+        Assert.assertEquals("Remote registry app instance count not as expected.", 2,
                 remApplication.getInstances().size());
 
     }
