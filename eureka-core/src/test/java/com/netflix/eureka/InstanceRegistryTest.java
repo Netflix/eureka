@@ -38,8 +38,6 @@ public class InstanceRegistryTest extends AbstractTester {
 
     @Test
     public void testGetAppsDeltaFromAllRemoteRegions() throws Exception {
-        testGetAppsFromAllRemoteRegions(); // to add to registry
-
         registerInstanceLocally(createLocalInstance(LOCAL_REGION_INSTANCE_2_HOSTNAME)); /// local delta
         waitForDeltaToBeRetrieved();
         Applications appDelta = registry.getApplicationDeltasFromMultipleRegions(null);
@@ -75,12 +73,15 @@ public class InstanceRegistryTest extends AbstractTester {
 
     private void waitForDeltaToBeRetrieved() throws InterruptedException {
         int count = 0;
-        System.out.println("Sleeping up to 30 seconds to let the remote registry fetch delta.");
-        while (count++ < 30 && !mockRemoteEurekaServer.isSentDelta()) {
+        System.out.println("Sleeping up to 35 seconds to let the remote registry fetch delta.");
+        while (count++ < 35 && !mockRemoteEurekaServer.isSentDelta()) {
             Thread.sleep(1000);
         }
-        // Wait a second more to be sure the delta was processed
-        Thread.sleep(1000);
+        if (!mockRemoteEurekaServer.isSentDelta()) {
+            System.out.println("Waited for 35 seconds but remote server did not send delta");
+        }
+        // Wait 2 seconds more to be sure the delta was processed
+        Thread.sleep(2000);
     }
 
     @Test
