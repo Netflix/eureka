@@ -33,7 +33,7 @@ public class DiscoveryClientHealthTest extends AbstractDiscoveryClientTester {
         Assert.assertTrue(client instanceof DiscoveryClient);
         DiscoveryClient clientImpl = (DiscoveryClient) client;
 
-        DiscoveryClient.InstanceInfoReplicator instanceInfoReplicator = clientImpl.getInstanceInfoReplicator();
+        InstanceInfoReplicator instanceInfoReplicator = clientImpl.getInstanceInfoReplicator();
         instanceInfoReplicator.run();
 
         Assert.assertEquals("Instance info status not as expected.", InstanceInfo.InstanceStatus.STARTING,
@@ -67,7 +67,7 @@ public class DiscoveryClientHealthTest extends AbstractDiscoveryClientTester {
         Assert.assertTrue(client instanceof DiscoveryClient);
         DiscoveryClient clientImpl = (DiscoveryClient) client;
 
-        DiscoveryClient.InstanceInfoReplicator instanceInfoReplicator = clientImpl.getInstanceInfoReplicator();
+        InstanceInfoReplicator instanceInfoReplicator = clientImpl.getInstanceInfoReplicator();
 
         Assert.assertEquals("Instance info status not as expected.", InstanceInfo.InstanceStatus.STARTING,
                 clientImpl.getInstanceInfo().getStatus());
@@ -95,6 +95,15 @@ public class DiscoveryClientHealthTest extends AbstractDiscoveryClientTester {
 
         Assert.assertTrue("Healthcheck callback not invoked when status is DOWN.", myHealthCheckHandler.isInvoked());
         Assert.assertEquals("Instance info status not as expected post healthcheck.", InstanceInfo.InstanceStatus.UP,
+                clientImpl.getInstanceInfo().getStatus());
+
+        clientImpl.getInstanceInfo().setStatus(InstanceInfo.InstanceStatus.UP);
+        myHealthCheckHandler.reset();
+        myHealthCheckHandler.shouldException = true;
+        instanceInfoReplicator.run();
+
+        Assert.assertTrue("Healthcheck callback not invoked when status is UP.", myHealthCheckHandler.isInvoked());
+        Assert.assertEquals("Instance info status not as expected post healthcheck.", InstanceInfo.InstanceStatus.DOWN,
                 clientImpl.getInstanceInfo().getStatus());
     }
 
@@ -126,6 +135,7 @@ public class DiscoveryClientHealthTest extends AbstractDiscoveryClientTester {
 
         private final InstanceInfo.InstanceStatus health;
         private volatile boolean invoked;
+        volatile boolean shouldException;
 
         private MyHealthCheckHandler(InstanceInfo.InstanceStatus health) {
             this.health = health;
@@ -136,12 +146,16 @@ public class DiscoveryClientHealthTest extends AbstractDiscoveryClientTester {
         }
 
         public void reset() {
+            shouldException = false;
             invoked = false;
         }
 
         @Override
         public InstanceInfo.InstanceStatus getStatus(InstanceInfo.InstanceStatus currentStatus) {
             invoked = true;
+            if (shouldException) {
+                throw new RuntimeException("test induced exception");
+            }
             return health;
         }
     }

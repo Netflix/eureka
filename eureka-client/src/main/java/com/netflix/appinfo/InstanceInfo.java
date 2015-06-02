@@ -759,7 +759,7 @@ public class InstanceInfo {
     @Deprecated
     public void setSID(String sid) {
         this.sid = sid;
-        setIsDirty(true);
+        setIsDirty();
     }
 
     @Deprecated
@@ -982,14 +982,17 @@ public class InstanceInfo {
     /**
      * Set the status for this instance.
      *
-     * @param status
-     *            status for this instance.
+     * @param status status for this instance.
+     * @return the prev status if a different status from the current was set, null otherwise
      */
-    public synchronized void setStatus(InstanceStatus status) {
+    public synchronized InstanceStatus setStatus(InstanceStatus status) {
         if (this.status != status) {
+            InstanceStatus prev = this.status;
             this.status = status;
-            setIsDirty(true);
+            setIsDirty();
+            return prev;
         }
+        return null;
     }
 
     /**
@@ -1028,15 +1031,55 @@ public class InstanceInfo {
     }
 
     /**
+     * @return the lastDirtyTimestamp if is dirty, null otherwise.
+     */
+    public synchronized Long isDirtyWithTime() {
+        if (isInstanceInfoDirty) {
+            return lastDirtyTimestamp;
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * @deprecated use {@link #setIsDirty()} and {@link #unsetIsDirty(long)} to set and unset
+     *
      * Sets the dirty flag so that the instance information can be carried to
      * the discovery server on the next heartbeat.
      *
-     * @param b
-     *            - true if dirty, false otherwise.
+     * @param isDirty true if dirty, false otherwise.
      */
-    public void setIsDirty(boolean b) {
-        isInstanceInfoDirty = b;
-        this.lastDirtyTimestamp = System.currentTimeMillis();
+    @Deprecated
+    public synchronized void setIsDirty(boolean isDirty) {
+        if (isDirty) {
+            setIsDirty();
+        } else {
+            isInstanceInfoDirty = false;
+            // else don't update lastDirtyTimestamp as we are setting isDirty to false
+        }
+    }
+
+    /**
+     * Sets the dirty flag so that the instance information can be carried to
+     * the discovery server on the next heartbeat.
+     */
+    public synchronized void setIsDirty() {
+        isInstanceInfoDirty = true;
+        lastDirtyTimestamp = System.currentTimeMillis();
+    }
+
+
+    /**
+     * Unset the dirty flag iff the unsetDirtyTimestamp matches the lastDirtyTimestamp. No-op if
+     * lastDirtyTimestamp > unsetDirtyTimestamp
+     *
+     * @param unsetDirtyTimestamp the expected lastDirtyTimestamp to unset.
+     */
+    public synchronized void unsetIsDirty(long unsetDirtyTimestamp) {
+        if (lastDirtyTimestamp <= unsetDirtyTimestamp) {
+            isInstanceInfoDirty = false;
+        } else {
+        }
     }
 
     /**
@@ -1123,7 +1166,7 @@ public class InstanceInfo {
     synchronized void registerRuntimeMetadata(
             Map<String, String> runtimeMetadata) {
         metadata.putAll(runtimeMetadata);
-        setIsDirty(true);
+        setIsDirty();
     }
 
     /**

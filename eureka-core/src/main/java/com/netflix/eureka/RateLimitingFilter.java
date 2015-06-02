@@ -28,13 +28,14 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.netflix.appinfo.AbstractEurekaIdentity;
 import com.netflix.appinfo.EurekaClientIdentity;
 import com.netflix.eureka.util.EurekaMonitors;
-import com.netflix.eureka.util.RateLimiter;
+import com.netflix.discovery.util.RateLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,12 +97,12 @@ public class RateLimitingFilter implements Filter {
     /**
      * Includes both full and delta fetches.
      */
-    private static final RateLimiter registryFetchRateLimiter = new RateLimiter();
+    private static final RateLimiter registryFetchRateLimiter = new RateLimiter(TimeUnit.SECONDS);
 
     /**
      * Only full registry fetches.
      */
-    private static final RateLimiter registryFullFetchRateLimiter = new RateLimiter();
+    private static final RateLimiter registryFullFetchRateLimiter = new RateLimiter(TimeUnit.SECONDS);
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {

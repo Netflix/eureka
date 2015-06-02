@@ -485,4 +485,10 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
         return configInstance.getStringProperty(
                 namespace + "escapeCharReplacement", "__").get();
     }
+
+    @Override
+    public boolean shouldOnDemandUpdateStatusChange() {
+        return configInstance.getBooleanProperty(
+                namespace + "shouldOnDemandUpdateStatusChange", true).get();
+    }
 }
