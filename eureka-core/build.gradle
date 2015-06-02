@@ -11,7 +11,7 @@ dependencies {
 
     testCompile 'junit:junit:4.10'
     testCompile 'org.mortbay.jetty:jetty:6.1H.22'
-    testCompile 'org.mockito:mockito-all:1.8.5'
+    testCompile "org.mockito:mockito-core:${mockitoVersion}"
     testRuntime 'org.slf4j:slf4j-simple:1.7.10'
     testCompile project(':eureka-client')
 }
