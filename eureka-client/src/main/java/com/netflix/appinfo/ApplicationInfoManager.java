@@ -118,7 +118,11 @@ public class ApplicationInfoManager {
         InstanceStatus prev = instanceInfo.setStatus(status);
         if (prev != null) {
             for (StatusChangeListener listener : listeners.values()) {
-                listener.notify(new StatusChangeEvent(prev, status));
+                try {
+                    listener.notify(new StatusChangeEvent(prev, status));
+                } catch (Exception e) {
+                    logger.warn("failed to notify listener: {}", listener.getId(), e);
+                }
             }
         }
     }
