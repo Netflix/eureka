@@ -67,7 +67,7 @@ class InstanceInfoReplicator implements Runnable {
     }
 
     public void stop() {
-        scheduler.shutdown();
+        scheduler.shutdownNow();
         started.set(false);
     }
 
