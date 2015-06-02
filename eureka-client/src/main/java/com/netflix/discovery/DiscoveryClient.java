@@ -1758,8 +1758,14 @@ public class DiscoveryClient implements EurekaClient {
     void refreshInstanceInfo() {
         ApplicationInfoManager.getInstance().refreshDataCenterInfoIfRequired();
 
-        final HealthCheckHandler handler = getHealthCheckHandler();
-        InstanceStatus status = handler.getStatus(instanceInfo.getStatus());
+        InstanceStatus status;
+        try {
+            status = getHealthCheckHandler().getStatus(instanceInfo.getStatus());
+        } catch (Exception e) {
+            logger.warn("Exception from healthcheckHandler.getStatus, setting status to DOWN", e);
+            status = InstanceStatus.DOWN;
+        }
+
         if (null != status) {
             instanceInfo.setStatus(status);
         }
