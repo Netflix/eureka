@@ -11,7 +11,6 @@ import java.util.regex.Pattern;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
-import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.EurekaHttpClient.HttpResponse;
 import com.netflix.discovery.shared.EurekaJerseyClient;
 import com.netflix.discovery.shared.EurekaJerseyClient.JerseyClient;
@@ -53,7 +52,6 @@ public class EurekaClientServerRestIntegrationTest {
 
     private static final Pattern WAR_PATTERN = Pattern.compile("eureka-server.*.war");
 
-    private static EurekaClientConfig eurekaClientConfig;
     private static EurekaServerConfig eurekaServerConfig;
 
     private static Server server;

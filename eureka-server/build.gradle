@@ -25,3 +25,6 @@ task copyLibs(type: Copy) {
 war {
     from (project(':eureka-resources').file('build/resources/main'))
 }
+
+// Integration test loads eureka war, so it must be ready prior to running tests
+test.dependsOn war
