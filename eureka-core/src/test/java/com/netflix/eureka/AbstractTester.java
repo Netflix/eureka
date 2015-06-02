@@ -38,6 +38,7 @@ public class AbstractTester {
     public static final String REMOTE_REGION_NAME = "us-east-1";
     public static final String REMOTE_REGION_APP_NAME = "MYAPP";
     public static final String REMOTE_REGION_INSTANCE_1_HOSTNAME = "blah";
+    public static final String REMOTE_REGION_INSTANCE_2_HOSTNAME = "blah2";
     public static final String LOCAL_REGION_APP_NAME = "MYLOCAPP";
     public static final String LOCAL_REGION_INSTANCE_1_HOSTNAME = "blahloc";
     public static final String LOCAL_REGION_INSTANCE_2_HOSTNAME = "blahloc2";

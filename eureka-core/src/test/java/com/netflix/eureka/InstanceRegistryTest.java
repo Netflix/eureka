@@ -97,7 +97,7 @@ public class InstanceRegistryTest extends AbstractTester {
 
     @Test
     public void testGetAppsFromBothRegions() throws Exception {
-        registerInstanceLocally(createRemoteInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME));
+        registerInstanceLocally(createLocalInstance(LOCAL_REGION_INSTANCE_2_HOSTNAME));
         registerInstanceLocally(createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME));
 
         Applications apps = registry.getApplicationsFromAllRemoteRegions();
@@ -114,10 +114,10 @@ public class InstanceRegistryTest extends AbstractTester {
             }
         }
         Assert.assertNotNull("Did not find local registry app", locaApplication);
-        Assert.assertEquals("Local registry app instance count not as expected.", 1,
+        Assert.assertEquals("Local registry app instance count not as expected.", 2,
                 locaApplication.getInstances().size());
         Assert.assertNotNull("Did not find remote registry app", remApplication);
-        Assert.assertEquals("Remote registry app instance count not as expected.", 2,
+        Assert.assertEquals("Remote registry app instance count not as expected.", 1,
                 remApplication.getInstances().size());
 
     }
