@@ -218,10 +218,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             recentlyChangedQueue.add(new RecentlyChangedItem(lease));
             r.setLastUpdatedTimestamp();
             invalidateCache(r.getAppName(), r.getVIPAddress(), r.getSecureVipAddress());
-            logger.info("Registered instance id {} with status {}", r.getId(),
-                    r.getStatus().toString());
-            logger.debug("DS: Registry: registered " + r.getAppName() + " - "
-                    + r.getId());
+            logger.info("Registered instance {}/{} with status {} (replication={})",
+                    r.getAppName(), r.getId(), r.getStatus(), isReplication);
         } finally {
             read.unlock();
         }
@@ -283,8 +281,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     svip = instanceInfo.getSecureVipAddress();
                 }
                 invalidateCache(appName, vip, svip);
-                logger.debug("DS: Registry: canceled lease: " + appName + " - "
-                        + id);
+                logger.info("Cancelled instance {}/{} (replication={})", appName, id, isReplication);
                 return true;
             }
         } finally {
@@ -1134,7 +1131,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 EUREKA_CONFIG.getEvictionIntervalTimerInMs());
     }
 
-    @com.netflix.servo.annotations.Monitor(name = "numOfElementsinInstanceCache", description = "Number of elements in the instance Cache", type = DataSourceType.GAUGE)
+    @com.netflix.servo.annotations.Monitor(name = "numOfElementsinInstanceCache", description = "Number of overrides in the instance Cache", type = DataSourceType.GAUGE)
     public long getNumberofElementsininstanceCache() {
         return overriddenInstanceStatusMap.size();
     }

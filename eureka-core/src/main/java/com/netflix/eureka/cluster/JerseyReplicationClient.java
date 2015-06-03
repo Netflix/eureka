@@ -21,7 +21,6 @@ import com.netflix.eureka.resources.ASGResource.ASGStatus;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.WebResource.Builder;
-import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +64,7 @@ public class JerseyReplicationClient extends JerseyEurekaHttpClient implements H
                         config.getPeerNodeConnectionIdleTimeoutSeconds());
             }
             jerseyApacheClient = jerseyClient.getClient();
-            jerseyApacheClient.addFilter(new GZIPContentEncodingFilter(config.shouldEnableReplicatedRequestCompression()));
+            jerseyApacheClient.addFilter(new DynamicGZIPContentEncodingFilter(config));
         } catch (Throwable e) {
             throw new RuntimeException("Cannot Create new Replica Node :" + name, e);
         }
