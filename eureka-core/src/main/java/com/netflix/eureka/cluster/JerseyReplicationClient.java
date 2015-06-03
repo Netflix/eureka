@@ -1,11 +1,14 @@
 package com.netflix.eureka.cluster;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response.Status;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
 
+import com.netflix.appinfo.InstanceInfo;
+import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.EurekaIdentityHeaderFilter;
 import com.netflix.discovery.shared.EurekaJerseyClient;
 import com.netflix.discovery.shared.EurekaJerseyClient.JerseyClient;
@@ -17,6 +20,7 @@ import com.netflix.eureka.cluster.protocol.ReplicationListResponse;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.api.client.WebResource.Builder;
 import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import org.slf4j.Logger;
@@ -61,7 +65,7 @@ public class JerseyReplicationClient extends JerseyEurekaHttpClient implements H
                         config.getPeerNodeConnectionIdleTimeoutSeconds());
             }
             jerseyApacheClient = jerseyClient.getClient();
-            jerseyApacheClient.addFilter(new GZIPContentEncodingFilter(true));
+            jerseyApacheClient.addFilter(new GZIPContentEncodingFilter(config.shouldEnableReplicatedRequestCompression()));
         } catch (Throwable e) {
             throw new RuntimeException("Cannot Create new Replica Node :" + name, e);
         }
@@ -82,8 +86,42 @@ public class JerseyReplicationClient extends JerseyEurekaHttpClient implements H
     }
 
     @Override
-    protected void addExtraHeaders(WebResource webResource) {
+    protected void addExtraHeaders(Builder webResource) {
         webResource.header(PeerEurekaNode.HEADER_REPLICATION, "true");
+    }
+
+    /**
+     * Compared to regular heartbeat, in the replication channel the server may return a more up to date
+     * instance copy.
+     */
+    @Override
+    public HttpResponse<InstanceInfo> sendHeartBeat(String appName, String id, InstanceInfo info, InstanceStatus overriddenStatus) {
+        String urlPath = "apps/" + appName + '/' + id;
+        ClientResponse response = null;
+        try {
+            WebResource webResource = getJerseyApacheClient().resource(serviceUrl)
+                    .path(urlPath)
+                    .queryParam("status", info.getStatus().toString())
+                    .queryParam("lastDirtyTimestamp", info.getLastDirtyTimestamp().toString());
+            if (overriddenStatus != null) {
+                webResource = webResource.queryParam("overriddenstatus", overriddenStatus.name());
+            }
+            Builder requestBuilder = webResource.getRequestBuilder();
+            addExtraHeaders(requestBuilder);
+            response = requestBuilder.accept(MediaType.APPLICATION_JSON_TYPE).put(ClientResponse.class);
+            InstanceInfo infoFromPeer = null;
+            if (response.getStatus() == Status.OK.getStatusCode() && response.hasEntity()) {
+                infoFromPeer = response.getEntity(InstanceInfo.class);
+            }
+            return HttpResponse.responseWith(response.getStatus(), infoFromPeer);
+        } finally {
+            if (logger.isDebugEnabled()) {
+                logger.debug("[heartbeat] Jersey HTTP PUT {}; statusCode={}", urlPath, response == null ? "N/A" : response.getStatus());
+            }
+            if (response != null) {
+                response.close();
+            }
+        }
     }
 
     @Override

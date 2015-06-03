@@ -124,7 +124,7 @@ public class EurekaClientServerRestIntegrationTest {
         jerseyEurekaClient.register(instanceInfo);
 
         // Now send heartbeat
-        HttpResponse<InstanceInfo> heartBeatResponse = jerseyEurekaClient.sendHeartBeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null);
+        HttpResponse<InstanceInfo> heartBeatResponse = jerseyReplicationClient.sendHeartBeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null);
 
         assertThat(heartBeatResponse.getStatusCode(), is(equalTo(200)));
         assertThat(heartBeatResponse.getEntity(), is(nullValue()));
@@ -135,7 +135,7 @@ public class EurekaClientServerRestIntegrationTest {
         InstanceInfo instanceInfo = instanceInfoIt.next();
 
         // Now send heartbeat
-        HttpResponse<InstanceInfo> heartBeatResponse = jerseyEurekaClient.sendHeartBeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null);
+        HttpResponse<InstanceInfo> heartBeatResponse = jerseyReplicationClient.sendHeartBeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null);
 
         assertThat(heartBeatResponse.getStatusCode(), is(equalTo(404)));
     }

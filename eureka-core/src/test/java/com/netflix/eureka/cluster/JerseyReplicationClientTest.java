@@ -17,13 +17,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockserver.client.server.MockServerClient;
 import org.mockserver.junit.MockServerRule;
-import org.mockserver.model.Header;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
+import static org.mockserver.model.Header.header;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
 
@@ -56,6 +56,7 @@ public class JerseyReplicationClientTest {
         serverMockClient.when(
                 request()
                         .withMethod("POST")
+                        .withHeader(header(PeerEurekaNode.HEADER_REPLICATION, "true"))
                         .withPath("/eureka/v2/apps/" + instanceInfo.getAppName())
         ).respond(
                 response().withStatusCode(200)
@@ -70,6 +71,7 @@ public class JerseyReplicationClientTest {
         serverMockClient.when(
                 request()
                         .withMethod("DELETE")
+                        .withHeader(header(PeerEurekaNode.HEADER_REPLICATION, "true"))
                         .withPath("/eureka/v2/apps/" + instanceInfo.getAppName() + '/' + instanceInfo.getId())
         ).respond(
                 response().withStatusCode(204)
@@ -84,6 +86,7 @@ public class JerseyReplicationClientTest {
         serverMockClient.when(
                 request()
                         .withMethod("PUT")
+                        .withHeader(header(PeerEurekaNode.HEADER_REPLICATION, "true"))
                         .withPath("/eureka/v2/apps/" + instanceInfo.getAppName() + '/' + instanceInfo.getId())
         ).respond(
                 response().withStatusCode(200)
@@ -103,12 +106,13 @@ public class JerseyReplicationClientTest {
         serverMockClient.when(
                 request()
                         .withMethod("PUT")
+                        .withHeader(header(PeerEurekaNode.HEADER_REPLICATION, "true"))
                         .withPath("/eureka/v2/apps/" + this.instanceInfo.getAppName() + '/' + this.instanceInfo.getId())
         ).respond(
                 response()
                         .withStatusCode(200)
-                        .withHeader(Header.header("Content-Type", MediaType.APPLICATION_JSON))
-                        .withHeader(Header.header("Content-Encoding", "gzip"))
+                        .withHeader(header("Content-Type", MediaType.APPLICATION_JSON))
+                        .withHeader(header("Content-Encoding", "gzip"))
                         .withBody(responseBody)
         );
 
@@ -122,6 +126,7 @@ public class JerseyReplicationClientTest {
         serverMockClient.when(
                 request()
                         .withMethod("PUT")
+                        .withHeader(header(PeerEurekaNode.HEADER_REPLICATION, "true"))
                         .withPath("/eureka/v2/asg/" + instanceInfo.getASGName() + "/status")
         ).respond(
                 response().withStatusCode(200)
@@ -136,6 +141,7 @@ public class JerseyReplicationClientTest {
         serverMockClient.when(
                 request()
                         .withMethod("PUT")
+                        .withHeader(header(PeerEurekaNode.HEADER_REPLICATION, "true"))
                         .withPath("/eureka/v2/apps/" + instanceInfo.getAppName() + '/' + instanceInfo.getId() + "/status")
         ).respond(
                 response().withStatusCode(200)
@@ -150,6 +156,7 @@ public class JerseyReplicationClientTest {
         serverMockClient.when(
                 request()
                         .withMethod("DELETE")
+                        .withHeader(header(PeerEurekaNode.HEADER_REPLICATION, "true"))
                         .withPath("/eureka/v2/apps/" + instanceInfo.getAppName() + '/' + instanceInfo.getId() + "/status")
         ).respond(
                 response().withStatusCode(204)
