@@ -1,0 +1,5 @@
+dependencies {
+    compile project(':eureka-client')
+
+    compile "junit:junit:${junit_version}"
+}

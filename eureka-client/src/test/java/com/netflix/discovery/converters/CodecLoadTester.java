@@ -12,6 +12,7 @@ import java.util.List;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.discovery.util.InstanceInfoGenerator;
 
 /**
  * @author Tomasz Bak
@@ -26,7 +27,8 @@ public class CodecLoadTester {
     private final EurekaJacksonCodec jacksonCodec = new EurekaJacksonCodec();
 
     public CodecLoadTester(int instanceCount, int appCount) {
-        Iterator<InstanceInfo> instanceIt = new InstanceInfoGenerator(instanceCount, appCount, true).serviceIterator();
+        Iterator<InstanceInfo> instanceIt = InstanceInfoGenerator.newBuilder(instanceCount, appCount)
+                .withMetaData(true).build().serviceIterator();
         int appIdx = 0;
         while (instanceIt.hasNext()) {
             InstanceInfo next = instanceIt.next();
@@ -110,7 +112,7 @@ public class CodecLoadTester {
                 jacksonCodec.writeTo(object, captureStream);
                 byte[] bytes = captureStream.toByteArray();
                 InputStream source = new ByteArrayInputStream(bytes);
-                jacksonCodec.readFrom(object.getClass(), source);
+                jacksonCodec.readValue(object.getClass(), source);
             } catch (IOException e) {
                 throw new RuntimeException("unexpected", e);
             }

@@ -37,7 +37,7 @@
 	</ul>
     <div id="tabs-1">
       <%
-      PeerAwareInstanceRegistry registery = PeerAwareInstanceRegistry.getInstance();
+      PeerAwareInstanceRegistryImpl registery = PeerAwareInstanceRegistryImpl.getInstance();
       List<Pair<Long, String>> list = registery.getLastNCanceledInstances();
       out.print("<table id=\'lastNCanceled\' class=\"stripeable\">");
       out.print("<tr><th>Timestamp</th><th>Lease</th></tr>");

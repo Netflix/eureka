@@ -28,7 +28,7 @@ import javax.ws.rs.core.Response.Status;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.eureka.CurrentRequestVersion;
-import com.netflix.eureka.PeerAwareInstanceRegistry;
+import com.netflix.eureka.PeerAwareInstanceRegistryImpl;
 import com.netflix.eureka.Version;
 import com.netflix.eureka.cluster.PeerEurekaNode;
 import com.netflix.eureka.resources.ResponseCache.Key;
@@ -49,7 +49,7 @@ public class ApplicationResource {
     private static final Logger logger = LoggerFactory
             .getLogger(ApplicationResource.class);
 
-    private final PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry
+    private final PeerAwareInstanceRegistryImpl registry = PeerAwareInstanceRegistryImpl
             .getInstance();
 
     String appName;
@@ -72,7 +72,7 @@ public class ApplicationResource {
     @GET
     public Response getApplication(@PathParam("version") String version,
                                    @HeaderParam("Accept") final String acceptHeader) {
-        if (!PeerAwareInstanceRegistry.getInstance().shouldAllowAccess(false)) {
+        if (!PeerAwareInstanceRegistryImpl.getInstance().shouldAllowAccess(false)) {
             return Response.status(Status.FORBIDDEN).build();
         }
 

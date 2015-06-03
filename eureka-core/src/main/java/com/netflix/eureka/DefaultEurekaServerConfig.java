@@ -208,6 +208,12 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     }
 
     @Override
+    public boolean shouldEnableReplicatedRequestCompression() {
+        return configInstance.getBooleanProperty(
+                namespace + "enableReplicatedRequestCompression", false).get();
+    }
+
+    @Override
     public int getNumberOfReplicationRetries() {
         return configInstance.getIntProperty(
                 namespace + "numberOfReplicationRetries", 5).get();

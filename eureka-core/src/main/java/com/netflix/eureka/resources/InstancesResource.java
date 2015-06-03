@@ -26,8 +26,8 @@ import java.util.List;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.eureka.CurrentRequestVersion;
-import com.netflix.eureka.InstanceRegistry;
-import com.netflix.eureka.PeerAwareInstanceRegistry;
+import com.netflix.eureka.AbstractInstanceRegistry;
+import com.netflix.eureka.PeerAwareInstanceRegistryImpl;
 import com.netflix.eureka.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +44,7 @@ public class InstancesResource {
     private static final Logger logger = LoggerFactory
             .getLogger(InstancesResource.class);
 
-    private final InstanceRegistry registry = PeerAwareInstanceRegistry
+    private final AbstractInstanceRegistry registry = PeerAwareInstanceRegistryImpl
             .getInstance();
 
     @GET

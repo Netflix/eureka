@@ -26,7 +26,7 @@ import java.util.Date;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.shared.Application;
-import com.netflix.eureka.PeerAwareInstanceRegistry;
+import com.netflix.eureka.PeerAwareInstanceRegistryImpl;
 import com.netflix.eureka.cluster.PeerEurekaNode;
 import com.netflix.eureka.util.StatusInfo;
 import com.netflix.eureka.util.StatusInfo.Builder;
@@ -45,7 +45,7 @@ public class StatusResource {
             .getLogger(StatusResource.class);
     private static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss Z";
 
-    private final PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry
+    private final PeerAwareInstanceRegistryImpl registry = PeerAwareInstanceRegistryImpl
             .getInstance();
 
     @GET
@@ -82,7 +82,7 @@ public class StatusResource {
 
         try {
             String givenHostName = new URI(url).getHost();
-            Application app = PeerAwareInstanceRegistry.getInstance()
+            Application app = PeerAwareInstanceRegistryImpl.getInstance()
                     .getApplication(myAppName, false);
             for (InstanceInfo info : app.getInstances()) {
                 if (info.getHostName().equals(givenHostName)) {

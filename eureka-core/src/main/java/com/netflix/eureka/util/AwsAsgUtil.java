@@ -42,9 +42,10 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.eureka.AbstractInstanceRegistry;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfigurationManager;
-import com.netflix.eureka.PeerAwareInstanceRegistry;
+import com.netflix.eureka.PeerAwareInstanceRegistryImpl;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
@@ -291,7 +292,7 @@ public class AwsAsgUtil {
      * Get the names of all the ASG to which query AWS for.
      *
      * <p>
-     * The names are obtained from the {@link com.netflix.eureka.InstanceRegistry} which is then
+     * The names are obtained from the {@link AbstractInstanceRegistry} which is then
      * used for querying the AWS.
      * </p>
      *
@@ -299,7 +300,7 @@ public class AwsAsgUtil {
      */
     private Set<String> getASGNames() {
         Set<String> asgNames = new HashSet<String>();
-        Applications apps = PeerAwareInstanceRegistry.getInstance()
+        Applications apps = PeerAwareInstanceRegistryImpl.getInstance()
                 .getApplications(false);
         for (Application app : apps.getRegisteredApplications()) {
             for (InstanceInfo instanceInfo : app.getInstances()) {
