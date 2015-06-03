@@ -38,26 +38,24 @@ public class InstanceRegistryTest extends AbstractTester {
 
     @Test
     public void testGetAppsDeltaFromAllRemoteRegions() throws Exception {
-        testGetAppsFromAllRemoteRegions(); // to add to registry
-
         registerInstanceLocally(createLocalInstance(LOCAL_REGION_INSTANCE_2_HOSTNAME)); /// local delta
         waitForDeltaToBeRetrieved();
         Applications appDelta = registry.getApplicationDeltasFromMultipleRegions(null);
         List<Application> registeredApplications = appDelta.getRegisteredApplications();
         Assert.assertEquals("Apps size from remote regions do not match", 2, registeredApplications.size());
-        Application locaApplication = null;
+        Application localApplication = null;
         Application remApplication = null;
         for (Application registeredApplication : registeredApplications) {
             if (registeredApplication.getName().equalsIgnoreCase(LOCAL_REGION_APP_NAME)) {
-                locaApplication = registeredApplication;
+                localApplication = registeredApplication;
             }
             if (registeredApplication.getName().equalsIgnoreCase(REMOTE_REGION_APP_NAME)) {
                 remApplication = registeredApplication;
             }
         }
-        Assert.assertNotNull("Did not find local registry app in delta.", locaApplication);
+        Assert.assertNotNull("Did not find local registry app in delta.", localApplication);
         Assert.assertEquals("Local registry app instance count in delta not as expected.", 1,
-                locaApplication.getInstances().size());
+                localApplication.getInstances().size());
         Assert.assertNotNull("Did not find remote registry app in delta", remApplication);
         Assert.assertEquals("Remote registry app instance count  in delta not as expected.", 1,
                 remApplication.getInstances().size());
@@ -75,12 +73,15 @@ public class InstanceRegistryTest extends AbstractTester {
 
     private void waitForDeltaToBeRetrieved() throws InterruptedException {
         int count = 0;
-        System.out.println("Sleeping up to 30 seconds to let the remote registry fetch delta.");
-        while (count++ < 30 && !mockRemoteEurekaServer.isSentDelta()) {
+        System.out.println("Sleeping up to 35 seconds to let the remote registry fetch delta.");
+        while (count++ < 35 && !mockRemoteEurekaServer.isSentDelta()) {
             Thread.sleep(1000);
         }
-        // Wait a second more to be sure the delta was processed
-        Thread.sleep(1000);
+        if (!mockRemoteEurekaServer.isSentDelta()) {
+            System.out.println("Waited for 35 seconds but remote server did not send delta");
+        }
+        // Wait 2 seconds more to be sure the delta was processed
+        Thread.sleep(2000);
     }
 
     @Test
@@ -97,7 +98,7 @@ public class InstanceRegistryTest extends AbstractTester {
 
     @Test
     public void testGetAppsFromBothRegions() throws Exception {
-        registerInstanceLocally(createRemoteInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME));
+        registerInstanceLocally(createRemoteInstance(LOCAL_REGION_INSTANCE_2_HOSTNAME));
         registerInstanceLocally(createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME));
 
         Applications apps = registry.getApplicationsFromAllRemoteRegions();

@@ -146,17 +146,16 @@ public class DiscoveryClient implements EurekaClient {
     private volatile HealthCheckHandler healthCheckHandler;
     private final Provider<HealthCheckHandler> healthCheckHandlerProvider;
     private final Provider<HealthCheckCallback> healthCheckCallbackProvider;
-    private volatile AtomicReference<List<String>> eurekaServiceUrls = new AtomicReference<List<String>>();
-    private volatile AtomicReference<Applications> localRegionApps = new AtomicReference<Applications>();
+    private final AtomicReference<List<String>> eurekaServiceUrls = new AtomicReference<List<String>>();
+    private final AtomicReference<Applications> localRegionApps = new AtomicReference<Applications>();
     private volatile Map<String, Applications> remoteRegionVsApps = new ConcurrentHashMap<String, Applications>();
     private final Lock fetchRegistryUpdateLock = new ReentrantLock();
     // monotonically increasing generation counter to ensure stale threads do not reset registry to an older version
-    private volatile AtomicLong fetchRegistryGeneration;
+    private final AtomicLong fetchRegistryGeneration;
 
-    private InstanceInfo instanceInfo;
+    private final InstanceInfo instanceInfo;
     private String appPathIdentifier;
     private boolean isRegisteredWithDiscovery = false;
-    private String discoveryServerAMIId;
     private JerseyClient discoveryJerseyClient;
     private AtomicReference<String> lastQueryRedirect = new AtomicReference<String>();
     private AtomicReference<String> lastRegisterRedirect = new AtomicReference<String>();
@@ -165,13 +164,21 @@ public class DiscoveryClient implements EurekaClient {
     private final AtomicReference<String> remoteRegionsToFetch;
     private final InstanceRegionChecker instanceRegionChecker;
     private volatile InstanceInfo.InstanceStatus lastRemoteInstanceStatus = InstanceInfo.InstanceStatus.UNKNOWN;
-    private InstanceInfoReplicator instanceInfoReplicator;
+
+    private final ApplicationInfoManager.StatusChangeListener statusChangeListener;
 
     private enum Action {
         Register, Cancel, Renew, Refresh, Refresh_Delta
     }
 
+    /**
+     * A scheduler to be used for the following 3 tasks:
+     * - updating service urls
+     * - scheduling a TimedSuperVisorTask
+     */
     private final ScheduledExecutorService scheduler;
+
+    private InstanceInfoReplicator instanceInfoReplicator;
 
     // additional executors for executing hearbeat and cacheRefresh tasks
     private final ThreadPoolExecutor heartbeatExecutor;
@@ -233,7 +240,7 @@ public class DiscoveryClient implements EurekaClient {
         this.backupRegistryProvider = backupRegistryProvider;
 
         try {
-            scheduler = Executors.newScheduledThreadPool(4,
+            scheduler = Executors.newScheduledThreadPool(3,
                     new ThreadFactoryBuilder()
                             .setNameFormat("DiscoveryClient-%d")
                             .setDaemon(true)
@@ -256,10 +263,12 @@ public class DiscoveryClient implements EurekaClient {
 
             fetchRegistryGeneration = new AtomicLong(0);
 
+            instanceInfo = myInfo;
             if (myInfo != null) {
-                instanceInfo = myInfo;
                 appPathIdentifier = instanceInfo.getAppName() + "/"
                         + instanceInfo.getId();
+            } else {
+                logger.warn("Setting instanceInfo to a passed in null value");
             }
 
             if (eurekaServiceUrls.get().get(0).startsWith("https://") &&
@@ -320,6 +329,24 @@ public class DiscoveryClient implements EurekaClient {
         if (clientConfig.shouldFetchRegistry() && !fetchRegistry(false)) {
             fetchRegistryFromBackup();
         }
+
+        statusChangeListener = new ApplicationInfoManager.StatusChangeListener() {
+            @Override
+            public String getId() {
+                return "statusChangeListener";
+            }
+
+            @Override
+            public void notify(StatusChangeEvent statusChangeEvent) {
+                logger.info("Saw local status change event {}", statusChangeEvent);
+                instanceInfoReplicator.onDemandUpdate();
+            }
+        };
+
+        if (clientConfig.shouldOnDemandUpdateStatusChange()) {
+            ApplicationInfoManager.getInstance().registerStatusChangeListener(statusChangeListener);
+        }
+
         initScheduledTasks();
         try {
             Monitors.registerObject(this);
@@ -606,22 +633,49 @@ public class DiscoveryClient implements EurekaClient {
     /**
      * Register with the eureka service by making the appropriate REST call.
      */
-    void register() {
+    void register() throws Throwable {
         logger.info(PREFIX + appPathIdentifier + ": registering service...");
         ClientResponse response = null;
         try {
             response = makeRemoteCall(Action.Register);
             isRegisteredWithDiscovery = true;
-            logger.info(PREFIX + appPathIdentifier + " - registration status: "
-                    + (response != null ? response.getStatus() : "not sent"));
+            logger.info("{} - registration status: {}", PREFIX + appPathIdentifier,
+                    (response != null ? response.getStatus() : "not sent"));
         } catch (Throwable e) {
-            logger.error(PREFIX + appPathIdentifier + " - registration failed"
-                    + e.getMessage(), e);
+            logger.warn("{} - registration failed {}", PREFIX + appPathIdentifier, e.getMessage(), e);
+            throw e;
         } finally {
             if (response != null) {
                 response.close();
             }
         }
+    }
+
+    /**
+     * Renew with the eureka service by making the appropriate REST call
+     */
+    void renew() {
+        ClientResponse response = null;
+        try {
+            response = makeRemoteCall(Action.Renew);
+            logger.debug("{} - Heartbeat status: {}", PREFIX + appPathIdentifier,
+                    (response != null ? response.getStatus() : "not sent"));
+            if (response == null) {
+                return;
+            }
+            if (response.getStatus() == 404) {
+                REREGISTER_COUNTER.increment();
+                logger.info("{} - Re-registering apps/{}", PREFIX + appPathIdentifier, instanceInfo.getAppName());
+                register();
+            }
+        } catch (Throwable e) {
+            logger.error("{} - was unable to send heartbeat!", PREFIX + appPathIdentifier, e);
+        } finally {
+            if (response != null) {
+                response.close();
+            }
+        }
+
     }
 
     /**
@@ -723,6 +777,7 @@ public class DiscoveryClient implements EurekaClient {
     @PreDestroy
     @Override
     public void shutdown() {
+        ApplicationInfoManager.getInstance().unregisterStatusChangeListener(statusChangeListener.getId());
         cancelScheduledTasks();
 
         // If APPINFO was registered
@@ -1372,18 +1427,23 @@ public class DiscoveryClient implements EurekaClient {
                     ),
                     renewalIntervalInSecs, TimeUnit.SECONDS);
 
-            // InstanceInfo replication timer
-            instanceInfoReplicator = new InstanceInfoReplicator();
-            scheduler.scheduleWithFixedDelay(instanceInfoReplicator,
-                    clientConfig.getInitialInstanceInfoReplicationIntervalSeconds(),
-                    clientConfig.getInstanceInfoReplicationIntervalSeconds(), TimeUnit.SECONDS);
+            // InstanceInfo replicator
+            instanceInfoReplicator = new InstanceInfoReplicator(
+                    this,
+                    instanceInfo,
+                    clientConfig.getInstanceInfoReplicationIntervalSeconds(),
+                    2); // burstSize
 
+            instanceInfoReplicator.start(clientConfig.getInitialInstanceInfoReplicationIntervalSeconds());
         } else {
             logger.info("Not registering with Eureka server per configuration");
         }
     }
 
     private void cancelScheduledTasks() {
+        if (instanceInfoReplicator != null) {
+            instanceInfoReplicator.stop();
+        }
         heartbeatExecutor.shutdownNow();
         cacheRefreshExecutor.shutdownNow();
         scheduler.shutdownNow();
@@ -1692,72 +1752,32 @@ public class DiscoveryClient implements EurekaClient {
     }
 
     /**
-     * The heartbeat task that renews the lease in the given intervals.
-     *
+     * Refresh the current local instanceInfo. Note that after a valid refresh where changes are observed, the
+     * isDirty flag on the instanceInfo is set to true
      */
-    private class HeartbeatThread implements Runnable {
+    void refreshInstanceInfo() {
+        ApplicationInfoManager.getInstance().refreshDataCenterInfoIfRequired();
 
-        public void run() {
-            ClientResponse response = null;
-            try {
-                response = makeRemoteCall(Action.Renew);
-                logger.debug(PREFIX
-                        + appPathIdentifier
-                        + " - Heartbeat status: "
-                        + (response != null ? response.getStatus() : "not sent"));
-                if (response == null) {
-                    return;
-                }
-                if (response.getStatus() == 404) {
-                    REREGISTER_COUNTER.increment();
-                    logger.info(PREFIX + appPathIdentifier
-                            + " - Re-registering " + "apps/"
-                            + instanceInfo.getAppName());
-                    register();
-                }
-            } catch (Throwable e) {
-                logger.error(PREFIX + appPathIdentifier
-                        + " - was unable to send heartbeat!", e);
-            } finally {
-                if (response != null) {
-                    response.close();
-                }
-            }
+        InstanceStatus status;
+        try {
+            status = getHealthCheckHandler().getStatus(instanceInfo.getStatus());
+        } catch (Exception e) {
+            logger.warn("Exception from healthcheckHandler.getStatus, setting status to DOWN", e);
+            status = InstanceStatus.DOWN;
+        }
+
+        if (null != status) {
+            instanceInfo.setStatus(status);
         }
     }
 
     /**
-     * The instance info replicator thread that replicates instance info data to
-     * the eureka server at specified intervals.
-     *
-     */
-    @VisibleForTesting
-    class InstanceInfoReplicator extends TimerTask {
+     * The heartbeat task that renews the lease in the given intervals.
+`     */
+    private class HeartbeatThread implements Runnable {
 
         public void run() {
-            try {
-                // TODO: Move the below code to use the InstanceInfoListener
-                // Refresh the amazon info including public IP if it has changed
-                ApplicationInfoManager.getInstance()
-                        .refreshDataCenterInfoIfRequired();
-
-                final HealthCheckHandler handler = getHealthCheckHandler();
-                InstanceStatus status = handler.getStatus(instanceInfo.getStatus());
-                if (null != status) {
-                    instanceInfo.setStatus(status);
-                }
-
-                if (instanceInfo.isDirty()) {
-                    logger.info(PREFIX + appPathIdentifier
-                            + " - retransmit instance info with status "
-                            + instanceInfo.getStatus().toString());
-                    // Simply register again
-                    register();
-                    instanceInfo.setIsDirty(false);
-                }
-            } catch (Throwable t) {
-                logger.error("There was a problem with the instance info replicator :", t);
-            }
+            renew();
         }
     }
 

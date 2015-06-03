@@ -18,9 +18,11 @@ package com.netflix.appinfo;
 
 import javax.inject.Inject;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
+import com.netflix.discovery.StatusChangeEvent;
 import com.netflix.governator.guice.lazy.FineGrainedLazySingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,13 +52,17 @@ public class ApplicationInfoManager {
     private InstanceInfo instanceInfo;
     private EurekaInstanceConfig config;
 
+    private Map<String, StatusChangeListener> listeners;
+
     private ApplicationInfoManager() {
+        listeners = new ConcurrentHashMap<String, StatusChangeListener>();
     }
 
     @Inject
     ApplicationInfoManager(EurekaInstanceConfig config, InstanceInfo instanceInfo) {
         this.config = config;
         this.instanceInfo = instanceInfo;
+        this.listeners = new ConcurrentHashMap<String, StatusChangeListener>();
 
         // Hack to allow for getInstance() to use the DI'd ApplicationInfoManager
         instance = this;
@@ -103,13 +109,30 @@ public class ApplicationInfoManager {
 
     /**
      * Set the status of this instance. Application can use this to indicate
-     * whether it is ready to receive traffic.
+     * whether it is ready to receive traffic. Setting the status here also notifies all registered listeners
+     * of a status change event.
      *
-     * @param status
-     *            Status of the instance
+     * @param status Status of the instance
      */
-    public void setInstanceStatus(InstanceStatus status) {
-        instanceInfo.setStatus(status);
+    public synchronized void setInstanceStatus(InstanceStatus status) {
+        InstanceStatus prev = instanceInfo.setStatus(status);
+        if (prev != null) {
+            for (StatusChangeListener listener : listeners.values()) {
+                try {
+                    listener.notify(new StatusChangeEvent(prev, status));
+                } catch (Exception e) {
+                    logger.warn("failed to notify listener: {}", listener.getId(), e);
+                }
+            }
+        }
+    }
+
+    public void registerStatusChangeListener(StatusChangeListener listener) {
+        listeners.put(listener.getId(), listener);
+    }
+
+    public void unregisterStatusChangeListener(String listenerId) {
+        listeners.remove(listenerId);
     }
 
     /**
@@ -127,7 +150,12 @@ public class ApplicationInfoManager {
                     instanceInfo);
             builder.setHostName(newHostname).setDataCenterInfo(
                     config.getDataCenterInfo());
-            instanceInfo.setIsDirty(true);
+            instanceInfo.setIsDirty();
         }
+    }
+
+    public static interface StatusChangeListener {
+        String getId();
+        void notify(StatusChangeEvent statusChangeEvent);
     }
 }

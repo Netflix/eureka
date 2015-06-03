@@ -670,6 +670,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     Applications remoteApps = remoteRegistry.getApplications();
                     for (Application application : remoteApps.getRegisteredApplications()) {
                         if (shouldFetchFromRemoteRegistry(application.getName(), remoteRegion)) {
+                            logger.info("Application {}  fetched from the remote region {}",
+                                    application.getName(), remoteRegion);
+
                             Application appInstanceTillNow = apps.getRegisteredApplications(application.getName());
                             if (appInstanceTillNow == null) {
                                 appInstanceTillNow = new Application(application.getName());
@@ -679,9 +682,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                                 appInstanceTillNow.addInstance(instanceInfo);
                             }
                         } else {
-                            logger.info("Application {} not fetched from the remote region {} as there exists a "
-                                            + "whitelist and this app is not in the whitelist.", application.getName(),
-                                    remoteRegion);
+                            logger.debug("Application {} not fetched from the remote region {} as there exists a "
+                                            + "whitelist and this app is not in the whitelist.",
+                                    application.getName(), remoteRegion);
                         }
                     }
                 } else {
@@ -1278,5 +1281,4 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         logger.info("Finished initializing remote region registries. All known remote regions: {}",
                 Arrays.toString(allKnownRemoteRegions));
     }
-
 }
