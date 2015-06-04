@@ -17,9 +17,9 @@ import static com.netflix.eureka2.utils.rx.RxFunctions.filterNullValuesFunc;
  *
  * @author Tomasz Bak
  */
-public final class EurekaRegistrationFunctions {
+public final class RegistrationFunctions {
 
-    private EurekaRegistrationFunctions() {
+    private RegistrationFunctions() {
     }
 
     /**
@@ -37,15 +37,15 @@ public final class EurekaRegistrationFunctions {
                         Notification<InstanceInfo> first = notifications.get(0);
                         if (notifications.size() == 1) {
                             if (first.getKind() == Kind.OnNext) {
-                                return new ChangeNotification<InstanceInfoWithSource>(ChangeNotification.Kind.Add, new InstanceInfoWithSource(first.getValue(), source));
+                                return new ChangeNotification<>(ChangeNotification.Kind.Add, new InstanceInfoWithSource(first.getValue(), source));
                             }
                             return null;
                         }
                         Notification<InstanceInfo> second = notifications.get(1);
                         if (second.getKind() == Kind.OnNext) {
-                            return new ChangeNotification<InstanceInfoWithSource>(ChangeNotification.Kind.Add, new InstanceInfoWithSource(second.getValue(), source));
+                            return new ChangeNotification<>(ChangeNotification.Kind.Add, new InstanceInfoWithSource(second.getValue(), source));
                         }
-                        return new ChangeNotification<InstanceInfoWithSource>(ChangeNotification.Kind.Delete, new InstanceInfoWithSource(first.getValue(), source));
+                        return new ChangeNotification<>(ChangeNotification.Kind.Delete, new InstanceInfoWithSource(first.getValue(), source));
                     }
                 })
                 .filter(filterNullValuesFunc());

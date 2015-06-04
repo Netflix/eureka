@@ -33,7 +33,7 @@ import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.EurekaRegistryMetrics;
-import com.netflix.eureka2.registry.EurekaRegistrationFunctions.InstanceInfoWithSource;
+import com.netflix.eureka2.registry.RegistrationFunctions.InstanceInfoWithSource;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.utils.rx.PauseableSubject;
 import org.slf4j.Logger;
@@ -47,7 +47,7 @@ import rx.subjects.PublishSubject;
 import rx.subjects.SerializedSubject;
 import rx.subjects.Subject;
 
-import static com.netflix.eureka2.registry.EurekaRegistrationFunctions.toSourcedChangeNotificationStream;
+import static com.netflix.eureka2.registry.RegistrationFunctions.toSourcedChangeNotificationStream;
 
 /**
  * An implementation of {@link com.netflix.eureka2.registry.SourcedEurekaRegistry} that uses a
