@@ -219,7 +219,10 @@ public class AwsAsgUtil {
             sts.setEndpoint("sts." + region + ".amazonaws.com");
         }
 
-        String roleArn = "arn:aws:iam::" + asgAccount + ":role/ListAutoScalingGroups";
+        String roleName = EurekaServerConfigurationManager.getInstance().getConfiguration().
+                getListAutoScalingGroupsRoleName();
+
+        String roleArn = "arn:aws:iam::" + asgAccount + ":role/" + roleName;
 
         AssumeRoleResult assumeRoleResult = sts.assumeRole(new AssumeRoleRequest()
                         .withRoleArn(roleArn)
