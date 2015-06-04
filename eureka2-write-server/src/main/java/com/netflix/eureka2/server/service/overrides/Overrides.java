@@ -7,6 +7,7 @@ import java.util.Set;
 /**
  * Contains all overrides for a given id. Actual overrides are provided
  * as a set of Deltas that can be applied to instanceInfos.
+
  *
  * @author David Liu
  */
@@ -24,7 +25,35 @@ public class Overrides {
         return id;
     }
 
+    @Override
+    public String toString() {
+        return "Overrides{" +
+                "id='" + id + '\'' +
+                ", deltas=" + deltas +
+                '}';
+    }
+
     public Set<Delta<?>> getDeltas() {
         return deltas;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Overrides)) return false;
+
+        Overrides overrides = (Overrides) o;
+
+        if (deltas != null ? !deltas.equals(overrides.deltas) : overrides.deltas != null) return false;
+        if (id != null ? !id.equals(overrides.id) : overrides.id != null) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = id != null ? id.hashCode() : 0;
+        result = 31 * result + (deltas != null ? deltas.hashCode() : 0);
+        return result;
     }
 }

@@ -1,10 +1,7 @@
 package com.netflix.eureka2.server.service.overrides;
 
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.registry.instance.Delta;
 import rx.Observable;
-
-import java.util.Set;
 
 /**
  * A registry that holds override data that can be applied to instanceInfos.
@@ -14,15 +11,23 @@ import java.util.Set;
 public interface OverridesRegistry {
 
     /**
+     * Get all overrides for a given id
+     *
+     * @param id
+     * @return
+     */
+    Overrides get(String id);
+
+
+    /**
      * Set all overrides for the given id. If there are any previous overrides, they are discarded.
      *
      * Implementations will need to deal with concurrency between set and remove, if any.
      *
-     * @param id
-     * @param deltas
-     * @return
+     * @param overrides
+     * @return an Observable<Void> that will onComplete or onError based on the operation success/failure
      */
-    Observable<Void> set(String id, Set<Delta<?>> deltas);
+    Observable<Void> set(Overrides overrides);
 
 
     /**
@@ -31,7 +36,7 @@ public interface OverridesRegistry {
      * Implementations will need to deal with concurrency between set and remove, if any.
      *
      * @param id
-     * @return
+     * @return an Observable<Void> that will onComplete or onError based on the operation success/failure
      */
     Observable<Void> remove(String id);
 
@@ -39,7 +44,13 @@ public interface OverridesRegistry {
      * On subscribe emits latest override for the given instance id, or if no override present
      * emits delete override notification.
      *
+     * @param id the id of the override stream to return
      * @return a stream of updates on additions and removals for overrides
      */
     Observable<ChangeNotification<Overrides>> forUpdates(String id);
+
+    /**
+     * Shutdown the overrides registry
+     */
+    void shutdown();
 }

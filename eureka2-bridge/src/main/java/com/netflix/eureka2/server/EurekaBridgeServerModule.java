@@ -2,6 +2,8 @@ package com.netflix.eureka2.server;
 
 import com.google.inject.name.Names;
 import com.netflix.eureka2.config.EurekaRegistryConfig;
+import com.netflix.eureka2.interests.IndexRegistry;
+import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.SpectatorEurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.server.BridgeServerMetricFactory;
@@ -9,7 +11,9 @@ import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
 import com.netflix.eureka2.metric.server.SpectatorBridgeServerMetricFactory;
 import com.netflix.eureka2.metric.server.SpectatorWriteServerMetricFactory;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
+import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
 import com.netflix.eureka2.registry.eviction.EvictionStrategy;
@@ -60,7 +64,12 @@ public class EurekaBridgeServerModule extends AbstractEurekaServerModule {
             bind(BridgeServerConfig.class).toInstance(config);
         }
 
-        bind(SourcedEurekaRegistry.class).to(EurekaBridgeRegistry.class);
+        bind(IndexRegistry.class).to(IndexRegistryImpl.class).asEagerSingleton();
+
+        bind(SourcedEurekaRegistry.class).annotatedWith(Names.named("delegate")).to(EurekaBridgeRegistry.class).asEagerSingleton();
+        bind(SourcedEurekaRegistry.class).to(SourcedEurekaRegistryImpl.class);
+        bind(EurekaRegistryView.class).to(SourcedEurekaRegistryImpl.class);
+
         bind(EvictionQueue.class).to(EvictionQueueImpl.class).asEagerSingleton();
         bind(EvictionStrategy.class).toProvider(EvictionStrategyProvider.class);
 
