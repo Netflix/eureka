@@ -33,7 +33,7 @@ public class OverridesServiceImpl implements OverridesService {
     }
 
     @Override
-    public Observable<Void> register(Observable<InstanceInfo> registrationUpdates, Source source) {
+    public Observable<Void> register(String id, Source source, Observable<InstanceInfo> registrationUpdates) {
         Observable<InstanceInfo> sharedUpdates = registrationUpdates.share();
 
         Observable<ChangeNotification<Overrides>> instanceOverrides = sharedUpdates
@@ -60,7 +60,7 @@ public class OverridesServiceImpl implements OverridesService {
                     }
                 });
 
-        return delegate.register(overridenUpdates, source);
+        return delegate.register(id, source, overridenUpdates);
     }
 
     @Override
