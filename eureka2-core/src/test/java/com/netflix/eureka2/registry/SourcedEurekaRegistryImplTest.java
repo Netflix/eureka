@@ -30,10 +30,18 @@ import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
+import rx.subjects.BehaviorSubject;
 
 import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -134,6 +142,21 @@ public class SourcedEurekaRegistryImplTest {
 
         assertThat(returnedIds.size(), is(greaterThanOrEqualTo(3)));
         assertThat(new HashSet<>(returnedIds), containsInAnyOrder(discovery1.getId(), discovery2.getId(), discovery3.getId()));
+    }
+
+    @Test
+    public void testRegisterWithObservable() throws Exception {
+//        InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder().withStatus(InstanceInfo.Status.UP).build();
+//        BehaviorSubject<InstanceInfo> registrationSubject = BehaviorSubject.create();
+//
+//        registry.register(original.getId(), localSource, registrationSubject).subscribe();
+//
+//        ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
+//        Observable<ChangeNotification<InstanceInfo>> interestStream =
+//                registry.forInterest(Interests.forApplications(original.getApp())).filter(dataOnlyFilter())
+//                .subscribe();
+//
+//        assertThat(testSubscriber.takeNext(10, TimeUnit.SECONDS));
     }
 
     @Test(timeout = 60000)
@@ -385,7 +408,7 @@ public class SourcedEurekaRegistryImplTest {
         ChangeNotification<InstanceInfo> notification = testSubscriber.takeNext();
         assertThat(notification, is(instanceOf(Sourced.class)));
         assertThat(notification.getData(), is(equalTo(original)));
-        assertThat(((Sourced)notification).getSource(), is(equalTo(replicatedSource)));
+        assertThat(((Sourced) notification).getSource(), is(equalTo(replicatedSource)));
 
         registry.register(original, localSource);  // register with the same but with localSource
         testScheduler.triggerActions();
@@ -393,7 +416,7 @@ public class SourcedEurekaRegistryImplTest {
         notification = testSubscriber.takeNext();
         assertThat(notification, is(instanceOf(Sourced.class)));
         assertThat(notification.getData(), is(equalTo(original)));
-        assertThat(((Sourced)notification).getSource(), is(equalTo(localSource)));
+        assertThat(((Sourced) notification).getSource(), is(equalTo(localSource)));
     }
 
     @Test(timeout = 60000)
@@ -423,7 +446,7 @@ public class SourcedEurekaRegistryImplTest {
         ChangeNotification<InstanceInfo> initial = testSubscriber.takeNext();
         assertThat(initial, is(instanceOf(Sourced.class)));
         assertThat(initial.getData(), is(equalTo(original)));
-        assertThat(((Sourced)initial).getSource(), is(equalTo(localSource)));
+        assertThat(((Sourced) initial).getSource(), is(equalTo(localSource)));
 
         registry.unregister(original, localSource);
         testScheduler.triggerActions();
@@ -436,11 +459,11 @@ public class SourcedEurekaRegistryImplTest {
 
         assertThat(notifications.get(0).getKind(), is(ChangeNotification.Kind.Delete));
         assertThat(notifications.get(0), is(instanceOf(Sourced.class)));
-        assertThat(((Sourced)notifications.get(0)).getSource(), is(equalTo(localSource)));
+        assertThat(((Sourced) notifications.get(0)).getSource(), is(equalTo(localSource)));
 
         assertThat(notifications.get(1).getKind(), is(ChangeNotification.Kind.Add));
         assertThat(notifications.get(1), is(instanceOf(Sourced.class)));
-        assertThat(((Sourced)notifications.get(1)).getSource(), is(equalTo(replicatedSource)));
+        assertThat(((Sourced) notifications.get(1)).getSource(), is(equalTo(replicatedSource)));
     }
 
 
@@ -488,7 +511,7 @@ public class SourcedEurekaRegistryImplTest {
         ChangeNotification<InstanceInfo> initial = testSubscriber.takeNext();
         assertThat(initial, is(instanceOf(Sourced.class)));
         assertThat(initial.getData(), is(equalTo(copy1)));
-        assertThat(((Sourced)initial).getSource(), is(equalTo(local1)));
+        assertThat(((Sourced) initial).getSource(), is(equalTo(local1)));
 
         registry.unregister(copy2, local2);  // unregister the middle copy that is different from the head
         testScheduler.triggerActions();
@@ -503,7 +526,7 @@ public class SourcedEurekaRegistryImplTest {
         assertThat(notification, is(instanceOf(Sourced.class)));
         assertThat(notification.getData(), is(equalTo(copy3)));
         assertThat(notification.getKind(), is(equalTo(ChangeNotification.Kind.Modify)));
-        assertThat(((Sourced)notification).getSource(), is(equalTo(local3)));
+        assertThat(((Sourced) notification).getSource(), is(equalTo(local3)));
     }
 
     @Test(timeout = 60000)

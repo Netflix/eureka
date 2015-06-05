@@ -11,7 +11,7 @@ public interface EurekaRegistrationProcessor<T> extends EurekaCloseable {
 
     /**
      */
-    Observable<Void> register(Observable<InstanceInfo> registrationUpdates, Source source);
+    Observable<Void> register(String id, Source source, Observable<InstanceInfo> registrationUpdates);
 
     /**
      * @return a boolean to denote whether the register added a new entry or updated an existing entry

@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
@@ -39,8 +40,10 @@ import com.netflix.eureka2.utils.rx.PauseableSubject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.Observable.OnSubscribe;
 import rx.Scheduler;
 import rx.Subscriber;
+import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
@@ -69,6 +72,12 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
 
     private final Subject<Observable<ChangeNotification<InstanceInfoWithSource>>, Observable<ChangeNotification<InstanceInfoWithSource>>>
             registrationSubject = new SerializedSubject(PublishSubject.create());
+
+    /**
+     * All registrations are serialized, and each registration subscription updates this data structure. If there is
+     * another subscription with the given {origin, source, id}, it is overwritten, so no longer taken into consideration.
+     */
+    private final ConcurrentMap<String, Source> approvedRegistrations = new ConcurrentHashMap<>();
 
     public SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory metricsFactory) {
         this(new IndexRegistryImpl<InstanceInfo>(), metricsFactory, Schedulers.computation());
@@ -106,6 +115,14 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
                     public void onNext(ChangeNotification<InstanceInfoWithSource> notification) {
                         InstanceInfo instanceInfo = notification.getData().getInstanceInfo();
                         Source source = notification.getData().getSource();
+
+                        // Duplicate registration detection (last subscription wins).
+                        String clientId = clientIdFor(instanceInfo.getId(), source);
+                        Source latestSource = approvedRegistrations.get(clientId);
+                        if (latestSource == null || !latestSource.equals(source)) {
+                            return;
+                        }
+
                         NotifyingInstanceInfoHolder holder = internalStore.get(instanceInfo.getId());
                         switch (notification.getKind()) {
                             case Add:
@@ -121,6 +138,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
                                     internalStore.remove(instanceInfo.getId());
                                     metrics.setRegistrySize(internalStore.size());
                                 }
+                                approvedRegistrations.remove(clientId, source);
                                 break;
                             default:
                                 logger.error("Unexpected notification type {}", notification.getKind());
@@ -134,27 +152,49 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     // Registry manipulation
     // -------------------------------------------------
 
-    public Observable<Void> register(Observable<InstanceInfo> registrationUpdates, final Source source) {
-        Observable<ChangeNotification<InstanceInfoWithSource>> changeNotifications =
-                toSourcedChangeNotificationStream(registrationUpdates, source).share();
+    @Override
+    public Observable<Void> register(final String id, final Source source, final Observable<InstanceInfo> registrationUpdates) {
+        return Observable.create(new OnSubscribe<Void>() {
+            @Override
+            public void call(Subscriber<? super Void> subscriber) {
+                Observable<ChangeNotification<InstanceInfoWithSource>> changeNotifications =
+                        toSourcedChangeNotificationStream(registrationUpdates, id, source)
+                                .doOnSubscribe(new Action0() {
+                                    @Override
+                                    public void call() {
+                                        approvedRegistrations.put(clientIdFor(id, source), source);
+                                    }
+                                });
+                registrationSubject.onNext(changeNotifications);
+                subscriber.onCompleted();
+            }
+        });
+    }
 
-        registrationSubject.onNext(changeNotifications);
-        return changeNotifications.ignoreElements().cast(Void.class);
+    private static String clientIdFor(String id, Source source) {
+        return source.getOrigin() + "/" + source.getName() + '/' + id;
     }
 
     @Override
     public Observable<Boolean> register(final InstanceInfo instanceInfo, final Source source) {
-        registrationSubject.onNext(Observable.just(
+        Observable<ChangeNotification<InstanceInfoWithSource>> registerObservable = Observable.just(
                 new ChangeNotification<InstanceInfoWithSource>(Kind.Add, new InstanceInfoWithSource(instanceInfo, source))
-        ));
+        ).doOnSubscribe(new Action0() {
+            @Override
+            public void call() {
+                approvedRegistrations.put(clientIdFor(instanceInfo.getId(), source), source);
+            }
+        });
+        registrationSubject.onNext(registerObservable);
         return Observable.just(true);
     }
 
     @Override
     public Observable<Boolean> unregister(final InstanceInfo instanceInfo, final Source source) {
-        registrationSubject.onNext(Observable.just(
+        Observable<ChangeNotification<InstanceInfoWithSource>> unregisterObservable = Observable.just(
                 new ChangeNotification<InstanceInfoWithSource>(Kind.Delete, new InstanceInfoWithSource(instanceInfo, source))
-        ));
+        );
+        registrationSubject.onNext(unregisterObservable);
         return Observable.just(true);
     }
 

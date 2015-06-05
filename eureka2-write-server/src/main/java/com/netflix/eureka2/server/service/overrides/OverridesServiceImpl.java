@@ -33,7 +33,7 @@ public class OverridesServiceImpl implements OverridesService {
     }
 
     @Override
-    public Observable<Void> register(Observable<InstanceInfo> registrationUpdates, Source source) {
+    public Observable<Void> register(String id, Source source, Observable<InstanceInfo> registrationUpdates) {
         Observable<InstanceInfo> sharedUpdates = registrationUpdates.share();
 
         Observable<ChangeNotification<Overrides>> instanceOverrides = sharedUpdates
@@ -45,7 +45,7 @@ public class OverridesServiceImpl implements OverridesService {
                     }
                 });
 
-        Observable<InstanceInfo> overriddenUpdates = Observable.combineLatest(registrationUpdates, instanceOverrides,
+        Observable<InstanceInfo> overridenUpdates = Observable.combineLatest(registrationUpdates, instanceOverrides,
                 new Func2<InstanceInfo, ChangeNotification<Overrides>, InstanceInfo>() {
                     @Override
                     public InstanceInfo call(InstanceInfo instanceInfo, ChangeNotification<Overrides> overrideNotification) {
@@ -60,7 +60,7 @@ public class OverridesServiceImpl implements OverridesService {
                     }
                 });
 
-        return delegate.register(overriddenUpdates, source);
+        return delegate.register(id, source, overridenUpdates);
     }
 
     @Override
