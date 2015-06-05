@@ -9,6 +9,7 @@ import com.netflix.eureka2.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.utils.rx.RxFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -34,7 +35,7 @@ public class OverridesServiceImpl implements OverridesService {
 
     @Override
     public Observable<Void> register(String id, Source source, Observable<InstanceInfo> registrationUpdates) {
-        Observable<InstanceInfo> sharedUpdates = registrationUpdates.share();
+        Observable<InstanceInfo> sharedUpdates = registrationUpdates.cache(1);
 
         Observable<ChangeNotification<Overrides>> instanceOverrides = sharedUpdates
                 .take(1)
@@ -45,15 +46,19 @@ public class OverridesServiceImpl implements OverridesService {
                     }
                 });
 
-        Observable<InstanceInfo> overridenUpdates = Observable.combineLatest(registrationUpdates, instanceOverrides,
+        Observable<InstanceInfo> overridenUpdates = RxFunctions.combineWithOptional(
+                sharedUpdates,
+                instanceOverrides,
                 new Func2<InstanceInfo, ChangeNotification<Overrides>, InstanceInfo>() {
                     @Override
                     public InstanceInfo call(InstanceInfo instanceInfo, ChangeNotification<Overrides> overrideNotification) {
                         switch (overrideNotification.getKind()) {
                             case Add:
                             case Modify:
+                                logger.info("Applying overrides to instance {}: {}", instanceInfo.getId(), overrideNotification.getData().getDeltas());
                                 return applyDelta(instanceInfo, overrideNotification.getData().getDeltas());
                             case Delete:
+                                logger.info("Removed all overrides for instance {}", instanceInfo.getId());
                                 return instanceInfo;
                         }
                         throw new IllegalStateException("Unexpected notification kind " + overrideNotification.getKind());
@@ -65,12 +70,12 @@ public class OverridesServiceImpl implements OverridesService {
 
     @Override
     public Observable<Boolean> register(final InstanceInfo instanceInfo, final Source source) {
-        return null;
+        throw new IllegalStateException("method not implemented");
     }
 
     @Override
     public Observable<Boolean> unregister(final InstanceInfo instanceInfo, final Source source) {
-        return null;
+        throw new IllegalStateException("method not implemented");
     }
 
     @Override

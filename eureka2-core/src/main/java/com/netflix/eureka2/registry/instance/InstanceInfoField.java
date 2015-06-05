@@ -262,6 +262,11 @@ public class InstanceInfoField<T> {
         return accessor.getValue(instanceInfo);
     }
 
+    @Override
+    public String toString() {
+        return fieldName.name();
+    }
+
     @SuppressWarnings("unchecked")
     public static <T> InstanceInfoField<T> forName(Name name) {
         switch (name) {
