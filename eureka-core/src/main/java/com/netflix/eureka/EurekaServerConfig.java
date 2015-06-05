@@ -551,4 +551,9 @@ public interface EurekaServerConfig {
      * See also {@link #getRateLimiterBurstSize()}.
      */
     int getRateLimiterFullFetchAverageRate();
+
+    /**
+     * Name of the Role used to describe auto scaling groups from third AWS accounts.
+     */
+    String getListAutoScalingGroupsRoleName();
 }

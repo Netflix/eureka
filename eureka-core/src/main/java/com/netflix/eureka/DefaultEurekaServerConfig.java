@@ -82,6 +82,9 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     private final DynamicIntProperty rateLimiterRegistryFetchAverageRate = configInstance.getIntProperty(namespace + "rateLimiter.registryFetchAverageRate", 500);
     private final DynamicIntProperty rateLimiterFullFetchAverageRate = configInstance.getIntProperty(namespace + "rateLimiter.fullFetchAverageRate", 100);
 
+    private final DynamicStringProperty listAutoScalingGroupsRoleName =
+            configInstance.getStringProperty(namespace + "listAutoScalingGroupsRoleName", "ListAutoScalingGroups");
+
     public DefaultEurekaServerConfig() {
         init();
     }
@@ -579,5 +582,10 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     @Override
     public int getRateLimiterFullFetchAverageRate() {
         return rateLimiterFullFetchAverageRate.get();
+    }
+
+    @Override
+    public String getListAutoScalingGroupsRoleName() {
+        return listAutoScalingGroupsRoleName.get();
     }
 }
