@@ -15,6 +15,8 @@ import com.netflix.eureka2.metric.EurekaRegistryMetrics;
 import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.registry.Source.Origin;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo.Builder;
+import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.After;
@@ -33,6 +35,9 @@ import rx.schedulers.TestScheduler;
 import rx.subjects.BehaviorSubject;
 
 import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.modifyChangeNotificationOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
@@ -146,17 +151,69 @@ public class SourcedEurekaRegistryImplTest {
 
     @Test
     public void testRegisterWithObservable() throws Exception {
-//        InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder().withStatus(InstanceInfo.Status.UP).build();
-//        BehaviorSubject<InstanceInfo> registrationSubject = BehaviorSubject.create();
-//
-//        registry.register(original.getId(), localSource, registrationSubject).subscribe();
-//
-//        ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
-//        Observable<ChangeNotification<InstanceInfo>> interestStream =
-//                registry.forInterest(Interests.forApplications(original.getApp())).filter(dataOnlyFilter())
-//                .subscribe();
-//
-//        assertThat(testSubscriber.takeNext(10, TimeUnit.SECONDS));
+        InstanceInfo original = SampleInstanceInfo.WebServer.builder().withStatus(InstanceInfo.Status.UP).build();
+        BehaviorSubject<InstanceInfo> registrationSubject = BehaviorSubject.create();
+
+        // Initial add
+        ExtTestSubscriber<Void> registerSubscriber = new ExtTestSubscriber<>();
+        registry.register(original.getId(), localSource, registrationSubject).subscribe(registerSubscriber);
+        registrationSubject.onNext(original);
+
+        testScheduler.triggerActions();
+
+        assertThat(registerSubscriber.isUnsubscribed(), is(true));
+
+        // Subscribe to interest stream and verify add notification has been sent
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> interestSubscriber = new ExtTestSubscriber<>();
+        registry.forInterest(Interests.forApplications(original.getApp())).filter(dataOnlyFilter())
+                .subscribe(interestSubscriber);
+
+        assertThat(interestSubscriber.takeNextOrFail(), is(addChangeNotificationOf(original)));
+        assertThat(interestSubscriber.takeNext(), is(nullValue()));
+
+        // Update instance status, and check that modify notification is issued
+        InstanceInfo updated = new Builder().withInstanceInfo(original).withStatus(Status.DOWN).build();
+        registrationSubject.onNext(updated);
+
+        testScheduler.triggerActions();
+
+        assertThat(interestSubscriber.takeNextOrFail(), is(modifyChangeNotificationOf(updated)));
+        assertThat(interestSubscriber.takeNext(), is(nullValue()));
+
+        // Now onComplete registration observable which triggers delete notification
+        registrationSubject.onCompleted();
+        testScheduler.triggerActions();
+
+        assertThat(interestSubscriber.takeNextOrFail(), is(deleteChangeNotificationOf(updated)));
+    }
+
+    @Test
+    public void testRegistrationObservableOnErrorTriggersDeleteNotification() throws Exception {
+        InstanceInfo original = SampleInstanceInfo.WebServer.builder().withStatus(InstanceInfo.Status.UP).build();
+        BehaviorSubject<InstanceInfo> registrationSubject = BehaviorSubject.create();
+
+        // Initial add
+        ExtTestSubscriber<Void> registerSubscriber = new ExtTestSubscriber<>();
+        registry.register(original.getId(), localSource, registrationSubject).subscribe(registerSubscriber);
+        registrationSubject.onNext(original);
+
+        testScheduler.triggerActions();
+
+        assertThat(registerSubscriber.isUnsubscribed(), is(true));
+
+        // Subscribe to interest stream and verify add notification has been sent
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> interestSubscriber = new ExtTestSubscriber<>();
+        registry.forInterest(Interests.forApplications(original.getApp())).filter(dataOnlyFilter())
+                .subscribe(interestSubscriber);
+
+        assertThat(interestSubscriber.takeNextOrFail(), is(addChangeNotificationOf(original)));
+        assertThat(interestSubscriber.takeNext(), is(nullValue()));
+
+        // Now onComplete registration observable which triggers delete notification
+        registrationSubject.onError(new Exception("simulated registration error"));
+        testScheduler.triggerActions();
+
+        assertThat(interestSubscriber.takeNextOrFail(), is(deleteChangeNotificationOf(original)));
     }
 
     @Test(timeout = 60000)

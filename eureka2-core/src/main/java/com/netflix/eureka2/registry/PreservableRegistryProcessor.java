@@ -62,7 +62,7 @@ public class PreservableRegistryProcessor implements EurekaRegistrationProcessor
                     }
                 });
 
-                final Subscription registrationUpdatesSubscription = registrationUpdates.materialize().subscribe(
+                registrationUpdates.materialize().subscribe(
                         new Action1<Notification<InstanceInfo>>() {
                             @Override
                             public void call(Notification<InstanceInfo> notification) {
@@ -81,29 +81,19 @@ public class PreservableRegistryProcessor implements EurekaRegistrationProcessor
                         }
                 );
 
-                clientSubscriber.add(new Subscription() {
-                    @Override
-                    public void unsubscribe() {
-                        registrationUpdatesSubscription.unsubscribe();
-                    }
-
-                    @Override
-                    public boolean isUnsubscribed() {
-                        return false;
-                    }
-                });
+                clientSubscriber.onCompleted();
             }
         });
     }
 
     @Override
     public Observable<Boolean> register(InstanceInfo instanceInfo, Source source) {
-        return null;
+        throw new IllegalStateException("method not implemented");
     }
 
     @Override
     public Observable<Boolean> unregister(InstanceInfo instanceInfo, Source source) {
-        return null;
+        throw new IllegalStateException("method not implemented");
     }
 
     @Override
@@ -133,6 +123,11 @@ public class PreservableRegistryProcessor implements EurekaRegistrationProcessor
         void addToEvictionQueue(Subject<InstanceInfo, InstanceInfo> subject) {
             registrationsToEvict.add(subject);
             request(1);
+        }
+
+        @Override
+        public void onStart() {
+            request(0);
         }
 
         @Override
