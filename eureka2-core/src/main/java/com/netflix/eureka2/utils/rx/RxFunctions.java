@@ -1,12 +1,11 @@
 package com.netflix.eureka2.utils.rx;
 
-import java.util.List;
-
 import rx.Notification;
 import rx.Notification.Kind;
 import rx.Observable;
 import rx.Observable.Transformer;
 import rx.functions.Func1;
+import rx.functions.Func2;
 
 /**
  * @author Tomasz Bak
@@ -24,6 +23,15 @@ public final class RxFunctions {
         @Override
         public Notification<?> call(Notification<?> notification) {
             return notification.getKind() == Kind.OnError ? Notification.createOnCompleted() : notification;
+        }
+    };
+
+    private static final Object COMBINE_MARKER = new Object();
+    private static final Observable<Object> COMBINE_MARKER_OBSERVABLE = Observable.just(COMBINE_MARKER);
+    private static final Func1<Object, Boolean> COMBINE_MARKER_PREDICATE = new Func1<Object, Boolean>() {
+        @Override
+        public Boolean call(Object o) {
+            return o == COMBINE_MARKER;
         }
     };
 
@@ -48,15 +56,20 @@ public final class RxFunctions {
     }
 
     /**
-     * Return a list of latest observed values. For example for windows size 3, and stream {A, B, C, D}
-     * this would emit {A}, {A,B}, {A,B,C}, {B,C,D}.
+     * Combine operator that completes immediately when the first (primary) observable terminates.
+     * Standard {@link Observable#combineLatest(Observable, Observable, Func2)} completes only when both
+     * combined streams complete.
      */
-    public static <T> Transformer<T, List<T>> lastWindow(int count) {
-        return new Transformer<T, List<T>>() {
+    public static <T1, T2, R> Observable<R> combineWithOptional(Observable<? extends T1> main, Observable<? extends T2> optional, final Func2<? super T1, ? super T2, ? extends R> combineFunction) {
+        Observable mainUntyped = main;
+        return Observable.combineLatest(mainUntyped.concatWith(COMBINE_MARKER_OBSERVABLE), optional, new Func2<Object, T2, Object>() {
             @Override
-            public Observable<List<T>> call(Observable<T> observable) {
-                return null;
+            public Object call(Object t1, T2 t2) {
+                if (t1 == COMBINE_MARKER) {
+                    return COMBINE_MARKER;
+                }
+                return combineFunction.call((T1) t1, t2);
             }
-        };
+        }).takeUntil(COMBINE_MARKER_PREDICATE);
     }
 }
