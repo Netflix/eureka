@@ -410,7 +410,7 @@ public class AwsAsgUtil {
             }
         }
 
-        logger.error("Couldn't get the ASG account for " + asgName);
+        logger.warn("Couldn't get the ASG account for {}, using the default accountId instead", asgName);
         return accountId;
     }
 
