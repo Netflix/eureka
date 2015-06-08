@@ -32,9 +32,7 @@ public class Lease<T> {
 
     enum Action {
         Register, Cancel, Renew
-    }
-
-    ;
+    };
 
     public static final int DEFAULT_DURATION_IN_SECS = 90;
 
@@ -92,6 +90,11 @@ public class Lease<T> {
 
     /**
      * Checks if the lease of a given {@link com.netflix.appinfo.InstanceInfo} has expired or not.
+     *
+     * Note that due to renew() doing the 'wrong" thing and setting lastUpdateTimestamp to +duration more than
+     * what it should be, the expiry will actually be 2 * duration. This is a minor bug and should only affect
+     * instances that ungracefully shutdown. Due to possible wide ranging impact to existing usage, this will
+     * not be fixed.
      */
     public boolean isExpired() {
         return (evictionTimestamp > 0 || System.currentTimeMillis() > (lastUpdateTimestamp + duration));
@@ -108,6 +111,7 @@ public class Lease<T> {
 
     /**
      * Gets the milliseconds since epoch when the lease was last renewed.
+     * Note that the value returned here is actually not the last lease renewal time but the renewal + duration.
      *
      * @return the milliseconds since epoch when the lease was last renewed.
      */

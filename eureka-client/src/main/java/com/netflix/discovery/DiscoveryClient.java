@@ -165,7 +165,7 @@ public class DiscoveryClient implements EurekaClient {
     private final InstanceRegionChecker instanceRegionChecker;
     private volatile InstanceInfo.InstanceStatus lastRemoteInstanceStatus = InstanceInfo.InstanceStatus.UNKNOWN;
 
-    private final ApplicationInfoManager.StatusChangeListener statusChangeListener;
+    private ApplicationInfoManager.StatusChangeListener statusChangeListener;
 
     private enum Action {
         Register, Cancel, Renew, Refresh, Refresh_Delta
@@ -328,23 +328,6 @@ public class DiscoveryClient implements EurekaClient {
         }
         if (clientConfig.shouldFetchRegistry() && !fetchRegistry(false)) {
             fetchRegistryFromBackup();
-        }
-
-        statusChangeListener = new ApplicationInfoManager.StatusChangeListener() {
-            @Override
-            public String getId() {
-                return "statusChangeListener";
-            }
-
-            @Override
-            public void notify(StatusChangeEvent statusChangeEvent) {
-                logger.info("Saw local status change event {}", statusChangeEvent);
-                instanceInfoReplicator.onDemandUpdate();
-            }
-        };
-
-        if (clientConfig.shouldOnDemandUpdateStatusChange()) {
-            ApplicationInfoManager.getInstance().registerStatusChangeListener(statusChangeListener);
         }
 
         initScheduledTasks();
@@ -777,7 +760,10 @@ public class DiscoveryClient implements EurekaClient {
     @PreDestroy
     @Override
     public void shutdown() {
-        ApplicationInfoManager.getInstance().unregisterStatusChangeListener(statusChangeListener.getId());
+        if (statusChangeListener != null) {
+            ApplicationInfoManager.getInstance().unregisterStatusChangeListener(statusChangeListener.getId());
+        }
+
         cancelScheduledTasks();
 
         // If APPINFO was registered
@@ -1433,6 +1419,23 @@ public class DiscoveryClient implements EurekaClient {
                     instanceInfo,
                     clientConfig.getInstanceInfoReplicationIntervalSeconds(),
                     2); // burstSize
+
+            statusChangeListener = new ApplicationInfoManager.StatusChangeListener() {
+                @Override
+                public String getId() {
+                    return "statusChangeListener";
+                }
+
+                @Override
+                public void notify(StatusChangeEvent statusChangeEvent) {
+                    logger.info("Saw local status change event {}", statusChangeEvent);
+                    instanceInfoReplicator.onDemandUpdate();
+                }
+            };
+
+            if (clientConfig.shouldOnDemandUpdateStatusChange()) {
+                ApplicationInfoManager.getInstance().registerStatusChangeListener(statusChangeListener);
+            }
 
             instanceInfoReplicator.start(clientConfig.getInitialInstanceInfoReplicationIntervalSeconds());
         } else {
