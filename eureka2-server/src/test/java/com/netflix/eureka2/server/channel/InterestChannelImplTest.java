@@ -13,8 +13,10 @@ import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics;
 import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics.AtomicInterest;
 import com.netflix.eureka2.protocol.discovery.AddInstance;
+import com.netflix.eureka2.protocol.discovery.DeleteInstance;
 import com.netflix.eureka2.protocol.discovery.InterestRegistration;
 import com.netflix.eureka2.protocol.discovery.StreamStateUpdate;
+import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
@@ -46,7 +48,7 @@ public class InterestChannelImplTest {
 
     public static final Interest<InstanceInfo> CLIENT_INTEREST = Interests.forFullRegistry();
 
-    private final SourcedEurekaRegistry<InstanceInfo> registry = mock(SourcedEurekaRegistry.class);
+    private final EurekaRegistryView<InstanceInfo> registry = mock(EurekaRegistryView.class);
     private final ServerInterestChannelMetrics interestChannelMetrics = mock(ServerInterestChannelMetrics.class);
 
     private final MessageConnection connection = mock(MessageConnection.class);
@@ -69,22 +71,43 @@ public class InterestChannelImplTest {
     }
 
     @Test
-    public void testStreamStateNotificationsAreSentToClients() throws Exception {
+    public void testStreamStateNotificationsForInterestWithNoData() throws Exception {
+        StreamStateNotification<InstanceInfo> startNotification =
+                StreamStateNotification.bufferStartNotification(CLIENT_INTEREST);
+        StreamStateNotification<InstanceInfo> endNotification =
+                StreamStateNotification.bufferEndNotification(CLIENT_INTEREST);
+
+        notificationSubject.onNext(startNotification);
+        notificationSubject.onNext(endNotification);
+
         // Send interest subscription first
         incomingSubject.onNext(new InterestRegistration(CLIENT_INTEREST));
 
-        // Trigger buffer state change notification
-        StreamStateNotification<InstanceInfo> stateNotification =
+        verify(connection, times(1)).submitWithAck(new StreamStateUpdate(startNotification));
+        verify(connection, times(1)).submitWithAck(new StreamStateUpdate(endNotification));
+    }
+
+    @Test
+    public void testStreamStateNotificationsForInterestWithData() throws Exception {
+        StreamStateNotification<InstanceInfo> startNotification =
                 StreamStateNotification.bufferStartNotification(CLIENT_INTEREST);
+        ChangeNotification<InstanceInfo> dataNotification1 = new ChangeNotification<>(Kind.Add, SampleInstanceInfo.ZuulServer.build());
+        ChangeNotification<InstanceInfo> dataNotification2 = new ChangeNotification<>(Kind.Delete, SampleInstanceInfo.CliServer.build());
+        StreamStateNotification<InstanceInfo> endNotification =
+                StreamStateNotification.bufferEndNotification(CLIENT_INTEREST);
 
-        notificationSubject.onNext(stateNotification);
-        verify(connection, times(1)).submitWithAck(new StreamStateUpdate(stateNotification));
+        notificationSubject.onNext(startNotification);
+        notificationSubject.onNext(dataNotification1);
+        notificationSubject.onNext(dataNotification2);
+        notificationSubject.onNext(endNotification);
 
-        // Trigger BufferEnd state change notification
-        stateNotification = StreamStateNotification.bufferEndNotification(CLIENT_INTEREST);
+        // Send interest subscription first
+        incomingSubject.onNext(new InterestRegistration(CLIENT_INTEREST));
 
-        notificationSubject.onNext(stateNotification);
-        verify(connection, times(1)).submitWithAck(new StreamStateUpdate(stateNotification));
+        verify(connection, times(1)).submitWithAck(new StreamStateUpdate(startNotification));
+        verify(connection, times(1)).submitWithAck(new AddInstance(dataNotification1.getData()));
+        verify(connection, times(1)).submitWithAck(new DeleteInstance(dataNotification2.getData().getId()));
+        verify(connection, times(1)).submitWithAck(new StreamStateUpdate(endNotification));
     }
 
     @Test

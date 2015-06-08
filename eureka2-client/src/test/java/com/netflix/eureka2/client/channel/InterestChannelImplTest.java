@@ -1,5 +1,7 @@
 package com.netflix.eureka2.client.channel;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -34,6 +36,7 @@ import org.mockito.Mockito;
 import rx.Observable;
 import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 import rx.subjects.PublishSubject;
@@ -41,9 +44,8 @@ import rx.subjects.ReplaySubject;
 
 import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
 import static com.netflix.eureka2.metric.EurekaRegistryMetricFactory.registryMetrics;
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.bufferingChangeNotification;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.*;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -209,23 +211,58 @@ public class InterestChannelImplTest {
         ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
         channel.change(interest).subscribe(testSubscriber);
 
-        ExtTestSubscriber<ChangeNotification<InstanceInfo>> notificationSubscriber = new ExtTestSubscriber<>();
-        registry.forInterest(interest).subscribe(notificationSubscriber);
+        TestSubscriber<ChangeNotification<InstanceInfo>> networkInterestSubscriber = new TestSubscriber<>();
+        channel.channelInterestStream.subscribe(networkInterestSubscriber);
+
+        // a subscriber that subscribes to the registry before it has any data
+        TestSubscriber<ChangeNotification<InstanceInfo>> registrySubscriber1 = new TestSubscriber<>();
+        registry.forInterest(interest).subscribe(registrySubscriber1);
+        testScheduler.triggerActions();
 
         // Issue batch of data
         incomingSubject.onNext(new StreamStateUpdate(StreamStateNotification.bufferStartNotification(interest)));
-
         incomingSubject.onNext(message1);
         testScheduler.triggerActions();
+
+        // a subscriber that subscribes to the registry halfway through it receiving data
+        TestSubscriber<ChangeNotification<InstanceInfo>> registrySubscriber2 = new TestSubscriber<>();
+        registry.forInterest(interest).subscribe(registrySubscriber2);
+
         incomingSubject.onNext(message2);
+        incomingSubject.onNext(new StreamStateUpdate(StreamStateNotification.bufferEndNotification(interest)));
         testScheduler.triggerActions();
 
-        incomingSubject.onNext(new StreamStateUpdate(StreamStateNotification.bufferEndNotification(interest)));
+        // a subscriber that subscribes to the registry after it has received all data
+        TestSubscriber<ChangeNotification<InstanceInfo>> registrySubscriber3 = new TestSubscriber<>();
+        registry.forInterest(interest).subscribe(registrySubscriber3);
 
-        // We should have got <original 1> <original 2> <buffering sentinel> from registry
-        assertThat(notificationSubscriber.takeNextOrFail(), is(addChangeNotificationOf(original1)));
-        assertThat(notificationSubscriber.takeNextOrFail(), is(addChangeNotificationOf(original2)));
-        assertThat(notificationSubscriber.takeNextOrFail(), is(bufferingChangeNotification()));
+        // check the conversion from network to channel level datastructures
+        assertThat(networkInterestSubscriber.getOnNextEvents().size(), is(4));
+        assertThat(networkInterestSubscriber.getOnNextEvents().get(0), is(bufferStartNotification()));
+        assertThat(networkInterestSubscriber.getOnNextEvents().get(1), is(addChangeNotificationOf(original1)));
+        assertThat(networkInterestSubscriber.getOnNextEvents().get(2), is(addChangeNotificationOf(original2)));
+        assertThat(networkInterestSubscriber.getOnNextEvents().get(3), is(bufferEndNotification()));
+
+        // check the returns from the registry
+        assertThat(registrySubscriber1.getOnNextEvents().size(), is(4));
+        assertThat(registrySubscriber1.getOnNextEvents().get(0), is(addChangeNotificationOf(original1)));
+        assertThat(registrySubscriber1.getOnNextEvents().get(1), is(bufferingChangeNotification()));
+        assertThat(registrySubscriber1.getOnNextEvents().get(2), is(addChangeNotificationOf(original2)));
+        assertThat(registrySubscriber1.getOnNextEvents().get(3), is(bufferingChangeNotification()));
+
+        assertThat(registrySubscriber2.getOnNextEvents().size(), is(4));
+        assertThat(registrySubscriber2.getOnNextEvents().get(0), is(addChangeNotificationOf(original1)));
+        assertThat(registrySubscriber2.getOnNextEvents().get(1), is(bufferingChangeNotification()));
+        assertThat(registrySubscriber2.getOnNextEvents().get(2), is(addChangeNotificationOf(original2)));
+        assertThat(registrySubscriber2.getOnNextEvents().get(3), is(bufferingChangeNotification()));
+
+        assertThat(registrySubscriber3.getOnNextEvents().size(), is(3));
+        List<InstanceInfo> received = Arrays.asList(
+                registrySubscriber3.getOnNextEvents().get(0).getData(),
+                registrySubscriber3.getOnNextEvents().get(1).getData()
+        );
+        assertThat(received, containsInAnyOrder(original1, original2));
+        assertThat(registrySubscriber3.getOnNextEvents().get(2), is(bufferingChangeNotification()));
     }
 
     @Test(timeout = 60000)

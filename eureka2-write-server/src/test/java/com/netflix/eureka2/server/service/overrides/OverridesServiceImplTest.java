@@ -41,7 +41,7 @@ public class OverridesServiceImplTest {
     @Before
     public void setUp() throws Exception {
         when(overridesRegistry.forUpdates(anyString())).thenReturn(overridesSubject);
-        overridesService.register(FIRST_INSTANCE_INFO.getId(), SOURCE, registrationSubject).subscribe();
+        overridesService.register(FIRST_INSTANCE_INFO.getId(), registrationSubject, SOURCE).subscribe();
     }
 
     @Test

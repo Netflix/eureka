@@ -38,7 +38,7 @@ public class PreservableRegistryProcessorTest {
 
     @Before
     public void setUp() throws Exception {
-        registry.register(FIRST_INSTANCE_INFO.getId(), SOURCE, registrationSubject).subscribe();
+        registry.register(FIRST_INSTANCE_INFO.getId(), registrationSubject, SOURCE).subscribe();
     }
 
     @Test
