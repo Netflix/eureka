@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -39,14 +39,7 @@ import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotifica
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.modifyChangeNotificationOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.hasItems;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -156,7 +149,7 @@ public class SourcedEurekaRegistryImplTest {
 
         // Initial add
         ExtTestSubscriber<Void> registerSubscriber = new ExtTestSubscriber<>();
-        registry.register(original.getId(), localSource, registrationSubject).subscribe(registerSubscriber);
+        registry.register(original.getId(), registrationSubject, localSource).subscribe(registerSubscriber);
         registrationSubject.onNext(original);
 
         testScheduler.triggerActions();
@@ -194,7 +187,7 @@ public class SourcedEurekaRegistryImplTest {
 
         // Initial add
         ExtTestSubscriber<Void> registerSubscriber = new ExtTestSubscriber<>();
-        registry.register(original.getId(), localSource, registrationSubject).subscribe(registerSubscriber);
+        registry.register(original.getId(), registrationSubject, localSource).subscribe(registerSubscriber);
         registrationSubject.onNext(original);
 
         testScheduler.triggerActions();
@@ -225,7 +218,7 @@ public class SourcedEurekaRegistryImplTest {
         registry.register(original, localSource);
         testScheduler.triggerActions();
 
-        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
+        ConcurrentMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
         assertThat(internalStore.size(), equalTo(1));
 
         MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
@@ -243,7 +236,7 @@ public class SourcedEurekaRegistryImplTest {
         registry.register(original, localSource);
         testScheduler.triggerActions();
 
-        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
+        ConcurrentMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
         assertThat(internalStore.size(), equalTo(1));
 
         MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
@@ -281,7 +274,7 @@ public class SourcedEurekaRegistryImplTest {
         registry.register(replicated, new Source(Source.Origin.REPLICATED, "replicationSourceId"));
         testScheduler.triggerActions();
 
-        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
+        ConcurrentMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
         assertThat(internalStore.size(), equalTo(1));
 
         MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
@@ -308,7 +301,7 @@ public class SourcedEurekaRegistryImplTest {
         registry.register(original, localSource);
         testScheduler.triggerActions();
 
-        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
+        ConcurrentMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
         assertThat(internalStore.size(), equalTo(1));
 
         MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
@@ -337,7 +330,7 @@ public class SourcedEurekaRegistryImplTest {
         registry.register(original, localSource);
         testScheduler.triggerActions();
 
-        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
+        ConcurrentMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
         assertThat(internalStore.size(), equalTo(1));
 
         MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
@@ -374,7 +367,7 @@ public class SourcedEurekaRegistryImplTest {
         registry.register(original, localSource);
         testScheduler.triggerActions();
 
-        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
+        ConcurrentMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
         assertThat(internalStore.size(), equalTo(1));
 
         MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
@@ -421,7 +414,7 @@ public class SourcedEurekaRegistryImplTest {
         registry.register(original, replicatedSource);
         testScheduler.triggerActions();
 
-        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
+        ConcurrentMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
         assertThat(internalStore.size(), equalTo(1));
 
         MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
@@ -723,7 +716,7 @@ public class SourcedEurekaRegistryImplTest {
             super(registryMetricFactory, testScheduler);
         }
 
-        public ConcurrentHashMap<String, NotifyingInstanceInfoHolder> getInternalStore() {
+        public ConcurrentMap<String, NotifyingInstanceInfoHolder> getInternalStore() {
             return internalStore;
         }
     }

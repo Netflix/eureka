@@ -65,13 +65,13 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
 
     private static final Logger logger = LoggerFactory.getLogger(SourcedEurekaRegistryImpl.class);
 
-    protected final ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore;
+    protected final ConcurrentMap<String, NotifyingInstanceInfoHolder> internalStore;
     private final PauseableSubject<ChangeNotification<InstanceInfo>> pauseableSubject;  // subject for all changes in the registry
     private final IndexRegistry<InstanceInfo> indexRegistry;
     private final EurekaRegistryMetrics metrics;
 
     private final Subject<Observable<ChangeNotification<InstanceInfoWithSource>>, Observable<ChangeNotification<InstanceInfoWithSource>>>
-            registrationSubject = new SerializedSubject(PublishSubject.create());
+            registrationSubject = new SerializedSubject<>(PublishSubject.<Observable<ChangeNotification<InstanceInfoWithSource>>>create());
 
     /**
      * All registrations are serialized, and each registration subscription updates this data structure. If there is
@@ -153,12 +153,12 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     // -------------------------------------------------
 
     @Override
-    public Observable<Void> register(final String id, final Source source, final Observable<InstanceInfo> registrationUpdates) {
+    public Observable<Void> register(final String id, final Observable<InstanceInfo> registrationUpdates, final Source source) {
         return Observable.create(new OnSubscribe<Void>() {
             @Override
             public void call(Subscriber<? super Void> subscriber) {
                 Observable<ChangeNotification<InstanceInfoWithSource>> changeNotifications =
-                        toSourcedChangeNotificationStream(registrationUpdates, id, source)
+                        toSourcedChangeNotificationStream(id, registrationUpdates, source)
                                 .doOnSubscribe(new Action0() {
                                     @Override
                                     public void call() {
@@ -178,7 +178,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     @Override
     public Observable<Boolean> register(final InstanceInfo instanceInfo, final Source source) {
         Observable<ChangeNotification<InstanceInfoWithSource>> registerObservable = Observable.just(
-                new ChangeNotification<InstanceInfoWithSource>(Kind.Add, new InstanceInfoWithSource(instanceInfo, source))
+                new ChangeNotification<>(Kind.Add, new InstanceInfoWithSource(instanceInfo, source))
         ).doOnSubscribe(new Action0() {
             @Override
             public void call() {
@@ -192,7 +192,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     @Override
     public Observable<Boolean> unregister(final InstanceInfo instanceInfo, final Source source) {
         Observable<ChangeNotification<InstanceInfoWithSource>> unregisterObservable = Observable.just(
-                new ChangeNotification<InstanceInfoWithSource>(Kind.Delete, new InstanceInfoWithSource(instanceInfo, source))
+                new ChangeNotification<>(Kind.Delete, new InstanceInfoWithSource(instanceInfo, source))
         );
         registrationSubject.onNext(unregisterObservable);
         return Observable.just(true);

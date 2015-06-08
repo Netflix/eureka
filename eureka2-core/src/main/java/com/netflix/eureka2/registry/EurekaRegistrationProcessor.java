@@ -1,7 +1,6 @@
 package com.netflix.eureka2.registry;
 
 import com.netflix.eureka2.EurekaCloseable;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
 
 /**
@@ -9,17 +8,15 @@ import rx.Observable;
  */
 public interface EurekaRegistrationProcessor<T> extends EurekaCloseable {
 
-    /**
-     */
-    Observable<Void> register(String id, Source source, Observable<InstanceInfo> registrationUpdates);
+    Observable<Void> register(String id, Observable<T> registrationUpdates, Source source);
 
     /**
      * @return a boolean to denote whether the register added a new entry or updated an existing entry
      */
-    Observable<Boolean> register(T instanceInfo, Source source);
+    Observable<Boolean> register(T registrant, Source source);
 
     /**
      * @return a boolean to denote whether the unregister removed an existing entry
      */
-    Observable<Boolean> unregister(T instanceInfo, Source source);
+    Observable<Boolean> unregister(T registrant, Source source);
 }

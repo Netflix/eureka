@@ -2,7 +2,9 @@ package com.netflix.eureka2.utils.rx;
 
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import org.junit.Test;
+import rx.Observable;
 import rx.functions.Func2;
+import rx.observers.TestSubscriber;
 import rx.subjects.PublishSubject;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -59,5 +61,17 @@ public class RxFunctionsTest {
 
         mainStream.onNext("B");
         assertThat(testSubscriber.takeNext(), is(equalTo("B#1")));
+    }
+
+    @Test
+    public void testSwallowErrorFunc() {
+        TestSubscriber<Void> testSubscriber = new TestSubscriber<>();
+
+        Observable.<Void>error(new RuntimeException("test exception"))
+                .compose(RxFunctions.<Void>swallowError())
+                .subscribe(testSubscriber);
+
+        testSubscriber.assertNoErrors();
+        testSubscriber.assertTerminalEvent();
     }
 }
