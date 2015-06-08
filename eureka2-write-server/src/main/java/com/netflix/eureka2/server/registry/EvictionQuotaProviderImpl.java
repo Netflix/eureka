@@ -1,5 +1,6 @@
-package com.netflix.eureka2.registry.eviction;
+package com.netflix.eureka2.server.registry;
 
+import javax.inject.Inject;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -7,6 +8,7 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.server.config.WriteServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -54,9 +56,10 @@ public class EvictionQuotaProviderImpl implements EvictionQuotaProvider {
 
     private final AtomicReference<EvictionState> evictionStateRef = new AtomicReference<>();
 
-    public EvictionQuotaProviderImpl(final SourcedEurekaRegistry registry, int allowedPercentageDrop) {
+    @Inject
+    public EvictionQuotaProviderImpl(final SourcedEurekaRegistry registry, WriteServerConfig config) {
         this.registry = registry;
-        this.allowedPercentageDrop = allowedPercentageDrop;
+        this.allowedPercentageDrop = config.getEvictionAllowedPercentageDrop();
 
         /**
          * Registry size change should trigger state evaluation, as it may generate eviction permits.

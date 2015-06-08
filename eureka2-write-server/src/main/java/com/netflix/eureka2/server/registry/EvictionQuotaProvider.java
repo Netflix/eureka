@@ -1,10 +1,10 @@
-package com.netflix.eureka2.registry.eviction;
+package com.netflix.eureka2.server.registry;
 
 import rx.Observable;
 
 /**
  * Back pressure aware observable that emits eviction quotas, when requested
- * by {@link com.netflix.eureka2.registry.PreservableRegistryProcessor}.
+ * by {@link PreservableRegistryProcessor}.
  *
  * @author Tomasz Bak
  */

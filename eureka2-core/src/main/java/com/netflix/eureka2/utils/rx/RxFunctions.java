@@ -17,12 +17,12 @@ public final class RxFunctions {
         }
     };
 
-    private static final Object COMBINE_MARKER = new Object();
+    private static final Object COMBINE_MARKER = new String("combineWithOptional() operator's end of primary stream marker");
     private static final Observable<Object> COMBINE_MARKER_OBSERVABLE = Observable.just(COMBINE_MARKER);
     private static final Func1<Object, Boolean> COMBINE_MARKER_PREDICATE = new Func1<Object, Boolean>() {
         @Override
         public Boolean call(Object o) {
-            return o == COMBINE_MARKER;
+            return o != COMBINE_MARKER;
         }
     };
 
@@ -61,6 +61,6 @@ public final class RxFunctions {
                 }
                 return combineFunction.call((T1) t1, t2);
             }
-        }).takeUntil(COMBINE_MARKER_PREDICATE);
+        }).takeWhile(COMBINE_MARKER_PREDICATE);
     }
 }
