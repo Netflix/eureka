@@ -247,7 +247,7 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
     private ChangeNotification<InstanceInfo> streamStateUpdateToStreamStateNotification(StreamStateUpdate notification) {
         BufferState state = notification.getState();
         if (state == BufferState.BufferStart || state == BufferState.BufferEnd) {
-            return new StreamStateNotification<InstanceInfo>(state, notification.getInterest());
+            return new StreamStateNotification<>(state, notification.getInterest());
         }
         throw new IllegalStateException("Unexpected state " + state);
     }

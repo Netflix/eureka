@@ -1,14 +1,18 @@
 package com.netflix.eureka2.testkit.junit;
 
+import java.util.Arrays;
 import java.util.List;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
+import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.junit.matchers.ChangeNotificationBatchMatcher;
 import com.netflix.eureka2.testkit.junit.matchers.ChangeNotificationKindMatcher;
 import com.netflix.eureka2.testkit.junit.matchers.ChangeNotificationMatcher;
 import com.netflix.eureka2.testkit.junit.matchers.InstanceInfoMatcher;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 
 /**
@@ -41,6 +45,42 @@ public final class EurekaMatchers {
 
     public static Matcher<ChangeNotification<InstanceInfo>> bufferingChangeNotification() {
         return new ChangeNotificationKindMatcher(Kind.BufferSentinel);
+    }
+
+    public static Matcher<ChangeNotification<InstanceInfo>> bufferStartNotification() {
+        return new BaseMatcher<ChangeNotification<InstanceInfo>>() {
+            @Override
+            public boolean matches(Object item) {
+                if (!new ChangeNotificationKindMatcher(Kind.BufferSentinel).matches(item)) {
+                    return false;
+                } else {
+                    return ((StreamStateNotification<InstanceInfo>) item).getBufferState() == StreamStateNotification.BufferState.BufferStart;
+                }
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("Expected bufferStart notification");
+            }
+        };
+    }
+
+    public static Matcher<ChangeNotification<InstanceInfo>> bufferEndNotification() {
+        return new BaseMatcher<ChangeNotification<InstanceInfo>>() {
+            @Override
+            public boolean matches(Object item) {
+                if (!new ChangeNotificationKindMatcher(Kind.BufferSentinel).matches(item)) {
+                    return false;
+                } else {
+                    return ((StreamStateNotification<InstanceInfo>) item).getBufferState() == StreamStateNotification.BufferState.BufferEnd;
+                }
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("Expected bufferStart notification");
+            }
+        };
     }
 
     public static <T> Matcher<List<ChangeNotification<T>>> changeNotificationBatchOf(List<ChangeNotification<T>> dataNotifications) {

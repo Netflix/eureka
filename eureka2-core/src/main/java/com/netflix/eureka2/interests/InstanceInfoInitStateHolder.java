@@ -62,7 +62,10 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
     @Override
     protected Iterator<ChangeNotification<InstanceInfo>> _newIterator() {
         if (notificationMap.isEmpty()) {
-            return singletonIterator(bufferEndNotification);
+            return concat(
+                    singletonIterator(bufferStartNotification),
+                    singletonIterator(bufferEndNotification)
+            );
         }
         return concat(
                 singletonIterator(bufferStartNotification),
