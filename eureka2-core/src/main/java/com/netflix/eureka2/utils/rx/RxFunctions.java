@@ -1,7 +1,5 @@
 package com.netflix.eureka2.utils.rx;
 
-import rx.Notification;
-import rx.Notification.Kind;
 import rx.Observable;
 import rx.Observable.Transformer;
 import rx.functions.Func1;
@@ -16,13 +14,6 @@ public final class RxFunctions {
         @Override
         public Boolean call(Object o) {
             return o != null;
-        }
-    };
-
-    private static final Func1<Notification<?>, Notification<?>> SWALLOW_ERROR_FUNC = new Func1<Notification<?>, Notification<?>>() {
-        @Override
-        public Notification<?> call(Notification<?> notification) {
-            return notification.getKind() == Kind.OnError ? Notification.createOnCompleted() : notification;
         }
     };
 
@@ -50,7 +41,7 @@ public final class RxFunctions {
         return new Transformer<T, T>() {
             @Override
             public Observable<T> call(Observable<T> observable) {
-                return observable.materialize().map(SWALLOW_ERROR_FUNC).dematerialize();
+                return observable.onErrorResumeNext(Observable.<T>empty());
             }
         };
     }

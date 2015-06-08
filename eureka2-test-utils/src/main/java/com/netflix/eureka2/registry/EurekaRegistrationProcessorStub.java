@@ -19,7 +19,7 @@ public class EurekaRegistrationProcessorStub implements EurekaRegistrationProces
     private final ExtTestSubscriber<InstanceInfo> registrationUpdateSubscriber = new ExtTestSubscriber<>();
 
     @Override
-    public Observable<Void> register(String id, Source source, final Observable<InstanceInfo> registrationUpdates) {
+    public Observable<Void> register(String id, final Observable<InstanceInfo> registrationUpdates, Source source) {
         return Observable.create(new OnSubscribe<Void>() {
             @Override
             public void call(Subscriber<? super Void> subscriber) {

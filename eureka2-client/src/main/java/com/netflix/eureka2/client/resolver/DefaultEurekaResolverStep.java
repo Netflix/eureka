@@ -129,7 +129,7 @@ class DefaultEurekaResolverStep implements EurekaRemoteResolverStep {
         }
 
         @Override
-        public Observable<Void> register(String id, Source source, Observable<InstanceInfo> registrationUpdates) {
+        public Observable<Void> register(String id, Observable<InstanceInfo> registrationUpdates, Source source) {
             throw new IllegalStateException("method not supported");
         }
 

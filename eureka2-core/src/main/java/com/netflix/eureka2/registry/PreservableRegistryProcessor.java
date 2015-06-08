@@ -40,12 +40,12 @@ public class PreservableRegistryProcessor implements EurekaRegistrationProcessor
     }
 
     @Override
-    public Observable<Void> register(final String id, final Source source, final Observable<InstanceInfo> registrationUpdates) {
+    public Observable<Void> register(final String id, final Observable<InstanceInfo> registrationUpdates, final Source source) {
         return Observable.create(new OnSubscribe<Void>() {
             @Override
             public void call(final Subscriber<? super Void> clientSubscriber) {
                 final PublishSubject<InstanceInfo> delegateUpdates = PublishSubject.create();
-                delegate.register(id, source, delegateUpdates).subscribe(new Subscriber<Void>() {
+                delegate.register(id, delegateUpdates, source).subscribe(new Subscriber<Void>() {
                     @Override
                     public void onCompleted() {
                         clientSubscriber.onCompleted();
