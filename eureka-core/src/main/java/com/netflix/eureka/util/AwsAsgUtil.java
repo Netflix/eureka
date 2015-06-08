@@ -20,7 +20,6 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
 import com.amazonaws.services.securitytoken.model.AssumeRoleResult;
@@ -154,7 +153,7 @@ public class AwsAsgUtil {
     private boolean isAddToLoadBalancerSuspended(String asgName) {
         String asgAccount = getASGAccount(asgName);
         AutoScalingGroup asg;
-        if(asgAccount.equals(accountId)) {
+        if(asgAccount == null || asgAccount.equals(accountId)) {
             asg = retrieveAutoScalingGroup(asgName);
         } else {
             asg = retrieveAutoScalingGroupCrossAccount(asgAccount, asgName);
