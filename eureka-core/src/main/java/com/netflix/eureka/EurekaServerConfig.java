@@ -259,7 +259,7 @@ public interface EurekaServerConfig {
 
     /**
      * Gets the time interval with which the payload cache of the client should
-     * be updated.
+     * be updated. Set to 0 to update the cache immediately.
      *
      * @return time in milliseconds.
      */

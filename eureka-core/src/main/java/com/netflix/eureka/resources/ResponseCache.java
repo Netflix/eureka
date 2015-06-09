@@ -154,12 +154,23 @@ public class ResponseCache {
 
     private static final ResponseCache s_instance = new ResponseCache();
 
+    /**
+     * Indicates if the read only cache is enabled or not.
+     */
+    private boolean readOnlyCacheEnabled = false;
+    
     private ResponseCache() {
+    	// A responseCacheUpdateIntervalMs set to 0 (or lower) means an immediate propagation
+    	// of changes. This has the same effect as disabling the read only cache.
         long responseCacheUpdateIntervalMs = eurekaConfig.getResponseCacheUpdateIntervalMs();
-        timer.schedule(getCacheUpdateTask(),
-                new Date(((System.currentTimeMillis() / responseCacheUpdateIntervalMs) * responseCacheUpdateIntervalMs)
-                        + responseCacheUpdateIntervalMs),
-                responseCacheUpdateIntervalMs);
+        if( responseCacheUpdateIntervalMs > 0 ) {
+        	this.readOnlyCacheEnabled = true;
+	        timer.schedule(getCacheUpdateTask(),
+	                new Date(((System.currentTimeMillis() / responseCacheUpdateIntervalMs) * responseCacheUpdateIntervalMs)
+	                        + responseCacheUpdateIntervalMs),
+	                responseCacheUpdateIntervalMs);
+        }
+        
         try {
             Monitors.registerObject(this);
 
@@ -323,7 +334,7 @@ public class ResponseCache {
     Value getValue(final Key key, boolean ignoreReadOnlyCache) {
         Value payload = null;
         try {
-            if (ignoreReadOnlyCache) {
+            if (ignoreReadOnlyCache || !readOnlyCacheEnabled) {
                 payload = readWriteCacheMap.get(key);
             } else {
                 final Value currentPayload = readOnlyCacheMap.get(key);
