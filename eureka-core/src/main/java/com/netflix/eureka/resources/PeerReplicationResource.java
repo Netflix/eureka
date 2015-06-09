@@ -136,7 +136,7 @@ public class PeerReplicationResource {
     }
 
     private static Builder handleStatusUpdate(ReplicationInstance instanceInfo, InstanceResource resource) {
-        Response response = resource.statusUpdate(instanceInfo.getStatus(), REPLICATION, instanceInfo.getLastDirtyTimestamp().toString());
+        Response response = resource.statusUpdate(instanceInfo.getStatus(), REPLICATION, toString(instanceInfo.getLastDirtyTimestamp()));
         return new Builder().setStatusCode(response.getStatus());
     }
 

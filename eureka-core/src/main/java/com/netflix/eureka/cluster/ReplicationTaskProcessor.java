@@ -228,6 +228,7 @@ public class ReplicationTaskProcessor {
                     new Date(now),
                     new Date(task.getSubmitTime())};
 
+            DynamicCounter.increment("Replication_" + task.getAction().name() + "_expiry");
             logger.warn(
                     "Replication events older than the threshold. AppName : {}, Id: {}, Action : {}, Current Time : {}, Submit Time :{}",
                     args);
