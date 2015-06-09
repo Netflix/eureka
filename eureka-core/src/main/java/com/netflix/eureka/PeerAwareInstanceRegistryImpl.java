@@ -604,7 +604,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
     @com.netflix.servo.annotations.Monitor(name = "isBelowRenewThreshold", description = "0 = false, 1 = true",
             type = com.netflix.servo.annotations.DataSourceType.GAUGE)
     public int isBelowRenewThresold() {
-        if ((getNumOfRenewsInLastMin() < numberOfRenewsPerMinThreshold)
+        if ((getNumOfRenewsInLastMin() <= numberOfRenewsPerMinThreshold)
                 && ((this.startupTime > 0) && (System.currentTimeMillis() > this.startupTime
                 + (EUREKA_SERVER_CONFIG.getWaitTimeInMsWhenSyncEmpty())))) {
             return 1;
