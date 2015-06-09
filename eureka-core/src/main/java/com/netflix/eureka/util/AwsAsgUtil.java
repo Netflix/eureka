@@ -16,17 +16,24 @@
 
 package com.netflix.eureka.util;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
+import com.amazonaws.services.securitytoken.model.AssumeRoleResult;
+import com.amazonaws.services.securitytoken.model.Credentials;
+import com.google.common.base.Strings;
+import com.netflix.appinfo.AmazonInfo;
+import com.netflix.appinfo.AmazonInfo.MetaDataKey;
+import com.netflix.appinfo.ApplicationInfoManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.services.autoscaling.AmazonAutoScaling;
 import com.amazonaws.services.autoscaling.AmazonAutoScalingClient;
@@ -34,7 +41,7 @@ import com.amazonaws.services.autoscaling.model.AutoScalingGroup;
 import com.amazonaws.services.autoscaling.model.DescribeAutoScalingGroupsRequest;
 import com.amazonaws.services.autoscaling.model.DescribeAutoScalingGroupsResult;
 import com.amazonaws.services.autoscaling.model.SuspendedProcess;
-import com.google.common.base.Strings;
+import com.amazonaws.services.securitytoken.model.AssumeRoleRequest;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -49,8 +56,6 @@ import com.netflix.eureka.PeerAwareInstanceRegistryImpl;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A utility class for querying and updating information about amazon
@@ -66,6 +71,10 @@ public class AwsAsgUtil {
     private static final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
             .getInstance().getConfiguration();
     private static final AmazonAutoScaling client = getAmazonAutoScalingClient();
+
+    private Map<String, Credentials> stsCredentials = new HashMap<String, Credentials>();
+
+    private static final String accountId = getAccountId();
     // Cache for the AWS ASG information
     private final LoadingCache<String, Boolean> asgCache = CacheBuilder
             .newBuilder().initialCapacity(500)
@@ -143,7 +152,13 @@ public class AwsAsgUtil {
      * @return - true if the ASG is disabled, false otherwise
      */
     private boolean isAddToLoadBalancerSuspended(String asgName) {
-        AutoScalingGroup asg = retrieveAutoScalingGroup(asgName);
+        String asgAccount = getASGAccount(asgName);
+        AutoScalingGroup asg;
+        if(asgAccount == null || asgAccount.equals(accountId)) {
+            asg = retrieveAutoScalingGroup(asgName);
+        } else {
+            asg = retrieveAutoScalingGroupCrossAccount(asgAccount, asgName);
+        }
         if (asg == null) {
             logger.warn(
                     "The ASG information for {} could not be found. So returning false.",
@@ -187,6 +202,65 @@ public class AwsAsgUtil {
         DescribeAutoScalingGroupsRequest request = new DescribeAutoScalingGroupsRequest()
                 .withAutoScalingGroupNames(asgName);
         DescribeAutoScalingGroupsResult result = client
+                .describeAutoScalingGroups(request);
+        List<AutoScalingGroup> asgs = result.getAutoScalingGroups();
+        if (asgs.isEmpty()) {
+            return null;
+        } else {
+            return asgs.get(0);
+        }
+    }
+
+    private Credentials initializeStsSession(String asgAccount) {
+        AWSSecurityTokenService sts = new AWSSecurityTokenServiceClient(new InstanceProfileCredentialsProvider());
+        String region = DiscoveryManager.getInstance().getEurekaClientConfig()
+                .getRegion();
+        if (!region.equals("us-east-1")) {
+            sts.setEndpoint("sts." + region + ".amazonaws.com");
+        }
+
+        String roleName = EurekaServerConfigurationManager.getInstance().getConfiguration().
+                getListAutoScalingGroupsRoleName();
+
+        String roleArn = "arn:aws:iam::" + asgAccount + ":role/" + roleName;
+
+        AssumeRoleResult assumeRoleResult = sts.assumeRole(new AssumeRoleRequest()
+                        .withRoleArn(roleArn)
+                        .withRoleSessionName("sts-session-" + asgAccount)
+        );
+
+        return assumeRoleResult.getCredentials();
+    }
+
+    private AutoScalingGroup retrieveAutoScalingGroupCrossAccount(String asgAccount, String asgName) {
+        logger.debug("Getting cross account ASG for asgName: " + asgName + ", asgAccount: " + asgAccount);
+
+        Credentials credentials = stsCredentials.get(asgAccount);
+
+        if (credentials == null || credentials.getExpiration().getTime() < System.currentTimeMillis() + 1000) {
+            stsCredentials.put(asgAccount, initializeStsSession(asgAccount));
+        }
+
+        ClientConfiguration clientConfiguration = new ClientConfiguration()
+                .withConnectionTimeout(eurekaConfig.getASGQueryTimeoutMs());
+
+        AmazonAutoScaling autoScalingClient = new AmazonAutoScalingClient(
+                new BasicSessionCredentials(
+                        credentials.getAccessKeyId(),
+                        credentials.getSecretAccessKey(),
+                        credentials.getSessionToken()
+                ),
+                clientConfiguration
+        );
+
+        String region = DiscoveryManager.getInstance().getEurekaClientConfig().getRegion();
+        if (!region.equals("us-east-1")) {
+            autoScalingClient.setEndpoint("autoscaling." + region + ".amazonaws.com");
+        }
+
+        DescribeAutoScalingGroupsRequest request = new DescribeAutoScalingGroupsRequest()
+                .withAutoScalingGroupNames(asgName);
+        DescribeAutoScalingGroupsResult result = autoScalingClient
                 .describeAutoScalingGroups(request);
         List<AutoScalingGroup> asgs = result.getAutoScalingGroups();
         if (asgs.isEmpty()) {
@@ -300,8 +374,7 @@ public class AwsAsgUtil {
      */
     private Set<String> getASGNames() {
         Set<String> asgNames = new HashSet<String>();
-        Applications apps = PeerAwareInstanceRegistryImpl.getInstance()
-                .getApplications(false);
+        Applications apps = PeerAwareInstanceRegistryImpl.getInstance().getApplications(false);
         for (Application app : apps.getRegisteredApplications()) {
             for (InstanceInfo instanceInfo : app.getInstances()) {
                 String asgName = instanceInfo.getASGName();
@@ -312,6 +385,32 @@ public class AwsAsgUtil {
         }
 
         return asgNames;
+    }
+
+    /**
+     * Get the AWS account id where an ASG is created.
+     *
+     * @param asgName
+     *            - The name of the ASG
+     * @return the account id
+     */
+    private String getASGAccount(String asgName) {
+        Applications apps = PeerAwareInstanceRegistryImpl.getInstance().getApplications(false);
+
+        for (Application app : apps.getRegisteredApplications()) {
+            for (InstanceInfo instanceInfo : app.getInstances()) {
+                String thisAsgName = instanceInfo.getASGName();
+                if (thisAsgName != null && thisAsgName.equals(asgName)) {
+                    String accountId = ((AmazonInfo) instanceInfo.getDataCenterInfo()).get(MetaDataKey.accountId);
+                    if (accountId != null) {
+                        return accountId;
+                    }
+                }
+            }
+        }
+
+        logger.warn("Couldn't get the ASG account for {}, using the default accountId instead", asgName);
+        return accountId;
     }
 
     private static AmazonAutoScaling getAmazonAutoScalingClient() {
@@ -330,6 +429,11 @@ public class AwsAsgUtil {
                     new InstanceProfileCredentialsProvider(),
                     clientConfiguration);
         }
+    }
+
+    private static String getAccountId() {
+        InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
+        return ((AmazonInfo) myInfo.getDataCenterInfo()).get(MetaDataKey.accountId);
     }
 
 }

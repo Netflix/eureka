@@ -4,11 +4,13 @@ import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.MyDataCenterInstanceConfig;
 import com.netflix.config.ConfigurationManager;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -16,8 +18,9 @@ import java.util.UUID;
  */
 public class DiscoveryClientRegisterUpdateTest {
 
-    private ApplicationInfoManager applicationInfoManager;
+    private TestApplicationInfoManager applicationInfoManager;
     private MockRemoteEurekaServer mockLocalEurekaServer;
+    private EurekaClient client;
 
     @Before
     public void setUp() throws Exception {
@@ -32,9 +35,16 @@ public class DiscoveryClientRegisterUpdateTest {
                 "http://localhost:" + mockLocalEurekaServer.getPort() +
                         MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
 
-        applicationInfoManager = ApplicationInfoManager.getInstance();
+        applicationInfoManager = new TestApplicationInfoManager();
         applicationInfoManager.initComponent(new MyDataCenterInstanceConfig());
-        EurekaClient client = new DiscoveryClient(applicationInfoManager.getInfo(), new DefaultEurekaClientConfig());
+        client = new DiscoveryClient(applicationInfoManager.getInfo(), new DefaultEurekaClientConfig());
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        client.shutdown();
+        mockLocalEurekaServer.stop();
+        ConfigurationManager.getConfigInstance().clear();
     }
 
     @Test
@@ -66,5 +76,36 @@ public class DiscoveryClientRegisterUpdateTest {
 
         Assert.assertEquals(Arrays.asList("DOWN", "UP"), mockLocalEurekaServer.registrationStatuses);
         Assert.assertEquals(2, mockLocalEurekaServer.registerCount.get());
+    }
+
+    @Test
+    public void registerUpdateShutdownTest() throws Exception {
+        Assert.assertEquals(1, applicationInfoManager.getStatusChangeListeners().size());
+        client.shutdown();
+        Assert.assertEquals(0, applicationInfoManager.getStatusChangeListeners().size());
+    }
+
+    @Test
+    public void testRegistrationDisabled() throws Exception {
+        client.shutdown();  // shutdown the default @Before client first
+
+        ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", "false");
+        client = new DiscoveryClient(applicationInfoManager.getInfo(), new DefaultEurekaClientConfig());
+        Assert.assertEquals(0, applicationInfoManager.getStatusChangeListeners().size());
+        applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.DOWN);
+        applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.UP);
+        Thread.sleep(400);
+        client.shutdown();
+        Assert.assertEquals(0, applicationInfoManager.getStatusChangeListeners().size());
+    }
+
+    public class TestApplicationInfoManager extends ApplicationInfoManager {
+        TestApplicationInfoManager() {
+            super(null, null);
+        }
+
+        public Map<String, StatusChangeListener> getStatusChangeListeners() {
+            return this.listeners;
+        }
     }
 }

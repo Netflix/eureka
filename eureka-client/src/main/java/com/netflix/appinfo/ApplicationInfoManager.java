@@ -52,14 +52,18 @@ public class ApplicationInfoManager {
     private InstanceInfo instanceInfo;
     private EurekaInstanceConfig config;
 
-    private Map<String, StatusChangeListener> listeners;
+    protected Map<String, StatusChangeListener> listeners;
 
     private ApplicationInfoManager() {
         listeners = new ConcurrentHashMap<String, StatusChangeListener>();
     }
 
+    /**
+     * public for spring DI use. This class should be in singleton scope so do not create explicitly.
+     * Either use DI or use getInstance().initComponent() if not using DI
+     */
     @Inject
-    ApplicationInfoManager(EurekaInstanceConfig config, InstanceInfo instanceInfo) {
+    public ApplicationInfoManager(EurekaInstanceConfig config, InstanceInfo instanceInfo) {
         this.config = config;
         this.instanceInfo = instanceInfo;
         this.listeners = new ConcurrentHashMap<String, StatusChangeListener>();
