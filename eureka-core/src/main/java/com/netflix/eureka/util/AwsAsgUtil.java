@@ -16,8 +16,19 @@
 
 package com.netflix.eureka.util;
 
-import java.util.*;
-import java.util.concurrent.ExecutionException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
@@ -25,6 +36,9 @@ import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
 import com.amazonaws.services.securitytoken.model.AssumeRoleResult;
 import com.amazonaws.services.securitytoken.model.Credentials;
 import com.google.common.base.Strings;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.ApplicationInfoManager;
@@ -65,36 +79,57 @@ import com.netflix.servo.monitor.Stopwatch;
  */
 
 public class AwsAsgUtil {
-    private final Logger logger = LoggerFactory.getLogger(AwsAsgUtil.class);
+    private static final Logger logger = LoggerFactory.getLogger(AwsAsgUtil.class);
+
     private static final String PROP_ADD_TO_LOAD_BALANCER = "AddToLoadBalancer";
     private static final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
             .getInstance().getConfiguration();
     private static final AmazonAutoScaling client = getAmazonAutoScalingClient();
 
+    private static final String accountId = getAccountId();
+
     private Map<String, Credentials> stsCredentials = new HashMap<String, Credentials>();
 
-    private static final String accountId = getAccountId();
+    private final ExecutorService cacheReloadExecutor = new ThreadPoolExecutor(
+            1, 10, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(),
+            new ThreadFactory() {
+                @Override
+                public Thread newThread(Runnable r) {
+                    Thread thread = new Thread(r, "Eureka-AWS-isASGEnabled");
+                    thread.setDaemon(true);
+                    return thread;
+                }
+    });
+
+    private ListeningExecutorService listeningCacheReloadExecutor = MoreExecutors.listeningDecorator(cacheReloadExecutor);
+
     // Cache for the AWS ASG information
-    private final LoadingCache<String, Boolean> asgCache = CacheBuilder
+    private final LoadingCache<CacheKey, Boolean> asgCache = CacheBuilder
             .newBuilder().initialCapacity(500)
             .expireAfterAccess(5, TimeUnit.MINUTES)
-            .build(new CacheLoader<String, Boolean>() {
-
+            .build(new CacheLoader<CacheKey, Boolean>() {
                 @Override
-                public Boolean load(String key) throws Exception {
-                    return isASGEnabledinAWS(key);
+                public Boolean load(CacheKey key) throws Exception {
+                    return isASGEnabledinAWS(key.asgAccountId, key.asgName);
+                }
+                @Override
+                public ListenableFuture<Boolean> reload(final CacheKey key, Boolean oldValue) throws Exception {
+                    return listeningCacheReloadExecutor.submit(new Callable<Boolean>() {
+                        @Override
+                        public Boolean call() throws Exception {
+                            return load(key);
+                        }
+                    });
                 }
             });
 
     private final Timer timer = new Timer("Eureka-ASGCacheRefresh", true);
-    private final com.netflix.servo.monitor.Timer loadASGInfoTimer = Monitors
-            .newTimer("Eureka-loadASGInfo");
+    private final com.netflix.servo.monitor.Timer loadASGInfoTimer = Monitors.newTimer("Eureka-loadASGInfo");
 
     private static final AwsAsgUtil awsAsgUtil = new AwsAsgUtil();
 
     private AwsAsgUtil() {
-        String region = DiscoveryManager.getInstance().getEurekaClientConfig()
-                .getRegion();
+        String region = DiscoveryManager.getInstance().getEurekaClientConfig().getRegion();
         client.setEndpoint("autoscaling." + region + ".amazonaws.com");
         timer.schedule(getASGUpdateTask(),
                 eurekaConfig.getASGUpdateIntervalMs(),
@@ -117,29 +152,30 @@ public class AwsAsgUtil {
      * Return the status of the ASG whether is enabled or disabled for service.
      * The value is picked up from the cache except the very first time.
      *
-     * @param asgName
-     *            - The name of the ASG
-     * @return - true if enabled, false otherwise
+     * @param instanceInfo the instanceInfo for the lookup
+     * @return true if enabled, false otherwise
      */
-    public boolean isASGEnabled(String asgName) {
-        try {
-            return asgCache.get(asgName);
-        } catch (ExecutionException e) {
-            logger.error("Error getting cache value for asg : " + asgName, e);
+    public boolean isASGEnabled(InstanceInfo instanceInfo) {
+        CacheKey cacheKey = new CacheKey(getAccountId(instanceInfo, accountId), instanceInfo.getASGName());
+        asgCache.refresh(cacheKey);
+        Boolean result = asgCache.getIfPresent(cacheKey);
+        if (result != null) {
+            return result;
+        } else {
+            logger.warn("Cache value for asg {} does not exist yet", cacheKey.asgName);
+            return true;
         }
-        return true;
     }
 
     /**
      * Sets the status of the ASG.
      *
-     * @param asgName
-     *            - The name of the ASG
-     * @param enabled
-     *            - true to enable, false to disable
+     * @param asgName The name of the ASG
+     * @param enabled true to enable, false to disable
      */
     public void setStatus(String asgName, boolean enabled) {
-        asgCache.put(asgName, enabled);
+        String asgAccountId = getASGAccount(asgName);
+        asgCache.put(new CacheKey(asgAccountId, asgName), enabled);
     }
 
     /**
@@ -150,18 +186,15 @@ public class AwsAsgUtil {
      *            - The name of the ASG for which the status needs to be queried
      * @return - true if the ASG is disabled, false otherwise
      */
-    private boolean isAddToLoadBalancerSuspended(String asgName) {
-        String asgAccount = getASGAccount(asgName);
+    private boolean isAddToLoadBalancerSuspended(String asgAccountId, String asgName) {
         AutoScalingGroup asg;
-        if(asgAccount == null || asgAccount.equals(accountId)) {
+        if(asgAccountId == null || asgAccountId.equals(accountId)) {
             asg = retrieveAutoScalingGroup(asgName);
         } else {
-            asg = retrieveAutoScalingGroupCrossAccount(asgAccount, asgName);
+            asg = retrieveAutoScalingGroupCrossAccount(asgAccountId, asgName);
         }
         if (asg == null) {
-            logger.warn(
-                    "The ASG information for {} could not be found. So returning false.",
-                    asgName);
+            logger.warn("The ASG information for {} could not be found. So returning false.", asgName);
             return false;
         }
         return isAddToLoadBalancerSuspended(asg);
@@ -212,8 +245,7 @@ public class AwsAsgUtil {
 
     private Credentials initializeStsSession(String asgAccount) {
         AWSSecurityTokenService sts = new AWSSecurityTokenServiceClient(new InstanceProfileCredentialsProvider());
-        String region = DiscoveryManager.getInstance().getEurekaClientConfig()
-                .getRegion();
+        String region = DiscoveryManager.getInstance().getEurekaClientConfig().getRegion();
         if (!region.equals("us-east-1")) {
             sts.setEndpoint("sts." + region + ".amazonaws.com");
         }
@@ -238,6 +270,7 @@ public class AwsAsgUtil {
 
         if (credentials == null || credentials.getExpiration().getTime() < System.currentTimeMillis() + 1000) {
             stsCredentials.put(asgAccount, initializeStsSession(asgAccount));
+            credentials = stsCredentials.get(asgAccount);
         }
 
         ClientConfiguration clientConfiguration = new ClientConfiguration()
@@ -272,16 +305,14 @@ public class AwsAsgUtil {
     /**
      * Queries AWS to see if the load balancer flag is suspended.
      *
-     * @param key
-     *            - The name of the ASG for which the flag needs to be checked.
-     * @return - true, if the load balancer flag is not suspended, false
-     *         otherwise.
+     * @param asgAccountid the accountId this asg resides in, if applicable (null will use the default accountId)
+     * @param asgName the name of the asg
+     * @return true, if the load balancer flag is not suspended, false otherwise.
      */
-    private Boolean isASGEnabledinAWS(Object key) {
-        String myKey = (String) key;
+    private Boolean isASGEnabledinAWS(String asgAccountid, String asgName) {
         try {
             Stopwatch t = this.loadASGInfoTimer.start();
-            boolean returnValue = !isAddToLoadBalancerSuspended(myKey);
+            boolean returnValue = !isAddToLoadBalancerSuspended(asgAccountid, asgName);
             t.stop();
             return returnValue;
         } catch (Throwable e) {
@@ -339,15 +370,13 @@ public class AwsAsgUtil {
             public void run() {
                 try {
                     // First get the active ASG names
-                    Set<String> asgNames = getASGNames();
-                    logger.debug("Trying to  refresh the keys for {}",
-                            Arrays.toString(asgNames.toArray()));
-                    for (String key : asgNames) {
+                    Set<CacheKey> cacheKeys = getCacheKeys();
+                    logger.debug("Trying to  refresh the keys for {}", Arrays.toString(cacheKeys.toArray()));
+                    for (CacheKey key : cacheKeys) {
                         try {
                             asgCache.refresh(key);
                         } catch (Throwable e) {
-                            logger.error("Error updating the ASG cache for "
-                                    + key, e);
+                            logger.error("Error updating the ASG cache for {}", key, e);
                         }
 
                     }
@@ -362,36 +391,37 @@ public class AwsAsgUtil {
     }
 
     /**
-     * Get the names of all the ASG to which query AWS for.
+     * Get the cacheKeys of all the ASG to which query AWS for.
      *
      * <p>
      * The names are obtained from the {@link com.netflix.eureka.InstanceRegistry} which is then
      * used for querying the AWS.
      * </p>
      *
-     * @return the set of ASG names.
+     * @return the set of ASG cacheKeys (asgName + accountId).
      */
-    private Set<String> getASGNames() {
-        Set<String> asgNames = new HashSet<String>();
-        Applications apps = PeerAwareInstanceRegistry.getInstance()
-        .getApplications(false);
+    private Set<CacheKey> getCacheKeys() {
+        Set<CacheKey> cacheKeys = new HashSet<CacheKey>();
+        Applications apps = PeerAwareInstanceRegistry.getInstance().getApplications(false);
         for (Application app : apps.getRegisteredApplications()) {
             for (InstanceInfo instanceInfo : app.getInstances()) {
+                String localAccountId = getAccountId(instanceInfo, accountId);
                 String asgName = instanceInfo.getASGName();
                 if (asgName != null) {
-                    asgNames.add(asgName);
+                    CacheKey key = new CacheKey(localAccountId, asgName);
+                    cacheKeys.add(key);
                 }
             }
         }
 
-        return asgNames;
+        return cacheKeys;
     }
 
     /**
      * Get the AWS account id where an ASG is created.
+     * Warning: This is expensive as it loops through all instances currently registered.
      *
-     * @param asgName
-     *            - The name of the ASG
+     * @param asgName The name of the ASG
      * @return the account id
      */
     private String getASGAccount(String asgName) {
@@ -401,16 +431,21 @@ public class AwsAsgUtil {
             for (InstanceInfo instanceInfo : app.getInstances()) {
                 String thisAsgName = instanceInfo.getASGName();
                 if (thisAsgName != null && thisAsgName.equals(asgName)) {
-                    String accountId = ((AmazonInfo) instanceInfo.getDataCenterInfo()).get(MetaDataKey.accountId);
-                    if (accountId != null) {
-                        return accountId;
+                    String localAccountId = getAccountId(instanceInfo, null);
+                    if (localAccountId != null) {
+                        return localAccountId;
                     }
                 }
             }
         }
 
-        logger.warn("Couldn't get the ASG account for {}, using the default accountId instead", asgName);
+        logger.info("Couldn't get the ASG account for {}, using the default accountId instead", asgName);
         return accountId;
+    }
+
+    private String getAccountId(InstanceInfo instanceInfo, String fallbackId) {
+        String localAccountId = ((AmazonInfo) instanceInfo.getDataCenterInfo()).get(MetaDataKey.accountId);
+        return localAccountId == null ? fallbackId : localAccountId;
     }
 
     private static AmazonAutoScaling getAmazonAutoScalingClient() {
@@ -436,4 +471,44 @@ public class AwsAsgUtil {
         return ((AmazonInfo) myInfo.getDataCenterInfo()).get(MetaDataKey.accountId);
     }
 
+
+
+    private static class CacheKey {
+        final String asgAccountId;
+        final String asgName;
+
+        CacheKey(String asgAccountId, String asgName) {
+            this.asgAccountId = asgAccountId;
+            this.asgName = asgName;
+        }
+
+        @Override
+        public String toString() {
+            return "CacheKey{" +
+                    "asgName='" + asgName + '\'' +
+                    ", asgAccountId='" + asgAccountId + '\'' +
+                    '}';
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof CacheKey)) return false;
+
+            CacheKey cacheKey = (CacheKey) o;
+
+            if (asgAccountId != null ? !asgAccountId.equals(cacheKey.asgAccountId) : cacheKey.asgAccountId != null)
+                return false;
+            if (asgName != null ? !asgName.equals(cacheKey.asgName) : cacheKey.asgName != null) return false;
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = asgName != null ? asgName.hashCode() : 0;
+            result = 31 * result + (asgAccountId != null ? asgAccountId.hashCode() : 0);
+            return result;
+        }
+    }
 }

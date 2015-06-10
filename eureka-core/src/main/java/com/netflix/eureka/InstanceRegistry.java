@@ -1213,8 +1213,7 @@ public abstract class InstanceRegistry implements LeaseManager<InstanceInfo>,
         // If the ASGName is present- check for its status
         boolean isASGDisabled = false;
         if (r.getASGName() != null) {
-            isASGDisabled = !AwsAsgUtil.getInstance().isASGEnabled(
-                    r.getASGName());
+            isASGDisabled = !AwsAsgUtil.getInstance().isASGEnabled(r);
             logger.debug("The ASG name is specified {} and the value is {}",
                     r.getASGName(), isASGDisabled);
             if (isASGDisabled) {
