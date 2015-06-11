@@ -266,6 +266,15 @@ public interface EurekaServerConfig {
     long getResponseCacheUpdateIntervalMs();
 
     /**
+     * The {@link com.netflix.eureka.resources.ResponseCache} currently uses a two level caching
+     * strategy to responses. A readWrite cache with an expiration policy, and a readonly cache
+     * that caches without expiry.
+     *
+     * @return true if the read only cache is to be used
+     */
+    boolean shouldUseReadOnlyResponseCache();
+
+    /**
      * Checks to see if the delta information can be served to client or not.
      * <p>
      * <em>The changes are effective at runtime.</em>
