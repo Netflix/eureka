@@ -150,9 +150,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             // Retain the last dirty timestamp without overwriting it, if there
             // is already a lease
             if (existingLease != null && (existingLease.getHolder() != null)) {
-                Long existingLastDirtyTimestamp = existingLease.getHolder()
-                        .getLastDirtyTimestamp();
+                Long existingLastDirtyTimestamp = existingLease.getHolder().getLastDirtyTimestamp();
                 Long registrationLastDirtyTimestamp = r.getLastDirtyTimestamp();
+                logger.debug("Existing lease found (existing={}, provided={}", existingLastDirtyTimestamp, registrationLastDirtyTimestamp);
                 if (existingLastDirtyTimestamp > registrationLastDirtyTimestamp) {
                     logger.warn(
                             "There is an existing lease and the existing lease's dirty timestamp {} is greater than "
@@ -173,6 +173,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                                         * EUREKA_SERVER_CONFIG.getRenewalPercentThreshold());
                     }
                 }
+                logger.debug("No previous lease information found; it is new registration");
             }
             Lease<InstanceInfo> lease = new Lease<InstanceInfo>(r,
                     leaseDuration);

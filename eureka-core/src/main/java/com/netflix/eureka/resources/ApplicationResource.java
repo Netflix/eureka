@@ -123,6 +123,7 @@ public class ApplicationResource {
     @Consumes({"application/json", "application/xml"})
     public void addInstance(InstanceInfo info,
                             @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication) {
+        logger.debug("Registering instance {} (replication={})", info.getId(), isReplication);
         registry.register(info, "true".equals(isReplication));
     }
 

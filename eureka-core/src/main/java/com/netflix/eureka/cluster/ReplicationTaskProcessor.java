@@ -100,12 +100,16 @@ public class ReplicationTaskProcessor {
 
                     HttpResponse<?> httpResponse = task.execute();
                     int statusCode = httpResponse.getStatusCode();
+                    Object entity = httpResponse.getEntity();
+                    if(logger.isDebugEnabled()) {
+                        logger.debug("Replication task {} completed with status {}, (includes entity {})", task.getTaskName(), statusCode, entity != null);
+                    }
                     if (isSuccess(statusCode)) {
                         DynamicCounter.increment("Single_" + task.getAction().name() + "_success");
                         task.handleSuccess();
                     } else {
                         DynamicCounter.increment("Single_" + task.getAction().name() + "_failure");
-                        task.handleFailure(statusCode, httpResponse.getEntity());
+                        task.handleFailure(statusCode, entity);
                     }
                 } catch (Throwable e) {
                     if (isNetworkConnectException(e)) {

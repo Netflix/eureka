@@ -136,10 +136,11 @@ public class InstanceResource {
                 registry.storeOverriddenStatusIfRequired(id,
                         InstanceStatus.valueOf(overriddenStatus));
             }
-            return response;
+        } else {
+            response = Response.ok().build();
         }
-        logger.debug("Found (Renew): {} - {}" + app.getName(), id);
-        return Response.ok().build();
+        logger.debug("Found (Renew): {} - {}; reply status={}" + app.getName(), id, response.getStatus());
+        return response;
     }
 
     /**
@@ -320,7 +321,7 @@ public class InstanceResource {
                                 "Time to sync, since the last dirty timestamp differs -"
                                         + " ReplicationInstance id : {},Registry : {} Incoming: {} Replication: {}",
                                 args);
-                        return Response.ok(appInfo).build();
+                        return Response.status(Status.CONFLICT).entity(appInfo).build();
                     } else {
                         return Response.ok().build();
                     }

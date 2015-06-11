@@ -1,6 +1,7 @@
 package com.netflix.eureka.cluster;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response.Status;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.zip.GZIPOutputStream;
@@ -110,14 +111,14 @@ public class JerseyReplicationClientTest {
                         .withPath("/eureka/v2/apps/" + this.instanceInfo.getAppName() + '/' + this.instanceInfo.getId())
         ).respond(
                 response()
-                        .withStatusCode(200)
+                        .withStatusCode(Status.CONFLICT.getStatusCode())
                         .withHeader(header("Content-Type", MediaType.APPLICATION_JSON))
                         .withHeader(header("Content-Encoding", "gzip"))
                         .withBody(responseBody)
         );
 
         HttpResponse<InstanceInfo> response = replicationClient.sendHeartBeat(this.instanceInfo.getAppName(), this.instanceInfo.getId(), this.instanceInfo, null);
-        assertThat(response.getStatusCode(), is(equalTo(200)));
+        assertThat(response.getStatusCode(), is(equalTo(Status.CONFLICT.getStatusCode())));
         assertThat(response.getEntity(), is(notNullValue()));
     }
 

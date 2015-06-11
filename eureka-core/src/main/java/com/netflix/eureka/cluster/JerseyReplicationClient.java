@@ -109,7 +109,7 @@ public class JerseyReplicationClient extends JerseyEurekaHttpClient implements H
             addExtraHeaders(requestBuilder);
             response = requestBuilder.accept(MediaType.APPLICATION_JSON_TYPE).put(ClientResponse.class);
             InstanceInfo infoFromPeer = null;
-            if (response.getStatus() == Status.OK.getStatusCode() && response.hasEntity()) {
+            if (response.getStatus() == Status.CONFLICT.getStatusCode() && response.hasEntity()) {
                 infoFromPeer = response.getEntity(InstanceInfo.class);
             }
             return HttpResponse.responseWith(response.getStatus(), infoFromPeer);
