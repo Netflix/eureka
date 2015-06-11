@@ -81,11 +81,15 @@ public class ResponseCache {
 
     private static final Logger logger = LoggerFactory
             .getLogger(ResponseCache.class);
-    private final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
-            .getInstance().getConfiguration();
 
     public static final String ALL_APPS = "ALL_APPS";
     public static final String ALL_APPS_DELTA = "ALL_APPS_DELTA";
+
+    private static final AtomicLong versionDelta = new AtomicLong(0);
+    private static final AtomicLong versionDeltaWithRegions = new AtomicLong(0);
+    private static final String EMPTY_PAYLOAD = "";
+
+    private static final java.util.Timer timer = new java.util.Timer("Eureka -CacheFillTimer", true);
 
     private final Timer serializeAllAppsTimer = Monitors
             .newTimer("serialize-all");
@@ -101,13 +105,12 @@ public class ResponseCache {
     private final Timer compressPayloadTimer = Monitors
             .newTimer("compress-payload");
 
-    private static final AtomicLong versionDelta = new AtomicLong(0);
-    private static final AtomicLong versionDeltaWithRegions = new AtomicLong(0);
-    private static final String EMPTY_PAYLOAD = "";
-
     public enum KeyType {
         JSON, XML
     }
+
+    private final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
+            .getInstance().getConfiguration();
 
     /**
      * This map holds mapping of keys without regions to a list of keys with region (provided by clients)
@@ -125,7 +128,6 @@ public class ResponseCache {
             });
 
     private final ConcurrentMap<Key, Value> readOnlyCacheMap = new ConcurrentHashMap<Key, Value>();
-    private static final java.util.Timer timer = new java.util.Timer("Eureka -CacheFillTimer", true);
 
     private final LoadingCache<Key, Value> readWriteCacheMap =
             CacheBuilder.newBuilder().initialCapacity(1000)
@@ -152,14 +154,21 @@ public class ResponseCache {
                         }
                     });
 
+    private final boolean shouldUseReadOnlyResponseCache;
+
     private static final ResponseCache s_instance = new ResponseCache();
 
     private ResponseCache() {
         long responseCacheUpdateIntervalMs = eurekaConfig.getResponseCacheUpdateIntervalMs();
-        timer.schedule(getCacheUpdateTask(),
-                new Date(((System.currentTimeMillis() / responseCacheUpdateIntervalMs) * responseCacheUpdateIntervalMs)
-                        + responseCacheUpdateIntervalMs),
-                responseCacheUpdateIntervalMs);
+        shouldUseReadOnlyResponseCache = eurekaConfig.shouldUseReadOnlyResponseCache();
+
+        if (shouldUseReadOnlyResponseCache) {
+            timer.schedule(getCacheUpdateTask(),
+                    new Date(((System.currentTimeMillis() / responseCacheUpdateIntervalMs) * responseCacheUpdateIntervalMs)
+                            + responseCacheUpdateIntervalMs),
+                    responseCacheUpdateIntervalMs);
+        }
+
         try {
             Monitors.registerObject(this);
 
@@ -214,12 +223,12 @@ public class ResponseCache {
      * @return payload which contains information about the applications.
      */
     public String get(final Key key) {
-        return get(key, false);
+        return get(key, shouldUseReadOnlyResponseCache);
     }
 
     @VisibleForTesting
-    String get(final Key key, boolean ignoreReadOnlyCache) {
-        Value payload = getValue(key, ignoreReadOnlyCache);
+    String get(final Key key, boolean useReadOnlyCache) {
+        Value payload = getValue(key, useReadOnlyCache);
         if (payload == null || payload.getPayload() == EMPTY_PAYLOAD) {
             return null;
         } else {
@@ -237,7 +246,7 @@ public class ResponseCache {
      *         applications.
      */
     public byte[] getGZIP(Key key) {
-        Value payload = getValue(key, false);
+        Value payload = getValue(key, shouldUseReadOnlyResponseCache);
         if (payload == null) {
             return null;
         }
@@ -320,12 +329,10 @@ public class ResponseCache {
      * Get the payload in both compressed and uncompressed form.
      */
     @VisibleForTesting
-    Value getValue(final Key key, boolean ignoreReadOnlyCache) {
+    Value getValue(final Key key, boolean useReadOnlyCache) {
         Value payload = null;
         try {
-            if (ignoreReadOnlyCache) {
-                payload = readWriteCacheMap.get(key);
-            } else {
+            if (useReadOnlyCache) {
                 final Value currentPayload = readOnlyCacheMap.get(key);
                 if (currentPayload != null) {
                     payload = currentPayload;
@@ -333,6 +340,8 @@ public class ResponseCache {
                     payload = readWriteCacheMap.get(key);
                     readOnlyCacheMap.put(key, payload);
                 }
+            } else {
+                payload = readWriteCacheMap.get(key);
             }
         } catch (Throwable t) {
             logger.error("Cannot get value for key :" + key, t);

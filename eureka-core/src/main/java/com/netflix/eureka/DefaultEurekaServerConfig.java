@@ -304,6 +304,12 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     }
 
     @Override
+    public boolean shouldUseReadOnlyResponseCache() {
+        return configInstance.getBooleanProperty(
+                namespace + "shouldUseReadOnlyResponseCache", true).get();
+    }
+
+    @Override
     public boolean shouldDisableDelta() {
         return configInstance.getBooleanProperty(namespace + "disableDelta",
                 false).get();
