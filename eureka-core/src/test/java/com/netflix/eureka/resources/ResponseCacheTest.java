@@ -34,7 +34,7 @@ public class ResponseCacheTest extends AbstractTester {
         ResponseCache cache = ResponseCache.getInstance();
         ResponseCache.Key key = new ResponseCache.Key(ResponseCache.Key.EntityType.Application, REMOTE_REGION_APP_NAME,
                 ResponseCache.KeyType.JSON, Version.V1);
-        String response = cache.get(key, true);
+        String response = cache.get(key, false);
         Assert.assertNotNull("Cache get returned null.", response);
 
         PeerAwareInstanceRegistryImpl.getInstance().cancel(REMOTE_REGION_APP_NAME, REMOTE_REGION_INSTANCE_1_HOSTNAME, true);
@@ -51,7 +51,7 @@ public class ResponseCacheTest extends AbstractTester {
                 new String[]{REMOTE_REGION},
                 ResponseCache.KeyType.JSON, Version.V1);
 
-        Assert.assertNotNull("Cache get returned null.", cache.get(key, true));
+        Assert.assertNotNull("Cache get returned null.", cache.get(key, false));
 
         PeerAwareInstanceRegistryImpl.getInstance().cancel(REMOTE_REGION_APP_NAME, REMOTE_REGION_INSTANCE_1_HOSTNAME, true);
 
@@ -70,8 +70,8 @@ public class ResponseCacheTest extends AbstractTester {
                 new String[]{REMOTE_REGION},
                 ResponseCache.KeyType.JSON, Version.V1);
 
-        Assert.assertNotNull("Cache get returned null.", cache.get(key1, true));
-        Assert.assertNotNull("Cache get returned null.", cache.get(key2, true));
+        Assert.assertNotNull("Cache get returned null.", cache.get(key1, false));
+        Assert.assertNotNull("Cache get returned null.", cache.get(key2, false));
 
         PeerAwareInstanceRegistryImpl.getInstance().cancel(REMOTE_REGION_APP_NAME, REMOTE_REGION_INSTANCE_1_HOSTNAME, true);
 

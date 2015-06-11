@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
  * get refilled by an ASG - which is normal in AWS environments,the instances
  * automatically go in the {@link com.netflix.appinfo.InstanceInfo.InstanceStatus#OUT_OF_SERVICE} state when they
  * are refilled by the ASG and if the ASG is disabled by as indicated by a flag
- * in the ASG as described in {@link AwsAsgUtil#isASGEnabled(String)}
+ * in the ASG as described in {@link AwsAsgUtil#isASGEnabled}
  * </p>
  *
  * @author Karthik Ranganathan
