@@ -126,47 +126,4 @@ public class WriteClusterReplicationTest {
         registrationClient.shutdown();
         interestClient.shutdown();
     }
-
-    @Test(timeout = 60000)
-    public void testSubscriptionToInterestChannelGetsAllUpdates() throws Exception {
-        final EurekaRegistrationClient dataSourceClient = eurekaDeploymentResource.registrationClientToWriteServer(0);
-        final EurekaInterestClient subscriberClient = eurekaDeploymentResource.interestClientToWriteServer(0);
-
-        Iterator<InstanceInfo> instanceInfos = SampleInstanceInfo.collectionOf("itest", SampleInstanceInfo.ZuulServer.build());
-
-        // First populate registry with some data.
-        InstanceInfo firstRecord = instanceInfos.next();
-        dataSourceClient.register(Observable.just(firstRecord)).subscribe();
-
-        // Subscribe to get current registry content
-        Observable<ChangeNotification<InstanceInfo>> notifications =
-                subscriberClient.forInterest(Interests.forApplications(firstRecord.getApp())).filter(dataOnlyFilter());
-        Iterator<ChangeNotification<InstanceInfo>> notificationIterator = iteratorFrom(5, TimeUnit.SECONDS, notifications);
-
-        assertThat(notificationIterator.next(), is(addChangeNotificationOf(firstRecord)));
-
-        // Now register another client
-        InstanceInfo secondRecord = instanceInfos.next();
-        dataSourceClient.register(Observable.just(secondRecord)).subscribe();
-
-        assertThat(notificationIterator.next(), is(addChangeNotificationOf(secondRecord)));
-
-        dataSourceClient.shutdown();
-        subscriberClient.shutdown();
-    }
-
-    @Test
-    public void testWriteServerReturnsAvailableContentAsOneBatch() throws Exception {
-        EurekaInterestClient subscriberClient = eurekaDeploymentResource.interestClientToWriteServer(0);
-
-        ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
-        subscriberClient.forInterest(Interests.forFullRegistry()).subscribe(testSubscriber);
-
-        assertThat(testSubscriber.takeNextOrWait(), is(addChangeNotification()));
-        assertThat(testSubscriber.takeNextOrWait(), is(addChangeNotification()));
-        assertThat(testSubscriber.takeNextOrWait(), is(bufferingChangeNotification()));
-
-        subscriberClient.shutdown();
-    }
-
 }
