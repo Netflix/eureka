@@ -1,4 +1,4 @@
-package com.netflix.eureka2.integration;
+package com.netflix.eureka2.integration.client;
 
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;

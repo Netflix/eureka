@@ -1,4 +1,4 @@
-package com.netflix.eureka2.integration.random;
+package com.netflix.eureka2.integration.server.random;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;

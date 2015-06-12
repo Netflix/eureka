@@ -1,4 +1,4 @@
-package com.netflix.eureka2.integration;
+package com.netflix.eureka2.integration.server.interest;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;

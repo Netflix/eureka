@@ -1,4 +1,4 @@
-package com.netflix.eureka2.integration.startup;
+package com.netflix.eureka2.integration.server.startup;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
