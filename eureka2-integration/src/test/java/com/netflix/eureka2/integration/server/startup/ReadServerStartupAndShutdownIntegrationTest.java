@@ -1,4 +1,4 @@
-package com.netflix.eureka2.integration.startup;
+package com.netflix.eureka2.integration.server.startup;
 
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.junit.categories.LongRunningTest;

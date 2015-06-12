@@ -1,4 +1,4 @@
-package com.netflix.eureka2.integration;
+package com.netflix.eureka2.integration.server.replication;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -37,7 +37,7 @@ import static org.hamcrest.Matchers.is;
  * @author David Liu
  */
 @Category(IntegrationTest.class)
-public class WriteClusterIntegrationTest {
+public class WriteClusterReplicationTest {
 
     @Rule
     public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResource(2, 0);

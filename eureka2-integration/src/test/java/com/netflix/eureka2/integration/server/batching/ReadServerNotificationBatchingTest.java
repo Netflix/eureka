@@ -1,4 +1,4 @@
-package com.netflix.eureka2.integration;
+package com.netflix.eureka2.integration.server.batching;
 
 import java.util.Iterator;
 import java.util.Set;
@@ -33,7 +33,7 @@ import static org.junit.Assert.assertThat;
 /**
  * @author David Liu
  */
-public class ReadServerIntegrationTest {
+public class ReadServerNotificationBatchingTest {
 
     private static final int REGISTRY_INITIAL_SIZE = 100;
 
