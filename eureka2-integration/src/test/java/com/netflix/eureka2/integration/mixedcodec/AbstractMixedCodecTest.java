@@ -2,6 +2,7 @@ package com.netflix.eureka2.integration.mixedcodec;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
+import com.netflix.eureka2.integration.IntegrationTestClassSetup;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -21,7 +22,7 @@ import static org.hamcrest.Matchers.is;
  *
  * @author David Liu
  */
-public abstract class AbstractMixedCodecTest {
+public abstract class AbstractMixedCodecTest extends IntegrationTestClassSetup {
 
     private final InstanceInfo registeringInfo = SampleInstanceInfo.CliServer.build();
 

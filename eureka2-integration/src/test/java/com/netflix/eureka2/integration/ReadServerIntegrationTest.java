@@ -33,7 +33,7 @@ import static org.junit.Assert.assertThat;
 /**
  * @author David Liu
  */
-public class ReadServerIntegrationTest {
+public class ReadServerIntegrationTest extends IntegrationTestClassSetup {
 
     private static final int REGISTRY_INITIAL_SIZE = 100;
 

@@ -3,11 +3,14 @@ package com.netflix.eureka2.client.channel;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.netflix.eureka2.channel.AbstractClientChannel;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.channel.InterestChannel.STATE;
 import com.netflix.eureka2.client.interest.BatchingRegistry;
+import com.netflix.eureka2.config.SystemConfigLoader;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.ModifyNotification;
@@ -31,8 +34,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
+import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.observers.SafeSubscriber;
+import rx.subjects.PublishSubject;
 
 /**
  * An implementation of {@link InterestChannel}. It is mandatory that all operations
@@ -46,17 +51,29 @@ import rx.observers.SafeSubscriber;
 public class InterestChannelImpl extends AbstractClientChannel<STATE> implements InterestChannel, Sourced {
 
     private static final Logger logger = LoggerFactory.getLogger(InterestChannelImpl.class);
+
     private final BatchingRegistry<InstanceInfo> remoteBatchingRegistry;
+
+    // FIXME: adding this hack for now to deal with a race condition w.r.t. to the remoteBatchingRegistry
+    // emitting hints faster than the data can be added to the client side registry. This will go away
+    // after the next batch of fixes to refactor the client side registry and index structure, such that
+    // batch markers are routed through the indexes instead of asynchronously outside of the indexes.
+    private final PublishSubject<ChangeNotification<InstanceInfo>> remoteBatchingSubject;
+    private final long bufferHintDelayMs = SystemConfigLoader
+            .getFromSystemPropertySafe("eureka.hacks.interestChannel.bufferHintDelayMs", 100);
+    private final long maxBufferHintDelayMs = SystemConfigLoader
+            .getFromSystemPropertySafe("eureka.hacks.interestChannel.maxBufferHintDelayMs", 5000);
 
     /**
      * Since we assume single threaded access to this channel, no need for concurrency control
      */
     protected Observable<ChangeNotification<InstanceInfo>> channelInterestStream;
 
+    private final AtomicLong delayCounter = new AtomicLong(0l);
     protected Subscriber<ChangeNotification<InstanceInfo>> channelInterestSubscriber;
 
-    private final Source selfSource;
     protected final SourcedEurekaRegistry<InstanceInfo> registry;
+    private final Source selfSource;
 
     /**
      * A local copy of instances received by this channel from the server. This is used for:
@@ -84,7 +101,8 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
         this.remoteBatchingRegistry = remoteBatchingRegistry;
         this.selfSource = new Source(Source.Origin.INTERESTED);
         this.registry = registry;
-        channelInterestSubscriber = new ChannelInterestSubscriber(registry);
+        this.remoteBatchingSubject = PublishSubject.create();
+        channelInterestSubscriber = new ChannelInterestSubscriber(registry, remoteBatchingSubject);
         channelInterestStream = createInterestStream();
     }
 
@@ -116,7 +134,8 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
                 } else if (moveToState(STATE.Idle, STATE.Open)) {
                     logger.debug("First time registration: {}", newInterest);
                     channelInterestStream.subscribe(channelInterestSubscriber);
-                    remoteBatchingRegistry.connectTo(channelInterestStream);
+                    remoteBatchingRegistry.connectTo(remoteBatchingSubject);
+
                 } else {
                     logger.debug("Channel changes: {}", newInterest);
                 }
@@ -253,7 +272,7 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
     }
 
     protected class ChannelInterestSubscriber extends SafeSubscriber<ChangeNotification<InstanceInfo>> {
-        public ChannelInterestSubscriber(final SourcedEurekaRegistry<InstanceInfo> registry) {
+        public ChannelInterestSubscriber(final SourcedEurekaRegistry<InstanceInfo> registry, final PublishSubject<ChangeNotification<InstanceInfo>> remoteBatchingSubject) {
             super(new Subscriber<ChangeNotification<InstanceInfo>>() {
                 @Override
                 public void onCompleted() {
@@ -267,16 +286,30 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
                 }
 
                 @Override
-                public void onNext(ChangeNotification<InstanceInfo> notification) {
+                public void onNext(final ChangeNotification<InstanceInfo> notification) {
                     switch (notification.getKind()) {  // these are in-mem blocking ops
                         case Add:
                         case Modify:
                             registry.register(notification.getData(), selfSource);
+                            delayCounter.addAndGet(bufferHintDelayMs);
                             break;
                         case Delete:
                             registry.unregister(notification.getData(), selfSource);
+                            delayCounter.addAndGet(bufferHintDelayMs);
                             break;
                         case BufferSentinel:
+                            BufferState bufferState = ((StreamStateNotification<InstanceInfo>) notification).getBufferState();
+                            if (bufferState == BufferState.BufferEnd) {
+                                long delay = Math.min(delayCounter.getAndSet(0), maxBufferHintDelayMs);
+
+                                Observable.timer(delay, TimeUnit.MILLISECONDS)
+                                        .doOnNext(new Action1<Long>() {
+                                            @Override
+                                            public void call(Long aLong) {
+                                                remoteBatchingSubject.onNext(notification);
+                                            }
+                                        }).subscribe();
+                            }
                             // No-op
                             break;
                         default:
