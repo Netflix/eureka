@@ -66,7 +66,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     private static final Logger logger = LoggerFactory.getLogger(SourcedEurekaRegistryImpl.class);
 
     protected final ConcurrentMap<String, NotifyingInstanceInfoHolder> internalStore;
-    private final PauseableSubject<ChangeNotification<InstanceInfo>> pauseableSubject;  // subject for all changes in the registry
+    private final PauseableSubject<ChangeNotification<InstanceInfo>> registryChangeSubject;  // subject for all changes in the registry
     private final IndexRegistry<InstanceInfo> indexRegistry;
     private final EurekaRegistryMetrics metrics;
 
@@ -97,7 +97,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
         this.metrics = metricsFactory.getEurekaServerRegistryMetrics();
 
         internalStore = new ConcurrentHashMap<>();
-        pauseableSubject = PauseableSubject.create();
+        registryChangeSubject = PauseableSubject.create();
 
         Observable.merge(registrationSubject).observeOn(scheduler).subscribe(
                 new Subscriber<ChangeNotification<InstanceInfoWithSource>>() {
@@ -127,7 +127,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
                         switch (notification.getKind()) {
                             case Add:
                                 if (holder == null) {
-                                    holder = new NotifyingInstanceInfoHolder(pauseableSubject, instanceInfo.getId(), metrics);
+                                    holder = new NotifyingInstanceInfoHolder(registryChangeSubject, instanceInfo.getId(), metrics);
                                     internalStore.put(instanceInfo.getId(), holder);
                                     metrics.setRegistrySize(internalStore.size());
                                 }
@@ -253,15 +253,15 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
         try {
             // TODO: this method can be run concurrently from different channels, unless we run everything on single server event loop.
             // It is possible that the same instanceinfo will be both in snapshot and paused notification queue.
-            pauseableSubject.pause(); // Pause notifications till we get a snapshot of current registry (registry.values())
+            registryChangeSubject.pause(); // Pause notifications till we get a snapshot of current registry (registry.values())
             if (interest instanceof MultipleInterests) {
                 return indexRegistry.forCompositeInterest((MultipleInterests) interest, this);
             } else {
-                return indexRegistry.forInterest(interest, pauseableSubject,
+                return indexRegistry.forInterest(interest, registryChangeSubject,
                         new InstanceInfoInitStateHolder(getSnapshotForInterest(interest), interest));
             }
         } finally {
-            pauseableSubject.resume();
+            registryChangeSubject.resume();
         }
     }
 
@@ -308,7 +308,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
         logger.info("Shutting down the eureka registry");
 
         registrationSubject.onCompleted();
-        pauseableSubject.onCompleted();
+        registryChangeSubject.onCompleted();
         internalStore.clear();
         return indexRegistry.shutdown();
     }
@@ -316,7 +316,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     @Override
     public Observable<Void> shutdown(Throwable cause) {
         registrationSubject.onCompleted();
-        pauseableSubject.onCompleted();
+        registryChangeSubject.onCompleted();
         return indexRegistry.shutdown(cause);
     }
 

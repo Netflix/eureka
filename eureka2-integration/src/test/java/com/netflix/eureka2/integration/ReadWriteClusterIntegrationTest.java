@@ -27,7 +27,7 @@ import static org.hamcrest.Matchers.is;
  * @author David Liu
  */
 @Category(IntegrationTest.class)
-public class ReadWriteClusterIntegrationTest {
+public class ReadWriteClusterIntegrationTest extends IntegrationTestClassSetup {
 
     @Rule
     public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResource(3, 6);

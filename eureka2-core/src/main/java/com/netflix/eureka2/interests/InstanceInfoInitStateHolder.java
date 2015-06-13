@@ -7,7 +7,6 @@ import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.StreamStateNotification.BufferState;
 import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.utils.rx.PauseableSubject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,24 +24,27 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
 
     private static final Logger logger = LoggerFactory.getLogger(InstanceInfoInitStateHolder.class);
 
-    private final ConcurrentHashMap<String, ChangeNotification<InstanceInfo>> notificationMap;
-    private final ChangeNotification<InstanceInfo> bufferStartNotification;
-    private final ChangeNotification<InstanceInfo> bufferEndNotification;
+    protected final ConcurrentHashMap<String, ChangeNotification<InstanceInfo>> notificationMap;
+    protected final ChangeNotification<InstanceInfo> bufferStartNotification;
+    protected final ChangeNotification<InstanceInfo> bufferEndNotification;
+    protected final ChangeNotification<InstanceInfo> bufferUnknownNotification;
 
     public InstanceInfoInitStateHolder(Iterator<ChangeNotification<InstanceInfo>> initialRegistry, Interest<InstanceInfo> interest) {
-        super(PauseableSubject.<ChangeNotification<InstanceInfo>>create());
+        super();
         this.bufferStartNotification = new StreamStateNotification<>(BufferState.BufferStart, interest);
         this.bufferEndNotification = new StreamStateNotification<>(BufferState.BufferEnd, interest);
+        this.bufferUnknownNotification = new StreamStateNotification<>(BufferState.Unknown, interest);
         notificationMap = new ConcurrentHashMap<>();
 
         while (initialRegistry.hasNext()) {
             ChangeNotification<InstanceInfo> next = initialRegistry.next();
             notificationMap.put(next.getData().getId(), next); // Always Kind.Add
         }
+
     }
 
     @Override
-    protected void addNotification(ChangeNotification<InstanceInfo> notification) {
+    public void addNotification(ChangeNotification<InstanceInfo> notification) {
         String id = notification.getData().getId();
         ChangeNotification<InstanceInfo> current = notificationMap.get(id);
 
@@ -55,12 +57,12 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
     }
 
     @Override
-    protected void clearAllNotifications() {
+    public void clearAllNotifications() {
         notificationMap.clear();
     }
 
     @Override
-    protected Iterator<ChangeNotification<InstanceInfo>> _newIterator() {
+    public Iterator<ChangeNotification<InstanceInfo>> _newIterator() {
         if (notificationMap.isEmpty()) {
             return concat(
                     singletonIterator(bufferStartNotification),

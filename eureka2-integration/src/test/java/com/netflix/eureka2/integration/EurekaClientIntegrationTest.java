@@ -34,7 +34,7 @@ import static org.junit.Assert.assertThat;
  * @author Tomasz Bak
  */
 @Category(IntegrationTest.class)
-public class EurekaClientIntegrationTest {
+public class EurekaClientIntegrationTest extends IntegrationTestClassSetup {
 
     @Rule
     public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResource(1, 1);
