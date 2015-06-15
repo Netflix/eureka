@@ -10,7 +10,7 @@ import com.netflix.appinfo.InstanceInfo;
  * @author elandau
  *
  */
-public class StatusChangeEvent {
+public class StatusChangeEvent extends DiscoveryEvent {
     private final InstanceInfo.InstanceStatus current;
     private final InstanceInfo.InstanceStatus previous;
 

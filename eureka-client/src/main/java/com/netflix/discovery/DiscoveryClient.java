@@ -2010,11 +2010,7 @@ public class DiscoveryClient implements EurekaClient {
      * @param newStatus the new remote {@link InstanceStatus} 
      */
     protected void onRemoteStatusChanged(InstanceInfo.InstanceStatus oldStatus, InstanceInfo.InstanceStatus newStatus) {
-    	// Publish event if an EventBus is available
-        if (eventBus != null) {
-            StatusChangeEvent event = new StatusChangeEvent(oldStatus, newStatus);
-            eventBus.publish(event);
-        }
+    	fireEvent(new StatusChangeEvent(oldStatus, newStatus));
     }
     
     /**
@@ -2024,7 +2020,19 @@ public class DiscoveryClient implements EurekaClient {
      * Subclasses may override this method to implement custom behavior if needed.
      */
     protected void onCacheRefreshed() {
-    	// NOOP
+    	fireEvent(new CacheRefreshedEvent());
     }
 
+
+    /**
+     * Send the given event on the EventBus if one is available
+     * 
+     * @param event the event to send on the eventBus
+     */
+    protected void fireEvent(DiscoveryEvent event) {
+    	// Publish event if an EventBus is available
+        if (eventBus != null) {
+            eventBus.publish(event);
+        }
+    }
 }
