@@ -1,19 +1,20 @@
 package com.netflix.eureka2.integration.server.batching;
 
+import java.util.LinkedHashSet;
+import java.util.concurrent.TimeUnit;
+
 import com.netflix.eureka2.client.EurekaInterestClient;
-import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.client.functions.InterestFunctions;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotification;
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.bufferingChangeNotification;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 /**
@@ -29,13 +30,14 @@ public class WriteServerNotificationBatchingTest {
     public void testWriteServerReturnsAvailableContentAsOneBatch() throws Exception {
         EurekaInterestClient subscriberClient = eurekaDeploymentResource.interestClientToWriteServer(0);
 
-        ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
-        subscriberClient.forInterest(Interests.forFullRegistry()).subscribe(testSubscriber);
+        LinkedHashSet<InstanceInfo> batch = subscriberClient.forInterest(Interests.forFullRegistry())
+                .compose(InterestFunctions.buffers())
+                .compose(InterestFunctions.snapshots())
+                .take(1)
+                .timeout(30, TimeUnit.SECONDS)
+                .toBlocking()
+                .first();
 
-        assertThat(testSubscriber.takeNextOrWait(), is(addChangeNotification()));
-        assertThat(testSubscriber.takeNextOrWait(), is(addChangeNotification()));
-        assertThat(testSubscriber.takeNextOrWait(), is(bufferingChangeNotification()));
-
-        subscriberClient.shutdown();
+        assertThat(batch.size(), is(equalTo(2)));
     }
 }
