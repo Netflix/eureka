@@ -845,6 +845,10 @@ public class DiscoveryClient implements EurekaClient {
             logger.debug(PREFIX + appPathIdentifier + " -  refresh status: "
                     + response.getStatus());
 
+            // Notify about cache refreshed before updating the instance remote status
+            onCacheRefreshed();
+            
+            // Update remote status based on refreshed data held in the cache
             updateInstanceRemoteStatus();
 
         } catch (Throwable e) {
@@ -880,15 +884,8 @@ public class DiscoveryClient implements EurekaClient {
 
         // Notify if status changed
         if (lastRemoteInstanceStatus != currentRemoteInstanceStatus) {
-            try {
-                if (eventBus != null) {
-                    StatusChangeEvent event = new StatusChangeEvent(lastRemoteInstanceStatus,
-                            currentRemoteInstanceStatus);
-                    eventBus.publish(event);
-                }
-            } finally {
-                lastRemoteInstanceStatus = currentRemoteInstanceStatus;
-            }
+        	onRemoteStatusChanged(lastRemoteInstanceStatus, currentRemoteInstanceStatus);
+        	lastRemoteInstanceStatus = currentRemoteInstanceStatus;
         }
     }
 
@@ -2002,6 +1999,32 @@ public class DiscoveryClient implements EurekaClient {
             String zone = list.remove(0);
             list.add(zone);
         }
+    }
+
+    
+    /**
+     * Invoked when the remote status of this client has changed.
+     * Subclasses may override this method to implement custom behavior if needed.
+     * 
+     * @param oldStatus the previous remote {@link InstanceStatus}
+     * @param newStatus the new remote {@link InstanceStatus} 
+     */
+    protected void onRemoteStatusChanged(InstanceInfo.InstanceStatus oldStatus, InstanceInfo.InstanceStatus newStatus) {
+    	// Publish event if an EventBus is available
+        if (eventBus != null) {
+            StatusChangeEvent event = new StatusChangeEvent(oldStatus, newStatus);
+            eventBus.publish(event);
+        }
+    }
+    
+    /**
+     * Invoked every time the local registry cache is refreshed (whether changes have 
+     * been detected or not).
+     * 
+     * Subclasses may override this method to implement custom behavior if needed.
+     */
+    protected void onCacheRefreshed() {
+    	// NOOP
     }
 
 }
