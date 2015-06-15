@@ -844,13 +844,6 @@ public class DiscoveryClient implements EurekaClient {
 
             logger.debug(PREFIX + appPathIdentifier + " -  refresh status: "
                     + response.getStatus());
-
-            // Notify about cache refreshed before updating the instance remote status
-            onCacheRefreshed();
-            
-            // Update remote status based on refreshed data held in the cache
-            updateInstanceRemoteStatus();
-
         } catch (Throwable e) {
             logger.error(
                     PREFIX + appPathIdentifier
@@ -863,6 +856,14 @@ public class DiscoveryClient implements EurekaClient {
             }
             closeResponse(response);
         }
+
+        // Notify about cache refresh before updating the instance remote status
+        onCacheRefreshed();
+        
+        // Update remote status based on refreshed data held in the cache
+        updateInstanceRemoteStatus();
+
+        // registry was fetched successfully, so return true
         return true;
     }
 
