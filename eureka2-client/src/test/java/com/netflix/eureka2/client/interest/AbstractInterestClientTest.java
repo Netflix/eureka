@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
  */
 public class AbstractInterestClientTest {
 
-    private SourcedEurekaRegistryImpl registry;
+    private SourcedEurekaRegistry<InstanceInfo> registry;
     private RetryableConnection<InterestChannel> retryableConnection;
     private ReplaySubject<InterestChannel> channelSubject;
 
@@ -36,7 +36,7 @@ public class AbstractInterestClientTest {
 
     @Before
     public void setUp() {
-        registry = mock(SourcedEurekaRegistryImpl.class);
+        registry = mock(SourcedEurekaRegistry.class);
         retryableConnection = mock(RetryableConnection.class);
 
         channelSubject = ReplaySubject.create();
@@ -79,7 +79,6 @@ public class AbstractInterestClientTest {
 
         channel2BatchSubject.onNext(newBufferEnd());
         verify(registry, times(1)).evictAll(any(Source.SourceMatcher.class));
-        Thread.sleep(1000);
     }
 
 
@@ -105,11 +104,6 @@ public class AbstractInterestClientTest {
         @Override
         public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest) {
             return null;
-        }
-
-        @Override
-        public void registryEvictionSubscribe(RetryableConnection<InterestChannel> retryableConnection) {
-            super.registryEvictionSubscribe(retryableConnection);
         }
     }
 }

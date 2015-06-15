@@ -57,7 +57,7 @@ import static org.mockito.Mockito.*;
  * @author David Liu
  */
 @Category(IntegrationTest.class)
-public class BatchHintsIntegrationTest {
+public class InterestBatchHintsIntegrationTest {
 
     private ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber;
 
@@ -170,7 +170,7 @@ public class BatchHintsIntegrationTest {
     }
 
     @Test
-    public void testChannelChangeEvictionOnBufferHints() throws Exception {
+    public void testInterestChannelChangeEvictionOnBufferHints() throws Exception {
         // set up the new connection for the second iteration of the interest channel
         ReplaySubject<Void> serverConnection2Lifecycle = ReplaySubject.create();
         ReplaySubject<Object> incomingSubject2 = ReplaySubject.create();
