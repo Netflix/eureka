@@ -31,8 +31,8 @@ import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
-import com.netflix.eureka2.server.registry.EvictionQuotaProvider;
-import com.netflix.eureka2.server.registry.EvictionQuotaProviderImpl;
+import com.netflix.eureka2.server.registry.EvictionQuotaKeeper;
+import com.netflix.eureka2.server.registry.EvictionQuotaKeeperImpl;
 import com.netflix.eureka2.registry.eviction.EvictionStrategy;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
 import com.netflix.eureka2.server.audit.AuditServiceController;
@@ -57,6 +57,8 @@ import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServ
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 import io.reactivex.netty.spectator.SpectatorEventsListenerFactory;
+
+import static com.netflix.eureka2.Names.REGISTRATION;
 
 /**
  * @author Tomasz Bak
@@ -92,8 +94,8 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
         bind(SourcedEurekaRegistry.class).to(SourcedEurekaRegistryImpl.class);
         bind(EurekaRegistryView.class).to(SourcedEurekaRegistryImpl.class);
 
-        bind(EurekaRegistrationProcessor.class).annotatedWith(Names.named("registration")).toProvider(RegistrationChannelProcessorProvider.class);
-        bind(EvictionQuotaProvider.class).to(EvictionQuotaProviderImpl.class);
+        bind(EurekaRegistrationProcessor.class).annotatedWith(Names.named(REGISTRATION)).toProvider(RegistrationChannelProcessorProvider.class);
+        bind(EvictionQuotaKeeper.class).to(EvictionQuotaKeeperImpl.class);
         bind(OverridesRegistry.class).to(InMemoryOverridesRegistry.class);
 
         bind(EvictionQueue.class).to(EvictionQueueImpl.class).asEagerSingleton();

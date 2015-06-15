@@ -8,7 +8,6 @@ import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.protocol.registration.Unregister;
 import com.netflix.eureka2.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.transport.MessageConnection;
@@ -41,7 +40,6 @@ import static org.mockito.Mockito.when;
 public class RegistrationChannelImplTest {
 
     private final EurekaRegistrationProcessor<InstanceInfo> registrationProcessor = mock(EurekaRegistrationProcessor.class);
-    private final EvictionQueue evictionQueue = mock(EvictionQueue.class);
     private final PublishSubject<Void> transportLifeCycle = PublishSubject.create();
     private final PublishSubject<Object> incomingSubject = PublishSubject.create();
 
@@ -71,7 +69,7 @@ public class RegistrationChannelImplTest {
         when(registrationProcessor.register(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.just(true));
         when(registrationProcessor.unregister(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.just(true));
 
-        channel = spy(new RegistrationChannelImpl(registrationProcessor, evictionQueue, transport, mock(RegistrationChannelMetrics.class)));
+        channel = spy(new RegistrationChannelImpl(registrationProcessor, transport, mock(RegistrationChannelMetrics.class)));
     }
 
     @After

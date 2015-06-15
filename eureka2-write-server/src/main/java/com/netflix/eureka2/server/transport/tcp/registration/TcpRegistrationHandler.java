@@ -19,9 +19,9 @@ package com.netflix.eureka2.server.transport.tcp.registration;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import com.netflix.eureka2.Names;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
 import com.netflix.eureka2.registry.EurekaRegistrationProcessor;
-import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.RegistrationChannelFactory;
 import com.netflix.eureka2.server.config.WriteServerConfig;
@@ -40,29 +40,26 @@ public class TcpRegistrationHandler implements ConnectionHandler<Object, Object>
 
     private final WriteServerConfig config;
     private final EurekaRegistrationProcessor<InstanceInfo> registrationProcessor;
-    private final EvictionQueue evictionQueue;
     private final WriteServerMetricFactory metricFactory;
 
     @Inject
     public TcpRegistrationHandler(WriteServerConfig config,
-                                  @Named("registration") EurekaRegistrationProcessor registrationProcessor,
-                                  EvictionQueue evictionQueue,
+                                  @Named(Names.REGISTRATION) EurekaRegistrationProcessor registrationProcessor,
                                   WriteServerMetricFactory metricFactory) {
         this.config = config;
         this.registrationProcessor = registrationProcessor;
-        this.evictionQueue = evictionQueue;
         this.metricFactory = metricFactory;
     }
 
     @Override
     public Observable<Void> handle(ObservableConnection<Object, Object> connection) {
         MessageConnection broker = new HeartBeatConnection(
-                new BaseMessageConnection("registration", connection, metricFactory.getRegistrationConnectionMetrics()),
+                new BaseMessageConnection(Names.REGISTRATION, connection, metricFactory.getRegistrationConnectionMetrics()),
                 config.getHeartbeatIntervalMs(), 3,
                 Schedulers.computation()
         );
         final RegistrationChannelFactory channelFactory
-                = new RegistrationChannelFactory(registrationProcessor, broker, evictionQueue, metricFactory);
+                = new RegistrationChannelFactory(registrationProcessor, broker, metricFactory);
 
         return channelFactory.newChannel()
                 .asLifecycleObservable(); // Since this is a discovery handler which only handles interest subscriptions,

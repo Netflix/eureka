@@ -42,9 +42,9 @@ import rx.subjects.Subject;
  *
  * @author Tomasz Bak
  */
-public class EvictionQuotaProviderImpl implements EvictionQuotaProvider {
+public class EvictionQuotaKeeperImpl implements EvictionQuotaKeeper {
 
-    private static final Logger logger = LoggerFactory.getLogger(EvictionQuotaProviderImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(EvictionQuotaKeeperImpl.class);
 
     private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final int allowedPercentageDrop;
@@ -57,7 +57,7 @@ public class EvictionQuotaProviderImpl implements EvictionQuotaProvider {
     private final AtomicReference<EvictionState> evictionStateRef = new AtomicReference<>();
 
     @Inject
-    public EvictionQuotaProviderImpl(final SourcedEurekaRegistry registry, WriteServerConfig config) {
+    public EvictionQuotaKeeperImpl(final SourcedEurekaRegistry registry, WriteServerConfig config) {
         this.registry = registry;
         this.allowedPercentageDrop = config.getEvictionAllowedPercentageDrop();
 
@@ -75,7 +75,7 @@ public class EvictionQuotaProviderImpl implements EvictionQuotaProvider {
             public Integer call(ChangeNotification<InstanceInfo> notification) {
                 return registry.size();
             }
-        }).distinct().subscribe(new Subscriber<Integer>() {
+        }).distinctUntilChanged().subscribe(new Subscriber<Integer>() {
             @Override
             public void onCompleted() {
                 logger.info("Interest subscription completed with onCompleted. Registry updates will no longer be handled");

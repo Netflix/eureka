@@ -74,7 +74,7 @@ public class PreservableRegistryProcessorTest {
         registrationDelegate.verifyRegistrationCompleted();
     }
 
-    static class EvictionQuota implements EvictionQuotaProvider {
+    static class EvictionQuota implements EvictionQuotaKeeper {
 
         private final Producer quotaProducer;
         private final Subject<Long, Long> quotaSubject = new SerializedSubject<>(PublishSubject.<Long>create());

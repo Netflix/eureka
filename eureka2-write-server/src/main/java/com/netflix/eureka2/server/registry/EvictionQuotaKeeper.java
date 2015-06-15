@@ -8,6 +8,6 @@ import rx.Observable;
  *
  * @author Tomasz Bak
  */
-public interface EvictionQuotaProvider {
+public interface EvictionQuotaKeeper {
     Observable<Long> quota();
 }

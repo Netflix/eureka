@@ -9,7 +9,6 @@ import com.netflix.eureka2.protocol.registration.Unregister;
 import com.netflix.eureka2.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Sourced;
-import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.utils.ExceptionUtils;
@@ -33,9 +32,9 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATE> imple
     private final EurekaRegistrationProcessor<InstanceInfo> registrationProcessor;
 
     private final BehaviorSubject<InstanceInfo> registrationSubject = BehaviorSubject.create();
+    private volatile InstanceInfo lastInstanceInfo;
 
     public RegistrationChannelImpl(EurekaRegistrationProcessor registrationProcessor,
-                                   final EvictionQueue evictionQueue,
                                    MessageConnection transport,
                                    RegistrationChannelMetrics metrics) {
         super(STATE.Idle, transport, metrics);
@@ -100,9 +99,8 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATE> imple
             }
 
             private void evictIfPresent() {
-                InstanceInfo toEvict = registrationSubject.getValue();
-                if (toEvict != null) {
-                    logger.info("Connection terminated without unregister; adding instance {} to eviction queue", toEvict.getId());
+                if (state.get() == STATE.Registered) {
+                    logger.info("Connection terminated without unregister; adding instance {} to eviction queue", lastInstanceInfo.getId());
                     registrationSubject.onError(CONNECTION_TERMINATED);
                 }
             }
@@ -136,19 +134,20 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATE> imple
             // Since channel is already closed and hence the transport, we don't need to send an error on transport.
             return Observable.error(CHANNEL_CLOSED_EXCEPTION);
         } else {
-            Exception exception = new IllegalStateException("Unknown state error when registering, current state: " + currentState);
+            final Exception exception = new IllegalStateException("Unknown state error when registering, current state: " + currentState);
             return sendErrorOnTransport(exception).doOnTerminate(new Action0() {
                 @Override
                 public void call() {
-                    close();
+                    close(exception);
                 }
             });
         }
     }
 
-    private Observable<Void> firstRegistration(InstanceInfo instanceInfo) {
+    private Observable<Void> firstRegistration(final InstanceInfo instanceInfo) {
         logger.debug("Registering service in registry: {}", instanceInfo);
         registrationSubject.onNext(instanceInfo);
+        lastInstanceInfo = instanceInfo;
 
         return registrationProcessor.register(instanceInfo.getId(), registrationSubject, selfSource)
                 .ignoreElements()
@@ -183,7 +182,7 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATE> imple
 
                             @Override
                             public void onError(Throwable e) {
-                                logger.warn("Failed to send ack for register operation for instanceInfo {}", registrationSubject.getValue().getId());
+                                logger.warn("Failed to send ack for register operation for instanceInfo {}", instanceInfo.getId());
                             }
 
                             @Override
@@ -216,8 +215,7 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATE> imple
         STATE currentState = moveToState(STATE.Closed);
         switch (currentState) {
             case Registered:
-                InstanceInfo instanceInfo = registrationSubject.getValue();
-                logger.info("Unregistering service in registry: {}", instanceInfo.getId());
+                logger.info("Unregistering service in registry: {}", lastInstanceInfo.getId());
                 registrationSubject.onCompleted();
                 break;
             case Closed:

@@ -34,11 +34,11 @@ public class PreservableRegistryProcessor implements EurekaRegistrationProcessor
     private final AtomicBoolean isShutdown = new AtomicBoolean();
 
     public PreservableRegistryProcessor(EurekaRegistrationProcessor<InstanceInfo> delegate,
-                                        EvictionQuotaProvider evictionQuotaProvider,
+                                        EvictionQuotaKeeper evictionQuotaKeeper,
                                         EurekaRegistryMetricFactory metricFactory) {
         this.delegate = delegate;
         this.quotaSubscriber = new QuotaSubscriber();
-        this.quotaSubscription = evictionQuotaProvider.quota().subscribe(quotaSubscriber);
+        this.quotaSubscription = evictionQuotaKeeper.quota().subscribe(quotaSubscriber);
     }
 
     @Override

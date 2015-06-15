@@ -25,7 +25,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Tomasz Bak
  */
-public class EvictionQuotaProviderImplTest {
+public class EvictionQuotaKeeperImplTest {
 
     private static final int ALLOWED_PERCENTAGE_DROP = 80;
 
@@ -34,7 +34,7 @@ public class EvictionQuotaProviderImplTest {
     private final SourcedEurekaRegistry<InstanceInfo> registry = mock(SourcedEurekaRegistry.class);
     private final PublishSubject<ChangeNotification<InstanceInfo>> interestSubject = PublishSubject.create();
 
-    private EvictionQuotaProviderImpl evictionQuotaProvider;
+    private EvictionQuotaKeeperImpl evictionQuotaProvider;
 
     private final QuotaSubscriber quotaSubscriber = new QuotaSubscriber();
 
@@ -46,7 +46,7 @@ public class EvictionQuotaProviderImplTest {
                 .withEvictionAllowedPercentageDrop(ALLOWED_PERCENTAGE_DROP)
                 .build();
 
-        evictionQuotaProvider = new EvictionQuotaProviderImpl(registry, config);
+        evictionQuotaProvider = new EvictionQuotaKeeperImpl(registry, config);
         evictionQuotaProvider.quota().subscribe(quotaSubscriber);
 
         // Emit buffer sentinel to mark end of available registry content

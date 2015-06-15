@@ -22,12 +22,12 @@ public class RegistrationChannelProcessorProvider implements Provider<EurekaRegi
     @Inject
     public RegistrationChannelProcessorProvider(SourcedEurekaRegistry sourcedEurekaRegistry,
                                                 OverridesRegistry overridesRegistry,
-                                                EvictionQuotaProvider evictionQuotaProvider,
+                                                EvictionQuotaKeeper evictionQuotaKeeper,
                                                 EurekaRegistryMetricFactory metricFactory) {
         this.overridesService = new OverridesServiceImpl(sourcedEurekaRegistry, overridesRegistry);
         this.preservableRegistrationProcessor = new PreservableRegistryProcessor(
                 overridesService,
-                evictionQuotaProvider,
+                evictionQuotaKeeper,
                 metricFactory
         );
     }
