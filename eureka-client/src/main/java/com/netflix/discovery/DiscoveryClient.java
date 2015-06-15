@@ -844,9 +844,6 @@ public class DiscoveryClient implements EurekaClient {
 
             logger.debug(PREFIX + appPathIdentifier + " -  refresh status: "
                     + response.getStatus());
-
-            updateInstanceRemoteStatus();
-
         } catch (Throwable e) {
             logger.error(
                     PREFIX + appPathIdentifier
@@ -859,6 +856,14 @@ public class DiscoveryClient implements EurekaClient {
             }
             closeResponse(response);
         }
+
+        // Notify about cache refresh before updating the instance remote status
+        onCacheRefreshed();
+        
+        // Update remote status based on refreshed data held in the cache
+        updateInstanceRemoteStatus();
+
+        // registry was fetched successfully, so return true
         return true;
     }
 
@@ -880,15 +885,8 @@ public class DiscoveryClient implements EurekaClient {
 
         // Notify if status changed
         if (lastRemoteInstanceStatus != currentRemoteInstanceStatus) {
-            try {
-                if (eventBus != null) {
-                    StatusChangeEvent event = new StatusChangeEvent(lastRemoteInstanceStatus,
-                            currentRemoteInstanceStatus);
-                    eventBus.publish(event);
-                }
-            } finally {
-                lastRemoteInstanceStatus = currentRemoteInstanceStatus;
-            }
+        	onRemoteStatusChanged(lastRemoteInstanceStatus, currentRemoteInstanceStatus);
+        	lastRemoteInstanceStatus = currentRemoteInstanceStatus;
         }
     }
 
@@ -2004,4 +2002,38 @@ public class DiscoveryClient implements EurekaClient {
         }
     }
 
+    
+    /**
+     * Invoked when the remote status of this client has changed.
+     * Subclasses may override this method to implement custom behavior if needed.
+     * 
+     * @param oldStatus the previous remote {@link InstanceStatus}
+     * @param newStatus the new remote {@link InstanceStatus} 
+     */
+    protected void onRemoteStatusChanged(InstanceInfo.InstanceStatus oldStatus, InstanceInfo.InstanceStatus newStatus) {
+    	fireEvent(new StatusChangeEvent(oldStatus, newStatus));
+    }
+    
+    /**
+     * Invoked every time the local registry cache is refreshed (whether changes have 
+     * been detected or not).
+     * 
+     * Subclasses may override this method to implement custom behavior if needed.
+     */
+    protected void onCacheRefreshed() {
+    	fireEvent(new CacheRefreshedEvent());
+    }
+
+
+    /**
+     * Send the given event on the EventBus if one is available
+     * 
+     * @param event the event to send on the eventBus
+     */
+    protected void fireEvent(DiscoveryEvent event) {
+    	// Publish event if an EventBus is available
+        if (eventBus != null) {
+            eventBus.publish(event);
+        }
+    }
 }
