@@ -284,6 +284,21 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     }
 
     @Override
+    public Observable<Long> evictAll(final Source.SourceMatcher evictionMatcher) {
+        long count = 0;
+        for (MultiSourcedDataHolder<InstanceInfo> holder : internalStore.values()) {
+            for (Source source : holder.getAllSources()) {
+                if (evictionMatcher.match(source)) {
+                    unregister(holder.get(source), source);
+                    count++;
+                }
+            }
+        }
+        logger.info("Completed evicting registry with source eviction matcher {}; removed {} copies", evictionMatcher, count);
+        return Observable.just(count);
+    }
+
+    @Override
     public Observable<Long> evictAllExcept(final Source.SourceMatcher retainMatcher) {
         long count = 0;
         for (MultiSourcedDataHolder<InstanceInfo> holder : internalStore.values()) {
