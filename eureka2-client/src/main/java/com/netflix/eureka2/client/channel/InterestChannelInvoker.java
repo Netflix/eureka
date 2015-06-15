@@ -3,8 +3,11 @@ package com.netflix.eureka2.client.channel;
 import java.util.concurrent.Callable;
 
 import com.netflix.eureka2.channel.InterestChannel;
+import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
+import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.utils.SerializedTaskInvoker;
 import rx.Observable;
@@ -17,9 +20,10 @@ import rx.schedulers.Schedulers;
  *
  * @author Nitesh Kant
  */
-public class InterestChannelInvoker extends SerializedTaskInvoker implements InterestChannel {
+public class InterestChannelInvoker extends SerializedTaskInvoker implements InterestChannel, Sourced {
 
     private final InterestChannel delegate;
+    private final Source selfSource;
 
     public InterestChannelInvoker(InterestChannel delegate, EurekaClientMetricFactory metricFactory) {
         this(delegate, metricFactory, Schedulers.computation());
@@ -28,6 +32,11 @@ public class InterestChannelInvoker extends SerializedTaskInvoker implements Int
     public InterestChannelInvoker(InterestChannel delegate, EurekaClientMetricFactory metricFactory, Scheduler scheduler) {
         super(metricFactory.getSerializedTaskInvokerMetrics(InterestChannelInvoker.class), scheduler);
         this.delegate = delegate;
+        if (delegate instanceof Sourced) {
+            this.selfSource = ((Sourced) delegate).getSource();
+        } else {
+            this.selfSource = new Source(Source.Origin.INTERESTED);
+        }
     }
 
     @Override
@@ -43,6 +52,11 @@ public class InterestChannelInvoker extends SerializedTaskInvoker implements Int
                 return "change: " + newInterest;
             }
         });
+    }
+
+    @Override
+    public Observable<ChangeNotification<InstanceInfo>> getChangeNotificationStream() {
+        return delegate.getChangeNotificationStream();
     }
 
     @Override
@@ -66,5 +80,10 @@ public class InterestChannelInvoker extends SerializedTaskInvoker implements Int
     @Override
     public Observable<Void> asLifecycleObservable() {
         return delegate.asLifecycleObservable();
+    }
+
+    @Override
+    public Source getSource() {
+        return selfSource;
     }
 }

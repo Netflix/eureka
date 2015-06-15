@@ -28,6 +28,12 @@ public interface SourcedEurekaRegistry<T> extends EurekaRegistrationProcessor<T>
     int size();
 
     /**
+     * Evict all registry info for all sources that matches the matcher
+     * @return an observable of long denoting the number of holder items touched for the eviction
+     */
+    Observable<Long> evictAll(Source.SourceMatcher evictionMatcher);
+
+    /**
      * Evict all registry info for all sources except those that matches the matcher
      * @return an observable of long denoting the number of holder items touched for the eviction
      */

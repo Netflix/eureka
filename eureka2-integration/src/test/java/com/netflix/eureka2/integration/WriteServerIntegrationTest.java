@@ -28,7 +28,7 @@ import static org.hamcrest.Matchers.is;
  * @author David Liu
  */
 @Category(IntegrationTest.class)
-public class WriteServerIntegrationTest {
+public class WriteServerIntegrationTest extends IntegrationTestClassSetup {
 
     @Rule
     public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResource(1, 0);

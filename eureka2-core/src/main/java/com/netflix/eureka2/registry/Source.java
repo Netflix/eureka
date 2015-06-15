@@ -85,6 +85,10 @@ public class Source {
                         ? (another == null)
                         : source.equals(another);
             }
+            @Override
+            public String toString() {
+                return "Matcher{" + source.toString() + "}";
+            }
         };
     }
 
