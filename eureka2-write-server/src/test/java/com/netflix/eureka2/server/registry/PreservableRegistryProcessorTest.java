@@ -1,7 +1,9 @@
-package com.netflix.eureka2.registry;
+package com.netflix.eureka2.server.registry;
 
 import java.util.concurrent.Semaphore;
 
+import com.netflix.eureka2.registry.EurekaRegistrationProcessorStub;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Source.Origin;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Builder;
@@ -32,7 +34,7 @@ public class PreservableRegistryProcessorTest {
     private final EvictionQuota evictionQuota = new EvictionQuota();
 
     private final PreservableRegistryProcessor registry = new PreservableRegistryProcessor(
-            registrationDelegate, evictionQuota.quota(), registryMetrics());
+            registrationDelegate, evictionQuota, registryMetrics());
 
     private final PublishSubject<InstanceInfo> registrationSubject = PublishSubject.create();
 
@@ -72,7 +74,7 @@ public class PreservableRegistryProcessorTest {
         registrationDelegate.verifyRegistrationCompleted();
     }
 
-    static class EvictionQuota {
+    static class EvictionQuota implements EvictionQuotaKeeper {
 
         private final Producer quotaProducer;
         private final Subject<Long, Long> quotaSubject = new SerializedSubject<>(PublishSubject.<Long>create());
@@ -107,7 +109,8 @@ public class PreservableRegistryProcessorTest {
             }
         }
 
-        Observable<Long> quota() {
+        @Override
+        public Observable<Long> quota() {
             return Observable.create(new OnSubscribe<Long>() {
                 @Override
                 public void call(Subscriber<? super Long> subscriber) {

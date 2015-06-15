@@ -9,6 +9,7 @@ import rx.subjects.PublishSubject;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -33,8 +34,9 @@ public class RxFunctionsTest {
         optionalStream.onNext(1);
 
         assertThat(testSubscriber.takeNext(), is(equalTo("A#1")));
-
         mainStream.onCompleted();
+
+        assertThat(testSubscriber.takeNext(), is(nullValue()));
         testSubscriber.assertOnCompleted();
     }
 
