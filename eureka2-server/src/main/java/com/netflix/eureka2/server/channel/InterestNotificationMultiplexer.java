@@ -112,6 +112,6 @@ public class InterestNotificationMultiplexer {
      * simplifies implementation of the multiplexer.
      */
     public Observable<ChangeNotification<InstanceInfo>> changeNotifications() {
-        return aggregatedStream.share();
+        return aggregatedStream;
     }
 }

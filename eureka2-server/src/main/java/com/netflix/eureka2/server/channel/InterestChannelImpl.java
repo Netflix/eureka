@@ -115,7 +115,7 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
 
     @Override
     public Observable<ChangeNotification<InstanceInfo>> getChangeNotificationStream() {
-        return notificationMultiplexer.changeNotifications();
+        return Observable.error(new UnsupportedOperationException("not implemented on server side interest channel"));
     }
 
     private void initializeNotificationMultiplexer() {
