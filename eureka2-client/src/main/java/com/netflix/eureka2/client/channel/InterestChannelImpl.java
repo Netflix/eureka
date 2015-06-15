@@ -37,7 +37,7 @@ import rx.Subscriber;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.observers.SafeSubscriber;
-import rx.subjects.PublishSubject;
+import rx.subjects.BehaviorSubject;
 
 /**
  * An implementation of {@link InterestChannel}. It is mandatory that all operations
@@ -58,7 +58,7 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
     // emitting hints faster than the data can be added to the client side registry. This will go away
     // after the next batch of fixes to refactor the client side registry and index structure, such that
     // batch markers are routed through the indexes instead of asynchronously outside of the indexes.
-    private final PublishSubject<ChangeNotification<InstanceInfo>> remoteBatchingSubject;
+    private final BehaviorSubject<ChangeNotification<InstanceInfo>> remoteBatchingSubject;
     private final long bufferHintDelayMs = SystemConfigLoader
             .getFromSystemPropertySafe("eureka.hacks.interestChannel.bufferHintDelayMs", 100);
     private final long maxBufferHintDelayMs = SystemConfigLoader
@@ -101,9 +101,11 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
         this.remoteBatchingRegistry = remoteBatchingRegistry;
         this.selfSource = new Source(Source.Origin.INTERESTED);
         this.registry = registry;
-        this.remoteBatchingSubject = PublishSubject.create();
+        this.remoteBatchingSubject = BehaviorSubject.create();
         channelInterestSubscriber = new ChannelInterestSubscriber(registry, remoteBatchingSubject);
         channelInterestStream = createInterestStream();
+
+        logger.info("created new interestChannel with source {}", selfSource);
     }
 
     @Override
@@ -143,6 +145,11 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
                 subscriber.onCompleted();
             }
         }).concatWith(serverRequest);
+    }
+
+    @Override
+    public Observable<ChangeNotification<InstanceInfo>> getChangeNotificationStream() {
+        return channelInterestStream;
     }
 
     @Override
@@ -272,7 +279,10 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
     }
 
     protected class ChannelInterestSubscriber extends SafeSubscriber<ChangeNotification<InstanceInfo>> {
-        public ChannelInterestSubscriber(final SourcedEurekaRegistry<InstanceInfo> registry, final PublishSubject<ChangeNotification<InstanceInfo>> remoteBatchingSubject) {
+        public ChannelInterestSubscriber(
+                final SourcedEurekaRegistry<InstanceInfo> registry,
+                final BehaviorSubject<ChangeNotification<InstanceInfo>> remoteBatchingSubject
+        ) {
             super(new Subscriber<ChangeNotification<InstanceInfo>>() {
                 @Override
                 public void onCompleted() {

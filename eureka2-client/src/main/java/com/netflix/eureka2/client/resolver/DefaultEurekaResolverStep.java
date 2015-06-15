@@ -178,6 +178,11 @@ class DefaultEurekaResolverStep implements EurekaRemoteResolverStep {
         }
 
         @Override
+        public Observable<Long> evictAll(Source.SourceMatcher evictionMatcher) {
+            return Observable.just(0l);
+        }
+
+        @Override
         public Observable<Long> evictAllExcept(Source.SourceMatcher retainMatcher) {
             return Observable.just(0l);
         }
