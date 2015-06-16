@@ -34,6 +34,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
 
     public static final String EUREKA_API_BASE_PATH = "/eureka/v2/";
 
+    private static Pattern HOSTNAME_PATTERN = Pattern.compile("\"hostName\"\\s?:\\s?\\\"([A-Za-z0-9\\.]*)\\\"");
     private static Pattern STATUS_PATTERN = Pattern.compile("\"status\"\\s?:\\s?\\\"([A-Z_]*)\\\"");
 
     private int port;
@@ -214,18 +215,25 @@ public class MockRemoteEurekaServer extends ExternalResource {
                         heartbeatCount.getAndIncrement();
                     } else if (request.getMethod().equals("POST")) {  // this is a register request
                         registerCount.getAndIncrement();
-                        String result = null;
+                        String statusStr = null;
+                        String hostname = null;
                         String line;
                         BufferedReader reader = request.getReader();
                         while ((line = reader.readLine()) != null) {
-                            Matcher matcher = STATUS_PATTERN.matcher(line);
-                            if (result == null && matcher.find()) {
-                                result = matcher.group(1);
+                            Matcher hostNameMatcher = HOSTNAME_PATTERN.matcher(line);
+                            if (hostname == null && hostNameMatcher.find()) {
+                                hostname = hostNameMatcher.group(1);
+                                // don't break here as we want to read the full buffer for a clean connection close
+                            }
+
+                            Matcher statusMatcher = STATUS_PATTERN.matcher(line);
+                            if (statusStr == null && statusMatcher.find()) {
+                                statusStr = statusMatcher.group(1);
                                 // don't break here as we want to read the full buffer for a clean connection close
                             }
                         }
-                        System.out.println("Matched status to: " + result);
-                        registrationStatuses.add(result);
+                        System.out.println("Matched status to: " + statusStr);
+                        registrationStatuses.add(statusStr);
 
                         String appName = pathInfo.substring(5);
                         if (!applicationMap.containsKey(appName)) {
@@ -233,8 +241,8 @@ public class MockRemoteEurekaServer extends ExternalResource {
                             InstanceInfo instanceInfo = InstanceInfo.Builder.newBuilder()
                                     .setAppName(appName)
                                     .setIPAddr("1.1.1.1")
-                                    .setHostName("localhost")
-                                    .setStatus(InstanceInfo.InstanceStatus.toEnum(result))
+                                    .setHostName(hostname)
+                                    .setStatus(InstanceInfo.InstanceStatus.toEnum(statusStr))
                                     .setDataCenterInfo(new DataCenterInfo() {
                                         @Override
                                         public Name getName() {
