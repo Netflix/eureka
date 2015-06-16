@@ -51,6 +51,7 @@ public class DiscoveryClientEventBusTest extends BaseDiscoveryClientTester {
         ConfigurationManager.getConfigInstance().setProperty("eureka.name", "EurekaTestApp-" + UUID.randomUUID());
         ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", "true");
         ConfigurationManager.getConfigInstance().setProperty("eureka.appinfo.initial.replicate.time", "0");
+        ConfigurationManager.getConfigInstance().setProperty("eureka.appinfo.replicate.interval", "5");
         ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default",
                 "http://localhost:" + mockLocalEurekaServer.getPort() + MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
 
@@ -104,7 +105,7 @@ public class DiscoveryClientEventBusTest extends BaseDiscoveryClientTester {
         // mark status as down. Should see change on next cache refresh
         injector.getInstance(ApplicationInfoManager.class).setInstanceStatus(InstanceInfo.InstanceStatus.DOWN);
 
-        Assert.assertTrue(eventLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(eventLatch.await(10, TimeUnit.SECONDS));
         Assert.assertEquals(1, receivedEvents.size());
         Assert.assertNotNull(receivedEvents.get(0));
     }
