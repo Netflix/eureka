@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.protocol.discovery;
+package com.netflix.eureka2.protocol.interest;
 
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;

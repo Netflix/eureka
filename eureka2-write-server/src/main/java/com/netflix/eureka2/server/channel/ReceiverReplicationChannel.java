@@ -4,12 +4,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.eureka2.channel.ReplicationChannel;
 import com.netflix.eureka2.channel.ReplicationChannel.STATE;
+import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
 import com.netflix.eureka2.protocol.EurekaProtocolError;
-import com.netflix.eureka2.protocol.replication.RegisterCopy;
+import com.netflix.eureka2.protocol.interest.AddInstance;
+import com.netflix.eureka2.protocol.interest.DeleteInstance;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
-import com.netflix.eureka2.protocol.replication.UnregisterCopy;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
@@ -38,6 +39,9 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATE> im
 
     private final SelfInfoResolver selfIdentityService;
     private final SourcedEurekaRegistry<InstanceInfo> registry;
+
+    private Observable<ChangeNotification<InstanceInfo>> streamStateObservable;
+
     private Source replicationSource;
 
     // A loop is detected by comparing hello message source id with local instance id.
@@ -99,11 +103,11 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATE> im
         if (message instanceof ReplicationHello) {
             logger.info("Received Hello from {}", ((ReplicationHello) message).getSourceId());
             reply = hello((ReplicationHello) message);
-        } else if (message instanceof RegisterCopy) {
-            InstanceInfo instanceInfo = ((RegisterCopy) message).getInstanceInfo();
+        } else if (message instanceof AddInstance) {
+            InstanceInfo instanceInfo = ((AddInstance) message).getInstanceInfo();
             reply = register(instanceInfo);// No need to subscribe, the register() call does the subscription.
-        } else if (message instanceof UnregisterCopy) {
-            reply = unregister(((UnregisterCopy) message).getInstanceId());// No need to subscribe, the unregister() call does the subscription.
+        } else if (message instanceof DeleteInstance) {
+            reply = unregister(((DeleteInstance) message).getInstanceId());// No need to subscribe, the unregister() call does the subscription.
         } else {
             reply = Observable.error(new EurekaProtocolError("Unexpected message " + message));
         }

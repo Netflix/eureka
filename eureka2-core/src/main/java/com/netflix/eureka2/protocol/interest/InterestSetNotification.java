@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.protocol.discovery;
+package com.netflix.eureka2.protocol.interest;
 
 /**
  * Marker interface for interest set update classes.

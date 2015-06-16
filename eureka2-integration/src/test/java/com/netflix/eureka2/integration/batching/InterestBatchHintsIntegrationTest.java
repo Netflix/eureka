@@ -17,10 +17,10 @@ import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
-import com.netflix.eureka2.protocol.discovery.AddInstance;
-import com.netflix.eureka2.protocol.discovery.InterestSetNotification;
-import com.netflix.eureka2.protocol.discovery.SampleAddInstance;
-import com.netflix.eureka2.protocol.discovery.StreamStateUpdate;
+import com.netflix.eureka2.protocol.interest.AddInstance;
+import com.netflix.eureka2.protocol.interest.InterestSetNotification;
+import com.netflix.eureka2.protocol.interest.SampleAddInstance;
+import com.netflix.eureka2.protocol.interest.StreamStateUpdate;
 import com.netflix.eureka2.registry.MultiSourcedDataHolder;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Sourced;
@@ -30,6 +30,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.TransportClient;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -51,7 +52,12 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 
 import static org.hamcrest.Matchers.not;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author David Liu
@@ -114,6 +120,13 @@ public class InterestBatchHintsIntegrationTest {
                 return channel;
             }
         });
+    }
+
+    @After
+    public void tearDown() {
+        if (interestClient != null) {
+            interestClient.shutdown();
+        }
     }
 
     @Test

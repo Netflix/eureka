@@ -1,6 +1,7 @@
-@namespace("com.netflix.eureka2.protocol.discovery")
-protocol DiscoveryProtocol {
+@namespace("com.netflix.eureka2.protocol.interest")
+protocol InterestProtocol {
 
+    import idl "eureka-common-model.avdl";
     import idl "eureka-registry-model.avdl";
     import idl "eureka-interest-model.avdl";
 
@@ -20,39 +21,39 @@ protocol DiscoveryProtocol {
         string instanceId;
     }
 
-    @namespace("com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$")
+    @namespace("com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$")
     record StringDeltaDTO {
         string id;
         string fieldName;
         union { null, string } value;
     }
-    @namespace("com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$")
+    @namespace("com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$")
     record EnumDeltaDTO {
         string id;
         string fieldName;
         union { null, com.netflix.eureka2.registry.instance.InstanceInfo$.Status } value;
     }
-    @namespace("com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$")
+    @namespace("com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$")
     record SetServicePortDeltaDTO {
         string id;
         string fieldName;
         union { null, @java-class("java.util.HashSet") array<com.netflix.eureka2.registry.instance.ServicePort> } value;
     }
-    @namespace("com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$")
+    @namespace("com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$")
     record SetStringDeltaDTO {
         string id;
         string fieldName;
         union { null, @java-class("java.util.HashSet") array<string> } value;
     }
 
-    @namespace("com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$")
+    @namespace("com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$")
     record MapStringDeltaDTO {
         string id;
         string fieldName;
         union { null, @java-class("java.util.HashMap") map<string> } value;
     }
 
-    @namespace("com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$")
+    @namespace("com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$")
     record DataCenterInfoDTO {
         string id;
         string fieldName;
@@ -65,18 +66,13 @@ protocol DiscoveryProtocol {
 
     record UpdateInstanceInfo {
         union {
-            com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.StringDeltaDTO,
-            com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.EnumDeltaDTO,
-            com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.SetServicePortDeltaDTO,
-            com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.SetStringDeltaDTO,
-            com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.MapStringDeltaDTO,
-            com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo$.DataCenterInfoDTO
+            com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$.StringDeltaDTO,
+            com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$.EnumDeltaDTO,
+            com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$.SetServicePortDeltaDTO,
+            com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$.SetStringDeltaDTO,
+            com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$.MapStringDeltaDTO,
+            com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$.DataCenterInfoDTO
         } deltaDTO;
-    }
-
-    @namespace("com.netflix.eureka2.interests.StreamStateNotification$")
-    enum BufferState {
-        Unknown, BufferStart, BufferEnd
     }
 
     record StreamStateUpdate {
@@ -110,7 +106,7 @@ protocol DiscoveryProtocol {
     record UnregisterInterestSet {
     }
 
-    record DiscoveryMessage {
+    record InterestMessage {
         union {
             AddInstance,
             DeleteInstance,

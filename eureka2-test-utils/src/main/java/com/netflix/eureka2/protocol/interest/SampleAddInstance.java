@@ -1,4 +1,4 @@
-package com.netflix.eureka2.protocol.discovery;
+package com.netflix.eureka2.protocol.interest;
 
 import java.util.ArrayList;
 import java.util.Collection;

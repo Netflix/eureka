@@ -1,7 +1,7 @@
 package com.netflix.eureka2.transport;
 
 import com.netflix.eureka2.codec.CodecType;
-import com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo;
+import com.netflix.eureka2.protocol.interest.UpdateInstanceInfo;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfoField;

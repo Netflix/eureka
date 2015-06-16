@@ -7,10 +7,10 @@ import com.netflix.eureka2.channel.TestSenderReplicationChannel;
 import com.netflix.eureka2.channel.TestSenderReplicationChannel.ReplicationItem;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
-import com.netflix.eureka2.protocol.replication.RegisterCopy;
+import com.netflix.eureka2.protocol.interest.AddInstance;
+import com.netflix.eureka2.protocol.interest.DeleteInstance;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
-import com.netflix.eureka2.protocol.replication.UnregisterCopy;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
@@ -365,8 +365,8 @@ public class ReplicationHandlerTest {
     private static TestSenderReplicationChannel newFailAtReplicateChannel(Integer id) {
         MessageConnection messageConnection = newMockMessageConnection();
         when(messageConnection.submit(any(ReplicationHello.class))).thenReturn(Observable.<Void>empty());
-        when(messageConnection.submit(any(RegisterCopy.class))).thenReturn(Observable.<Void>error(new Exception("test: register error")));
-        when(messageConnection.submit(any(UnregisterCopy.class))).thenReturn(Observable.<Void>error(new Exception("test: unregister error")));
+        when(messageConnection.submit(any(AddInstance.class))).thenReturn(Observable.<Void>error(new Exception("test: register error")));
+        when(messageConnection.submit(any(DeleteInstance.class))).thenReturn(Observable.<Void>error(new Exception("test: unregister error")));
         when(messageConnection.incoming()).thenReturn(Observable.<Object>just(HELLO_REPLY));
 
         TransportClient transportClient = mock(TransportClient.class);

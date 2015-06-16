@@ -21,10 +21,10 @@ import java.util.List;
 
 import com.netflix.eureka2.channel.ReplicationChannel.STATE;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
-import com.netflix.eureka2.protocol.replication.RegisterCopy;
+import com.netflix.eureka2.protocol.interest.AddInstance;
+import com.netflix.eureka2.protocol.interest.DeleteInstance;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
-import com.netflix.eureka2.protocol.replication.UnregisterCopy;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
@@ -115,7 +115,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         InstanceInfo infoUpdate = new InstanceInfo.Builder().withInstanceInfo(APP_INFO).withApp("myNewName").build();
 
         when(registry.register(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.just(false));
-        incomingSubject.onNext(new RegisterCopy(infoUpdate));
+        incomingSubject.onNext(new AddInstance(infoUpdate));
 
         verify(registry, times(2)).register(infoCaptor.capture(), sourceCaptor.capture());
 
@@ -137,7 +137,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
 
         // Now remove the record
         when(registry.unregister(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.just(true));
-        incomingSubject.onNext(new UnregisterCopy(APP_INFO.getId()));
+        incomingSubject.onNext(new DeleteInstance(APP_INFO.getId()));
 
         // Capture remove on the registry and verify the arguments
         verify(registry, times(1)).unregister(infoCaptor.capture(), sourceCaptor.capture());
@@ -149,9 +149,9 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         ReplicationHello hello = new ReplicationHello(RECEIVER_ID, 0);
         incomingSubject.onNext(hello);
 
-        incomingSubject.onNext(new RegisterCopy(APP_INFO));
-        incomingSubject.onNext(new RegisterCopy(APP_INFO));  // this is an update
-        incomingSubject.onNext(new UnregisterCopy(APP_INFO.getId()));
+        incomingSubject.onNext(new AddInstance(APP_INFO));
+        incomingSubject.onNext(new AddInstance(APP_INFO));  // this is an update
+        incomingSubject.onNext(new DeleteInstance(APP_INFO.getId()));
         verify(transport, times(3)).onError(ReceiverReplicationChannel.REPLICATION_LOOP_EXCEPTION);
     }
 
@@ -199,7 +199,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         incomingSubject.onNext(HELLO);
 
         when(registry.register(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.just(false));
-        incomingSubject.onNext(new RegisterCopy(info));
+        incomingSubject.onNext(new AddInstance(info));
     }
 
     private void verifyInstanceAndSourceCaptures(InstanceInfo info, String senderId) {

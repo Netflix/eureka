@@ -1,0 +1,12 @@
+@namespace("com.netflix.eureka2")
+protocol EurekaTransportModel {
+
+    @namespace("com.netflix.eureka2.transport")
+    record Acknowledgement {
+    }
+
+    @namespace("com.netflix.eureka2.protocol")
+    record Heartbeat {
+    }
+
+}

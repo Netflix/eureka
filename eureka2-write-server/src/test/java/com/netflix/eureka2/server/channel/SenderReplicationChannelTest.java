@@ -4,9 +4,9 @@ import java.util.Collections;
 
 import com.netflix.eureka2.channel.ReplicationChannel.STATE;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
-import com.netflix.eureka2.protocol.replication.RegisterCopy;
+import com.netflix.eureka2.protocol.interest.AddInstance;
+import com.netflix.eureka2.protocol.interest.DeleteInstance;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
-import com.netflix.eureka2.protocol.replication.UnregisterCopy;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.TransportClient;
 import org.junit.Before;
@@ -61,7 +61,7 @@ public class SenderReplicationChannelTest extends AbstractReplicationChannelTest
         // Test registration
         TestSubscriber<Void> replySubscriber = new TestSubscriber<>();
 
-        RegisterCopy message = new RegisterCopy(APP_INFO);
+        AddInstance message = new AddInstance(APP_INFO);
         when(connection.submit(message)).thenReturn(Observable.<Void>empty());
         replicationChannel.register(APP_INFO).subscribe(replySubscriber);
 
@@ -78,7 +78,7 @@ public class SenderReplicationChannelTest extends AbstractReplicationChannelTest
         // Test unregistration
         TestSubscriber<Void> replySubscriber = new TestSubscriber<>();
 
-        UnregisterCopy message = new UnregisterCopy(APP_INFO.getId());
+        DeleteInstance message = new DeleteInstance(APP_INFO.getId());
         when(connection.submit(message)).thenReturn(Observable.<Void>empty());
         replicationChannel.unregister(APP_INFO.getId()).subscribe(replySubscriber);
 

@@ -20,10 +20,10 @@ import com.netflix.eureka2.channel.AbstractClientChannel;
 import com.netflix.eureka2.channel.ReplicationChannel;
 import com.netflix.eureka2.channel.ReplicationChannel.STATE;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
-import com.netflix.eureka2.protocol.replication.RegisterCopy;
+import com.netflix.eureka2.protocol.interest.AddInstance;
+import com.netflix.eureka2.protocol.interest.DeleteInstance;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
-import com.netflix.eureka2.protocol.replication.UnregisterCopy;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.TransportClient;
@@ -76,7 +76,7 @@ public class SenderReplicationChannel extends AbstractClientChannel<STATE> imple
         return connect().switchMap(new Func1<MessageConnection, Observable<Void>>() {
             @Override
             public Observable<Void> call(MessageConnection connection) {
-                return sendOnConnection(connection, new RegisterCopy(instanceInfo));
+                return sendOnConnection(connection, new AddInstance(instanceInfo));
             }
         });
     }
@@ -90,7 +90,7 @@ public class SenderReplicationChannel extends AbstractClientChannel<STATE> imple
         return connect().switchMap(new Func1<MessageConnection, Observable<Void>>() {
             @Override
             public Observable<Void> call(MessageConnection connection) {
-                return sendOnConnection(connection, new UnregisterCopy(instanceId));
+                return sendOnConnection(connection, new DeleteInstance(instanceId));
             }
         });
     }

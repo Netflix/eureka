@@ -6,6 +6,11 @@ protocol EurekaInterestModel {
         Equals, Like
     }
 
+    @namespace("com.netflix.eureka2.interests.StreamStateNotification$")
+    enum BufferState {
+        Unknown, BufferStart, BufferEnd
+    }
+
     record ApplicationInterest {
         string pattern;
         union {
@@ -47,4 +52,5 @@ protocol EurekaInterestModel {
     record MultipleInterests {
         array< union {ApplicationInterest, FullRegistryInterest, EmptyRegistryInterest, VipInterest, SecureVipInterest, InstanceInterest} > interests;
     }
+
 }
