@@ -224,23 +224,28 @@ public class DiscoveryClient implements EurekaClient {
 
     public DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
         this(applicationInfoManager, config, args, new Provider<BackupRegistry>() {
+            private volatile BackupRegistry backupRegistryInstance;
             @Override
-            public BackupRegistry get() {
-                String backupRegistryClassName = clientConfig.getBackupRegistryImpl();
-                if (null != backupRegistryClassName) {
-                    try {
-                        return (BackupRegistry) Class.forName(backupRegistryClassName).newInstance();
-                    } catch (InstantiationException e) {
-                        logger.error("Error instantiating BackupRegistry.", e);
-                    } catch (IllegalAccessException e) {
-                        logger.error("Error instantiating BackupRegistry.", e);
-                    } catch (ClassNotFoundException e) {
-                        logger.error("Error instantiating BackupRegistry.", e);
+            public synchronized BackupRegistry get() {
+                if (backupRegistryInstance == null) {
+                    String backupRegistryClassName = clientConfig.getBackupRegistryImpl();
+                    if (null != backupRegistryClassName) {
+                        try {
+                            backupRegistryInstance = (BackupRegistry) Class.forName(backupRegistryClassName).newInstance();
+                        } catch (InstantiationException e) {
+                            logger.error("Error instantiating BackupRegistry.", e);
+                        } catch (IllegalAccessException e) {
+                            logger.error("Error instantiating BackupRegistry.", e);
+                        } catch (ClassNotFoundException e) {
+                            logger.error("Error instantiating BackupRegistry.", e);
+                        }
                     }
+
+                    logger.warn("Using default backup registry implementation which does not do anything.");
+                    backupRegistryInstance = new NotImplementedRegistryImpl();
                 }
 
-                logger.warn("Using default backup registry implementation which does not do anything.");
-                return new NotImplementedRegistryImpl();
+                return backupRegistryInstance;
             }
         });
     }
