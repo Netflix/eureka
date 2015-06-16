@@ -37,7 +37,7 @@ public class DiscoveryClientRegisterUpdateTest {
 
         applicationInfoManager = new TestApplicationInfoManager();
         applicationInfoManager.initComponent(new MyDataCenterInstanceConfig());
-        client = new DiscoveryClient(applicationInfoManager.getInfo(), new DefaultEurekaClientConfig());
+        client = new DiscoveryClient(applicationInfoManager, new DefaultEurekaClientConfig());
     }
 
     @After

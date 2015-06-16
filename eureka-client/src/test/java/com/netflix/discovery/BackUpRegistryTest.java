@@ -6,8 +6,12 @@ import java.util.UUID;
 
 import com.google.inject.Provider;
 import com.netflix.appinfo.AmazonInfo;
+import com.netflix.appinfo.ApplicationInfoManager;
+import com.netflix.appinfo.CloudInstanceConfig;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.appinfo.MyDataCenterInstanceConfig;
+import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
@@ -62,9 +66,11 @@ public class BackUpRegistryTest {
             }
         });
 
+        ApplicationInfoManager applicationInfoManager = new ApplicationInfoManager(new MyDataCenterInstanceConfig(), builder.build());
+
         backupRegistry = new MockBackupRegistry();
         setupBackupMock();
-        client = new DiscoveryClient(builder.build(), new DefaultEurekaClientConfig(), null,
+        client = new DiscoveryClient(applicationInfoManager, new DefaultEurekaClientConfig(), null,
                 new Provider<BackupRegistry>() {
                     @Override
                     public BackupRegistry get() {

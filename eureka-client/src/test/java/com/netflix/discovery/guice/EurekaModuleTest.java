@@ -16,6 +16,7 @@ import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.governator.guice.LifecycleInjector;
 import com.netflix.governator.guice.LifecycleInjectorBuilder;
+import com.netflix.governator.guice.LifecycleInjectorMode;
 import com.netflix.governator.lifecycle.LifecycleManager;
 import org.junit.After;
 import org.junit.Assert;
@@ -37,7 +38,7 @@ public class EurekaModuleTest {
         ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", "false");
         ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default", "http://localhost:8080/eureka/v2");
 
-        LifecycleInjectorBuilder builder = LifecycleInjector.builder();
+        LifecycleInjectorBuilder builder = LifecycleInjector.builder().withMode(LifecycleInjectorMode.SIMULATED_CHILD_INJECTORS);
 
         Module testModule = Modules.override(new EurekaModule()).with(new AbstractModule() {
             @Override

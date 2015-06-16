@@ -15,6 +15,7 @@ public class StatusChangeEvent extends DiscoveryEvent {
     private final InstanceInfo.InstanceStatus previous;
 
     public StatusChangeEvent(InstanceInfo.InstanceStatus previous, InstanceInfo.InstanceStatus current) {
+        super();
         this.current = current;
         this.previous = previous;
     }

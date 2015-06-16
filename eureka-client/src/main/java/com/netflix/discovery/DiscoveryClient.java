@@ -153,6 +153,7 @@ public class DiscoveryClient implements EurekaClient {
     // monotonically increasing generation counter to ensure stale threads do not reset registry to an older version
     private final AtomicLong fetchRegistryGeneration;
 
+    private final ApplicationInfoManager applicationInfoManager;
     private final InstanceInfo instanceInfo;
     private String appPathIdentifier;
     private boolean isRegisteredWithDiscovery = false;
@@ -197,12 +198,32 @@ public class DiscoveryClient implements EurekaClient {
         private Provider<HealthCheckHandler> healthCheckHandlerProvider;
     }
 
+    /**
+     * Assumes applicationInfoManager is already initialized
+     *
+     * @deprecated use constructor that takes ApplicationInfoManager instead of InstanceInfo directly
+     */
+    @Deprecated
     public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config) {
         this(myInfo, config, null);
     }
 
+    /**
+     * Assumes applicationInfoManager is already initialized
+     *
+     * @deprecated use constructor that takes ApplicationInfoManager instead of InstanceInfo directly
+     */
+    @Deprecated
     public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
-        this(myInfo, config, args, new Provider<BackupRegistry>() {
+        this(ApplicationInfoManager.getInstance(), config, args);
+    }
+
+    public DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config) {
+        this(applicationInfoManager, config, null);
+    }
+
+    public DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
+        this(applicationInfoManager, config, args, new Provider<BackupRegistry>() {
             @Override
             public BackupRegistry get() {
                 String backupRegistryClassName = clientConfig.getBackupRegistryImpl();
@@ -225,7 +246,7 @@ public class DiscoveryClient implements EurekaClient {
     }
 
     @Inject
-    DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, DiscoveryClientOptionalArgs args,
+    DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config, DiscoveryClientOptionalArgs args,
                     Provider<BackupRegistry> backupRegistryProvider) {
         if (args != null) {
             healthCheckHandlerProvider = args.healthCheckHandlerProvider;
@@ -236,6 +257,9 @@ public class DiscoveryClient implements EurekaClient {
             healthCheckHandlerProvider = null;
             eventBus = null;
         }
+
+        this.applicationInfoManager = applicationInfoManager;
+        InstanceInfo myInfo = applicationInfoManager.getInfo();
 
         this.backupRegistryProvider = backupRegistryProvider;
 
@@ -760,8 +784,8 @@ public class DiscoveryClient implements EurekaClient {
     @PreDestroy
     @Override
     public void shutdown() {
-        if (statusChangeListener != null) {
-            ApplicationInfoManager.getInstance().unregisterStatusChangeListener(statusChangeListener.getId());
+        if (statusChangeListener != null && applicationInfoManager != null) {
+            applicationInfoManager.unregisterStatusChangeListener(statusChangeListener.getId());
         }
 
         cancelScheduledTasks();
@@ -1432,7 +1456,7 @@ public class DiscoveryClient implements EurekaClient {
             };
 
             if (clientConfig.shouldOnDemandUpdateStatusChange()) {
-                ApplicationInfoManager.getInstance().registerStatusChangeListener(statusChangeListener);
+                applicationInfoManager.registerStatusChangeListener(statusChangeListener);
             }
 
             instanceInfoReplicator.start(clientConfig.getInitialInstanceInfoReplicationIntervalSeconds());
@@ -1757,7 +1781,7 @@ public class DiscoveryClient implements EurekaClient {
      * isDirty flag on the instanceInfo is set to true
      */
     void refreshInstanceInfo() {
-        ApplicationInfoManager.getInstance().refreshDataCenterInfoIfRequired();
+        applicationInfoManager.refreshDataCenterInfoIfRequired();
 
         InstanceStatus status;
         try {

@@ -15,6 +15,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.netflix.appinfo.AbstractEurekaIdentity;
+import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.EurekaClientIdentity;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.converters.XmlXStream;
@@ -225,6 +226,25 @@ public class MockRemoteEurekaServer extends ExternalResource {
                         }
                         System.out.println("Matched status to: " + result);
                         registrationStatuses.add(result);
+
+                        String appName = pathInfo.substring(5);
+                        if (!applicationMap.containsKey(appName)) {
+                            Application app = new Application(appName);
+                            InstanceInfo instanceInfo = InstanceInfo.Builder.newBuilder()
+                                    .setAppName(appName)
+                                    .setIPAddr("1.1.1.1")
+                                    .setHostName("localhost")
+                                    .setStatus(InstanceInfo.InstanceStatus.toEnum(result))
+                                    .setDataCenterInfo(new DataCenterInfo() {
+                                        @Override
+                                        public Name getName() {
+                                            return Name.MyOwn;
+                                        }
+                                    })
+                                    .build();
+                            app.addInstance(instanceInfo);
+                            applicationMap.put(appName, app);
+                        }
                     }
                     Applications apps = new Applications();
                     apps.setAppsHashCode("");
