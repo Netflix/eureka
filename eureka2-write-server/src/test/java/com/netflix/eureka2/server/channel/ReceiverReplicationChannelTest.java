@@ -27,7 +27,6 @@ import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.transport.MessageConnection;
@@ -59,7 +58,6 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
 
     private final SelfInfoResolver SelfIdentityService = mock(SelfInfoResolver.class);
     private final SourcedEurekaRegistry<InstanceInfo> registry = mock(SourcedEurekaRegistry.class);
-    private final EvictionQueue evictionQueue = mock(EvictionQueue.class);
 
     private ReceiverReplicationChannel replicationChannel;
     private final PublishSubject<Object> incomingSubject = PublishSubject.create();
@@ -78,8 +76,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
 
         when(SelfIdentityService.resolve()).thenReturn(Observable.just(RECEIVER_INFO));
 
-        replicationChannel = new ReceiverReplicationChannel(transport, SelfIdentityService, registry,
-                evictionQueue, channelMetrics);
+        replicationChannel = new ReceiverReplicationChannel(transport, SelfIdentityService, registry, channelMetrics);
     }
 
     @After
@@ -156,11 +153,6 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
     }
 
     @Test(timeout = 60000)
-    public void testAddsRecordsToEvictionQueueOnTransportDisconnect() throws Exception {
-        verifyAddsRecordsToEvictionQueueOnDisconnect(false);
-    }
-
-    @Test(timeout = 60000)
     public void testMetrics() throws Exception {
         // Idle -> Handshake -> Connected
         ReplicationHello hello = new ReplicationHello(RECEIVER_ID, 0);
@@ -173,26 +165,6 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         replicationChannel.close();
         verify(channelMetrics, times(1)).decrementStateCounter(STATE.Connected);
         verify(channelMetrics, times(1)).incrementStateCounter(STATE.Closed);
-    }
-
-    @Test(timeout = 60000)
-    public void testAddsRecordsToEvictionQueueOnTransportError() throws Exception {
-        verifyAddsRecordsToEvictionQueueOnDisconnect(true);
-    }
-
-    public void verifyAddsRecordsToEvictionQueueOnDisconnect(boolean onError) throws Exception {
-        handshakeAndRegister(APP_INFO);
-
-        // Now disconnect
-        if (onError) {
-            transportLifeCycle.onError(new Exception("disconnect with error"));
-        } else {
-            transportLifeCycle.onCompleted();
-        }
-
-        // Verify
-        verify(evictionQueue, times(1)).add(infoCaptor.capture(), sourceCaptor.capture());
-        verifyInstanceAndSourceCaptures(APP_INFO, SENDER_ID);
     }
 
     protected void handshakeAndRegister(InstanceInfo info) {

@@ -10,6 +10,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.ChangeNotifications;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
@@ -382,6 +383,7 @@ public class SourcedEurekaRegistryImplTest {
         registry.unregister(original, localSource);
         final List<ChangeNotification<InstanceInfo>> notifications = new ArrayList<>();
         registry.forInterest(Interests.forFullRegistry(), Source.matcherFor(Source.Origin.LOCAL))
+                .filter(ChangeNotifications.dataOnlyFilter())
                 .subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
                     @Override
                     public void onCompleted() {

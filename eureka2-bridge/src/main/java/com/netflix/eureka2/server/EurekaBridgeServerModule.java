@@ -30,7 +30,7 @@ import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.server.service.replication.ReplicationService;
 import com.netflix.eureka2.server.spi.ExtensionContext;
-import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
+import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 import io.reactivex.netty.spectator.SpectatorEventsListenerFactory;
@@ -76,9 +76,9 @@ public class EurekaBridgeServerModule extends AbstractEurekaServerModule {
         bind(SelfInfoResolver.class).to(EurekaBridgeServerSelfInfoResolver.class).asEagerSingleton();
         bind(SelfRegistrationService.class).to(EurekaBridgeServerSelfRegistrationService.class).asEagerSingleton();
 
-        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new SpectatorEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
-        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("replication")).toInstance(new SpectatorEventsListenerFactory("replication-rx-client-", "replication-rx-server-"));
-        bind(TcpDiscoveryServer.class).asEagerSingleton();
+        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named(com.netflix.eureka2.Names.INTEREST)).toInstance(new SpectatorEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
+        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named(com.netflix.eureka2.Names.REPLICATION)).toInstance(new SpectatorEventsListenerFactory("replication-rx-client-", "replication-rx-server-"));
+        bind(TcpInterestServer.class).asEagerSingleton();
         bind(TcpReplicationServer.class).asEagerSingleton();
 
         bind(ReplicationService.class).asEagerSingleton();

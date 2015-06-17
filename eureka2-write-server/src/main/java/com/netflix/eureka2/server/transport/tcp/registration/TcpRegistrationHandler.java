@@ -16,13 +16,13 @@
 
 package com.netflix.eureka2.server.transport.tcp.registration;
 
+import com.netflix.eureka2.Names;
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.channel.RegistrationChannelFactory;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
-import com.netflix.eureka2.server.channel.ServerChannelFactory;
+import com.netflix.eureka2.server.channel.RegistrationChannelImpl;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
@@ -58,15 +58,16 @@ public class TcpRegistrationHandler implements ConnectionHandler<Object, Object>
     @Override
     public Observable<Void> handle(ObservableConnection<Object, Object> connection) {
         MessageConnection broker = new HeartBeatConnection(
-                new BaseMessageConnection("registration", connection, metricFactory.getRegistrationConnectionMetrics()),
+                new BaseMessageConnection(Names.REGISTRATION, connection, metricFactory.getRegistrationConnectionMetrics()),
                 config.getHeartbeatIntervalMs(), 3,
                 Schedulers.computation()
         );
-        final ServerChannelFactory<RegistrationChannel> channelFactory
-                = new RegistrationChannelFactory(registry, broker, evictionQueue, metricFactory);
 
-        return channelFactory.newChannel()
-                .asLifecycleObservable(); // Since this is a discovery handler which only handles interest subscriptions,
+        RegistrationChannel registrationChannel =
+                new RegistrationChannelImpl(registry, evictionQueue, broker, metricFactory.getRegistrationChannelMetrics());
+
+        // Since this is a discovery handler which only handles interest subscriptions,
         // the channel is created on connection accept.
+        return registrationChannel.asLifecycleObservable();
     }
 }

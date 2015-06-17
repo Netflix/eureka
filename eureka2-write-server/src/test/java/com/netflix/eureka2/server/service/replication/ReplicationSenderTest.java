@@ -47,7 +47,7 @@ import static org.mockito.Mockito.*;
 /**
  * @author David Liu
  */
-public class ReplicationHandlerTest {
+public class ReplicationSenderTest {
 
     private static final int RETRY_WAIT_MILLIS = 10;
 
@@ -69,7 +69,7 @@ public class ReplicationHandlerTest {
 
     private ChannelFactory<ReplicationChannel> mockFactory;
     private TestChannelFactory<ReplicationChannel> factory;
-    private ReplicationHandler handler;
+    private ReplicationSender handler;
 
     @Before
     public void setUp() throws Exception {
@@ -87,7 +87,7 @@ public class ReplicationHandlerTest {
 
         mockFactory = mock(SenderReplicationChannelFactory.class);
         factory = new TestChannelFactory<>(mockFactory);
-        handler = spy(new ReplicationHandlerImpl(factory, RETRY_WAIT_MILLIS, registry, SELF_INFO));
+        handler = spy(new ReplicationSenderImpl(factory, RETRY_WAIT_MILLIS, registry, SELF_INFO));
 
         for (InstanceInfo instanceInfo : registryContent) {
             registry.register(instanceInfo, localSource).subscribe();

@@ -3,6 +3,8 @@ package com.netflix.eureka2.server.channel;
 import java.util.Collections;
 
 import com.netflix.eureka2.channel.ReplicationChannel.STATE;
+import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
 import com.netflix.eureka2.protocol.interest.AddInstance;
 import com.netflix.eureka2.protocol.interest.DeleteInstance;
@@ -63,7 +65,7 @@ public class SenderReplicationChannelTest extends AbstractReplicationChannelTest
 
         AddInstance message = new AddInstance(APP_INFO);
         when(connection.submit(message)).thenReturn(Observable.<Void>empty());
-        replicationChannel.register(APP_INFO).subscribe(replySubscriber);
+        replicationChannel.replicate(new ChangeNotification<>(Kind.Add, APP_INFO)).subscribe(replySubscriber);
 
         replySubscriber.assertNoErrors();
         replySubscriber.assertTerminalEvent();
@@ -80,7 +82,7 @@ public class SenderReplicationChannelTest extends AbstractReplicationChannelTest
 
         DeleteInstance message = new DeleteInstance(APP_INFO.getId());
         when(connection.submit(message)).thenReturn(Observable.<Void>empty());
-        replicationChannel.unregister(APP_INFO.getId()).subscribe(replySubscriber);
+        replicationChannel.replicate(new ChangeNotification<>(Kind.Delete, APP_INFO)).subscribe(replySubscriber);
 
         replySubscriber.assertNoErrors();
         replySubscriber.assertTerminalEvent();

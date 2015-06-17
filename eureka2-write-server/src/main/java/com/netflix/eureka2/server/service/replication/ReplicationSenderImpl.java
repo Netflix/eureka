@@ -27,11 +27,11 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * @author David Liu
  */
-public class ReplicationHandlerImpl implements ReplicationHandler {
+public class ReplicationSenderImpl implements ReplicationSender {
 
     enum STATE {Idle, Replicating, Closed}
 
-    private static final Logger logger = LoggerFactory.getLogger(ReplicationHandlerImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(ReplicationSenderImpl.class);
 
     private static final int DEFAULT_RETRY_WAIT_MILLIS = 500;
 
@@ -41,19 +41,19 @@ public class ReplicationHandlerImpl implements ReplicationHandler {
     private final Subscriber<Void> replicationSubscriber;
     private final AtomicReference<STATE> stateRef;
 
-    public ReplicationHandlerImpl(final WriteServerConfig config,
-                                  final Server address,
-                                  final SourcedEurekaRegistry<InstanceInfo> registry,
-                                  final InstanceInfo selfInfo,
-                                  final WriteServerMetricFactory metricFactory) {
+    public ReplicationSenderImpl(final WriteServerConfig config,
+                                 final Server address,
+                                 final SourcedEurekaRegistry<InstanceInfo> registry,
+                                 final InstanceInfo selfInfo,
+                                 final WriteServerMetricFactory metricFactory) {
         this(new SenderReplicationChannelFactory(config, address, metricFactory), DEFAULT_RETRY_WAIT_MILLIS, registry, selfInfo);
     }
 
-    /*visible for testing*/ ReplicationHandlerImpl(
-                                  final ChannelFactory<ReplicationChannel> channelFactory,
-                                  final int retryWaitMillis,
-                                  final SourcedEurekaRegistry<InstanceInfo> registry,
-                                  final InstanceInfo selfInfo) {
+    /*visible for testing*/ ReplicationSenderImpl(
+            final ChannelFactory<ReplicationChannel> channelFactory,
+            final int retryWaitMillis,
+            final SourcedEurekaRegistry<InstanceInfo> registry,
+            final InstanceInfo selfInfo) {
         this.stateRef = new AtomicReference<>(STATE.Idle);
         this.retryWaitMillis = retryWaitMillis;
         this.channelFactory = channelFactory;
@@ -140,21 +140,10 @@ public class ReplicationHandlerImpl implements ReplicationHandler {
         @Override
         public Observable<Void> call(final ReplicationChannel channel) {
             return registry.forInterest(Interests.forFullRegistry(), Source.matcherFor(Source.Origin.LOCAL))
-                    .flatMap(new Func1<ChangeNotification<InstanceInfo>, Observable<Void>>() {// TODO concatMap once backpressure is properly working
+                    .concatMap(new Func1<ChangeNotification<InstanceInfo>, Observable<? extends Void>>() { // TODO concatMap once backpressure is properly working
                         @Override
-                        public Observable<Void> call(ChangeNotification<InstanceInfo> notification) {
-                            switch (notification.getKind()) {
-                                case Add:
-                                    return channel.register(notification.getData());
-                                case Modify:
-                                    return channel.register(notification.getData());
-                                case Delete:
-                                    return channel.unregister(notification.getData().getId());
-                                default:
-                                    logger.warn("Unrecognised notification kind {}", notification);
-                                    return Observable.empty();
-                            }
-
+                        public Observable<? extends Void> call(ChangeNotification<InstanceInfo> notification) {
+                            return channel.replicate(notification);
                         }
                     });
         }

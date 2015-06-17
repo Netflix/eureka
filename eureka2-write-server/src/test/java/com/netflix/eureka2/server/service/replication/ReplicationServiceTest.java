@@ -68,7 +68,7 @@ public class ReplicationServiceTest {
 
     @Test(timeout = 60000)
     public void testConnectsToRemotePeers() throws Exception {
-        Map<Server, ReplicationHandler> addressVsHandler = replicationService.addressVsHandler;
+        Map<Server, ReplicationSender> addressVsHandler = replicationService.addressVsHandler;
         assertThat(addressVsHandler.size(), is(0));
 
         // Connect to trigger replication process
@@ -82,7 +82,7 @@ public class ReplicationServiceTest {
 
     @Test(timeout = 60000)
     public void testDisconnectsFromRemovedServers() throws Exception {
-        Map<Server, ReplicationHandler> addressVsHandler = replicationService.addressVsHandler;
+        Map<Server, ReplicationSender> addressVsHandler = replicationService.addressVsHandler;
         assertThat(addressVsHandler.size(), is(0));
 
         // Connect to trigger replication process
@@ -91,11 +91,11 @@ public class ReplicationServiceTest {
 
         peerAddressSubject.onNext(new ChangeNotification<>(Kind.Add, ADDRESS1));
         assertThat(addressVsHandler.size(), is(1));
-        Map.Entry<Server, ReplicationHandler> entry = addressVsHandler.entrySet().iterator().next();
+        Map.Entry<Server, ReplicationSender> entry = addressVsHandler.entrySet().iterator().next();
         assertThat(entry.getKey(), is(equalTo(ADDRESS1)));
 
         // hotswap the handler with a spy of itself so we can check shutdown
-        ReplicationHandler spyHandler = spy(entry.getValue());
+        ReplicationSender spyHandler = spy(entry.getValue());
         addressVsHandler.put(entry.getKey(), spyHandler);
 
         peerAddressSubject.onNext(new ChangeNotification<>(Kind.Delete, ADDRESS1));
@@ -106,7 +106,7 @@ public class ReplicationServiceTest {
 
     @Test(timeout = 60000)
     public void testShutdownCleanUpResources() {
-        Map<Server, ReplicationHandler> addressVsHandler = replicationService.addressVsHandler;
+        Map<Server, ReplicationSender> addressVsHandler = replicationService.addressVsHandler;
         assertThat(addressVsHandler.size(), is(0));
 
         // Connect to trigger replication process
@@ -118,9 +118,9 @@ public class ReplicationServiceTest {
         assertThat(addressVsHandler.size(), is(2));
 
         // hotswap all of the handlers with spies so we can check shutdown
-        List<ReplicationHandler> spies = new ArrayList<>();
-        for (Map.Entry<Server, ReplicationHandler> entry : replicationService.addressVsHandler.entrySet()) {
-            ReplicationHandler spyHandler = spy(entry.getValue());
+        List<ReplicationSender> spies = new ArrayList<>();
+        for (Map.Entry<Server, ReplicationSender> entry : replicationService.addressVsHandler.entrySet()) {
+            ReplicationSender spyHandler = spy(entry.getValue());
             spies.add(spyHandler);
             addressVsHandler.put(entry.getKey(), spyHandler);
         }
@@ -128,7 +128,7 @@ public class ReplicationServiceTest {
         replicationService.close();
 
         assertThat(addressVsHandler.size(), is(0));
-        for(ReplicationHandler spyHandler : spies) {
+        for(ReplicationSender spyHandler : spies) {
             verify(spyHandler, times(1)).shutdown();
         }
 

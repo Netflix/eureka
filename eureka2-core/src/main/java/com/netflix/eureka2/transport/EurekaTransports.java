@@ -76,7 +76,8 @@ public final class EurekaTransports {
     static final String REPLICATION_ENVELOPE_TYPE = "com.netflix.eureka2.protocol.replication.ReplicationMessages";
 
     static final Class<?>[] REPLICATION_PROTOCOL_MODEL = {
-            ReplicationHello.class, ReplicationHelloReply.class, AddInstance.class, DeleteInstance.class, Heartbeat.class
+            ReplicationHello.class, Heartbeat.class, ReplicationHelloReply.class,
+            AddInstance.class, DeleteInstance.class, StreamStateUpdate.class
     };
     static final Set<Class<?>> REPLICATION_PROTOCOL_MODEL_SET = new HashSet<>(Arrays.asList(REPLICATION_PROTOCOL_MODEL));
     static final Schema REPLICATION_AVRO_SCHEMA = AvroUtils.loadSchema(REPLICATION_SCHEMA_FILE, REPLICATION_ENVELOPE_TYPE);

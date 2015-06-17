@@ -13,18 +13,13 @@ import com.netflix.eureka2.interests.IndexRegistry;
 import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
-import com.netflix.eureka2.protocol.interest.AddInstance;
 import com.netflix.eureka2.protocol.interest.InterestSetNotification;
 import com.netflix.eureka2.protocol.interest.SampleAddInstance;
-import com.netflix.eureka2.protocol.interest.StreamStateUpdate;
-import com.netflix.eureka2.registry.MultiSourcedDataHolder;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Sourced;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
@@ -63,7 +58,7 @@ import static org.mockito.Mockito.when;
  * @author David Liu
  */
 @Category(IntegrationTest.class)
-public class InterestBatchHintsIntegrationTest {
+public class InterestBatchHintsIntegrationTest extends AbstractBatchHintsIntegrationTest {
 
     private ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber;
 
@@ -265,40 +260,4 @@ public class InterestBatchHintsIntegrationTest {
         verifyRegistryContentContainOnlySource(registry, secondSource);
     }
 
-    //
-    // ----- helpers -----
-    //
-
-    private void verifyRegistryContentContainOnlySource(SourcedEurekaRegistry<InstanceInfo> registry, Source source) {
-        List<? extends MultiSourcedDataHolder<InstanceInfo>> holders = registry.getHolders().toList().toBlocking().first();
-        for (MultiSourcedDataHolder<InstanceInfo> holder : holders) {
-            assertThat(holder.getAllSources().size(), is(1));
-            assertThat(holder.getAllSources().iterator().next(), is(source));
-        }
-    }
-
-    private List<ChangeNotification<InstanceInfo>> toChangeNotifications(List<InterestSetNotification> interestSetNotifications) {
-        List<ChangeNotification<InstanceInfo>> toReturn = new ArrayList<>(interestSetNotifications.size());
-        for (InterestSetNotification n : interestSetNotifications) {
-            if (n instanceof StreamStateUpdate) {
-                if (((StreamStateUpdate) n).getState() == StreamStateNotification.BufferState.BufferEnd) {
-                    toReturn.add(ChangeNotification.<InstanceInfo>bufferSentinel());
-                } else {
-                    // ignore buffer start
-                }
-            } else if (n instanceof AddInstance) {
-                toReturn.add(new ChangeNotification<>(ChangeNotification.Kind.Add, ((AddInstance) n).getInstanceInfo()));
-            }
-        }
-
-        return toReturn;
-    }
-
-    private StreamStateUpdate newBufferStart(Interest<InstanceInfo> interest) {
-        return new StreamStateUpdate(StreamStateNotification.bufferStartNotification(interest));
-    }
-
-    private StreamStateUpdate newBufferEnd(Interest<InstanceInfo> interest) {
-        return new StreamStateUpdate(StreamStateNotification.bufferEndNotification(interest));
-    }
 }

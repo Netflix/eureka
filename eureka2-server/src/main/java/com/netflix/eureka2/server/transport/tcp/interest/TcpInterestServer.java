@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server.transport.tcp.discovery;
+package com.netflix.eureka2.server.transport.tcp.interest;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
+import com.netflix.eureka2.Names;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.transport.tcp.AbstractTcpServer;
 import com.netflix.eureka2.transport.EurekaTransports;
@@ -30,12 +31,12 @@ import io.reactivex.netty.metrics.MetricEventsListenerFactory;
  * @author Tomasz Bak
  */
 @Singleton
-public class TcpDiscoveryServer extends AbstractTcpServer {
+public class TcpInterestServer extends AbstractTcpServer {
 
     @Inject
-    public TcpDiscoveryServer(EurekaServerConfig config,
-                              @Named("discovery") MetricEventsListenerFactory servoEventsListenerFactory,
-                              Provider<TcpDiscoveryHandler> tcpDiscoveryHandler) {
+    public TcpInterestServer(EurekaServerConfig config,
+                             @Named(Names.INTEREST) MetricEventsListenerFactory servoEventsListenerFactory,
+                             Provider<TcpInterestHandler> tcpDiscoveryHandler) {
         super(servoEventsListenerFactory, config, config.getDiscoveryPort(),
                 EurekaTransports.interestPipeline(config.getCodec()), tcpDiscoveryHandler);
     }

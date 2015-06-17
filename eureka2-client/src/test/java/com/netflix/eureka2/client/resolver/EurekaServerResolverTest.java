@@ -37,7 +37,7 @@ public class EurekaServerResolverTest extends AbstractResolverTest {
 
     private static final Interest<InstanceInfo> READ_SERVERS_INTEREST = Interests.forFullRegistry();
     private static final ServiceSelector EUREKA_SELECTOR =
-            ServiceSelector.selectBy().serviceLabel(Names.DISCOVERY).protocolType(ProtocolType.IPv4);
+            ServiceSelector.selectBy().serviceLabel(Names.INTEREST).protocolType(ProtocolType.IPv4);
 
     private static final Iterator<InstanceInfo> INSTANCE_INFO_IT =
             SampleInstanceInfo.collectionOf("resolver-test", SampleInstanceInfo.EurekaReadServer.build());

@@ -4,7 +4,7 @@ import com.netflix.eureka2.Names;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.ServicePort;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
+import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import rx.Observable;
 import rx.functions.Func1;
 
@@ -23,7 +23,7 @@ public class EurekaBridgeServerSelfInfoResolver implements SelfInfoResolver {
     @Inject
     public EurekaBridgeServerSelfInfoResolver(
             final EurekaServerConfig config,
-            final TcpDiscoveryServer discoveryServer)
+            final TcpInterestServer discoveryServer)
     {
         SelfInfoResolverChain resolverChain = new SelfInfoResolverChain(
                 new ConfigSelfInfoResolver(config),
@@ -32,7 +32,7 @@ public class EurekaBridgeServerSelfInfoResolver implements SelfInfoResolver {
                         .map(new Func1<HashSet<ServicePort>, InstanceInfo.Builder>() {
                             @Override
                             public InstanceInfo.Builder call(HashSet<ServicePort> ports) {
-                                ports.add(new ServicePort(Names.DISCOVERY, discoveryServer.serverPort(), false));
+                                ports.add(new ServicePort(Names.INTEREST, discoveryServer.serverPort(), false));
                                 return new InstanceInfo.Builder().withPorts(ports);
                             }
                        })

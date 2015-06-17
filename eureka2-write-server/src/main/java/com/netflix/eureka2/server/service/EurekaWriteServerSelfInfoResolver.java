@@ -9,7 +9,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.ServicePort;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
-import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
+import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
 import rx.Observable;
@@ -29,7 +29,7 @@ public class EurekaWriteServerSelfInfoResolver implements SelfInfoResolver {
             final EurekaHttpServer httpServer,
             final TcpRegistrationServer registrationServer,
             final TcpReplicationServer replicationServer,
-            final TcpDiscoveryServer discoveryServer) {
+            final TcpInterestServer discoveryServer) {
         SelfInfoResolverChain resolverChain = new SelfInfoResolverChain(
                 new ConfigSelfInfoResolver(config),
                 // write server specific resolver
@@ -40,7 +40,7 @@ public class EurekaWriteServerSelfInfoResolver implements SelfInfoResolver {
                                 ports.add(new ServicePort(Names.EUREKA_HTTP, httpServer.serverPort(), false));
                                 ports.add(new ServicePort(Names.REGISTRATION, registrationServer.serverPort(), false));
                                 ports.add(new ServicePort(Names.REPLICATION, replicationServer.serverPort(), false));
-                                ports.add(new ServicePort(Names.DISCOVERY, discoveryServer.serverPort(), false));
+                                ports.add(new ServicePort(Names.INTEREST, discoveryServer.serverPort(), false));
 
                                 return new InstanceInfo.Builder().withPorts(ports);
                             }

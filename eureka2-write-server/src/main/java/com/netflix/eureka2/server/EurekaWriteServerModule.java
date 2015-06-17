@@ -46,7 +46,7 @@ import com.netflix.eureka2.server.service.bootstrap.RegistryBootstrapCoordinator
 import com.netflix.eureka2.server.service.bootstrap.RegistryBootstrapService;
 import com.netflix.eureka2.server.service.replication.ReplicationService;
 import com.netflix.eureka2.server.spi.ExtensionContext;
-import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
+import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
@@ -92,11 +92,11 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
         bind(RegistryBootstrapCoordinator.class).asEagerSingleton();
         bind(RegistryBootstrapService.class).to(BackupClusterBootstrapService.class);
 
-        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("registration")).toInstance(new SpectatorEventsListenerFactory("registration-rx-client-", "registration-rx-server-"));
-        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new SpectatorEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
-        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("replication")).toInstance(new SpectatorEventsListenerFactory("replication-rx-client-", "replication-rx-server-"));
+        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named(com.netflix.eureka2.Names.REGISTRATION)).toInstance(new SpectatorEventsListenerFactory("registration-rx-client-", "registration-rx-server-"));
+        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named(com.netflix.eureka2.Names.INTEREST)).toInstance(new SpectatorEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
+        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named(com.netflix.eureka2.Names.REPLICATION)).toInstance(new SpectatorEventsListenerFactory("replication-rx-client-", "replication-rx-server-"));
         bind(TcpRegistrationServer.class).asEagerSingleton();
-        bind(TcpDiscoveryServer.class).asEagerSingleton();
+        bind(TcpInterestServer.class).asEagerSingleton();
         bind(TcpReplicationServer.class).asEagerSingleton();
 
         bind(ReplicationService.class).asEagerSingleton();

@@ -19,14 +19,19 @@ package com.netflix.eureka2.server.channel;
 import com.netflix.eureka2.channel.AbstractClientChannel;
 import com.netflix.eureka2.channel.ReplicationChannel;
 import com.netflix.eureka2.channel.ReplicationChannel.STATE;
+import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
 import com.netflix.eureka2.protocol.interest.AddInstance;
 import com.netflix.eureka2.protocol.interest.DeleteInstance;
+import com.netflix.eureka2.protocol.interest.StreamStateUpdate;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.TransportClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Func1;
 
@@ -34,6 +39,8 @@ import rx.functions.Func1;
  * @author Tomasz Bak
  */
 public class SenderReplicationChannel extends AbstractClientChannel<STATE> implements ReplicationChannel {
+
+    private static final Logger logger = LoggerFactory.getLogger(SenderReplicationChannel.class);
 
     private static final Exception ILLEGAL_STATE_EXCEPTION = new Exception("Operation illegal in current channel state");
 
@@ -68,29 +75,26 @@ public class SenderReplicationChannel extends AbstractClientChannel<STATE> imple
     }
 
     @Override
-    public Observable<Void> register(final InstanceInfo instanceInfo) {
-        if (state.get() != STATE.Connected) {
-            return invalidStateError();
-        }
-
+    public Observable<Void> replicate(final ChangeNotification<InstanceInfo> notification) {
         return connect().switchMap(new Func1<MessageConnection, Observable<Void>>() {
             @Override
             public Observable<Void> call(MessageConnection connection) {
-                return sendOnConnection(connection, new AddInstance(instanceInfo));
-            }
-        });
-    }
+                if (state.get() != STATE.Connected) {
+                    return invalidStateError();
+                }
 
-    @Override
-    public Observable<Void> unregister(final String instanceId) {
-        if (state.get() != STATE.Connected) {
-            return invalidStateError();
-        }
-
-        return connect().switchMap(new Func1<MessageConnection, Observable<Void>>() {
-            @Override
-            public Observable<Void> call(MessageConnection connection) {
-                return sendOnConnection(connection, new DeleteInstance(instanceId));
+                switch (notification.getKind()) {
+                    case Add:
+                    case Modify:
+                        return sendOnConnection(connection, new AddInstance(notification.getData()));
+                    case Delete:
+                        return sendOnConnection(connection, new DeleteInstance(notification.getData().getId()));
+                    case BufferSentinel:
+                        sendOnConnection(connection, new StreamStateUpdate((StreamStateNotification<InstanceInfo>)notification));
+                    default:
+                        logger.warn("Unrecognised notification kind {}, not sending", notification);
+                        return Observable.empty();
+                }
             }
         });
     }

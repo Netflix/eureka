@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server.transport.tcp.discovery;
+package com.netflix.eureka2.server.transport.tcp.interest;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -57,7 +57,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Tomasz Bak
  */
-public class TcpDiscoveryHandlerTest {
+public class TcpInterestHandlerTest {
 
     private final TestScheduler testScheduler = Schedulers.test();
 
@@ -69,7 +69,7 @@ public class TcpDiscoveryHandlerTest {
 
     private final ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
 
-    private TcpDiscoveryHandler handler;
+    private TcpInterestHandler handler;
 
     @Before
     public void setUp() {
@@ -100,8 +100,8 @@ public class TcpDiscoveryHandlerTest {
         }));
 
         // Create handler and advance time to we run through a retry cycle on health check.
-        handler = new TcpDiscoveryHandler(config, registry, systemHealthStatus, EurekaServerMetricFactory.serverMetrics(), testScheduler);
-        testScheduler.advanceTimeBy(TcpDiscoveryHandler.RETRY_INTERVAL_MS, TimeUnit.MILLISECONDS);
+        handler = new TcpInterestHandler(config, registry, systemHealthStatus, EurekaServerMetricFactory.serverMetrics(), testScheduler);
+        testScheduler.advanceTimeBy(TcpInterestHandler.RETRY_INTERVAL_MS, TimeUnit.MILLISECONDS);
 
         handler.handle(observableConnection).subscribe(testSubscriber);
         testSubscriber.assertOpen();
@@ -157,7 +157,7 @@ public class TcpDiscoveryHandlerTest {
     }
 
     private void createHandlerAndConnect() {
-        handler = new TcpDiscoveryHandler(config, registry, systemHealthStatus, EurekaServerMetricFactory.serverMetrics(), testScheduler);
+        handler = new TcpInterestHandler(config, registry, systemHealthStatus, EurekaServerMetricFactory.serverMetrics(), testScheduler);
         testScheduler.triggerActions();
         handler.handle(observableConnection).subscribe(testSubscriber);
     }

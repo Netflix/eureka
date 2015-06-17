@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server.transport.tcp.discovery;
+package com.netflix.eureka2.server.transport.tcp.interest;
 
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 
+import com.netflix.eureka2.Names;
+import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.health.EurekaHealthStatusAggregator;
 import com.netflix.eureka2.health.HealthStatusUpdate;
 import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
 import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
-import com.netflix.eureka2.server.channel.InterestChannelFactory;
+import com.netflix.eureka2.server.channel.InterestChannelImpl;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
@@ -46,9 +48,9 @@ import rx.schedulers.Schedulers;
 /**
  * @author Tomasz Bak
  */
-public class TcpDiscoveryHandler implements ConnectionHandler<Object, Object> {
+public class TcpInterestHandler implements ConnectionHandler<Object, Object> {
 
-    private static final Logger logger = LoggerFactory.getLogger(TcpDiscoveryHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(TcpInterestHandler.class);
 
     /* Visible for testing */ static final int RETRY_INTERVAL_MS = 1000;
 
@@ -60,21 +62,22 @@ public class TcpDiscoveryHandler implements ConnectionHandler<Object, Object> {
     private volatile boolean afterBootstrap;
 
     @Inject
-    public TcpDiscoveryHandler(EurekaCommonConfig config,
-                               EurekaRegistryView registry,
-                               EurekaHealthStatusAggregator systemHealthStatus,
-                               EurekaServerMetricFactory metricFactory) {
+    public TcpInterestHandler(EurekaCommonConfig config,
+                              EurekaRegistryView registry,
+                              EurekaHealthStatusAggregator systemHealthStatus,
+                              EurekaServerMetricFactory metricFactory) {
         this(config, registry, systemHealthStatus, metricFactory, Schedulers.computation());
     }
 
-    public TcpDiscoveryHandler(EurekaCommonConfig config,
-                               EurekaRegistryView registry,
-                               EurekaHealthStatusAggregator systemHealthStatus,
-                               EurekaServerMetricFactory metricFactory,
-                               Scheduler scheduler) {
+    public TcpInterestHandler(EurekaCommonConfig config,
+                              EurekaRegistryView registry,
+                              EurekaHealthStatusAggregator systemHealthStatus,
+                              EurekaServerMetricFactory metricFactory,
+                              Scheduler scheduler) {
         this.config = config;
         this.registry = registry;
         this.metricFactory = metricFactory;
+
         this.healthStatusSubscription = systemHealthStatus.healthStatus()
                 .filter(new Func1<HealthStatusUpdate<EurekaHealthStatusAggregator>, Boolean>() {
                     @Override
@@ -131,16 +134,18 @@ public class TcpDiscoveryHandler implements ConnectionHandler<Object, Object> {
         }
 
         MessageConnection broker = new HeartBeatConnection(
-                new BaseMessageConnection("discovery", connection, metricFactory.getDiscoveryConnectionMetrics()),
+                new BaseMessageConnection(Names.INTEREST, connection, metricFactory.getDiscoveryConnectionMetrics()),
                 config.getHeartbeatIntervalMs(), 3,
                 Schedulers.computation()
         );
-        final InterestChannelFactory channelFactory = new InterestChannelFactory(registry, broker, metricFactory);
+
+        InterestChannel interestChannel =
+                new InterestChannelImpl(registry, broker, metricFactory.getInterestChannelMetrics());
 
         // Since this is a discovery handler which only handles interest subscriptions,
         // the channel is created on connection accept. We subscribe here for the sake
         // of logging only.
-        Observable<Void> lifecycleObservable = channelFactory.newChannel().asLifecycleObservable();
+        Observable<Void> lifecycleObservable = interestChannel.asLifecycleObservable();
         lifecycleObservable.subscribe(new Subscriber<Void>() {
             @Override
             public void onCompleted() {

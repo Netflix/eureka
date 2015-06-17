@@ -1,20 +1,24 @@
 package com.netflix.eureka2.server.channel;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.netflix.eureka2.channel.ReplicationChannel;
 import com.netflix.eureka2.channel.ReplicationChannel.STATE;
+import com.netflix.eureka2.config.SystemConfigLoader;
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
 import com.netflix.eureka2.protocol.EurekaProtocolError;
 import com.netflix.eureka2.protocol.interest.AddInstance;
 import com.netflix.eureka2.protocol.interest.DeleteInstance;
+import com.netflix.eureka2.protocol.interest.StreamStateUpdate;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.transport.MessageConnection;
@@ -24,6 +28,7 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.subjects.BehaviorSubject;
 
 /**
  *
@@ -40,7 +45,14 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATE> im
     private final SelfInfoResolver selfIdentityService;
     private final SourcedEurekaRegistry<InstanceInfo> registry;
 
-    private Observable<ChangeNotification<InstanceInfo>> streamStateObservable;
+    // FIXME: get rid of the artificially timer induced delay on the stream state notification
+    private final BehaviorSubject<StreamStateNotification<InstanceInfo>> streamStateSubject;
+
+    private final long bufferHintDelayMs = SystemConfigLoader
+            .getFromSystemPropertySafe("eureka.hacks.receiverReplicationChannel.bufferHintDelayMs", 100);
+    private final long maxBufferHintDelayMs = SystemConfigLoader
+            .getFromSystemPropertySafe("eureka.hacks.receiverReplicationChannel.maxBufferHintDelayMs", 5000);
+    private final AtomicLong delayCounter = new AtomicLong(0l);
 
     private Source replicationSource;
 
@@ -52,43 +64,16 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATE> im
     public ReceiverReplicationChannel(MessageConnection transport,
                                       SelfInfoResolver selfIdentityService,
                                       SourcedEurekaRegistry<InstanceInfo> registry,
-                                      final EvictionQueue evictionQueue,
                                       ReplicationChannelMetrics metrics) {
         super(STATE.Idle, transport, metrics);
         this.selfIdentityService = selfIdentityService;
         this.registry = registry;
+        this.streamStateSubject = BehaviorSubject.create();
 
         subscribeToTransportInput(new Action1<Object>() {
             @Override
             public void call(Object message) {
                 dispatchMessageFromClient(message);
-            }
-        });
-
-        transport.lifecycleObservable().subscribe(new Subscriber<Void>() {
-            @Override
-            public void onCompleted() {
-                evict();
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                evict();
-            }
-
-            @Override
-            public void onNext(Void aVoid) {
-                // No op
-            }
-
-            private void evict() {
-                if (!replicationLoop) {
-                    logger.info("Replication channel disconnected; putting all registrations from the channel in the eviction queue");
-                    for (InstanceInfo instanceInfo : instanceInfoById.values()) {
-                        logger.info("Replication channel disconnected; adding instance {} to the eviction queue", instanceInfo.getId());
-                        evictionQueue.add(instanceInfo, replicationSource);
-                    }
-                }
             }
         });
     }
@@ -106,8 +91,21 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATE> im
         } else if (message instanceof AddInstance) {
             InstanceInfo instanceInfo = ((AddInstance) message).getInstanceInfo();
             reply = register(instanceInfo);// No need to subscribe, the register() call does the subscription.
+            delayCounter.addAndGet(bufferHintDelayMs);
         } else if (message instanceof DeleteInstance) {
             reply = unregister(((DeleteInstance) message).getInstanceId());// No need to subscribe, the unregister() call does the subscription.
+            delayCounter.addAndGet(bufferHintDelayMs);
+        } else if (message instanceof StreamStateUpdate) {
+            final StreamStateUpdate streamStateUpdate = (StreamStateUpdate) message;
+            long delay = Math.min(delayCounter.getAndSet(0), maxBufferHintDelayMs);
+
+            reply = Observable.timer(delay, TimeUnit.MILLISECONDS)
+                    .doOnNext(new Action1<Long>() {
+                        @Override
+                        public void call(Long aLong) {
+                            streamStateSubject.onNext(streamStateUpdateToStreamStateNotification(streamStateUpdate));
+                        }
+                    }).ignoreElements();
         } else {
             reply = Observable.error(new EurekaProtocolError("Unexpected message " + message));
         }
@@ -151,6 +149,16 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATE> im
         });
     }
 
+    // FIXME maybe it's time that the sender and receiver abstractions are separated.
+    @Override
+    public Observable<Void> replicate(ChangeNotification<InstanceInfo> notification) {
+        return Observable.error(new UnsupportedOperationException("Not implemented for receiver"));
+    }
+
+    public Observable<StreamStateNotification<InstanceInfo>> getStreamStateNotifications() {
+        return streamStateSubject.asObservable();
+    }
+
     /**
      * We first eagerly add to the instanceInfoById map, then execute the register operation. Scenarios of this:
      * - register op succeeds. All is good.
@@ -161,8 +169,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATE> im
      *   and the holder will deal with the deltas for the notifications.
      * - register op fails. If a subsequent unregister arrives, we will execute unregister as a no-op
      */
-    @Override
-    public Observable<Void> register(final InstanceInfo instanceInfo) {
+    private Observable<Void> register(final InstanceInfo instanceInfo) {
         logger.debug("Replicated registry entry: {}", instanceInfo);
 
         if (STATE.Connected != state.get()) {
@@ -203,8 +210,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATE> im
      * Note that in all the failure scenarios above, the current external RegistryReplicator will close the channel
      * and reestablish if the operation fails.
      */
-    @Override
-    public Observable<Void> unregister(final String instanceId) {
+    private Observable<Void> unregister(final String instanceId) {
         logger.debug("Removing registration entry for instanceId {}", instanceId);
 
         if (STATE.Connected != state.get()) {
@@ -236,6 +242,14 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATE> im
                     }
                 })
                 .ignoreElements();
+    }
+
+    private StreamStateNotification<InstanceInfo> streamStateUpdateToStreamStateNotification(StreamStateUpdate notification) {
+        StreamStateNotification.BufferState state = notification.getState();
+        if (state == StreamStateNotification.BufferState.BufferStart || state == StreamStateNotification.BufferState.BufferEnd) {
+            return new StreamStateNotification<>(state, notification.getInterest());
+        }
+        throw new IllegalStateException("Unexpected state " + state);
     }
 
     @Override

@@ -274,7 +274,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
                     Source notificationSource = ((Sourced) changeNotification).getSource();
                     return sourceMatcher.match(notificationSource);
                 } else if (changeNotification instanceof StreamStateNotification) {
-                    return false;
+                    return true;  // pass on the stream state info
                 } else {
                     logger.warn("Received notification without a source, {}", changeNotification);
                     return false;
