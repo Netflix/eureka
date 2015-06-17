@@ -28,7 +28,7 @@ import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
-import com.netflix.eureka2.utils.rx.NoOpSubscriber;
+import com.netflix.eureka2.utils.rx.RxFunctions;
 import io.reactivex.netty.channel.ConnectionHandler;
 import io.reactivex.netty.channel.ObservableConnection;
 import org.slf4j.Logger;
@@ -37,9 +37,7 @@ import rx.Notification;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Func1;
-import rx.functions.Func2;
 import rx.schedulers.Schedulers;
-import rx.subjects.BehaviorSubject;
 
 import javax.inject.Inject;
 
@@ -55,8 +53,6 @@ public class TcpReplicationHandler implements ConnectionHandler<Object, Object> 
     private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final WriteServerMetricFactory metricFactory;
 
-    private final BehaviorSubject<ReceiverReplicationChannel> channelSubject;
-
     @Inject
     public TcpReplicationHandler(WriteServerConfig config,
                                  SelfInfoResolver selfIdentityService,
@@ -66,33 +62,6 @@ public class TcpReplicationHandler implements ConnectionHandler<Object, Object> 
         this.selfIdentityService = selfIdentityService;
         this.registry = registry;
         this.metricFactory = metricFactory;
-        this.channelSubject = BehaviorSubject.create();
-
-        channelSubject
-                .scan(new Func2<ReceiverReplicationChannel, ReceiverReplicationChannel, ReceiverReplicationChannel>() {
-                    @Override
-                    public ReceiverReplicationChannel call(ReceiverReplicationChannel prev, ReceiverReplicationChannel curr) {
-                        setUpEviction(prev, curr).subscribe(new Subscriber<Long>() {
-                            @Override
-                            public void onCompleted() {
-
-                            }
-
-                            @Override
-                            public void onError(Throwable e) {
-
-                            }
-
-                            @Override
-                            public void onNext(Long aLong) {
-                                logger.info("Evicted {} instances in one round of eviction due to a new receiverReplicationChannel creation", aLong);
-                            }
-                        });
-
-                        return curr;
-                    }
-                })
-                .subscribe(new NoOpSubscriber<ReceiverReplicationChannel>());
     }
 
     @Override
@@ -110,14 +79,31 @@ public class TcpReplicationHandler implements ConnectionHandler<Object, Object> 
         ReceiverReplicationChannel channel =
                 new ReceiverReplicationChannel(connection, selfIdentityService, registry, metricFactory.getReplicationChannelMetrics());
 
-        channelSubject.onNext(channel);
+        setUpEviction(channel).subscribe(new Subscriber<Long>() {
+            @Override
+            public void onCompleted() {
+
+            }
+
+            @Override
+            public void onError(Throwable e) {
+
+            }
+
+            @Override
+            public void onNext(Long aLong) {
+                logger.info("Evicted {} instances in one round of eviction due to a new receiverReplicationChannel creation", aLong);
+            }
+        });
 
         return channel;
     }
 
-    private Observable<Long> setUpEviction(final ReceiverReplicationChannel prev, final ReceiverReplicationChannel curr) {
-        // once a new channel is available, wait for the first bufferEnd to be emitted. Once it is emitted,
-        // return a reference to the previous channel.
+    private Observable<Long> setUpEviction(final ReceiverReplicationChannel curr) {
+        // once a new channel is available, wait for the first bufferEnd to be emitted.
+        // Once it is emitted, evict all channels with the same source:name but an older id.
+        // if the curr channel closes before it sees a first bufferEnd, this stream will onComplete without
+        // executing an eviction. It is up to subsequent channels to evict all previous generations.
 
         return curr.getStreamStateNotifications()
                 .filter(new Func1<ChangeNotification<InstanceInfo>, Boolean>() {
@@ -133,32 +119,31 @@ public class TcpReplicationHandler implements ConnectionHandler<Object, Object> 
                     }
                 })
                 .take(1)
-                .map(new Func1<ChangeNotification<InstanceInfo>, ReceiverReplicationChannel>() {
+                .map(new Func1<StreamStateNotification<InstanceInfo>, Source>() {
                     @Override
-                    public ReceiverReplicationChannel call(ChangeNotification<InstanceInfo> notification) {
-                        return prev;
+                    public Source call(StreamStateNotification<InstanceInfo> notification) {
+                        // source will be available once we see an initial bufferEnd
+                        return curr.getSource();
                     }
                 })
-                .flatMap(new Func1<ReceiverReplicationChannel, Observable<Long>>() {
+                .filter(RxFunctions.filterNullValuesFunc())  // for paranoia
+                .flatMap(new Func1<Source, Observable<Long>>() {
                     @Override
-                    public Observable<Long> call(final ReceiverReplicationChannel channel) {
-                        return channel.asLifecycleObservable()
-                                .materialize()
-                                .flatMap(new Func1<Notification<Void>, Observable<Long>>() {
-                                    @Override
-                                    public Observable<Long> call(Notification<Void> rxNotification) {
-                                        // wait for the old channel to be closed before starting the eviction
-                                        // since the input is a void observable OnError or OnCompleted are both fine
-                                        Source toEvict = channel.getSource();
-                                        if (toEvict != null) {
-                                            return registry.evictAll(Source.matcherFor(toEvict));
-                                        } else {
-                                            return Observable.empty();
-                                        }
-                                    }
-                                });
+                    public Observable<Long> call(final Source currSource) {
+                        Source.SourceMatcher evictAllOlderMatcher = new Source.SourceMatcher() {
+                            @Override
+                            public boolean match(Source another) {
+                                if (another.getOrigin() == currSource.getOrigin() &&
+                                        another.getName().equals(currSource.getName()) &&
+                                        another.getId() < currSource.getId()) {
+                                    return true;
+                                }
+                                return false;
+                            }
+                        };
+
+                        return registry.evictAll(evictAllOlderMatcher);
                     }
                 });
     }
-
 }

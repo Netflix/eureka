@@ -16,6 +16,8 @@
 
 package com.netflix.eureka2.protocol.replication;
 
+import com.netflix.eureka2.registry.Source;
+
 /**
  * Hello message send by replication client (source), to identify itself and report the registry size.
  *
@@ -23,22 +25,22 @@ package com.netflix.eureka2.protocol.replication;
  */
 public class ReplicationHello {
 
-    private final String sourceId;
+    private final Source source;
     private final int registrySize;
 
     // For serialization frameworks
     protected ReplicationHello() {
-        this.sourceId = null;
+        this.source = null;
         this.registrySize = 0;
     }
 
-    public ReplicationHello(String sourceId, int registrySize) {
-        this.sourceId = sourceId;
+    public ReplicationHello(Source source, int registrySize) {
+        this.source = source;
         this.registrySize = registrySize;
     }
 
-    public String getSourceId() {
-        return sourceId;
+    public Source getSource() {
+        return source;
     }
 
     public int getRegistrySize() {
@@ -47,24 +49,20 @@ public class ReplicationHello {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
+        if (this == o) return true;
+        if (!(o instanceof ReplicationHello)) return false;
 
         ReplicationHello that = (ReplicationHello) o;
 
-        if (registrySize != that.registrySize)
-            return false;
-        if (sourceId != null ? !sourceId.equals(that.sourceId) : that.sourceId != null)
-            return false;
+        if (registrySize != that.registrySize) return false;
+        if (source != null ? !source.equals(that.source) : that.source != null) return false;
 
         return true;
     }
 
     @Override
     public int hashCode() {
-        int result = sourceId != null ? sourceId.hashCode() : 0;
+        int result = source != null ? source.hashCode() : 0;
         result = 31 * result + registrySize;
         return result;
     }
@@ -72,7 +70,7 @@ public class ReplicationHello {
     @Override
     public String toString() {
         return "ReplicationHello{" +
-                "sourceId='" + sourceId + '\'' +
+                "source=" + source +
                 ", registrySize=" + registrySize +
                 '}';
     }

@@ -17,11 +17,11 @@ import com.netflix.eureka2.interests.ModifyNotification;
 import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.interests.StreamStateNotification.BufferState;
 import com.netflix.eureka2.metric.InterestChannelMetrics;
-import com.netflix.eureka2.protocol.interest.AddInstance;
-import com.netflix.eureka2.protocol.interest.DeleteInstance;
+import com.netflix.eureka2.protocol.common.AddInstance;
+import com.netflix.eureka2.protocol.common.DeleteInstance;
 import com.netflix.eureka2.protocol.interest.InterestRegistration;
-import com.netflix.eureka2.protocol.interest.InterestSetNotification;
-import com.netflix.eureka2.protocol.interest.StreamStateUpdate;
+import com.netflix.eureka2.protocol.common.InterestSetNotification;
+import com.netflix.eureka2.protocol.common.StreamStateUpdate;
 import com.netflix.eureka2.protocol.interest.UpdateInstanceInfo;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Sourced;
@@ -48,7 +48,7 @@ import rx.subjects.BehaviorSubject;
  *
  * @author Nitesh Kant
  */
-public class InterestChannelImpl extends AbstractClientChannel<STATE> implements InterestChannel, Sourced {
+public class InterestChannelImpl extends AbstractClientChannel<STATE> implements InterestChannel {
 
     private static final Logger logger = LoggerFactory.getLogger(InterestChannelImpl.class);
 
@@ -96,10 +96,11 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
     public InterestChannelImpl(final SourcedEurekaRegistry<InstanceInfo> registry,
                                BatchingRegistry<InstanceInfo> remoteBatchingRegistry,
                                TransportClient client,
+                               long generationId,
                                InterestChannelMetrics metrics) {
         super(STATE.Idle, client, metrics);
         this.remoteBatchingRegistry = remoteBatchingRegistry;
-        this.selfSource = new Source(Source.Origin.INTERESTED);
+        this.selfSource = new Source(Source.Origin.INTERESTED, "clientInterestChannel", generationId);
         this.registry = registry;
         this.remoteBatchingSubject = BehaviorSubject.create();
         channelInterestSubscriber = new ChannelInterestSubscriber(registry, remoteBatchingSubject);

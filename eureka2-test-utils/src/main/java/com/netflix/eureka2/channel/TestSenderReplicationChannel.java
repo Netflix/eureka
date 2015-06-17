@@ -3,6 +3,7 @@ package com.netflix.eureka2.channel;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
 import rx.functions.Action0;
@@ -82,6 +83,11 @@ public class TestSenderReplicationChannel extends TestChannel<ReplicationChannel
             Thread.sleep(20);
         }
         return false;
+    }
+
+    @Override
+    public Source getSource() {
+        return new Source(Source.Origin.REPLICATED, "test");
     }
 
     public static class ReplicationItem {

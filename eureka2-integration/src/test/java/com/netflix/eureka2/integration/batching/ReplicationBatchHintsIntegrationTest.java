@@ -10,10 +10,11 @@ import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
-import com.netflix.eureka2.protocol.interest.InterestSetNotification;
+import com.netflix.eureka2.protocol.common.InterestSetNotification;
 import com.netflix.eureka2.protocol.interest.SampleAddInstance;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.ReceiverReplicationChannel;
@@ -43,13 +44,10 @@ import static org.mockito.Mockito.when;
 @Category(IntegrationTest.class)
 public class ReplicationBatchHintsIntegrationTest extends AbstractBatchHintsIntegrationTest {
 
-    private ReplaySubject<Object> incomingSubject1;
-    private ReplaySubject<Void> serverConnection1Lifecycle;
-    private MessageConnection connection1;
-
-    private ReplaySubject<Object> incomingSubject2;
-    private ReplaySubject<Void> serverConnection2Lifecycle;
-    private MessageConnection connection2;
+    private ChannelSet channelSet1;
+    private ChannelSet channelSet2;
+    private ChannelSet channelSet3;
+    private ChannelSet channelSet4;
 
     private SourcedEurekaRegistryImpl registry;
 
@@ -63,23 +61,10 @@ public class ReplicationBatchHintsIntegrationTest extends AbstractBatchHintsInte
 
         registry = spy(new SourcedEurekaRegistryImpl(compositeIndexRegistry, EurekaRegistryMetricFactory.registryMetrics()));
 
-        incomingSubject1 = ReplaySubject.create();
-        serverConnection1Lifecycle = ReplaySubject.create();
-
-        connection1 = mock(MessageConnection.class);
-        when(connection1.incoming()).thenReturn(incomingSubject1);
-        when(connection1.submit(any(ReplicationHelloReply.class))).thenReturn(Observable.<Void>empty());
-        when(connection1.acknowledge()).thenReturn(Observable.<Void>empty());
-        when(connection1.lifecycleObservable()).thenReturn(serverConnection1Lifecycle);
-
-        incomingSubject2 = ReplaySubject.create();
-        serverConnection2Lifecycle = ReplaySubject.create();
-
-        connection2 = mock(MessageConnection.class);
-        when(connection2.incoming()).thenReturn(incomingSubject2);
-        when(connection2.submit(any(ReplicationHelloReply.class))).thenReturn(Observable.<Void>empty());
-        when(connection2.acknowledge()).thenReturn(Observable.<Void>empty());
-        when(connection2.lifecycleObservable()).thenReturn(serverConnection2Lifecycle);
+        channelSet1 = new ChannelSet();
+        channelSet2 = new ChannelSet();
+        channelSet3 = new ChannelSet();
+        channelSet4 = new ChannelSet();
 
         SelfInfoResolver selfInfoResolver = mock(SelfInfoResolver.class);
         when(selfInfoResolver.resolve()).thenReturn(Observable.just(SampleInstanceInfo.CliServer.build()));
@@ -92,13 +77,35 @@ public class ReplicationBatchHintsIntegrationTest extends AbstractBatchHintsInte
         );
     }
 
+    static class ChannelSet {
+        final ReplaySubject<Object> incomingSubject;
+        final ReplaySubject<Void> serverConnectionLifecycle;
+        final MessageConnection connection;
+
+        private ChannelSet() {
+            incomingSubject = ReplaySubject.create();
+            serverConnectionLifecycle = ReplaySubject.create();
+
+            connection = mock(MessageConnection.class);
+            when(connection.incoming()).thenReturn(incomingSubject);
+            when(connection.submit(any(ReplicationHelloReply.class))).thenReturn(Observable.<Void>empty());
+            when(connection.acknowledge()).thenReturn(Observable.<Void>empty());
+            when(connection.lifecycleObservable()).thenReturn(serverConnectionLifecycle);
+        }
+    }
+
     @After
     public void tearDown() {
     }
 
-
+    /**
+     * In this test, channel1 and channel2 are connected to different replication peers.
+     * Channel3 and channel4 connects to the same peer as channel2.
+     * Verification passes when we assert that channel2 and channel3 data are evicted when
+     * channel4 receives a bufferEnd.
+     */
     @Test
-    public void testReceiverReplicationChannelChangeEvictionOnBufferHints() throws Exception {
+    public void testReceiverReplicationChannelChangeEvictionWithOtherChannelsActive() throws Exception {
         final Interest<InstanceInfo> interest = Interests.forFullRegistry();
 
         final List<InterestSetNotification> data1 = Arrays.asList(
@@ -113,27 +120,77 @@ public class ReplicationBatchHintsIntegrationTest extends AbstractBatchHintsInte
                 newBufferEnd(interest)
         );
 
-        final Observable<InterestSetNotification> remoteData = Observable.from(data1);
+        int data1Size = data1.size() - 2;  // less buffer markers
 
-        ReceiverReplicationChannel channel1 = handler.doHandle(connection1);
+        final Observable<InterestSetNotification> remoteData1 = Observable.from(data1);
+
+        final List<InterestSetNotification> data2 = Arrays.asList(
+                newBufferStart(interest),
+                SampleAddInstance.DiscoveryAdd.newMessage(),
+                SampleAddInstance.DiscoveryAdd.newMessage(),
+                SampleAddInstance.DiscoveryAdd.newMessage(),
+                SampleAddInstance.DiscoveryAdd.newMessage(),
+                SampleAddInstance.DiscoveryAdd.newMessage(),
+                newBufferEnd(interest)
+        );
+
+        int data2Size = data2.size() - 2;  // less buffer markers
+
+        final Observable<InterestSetNotification> remoteData2 = Observable.from(data2);
+
+        ReceiverReplicationChannel channel1 = handler.doHandle(channelSet1.connection);
         channel1.asLifecycleObservable().subscribe();
 
-        incomingSubject1.onNext(new ReplicationHello("remoteServer", data1.size() - 2));
-        remoteData.concatWith(Observable.<InterestSetNotification>never()).subscribe(incomingSubject1);
-
-        Thread.sleep(500);  // let the registry run as it's on a different loop
-
-        verifyRegistryContentContainOnlySource(registry, channel1.getSource());
-
-        channel1.close();
-        ReceiverReplicationChannel channel2 = handler.doHandle(connection2);
+        ReceiverReplicationChannel channel2 = handler.doHandle(channelSet2.connection);
         channel2.asLifecycleObservable().subscribe();
 
-        incomingSubject2.onNext(new ReplicationHello("remoteServer", data1.size() - 2));
-        remoteData.concatWith(Observable.<InterestSetNotification>never()).subscribe(incomingSubject2);
+        Source senderSource1 = new Source(Source.Origin.REPLICATED, "removeServer1", 0);
+        channelSet1.incomingSubject.onNext(new ReplicationHello(senderSource1, data1Size));  // subtract the buffer markers
+        remoteData1.concatWith(Observable.<InterestSetNotification>never()).subscribe(channelSet1.incomingSubject);
+
+        Source senderSource2 = new Source(Source.Origin.REPLICATED, "removeServer2", 0);
+        channelSet2.incomingSubject.onNext(new ReplicationHello(senderSource2, data2Size));
+        remoteData2.concatWith(Observable.<InterestSetNotification>never()).subscribe(channelSet2.incomingSubject);
 
         Thread.sleep(500);  // let the registry run as it's on a different loop
 
-        verifyRegistryContentContainOnlySource(registry, channel2.getSource());
+        verifyRegistryContentSourceEntries(registry, channel1.getSource(), data1Size);
+        verifyRegistryContentSourceEntries(registry, channel2.getSource(), data2Size);
+
+        channel2.close();
+        ReceiverReplicationChannel channel3 = handler.doHandle(channelSet3.connection);
+        channel3.asLifecycleObservable().subscribe();
+
+        Source senderSource3 = new Source(Source.Origin.REPLICATED, "removeServer2", 1);
+        channelSet3.incomingSubject.onNext(new ReplicationHello(senderSource3, data2Size));
+        // test an unclean channel, where we received 1 less from data2 and also did not see the bufferEnd
+        // this should mean the last entry from data2 is still marked as from source2 and there are no eviction.
+        remoteData2.take(data2.size() - 2).concatWith(Observable.<InterestSetNotification>never()).subscribe(channelSet3.incomingSubject);
+
+        Thread.sleep(500);  // let the registry run as it's on a different loop
+
+        verifyRegistryContentSourceEntries(registry, channel1.getSource(), data1Size);
+        verifyRegistryContentSourceEntries(registry, channel2.getSource(), 1);
+        verifyRegistryContentSourceEntries(registry, channel3.getSource(), data2Size - 1);  // 1 less than expected
+
+        channel3.close();
+        ReceiverReplicationChannel channel4 = handler.doHandle(channelSet4.connection);
+        channel4.asLifecycleObservable().subscribe();
+
+        Source senderSource4 = new Source(Source.Origin.REPLICATED, "removeServer2", 2);
+        channelSet4.incomingSubject.onNext(new ReplicationHello(senderSource4, data2Size));
+        // test data difference in the channel, where we received 2 less from data2 BUT we also saw a bufferEnd
+        // this should mean content from data2 is 2 less from the original list and all other source types are evicted
+        remoteData2.take(data2.size() - 3).concatWith(Observable.<InterestSetNotification>never()).subscribe(channelSet4.incomingSubject);
+        channelSet4.incomingSubject.onNext(data2.get(data2.size() - 1));
+
+        Thread.sleep(500);  // let the registry run as it's on a different loop
+
+        verifyRegistryContentSourceEntries(registry, channel1.getSource(), data1Size);
+        verifyRegistryContentSourceEntries(registry, channel2.getSource(), 0);
+        verifyRegistryContentSourceEntries(registry, channel3.getSource(), 0);
+        verifyRegistryContentSourceEntries(registry, channel4.getSource(), data2Size - 2);  // 2 less this round
+
+
     }
 }

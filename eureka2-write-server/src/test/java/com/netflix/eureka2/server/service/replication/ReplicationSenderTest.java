@@ -7,8 +7,8 @@ import com.netflix.eureka2.channel.TestSenderReplicationChannel;
 import com.netflix.eureka2.channel.TestSenderReplicationChannel.ReplicationItem;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
-import com.netflix.eureka2.protocol.interest.AddInstance;
-import com.netflix.eureka2.protocol.interest.DeleteInstance;
+import com.netflix.eureka2.protocol.common.AddInstance;
+import com.netflix.eureka2.protocol.common.DeleteInstance;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.registry.Source;
@@ -53,7 +53,8 @@ public class ReplicationSenderTest {
 
     private static final InstanceInfo SELF_INFO = SampleInstanceInfo.DiscoveryServer.build();
     private static final InstanceInfo REMOTE_INFO = SampleInstanceInfo.DiscoveryServer.build();
-    private static final ReplicationHelloReply HELLO_REPLY = new ReplicationHelloReply(REMOTE_INFO.getId(), true);
+    private static final Source REPLICATION_SOURCE = new Source(Source.Origin.REPLICATED, REMOTE_INFO.getId(), 0);
+    private static final ReplicationHelloReply HELLO_REPLY = new ReplicationHelloReply(REPLICATION_SOURCE, true);
     private ReplicationHello hello;
 
     private final AtomicInteger channelId = new AtomicInteger(0);
@@ -94,7 +95,8 @@ public class ReplicationSenderTest {
             testScheduler.triggerActions();
         }
 
-        hello = new ReplicationHello(SELF_INFO.getId(), registry.size());
+        Source senderSource = new Source(Source.Origin.REPLICATED, SELF_INFO.getId(), 0);
+        hello = new ReplicationHello(senderSource, registry.size());
     }
 
     @After
@@ -110,7 +112,7 @@ public class ReplicationSenderTest {
             public TestSenderReplicationChannel answer(InvocationOnMock invocation) throws Throwable {
                 MessageConnection messageConnection = mock(MessageConnection.class);
                 when(messageConnection.submit(hello)).thenReturn(Observable.<Void>empty());
-                when(messageConnection.incoming()).thenReturn(Observable.<Object>just(new ReplicationHelloReply(SELF_INFO.getId(), true)));
+                when(messageConnection.incoming()).thenReturn(Observable.<Object>just(new ReplicationHelloReply(REPLICATION_SOURCE, true)));
 
                 TransportClient transportClient = mock(TransportClient.class);
                 when(transportClient.connect()).thenReturn(Observable.just(messageConnection));
@@ -228,14 +230,14 @@ public class ReplicationSenderTest {
         assertThat(testChannel0.id, is(0));
         assertThat(testChannel0.closeCalled, is(true));
         assertThat(testChannel0.operations.size(), is(1));
-        assertThat(testChannel0.operations.iterator().next(), equalTo(hello));
+        assertThat(testChannel0.operations.iterator().next().getSource().getName(), equalTo(hello.getSource().getName()));
         assertThat(testChannel0.replicationItems.size(), is(0));
 
         TestSenderReplicationChannel testChannel1 = (TestSenderReplicationChannel) factory.getAllChannels().get(1);
         assertThat(testChannel1.id, is(1));
         assertThat(testChannel1.closeCalled, is(false));
         assertThat(testChannel1.operations.size(), is(1));
-        assertThat(testChannel1.operations.iterator().next(), equalTo(hello));
+        assertThat(testChannel1.operations.iterator().next().getSource().getName(), equalTo(hello.getSource().getName()));
         testChannel0.awaitReplicationItems(5, 100);
         assertThat(testChannel1.replicationItems.size(), is(5));
 
@@ -280,7 +282,7 @@ public class ReplicationSenderTest {
         assertThat(testChannel1.id, is(1));
         assertThat(testChannel1.closeCalled, is(false));
         assertThat(testChannel1.operations.size(), is(1));
-        assertThat(testChannel1.operations.iterator().next(), equalTo(hello));
+        assertThat(testChannel1.operations.iterator().next().getSource().getName(), equalTo(hello.getSource().getName()));
         testChannel1.awaitReplicationItems(5, 100);
         assertThat(testChannel1.replicationItems.size(), is(5));
 

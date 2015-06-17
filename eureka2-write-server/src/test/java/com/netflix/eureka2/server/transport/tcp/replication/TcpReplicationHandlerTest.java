@@ -2,8 +2,9 @@ package com.netflix.eureka2.server.transport.tcp.replication;
 
 import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
-import com.netflix.eureka2.protocol.interest.StreamStateUpdate;
+import com.netflix.eureka2.protocol.common.StreamStateUpdate;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.ReceiverReplicationChannel;
@@ -80,11 +81,13 @@ public class TcpReplicationHandlerTest {
     @Test
     public void testDoHandleEvictOlderChannelData() throws Exception {
         ReceiverReplicationChannel channel1 = handler.doHandle(connection1);
-        channel1.hello(new ReplicationHello("remoteServer", 0));  // do this to the set the channel source
+        Source remoteServer1 = new Source(Origin.REPLICATED, "remoteServer", 0);
+        channel1.hello(new ReplicationHello(remoteServer1, 0));  // do this to the set the channel source
         verify(registry, never()).evictAll(any(SourceMatcher.class));
 
         ReceiverReplicationChannel channel2 = handler.doHandle(connection2);
-        channel2.hello(new ReplicationHello("remoteServer", 0));  // do this to the set the channel source
+        Source remoteServer2 = new Source(Origin.REPLICATED, "remoteServer", 1);
+        channel2.hello(new ReplicationHello(remoteServer2, 0));  // do this to the set the channel source
         verify(registry, never()).evictAll(any(SourceMatcher.class));
 
         ArgumentCaptor<SourceMatcher> argument = ArgumentCaptor.forClass(SourceMatcher.class);
@@ -98,7 +101,7 @@ public class TcpReplicationHandlerTest {
         Thread.sleep(50);  // sleep a bit as it is async
         verify(registry).evictAll(argument.capture());
 
-        // need string compare for source matcher
-        assertThat(argument.getValue().toString(), is(matcherFor(channel1.getSource()).toString()));
+        assertThat(argument.getValue().match(remoteServer1), is(true));
+        assertThat(argument.getValue().match(remoteServer2), is(false));
     }
 }

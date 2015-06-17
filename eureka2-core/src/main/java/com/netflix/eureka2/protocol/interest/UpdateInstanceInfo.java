@@ -21,6 +21,7 @@ import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.Set;
 
+import com.netflix.eureka2.protocol.common.InterestSetNotification;
 import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfoField;

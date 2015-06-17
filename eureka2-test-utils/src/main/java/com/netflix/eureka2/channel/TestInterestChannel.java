@@ -10,7 +10,7 @@ import rx.Observable;
 /**
  * @author David Liu
  */
-public class TestInterestChannel extends TestChannel<InterestChannel, Interest<InstanceInfo>> implements InterestChannel, Sourced {
+public class TestInterestChannel extends TestChannel<InterestChannel, Interest<InstanceInfo>> implements InterestChannel {
     public TestInterestChannel(InterestChannel delegate, Integer id) {
         super(delegate, id);
     }
@@ -23,10 +23,7 @@ public class TestInterestChannel extends TestChannel<InterestChannel, Interest<I
 
     @Override
     public Source getSource() {
-        if (delegate instanceof Sourced) {
-            return ((Sourced) delegate).getSource();
-        }
-        return null;
+        return delegate.getSource();
     }
 
     @Override

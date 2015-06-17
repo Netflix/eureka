@@ -2,24 +2,6 @@
 protocol InterestProtocol {
 
     import idl "eureka-common-model.avdl";
-    import idl "eureka-registry-model.avdl";
-    import idl "eureka-interest-model.avdl";
-
-    @namespace("com.netflix.eureka2.transport")
-    record Acknowledgement {
-    }
-
-    @namespace("com.netflix.eureka2.protocol")
-    record Heartbeat {
-    }
-
-    record AddInstance {
-        com.netflix.eureka2.registry.instance.InstanceInfo instanceInfo;
-    }
-
-    record DeleteInstance {
-        string instanceId;
-    }
 
     @namespace("com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$")
     record StringDeltaDTO {
@@ -75,19 +57,6 @@ protocol InterestProtocol {
         } deltaDTO;
     }
 
-    record StreamStateUpdate {
-        com.netflix.eureka2.interests.StreamStateNotification$.BufferState state;
-        union {
-            com.netflix.eureka2.interests.ApplicationInterest,
-            com.netflix.eureka2.interests.FullRegistryInterest,
-            com.netflix.eureka2.interests.EmptyRegistryInterest,
-            com.netflix.eureka2.interests.VipInterest,
-            com.netflix.eureka2.interests.SecureVipInterest,
-            com.netflix.eureka2.interests.InstanceInterest,
-            com.netflix.eureka2.interests.MultipleInterests
-        } interest;
-    }
-
     record InterestRegistration {
         @java-class("[Lcom.netflix.eureka2.interests.Interest;")
         array<
@@ -108,14 +77,14 @@ protocol InterestProtocol {
 
     record InterestMessage {
         union {
-            AddInstance,
-            DeleteInstance,
-            UpdateInstanceInfo,
-            StreamStateUpdate,
-            InterestRegistration,
-            UnregisterInterestSet,
             com.netflix.eureka2.transport.Acknowledgement,
-            com.netflix.eureka2.protocol.Heartbeat
+            com.netflix.eureka2.protocol.common.Heartbeat,
+            com.netflix.eureka2.protocol.common.AddInstance,
+            com.netflix.eureka2.protocol.common.DeleteInstance,
+            com.netflix.eureka2.protocol.common.StreamStateUpdate,
+            UpdateInstanceInfo,
+            InterestRegistration,
+            UnregisterInterestSet
         } message;
     }
 }

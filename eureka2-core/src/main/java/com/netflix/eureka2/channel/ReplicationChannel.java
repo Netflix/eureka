@@ -4,6 +4,7 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
 
@@ -24,7 +25,7 @@ import rx.Observable;
  *
  * @author Nitesh Kant
  */
-public interface ReplicationChannel extends ServiceChannel {
+public interface ReplicationChannel extends ServiceChannel, Sourced {
 
     enum STATE {Idle, Handshake, Connected, Closed}
 

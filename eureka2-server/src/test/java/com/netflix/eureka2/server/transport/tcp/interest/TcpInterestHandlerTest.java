@@ -25,7 +25,7 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
-import com.netflix.eureka2.protocol.interest.AddInstance;
+import com.netflix.eureka2.protocol.common.AddInstance;
 import com.netflix.eureka2.protocol.interest.InterestRegistration;
 import com.netflix.eureka2.protocol.interest.UnregisterInterestSet;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;

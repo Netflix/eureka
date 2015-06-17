@@ -1,12 +1,46 @@
-@namespace("com.netflix.eureka2")
+@namespace("com.netflix.eureka2.protocol.common")
 protocol EurekaTransportModel {
+
+    import idl "eureka-registry-model.avdl";
+    import idl "eureka-interest-model.avdl";
 
     @namespace("com.netflix.eureka2.transport")
     record Acknowledgement {
     }
 
-    @namespace("com.netflix.eureka2.protocol")
     record Heartbeat {
     }
 
+    record AddInstance {
+        com.netflix.eureka2.registry.instance.InstanceInfo instanceInfo;
+    }
+
+    record DeleteInstance {
+        string instanceId;
+    }
+
+    record StreamStateUpdate {
+        com.netflix.eureka2.interests.StreamStateNotification$.BufferState state;
+        union {
+            com.netflix.eureka2.interests.ApplicationInterest,
+            com.netflix.eureka2.interests.FullRegistryInterest,
+            com.netflix.eureka2.interests.EmptyRegistryInterest,
+            com.netflix.eureka2.interests.VipInterest,
+            com.netflix.eureka2.interests.SecureVipInterest,
+            com.netflix.eureka2.interests.InstanceInterest,
+            com.netflix.eureka2.interests.MultipleInterests
+        } interest;
+    }
+
+    @namespace("com.netflix.eureka2.registry.Source$")
+    enum Origin {
+        LOCAL, REPLICATED, BOOTSTRAP, INTERESTED
+    }
+
+    @namespace("com.netflix.eureka2.registry")
+    record Source {
+        com.netflix.eureka2.registry.Source$.Origin origin;
+        union {null, string} name;
+        union {null, long} id;
+    }
 }

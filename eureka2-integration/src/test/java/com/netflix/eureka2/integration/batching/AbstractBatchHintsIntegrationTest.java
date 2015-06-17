@@ -3,15 +3,16 @@ package com.netflix.eureka2.integration.batching;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.StreamStateNotification;
-import com.netflix.eureka2.protocol.interest.AddInstance;
-import com.netflix.eureka2.protocol.interest.InterestSetNotification;
-import com.netflix.eureka2.protocol.interest.StreamStateUpdate;
+import com.netflix.eureka2.protocol.common.AddInstance;
+import com.netflix.eureka2.protocol.common.InterestSetNotification;
+import com.netflix.eureka2.protocol.common.StreamStateUpdate;
 import com.netflix.eureka2.registry.MultiSourcedDataHolder;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -32,6 +33,17 @@ public abstract class AbstractBatchHintsIntegrationTest {
             assertThat(holder.getAllSources().size(), is(1));
             assertThat(holder.getAllSources().iterator().next(), is(source));
         }
+    }
+
+    protected void verifyRegistryContentSourceEntries(SourcedEurekaRegistry<InstanceInfo> registry, Source source, int entries) {
+        List<? extends MultiSourcedDataHolder<InstanceInfo>> holders = registry.getHolders().toList().toBlocking().first();
+        Collection<Source> matches = new ArrayList<>();
+        for (MultiSourcedDataHolder<InstanceInfo> holder : holders) {
+            if (holder.getAllSources().contains(source)) {
+                matches.add(source);
+            }
+        }
+        assertThat(matches.size(), is(entries));
     }
 
     protected List<ChangeNotification<InstanceInfo>> toChangeNotifications(List<InterestSetNotification> interestSetNotifications) {

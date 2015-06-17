@@ -21,8 +21,8 @@ import java.util.List;
 
 import com.netflix.eureka2.channel.ReplicationChannel.STATE;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
-import com.netflix.eureka2.protocol.interest.AddInstance;
-import com.netflix.eureka2.protocol.interest.DeleteInstance;
+import com.netflix.eureka2.protocol.common.AddInstance;
+import com.netflix.eureka2.protocol.common.DeleteInstance;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.registry.Source;
@@ -92,7 +92,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         verify(transport).submit(captor.capture());
         ReplicationHelloReply reply = captor.getValue();
 
-        assertThat(reply, is(equalTo(HELLO_REPLY)));
+        assertThat(reply.getSource().getName(), is(equalTo(HELLO_REPLY.getSource().getName())));
     }
 
     @Test(timeout = 60000)
@@ -143,7 +143,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
 
     @Test(timeout = 60000)
     public void testDetectsReplicationLoop() throws Exception {
-        ReplicationHello hello = new ReplicationHello(RECEIVER_ID, 0);
+        ReplicationHello hello = new ReplicationHello(RECEIVER_SOURCE, 0);
         incomingSubject.onNext(hello);
 
         incomingSubject.onNext(new AddInstance(APP_INFO));
@@ -155,7 +155,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
     @Test(timeout = 60000)
     public void testMetrics() throws Exception {
         // Idle -> Handshake -> Connected
-        ReplicationHello hello = new ReplicationHello(RECEIVER_ID, 0);
+        ReplicationHello hello = new ReplicationHello(RECEIVER_SOURCE, 0);
         incomingSubject.onNext(hello);
 
         verify(channelMetrics, times(1)).incrementStateCounter(STATE.Handshake);

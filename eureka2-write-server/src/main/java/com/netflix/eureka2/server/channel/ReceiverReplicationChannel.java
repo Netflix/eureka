@@ -11,13 +11,12 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
 import com.netflix.eureka2.protocol.EurekaProtocolError;
-import com.netflix.eureka2.protocol.interest.AddInstance;
-import com.netflix.eureka2.protocol.interest.DeleteInstance;
-import com.netflix.eureka2.protocol.interest.StreamStateUpdate;
+import com.netflix.eureka2.protocol.common.AddInstance;
+import com.netflix.eureka2.protocol.common.DeleteInstance;
+import com.netflix.eureka2.protocol.common.StreamStateUpdate;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
@@ -34,7 +33,7 @@ import rx.subjects.BehaviorSubject;
  *
  * @author Nitesh Kant
  */
-public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATE> implements ReplicationChannel, Sourced {
+public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATE> implements ReplicationChannel {
 
     private static final Logger logger = LoggerFactory.getLogger(ReceiverReplicationChannel.class);
 
@@ -86,7 +85,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATE> im
     protected void dispatchMessageFromClient(final Object message) {
         Observable<?> reply;
         if (message instanceof ReplicationHello) {
-            logger.info("Received Hello from {}", ((ReplicationHello) message).getSourceId());
+            logger.info("Received Hello from {}", ((ReplicationHello) message).getSource());
             reply = hello((ReplicationHello) message);
         } else if (message instanceof AddInstance) {
             InstanceInfo instanceInfo = ((AddInstance) message).getInstanceInfo();
@@ -97,8 +96,11 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATE> im
             delayCounter.addAndGet(bufferHintDelayMs);
         } else if (message instanceof StreamStateUpdate) {
             final StreamStateUpdate streamStateUpdate = (StreamStateUpdate) message;
-            long delay = Math.min(delayCounter.getAndSet(0), maxBufferHintDelayMs);
+            if (streamStateUpdate.getState() == StreamStateNotification.BufferState.BufferStart) {
+                delayCounter.set(0);  // reset to 0 for buffer start
+            }
 
+            long delay = Math.min(delayCounter.getAndSet(0), maxBufferHintDelayMs);
             reply = Observable.timer(delay, TimeUnit.MILLISECONDS)
                     .doOnNext(new Action1<Long>() {
                         @Override
@@ -135,13 +137,15 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATE> im
             return Observable.error(state.get() == STATE.Closed ? CHANNEL_CLOSED_EXCEPTION : HANDSHAKE_FINISHED_EXCEPTION);
         }
 
-        replicationSource = new Source(Source.Origin.REPLICATED, hello.getSourceId());
+        replicationSource = hello.getSource();
 
         return selfIdentityService.resolve().take(1).flatMap(new Func1<InstanceInfo, Observable<ReplicationHelloReply>>() {
             @Override
             public Observable<ReplicationHelloReply> call(InstanceInfo instanceInfo) {
-                replicationLoop = instanceInfo.getId().equals(hello.getSourceId());
-                ReplicationHelloReply reply = new ReplicationHelloReply(instanceInfo.getId(), false);
+                replicationLoop = instanceInfo.getId().equals(hello.getSource().getName());
+
+                Source replySource = new Source(Source.Origin.REPLICATED, instanceInfo.getId(), hello.getSource().getId());
+                ReplicationHelloReply reply = new ReplicationHelloReply(replySource, false);
                 sendOnTransport(reply);
                 moveToState(STATE.Handshake, STATE.Connected);
                 return Observable.just(reply);
@@ -260,6 +264,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<STATE> im
         moveToState(STATE.Closed);
         super._close();
         unregisterAll();
+        streamStateSubject.onCompleted();
     }
 
     /**

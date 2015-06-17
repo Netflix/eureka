@@ -494,7 +494,7 @@ public class EurekaInterestClientImplTest {
 
     private InterestChannel createInterestChannel() {
         BatchingRegistry<InstanceInfo> remoteBatchingRegistry = new BatchingRegistryImpl<>();
-        return spy(new InterestChannelImpl(registry, remoteBatchingRegistry, transportClient, mock(InterestChannelMetrics.class)));
+        return spy(new InterestChannelImpl(registry, remoteBatchingRegistry, transportClient, 0, mock(InterestChannelMetrics.class)));
     }
 
     private TestInterestChannel newAlwaysSuccessChannel(Integer id) {
@@ -502,7 +502,7 @@ public class EurekaInterestClientImplTest {
         when(channel.change(argThat(new InterestMatcher(discoveryInterest)))).thenAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
-                registerAll(discoveryInfos, ((Sourced) channel).getSource());
+                registerAll(discoveryInfos, channel.getSource());
                 return Observable.empty();
             }
         });
@@ -510,7 +510,7 @@ public class EurekaInterestClientImplTest {
         when(channel.change(argThat(new InterestMatcher(zuulInterest)))).thenAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
-                registerAll(zuulInfos, ((Sourced) channel).getSource());
+                registerAll(zuulInfos, channel.getSource());
                 return Observable.empty();
             }
         });
@@ -518,7 +518,7 @@ public class EurekaInterestClientImplTest {
         when(channel.change(argThat(new InterestMatcher(allInterest)))).thenAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
-                registerAll(allInfos, ((Sourced) channel).getSource());
+                registerAll(allInfos, channel.getSource());
                 return Observable.empty();
             }
         });
@@ -526,7 +526,7 @@ public class EurekaInterestClientImplTest {
         when(channel.change(argThat(new InterestMatcher(Interests.forFullRegistry())))).thenAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
-                registerAll(allInfos, ((Sourced) channel).getSource());
+                registerAll(allInfos, channel.getSource());
                 return Observable.empty();
             }
         });

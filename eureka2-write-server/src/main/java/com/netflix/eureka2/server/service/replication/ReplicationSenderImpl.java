@@ -22,6 +22,7 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Func1;
 
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -40,6 +41,7 @@ public class ReplicationSenderImpl implements ReplicationSender {
     private final RetryableConnection<ReplicationChannel> connection;
     private final Subscriber<Void> replicationSubscriber;
     private final AtomicReference<STATE> stateRef;
+    private final AtomicLong senderGenerationId;
 
     public ReplicationSenderImpl(final WriteServerConfig config,
                                  final Server address,
@@ -57,6 +59,7 @@ public class ReplicationSenderImpl implements ReplicationSender {
         this.stateRef = new AtomicReference<>(STATE.Idle);
         this.retryWaitMillis = retryWaitMillis;
         this.channelFactory = channelFactory;
+        this.senderGenerationId = new AtomicLong(0l);
 
         final String ownInstanceId = selfInfo.getId();
 
@@ -66,17 +69,18 @@ public class ReplicationSenderImpl implements ReplicationSender {
         connection = connectionFactory.zeroOpConnection(new Func1<ReplicationChannel, Observable<Void>>() {
             @Override
             public Observable<Void> call(final ReplicationChannel replicationChannel) {
-                return replicationChannel.hello(new ReplicationHello(ownInstanceId, registry.size()))
+                Source senderSource = new Source(Source.Origin.REPLICATED, ownInstanceId, senderGenerationId.getAndIncrement());
+                return replicationChannel.hello(new ReplicationHello(senderSource, registry.size()))
                         .take(1)
                         .map(new Func1<ReplicationHelloReply, ReplicationChannel>() {
                             @Override
                             public ReplicationChannel call(ReplicationHelloReply replicationHelloReply) {
-                                if (replicationHelloReply.getSourceId().equals(ownInstanceId)) {
+                                if (replicationHelloReply.getSource().getName().equals(ownInstanceId)) {
                                     logger.info("{}: Taking out replication connection to itself", ownInstanceId);
                                     replicationChannel.close();  // gracefully close
                                     return null;
                                 } else {
-                                    logger.info("{} received hello back from {}", ownInstanceId, replicationHelloReply.getSourceId());
+                                    logger.info("{} received hello back from {}", ownInstanceId, replicationHelloReply.getSource());
                                     return replicationChannel;
                                 }
                             }

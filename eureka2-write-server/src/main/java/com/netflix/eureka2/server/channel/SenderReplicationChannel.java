@@ -22,11 +22,12 @@ import com.netflix.eureka2.channel.ReplicationChannel.STATE;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
-import com.netflix.eureka2.protocol.interest.AddInstance;
-import com.netflix.eureka2.protocol.interest.DeleteInstance;
-import com.netflix.eureka2.protocol.interest.StreamStateUpdate;
+import com.netflix.eureka2.protocol.common.AddInstance;
+import com.netflix.eureka2.protocol.common.DeleteInstance;
+import com.netflix.eureka2.protocol.common.StreamStateUpdate;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.TransportClient;
@@ -44,12 +45,16 @@ public class SenderReplicationChannel extends AbstractClientChannel<STATE> imple
 
     private static final Exception ILLEGAL_STATE_EXCEPTION = new Exception("Operation illegal in current channel state");
 
+    private Source selfSource;
+
     public SenderReplicationChannel(TransportClient client, ReplicationChannelMetrics metrics) {
         super(STATE.Idle, client, metrics);
     }
 
     @Override
     public Observable<ReplicationHelloReply> hello(final ReplicationHello hello) {
+        selfSource = hello.getSource();
+
         if (!moveToState(STATE.Idle, STATE.Handshake)) {
             return invalidStateError();
         }
@@ -90,7 +95,7 @@ public class SenderReplicationChannel extends AbstractClientChannel<STATE> imple
                     case Delete:
                         return sendOnConnection(connection, new DeleteInstance(notification.getData().getId()));
                     case BufferSentinel:
-                        sendOnConnection(connection, new StreamStateUpdate((StreamStateNotification<InstanceInfo>)notification));
+                        return sendOnConnection(connection, new StreamStateUpdate((StreamStateNotification<InstanceInfo>)notification));
                     default:
                         logger.warn("Unrecognised notification kind {}, not sending", notification);
                         return Observable.empty();
@@ -112,5 +117,10 @@ public class SenderReplicationChannel extends AbstractClientChannel<STATE> imple
             return Observable.error(CHANNEL_CLOSED_EXCEPTION);
         }
         return Observable.error(ILLEGAL_STATE_EXCEPTION);
+    }
+
+    @Override
+    public Source getSource() {
+        return selfSource;
     }
 }

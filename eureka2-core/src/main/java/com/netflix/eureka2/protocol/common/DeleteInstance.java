@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.protocol.interest;
+package com.netflix.eureka2.protocol.common;
 
 /**
  * @author Tomasz Bak
