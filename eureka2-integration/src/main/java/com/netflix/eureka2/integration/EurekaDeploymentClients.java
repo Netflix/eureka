@@ -14,10 +14,12 @@ import com.netflix.eureka2.registry.Source.Origin;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
+import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import com.netflix.eureka2.utils.rx.NoOpSubscriber;
 import rx.functions.Action1;
 
 import static com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo.collectionOf;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -29,16 +31,18 @@ import static org.junit.Assert.assertTrue;
  */
 public class EurekaDeploymentClients {
 
+    private static final int TIMEOUT_SEC = 30;
+
     private final EurekaDeployment eurekaDeployment;
 
     public EurekaDeploymentClients(EurekaDeployment eurekaDeployment) {
         this.eurekaDeployment = eurekaDeployment;
     }
 
-    public void fillUpRegistry(int count, InstanceInfo instanceTemplate) throws Exception {
+    public void fillUpRegistryOfServer(int serverIdx, int count, InstanceInfo instanceTemplate) throws Exception {
         Iterator<InstanceInfo> instanceIt = collectionOf(instanceTemplate.getApp(), instanceTemplate);
-        Source source = new Source(Origin.LOCAL, "write0");
-        SourcedEurekaRegistry<InstanceInfo> eurekaServerRegistry = eurekaDeployment.getWriteCluster().getServer(0).getEurekaServerRegistry();
+        Source source = new Source(Origin.LOCAL, "write" + serverIdx);
+        SourcedEurekaRegistry<InstanceInfo> eurekaServerRegistry = eurekaDeployment.getWriteCluster().getServer(serverIdx).getEurekaServerRegistry();
 
         final Set<String> expectedInstances = new HashSet<>();
         for (int i = 0; i < count; i++) {
@@ -63,5 +67,52 @@ public class EurekaDeploymentClients {
                 });
 
         assertTrue("Registry not ready in time", latch.await(30, TimeUnit.SECONDS));
+    }
+
+    public void fillUpRegistry(int count, InstanceInfo instanceTemplate) throws Exception {
+        fillUpRegistryOfServer(0, count, instanceTemplate);
+    }
+
+    public void verifyWriteServerRegistryContent(int writeServerIdx, String appName, int count) throws InterruptedException {
+        SourcedEurekaRegistry<InstanceInfo> registry = registryOf(writeServerIdx);
+
+        final CountDownLatch latch = new CountDownLatch(count);
+
+        registry.forInterest(Interests.forApplications(appName))
+                .subscribe(new Action1<ChangeNotification<InstanceInfo>>() {
+                    @Override
+                    public void call(ChangeNotification<InstanceInfo> notification) {
+                        if (notification.getKind() == Kind.Add) {
+                            latch.countDown();
+                        }
+                    }
+                });
+
+        assertTrue("Registry not ready in time", latch.await(TIMEOUT_SEC, TimeUnit.SECONDS));
+    }
+
+    public void verifyWriteServerHasNoInstance(int writeServerIdx, String appName) throws InterruptedException {
+        SourcedEurekaRegistry<InstanceInfo> registry = registryOf(writeServerIdx);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        /**
+         * TODO We cannot trust buffer markers yet, so we subscribe and wait for some time to be sure there is no data for the given app
+         */
+        registry.forInterest(Interests.forApplications(appName))
+                .subscribe(new Action1<ChangeNotification<InstanceInfo>>() {
+                    @Override
+                    public void call(ChangeNotification<InstanceInfo> notification) {
+                        if (notification.getKind() == Kind.Add) {
+                            latch.countDown();
+                        }
+                    }
+                });
+        assertFalse("Unexpected items in the registry found", latch.await(1, TimeUnit.SECONDS));
+    }
+
+    private SourcedEurekaRegistry<InstanceInfo> registryOf(int writeServerIdx) {
+        EmbeddedWriteServer server = eurekaDeployment.getWriteCluster().getServer(writeServerIdx);
+        return server.getEurekaServerRegistry();
     }
 }

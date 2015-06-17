@@ -18,6 +18,8 @@ import com.netflix.eureka2.testkit.embedded.server.EmbeddedDashboardServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import com.netflix.eureka2.testkit.embedded.view.ClusterViewHttpServer;
+import com.netflix.eureka2.testkit.netrouter.NetworkRouter;
+import com.netflix.eureka2.testkit.netrouter.NetworkRouters;
 
 import static com.netflix.eureka2.interests.Interests.forVips;
 
@@ -31,6 +33,7 @@ public class EurekaDeployment {
     private final EmbeddedReadCluster readCluster;
     private final EmbeddedBridgeServer bridgeServer;
     private final EmbeddedDashboardServer dashboardServer;
+    private final NetworkRouter networkRouter;
 
     private final ClusterViewHttpServer deploymentView;
 
@@ -42,12 +45,14 @@ public class EurekaDeployment {
                                EmbeddedReadCluster readCluster,
                                EmbeddedBridgeServer bridgeServer,
                                EmbeddedDashboardServer dashboardServer,
+                               NetworkRouter networkRouter,
                                boolean viewEnabled) {
         this.transportConfig = transportConfig;
         this.writeCluster = writeCluster;
         this.readCluster = readCluster;
         this.bridgeServer = bridgeServer;
         this.dashboardServer = dashboardServer;
+        this.networkRouter = networkRouter;
 
         if (viewEnabled) {
             deploymentView = new ClusterViewHttpServer(this);
@@ -71,6 +76,10 @@ public class EurekaDeployment {
 
     public EmbeddedDashboardServer getDashboardServer() {
         return dashboardServer;
+    }
+
+    public NetworkRouter getNetworkRouter() {
+        return networkRouter;
     }
 
     /**
@@ -197,6 +206,7 @@ public class EurekaDeployment {
         private int writeClusterSize;
         private int readClusterSize;
         private boolean ephemeralPorts;
+        private boolean networkRouterEnabled;
         private boolean bridgeEnabled;
         private boolean dashboardEnabled;
         private boolean adminUIEnabled;
@@ -215,6 +225,11 @@ public class EurekaDeployment {
 
         public EurekaDeploymentBuilder withEphemeralPorts(boolean ephemeralPorts) {
             this.ephemeralPorts = ephemeralPorts;
+            return this;
+        }
+
+        public EurekaDeploymentBuilder withNetworkRouter(boolean networkRouterEnabled) {
+            this.networkRouterEnabled = networkRouterEnabled;
             return this;
         }
 
@@ -252,11 +267,12 @@ public class EurekaDeployment {
             if (transportConfig == null) {
                 transportConfig = new BasicEurekaTransportConfig.Builder().build();
             }
-            EmbeddedWriteCluster writeCluster = new EmbeddedWriteCluster(extensionsEnabled, adminUIEnabled, ephemeralPorts, transportConfig.getCodec());
+            NetworkRouter networkRouter = networkRouterEnabled ? NetworkRouters.aRouter() : null;
+            EmbeddedWriteCluster writeCluster = new EmbeddedWriteCluster(extensionsEnabled, adminUIEnabled, ephemeralPorts, transportConfig.getCodec(), networkRouter);
             writeCluster.scaleUpBy(writeClusterSize);
 
             EmbeddedReadCluster readCluster = new EmbeddedReadCluster(writeCluster.registrationResolver(),
-                    writeCluster.interestResolver(), extensionsEnabled, adminUIEnabled, ephemeralPorts, transportConfig.getCodec());
+                    writeCluster.interestResolver(), extensionsEnabled, adminUIEnabled, ephemeralPorts, transportConfig.getCodec(), networkRouter);
             readCluster.scaleUpBy(readClusterSize);
 
             EmbeddedBridgeServer bridgeServer = null;
@@ -287,7 +303,7 @@ public class EurekaDeployment {
                 );
                 dashboardServer.start();
             }
-            return new EurekaDeployment(transportConfig, writeCluster, readCluster, bridgeServer, dashboardServer, viewEnabled);
+            return new EurekaDeployment(transportConfig, writeCluster, readCluster, bridgeServer, dashboardServer, networkRouter, viewEnabled);
         }
     }
 }
