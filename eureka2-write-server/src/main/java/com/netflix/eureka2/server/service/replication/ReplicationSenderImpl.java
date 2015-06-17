@@ -59,7 +59,7 @@ public class ReplicationSenderImpl implements ReplicationSender {
         this.stateRef = new AtomicReference<>(STATE.Idle);
         this.retryWaitMillis = retryWaitMillis;
         this.channelFactory = channelFactory;
-        this.senderGenerationId = new AtomicLong(0l);
+        this.senderGenerationId = new AtomicLong(System.currentTimeMillis());  // seed with system time to avoid reset on reboot
 
         final String ownInstanceId = selfInfo.getId();
 

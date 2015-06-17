@@ -43,7 +43,7 @@ public class InterestChannelFactory extends ClientChannelFactory<InterestChannel
         this.eurekaRegistry = eurekaRegistry;
         this.transport = transport;
         this.remoteBatchingRegistry = remoteBatchingRegistry;
-        this.generationId = new AtomicLong(0l);
+        this.generationId = new AtomicLong(System.currentTimeMillis());  // seed with system time to avoid reset on reboot
     }
 
     @Override
