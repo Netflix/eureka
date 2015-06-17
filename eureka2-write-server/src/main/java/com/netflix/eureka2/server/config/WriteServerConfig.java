@@ -32,6 +32,8 @@ public class WriteServerConfig extends EurekaServerConfig {
 
     public static final long DEFAULT_BOOTSTRAP_TIMEOUT_MILLIS = 30000;
 
+    private static final int DEFAULT_EVICTION_ALLOWED_PERCENTAGE_DROP = 80;
+
     @Configuration("eureka.services.registration.port")
     protected int registrationPort = EurekaTransports.DEFAULT_REGISTRATION_PORT;
 
@@ -42,14 +44,17 @@ public class WriteServerConfig extends EurekaServerConfig {
     @Configuration("eureka.services.replication.reconnectDelayMillis")
     protected long replicationReconnectDelayMillis = DEFAULT_REPLICATION_RECONNECT_DELAY_MILLIS;
 
+    @Configuration("eureka.services.eviction.allowedPercentageDrop")
+    protected int evictionAllowedPercentageDrop = DEFAULT_EVICTION_ALLOWED_PERCENTAGE_DROP;
+
     @Configuration("eureka.services.bootstrap.enabled")
-    protected boolean bootstrapEnabled = false;
+    protected boolean bootstrapEnabled;
 
     @Configuration("eureka.services.bootstrap.resolverType")
     protected String bootstrapResolverType = ResolverType.Fixed.name();
 
     @Configuration("eureka.services.bootstrap.serverList")
-    protected String[] bootstrapServerList = null;
+    protected String[] bootstrapServerList;
 
     @Configuration("eureka.services.bootstrap.timeoutMillis")
     protected long bootstrapTimeoutMillis = DEFAULT_BOOTSTRAP_TIMEOUT_MILLIS;
@@ -80,6 +85,7 @@ public class WriteServerConfig extends EurekaServerConfig {
             int registrationPort,
             int replicationPort,
             long replicationReconnectDelayMillis,
+            int evictionAllowedPercentageDrop,
             boolean bootstrapEnabled,
             ResolverType bootstrapResolverType,
             String[] bootstrapServerList,
@@ -93,6 +99,7 @@ public class WriteServerConfig extends EurekaServerConfig {
         this.registrationPort = registrationPort;
         this.replicationPort = replicationPort;
         this.replicationReconnectDelayMillis = replicationReconnectDelayMillis;
+        this.evictionAllowedPercentageDrop = evictionAllowedPercentageDrop;
         this.bootstrapEnabled = bootstrapEnabled;
         this.bootstrapResolverType = bootstrapResolverType == null ? this.bootstrapResolverType : bootstrapResolverType.name();
         this.bootstrapServerList = bootstrapServerList;
@@ -109,6 +116,10 @@ public class WriteServerConfig extends EurekaServerConfig {
 
     public long getReplicationReconnectDelayMillis() {
         return replicationReconnectDelayMillis;
+    }
+
+    public int getEvictionAllowedPercentageDrop() {
+        return evictionAllowedPercentageDrop;
     }
 
     public boolean isBootstrapEnabled() {
@@ -141,6 +152,7 @@ public class WriteServerConfig extends EurekaServerConfig {
     public static class WriteServerConfigBuilder
             extends AbstractWriteServerConfigBuilder<WriteServerConfig, WriteServerConfigBuilder> {
 
+
         @Override
         public WriteServerConfig build() {
             return new WriteServerConfig(
@@ -165,11 +177,12 @@ public class WriteServerConfig extends EurekaServerConfig {
                     registrationPort,
                     replicationPort,
                     replicationReconnectDelayMillis,
+                    evictionAllowedPercentageDrop,
                     bootstrapEnabled,
                     bootstrapResolverType,
                     bootstrapServerList,
                     bootstrapTimeoutMillis
-                    );
+            );
         }
     }
 
@@ -179,6 +192,7 @@ public class WriteServerConfig extends EurekaServerConfig {
         protected int registrationPort = EurekaTransports.DEFAULT_REGISTRATION_PORT;
         protected int replicationPort = EurekaTransports.DEFAULT_REPLICATION_PORT;
         protected long replicationReconnectDelayMillis = DEFAULT_REPLICATION_RECONNECT_DELAY_MILLIS;
+        protected int evictionAllowedPercentageDrop;
         protected boolean bootstrapEnabled;
         protected ResolverType bootstrapResolverType;
         protected String[] bootstrapServerList;
@@ -201,6 +215,12 @@ public class WriteServerConfig extends EurekaServerConfig {
             this.replicationReconnectDelayMillis = replicationReconnectDelayMillis;
             return self();
         }
+
+        public B withEvictionAllowedPercentageDrop(int evictionAllowedPercentageDrop) {
+            this.evictionAllowedPercentageDrop = evictionAllowedPercentageDrop;
+            return self();
+        }
+
 
         public B withBootstrapEnabled(boolean enabled) {
             this.bootstrapEnabled = enabled;

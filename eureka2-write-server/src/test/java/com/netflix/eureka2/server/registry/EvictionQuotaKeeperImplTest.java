@@ -1,4 +1,4 @@
-package com.netflix.eureka2.registry.eviction;
+package com.netflix.eureka2.server.registry;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -7,6 +7,8 @@ import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.server.config.WriteServerConfig;
+import com.netflix.eureka2.server.config.WriteServerConfig.WriteServerConfigBuilder;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.After;
 import org.junit.Before;
@@ -23,7 +25,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Tomasz Bak
  */
-public class EvictionQuotaProviderImplTest {
+public class EvictionQuotaKeeperImplTest {
 
     private static final int ALLOWED_PERCENTAGE_DROP = 80;
 
@@ -32,7 +34,7 @@ public class EvictionQuotaProviderImplTest {
     private final SourcedEurekaRegistry<InstanceInfo> registry = mock(SourcedEurekaRegistry.class);
     private final PublishSubject<ChangeNotification<InstanceInfo>> interestSubject = PublishSubject.create();
 
-    private EvictionQuotaProviderImpl evictionQuotaProvider;
+    private EvictionQuotaKeeperImpl evictionQuotaProvider;
 
     private final QuotaSubscriber quotaSubscriber = new QuotaSubscriber();
 
@@ -40,7 +42,11 @@ public class EvictionQuotaProviderImplTest {
     public void setUp() throws Exception {
         when(registry.forInterest(Interests.forFullRegistry())).thenReturn(interestSubject);
 
-        evictionQuotaProvider = new EvictionQuotaProviderImpl(registry, ALLOWED_PERCENTAGE_DROP);
+        WriteServerConfig config = new WriteServerConfigBuilder()
+                .withEvictionAllowedPercentageDrop(ALLOWED_PERCENTAGE_DROP)
+                .build();
+
+        evictionQuotaProvider = new EvictionQuotaKeeperImpl(registry, config);
         evictionQuotaProvider.quota().subscribe(quotaSubscriber);
 
         // Emit buffer sentinel to mark end of available registry content

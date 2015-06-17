@@ -1,25 +1,24 @@
 package com.netflix.eureka2.server.channel;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.channel.RegistrationChannel.STATE;
 import com.netflix.eureka2.metric.RegistrationChannelMetrics;
 import com.netflix.eureka2.protocol.EurekaProtocolError;
 import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.protocol.registration.Unregister;
+import com.netflix.eureka2.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Sourced;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.utils.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Action1;
+import rx.subjects.BehaviorSubject;
 
 /**
  * @author Nitesh Kant
@@ -27,20 +26,21 @@ import rx.functions.Action1;
 public class RegistrationChannelImpl extends AbstractHandlerChannel<STATE> implements RegistrationChannel, Sourced {
 
     private static final Logger logger = LoggerFactory.getLogger(RegistrationChannelImpl.class);
+    private static final Exception CONNECTION_TERMINATED = ExceptionUtils.trimStackTraceof(new Exception("Registration connection terminated without unregister request"));
 
     private final Source selfSource;
-    private final AtomicReference<InstanceInfo> instanceInfoRef;
-    private final SourcedEurekaRegistry registry;
+    private final EurekaRegistrationProcessor<InstanceInfo> registrationProcessor;
 
-    public RegistrationChannelImpl(SourcedEurekaRegistry registry,
-                                   final EvictionQueue evictionQueue,
+    private final BehaviorSubject<InstanceInfo> registrationSubject = BehaviorSubject.create();
+    private volatile InstanceInfo lastInstanceInfo;
+
+    public RegistrationChannelImpl(EurekaRegistrationProcessor registrationProcessor,
                                    MessageConnection transport,
                                    RegistrationChannelMetrics metrics) {
         super(STATE.Idle, transport, metrics);
-        this.registry = registry;
+        this.registrationProcessor = registrationProcessor;
 
         selfSource = new Source(Source.Origin.LOCAL);
-        instanceInfoRef = new AtomicReference<>();
 
         subscribeToTransportInput(new Action1<Object>() {
             @Override
@@ -99,10 +99,9 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATE> imple
             }
 
             private void evictIfPresent() {
-                InstanceInfo toEvict = instanceInfoRef.get();
-                if (toEvict != null) {
-                    logger.info("Connection terminated without unregister; adding instance {} to eviction queue", toEvict);
-                    evictionQueue.add(toEvict, selfSource);
+                if (state.get() == STATE.Registered) {
+                    logger.info("Connection terminated without unregister; adding instance {} to eviction queue", lastInstanceInfo.getId());
+                    registrationSubject.onError(CONNECTION_TERMINATED);
                 }
             }
         });
@@ -124,38 +123,51 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATE> imple
      */
     @Override
     public Observable<Void> register(final InstanceInfo instanceInfo) {
-        if (!moveToState(STATE.Idle, STATE.Registered) &&
-                !moveToState(STATE.Registered, STATE.Registered)) {
-            STATE currentState = state.get();
-            if (STATE.Closed == currentState) {
-                // Since channel is already closed and hence the transport, we don't need to send an error on transport.
-                return Observable.error(CHANNEL_CLOSED_EXCEPTION);
-            } else {
-                Exception exception = new IllegalStateException("Unknown state error when registering, current state: " + currentState);
-                return sendErrorOnTransport(exception).doOnTerminate(new Action0() {
-                    @Override
-                    public void call() {
-                        close();
-                    }
-                });
-            }
+        if (moveToState(STATE.Idle, STATE.Registered)) {
+            return firstRegistration(instanceInfo);
         }
+        if (getState() == STATE.Registered) {
+            return registrationUpdate(instanceInfo);
+        }
+        STATE currentState = getState();
+        if (STATE.Closed == currentState) {
+            // Since channel is already closed and hence the transport, we don't need to send an error on transport.
+            return Observable.error(CHANNEL_CLOSED_EXCEPTION);
+        } else {
+            final Exception exception = new IllegalStateException("Unknown state error when registering, current state: " + currentState);
+            return sendErrorOnTransport(exception).doOnTerminate(new Action0() {
+                @Override
+                public void call() {
+                    close(exception);
+                }
+            });
+        }
+    }
 
+    private Observable<Void> firstRegistration(final InstanceInfo instanceInfo) {
         logger.debug("Registering service in registry: {}", instanceInfo);
+        registrationSubject.onNext(instanceInfo);
+        lastInstanceInfo = instanceInfo;
 
-        // it doesn't matter too much whether this cached instance info is the most update to date one
-        instanceInfoRef.set(instanceInfo);
-
-        return registry.register(instanceInfo, selfSource)
+        return registrationProcessor.register(instanceInfo.getId(), registrationSubject, selfSource)
                 .ignoreElements()
                 .cast(Void.class)
                 .doOnError(new Action1<Throwable>() {
                     @Override
                     public void call(Throwable throwable) {
-                        sendErrorOnTransport(throwable).doOnTerminate(new Action0() {
+                        sendErrorOnTransport(throwable).subscribe(new Subscriber<Void>() {
                             @Override
-                            public void call() {
+                            public void onCompleted() {
                                 close();
+                            }
+
+                            @Override
+                            public void onError(Throwable e) {
+                                close(e);
+                            }
+
+                            @Override
+                            public void onNext(Void aVoid) {
                             }
                         });
                     }
@@ -163,14 +175,28 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATE> imple
                 .doOnCompleted(new Action0() {
                     @Override
                     public void call() {
-                        sendAckOnTransport().doOnError(new Action1<Throwable>() {
+                        sendAckOnTransport().subscribe(new Subscriber<Void>() {
                             @Override
-                            public void call(Throwable throwable) {
-                                logger.warn("Failed to send ack for register operation for instanceInfo {}", instanceInfo);
+                            public void onCompleted() {
+                            }
+
+                            @Override
+                            public void onError(Throwable e) {
+                                logger.warn("Failed to send ack for register operation for instanceInfo {}", instanceInfo.getId());
+                            }
+
+                            @Override
+                            public void onNext(Void aVoid) {
                             }
                         });
                     }
                 });
+    }
+
+    private Observable<Void> registrationUpdate(InstanceInfo instanceInfo) {
+        logger.debug("Registration update: {}", instanceInfo);
+        registrationSubject.onNext(instanceInfo);
+        return Observable.empty();
     }
 
     /**
@@ -187,54 +213,31 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATE> imple
     @Override
     public Observable<Void> unregister() {
         STATE currentState = moveToState(STATE.Closed);
-
-        logger.debug("Unregistering service in registry: {}", instanceInfoRef.get());
-
         switch (currentState) {
             case Registered:
-                InstanceInfo toUnregister = instanceInfoRef.get();
-
-                return registry.unregister(toUnregister, selfSource)
-                        .ignoreElements()
-                        .cast(Void.class)
-                        .doOnError(new Action1<Throwable>() {
-                            @Override
-                            public void call(Throwable throwable) {
-                                sendErrorOnTransport(throwable);
-                            }
-                        })
-                        .doOnCompleted(new Action0() {
-                            @Override
-                            public void call() {
-                                instanceInfoRef.set(null);
-                                sendAckOnTransport().doOnTerminate(new Action0() {
-                                    @Override
-                                    public void call() {
-                                        close();
-                                    }
-                                }).subscribe();
-                            }
-                        });
+                logger.info("Unregistering service in registry: {}", lastInstanceInfo.getId());
+                registrationSubject.onCompleted();
+                break;
             case Closed:
                 logger.info("Unregister on an already closed channel. This is a no-op");
                 return Observable.empty();  // no need to send ack on transport as channel is already closed
             case Idle:
                 logger.info("Unregistered an Idle channel, This is a no-op");
-            default:
-                return sendAckOnTransport().doOnTerminate(new Action0() {
-                    @Override
-                    public void call() {
-                        close();
-                    }
-                });
+                break;
         }
+        return sendAckOnTransport().doOnTerminate(new Action0() {
+            @Override
+            public void call() {
+                close();
+            }
+        });
     }
 
     @Override
     protected void _close() {
-        if (state.get() != STATE.Closed) {
-            moveToState(state.get(), STATE.Closed);
+        STATE previousState = moveToState(STATE.Closed);
+        if (previousState != STATE.Closed) {
+            super._close();
         }
-        super._close();
     }
 }

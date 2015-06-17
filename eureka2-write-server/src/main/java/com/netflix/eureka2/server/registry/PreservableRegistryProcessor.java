@@ -1,10 +1,12 @@
-package com.netflix.eureka2.registry;
+package com.netflix.eureka2.server.registry;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
+import com.netflix.eureka2.registry.EurekaRegistrationProcessor;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,11 +34,11 @@ public class PreservableRegistryProcessor implements EurekaRegistrationProcessor
     private final AtomicBoolean isShutdown = new AtomicBoolean();
 
     public PreservableRegistryProcessor(EurekaRegistrationProcessor<InstanceInfo> delegate,
-                                        Observable<Long> evictionQuotas,
+                                        EvictionQuotaKeeper evictionQuotaKeeper,
                                         EurekaRegistryMetricFactory metricFactory) {
         this.delegate = delegate;
         this.quotaSubscriber = new QuotaSubscriber();
-        this.quotaSubscription = evictionQuotas.subscribe(quotaSubscriber);
+        this.quotaSubscription = evictionQuotaKeeper.quota().subscribe(quotaSubscriber);
     }
 
     @Override

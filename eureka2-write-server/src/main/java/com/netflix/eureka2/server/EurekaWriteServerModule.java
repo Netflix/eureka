@@ -25,17 +25,21 @@ import com.netflix.eureka2.metric.SpectatorEurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
 import com.netflix.eureka2.metric.server.SpectatorWriteServerMetricFactory;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
+import com.netflix.eureka2.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
+import com.netflix.eureka2.server.registry.EvictionQuotaKeeper;
+import com.netflix.eureka2.server.registry.EvictionQuotaKeeperImpl;
 import com.netflix.eureka2.registry.eviction.EvictionStrategy;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
 import com.netflix.eureka2.server.audit.AuditServiceController;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.config.WriteServerConfig;
+import com.netflix.eureka2.server.registry.RegistrationChannelProcessorProvider;
 import com.netflix.eureka2.server.rest.WriteServerRootResource;
 import com.netflix.eureka2.server.service.EurekaWriteServerSelfInfoResolver;
 import com.netflix.eureka2.server.service.EurekaWriteServerSelfRegistrationService;
@@ -44,6 +48,8 @@ import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.server.service.bootstrap.BackupClusterBootstrapService;
 import com.netflix.eureka2.server.service.bootstrap.RegistryBootstrapCoordinator;
 import com.netflix.eureka2.server.service.bootstrap.RegistryBootstrapService;
+import com.netflix.eureka2.server.service.overrides.InMemoryOverridesRegistry;
+import com.netflix.eureka2.server.service.overrides.OverridesRegistry;
 import com.netflix.eureka2.server.service.replication.ReplicationService;
 import com.netflix.eureka2.server.spi.ExtensionContext;
 import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
@@ -51,6 +57,8 @@ import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServ
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 import io.reactivex.netty.spectator.SpectatorEventsListenerFactory;
+
+import static com.netflix.eureka2.Names.REGISTRATION;
 
 /**
  * @author Tomasz Bak
@@ -85,6 +93,10 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
         bind(SourcedEurekaRegistry.class).annotatedWith(Names.named("delegate")).to(SourcedEurekaRegistryImpl.class).asEagerSingleton();
         bind(SourcedEurekaRegistry.class).to(SourcedEurekaRegistryImpl.class);
         bind(EurekaRegistryView.class).to(SourcedEurekaRegistryImpl.class);
+
+        bind(EurekaRegistrationProcessor.class).annotatedWith(Names.named(REGISTRATION)).toProvider(RegistrationChannelProcessorProvider.class);
+        bind(EvictionQuotaKeeper.class).to(EvictionQuotaKeeperImpl.class);
+        bind(OverridesRegistry.class).to(InMemoryOverridesRegistry.class);
 
         bind(EvictionQueue.class).to(EvictionQueueImpl.class).asEagerSingleton();
         bind(EvictionStrategy.class).toProvider(EvictionStrategyProvider.class);
