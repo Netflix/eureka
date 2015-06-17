@@ -197,29 +197,14 @@ public class DiscoveryClient implements EurekaClient {
         @Inject(optional = true)
         private Provider<HealthCheckHandler> healthCheckHandlerProvider;
 
-        public EventBus getEventBus() {
-            return eventBus;
-        }
+        public DiscoveryClientOptionalArgs() { }
 
-        public void setEventBus(EventBus eventBus) {
+        public DiscoveryClientOptionalArgs(EventBus eventBus, Provider<HealthCheckCallback> healthCheckCallbackProvider, Provider<HealthCheckHandler> healthCheckHandlerProvider) {
             this.eventBus = eventBus;
-        }
-
-        public Provider<HealthCheckCallback> getHealthCheckCallbackProvider() {
-            return healthCheckCallbackProvider;
-        }
-
-        public void setHealthCheckCallbackProvider(Provider<HealthCheckCallback> healthCheckCallbackProvider) {
             this.healthCheckCallbackProvider = healthCheckCallbackProvider;
-        }
-
-        public Provider<HealthCheckHandler> getHealthCheckHandlerProvider() {
-            return healthCheckHandlerProvider;
-        }
-
-        public void setHealthCheckHandlerProvider(Provider<HealthCheckHandler> healthCheckHandlerProvider) {
             this.healthCheckHandlerProvider = healthCheckHandlerProvider;
         }
+
     }
 
     /**
