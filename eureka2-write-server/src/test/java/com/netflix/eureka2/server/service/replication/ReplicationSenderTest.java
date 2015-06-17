@@ -131,7 +131,7 @@ public class ReplicationSenderTest {
         assertThat(testChannel.id, is(0));
         assertThat(testChannel.closeCalled, is(true));
         assertThat(testChannel.operations.size(), is(1));
-        assertThat(testChannel.operations.iterator().next(), equalTo(hello));
+        assertThat(testChannel.operations.iterator().next().getSource().getName(), equalTo(hello.getSource().getName()));
         assertThat(testChannel.replicationItems.size(), is(0));
 
         registry.unregister(registryContent.get(0), localSource).subscribe();
@@ -160,7 +160,7 @@ public class ReplicationSenderTest {
         assertThat(testChannel.id, is(0));
         assertThat(testChannel.closeCalled, is(false));
         assertThat(testChannel.operations.size(), is(1));
-        assertThat(testChannel.operations.iterator().next(), equalTo(hello));
+        assertThat(testChannel.operations.iterator().next().getSource().getName(), equalTo(hello.getSource().getName()));
         assertThat(testChannel.replicationItems.size(), is(5));
 
         List<String> ids = new ArrayList<>();
@@ -274,7 +274,7 @@ public class ReplicationSenderTest {
         assertThat(testChannel0.id, is(0));
         assertThat(testChannel0.closeCalled, is(true));
         assertThat(testChannel0.operations.size(), is(1));
-        assertThat(testChannel0.operations.iterator().next(), equalTo(hello));
+        assertThat(testChannel0.operations.iterator().next().getSource().getName(), equalTo(hello.getSource().getName()));
         testChannel0.awaitReplicationItems(5, 100);
         assertThat(testChannel0.replicationItems.size(), is(5));
 
@@ -312,7 +312,7 @@ public class ReplicationSenderTest {
         assertThat(testChannel.id, is(0));
         assertThat(testChannel.closeCalled, is(false));
         assertThat(testChannel.operations.size(), is(1));
-        assertThat(testChannel.operations.iterator().next(), equalTo(hello));
+        assertThat(testChannel.operations.iterator().next().getSource().getName(), equalTo(hello.getSource().getName()));
         assertThat(testChannel.replicationItems.size(), is(5));
 
         List<String> ids = new ArrayList<>();
