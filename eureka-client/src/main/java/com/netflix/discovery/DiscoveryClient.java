@@ -153,6 +153,7 @@ public class DiscoveryClient implements EurekaClient {
     // monotonically increasing generation counter to ensure stale threads do not reset registry to an older version
     private final AtomicLong fetchRegistryGeneration;
 
+    private final ApplicationInfoManager applicationInfoManager;
     private final InstanceInfo instanceInfo;
     private String appPathIdentifier;
     private boolean isRegisteredWithDiscovery = false;
@@ -197,35 +198,60 @@ public class DiscoveryClient implements EurekaClient {
         private Provider<HealthCheckHandler> healthCheckHandlerProvider;
     }
 
+    /**
+     * Assumes applicationInfoManager is already initialized
+     *
+     * @deprecated use constructor that takes ApplicationInfoManager instead of InstanceInfo directly
+     */
+    @Deprecated
     public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config) {
         this(myInfo, config, null);
     }
 
+    /**
+     * Assumes applicationInfoManager is already initialized
+     *
+     * @deprecated use constructor that takes ApplicationInfoManager instead of InstanceInfo directly
+     */
+    @Deprecated
     public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
-        this(myInfo, config, args, new Provider<BackupRegistry>() {
+        this(ApplicationInfoManager.getInstance(), config, args);
+    }
+
+    public DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config) {
+        this(applicationInfoManager, config, null);
+    }
+
+    public DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
+        this(applicationInfoManager, config, args, new Provider<BackupRegistry>() {
+            private volatile BackupRegistry backupRegistryInstance;
             @Override
-            public BackupRegistry get() {
-                String backupRegistryClassName = clientConfig.getBackupRegistryImpl();
-                if (null != backupRegistryClassName) {
-                    try {
-                        return (BackupRegistry) Class.forName(backupRegistryClassName).newInstance();
-                    } catch (InstantiationException e) {
-                        logger.error("Error instantiating BackupRegistry.", e);
-                    } catch (IllegalAccessException e) {
-                        logger.error("Error instantiating BackupRegistry.", e);
-                    } catch (ClassNotFoundException e) {
-                        logger.error("Error instantiating BackupRegistry.", e);
+            public synchronized BackupRegistry get() {
+                if (backupRegistryInstance == null) {
+                    String backupRegistryClassName = clientConfig.getBackupRegistryImpl();
+                    if (null != backupRegistryClassName) {
+                        try {
+                            backupRegistryInstance = (BackupRegistry) Class.forName(backupRegistryClassName).newInstance();
+                        } catch (InstantiationException e) {
+                            logger.error("Error instantiating BackupRegistry.", e);
+                        } catch (IllegalAccessException e) {
+                            logger.error("Error instantiating BackupRegistry.", e);
+                        } catch (ClassNotFoundException e) {
+                            logger.error("Error instantiating BackupRegistry.", e);
+                        }
                     }
+
+                    logger.warn("Using default backup registry implementation which does not do anything.");
+                    backupRegistryInstance = new NotImplementedRegistryImpl();
                 }
 
-                logger.warn("Using default backup registry implementation which does not do anything.");
-                return new NotImplementedRegistryImpl();
+                return backupRegistryInstance;
             }
         });
     }
 
     @Inject
-    DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, DiscoveryClientOptionalArgs args,
+    DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config, DiscoveryClientOptionalArgs args,
                     Provider<BackupRegistry> backupRegistryProvider) {
         if (args != null) {
             healthCheckHandlerProvider = args.healthCheckHandlerProvider;
@@ -236,6 +262,9 @@ public class DiscoveryClient implements EurekaClient {
             healthCheckHandlerProvider = null;
             eventBus = null;
         }
+
+        this.applicationInfoManager = applicationInfoManager;
+        InstanceInfo myInfo = applicationInfoManager.getInfo();
 
         this.backupRegistryProvider = backupRegistryProvider;
 
@@ -760,8 +789,8 @@ public class DiscoveryClient implements EurekaClient {
     @PreDestroy
     @Override
     public void shutdown() {
-        if (statusChangeListener != null) {
-            ApplicationInfoManager.getInstance().unregisterStatusChangeListener(statusChangeListener.getId());
+        if (statusChangeListener != null && applicationInfoManager != null) {
+            applicationInfoManager.unregisterStatusChangeListener(statusChangeListener.getId());
         }
 
         cancelScheduledTasks();
@@ -844,9 +873,6 @@ public class DiscoveryClient implements EurekaClient {
 
             logger.debug(PREFIX + appPathIdentifier + " -  refresh status: "
                     + response.getStatus());
-
-            updateInstanceRemoteStatus();
-
         } catch (Throwable e) {
             logger.error(
                     PREFIX + appPathIdentifier
@@ -859,6 +885,14 @@ public class DiscoveryClient implements EurekaClient {
             }
             closeResponse(response);
         }
+
+        // Notify about cache refresh before updating the instance remote status
+        onCacheRefreshed();
+        
+        // Update remote status based on refreshed data held in the cache
+        updateInstanceRemoteStatus();
+
+        // registry was fetched successfully, so return true
         return true;
     }
 
@@ -880,15 +914,8 @@ public class DiscoveryClient implements EurekaClient {
 
         // Notify if status changed
         if (lastRemoteInstanceStatus != currentRemoteInstanceStatus) {
-            try {
-                if (eventBus != null) {
-                    StatusChangeEvent event = new StatusChangeEvent(lastRemoteInstanceStatus,
-                            currentRemoteInstanceStatus);
-                    eventBus.publish(event);
-                }
-            } finally {
-                lastRemoteInstanceStatus = currentRemoteInstanceStatus;
-            }
+        	onRemoteStatusChanged(lastRemoteInstanceStatus, currentRemoteInstanceStatus);
+        	lastRemoteInstanceStatus = currentRemoteInstanceStatus;
         }
     }
 
@@ -1434,7 +1461,7 @@ public class DiscoveryClient implements EurekaClient {
             };
 
             if (clientConfig.shouldOnDemandUpdateStatusChange()) {
-                ApplicationInfoManager.getInstance().registerStatusChangeListener(statusChangeListener);
+                applicationInfoManager.registerStatusChangeListener(statusChangeListener);
             }
 
             instanceInfoReplicator.start(clientConfig.getInitialInstanceInfoReplicationIntervalSeconds());
@@ -1759,7 +1786,7 @@ public class DiscoveryClient implements EurekaClient {
      * isDirty flag on the instanceInfo is set to true
      */
     void refreshInstanceInfo() {
-        ApplicationInfoManager.getInstance().refreshDataCenterInfoIfRequired();
+        applicationInfoManager.refreshDataCenterInfoIfRequired();
 
         InstanceStatus status;
         try {
@@ -2004,4 +2031,38 @@ public class DiscoveryClient implements EurekaClient {
         }
     }
 
+    
+    /**
+     * Invoked when the remote status of this client has changed.
+     * Subclasses may override this method to implement custom behavior if needed.
+     * 
+     * @param oldStatus the previous remote {@link InstanceStatus}
+     * @param newStatus the new remote {@link InstanceStatus} 
+     */
+    protected void onRemoteStatusChanged(InstanceInfo.InstanceStatus oldStatus, InstanceInfo.InstanceStatus newStatus) {
+    	fireEvent(new StatusChangeEvent(oldStatus, newStatus));
+    }
+    
+    /**
+     * Invoked every time the local registry cache is refreshed (whether changes have 
+     * been detected or not).
+     * 
+     * Subclasses may override this method to implement custom behavior if needed.
+     */
+    protected void onCacheRefreshed() {
+    	fireEvent(new CacheRefreshedEvent());
+    }
+
+
+    /**
+     * Send the given event on the EventBus if one is available
+     * 
+     * @param event the event to send on the eventBus
+     */
+    protected void fireEvent(DiscoveryEvent event) {
+    	// Publish event if an EventBus is available
+        if (eventBus != null) {
+            eventBus.publish(event);
+        }
+    }
 }

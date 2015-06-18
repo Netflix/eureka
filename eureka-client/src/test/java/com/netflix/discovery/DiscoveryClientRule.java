@@ -87,6 +87,18 @@ public class DiscoveryClientRule extends ExternalResource {
     public static EurekaClient setupDiscoveryClient(InstanceInfo clientInstanceInfo) {
         DefaultEurekaClientConfig config = new DefaultEurekaClientConfig();
         // setup config in advance, used in initialize converter
+        ApplicationInfoManager applicationInfoManager = new ApplicationInfoManager(new MyDataCenterInstanceConfig(), clientInstanceInfo);
+
+        DiscoveryManager.getInstance().setEurekaClientConfig(config);
+        EurekaClient client = new DiscoveryClient(applicationInfoManager, config);
+        return client;
+    }
+
+    public static EurekaClient setupInjector(InstanceInfo clientInstanceInfo) {
+
+
+        DefaultEurekaClientConfig config = new DefaultEurekaClientConfig();
+        // setup config in advance, used in initialize converter
         DiscoveryManager.getInstance().setEurekaClientConfig(config);
         EurekaClient client = new DiscoveryClient(clientInstanceInfo, config);
         ApplicationInfoManager.getInstance().initComponent(new MyDataCenterInstanceConfig());

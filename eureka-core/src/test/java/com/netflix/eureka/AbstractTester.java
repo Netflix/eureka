@@ -83,9 +83,9 @@ public class AbstractTester {
 
         DefaultEurekaClientConfig config = new DefaultEurekaClientConfig();
         // setup config in advance, used in initialize converter
+        ApplicationInfoManager applicationInfoManager = new ApplicationInfoManager(new MyDataCenterInstanceConfig(), builder.build());
         DiscoveryManager.getInstance().setEurekaClientConfig(config);
-        client = new DiscoveryClient(builder.build(), config);
-        ApplicationInfoManager.getInstance().initComponent(new MyDataCenterInstanceConfig());
+        client = new DiscoveryClient(applicationInfoManager, config);
         registry = new TestPeerAwareInstanceRegistry();
         registry.initRemoteRegionRegistry();
     }
