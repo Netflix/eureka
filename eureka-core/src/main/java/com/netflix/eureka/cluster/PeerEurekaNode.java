@@ -25,7 +25,6 @@ import com.netflix.discovery.shared.EurekaHttpClient.HttpResponse;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.PeerAwareInstanceRegistry;
 import com.netflix.eureka.PeerAwareInstanceRegistryImpl.Action;
-import com.netflix.eureka.cluster.ReplicationTask.BatchableReplicationTask;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,15 +98,11 @@ public class PeerEurekaNode {
      * @throws Exception
      */
     public void register(final InstanceInfo info) throws Exception {
-        ReplicationTask replicationTask = new BatchableReplicationTask(name, info.getAppName(), info.getId(), Action.Register, config) {
+        registerProcessor.process(new InstanceReplicationTask(name, Action.Register, info, null, true) {
             public HttpResponse<Void> execute() {
                 return replicationClient.register(info);
             }
-        };
-        replicationTask.setReplicateInstanceInfo(true);
-        // Set the actual object to be registered in the task for use in batch operations
-        replicationTask.setInstanceInfo(info);
-        registerProcessor.process(replicationTask);
+        });
     }
 
     /**
@@ -121,7 +116,7 @@ public class PeerEurekaNode {
      * @throws Exception
      */
     public void cancel(final String appName, final String id) throws Exception {
-        cancelProcessor.process(new BatchableReplicationTask(name, appName, id, Action.Cancel, config) {
+        cancelProcessor.process(new InstanceReplicationTask(name, Action.Cancel, appName, id) {
             @Override
             public HttpResponse<Void> execute() {
                 return replicationClient.cancel(appName, id);
@@ -160,7 +155,7 @@ public class PeerEurekaNode {
             replicationClient.sendHeartBeat(appName, id, info, overriddenStatus);
             return;
         }
-        ReplicationTask replicationTask = new BatchableReplicationTask(name, appName, id, Action.Heartbeat, config) {
+        ReplicationTask replicationTask = new InstanceReplicationTask(name, Action.Heartbeat, info, overriddenStatus, false) {
             @Override
             public HttpResponse<InstanceInfo> execute() throws Throwable {
                 return replicationClient.sendHeartBeat(appName, id, info, overriddenStatus);
@@ -184,8 +179,6 @@ public class PeerEurekaNode {
                 }
             }
         };
-        replicationTask.setInstanceInfo(info);
-        replicationTask.setOverriddenStatus(overriddenStatus);
         heartBeatProcessor.process(replicationTask);
     }
 
@@ -203,7 +196,7 @@ public class PeerEurekaNode {
      *            the new status of the ASG.
      */
     public void statusUpdate(final String asgName, final ASGStatus newStatus) {
-        asgStatusProcessor.process(new ReplicationTask(name, asgName, asgName, Action.StatusUpdate) {
+        asgStatusProcessor.process(new AsgReplicationTask(name, Action.StatusUpdate, asgName, newStatus) {
             public HttpResponse<?> execute() {
                 return replicationClient.statusUpdate(asgName, newStatus);
             }
@@ -225,7 +218,7 @@ public class PeerEurekaNode {
      */
     public void statusUpdate(final String appName, final String id,
                              final InstanceStatus newStatus, final InstanceInfo info) {
-        statusProcessor.process(new BatchableReplicationTask(name, appName, id, Action.StatusUpdate, config) {
+        statusProcessor.process(new InstanceReplicationTask(name, Action.StatusUpdate, info, null, false) {
             @Override
             public HttpResponse<Void> execute() {
                 return replicationClient.statusUpdate(appName, id, newStatus, info);
@@ -244,7 +237,7 @@ public class PeerEurekaNode {
      *            the instance information of the instance.
      */
     public void deleteStatusOverride(final String appName, final String id, final InstanceInfo info) {
-        statusProcessor.process(new BatchableReplicationTask(name, appName, id, Action.DeleteStatusOverride, config) {
+        statusProcessor.process(new InstanceReplicationTask(name, Action.DeleteStatusOverride, info, null, false) {
             @Override
             public HttpResponse<Void> execute() {
                 return replicationClient.deleteStatusOverride(appName, id, info);

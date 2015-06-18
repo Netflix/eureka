@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
+import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka.cluster.protocol.ReplicationInstanceResponse;
 import com.netflix.eureka.cluster.protocol.ReplicationList;
 import com.netflix.eureka.cluster.protocol.ReplicationListResponse;
@@ -94,6 +95,16 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
     public HttpResponse<Void> deleteStatusOverride(String appName, String id, InstanceInfo info) {
         handledRequests.add(new HandledRequest(RequestType.DeleteStatusOverride, null));
         return new HttpResponse<>(networkStatusCodes[callCounter.getAndIncrement()], null);
+    }
+
+    @Override
+    public HttpResponse<Applications> getApplications() {
+        throw new IllegalStateException("method not supported");
+    }
+
+    @Override
+    public HttpResponse<Applications> getDelta() {
+        throw new IllegalStateException("method not supported");
     }
 
     @Override

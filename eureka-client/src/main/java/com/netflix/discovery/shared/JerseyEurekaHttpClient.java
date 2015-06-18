@@ -141,6 +141,54 @@ public abstract class JerseyEurekaHttpClient implements EurekaHttpClient {
     }
 
     @Override
+    public HttpResponse<Applications> getApplications() {
+        String urlPath = "apps/";
+        ClientResponse response = null;
+        try {
+            Builder requestBuilder = getJerseyApacheClient().resource(serviceUrl).path(urlPath).getRequestBuilder();
+            addExtraHeaders(requestBuilder);
+            response = requestBuilder.accept(MediaType.APPLICATION_JSON_TYPE).get(ClientResponse.class);
+
+            Applications applications = null;
+            if (response.getStatus() == Status.OK.getStatusCode() && response.hasEntity()) {
+                applications = response.getEntity(Applications.class);
+            }
+            return HttpResponse.responseWith(response.getStatus(), applications);
+        } finally {
+            if (logger.isDebugEnabled()) {
+                logger.debug("[getApplications] Jersey HTTP GET {}; statusCode=", urlPath, response == null ? "N/A" : response.getStatus());
+            }
+            if (response != null) {
+                response.close();
+            }
+        }
+    }
+
+    @Override
+    public HttpResponse<Applications> getDelta() {
+        String urlPath = "apps/delta";
+        ClientResponse response = null;
+        try {
+            Builder requestBuilder = getJerseyApacheClient().resource(serviceUrl).path(urlPath).getRequestBuilder();
+            addExtraHeaders(requestBuilder);
+            response = requestBuilder.accept(MediaType.APPLICATION_JSON_TYPE).get(ClientResponse.class);
+
+            Applications applications = null;
+            if (response.getStatus() == Status.OK.getStatusCode() && response.hasEntity()) {
+                applications = response.getEntity(Applications.class);
+            }
+            return HttpResponse.responseWith(response.getStatus(), applications);
+        } finally {
+            if (logger.isDebugEnabled()) {
+                logger.debug("[getDelta] Jersey HTTP GET {}; statusCode=", urlPath, response == null ? "N/A" : response.getStatus());
+            }
+            if (response != null) {
+                response.close();
+            }
+        }
+    }
+
+    @Override
     public HttpResponse<InstanceInfo> getInstance(String appName, String id) {
         String urlPath = "apps/" + appName + '/' + id;
         ClientResponse response = null;

@@ -15,8 +15,8 @@ import static com.netflix.eureka.cluster.ClusterSampleData.MAX_PROCESSING_DELAY_
 import static com.netflix.eureka.cluster.ClusterSampleData.REPLICATION_EXPIRY_TIME_MS;
 import static com.netflix.eureka.cluster.ClusterSampleData.RETRY_SLEEP_TIME_MS;
 import static com.netflix.eureka.cluster.ClusterSampleData.SERVER_UNAVAILABLE_SLEEP_TIME_MS;
-import static com.netflix.eureka.cluster.TestableReplicationTask.aBatchableTask;
-import static com.netflix.eureka.cluster.TestableReplicationTask.aNonBatchableTask;
+import static com.netflix.eureka.cluster.TestableInstanceReplicationTask.aBatchableTask;
+import static com.netflix.eureka.cluster.TestableInstanceReplicationTask.aNonBatchableTask;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -53,7 +53,7 @@ public class ReplicationTaskProcessorTest {
 
     @Test
     public void testNonBatchableTaskExecution() throws Exception {
-        TestableReplicationTask task = aNonBatchableTask().withAction(Action.Heartbeat).withReplyStatusCode(200).build();
+        TestableInstanceReplicationTask task = aNonBatchableTask().withAction(Action.Heartbeat).withReplyStatusCode(200).build();
 
         boolean status = replicationTaskProcessor.process(task);
 
@@ -63,7 +63,7 @@ public class ReplicationTaskProcessorTest {
 
     @Test
     public void testNonBatchableTaskFailureHandling() throws Exception {
-        TestableReplicationTask task = aNonBatchableTask().withAction(Action.Heartbeat).withReplyStatusCode(503).build();
+        TestableInstanceReplicationTask task = aNonBatchableTask().withAction(Action.Heartbeat).withReplyStatusCode(503).build();
 
         boolean status = replicationTaskProcessor.process(task);
 
@@ -73,13 +73,13 @@ public class ReplicationTaskProcessorTest {
 
     @Test
     public void testNonBatchableTaskExpiry() throws Exception {
-        TestableReplicationTask longTask = aNonBatchableTask()
+        TestableInstanceReplicationTask longTask = aNonBatchableTask()
                 .withId("longTask")
                 .withAction(Action.Heartbeat)
                 .withReplyStatusCode(200)
                 .withProcessingDelay(5 * REPLICATION_EXPIRY_TIME_MS, TimeUnit.MILLISECONDS)
                 .build();
-        TestableReplicationTask secondTask =
+        TestableInstanceReplicationTask secondTask =
                 aNonBatchableTask().withId("secondTask").withAction(Action.Heartbeat).withReplyStatusCode(200).build();
 
         boolean status = replicationTaskProcessor.process(longTask) && replicationTaskProcessor.process(secondTask);
@@ -91,7 +91,7 @@ public class ReplicationTaskProcessorTest {
 
     @Test
     public void testNonBatchableTaskRetryOnConnectionError() throws Exception {
-        TestableReplicationTask task = aNonBatchableTask()
+        TestableInstanceReplicationTask task = aNonBatchableTask()
                 .withAction(Action.Heartbeat).withReplyStatusCode(200).withNetworkFailures(2).build();
 
         boolean status = replicationTaskProcessor.process(task);
@@ -102,7 +102,7 @@ public class ReplicationTaskProcessorTest {
 
     @Test
     public void testBatchableTaskListExecution() throws Exception {
-        TestableReplicationTask task = aBatchableTask().build();
+        TestableInstanceReplicationTask task = aBatchableTask().build();
 
         replicationClient.withBatchReply(200);
         replicationClient.withNetworkStatusCode(200);
@@ -114,7 +114,7 @@ public class ReplicationTaskProcessorTest {
 
     @Test
     public void testBatchableTaskFailureHandling() throws Exception {
-        TestableReplicationTask task = aBatchableTask().build();
+        TestableInstanceReplicationTask task = aBatchableTask().build();
         InstanceInfo instanceInfoFromPeer = InstanceInfoGenerator.takeOne();
 
         replicationClient.withNetworkStatusCode(200);
@@ -128,7 +128,7 @@ public class ReplicationTaskProcessorTest {
 
     @Test
     public void testBatchableTaskExpiry() throws Exception {
-        TestableReplicationTask longTask = aBatchableTask().build();
+        TestableInstanceReplicationTask longTask = aBatchableTask().build();
 
         replicationClient.withNetworkStatusCode(200);
         replicationClient.withBatchReply(200);
@@ -138,7 +138,7 @@ public class ReplicationTaskProcessorTest {
         // Wait a bit, to be sure long task is picked up by the batcher
         Thread.sleep(REPLICATION_EXPIRY_TIME_MS);
 
-        TestableReplicationTask secondTask =
+        TestableInstanceReplicationTask secondTask =
                 aBatchableTask().withId("secondTask").withAction(Action.Heartbeat).withReplyStatusCode(200).build();
         replicationTaskProcessor.process(secondTask);
 
@@ -148,7 +148,7 @@ public class ReplicationTaskProcessorTest {
 
     @Test
     public void testBatchableTaskRetryOnConnectionError() throws Exception {
-        TestableReplicationTask task = aBatchableTask().withAction(Action.Heartbeat).withReplyStatusCode(200).build();
+        TestableInstanceReplicationTask task = aBatchableTask().withAction(Action.Heartbeat).withReplyStatusCode(200).build();
 
         replicationClient.withNetworkStatusCode(200);
         replicationClient.withNetworkError(2);
@@ -161,7 +161,7 @@ public class ReplicationTaskProcessorTest {
 
     @Test
     public void testBatchableTaskRetryOnServerBusy() throws Exception {
-        TestableReplicationTask task = aBatchableTask().withAction(Action.Heartbeat).withReplyStatusCode(200).build();
+        TestableInstanceReplicationTask task = aBatchableTask().withAction(Action.Heartbeat).withReplyStatusCode(200).build();
 
         replicationClient.withNetworkStatusCode(503, 200);
         replicationClient.withBatchReply(200);

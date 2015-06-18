@@ -9,7 +9,7 @@ import com.netflix.eureka.PeerAwareInstanceRegistryImpl.Action;
 /**
  * @author Tomasz Bak
  */
-class TestableReplicationTask extends ReplicationTask {
+class TestableInstanceReplicationTask extends InstanceReplicationTask {
 
     public static final String APP_NAME = "testableReplicationTaskApp";
 
@@ -20,15 +20,15 @@ class TestableReplicationTask extends ReplicationTask {
 
     private volatile int triggeredNetworkFailures;
 
-    TestableReplicationTask(boolean batchable,
-                            String peerNodeName,
-                            String appName,
-                            String id,
-                            Action action,
-                            int replyStatusCode,
-                            long processingDelayMs,
-                            int networkFailuresRepeatCount) {
-        super(peerNodeName, appName, id, action);
+    TestableInstanceReplicationTask(boolean batchable,
+                                    String peerNodeName,
+                                    String appName,
+                                    String id,
+                                    Action action,
+                                    int replyStatusCode,
+                                    long processingDelayMs,
+                                    int networkFailuresRepeatCount) {
+        super(peerNodeName, action, appName, id);
         this.batchable = batchable;
         this.replyStatusCode = replyStatusCode;
         this.processingDelayMs = processingDelayMs;
@@ -108,8 +108,8 @@ class TestableReplicationTask extends ReplicationTask {
             return this;
         }
 
-        public TestableReplicationTask build() {
-            return new TestableReplicationTask(
+        public TestableInstanceReplicationTask build() {
+            return new TestableInstanceReplicationTask(
                     batchable,
                     "peerNodeName#test",
                     APP_NAME,

@@ -1,7 +1,6 @@
 package com.netflix.eureka.cluster;
 
 import java.io.IOException;
-import java.util.Date;
 import java.util.List;
 
 import com.netflix.appinfo.InstanceInfo;
@@ -66,10 +65,10 @@ public class ReplicationTaskProcessor {
         return new MessageProcessor<ReplicationTask>() {
             @Override
             public void process(List<ReplicationTask> tasks) {
-                if (!tasks.get(0).isBatchingSupported()) {
-                    executeSingle(tasks);
-                } else {
+                if (tasks.get(0).isBatchingSupported() && config.shouldBatchReplication()) {
                     executeBatch(tasks);
+                } else {
+                    executeSingle(tasks);
                 }
             }
         };
@@ -101,7 +100,7 @@ public class ReplicationTaskProcessor {
                     HttpResponse<?> httpResponse = task.execute();
                     int statusCode = httpResponse.getStatusCode();
                     Object entity = httpResponse.getEntity();
-                    if(logger.isDebugEnabled()) {
+                    if (logger.isDebugEnabled()) {
                         logger.debug("Replication task {} completed with status {}, (includes entity {})", task.getTaskName(), statusCode, entity != null);
                     }
                     if (isSuccess(statusCode)) {
@@ -214,7 +213,8 @@ public class ReplicationTaskProcessor {
         ReplicationList list = new ReplicationList();
         for (ReplicationTask task : tasks) {
             if (!isLate(task)) {
-                list.addReplicationInstance(createReplicationInstanceOf(task));
+                // Only InstanceReplicationTask are batched.
+                list.addReplicationInstance(createReplicationInstanceOf((InstanceReplicationTask) task));
             }
         }
         return list;
@@ -225,17 +225,8 @@ public class ReplicationTaskProcessor {
         boolean late = now - task.getSubmitTime() > config.getMaxTimeForReplication();
 
         if (late) {
-            Object[] args = {
-                    task.getAppName(),
-                    task.getId(),
-                    task.getAction(),
-                    new Date(now),
-                    new Date(task.getSubmitTime())};
-
             DynamicCounter.increment("Replication_" + task.getAction().name() + "_expiry");
-            logger.warn(
-                    "Replication events older than the threshold. AppName : {}, Id: {}, Action : {}, Current Time : {}, Submit Time :{}",
-                    args);
+            logger.warn("Replication task {} older than the threshold (submit time {}", task.getTaskName(), task.getSubmitTime());
 
             task.cancel();
         }
@@ -264,14 +255,13 @@ public class ReplicationTaskProcessor {
         return false;
     }
 
-    private static ReplicationInstance createReplicationInstanceOf(ReplicationTask task) {
+    private static ReplicationInstance createReplicationInstanceOf(InstanceReplicationTask task) {
         ReplicationInstanceBuilder instanceBuilder = aReplicationInstance();
         instanceBuilder.withAppName(task.getAppName());
         instanceBuilder.withId(task.getId());
         InstanceInfo instanceInfo = task.getInstanceInfo();
         if (instanceInfo != null) {
-            String overriddenStatus = task.getOverriddenStatus() == null ? null
-                    : task.getOverriddenStatus().name();
+            String overriddenStatus = task.getOverriddenStatus() == null ? null : task.getOverriddenStatus().name();
             instanceBuilder.withOverriddenStatus(overriddenStatus);
             instanceBuilder.withLastDirtyTimestamp(instanceInfo.getLastDirtyTimestamp());
             if (task.shouldReplicateInstanceInfo()) {

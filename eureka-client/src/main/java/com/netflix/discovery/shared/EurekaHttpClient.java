@@ -20,6 +20,10 @@ public interface EurekaHttpClient {
 
     HttpResponse<Void> deleteStatusOverride(String appName, String id, InstanceInfo info);
 
+    HttpResponse<Applications> getApplications();
+
+    HttpResponse<Applications> getDelta();
+
     HttpResponse<InstanceInfo> getInstance(String appName, String id);
 
     void shutdown();

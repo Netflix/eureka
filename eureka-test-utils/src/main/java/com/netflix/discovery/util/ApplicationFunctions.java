@@ -64,7 +64,14 @@ public final class ApplicationFunctions {
         }
         Application merged = copyOf(first);
         for (InstanceInfo instance : second.getInstances()) {
-            merged.addInstance(instance);
+            switch (instance.getActionType()) {
+                case ADDED:
+                case MODIFIED:
+                    merged.addInstance(instance);
+                    break;
+                case DELETED:
+                    merged.removeInstance(instance);
+            }
         }
         return merged;
     }
@@ -94,5 +101,13 @@ public final class ApplicationFunctions {
         applications.setVersion(1L);
         applications.setAppsHashCode(applications.getReconcileHashCode());
         return applications;
+    }
+
+    public static int countInstances(Applications applications) {
+        int count = 0;
+        for(Application application: applications.getRegisteredApplications()) {
+            count += application.getInstances().size();
+        }
+        return count;
     }
 }

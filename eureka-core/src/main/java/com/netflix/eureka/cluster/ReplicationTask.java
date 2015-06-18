@@ -2,10 +2,7 @@ package com.netflix.eureka.cluster;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.netflix.appinfo.InstanceInfo;
-import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.shared.EurekaHttpClient.HttpResponse;
-import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.PeerAwareInstanceRegistryImpl.Action;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,36 +16,18 @@ abstract class ReplicationTask {
 
     public enum ProcessingState {Pending, Finished, Failed, Cancelled}
 
-    private final long submitTime = System.currentTimeMillis();
-    private final String peerNodeName;
-    private final String appName;
-    private final String id;
-    private final Action action;
-
-    private InstanceInfo instanceInfo;
-    private InstanceStatus overriddenStatus;
-    private boolean replicateInstanceInfo;
+    protected final long submitTime = System.currentTimeMillis();
+    protected final String peerNodeName;
+    protected final Action action;
 
     private final AtomicReference<ProcessingState> processingState = new AtomicReference<>(ProcessingState.Pending);
 
-    ReplicationTask(String peerNodeName, String appName, String id, Action action) {
+    ReplicationTask(String peerNodeName, Action action) {
         this.peerNodeName = peerNodeName;
-        this.appName = appName;
-        this.id = id;
         this.action = action;
     }
 
-    public String getTaskName() {
-        return appName + '/' + id + ':' + action + '@' + peerNodeName;
-    }
-
-    public String getAppName() {
-        return appName;
-    }
-
-    public String getId() {
-        return id;
-    }
+    public abstract String getTaskName();
 
     public Action getAction() {
         return action;
@@ -58,33 +37,7 @@ abstract class ReplicationTask {
         return this.submitTime;
     }
 
-    public InstanceInfo getInstanceInfo() {
-        return instanceInfo;
-    }
-
-    public void setInstanceInfo(InstanceInfo instanceInfo) {
-        this.instanceInfo = instanceInfo;
-    }
-
-    public InstanceStatus getOverriddenStatus() {
-        return overriddenStatus;
-    }
-
-    public void setOverriddenStatus(InstanceStatus overriddenStatus) {
-        this.overriddenStatus = overriddenStatus;
-    }
-
-    public boolean shouldReplicateInstanceInfo() {
-        return replicateInstanceInfo;
-    }
-
-    public void setReplicateInstanceInfo(boolean replicateInstanceInfo) {
-        this.replicateInstanceInfo = replicateInstanceInfo;
-    }
-
-    public boolean isBatchingSupported() {
-        return false;
-    }
+    public abstract boolean isBatchingSupported();
 
     public abstract HttpResponse<?> execute() throws Throwable;
 
@@ -98,8 +51,7 @@ abstract class ReplicationTask {
      */
     public void handleFailure(int statusCode, Object responseEntity) throws Throwable {
         processingState.compareAndSet(ProcessingState.Pending, ProcessingState.Failed);
-        Object[] args = {this.appName, this.id, this.action.name(), peerNodeName, statusCode};
-        logger.warn("The replication of {}/{}/{} to peer {} failed with response code {}", args);
+        logger.warn("The replication of task {} failed with response code {}", getTaskName(), statusCode);
     }
 
     /**
@@ -111,20 +63,5 @@ abstract class ReplicationTask {
 
     public ProcessingState getProcessingState() {
         return processingState.get();
-    }
-
-    abstract static class BatchableReplicationTask extends ReplicationTask {
-
-        private final EurekaServerConfig config;
-
-        BatchableReplicationTask(String peerNodeName, String appName, String id, Action action, EurekaServerConfig config) {
-            super(peerNodeName, appName, id, action);
-            this.config = config;
-        }
-
-        @Override
-        public boolean isBatchingSupported() {
-            return config.shouldBatchReplication();
-        }
     }
 }
