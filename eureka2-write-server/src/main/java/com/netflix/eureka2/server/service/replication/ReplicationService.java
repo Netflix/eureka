@@ -56,7 +56,7 @@ public class ReplicationService {
     private final ReplicationPeerAddressesProvider peerAddressesProvider;
     private final WriteServerMetricFactory metricFactory;
 
-    protected final Map<Server, ReplicationHandler> addressVsHandler;
+    protected final Map<Server, ReplicationSender> addressVsHandler;
 
     private InstanceInfo ownInstanceInfo;
     private Subscription resolverSubscription;
@@ -128,14 +128,14 @@ public class ReplicationService {
         if (!addressVsHandler.containsKey(address)) {
             logger.info("Adding replication channel to server {}", address);
 
-            ReplicationHandler handler = new ReplicationHandlerImpl(config, address, eurekaRegistry, ownInstanceInfo, metricFactory);
+            ReplicationSender handler = new ReplicationSenderImpl(config, address, eurekaRegistry, ownInstanceInfo, metricFactory);
             addressVsHandler.put(address, handler);
             handler.startReplication();
         }
     }
 
     private void removeServer(Server address) {
-        ReplicationHandler handler = addressVsHandler.remove(address);
+        ReplicationSender handler = addressVsHandler.remove(address);
         if (handler != null) {
             logger.info("Removing replication channel to server {}", address);
             handler.shutdown();
@@ -148,7 +148,7 @@ public class ReplicationService {
         STATE prev = state.getAndSet(STATE.Closed);
         if (STATE.Connected == prev) {  // only need to perform shutdown if was previously connected
             resolverSubscription.unsubscribe();
-            for (ReplicationHandler handler : addressVsHandler.values()) {
+            for (ReplicationSender handler : addressVsHandler.values()) {
                 handler.shutdown();
             }
             addressVsHandler.clear();

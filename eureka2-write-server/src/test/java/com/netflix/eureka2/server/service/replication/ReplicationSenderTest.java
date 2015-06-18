@@ -7,10 +7,10 @@ import com.netflix.eureka2.channel.TestSenderReplicationChannel;
 import com.netflix.eureka2.channel.TestSenderReplicationChannel.ReplicationItem;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
-import com.netflix.eureka2.protocol.replication.RegisterCopy;
+import com.netflix.eureka2.protocol.common.AddInstance;
+import com.netflix.eureka2.protocol.common.DeleteInstance;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
-import com.netflix.eureka2.protocol.replication.UnregisterCopy;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
@@ -47,13 +47,14 @@ import static org.mockito.Mockito.*;
 /**
  * @author David Liu
  */
-public class ReplicationHandlerTest {
+public class ReplicationSenderTest {
 
     private static final int RETRY_WAIT_MILLIS = 10;
 
     private static final InstanceInfo SELF_INFO = SampleInstanceInfo.DiscoveryServer.build();
     private static final InstanceInfo REMOTE_INFO = SampleInstanceInfo.DiscoveryServer.build();
-    private static final ReplicationHelloReply HELLO_REPLY = new ReplicationHelloReply(REMOTE_INFO.getId(), true);
+    private static final Source REPLICATION_SOURCE = new Source(Source.Origin.REPLICATED, REMOTE_INFO.getId(), 0);
+    private static final ReplicationHelloReply HELLO_REPLY = new ReplicationHelloReply(REPLICATION_SOURCE, true);
     private ReplicationHello hello;
 
     private final AtomicInteger channelId = new AtomicInteger(0);
@@ -69,7 +70,7 @@ public class ReplicationHandlerTest {
 
     private ChannelFactory<ReplicationChannel> mockFactory;
     private TestChannelFactory<ReplicationChannel> factory;
-    private ReplicationHandler handler;
+    private ReplicationSender handler;
 
     @Before
     public void setUp() throws Exception {
@@ -87,14 +88,15 @@ public class ReplicationHandlerTest {
 
         mockFactory = mock(SenderReplicationChannelFactory.class);
         factory = new TestChannelFactory<>(mockFactory);
-        handler = spy(new ReplicationHandlerImpl(factory, RETRY_WAIT_MILLIS, registry, SELF_INFO));
+        handler = spy(new ReplicationSenderImpl(factory, RETRY_WAIT_MILLIS, registry, SELF_INFO));
 
         for (InstanceInfo instanceInfo : registryContent) {
             registry.register(instanceInfo, localSource).subscribe();
             testScheduler.triggerActions();
         }
 
-        hello = new ReplicationHello(SELF_INFO.getId(), registry.size());
+        Source senderSource = new Source(Source.Origin.REPLICATED, SELF_INFO.getId(), 0);
+        hello = new ReplicationHello(senderSource, registry.size());
     }
 
     @After
@@ -110,7 +112,7 @@ public class ReplicationHandlerTest {
             public TestSenderReplicationChannel answer(InvocationOnMock invocation) throws Throwable {
                 MessageConnection messageConnection = mock(MessageConnection.class);
                 when(messageConnection.submit(hello)).thenReturn(Observable.<Void>empty());
-                when(messageConnection.incoming()).thenReturn(Observable.<Object>just(new ReplicationHelloReply(SELF_INFO.getId(), true)));
+                when(messageConnection.incoming()).thenReturn(Observable.<Object>just(new ReplicationHelloReply(REPLICATION_SOURCE, true)));
 
                 TransportClient transportClient = mock(TransportClient.class);
                 when(transportClient.connect()).thenReturn(Observable.just(messageConnection));
@@ -129,7 +131,7 @@ public class ReplicationHandlerTest {
         assertThat(testChannel.id, is(0));
         assertThat(testChannel.closeCalled, is(true));
         assertThat(testChannel.operations.size(), is(1));
-        assertThat(testChannel.operations.iterator().next(), equalTo(hello));
+        assertThat(testChannel.operations.iterator().next().getSource().getName(), equalTo(hello.getSource().getName()));
         assertThat(testChannel.replicationItems.size(), is(0));
 
         registry.unregister(registryContent.get(0), localSource).subscribe();
@@ -158,7 +160,7 @@ public class ReplicationHandlerTest {
         assertThat(testChannel.id, is(0));
         assertThat(testChannel.closeCalled, is(false));
         assertThat(testChannel.operations.size(), is(1));
-        assertThat(testChannel.operations.iterator().next(), equalTo(hello));
+        assertThat(testChannel.operations.iterator().next().getSource().getName(), equalTo(hello.getSource().getName()));
         assertThat(testChannel.replicationItems.size(), is(5));
 
         List<String> ids = new ArrayList<>();
@@ -228,14 +230,14 @@ public class ReplicationHandlerTest {
         assertThat(testChannel0.id, is(0));
         assertThat(testChannel0.closeCalled, is(true));
         assertThat(testChannel0.operations.size(), is(1));
-        assertThat(testChannel0.operations.iterator().next(), equalTo(hello));
+        assertThat(testChannel0.operations.iterator().next().getSource().getName(), equalTo(hello.getSource().getName()));
         assertThat(testChannel0.replicationItems.size(), is(0));
 
         TestSenderReplicationChannel testChannel1 = (TestSenderReplicationChannel) factory.getAllChannels().get(1);
         assertThat(testChannel1.id, is(1));
         assertThat(testChannel1.closeCalled, is(false));
         assertThat(testChannel1.operations.size(), is(1));
-        assertThat(testChannel1.operations.iterator().next(), equalTo(hello));
+        assertThat(testChannel1.operations.iterator().next().getSource().getName(), equalTo(hello.getSource().getName()));
         testChannel0.awaitReplicationItems(5, 100);
         assertThat(testChannel1.replicationItems.size(), is(5));
 
@@ -272,7 +274,7 @@ public class ReplicationHandlerTest {
         assertThat(testChannel0.id, is(0));
         assertThat(testChannel0.closeCalled, is(true));
         assertThat(testChannel0.operations.size(), is(1));
-        assertThat(testChannel0.operations.iterator().next(), equalTo(hello));
+        assertThat(testChannel0.operations.iterator().next().getSource().getName(), equalTo(hello.getSource().getName()));
         testChannel0.awaitReplicationItems(5, 100);
         assertThat(testChannel0.replicationItems.size(), is(5));
 
@@ -280,7 +282,7 @@ public class ReplicationHandlerTest {
         assertThat(testChannel1.id, is(1));
         assertThat(testChannel1.closeCalled, is(false));
         assertThat(testChannel1.operations.size(), is(1));
-        assertThat(testChannel1.operations.iterator().next(), equalTo(hello));
+        assertThat(testChannel1.operations.iterator().next().getSource().getName(), equalTo(hello.getSource().getName()));
         testChannel1.awaitReplicationItems(5, 100);
         assertThat(testChannel1.replicationItems.size(), is(5));
 
@@ -310,7 +312,7 @@ public class ReplicationHandlerTest {
         assertThat(testChannel.id, is(0));
         assertThat(testChannel.closeCalled, is(false));
         assertThat(testChannel.operations.size(), is(1));
-        assertThat(testChannel.operations.iterator().next(), equalTo(hello));
+        assertThat(testChannel.operations.iterator().next().getSource().getName(), equalTo(hello.getSource().getName()));
         assertThat(testChannel.replicationItems.size(), is(5));
 
         List<String> ids = new ArrayList<>();
@@ -365,8 +367,8 @@ public class ReplicationHandlerTest {
     private static TestSenderReplicationChannel newFailAtReplicateChannel(Integer id) {
         MessageConnection messageConnection = newMockMessageConnection();
         when(messageConnection.submit(any(ReplicationHello.class))).thenReturn(Observable.<Void>empty());
-        when(messageConnection.submit(any(RegisterCopy.class))).thenReturn(Observable.<Void>error(new Exception("test: register error")));
-        when(messageConnection.submit(any(UnregisterCopy.class))).thenReturn(Observable.<Void>error(new Exception("test: unregister error")));
+        when(messageConnection.submit(any(AddInstance.class))).thenReturn(Observable.<Void>error(new Exception("test: register error")));
+        when(messageConnection.submit(any(DeleteInstance.class))).thenReturn(Observable.<Void>error(new Exception("test: unregister error")));
         when(messageConnection.incoming()).thenReturn(Observable.<Object>just(HELLO_REPLY));
 
         TransportClient transportClient = mock(TransportClient.class);

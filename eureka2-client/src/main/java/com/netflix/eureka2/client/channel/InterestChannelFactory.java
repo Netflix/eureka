@@ -10,6 +10,8 @@ import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.transport.TransportClient;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 /**
  * @author David Liu
  */
@@ -19,13 +21,18 @@ public class InterestChannelFactory extends ClientChannelFactory<InterestChannel
     private final TransportClient transport;
     private final BatchingRegistry<InstanceInfo> remoteBatchingRegistry;
 
+    private final AtomicLong generationId;
+
     public InterestChannelFactory(String clientId,
                                   EurekaTransportConfig config,
                                   ServerResolver resolver,
                                   SourcedEurekaRegistry<InstanceInfo> eurekaRegistry,
                                   BatchingRegistry<InstanceInfo> remoteBatchingRegistry,
                                   EurekaClientMetricFactory metricFactory) {
-        this(TransportClients.newTcpDiscoveryClient(clientId, config, resolver, metricFactory), eurekaRegistry, remoteBatchingRegistry, metricFactory);
+        this(
+                TransportClients.newTcpDiscoveryClient(clientId, config, resolver, metricFactory),
+                eurekaRegistry, remoteBatchingRegistry, metricFactory
+        );
     }
 
     public InterestChannelFactory(TransportClient transport,
@@ -36,11 +43,14 @@ public class InterestChannelFactory extends ClientChannelFactory<InterestChannel
         this.eurekaRegistry = eurekaRegistry;
         this.transport = transport;
         this.remoteBatchingRegistry = remoteBatchingRegistry;
+        this.generationId = new AtomicLong(System.currentTimeMillis());  // seed with system time to avoid reset on reboot
     }
 
     @Override
     public InterestChannel newChannel() {
-        InterestChannel baseChannel = new InterestChannelImpl(eurekaRegistry, remoteBatchingRegistry, transport, metricFactory.getInterestChannelMetrics());
+        InterestChannel baseChannel = new InterestChannelImpl(
+                eurekaRegistry, remoteBatchingRegistry, transport,
+                generationId.getAndIncrement(), metricFactory.getInterestChannelMetrics());
         return new InterestChannelInvoker(baseChannel, metricFactory);
     }
 

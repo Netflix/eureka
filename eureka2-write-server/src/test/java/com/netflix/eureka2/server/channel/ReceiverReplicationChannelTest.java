@@ -21,13 +21,12 @@ import java.util.List;
 
 import com.netflix.eureka2.channel.ReplicationChannel.STATE;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
-import com.netflix.eureka2.protocol.replication.RegisterCopy;
+import com.netflix.eureka2.protocol.common.AddInstance;
+import com.netflix.eureka2.protocol.common.DeleteInstance;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
-import com.netflix.eureka2.protocol.replication.UnregisterCopy;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.transport.MessageConnection;
@@ -59,7 +58,6 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
 
     private final SelfInfoResolver SelfIdentityService = mock(SelfInfoResolver.class);
     private final SourcedEurekaRegistry<InstanceInfo> registry = mock(SourcedEurekaRegistry.class);
-    private final EvictionQueue evictionQueue = mock(EvictionQueue.class);
 
     private ReceiverReplicationChannel replicationChannel;
     private final PublishSubject<Object> incomingSubject = PublishSubject.create();
@@ -78,8 +76,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
 
         when(SelfIdentityService.resolve()).thenReturn(Observable.just(RECEIVER_INFO));
 
-        replicationChannel = new ReceiverReplicationChannel(transport, SelfIdentityService, registry,
-                evictionQueue, channelMetrics);
+        replicationChannel = new ReceiverReplicationChannel(transport, SelfIdentityService, registry, channelMetrics);
     }
 
     @After
@@ -95,7 +92,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         verify(transport).submit(captor.capture());
         ReplicationHelloReply reply = captor.getValue();
 
-        assertThat(reply, is(equalTo(HELLO_REPLY)));
+        assertThat(reply.getSource().getName(), is(equalTo(HELLO_REPLY.getSource().getName())));
     }
 
     @Test(timeout = 60000)
@@ -115,7 +112,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         InstanceInfo infoUpdate = new InstanceInfo.Builder().withInstanceInfo(APP_INFO).withApp("myNewName").build();
 
         when(registry.register(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.just(false));
-        incomingSubject.onNext(new RegisterCopy(infoUpdate));
+        incomingSubject.onNext(new AddInstance(infoUpdate));
 
         verify(registry, times(2)).register(infoCaptor.capture(), sourceCaptor.capture());
 
@@ -137,7 +134,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
 
         // Now remove the record
         when(registry.unregister(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.just(true));
-        incomingSubject.onNext(new UnregisterCopy(APP_INFO.getId()));
+        incomingSubject.onNext(new DeleteInstance(APP_INFO.getId()));
 
         // Capture remove on the registry and verify the arguments
         verify(registry, times(1)).unregister(infoCaptor.capture(), sourceCaptor.capture());
@@ -146,24 +143,19 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
 
     @Test(timeout = 60000)
     public void testDetectsReplicationLoop() throws Exception {
-        ReplicationHello hello = new ReplicationHello(RECEIVER_ID, 0);
+        ReplicationHello hello = new ReplicationHello(RECEIVER_SOURCE, 0);
         incomingSubject.onNext(hello);
 
-        incomingSubject.onNext(new RegisterCopy(APP_INFO));
-        incomingSubject.onNext(new RegisterCopy(APP_INFO));  // this is an update
-        incomingSubject.onNext(new UnregisterCopy(APP_INFO.getId()));
+        incomingSubject.onNext(new AddInstance(APP_INFO));
+        incomingSubject.onNext(new AddInstance(APP_INFO));  // this is an update
+        incomingSubject.onNext(new DeleteInstance(APP_INFO.getId()));
         verify(transport, times(3)).onError(ReceiverReplicationChannel.REPLICATION_LOOP_EXCEPTION);
-    }
-
-    @Test(timeout = 60000)
-    public void testAddsRecordsToEvictionQueueOnTransportDisconnect() throws Exception {
-        verifyAddsRecordsToEvictionQueueOnDisconnect(false);
     }
 
     @Test(timeout = 60000)
     public void testMetrics() throws Exception {
         // Idle -> Handshake -> Connected
-        ReplicationHello hello = new ReplicationHello(RECEIVER_ID, 0);
+        ReplicationHello hello = new ReplicationHello(RECEIVER_SOURCE, 0);
         incomingSubject.onNext(hello);
 
         verify(channelMetrics, times(1)).incrementStateCounter(STATE.Handshake);
@@ -175,31 +167,11 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         verify(channelMetrics, times(1)).incrementStateCounter(STATE.Closed);
     }
 
-    @Test(timeout = 60000)
-    public void testAddsRecordsToEvictionQueueOnTransportError() throws Exception {
-        verifyAddsRecordsToEvictionQueueOnDisconnect(true);
-    }
-
-    public void verifyAddsRecordsToEvictionQueueOnDisconnect(boolean onError) throws Exception {
-        handshakeAndRegister(APP_INFO);
-
-        // Now disconnect
-        if (onError) {
-            transportLifeCycle.onError(new Exception("disconnect with error"));
-        } else {
-            transportLifeCycle.onCompleted();
-        }
-
-        // Verify
-        verify(evictionQueue, times(1)).add(infoCaptor.capture(), sourceCaptor.capture());
-        verifyInstanceAndSourceCaptures(APP_INFO, SENDER_ID);
-    }
-
     protected void handshakeAndRegister(InstanceInfo info) {
         incomingSubject.onNext(HELLO);
 
         when(registry.register(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.just(false));
-        incomingSubject.onNext(new RegisterCopy(info));
+        incomingSubject.onNext(new AddInstance(info));
     }
 
     private void verifyInstanceAndSourceCaptures(InstanceInfo info, String senderId) {

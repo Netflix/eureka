@@ -1,7 +1,7 @@
 package com.netflix.eureka2.performance.interest;
 
 import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.protocol.discovery.InterestRegistration;
+import com.netflix.eureka2.protocol.interest.InterestRegistration;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.transport.MessageConnection;
 import rx.Observable;

@@ -15,7 +15,7 @@ import com.netflix.eureka2.server.EurekaBridgeServerModule;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
-import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
+import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedBridgeServer.BridgeServerReport;
@@ -73,7 +73,7 @@ public class EmbeddedBridgeServer extends EmbeddedEurekaServer<BridgeServerConfi
 
     public int getDiscoveryPort() {
         // Since server might be started on the ephemeral port, we need to get it directly from RxNetty server
-        return injector.getInstance(TcpDiscoveryServer.class).serverPort();
+        return injector.getInstance(TcpInterestServer.class).serverPort();
     }
 
     public int getReplicationPort() {

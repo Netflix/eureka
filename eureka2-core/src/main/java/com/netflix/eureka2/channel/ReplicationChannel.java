@@ -1,8 +1,10 @@
 package com.netflix.eureka2.channel;
 
+import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
 
@@ -16,14 +18,14 @@ import rx.Observable;
  * On the server side the data are put into the registry with origin set to {@link Source.Origin#REPLICATED}.
  * A replicated entry is removed from the registry under following circumstances:
  * <ul>
- *     <li>Explicit {@link #unregister(String)} call - an entry was removed from the source registry</li>
+ *     <li>Explicit {@link #replicate(com.netflix.eureka2.interests.ChangeNotification)} call with a Kind.Delete</li>
  *     <li>Replication connection termination - invalidates all entries replicated over this connection</li>
  *     <li>No heartbeat within configured period of time - equivalent to connection termination</li>
  * </ul>
  *
  * @author Nitesh Kant
  */
-public interface ReplicationChannel extends ServiceChannel {
+public interface ReplicationChannel extends ServiceChannel, Sourced {
 
     enum STATE {Idle, Handshake, Connected, Closed}
 
@@ -37,18 +39,10 @@ public interface ReplicationChannel extends ServiceChannel {
     Observable<ReplicationHelloReply> hello(ReplicationHello hello);
 
     /**
-     * Register or update the passed instance with eureka
+     * Submit a change notification to be replicated to a remote server
      *
-     * @param instanceInfo The instance definition.
-     *
-     * @return Acknowledgment for the registration.
+     * @param notification the change notification to be replicated
+     * @return Acknowledgement of the replication event
      */
-    Observable<Void> register(InstanceInfo instanceInfo);
-
-    /**
-     * Unregisters the {@link InstanceInfo} with given id.
-     *
-     * @return Acknowledgment for unregistration.
-     */
-    Observable<Void> unregister(String instanceId);
+    Observable<Void> replicate(ChangeNotification<InstanceInfo> notification);
 }

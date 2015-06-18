@@ -20,10 +20,11 @@ import javax.inject.Inject;
 import javax.inject.Named;
 
 import com.netflix.eureka2.Names;
+import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
 import com.netflix.eureka2.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.channel.RegistrationChannelFactory;
+import com.netflix.eureka2.server.channel.RegistrationChannelImpl;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
@@ -58,11 +59,13 @@ public class TcpRegistrationHandler implements ConnectionHandler<Object, Object>
                 config.getHeartbeatIntervalMs(), 3,
                 Schedulers.computation()
         );
-        final RegistrationChannelFactory channelFactory
-                = new RegistrationChannelFactory(registrationProcessor, broker, metricFactory);
 
-        return channelFactory.newChannel()
-                .asLifecycleObservable(); // Since this is a discovery handler which only handles interest subscriptions,
+
+        RegistrationChannel registrationChannel =
+                new RegistrationChannelImpl(registrationProcessor, broker, metricFactory.getRegistrationChannelMetrics());
+
+        // Since this is a discovery handler which only handles interest subscriptions,
         // the channel is created on connection accept.
+        return registrationChannel.asLifecycleObservable();
     }
 }

@@ -14,12 +14,26 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.protocol.discovery;
+package com.netflix.eureka2.protocol.common;
 
 /**
- * Marker interface for interest set update classes.
+ * We assume that heart beats are at the application level, not embedded
+ * into the transport layer/message broker.
  *
  * @author Tomasz Bak
  */
-public interface InterestSetNotification {
+public class Heartbeat {
+    public static final Heartbeat INSTANCE = new Heartbeat();
+
+    private static final int HASH = 98656312;
+
+    @Override
+    public int hashCode() {
+        return HASH;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof Heartbeat;
+    }
 }

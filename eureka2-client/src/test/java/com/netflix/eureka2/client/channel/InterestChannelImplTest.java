@@ -15,11 +15,11 @@ import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.InterestChannelMetrics;
-import com.netflix.eureka2.protocol.discovery.AddInstance;
-import com.netflix.eureka2.protocol.discovery.DeleteInstance;
-import com.netflix.eureka2.protocol.discovery.InterestSetNotification;
-import com.netflix.eureka2.protocol.discovery.SampleAddInstance;
-import com.netflix.eureka2.protocol.discovery.StreamStateUpdate;
+import com.netflix.eureka2.protocol.common.AddInstance;
+import com.netflix.eureka2.protocol.common.DeleteInstance;
+import com.netflix.eureka2.protocol.common.InterestSetNotification;
+import com.netflix.eureka2.protocol.interest.SampleAddInstance;
+import com.netflix.eureka2.protocol.common.StreamStateUpdate;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -103,7 +103,7 @@ public class InterestChannelImplTest {
         when(serverConnection.lifecycleObservable()).thenReturn(serverConnectionLifecycle);
         when(transportClient.connect()).thenReturn(Observable.just(serverConnection));
 
-        channel = new InterestChannelImpl(registry, remoteBatchingRegistry, transportClient, interestChannelMetrics);
+        channel = new InterestChannelImpl(registry, remoteBatchingRegistry, transportClient, 0, interestChannelMetrics);
     }
 
     @After

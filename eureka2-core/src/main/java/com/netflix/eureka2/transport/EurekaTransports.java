@@ -27,19 +27,17 @@ import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.codec.avro.EurekaAvroCodec;
 import com.netflix.eureka2.codec.avro.SchemaReflectData;
 import com.netflix.eureka2.codec.json.EurekaJsonCodec;
-import com.netflix.eureka2.protocol.Heartbeat;
-import com.netflix.eureka2.protocol.discovery.AddInstance;
-import com.netflix.eureka2.protocol.discovery.DeleteInstance;
-import com.netflix.eureka2.protocol.discovery.InterestRegistration;
-import com.netflix.eureka2.protocol.discovery.StreamStateUpdate;
-import com.netflix.eureka2.protocol.discovery.UnregisterInterestSet;
-import com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo;
+import com.netflix.eureka2.protocol.common.Heartbeat;
+import com.netflix.eureka2.protocol.common.AddInstance;
+import com.netflix.eureka2.protocol.common.DeleteInstance;
+import com.netflix.eureka2.protocol.interest.InterestRegistration;
+import com.netflix.eureka2.protocol.common.StreamStateUpdate;
+import com.netflix.eureka2.protocol.interest.UnregisterInterestSet;
+import com.netflix.eureka2.protocol.interest.UpdateInstanceInfo;
 import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.protocol.registration.Unregister;
-import com.netflix.eureka2.protocol.replication.RegisterCopy;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
-import com.netflix.eureka2.protocol.replication.UnregisterCopy;
 import com.netflix.eureka2.transport.codec.AbstractNettyCodec;
 import com.netflix.eureka2.transport.codec.DynamicNettyCodec;
 import com.netflix.eureka2.transport.codec.EurekaCodecWrapper;
@@ -78,7 +76,8 @@ public final class EurekaTransports {
     static final String REPLICATION_ENVELOPE_TYPE = "com.netflix.eureka2.protocol.replication.ReplicationMessages";
 
     static final Class<?>[] REPLICATION_PROTOCOL_MODEL = {
-            ReplicationHello.class, ReplicationHelloReply.class, RegisterCopy.class, UnregisterCopy.class, Heartbeat.class
+            ReplicationHello.class, Heartbeat.class, ReplicationHelloReply.class,
+            AddInstance.class, DeleteInstance.class, StreamStateUpdate.class
     };
     static final Set<Class<?>> REPLICATION_PROTOCOL_MODEL_SET = new HashSet<>(Arrays.asList(REPLICATION_PROTOCOL_MODEL));
     static final Schema REPLICATION_AVRO_SCHEMA = AvroUtils.loadSchema(REPLICATION_SCHEMA_FILE, REPLICATION_ENVELOPE_TYPE);
@@ -86,8 +85,8 @@ public final class EurekaTransports {
     /*
      * Discovery protocol constants.
      */
-    static final String INTEREST_SCHEMA_FILE = "discovery-schema.avpr";
-    static final String INTEREST_ENVELOPE_TYPE = "com.netflix.eureka2.protocol.discovery.DiscoveryMessage";
+    static final String INTEREST_SCHEMA_FILE = "interest-schema.avpr";
+    static final String INTEREST_ENVELOPE_TYPE = "com.netflix.eureka2.protocol.interest.InterestMessage";
 
     static final Class<?>[] INTEREST_PROTOCOL_MODEL = {
             InterestRegistration.class, UnregisterInterestSet.class, Heartbeat.class,

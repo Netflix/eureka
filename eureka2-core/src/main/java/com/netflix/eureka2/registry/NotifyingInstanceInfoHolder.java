@@ -297,7 +297,7 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
             String sourceKey = sourceKey(source);
             Source currIfExist = sourceMap.get(sourceKey);
             if (currIfExist != null) {
-                if (currIfExist.getId().equals(source.getId())) {
+                if (currIfExist.getId() == source.getId()) {
                     sourceMap.remove(sourceKey);
                     return dataMap.remove(currIfExist);
                 } else {  // no-op

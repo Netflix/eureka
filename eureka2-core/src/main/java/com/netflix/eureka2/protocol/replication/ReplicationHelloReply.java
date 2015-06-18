@@ -16,27 +16,29 @@
 
 package com.netflix.eureka2.protocol.replication;
 
+import com.netflix.eureka2.registry.Source;
+
 /**
  * @author Tomasz Bak
  */
 public class ReplicationHelloReply {
 
-    private final String sourceId;
+    private final Source source;
     private final boolean sendSnapshot;
 
     // For serialization frameworks
     protected ReplicationHelloReply() {
-        this.sourceId = null;
+        this.source = null;
         this.sendSnapshot = false;
     }
 
-    public ReplicationHelloReply(String sourceId, boolean sendSnapshot) {
-        this.sourceId = sourceId;
+    public ReplicationHelloReply(Source source, boolean sendSnapshot) {
+        this.source = source;
         this.sendSnapshot = sendSnapshot;
     }
 
-    public String getSourceId() {
-        return sourceId;
+    public Source getSource() {
+        return source;
     }
 
     public boolean isSendSnapshot() {
@@ -45,24 +47,20 @@ public class ReplicationHelloReply {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
+        if (this == o) return true;
+        if (!(o instanceof ReplicationHelloReply)) return false;
 
         ReplicationHelloReply that = (ReplicationHelloReply) o;
 
-        if (sendSnapshot != that.sendSnapshot)
-            return false;
-        if (sourceId != null ? !sourceId.equals(that.sourceId) : that.sourceId != null)
-            return false;
+        if (sendSnapshot != that.sendSnapshot) return false;
+        if (source != null ? !source.equals(that.source) : that.source != null) return false;
 
         return true;
     }
 
     @Override
     public int hashCode() {
-        int result = sourceId != null ? sourceId.hashCode() : 0;
+        int result = source != null ? source.hashCode() : 0;
         result = 31 * result + (sendSnapshot ? 1 : 0);
         return result;
     }
@@ -70,7 +68,7 @@ public class ReplicationHelloReply {
     @Override
     public String toString() {
         return "ReplicationHelloReply{" +
-                "sourceId='" + sourceId + '\'' +
+                "source=" + source +
                 ", sendSnapshot=" + sendSnapshot +
                 '}';
     }

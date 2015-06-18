@@ -8,11 +8,11 @@ import com.netflix.eureka2.connection.RetryableConnection;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.utils.rx.NoOpSubscriber;
 import com.netflix.eureka2.utils.rx.RetryStrategyFunc;
+import com.netflix.eureka2.utils.rx.RxFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Notification;
@@ -74,27 +74,36 @@ public abstract class AbstractInterestClient implements EurekaInterestClient {
                     }
                 })
                 .take(1)
-                .map(new Func1<ChangeNotification<InstanceInfo>, InterestChannel>() {
+                .map(new Func1<ChangeNotification<InstanceInfo>, Source>() {
                     @Override
-                    public InterestChannel call(ChangeNotification<InstanceInfo> notification) {
-                        return prev;
+                    public Source call(ChangeNotification<InstanceInfo> notification) {
+                        return curr.getSource();
                     }
                 })
-                .flatMap(new Func1<InterestChannel, Observable<Long>>() {
+                .filter(RxFunctions.filterNullValuesFunc())  // for paranoia
+                .flatMap(new Func1<Source, Observable<Long>>() {
                     @Override
-                    public Observable<Long> call(final InterestChannel interestChannel) {
-                        return interestChannel.asLifecycleObservable()
+                    public Observable<Long> call(final Source currSource) {
+                        return prev.asLifecycleObservable()
                                 .materialize()
                                 .flatMap(new Func1<Notification<Void>, Observable<Long>>() {
                                     @Override
                                     public Observable<Long> call(Notification<Void> rxNotification) {
                                         // wait for the old channel to be closed before starting the eviction
                                         // since the input is a void observable OnError or OnCompleted are both fine
-                                        if (interestChannel instanceof Sourced) {
-                                            Source toEvict = ((Sourced) interestChannel).getSource();
-                                            return registry.evictAll(Source.matcherFor(toEvict));
-                                        }
-                                        return Observable.empty();
+                                        Source.SourceMatcher evictAllOlderMatcher = new Source.SourceMatcher() {
+                                            @Override
+                                            public boolean match(Source another) {
+                                                if (another.getOrigin() == currSource.getOrigin() &&
+                                                        another.getName().equals(currSource.getName()) &&
+                                                        another.getId() < currSource.getId()) {
+                                                    return true;
+                                                }
+                                                return false;
+                                            }
+                                        };
+
+                                        return registry.evictAll(evictAllOlderMatcher);
                                     }
                                 });
                     }

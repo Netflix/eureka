@@ -22,16 +22,17 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Func1;
 
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author David Liu
  */
-public class ReplicationHandlerImpl implements ReplicationHandler {
+public class ReplicationSenderImpl implements ReplicationSender {
 
     enum STATE {Idle, Replicating, Closed}
 
-    private static final Logger logger = LoggerFactory.getLogger(ReplicationHandlerImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(ReplicationSenderImpl.class);
 
     private static final int DEFAULT_RETRY_WAIT_MILLIS = 500;
 
@@ -40,23 +41,25 @@ public class ReplicationHandlerImpl implements ReplicationHandler {
     private final RetryableConnection<ReplicationChannel> connection;
     private final Subscriber<Void> replicationSubscriber;
     private final AtomicReference<STATE> stateRef;
+    private final AtomicLong senderGenerationId;
 
-    public ReplicationHandlerImpl(final WriteServerConfig config,
-                                  final Server address,
-                                  final SourcedEurekaRegistry<InstanceInfo> registry,
-                                  final InstanceInfo selfInfo,
-                                  final WriteServerMetricFactory metricFactory) {
+    public ReplicationSenderImpl(final WriteServerConfig config,
+                                 final Server address,
+                                 final SourcedEurekaRegistry<InstanceInfo> registry,
+                                 final InstanceInfo selfInfo,
+                                 final WriteServerMetricFactory metricFactory) {
         this(new SenderReplicationChannelFactory(config, address, metricFactory), DEFAULT_RETRY_WAIT_MILLIS, registry, selfInfo);
     }
 
-    /*visible for testing*/ ReplicationHandlerImpl(
-                                  final ChannelFactory<ReplicationChannel> channelFactory,
-                                  final int retryWaitMillis,
-                                  final SourcedEurekaRegistry<InstanceInfo> registry,
-                                  final InstanceInfo selfInfo) {
+    /*visible for testing*/ ReplicationSenderImpl(
+            final ChannelFactory<ReplicationChannel> channelFactory,
+            final int retryWaitMillis,
+            final SourcedEurekaRegistry<InstanceInfo> registry,
+            final InstanceInfo selfInfo) {
         this.stateRef = new AtomicReference<>(STATE.Idle);
         this.retryWaitMillis = retryWaitMillis;
         this.channelFactory = channelFactory;
+        this.senderGenerationId = new AtomicLong(System.currentTimeMillis());  // seed with system time to avoid reset on reboot
 
         final String ownInstanceId = selfInfo.getId();
 
@@ -66,17 +69,18 @@ public class ReplicationHandlerImpl implements ReplicationHandler {
         connection = connectionFactory.zeroOpConnection(new Func1<ReplicationChannel, Observable<Void>>() {
             @Override
             public Observable<Void> call(final ReplicationChannel replicationChannel) {
-                return replicationChannel.hello(new ReplicationHello(ownInstanceId, registry.size()))
+                Source senderSource = new Source(Source.Origin.REPLICATED, ownInstanceId, senderGenerationId.getAndIncrement());
+                return replicationChannel.hello(new ReplicationHello(senderSource, registry.size()))
                         .take(1)
                         .map(new Func1<ReplicationHelloReply, ReplicationChannel>() {
                             @Override
                             public ReplicationChannel call(ReplicationHelloReply replicationHelloReply) {
-                                if (replicationHelloReply.getSourceId().equals(ownInstanceId)) {
+                                if (replicationHelloReply.getSource().getName().equals(ownInstanceId)) {
                                     logger.info("{}: Taking out replication connection to itself", ownInstanceId);
                                     replicationChannel.close();  // gracefully close
                                     return null;
                                 } else {
-                                    logger.info("{} received hello back from {}", ownInstanceId, replicationHelloReply.getSourceId());
+                                    logger.info("{} received hello back from {}", ownInstanceId, replicationHelloReply.getSource());
                                     return replicationChannel;
                                 }
                             }
@@ -140,21 +144,10 @@ public class ReplicationHandlerImpl implements ReplicationHandler {
         @Override
         public Observable<Void> call(final ReplicationChannel channel) {
             return registry.forInterest(Interests.forFullRegistry(), Source.matcherFor(Source.Origin.LOCAL))
-                    .flatMap(new Func1<ChangeNotification<InstanceInfo>, Observable<Void>>() {// TODO concatMap once backpressure is properly working
+                    .concatMap(new Func1<ChangeNotification<InstanceInfo>, Observable<? extends Void>>() { // TODO concatMap once backpressure is properly working
                         @Override
-                        public Observable<Void> call(ChangeNotification<InstanceInfo> notification) {
-                            switch (notification.getKind()) {
-                                case Add:
-                                    return channel.register(notification.getData());
-                                case Modify:
-                                    return channel.register(notification.getData());
-                                case Delete:
-                                    return channel.unregister(notification.getData().getId());
-                                default:
-                                    logger.warn("Unrecognised notification kind {}", notification);
-                                    return Observable.empty();
-                            }
-
+                        public Observable<? extends Void> call(ChangeNotification<InstanceInfo> notification) {
+                            return channel.replicate(notification);
                         }
                     });
         }

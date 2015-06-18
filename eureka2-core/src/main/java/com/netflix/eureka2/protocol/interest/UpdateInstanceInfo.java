@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.protocol.discovery;
+package com.netflix.eureka2.protocol.interest;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.Set;
 
+import com.netflix.eureka2.protocol.common.InterestSetNotification;
 import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfoField;

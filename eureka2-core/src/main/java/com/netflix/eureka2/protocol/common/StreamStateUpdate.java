@@ -1,4 +1,4 @@
-package com.netflix.eureka2.protocol.discovery;
+package com.netflix.eureka2.protocol.common;
 
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.StreamStateNotification;

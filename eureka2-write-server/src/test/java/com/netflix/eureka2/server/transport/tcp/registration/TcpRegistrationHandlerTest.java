@@ -17,6 +17,8 @@
 package com.netflix.eureka2.server.transport.tcp.registration;
 
 /**
+ * FIXME???
+ *
  * @author Tomasz Bak
  */
 public class TcpRegistrationHandlerTest {
