@@ -2,12 +2,12 @@ package com.netflix.eureka2.testkit.junit.resources;
 
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
+import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources.EurekaExternalResource;
-import com.netflix.eureka2.codec.CodecType;
 import rx.Observable;
 
 /**
@@ -55,7 +55,7 @@ public class WriteServerResource extends EurekaExternalResource {
                 .build();
 
         Observable<ChangeNotification<Server>> noPeers = Observable.never();
-        server = new EmbeddedWriteServer(config, noPeers, noPeers, false, false);
+        server = new EmbeddedWriteServer(config, noPeers, noPeers, null, false, false);
         server.start();
     }
 

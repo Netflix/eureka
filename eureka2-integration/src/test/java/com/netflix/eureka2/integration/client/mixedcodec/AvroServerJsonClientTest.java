@@ -1,4 +1,4 @@
-package com.netflix.eureka2.integration.mixedcodec;
+package com.netflix.eureka2.integration.client.mixedcodec;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;

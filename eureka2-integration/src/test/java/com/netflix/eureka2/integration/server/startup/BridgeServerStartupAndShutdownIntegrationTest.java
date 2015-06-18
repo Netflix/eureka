@@ -1,4 +1,4 @@
-package com.netflix.eureka2.integration.startup;
+package com.netflix.eureka2.integration.server.startup;
 
 import com.google.inject.AbstractModule;
 import com.netflix.discovery.DiscoveryClient;

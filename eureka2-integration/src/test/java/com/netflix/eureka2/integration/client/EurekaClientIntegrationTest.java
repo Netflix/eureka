@@ -1,4 +1,4 @@
-package com.netflix.eureka2.integration;
+package com.netflix.eureka2.integration.client;
 
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
@@ -8,6 +8,7 @@ import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
+import com.netflix.eureka2.integration.IntegrationTestClassSetup;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
