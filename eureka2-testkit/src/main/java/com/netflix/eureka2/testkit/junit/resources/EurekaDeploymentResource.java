@@ -16,17 +16,34 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
     private final int writeClusterSize;
     private final int readClusterSize;
     private final EurekaTransportConfig transportConfig;
+    private final boolean networkRouterEnabled;
 
     private EurekaDeployment eurekaDeployment;
 
+    /**
+     * Use builder instead {@link EurekaDeploymentResourceBuilder}.
+     */
+    @Deprecated
     public EurekaDeploymentResource(int writeClusterSize, int readClusterSize) {
         this(writeClusterSize, readClusterSize, new BasicEurekaTransportConfig.Builder().build());
     }
 
+    /**
+     * Use builder instead {@link EurekaDeploymentResourceBuilder}.
+     */
+    @Deprecated
     public EurekaDeploymentResource(int writeClusterSize, int readClusterSize, EurekaTransportConfig transportConfig) {
         this.writeClusterSize = writeClusterSize;
         this.readClusterSize = readClusterSize;
         this.transportConfig = transportConfig;
+        this.networkRouterEnabled = false;
+    }
+
+    private EurekaDeploymentResource(EurekaDeploymentResourceBuilder builder) {
+        this.writeClusterSize = builder.writeClusterSize;
+        this.readClusterSize = builder.readClusterSize;
+        this.transportConfig = builder.transportConfig;
+        this.networkRouterEnabled = builder.networkRouterEnabled;
     }
 
     public EurekaDeployment getEurekaDeployment() {
@@ -96,6 +113,7 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
                 .withReadClusterSize(readClusterSize)
                 .withEphemeralPorts(true)
                 .withTransportConfig(transportConfig)
+                .withNetworkRouter(networkRouterEnabled)
                 .build();
     }
 
@@ -103,6 +121,38 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
     protected void after() {
         if (eurekaDeployment != null) {
             eurekaDeployment.shutdown();
+        }
+    }
+
+    public static EurekaDeploymentResourceBuilder anEurekaDeploymentResource(int writeClusterSize, int readClusterSize) {
+        return new EurekaDeploymentResourceBuilder(writeClusterSize, readClusterSize);
+    }
+
+    public static class EurekaDeploymentResourceBuilder {
+
+        private final int writeClusterSize;
+        private final int readClusterSize;
+
+        private EurekaTransportConfig transportConfig;
+        private boolean networkRouterEnabled;
+
+        public EurekaDeploymentResourceBuilder(int writeClusterSize, int readClusterSize) {
+            this.writeClusterSize = writeClusterSize;
+            this.readClusterSize = readClusterSize;
+        }
+
+        public EurekaDeploymentResourceBuilder withNetworkRouter(boolean networkRouterEnabled) {
+            this.networkRouterEnabled = networkRouterEnabled;
+            return this;
+        }
+
+        public EurekaDeploymentResourceBuilder withTransportConfig(EurekaTransportConfig transportConfig) {
+            this.transportConfig = transportConfig;
+            return this;
+        }
+
+        public EurekaDeploymentResource build() {
+            return new EurekaDeploymentResource(this);
         }
     }
 }

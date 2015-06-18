@@ -19,6 +19,7 @@ import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer.WriteServerReport;
+import com.netflix.eureka2.testkit.netrouter.NetworkRouter;
 import rx.Observable;
 
 /**
@@ -28,15 +29,18 @@ public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig,
 
     private final Observable<ChangeNotification<Server>> interestPeers;
     private final Observable<ChangeNotification<Server>> replicationPeers;
+    private final NetworkRouter networkRouter;
 
     public EmbeddedWriteServer(final WriteServerConfig config,
                                final Observable<ChangeNotification<Server>> interestPeers,
                                final Observable<ChangeNotification<Server>> replicationPeers,
+                               NetworkRouter networkRouter,
                                boolean withExt,
                                boolean withDashboards) {
         super(ServerType.Write, config, withExt, withDashboards);
         this.interestPeers = interestPeers;
         this.replicationPeers = replicationPeers;
+        this.networkRouter = networkRouter;
     }
 
     @Override
@@ -48,6 +52,12 @@ public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig,
                     protected void configure() {
                         bind(InterestPeerAddressProvider.class).toInstance(new InterestPeerAddressProvider(interestPeers));
                         bind(ReplicationPeerAddressesProvider.class).toInstance(new ReplicationPeerAddressesProvider(replicationPeers));
+                        if (networkRouter != null) {
+                            bind(NetworkRouter.class).toInstance(networkRouter);
+                            bind(TcpRegistrationServer.class).to(EmbeddedTcpRegistrationServer.class);
+                            bind(TcpDiscoveryServer.class).to(EmbeddedTcpDiscoveryServer.class);
+                            bind(TcpReplicationServer.class).to(EmbeddedTcpReplicationServer.class);
+                        }
                     }
                 },
                 new Eureka1RestApiModule(new Eureka1Configuration(), ServerType.Write)
