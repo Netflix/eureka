@@ -65,9 +65,9 @@ public class EurekaClientFailoverTest {
                 NetworkLink registrationLink = networkRouter.getLinkTo(writeCluster.getServer(0).getRegistrationPort());
                 NetworkLink interestLink = networkRouter.getLinkTo(writeCluster.getServer(0).getDiscoveryPort());
                 NetworkLink replicationLink = networkRouter.getLinkTo(writeCluster.getServer(0).getReplicationPort());
-                registrationLink.disconnect();
                 interestLink.disconnect();
                 replicationLink.disconnect();
+                registrationLink.disconnect();
             }
         });
     }
