@@ -8,7 +8,6 @@ import com.netflix.eureka2.client.functions.InterestFunctions;
 import com.netflix.eureka2.integration.EurekaDeploymentClients;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.junit.categories.ExperimentalTest;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
@@ -26,7 +25,7 @@ import static org.hamcrest.Matchers.is;
 /**
  * @author Tomasz Bak
  */
-@Category({IntegrationTest.class, ExperimentalTest.class})
+@Category(IntegrationTest.class)
 public class WriteServerNotificationBatchingTest {
 
     private static final int CLUSTER_SIZE = 50;

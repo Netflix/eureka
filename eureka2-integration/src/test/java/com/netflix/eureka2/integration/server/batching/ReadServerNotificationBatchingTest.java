@@ -8,7 +8,6 @@ import com.netflix.eureka2.integration.EurekaDeploymentClients;
 import com.netflix.eureka2.integration.IntegrationTestClassSetup;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.junit.categories.ExperimentalTest;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
@@ -29,7 +28,7 @@ import static org.junit.Assert.assertThat;
 /**
  * @author David Liu
  */
-@Category({IntegrationTest.class, ExperimentalTest.class})
+@Category(IntegrationTest.class)
 public class ReadServerNotificationBatchingTest extends IntegrationTestClassSetup {
 
     private static final int REGISTRY_INITIAL_SIZE = 100;
