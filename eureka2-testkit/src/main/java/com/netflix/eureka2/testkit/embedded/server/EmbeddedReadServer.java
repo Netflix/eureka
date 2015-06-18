@@ -2,6 +2,7 @@ package com.netflix.eureka2.testkit.embedded.server;
 
 import java.util.Properties;
 
+import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.client.EurekaInterestClient;
@@ -27,6 +28,7 @@ import com.netflix.eureka2.server.interest.FullFetchInterestClient;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer.ReadServerReport;
+import com.netflix.eureka2.testkit.netrouter.NetworkRouter;
 
 import static com.netflix.eureka2.metric.EurekaRegistryMetricFactory.registryMetrics;
 import static com.netflix.eureka2.metric.client.EurekaClientMetricFactory.clientMetrics;
@@ -38,17 +40,20 @@ public class EmbeddedReadServer extends EmbeddedEurekaServer<EurekaServerConfig,
     private final String serverId;
     private final ServerResolver registrationResolver;
     private final ServerResolver discoveryResolver;
+    private final NetworkRouter networkRouter;
 
     public EmbeddedReadServer(String serverId,
                               EurekaServerConfig config,
                               ServerResolver registrationResolver,
                               ServerResolver discoveryResolver,
+                              NetworkRouter networkRouter,
                               boolean withExt,
                               boolean withDashboard) {
         super(ServerType.Read, config, withExt, withDashboard);
         this.serverId = serverId;
         this.registrationResolver = registrationResolver;
         this.discoveryResolver = discoveryResolver;
+        this.networkRouter = networkRouter;
     }
 
     @Override
@@ -77,6 +82,15 @@ public class EmbeddedReadServer extends EmbeddedEurekaServer<EurekaServerConfig,
 
         Module[] modules = {
                 new EurekaReadServerModule(config, registrationClient, interestClient),
+                new AbstractModule() {
+                    @Override
+                    protected void configure() {
+                        if (networkRouter != null) {
+                            bind(NetworkRouter.class).toInstance(networkRouter);
+                            bind(TcpInterestServer.class).to(EmbeddedTcpInterestServer.class);
+                        }
+                    }
+                },
                 new Eureka1RestApiModule(new Eureka1Configuration(), registrationClient)
         };
 

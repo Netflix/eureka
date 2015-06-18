@@ -1,10 +1,11 @@
-package com.netflix.eureka2.integration;
+package com.netflix.eureka2.integration.server.registration;
 
 import java.util.Arrays;
 import java.util.List;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
+import com.netflix.eureka2.integration.IntegrationTestClassSetup;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
@@ -28,7 +29,7 @@ import static org.hamcrest.Matchers.is;
  * @author David Liu
  */
 @Category(IntegrationTest.class)
-public class WriteServerIntegrationTest extends IntegrationTestClassSetup {
+public class WriteServerRegistrationTest extends IntegrationTestClassSetup {
 
     @Rule
     public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResource(1, 0);

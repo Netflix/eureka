@@ -16,6 +16,7 @@ import com.netflix.eureka2.server.resolver.ClusterAddress.ServiceType;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster.WriteClusterReport;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer.WriteServerReport;
+import com.netflix.eureka2.testkit.netrouter.NetworkRouter;
 import com.netflix.eureka2.utils.rx.RxFunctions;
 import rx.Observable;
 import rx.functions.Func1;
@@ -32,19 +33,21 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
     private final boolean withAdminUI;
     private final boolean ephemeralPorts;
     private final CodecType codec;
+    private final NetworkRouter networkRouter;
 
     private int nextAvailablePort = WRITE_SERVER_PORTS_FROM;
 
-    public EmbeddedWriteCluster(boolean withExt, boolean withAdminUI, boolean ephemeralPorts) {
-        this(withExt, withAdminUI, ephemeralPorts, CodecType.Avro);
+    public EmbeddedWriteCluster(boolean withExt, boolean withAdminUI, boolean ephemeralPorts, NetworkRouter networkRouter) {
+        this(withExt, withAdminUI, ephemeralPorts, CodecType.Avro, networkRouter);
     }
 
-    public EmbeddedWriteCluster(boolean withExt, boolean withAdminUI, boolean ephemeralPorts, CodecType codec) {
+    public EmbeddedWriteCluster(boolean withExt, boolean withAdminUI, boolean ephemeralPorts, CodecType codec, NetworkRouter networkRouter) {
         super(WRITE_SERVER_NAME);
         this.withExt = withExt;
         this.withAdminUI = withAdminUI;
         this.ephemeralPorts = ephemeralPorts;
         this.codec = codec;
+        this.networkRouter = networkRouter;
     }
 
     @Override
@@ -89,6 +92,7 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
                 config,
                 resolvePeers(ServiceType.Interest),
                 resolvePeers(ServiceType.Replication),
+                networkRouter,
                 withExt,
                 withAdminUI
         );

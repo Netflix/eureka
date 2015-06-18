@@ -1,28 +1,23 @@
-package com.netflix.eureka2.integration;
+package com.netflix.eureka2.integration.server.batching;
 
-import java.util.Iterator;
 import java.util.Set;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.functions.InterestFunctions;
-import com.netflix.eureka2.client.resolver.ServerResolver;
+import com.netflix.eureka2.integration.EurekaDeploymentClients;
+import com.netflix.eureka2.integration.IntegrationTestClassSetup;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.Source.Origin;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
-import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
-import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources;
-import com.netflix.eureka2.testkit.junit.resources.EurekaInterestClientResource;
-import com.netflix.eureka2.testkit.junit.resources.ReadServerResource;
-import com.netflix.eureka2.testkit.junit.resources.WriteServerResource;
-import com.netflix.eureka2.utils.rx.NoOpSubscriber;
+import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import rx.functions.Action1;
 
 import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
 import static org.hamcrest.Matchers.equalTo;
@@ -33,21 +28,23 @@ import static org.junit.Assert.assertThat;
 /**
  * @author David Liu
  */
-public class ReadServerIntegrationTest extends IntegrationTestClassSetup {
+@Category(IntegrationTest.class)
+public class ReadServerNotificationBatchingTest extends IntegrationTestClassSetup {
 
     private static final int REGISTRY_INITIAL_SIZE = 100;
 
+    /**
+     * We start with single write server, and scale read cluster up later, once write server has data in
+     * the registry.
+     */
     @Rule
-    public final WriteServerResource writeServerResource = new WriteServerResource();
+    public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResource(1, 0);
 
-    @Rule
-    public final EurekaExternalResources closeableResources = new EurekaExternalResources();
-
-    private EmbeddedWriteServer writeServer;
+    private EurekaDeploymentClients eurekaDeploymentClients;
 
     @Before
     public void setUp() throws Exception {
-        writeServer = writeServerResource.getServer();
+        eurekaDeploymentClients = new EurekaDeploymentClients(eurekaDeploymentResource.getEurekaDeployment());
     }
 
     /**
@@ -57,17 +54,15 @@ public class ReadServerIntegrationTest extends IntegrationTestClassSetup {
      */
     @Test(timeout = 60000)
     public void testColdReadCacheDataBatching() throws Exception {
-        fillUpRegistry(writeServer.getEurekaServerRegistry(), REGISTRY_INITIAL_SIZE);
-        while (writeServer.getEurekaServerRegistry().size() <= REGISTRY_INITIAL_SIZE) {
-            Thread.sleep(1);
-        }
+        eurekaDeploymentClients.fillUpRegistry(REGISTRY_INITIAL_SIZE, SampleInstanceInfo.WebServer.build());
 
         // Bootstrap read server and connect Eureka client immediately
-        ReadServerResource readServerResource = bootstrapReadServer();
-        EurekaInterestClient eurekaClient = connectEurekaClient(readServerResource.getInterestResolver()).getEurekaClient();
+        eurekaDeploymentResource.getEurekaDeployment().getReadCluster().scaleUpByOne();
+        EurekaInterestClient eurekaClient = eurekaDeploymentResource.interestClientToReadCluster();
 
         ExtTestSubscriber<Set<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
         eurekaClient.forInterest(Interests.forFullRegistry())
+                .doOnNext(DELAY_ACTION)
                 .compose(InterestFunctions.buffers())
                 .compose(InterestFunctions.snapshots())
                 .subscribe(testSubscriber);
@@ -85,11 +80,11 @@ public class ReadServerIntegrationTest extends IntegrationTestClassSetup {
     @Test(timeout = 60000)
     public void testHotCacheDataBatching() throws Exception {
         // Bootstrap read server and connect Eureka client immediately
-        ReadServerResource readServerResource = bootstrapReadServer();
-        EurekaInterestClient eurekaClient = connectEurekaClient(readServerResource.getInterestResolver()).getEurekaClient();
+        eurekaDeploymentResource.getEurekaDeployment().getReadCluster().scaleUpByOne();
+        EurekaInterestClient eurekaClient = eurekaDeploymentResource.interestClientToReadCluster();
 
         // Fill in the registry
-        fillUpRegistry(writeServer.getEurekaServerRegistry(), REGISTRY_INITIAL_SIZE);
+        eurekaDeploymentClients.fillUpRegistry(REGISTRY_INITIAL_SIZE, SampleInstanceInfo.WebServer.build());
 
         // Connect with a client and take all entries, to be sure that read server registry is hot
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
@@ -98,15 +93,14 @@ public class ReadServerIntegrationTest extends IntegrationTestClassSetup {
         eurekaClient.shutdown();
 
         // Now connect again
-        eurekaClient = connectEurekaClient(readServerResource.getInterestResolver()).getEurekaClient();
+        eurekaClient = eurekaDeploymentResource.interestClientToReadCluster();
         testSubscriber = new ExtTestSubscriber<>();
         eurekaClient.forInterest(Interests.forFullRegistry()).subscribe(testSubscriber);
-        for (int i = 0; i < REGISTRY_INITIAL_SIZE + 2; i++) {
-            testSubscriber.takeNextOrWait();
-        }
+        testSubscriber.takeNextOrWait(REGISTRY_INITIAL_SIZE + 2);
 
         ExtTestSubscriber<Set<InstanceInfo>> snapshotSubscriber = new ExtTestSubscriber<>();
         eurekaClient.forInterest(Interests.forFullRegistry())
+                .doOnNext(DELAY_ACTION)
                 .compose(InterestFunctions.buffers())
                 .compose(InterestFunctions.snapshots())
                 .subscribe(snapshotSubscriber);
@@ -116,20 +110,14 @@ public class ReadServerIntegrationTest extends IntegrationTestClassSetup {
         assertThat(initialSet.size(), is(equalTo(REGISTRY_INITIAL_SIZE + 2)));
     }
 
-    private EurekaInterestClientResource connectEurekaClient(ServerResolver serverResolver) {
-        EurekaInterestClientResource resource = new EurekaInterestClientResource(serverResolver);
-        return closeableResources.connect(resource);
-    }
-
-    private ReadServerResource bootstrapReadServer() {
-        return closeableResources.connect(new ReadServerResource(writeServerResource));
-    }
-
-    private static void fillUpRegistry(SourcedEurekaRegistry<InstanceInfo> eurekaServerRegistry, int registryInitialSize) {
-        Iterator<InstanceInfo> instanceIt = SampleInstanceInfo.collectionOf("testInstance#", SampleInstanceInfo.CliServer.build());
-        Source source = new Source(Origin.LOCAL, "write1");
-        for (int i = 0; i < registryInitialSize; i++) {
-            eurekaServerRegistry.register(instanceIt.next(), source).subscribe(new NoOpSubscriber<Boolean>());
+    private static final Action1<ChangeNotification<InstanceInfo>> DELAY_ACTION = new Action1<ChangeNotification<InstanceInfo>>() {
+        @Override
+        public void call(ChangeNotification<InstanceInfo> notification) {
+            // Inject processing delay, to help expose potential batch marker races.
+            try {
+                Thread.sleep(1);
+            } catch (InterruptedException ignore) {
+            }
         }
-    }
+    };
 }
