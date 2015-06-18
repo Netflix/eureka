@@ -1,10 +1,9 @@
 package com.netflix.eureka2.registry;
 
+import java.util.Collection;
+
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.SourcedChangeNotification;
-import rx.Observable;
-
-import java.util.Collection;
 
 /**
  * A holder object that maintains copies of the same data (as defined by some metric, such as id) that are
@@ -58,26 +57,17 @@ public interface MultiSourcedDataHolder<V> {
      * @param source the source to update
      * @param data the data copy
      */
-    Observable<Status> update(Source source, V data);
+    void update(Source source, V data);
 
     /**
      * @param source the source to delete
      */
-    Observable<Status> remove(Source source);
-
-    public enum Status {
-        AddedFirst,      // Add result of the first add operation to a new (empty) holder
-        AddedChange,     // Add result that modifies an existing copy in the holder
-        AddExpired,      // no-op add
-        RemovedFragment, // Remove result that removes a copy in the holder
-        RemovedLast,     // Remove result of the operation that removes the last copy in the holder
-        RemoveExpired    // no-op remove
-    }
+    boolean remove(Source source);
 
     final class Snapshot<V> {
         private final SourcedChangeNotification<V> notification;
 
-        protected Snapshot(Source source, V data) {
+        Snapshot(Source source, V data) {
             this.notification = new SourcedChangeNotification<>(ChangeNotification.Kind.Add, data, source);
         }
 
@@ -93,16 +83,4 @@ public interface MultiSourcedDataHolder<V> {
             return notification;
         }
     }
-
-
-    /**
-     * An interface for an accessor to the data store that holds th
-     */
-    interface HolderStoreAccessor<E extends MultiSourcedDataHolder> {
-        void add(E holder);
-        E get(String id);
-        void remove(String id);
-        boolean contains(String id);
-    }
-
 }

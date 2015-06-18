@@ -2,6 +2,8 @@ package com.netflix.eureka2.server;
 
 import com.google.inject.name.Names;
 import com.netflix.eureka2.config.EurekaRegistryConfig;
+import com.netflix.eureka2.interests.IndexRegistry;
+import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.SpectatorEurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.server.BridgeServerMetricFactory;
@@ -9,7 +11,9 @@ import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
 import com.netflix.eureka2.metric.server.SpectatorBridgeServerMetricFactory;
 import com.netflix.eureka2.metric.server.SpectatorWriteServerMetricFactory;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
+import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
 import com.netflix.eureka2.registry.eviction.EvictionStrategy;
@@ -26,7 +30,7 @@ import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.server.service.replication.ReplicationService;
 import com.netflix.eureka2.server.spi.ExtensionContext;
-import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
+import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 import io.reactivex.netty.spectator.SpectatorEventsListenerFactory;
@@ -60,16 +64,21 @@ public class EurekaBridgeServerModule extends AbstractEurekaServerModule {
             bind(BridgeServerConfig.class).toInstance(config);
         }
 
-        bind(SourcedEurekaRegistry.class).to(EurekaBridgeRegistry.class);
+        bind(IndexRegistry.class).to(IndexRegistryImpl.class).asEagerSingleton();
+
+        bind(SourcedEurekaRegistry.class).annotatedWith(Names.named("delegate")).to(EurekaBridgeRegistry.class).asEagerSingleton();
+        bind(SourcedEurekaRegistry.class).to(SourcedEurekaRegistryImpl.class);
+        bind(EurekaRegistryView.class).to(SourcedEurekaRegistryImpl.class);
+
         bind(EvictionQueue.class).to(EvictionQueueImpl.class).asEagerSingleton();
         bind(EvictionStrategy.class).toProvider(EvictionStrategyProvider.class);
 
         bind(SelfInfoResolver.class).to(EurekaBridgeServerSelfInfoResolver.class).asEagerSingleton();
         bind(SelfRegistrationService.class).to(EurekaBridgeServerSelfRegistrationService.class).asEagerSingleton();
 
-        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("discovery")).toInstance(new SpectatorEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
-        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named("replication")).toInstance(new SpectatorEventsListenerFactory("replication-rx-client-", "replication-rx-server-"));
-        bind(TcpDiscoveryServer.class).asEagerSingleton();
+        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named(com.netflix.eureka2.Names.INTEREST)).toInstance(new SpectatorEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
+        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named(com.netflix.eureka2.Names.REPLICATION)).toInstance(new SpectatorEventsListenerFactory("replication-rx-client-", "replication-rx-server-"));
+        bind(TcpInterestServer.class).asEagerSingleton();
         bind(TcpReplicationServer.class).asEagerSingleton();
 
         bind(ReplicationService.class).asEagerSingleton();

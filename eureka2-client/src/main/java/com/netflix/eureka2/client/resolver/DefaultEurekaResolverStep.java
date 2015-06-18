@@ -1,5 +1,8 @@
 package com.netflix.eureka2.client.resolver;
 
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+
 import com.netflix.eureka2.Names;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.client.EurekaInterestClient;
@@ -29,9 +32,6 @@ import rx.functions.Func1;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-
 /**
  * This resolver uses a custom, light weight eureka interest client for reading eureka read server data from
  * the remote server.
@@ -45,9 +45,9 @@ class DefaultEurekaResolverStep implements EurekaRemoteResolverStep {
     public static final String RESOLVER_CLIENT_ID = "resolverClient";
 
     private final ServiceSelector serviceSelector = ServiceSelector.selectBy()
-            .serviceLabel(Names.DISCOVERY).protocolType(NetworkAddress.ProtocolType.IPv4).publicIp(true)
+            .serviceLabel(Names.INTEREST).protocolType(NetworkAddress.ProtocolType.IPv4).publicIp(true)
             .or()
-            .serviceLabel(Names.DISCOVERY).protocolType(NetworkAddress.ProtocolType.IPv4);
+            .serviceLabel(Names.INTEREST).protocolType(NetworkAddress.ProtocolType.IPv4);
 
     private final EurekaInterestClientBuilder interestClientBuilder;
 
@@ -129,14 +129,19 @@ class DefaultEurekaResolverStep implements EurekaRemoteResolverStep {
         }
 
         @Override
+        public Observable<Void> register(String id, Observable<InstanceInfo> registrationUpdates, Source source) {
+            throw new IllegalStateException("method not supported");
+        }
+
+        @Override
         public Observable<Boolean> register(InstanceInfo instanceInfo, Source source) {
-            relay.onNext(new ChangeNotification<>(ChangeNotification.Kind.Add ,instanceInfo));
+            relay.onNext(new ChangeNotification<>(ChangeNotification.Kind.Add, instanceInfo));
             return Observable.just(true);
         }
 
         @Override
         public Observable<Boolean> unregister(InstanceInfo instanceInfo, Source source) {
-            relay.onNext(new ChangeNotification<>(ChangeNotification.Kind.Delete ,instanceInfo));
+            relay.onNext(new ChangeNotification<>(ChangeNotification.Kind.Delete, instanceInfo));
             return Observable.just(true);
         }
 
@@ -170,6 +175,11 @@ class DefaultEurekaResolverStep implements EurekaRemoteResolverStep {
         @Override
         public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, Source.SourceMatcher sourceMatcher) {
             return Observable.error(new UnsupportedOperationException("Not supported"));
+        }
+
+        @Override
+        public Observable<Long> evictAll(Source.SourceMatcher evictionMatcher) {
+            return Observable.just(0l);
         }
 
         @Override

@@ -1,6 +1,7 @@
 package com.netflix.eureka2.client.interest;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.interest.TestInterestSubscriber;
 import com.netflix.eureka2.interests.ChangeNotification;
@@ -66,10 +67,45 @@ public class BatchAwareIndexRegistryTest {
     public void testColdCacheAndDataInChannel() throws Exception {
         indexRegistry.forInterest(ATOMIC_INTEREST_A, null, null).subscribe(testSubscriber);
 
+        notificationSubject.onNext(StreamStateNotification.bufferStartNotification(ATOMIC_INTEREST_A));
         notificationSubject.onNext(StreamStateNotification.bufferEndNotification(ATOMIC_INTEREST_A));
         sendRemoteBatch(ATOMIC_INTEREST_A, DATA_NOTIFICATION, DATA_NOTIFICATION);
 
         testSubscriber.assertReceivesBatch(DATA_NOTIFICATION, DATA_NOTIFICATION);
+    }
+
+    /**
+     * Test situation where we subscribe for the first time for a particular
+     * interest, and there are no data items available in the server.
+     * <p>
+     * Expected behavior: single finish buffering
+     */
+    @Test
+    public void testColdCacheAndNoDataInChannel() throws Exception {
+        indexRegistry.forInterest(ATOMIC_INTEREST_A, null, null).subscribe(testSubscriber);
+
+        notificationSubject.onNext(StreamStateNotification.bufferStartNotification(ATOMIC_INTEREST_A));
+        notificationSubject.onNext(StreamStateNotification.bufferEndNotification(ATOMIC_INTEREST_A));
+        sendRemoteBatch(ATOMIC_INTEREST_A);
+
+        testSubscriber.assertReceivesBatch();
+    }
+
+    /**
+     * Pathological test case where we subscribe for the first time for a particular
+     * interest, and there are no data items available in the server, and the server does not respond at all.
+     * <p>
+     * Expected behavior: TODO need to properly define. Today the stream just waits
+     */
+    @Test
+    public void testColdCacheAndNoResponseFromServer() throws Exception {
+        indexRegistry.forInterest(ATOMIC_INTEREST_A, null, null).subscribe(testSubscriber);
+
+        notificationSubject.onNext(StreamStateNotification.bufferStartNotification(ATOMIC_INTEREST_A));
+        notificationSubject.onNext(StreamStateNotification.bufferEndNotification(ATOMIC_INTEREST_A));
+
+        ChangeNotification<InstanceInfo> notification = testSubscriber.takeNext(100, TimeUnit.MILLISECONDS);
+        assertThat(notification, is(nullValue()));  // FIXME define proper behaviour (e.g. some sort of timeout?)
     }
 
     /**
@@ -82,6 +118,7 @@ public class BatchAwareIndexRegistryTest {
     public void testHotCacheAndNoDataInChannel() throws Exception {
         indexRegistry.forInterest(ATOMIC_INTEREST_A, null, null).subscribe(testSubscriber);
 
+        remoteBatchingHintsSubject.onNext(StreamStateNotification.bufferStartNotification(ATOMIC_INTEREST_A));
         remoteBatchingHintsSubject.onNext(StreamStateNotification.bufferEndNotification(ATOMIC_INTEREST_A));
         sendLocalBatch(ATOMIC_INTEREST_A, DATA_NOTIFICATION, DATA_NOTIFICATION);
 
@@ -114,6 +151,7 @@ public class BatchAwareIndexRegistryTest {
         indexRegistry.forInterest(ATOMIC_INTEREST_A, null, null).subscribe(testSubscriber);
 
         // First time local registry was empty
+        notificationSubject.onNext(StreamStateNotification.bufferStartNotification(ATOMIC_INTEREST_A));
         notificationSubject.onNext(StreamStateNotification.bufferEndNotification(ATOMIC_INTEREST_A));
         sendRemoteBatch(ATOMIC_INTEREST_A, DATA_NOTIFICATION, DATA_NOTIFICATION);
         testSubscriber.assertReceivesBatch(DATA_NOTIFICATION, DATA_NOTIFICATION);
@@ -148,7 +186,9 @@ public class BatchAwareIndexRegistryTest {
     public void testCompositeWithColdCacheAndDataInChannel() throws Exception {
         indexRegistry.forInterest(INTEREST_AB, null, null).subscribe(testSubscriber);
 
+        notificationSubject.onNext(StreamStateNotification.bufferStartNotification(ATOMIC_INTEREST_A));
         notificationSubject.onNext(StreamStateNotification.bufferEndNotification(ATOMIC_INTEREST_A));
+        notificationSubject.onNext(StreamStateNotification.bufferStartNotification(ATOMIC_INTEREST_B));
         notificationSubject.onNext(StreamStateNotification.bufferEndNotification(ATOMIC_INTEREST_B));
 
         sendRemoteBatch(ATOMIC_INTEREST_A, DATA_NOTIFICATION, DATA_NOTIFICATION);

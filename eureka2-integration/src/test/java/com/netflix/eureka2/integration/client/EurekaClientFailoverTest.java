@@ -8,6 +8,7 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest.Operator;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
+import com.netflix.eureka2.junit.categories.LongRunningTest;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
@@ -34,7 +35,7 @@ import static org.junit.Assert.assertThat;
 /**
  * @author Tomasz Bak
  */
-@Category(IntegrationTest.class)
+@Category({IntegrationTest.class, LongRunningTest.class})
 public class EurekaClientFailoverTest {
 
     private static final InstanceInfo INSTANCE_UP = SampleInstanceInfo.WebServer.build();
@@ -64,10 +65,10 @@ public class EurekaClientFailoverTest {
                 writeCluster.scaleUpByOne();
                 NetworkLink registrationLink = networkRouter.getLinkTo(writeCluster.getServer(0).getRegistrationPort());
                 NetworkLink interestLink = networkRouter.getLinkTo(writeCluster.getServer(0).getDiscoveryPort());
-                NetworkLink replicationLink = networkRouter.getLinkTo(writeCluster.getServer(0).getReplicationPort());
-                registrationLink.disconnect();
+                NetworkLink replicationLink = networkRouter.getLinkTo(writeCluster.getServer(1).getReplicationPort());
                 interestLink.disconnect();
                 replicationLink.disconnect();
+                registrationLink.disconnect();
             }
         });
     }

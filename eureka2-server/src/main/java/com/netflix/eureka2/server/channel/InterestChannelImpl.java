@@ -10,13 +10,14 @@ import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics;
 import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics.ChannelSubscriptionMonitor;
 import com.netflix.eureka2.protocol.EurekaProtocolError;
-import com.netflix.eureka2.protocol.discovery.AddInstance;
-import com.netflix.eureka2.protocol.discovery.DeleteInstance;
-import com.netflix.eureka2.protocol.discovery.InterestRegistration;
-import com.netflix.eureka2.protocol.discovery.StreamStateUpdate;
-import com.netflix.eureka2.protocol.discovery.UnregisterInterestSet;
-import com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.protocol.common.AddInstance;
+import com.netflix.eureka2.protocol.common.DeleteInstance;
+import com.netflix.eureka2.protocol.interest.InterestRegistration;
+import com.netflix.eureka2.protocol.common.StreamStateUpdate;
+import com.netflix.eureka2.protocol.interest.UnregisterInterestSet;
+import com.netflix.eureka2.protocol.interest.UpdateInstanceInfo;
+import com.netflix.eureka2.registry.EurekaRegistryView;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.transport.MessageConnection;
@@ -39,16 +40,18 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
 
     private static final Logger logger = LoggerFactory.getLogger(InterestChannelImpl.class);
 
+    private final Source selfSource;
     private final ServerInterestChannelMetrics metrics;
 
     private final InterestNotificationMultiplexer notificationMultiplexer;
     private final ChannelSubscriptionMonitor channelSubscriptionMonitor;
 
-    public InterestChannelImpl(final SourcedEurekaRegistry<InstanceInfo> registry, final MessageConnection transport, final ServerInterestChannelMetrics metrics) {
-        super(STATE.Idle, transport, registry, metrics);
+    public InterestChannelImpl(final EurekaRegistryView<InstanceInfo> registry, final MessageConnection transport, final ServerInterestChannelMetrics metrics) {
+        super(STATE.Idle, transport, metrics);
         this.metrics = metrics;
         this.notificationMultiplexer = new InterestNotificationMultiplexer(registry);
         this.channelSubscriptionMonitor = new ChannelSubscriptionMonitor(metrics);
+        this.selfSource = new Source(Source.Origin.INTERESTED, "serverInterestChannel");
 
         subscribeToTransportInput(new Action1<Object>() {
             @Override
@@ -111,6 +114,11 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
         notificationMultiplexer.update(newInterest);
 
         return toReturn;
+    }
+
+    @Override
+    public Observable<ChangeNotification<InstanceInfo>> getChangeNotificationStream() {
+        return Observable.error(new UnsupportedOperationException("not implemented on server side interest channel"));
     }
 
     private void initializeNotificationMultiplexer() {
@@ -193,5 +201,10 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
             notificationMultiplexer.unregister();
             super._close(); // Shutdown the transport
         }
+    }
+
+    @Override
+    public Source getSource() {
+        return selfSource;
     }
 }

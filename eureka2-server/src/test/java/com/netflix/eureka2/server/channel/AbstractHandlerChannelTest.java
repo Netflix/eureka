@@ -1,15 +1,14 @@
 package com.netflix.eureka2.server.channel;
 
+import java.util.concurrent.TimeUnit;
+
 import com.netflix.eureka2.metric.noop.NoOpStateMachineMetrics;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
 import rx.observers.TestSubscriber;
-
-import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyObject;
@@ -64,11 +63,11 @@ public class AbstractHandlerChannelTest {
         Assert.assertEquals(1, subscriber.getOnErrorEvents().size());
     }
 
-    enum TestState { Ok }
+    enum TestState {}
 
     public class TestHandlerChannel extends AbstractHandlerChannel<TestState> {
         protected TestHandlerChannel(MessageConnection transport) {
-            super(null, transport, mock(SourcedEurekaRegistry.class), new NoOpStateMachineMetrics<TestState>());
+            super(null, transport, new NoOpStateMachineMetrics<TestState>());
         }
     }
 }

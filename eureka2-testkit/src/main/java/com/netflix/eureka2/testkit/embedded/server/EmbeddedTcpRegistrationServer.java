@@ -7,6 +7,7 @@ import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
+import com.netflix.eureka2.Names;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationHandler;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
@@ -24,7 +25,7 @@ public class EmbeddedTcpRegistrationServer extends TcpRegistrationServer {
 
     @Inject
     public EmbeddedTcpRegistrationServer(WriteServerConfig config,
-                                         @Named("registration") MetricEventsListenerFactory servoEventsListenerFactory,
+                                         @Named(Names.REGISTRATION) MetricEventsListenerFactory servoEventsListenerFactory,
                                          Provider<TcpRegistrationHandler> tcpRegistrationHandler,
                                          NetworkRouter networkRouter) {
         super(config, servoEventsListenerFactory, tcpRegistrationHandler);

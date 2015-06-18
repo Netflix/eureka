@@ -8,19 +8,18 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.interests.StreamStateNotification;
-import com.netflix.eureka2.protocol.Heartbeat;
-import com.netflix.eureka2.protocol.discovery.AddInstance;
-import com.netflix.eureka2.protocol.discovery.DeleteInstance;
-import com.netflix.eureka2.protocol.discovery.InterestRegistration;
-import com.netflix.eureka2.protocol.discovery.StreamStateUpdate;
-import com.netflix.eureka2.protocol.discovery.UnregisterInterestSet;
-import com.netflix.eureka2.protocol.discovery.UpdateInstanceInfo;
+import com.netflix.eureka2.protocol.common.Heartbeat;
+import com.netflix.eureka2.protocol.common.AddInstance;
+import com.netflix.eureka2.protocol.common.DeleteInstance;
+import com.netflix.eureka2.protocol.interest.InterestRegistration;
+import com.netflix.eureka2.protocol.common.StreamStateUpdate;
+import com.netflix.eureka2.protocol.interest.UnregisterInterestSet;
+import com.netflix.eureka2.protocol.interest.UpdateInstanceInfo;
 import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.protocol.registration.Unregister;
-import com.netflix.eureka2.protocol.replication.RegisterCopy;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
-import com.netflix.eureka2.protocol.replication.UnregisterCopy;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.datacenter.BasicDataCenterInfo;
 import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
 import com.netflix.eureka2.registry.instance.Delta.Builder;
@@ -131,12 +130,13 @@ public abstract class TransportCompatibilityTestSuite {
         }
 
         private void handshakeTest() {
-            runClientToServerWithAck(new ReplicationHello("testId", 1));
-            runClientToServerWithAck(new ReplicationHelloReply("testId", true));
+            Source source = new Source(Source.Origin.REPLICATED, "testId", 0);
+            runClientToServerWithAck(new ReplicationHello(source, 1));
+            runClientToServerWithAck(new ReplicationHelloReply(source, true));
         }
 
         private void registrationTest() {
-            runClientToServerWithAck(new RegisterCopy(instanceInfo));
+            runClientToServerWithAck(new AddInstance(instanceInfo));
         }
 
         private void registrationWithNullsTest() {
@@ -151,11 +151,11 @@ public abstract class TransportCompatibilityTestSuite {
                     .withPorts(ports)
                     .withHealthCheckUrls(healthCheckUrls)
                     .build();
-            runClientToServerWithAck(new RegisterCopy(emptyInstanceInfo));
+            runClientToServerWithAck(new AddInstance(emptyInstanceInfo));
         }
 
         private void unregisterTest() {
-            runClientToServerWithAck(new UnregisterCopy(instanceInfo.getId()));
+            runClientToServerWithAck(new DeleteInstance(instanceInfo.getId()));
         }
 
         private void hearbeatTest() {

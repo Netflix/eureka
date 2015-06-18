@@ -4,7 +4,7 @@ import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.eureka2.server.transport.tcp.discovery.TcpDiscoveryServer;
+import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
 import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources.EurekaExternalResource;
 import com.netflix.eureka2.codec.CodecType;
@@ -56,7 +56,7 @@ public class ReadServerResource extends EurekaExternalResource {
         server.start();
 
         // Find ephemeral port numbers
-        discoveryPort = server.getInjector().getInstance(TcpDiscoveryServer.class).serverPort();
+        discoveryPort = server.getInjector().getInstance(TcpInterestServer.class).serverPort();
     }
 
     @Override

@@ -1,20 +1,25 @@
 package com.netflix.eureka2.registry;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.ChangeNotifications;
 import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.EurekaRegistryMetrics;
 import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.registry.Source.Origin;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.instance.InstanceInfo.Builder;
+import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.After;
@@ -28,12 +33,18 @@ import rx.Subscription;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
+import rx.subjects.BehaviorSubject;
 
 import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.modifyChangeNotificationOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -136,6 +147,73 @@ public class SourcedEurekaRegistryImplTest {
         assertThat(new HashSet<>(returnedIds), containsInAnyOrder(discovery1.getId(), discovery2.getId(), discovery3.getId()));
     }
 
+    @Test
+    public void testRegisterWithObservable() throws Exception {
+        InstanceInfo original = SampleInstanceInfo.WebServer.builder().withStatus(InstanceInfo.Status.UP).build();
+        BehaviorSubject<InstanceInfo> registrationSubject = BehaviorSubject.create();
+
+        // Initial add
+        ExtTestSubscriber<Void> registerSubscriber = new ExtTestSubscriber<>();
+        registry.register(original.getId(), registrationSubject, localSource).subscribe(registerSubscriber);
+        registrationSubject.onNext(original);
+
+        testScheduler.triggerActions();
+
+        assertThat(registerSubscriber.isUnsubscribed(), is(true));
+
+        // Subscribe to interest stream and verify add notification has been sent
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> interestSubscriber = new ExtTestSubscriber<>();
+        registry.forInterest(Interests.forApplications(original.getApp())).filter(dataOnlyFilter())
+                .subscribe(interestSubscriber);
+
+        assertThat(interestSubscriber.takeNextOrFail(), is(addChangeNotificationOf(original)));
+        assertThat(interestSubscriber.takeNext(), is(nullValue()));
+
+        // Update instance status, and check that modify notification is issued
+        InstanceInfo updated = new Builder().withInstanceInfo(original).withStatus(Status.DOWN).build();
+        registrationSubject.onNext(updated);
+
+        testScheduler.triggerActions();
+
+        assertThat(interestSubscriber.takeNextOrFail(), is(modifyChangeNotificationOf(updated)));
+        assertThat(interestSubscriber.takeNext(), is(nullValue()));
+
+        // Now onComplete registration observable which triggers delete notification
+        registrationSubject.onCompleted();
+        testScheduler.triggerActions();
+
+        assertThat(interestSubscriber.takeNextOrFail(), is(deleteChangeNotificationOf(updated)));
+    }
+
+    @Test
+    public void testRegistrationObservableOnErrorTriggersDeleteNotification() throws Exception {
+        InstanceInfo original = SampleInstanceInfo.WebServer.builder().withStatus(InstanceInfo.Status.UP).build();
+        BehaviorSubject<InstanceInfo> registrationSubject = BehaviorSubject.create();
+
+        // Initial add
+        ExtTestSubscriber<Void> registerSubscriber = new ExtTestSubscriber<>();
+        registry.register(original.getId(), registrationSubject, localSource).subscribe(registerSubscriber);
+        registrationSubject.onNext(original);
+
+        testScheduler.triggerActions();
+
+        assertThat(registerSubscriber.isUnsubscribed(), is(true));
+
+        // Subscribe to interest stream and verify add notification has been sent
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> interestSubscriber = new ExtTestSubscriber<>();
+        registry.forInterest(Interests.forApplications(original.getApp())).filter(dataOnlyFilter())
+                .subscribe(interestSubscriber);
+
+        assertThat(interestSubscriber.takeNextOrFail(), is(addChangeNotificationOf(original)));
+        assertThat(interestSubscriber.takeNext(), is(nullValue()));
+
+        // Now onComplete registration observable which triggers delete notification
+        registrationSubject.onError(new Exception("simulated registration error"));
+        testScheduler.triggerActions();
+
+        assertThat(interestSubscriber.takeNextOrFail(), is(deleteChangeNotificationOf(original)));
+    }
+
     @Test(timeout = 60000)
     public void testRegister() {
         InstanceInfo original = SampleInstanceInfo.DiscoveryServer.builder()
@@ -145,7 +223,7 @@ public class SourcedEurekaRegistryImplTest {
         registry.register(original, localSource);
         testScheduler.triggerActions();
 
-        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
+        ConcurrentMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
         assertThat(internalStore.size(), equalTo(1));
 
         MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
@@ -163,7 +241,7 @@ public class SourcedEurekaRegistryImplTest {
         registry.register(original, localSource);
         testScheduler.triggerActions();
 
-        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
+        ConcurrentMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
         assertThat(internalStore.size(), equalTo(1));
 
         MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
@@ -201,7 +279,7 @@ public class SourcedEurekaRegistryImplTest {
         registry.register(replicated, new Source(Source.Origin.REPLICATED, "replicationSourceId"));
         testScheduler.triggerActions();
 
-        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
+        ConcurrentMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
         assertThat(internalStore.size(), equalTo(1));
 
         MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
@@ -228,7 +306,7 @@ public class SourcedEurekaRegistryImplTest {
         registry.register(original, localSource);
         testScheduler.triggerActions();
 
-        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
+        ConcurrentMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
         assertThat(internalStore.size(), equalTo(1));
 
         MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
@@ -257,7 +335,7 @@ public class SourcedEurekaRegistryImplTest {
         registry.register(original, localSource);
         testScheduler.triggerActions();
 
-        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
+        ConcurrentMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
         assertThat(internalStore.size(), equalTo(1));
 
         MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
@@ -294,7 +372,7 @@ public class SourcedEurekaRegistryImplTest {
         registry.register(original, localSource);
         testScheduler.triggerActions();
 
-        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
+        ConcurrentMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
         assertThat(internalStore.size(), equalTo(1));
 
         MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
@@ -305,6 +383,7 @@ public class SourcedEurekaRegistryImplTest {
         registry.unregister(original, localSource);
         final List<ChangeNotification<InstanceInfo>> notifications = new ArrayList<>();
         registry.forInterest(Interests.forFullRegistry(), Source.matcherFor(Source.Origin.LOCAL))
+                .filter(ChangeNotifications.dataOnlyFilter())
                 .subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
                     @Override
                     public void onCompleted() {
@@ -341,7 +420,7 @@ public class SourcedEurekaRegistryImplTest {
         registry.register(original, replicatedSource);
         testScheduler.triggerActions();
 
-        ConcurrentHashMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
+        ConcurrentMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
         assertThat(internalStore.size(), equalTo(1));
 
         MultiSourcedDataHolder<InstanceInfo> holder = internalStore.values().iterator().next();
@@ -385,7 +464,7 @@ public class SourcedEurekaRegistryImplTest {
         ChangeNotification<InstanceInfo> notification = testSubscriber.takeNext();
         assertThat(notification, is(instanceOf(Sourced.class)));
         assertThat(notification.getData(), is(equalTo(original)));
-        assertThat(((Sourced)notification).getSource(), is(equalTo(replicatedSource)));
+        assertThat(((Sourced) notification).getSource(), is(equalTo(replicatedSource)));
 
         registry.register(original, localSource);  // register with the same but with localSource
         testScheduler.triggerActions();
@@ -393,7 +472,7 @@ public class SourcedEurekaRegistryImplTest {
         notification = testSubscriber.takeNext();
         assertThat(notification, is(instanceOf(Sourced.class)));
         assertThat(notification.getData(), is(equalTo(original)));
-        assertThat(((Sourced)notification).getSource(), is(equalTo(localSource)));
+        assertThat(((Sourced) notification).getSource(), is(equalTo(localSource)));
     }
 
     @Test(timeout = 60000)
@@ -423,7 +502,7 @@ public class SourcedEurekaRegistryImplTest {
         ChangeNotification<InstanceInfo> initial = testSubscriber.takeNext();
         assertThat(initial, is(instanceOf(Sourced.class)));
         assertThat(initial.getData(), is(equalTo(original)));
-        assertThat(((Sourced)initial).getSource(), is(equalTo(localSource)));
+        assertThat(((Sourced) initial).getSource(), is(equalTo(localSource)));
 
         registry.unregister(original, localSource);
         testScheduler.triggerActions();
@@ -436,11 +515,11 @@ public class SourcedEurekaRegistryImplTest {
 
         assertThat(notifications.get(0).getKind(), is(ChangeNotification.Kind.Delete));
         assertThat(notifications.get(0), is(instanceOf(Sourced.class)));
-        assertThat(((Sourced)notifications.get(0)).getSource(), is(equalTo(localSource)));
+        assertThat(((Sourced) notifications.get(0)).getSource(), is(equalTo(localSource)));
 
         assertThat(notifications.get(1).getKind(), is(ChangeNotification.Kind.Add));
         assertThat(notifications.get(1), is(instanceOf(Sourced.class)));
-        assertThat(((Sourced)notifications.get(1)).getSource(), is(equalTo(replicatedSource)));
+        assertThat(((Sourced) notifications.get(1)).getSource(), is(equalTo(replicatedSource)));
     }
 
 
@@ -488,7 +567,7 @@ public class SourcedEurekaRegistryImplTest {
         ChangeNotification<InstanceInfo> initial = testSubscriber.takeNext();
         assertThat(initial, is(instanceOf(Sourced.class)));
         assertThat(initial.getData(), is(equalTo(copy1)));
-        assertThat(((Sourced)initial).getSource(), is(equalTo(local1)));
+        assertThat(((Sourced) initial).getSource(), is(equalTo(local1)));
 
         registry.unregister(copy2, local2);  // unregister the middle copy that is different from the head
         testScheduler.triggerActions();
@@ -503,7 +582,7 @@ public class SourcedEurekaRegistryImplTest {
         assertThat(notification, is(instanceOf(Sourced.class)));
         assertThat(notification.getData(), is(equalTo(copy3)));
         assertThat(notification.getKind(), is(equalTo(ChangeNotification.Kind.Modify)));
-        assertThat(((Sourced)notification).getSource(), is(equalTo(local3)));
+        assertThat(((Sourced) notification).getSource(), is(equalTo(local3)));
     }
 
     @Test(timeout = 60000)
@@ -637,13 +716,70 @@ public class SourcedEurekaRegistryImplTest {
         verify(registryMetrics, times(1)).setRegistrySize(0);
     }
 
+    @Test
+    public void testForInterestStreamStateCorrectness() {
+        TestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new TestSubscriber<>();
+        registry.forInterest(Interests.forFullRegistry()).subscribe(testSubscriber);
+        testScheduler.triggerActions();
+
+        assertThat(testSubscriber.getOnNextEvents().size(), is(2));
+        assertThat(testSubscriber.getOnNextEvents().get(0), is(instanceOf(StreamStateNotification.class)));
+        StreamStateNotification notification = (StreamStateNotification) testSubscriber.getOnNextEvents().get(0);
+        assertThat(notification.getBufferState(), is(StreamStateNotification.BufferState.BufferStart));
+
+        assertThat(testSubscriber.getOnNextEvents().get(1), is(instanceOf(StreamStateNotification.class)));
+        notification = (StreamStateNotification) testSubscriber.getOnNextEvents().get(1);
+        assertThat(notification.getBufferState(), is(StreamStateNotification.BufferState.BufferEnd));
+
+        List<InstanceInfo> instanceInfos = Arrays.asList(
+                SampleInstanceInfo.ZuulServer.build(),
+                SampleInstanceInfo.ZuulServer.build(),
+                SampleInstanceInfo.CliServer.build()
+        );
+
+        registry.register(instanceInfos.get(0), localSource);
+        registry.register(instanceInfos.get(1), localSource);
+        registry.register(instanceInfos.get(2), localSource);
+        testScheduler.triggerActions();
+
+        ConcurrentMap<String, NotifyingInstanceInfoHolder> internalStore = registry.getInternalStore();
+        assertThat(internalStore.size(), equalTo(3));
+
+        testSubscriber = new TestSubscriber<>();
+        registry.forInterest(Interests.forFullRegistry()).subscribe(testSubscriber);
+        testScheduler.triggerActions();
+
+        assertThat(testSubscriber.getOnNextEvents().size(), is(5));
+        assertThat(testSubscriber.getOnNextEvents().get(0), is(instanceOf(StreamStateNotification.class)));
+        notification = (StreamStateNotification) testSubscriber.getOnNextEvents().get(0);
+        assertThat(notification.getBufferState(), is(StreamStateNotification.BufferState.BufferStart));
+
+        assertThat(testSubscriber.getOnNextEvents().get(4), is(instanceOf(StreamStateNotification.class)));
+        notification = (StreamStateNotification) testSubscriber.getOnNextEvents().get(4);
+        assertThat(notification.getBufferState(), is(StreamStateNotification.BufferState.BufferEnd));
+
+        testSubscriber = new TestSubscriber<>();
+        registry.forInterest(Interests.forApplications(instanceInfos.get(0).getApp())).subscribe(testSubscriber);
+        testScheduler.triggerActions();
+
+        assertThat(testSubscriber.getOnNextEvents().size(), is(4));
+        assertThat(testSubscriber.getOnNextEvents().get(0), is(instanceOf(StreamStateNotification.class)));
+        notification = (StreamStateNotification) testSubscriber.getOnNextEvents().get(0);
+        assertThat(notification.getBufferState(), is(StreamStateNotification.BufferState.BufferStart));
+
+        assertThat(testSubscriber.getOnNextEvents().get(3), is(instanceOf(StreamStateNotification.class)));
+        notification = (StreamStateNotification) testSubscriber.getOnNextEvents().get(3);
+        assertThat(notification.getBufferState(), is(StreamStateNotification.BufferState.BufferEnd));
+    }
+
+
     private static class TestEurekaServerRegistry extends SourcedEurekaRegistryImpl {
 
         TestEurekaServerRegistry(EurekaRegistryMetricFactory registryMetricFactory, Scheduler testScheduler) {
             super(registryMetricFactory, testScheduler);
         }
 
-        public ConcurrentHashMap<String, NotifyingInstanceInfoHolder> getInternalStore() {
+        public ConcurrentMap<String, NotifyingInstanceInfoHolder> getInternalStore() {
             return internalStore;
         }
     }

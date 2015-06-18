@@ -7,6 +7,7 @@ import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
+import com.netflix.eureka2.Names;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationHandler;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
@@ -24,7 +25,7 @@ public class EmbeddedTcpReplicationServer extends TcpReplicationServer {
     @Inject
     public EmbeddedTcpReplicationServer(WriteServerConfig config,
                                         Provider<TcpReplicationHandler> tcpReplicationHandler,
-                                        @Named("replication") MetricEventsListenerFactory servoEventsListenerFactory,
+                                        @Named(Names.REPLICATION) MetricEventsListenerFactory servoEventsListenerFactory,
                                         NetworkRouter networkRouter) {
         super(config, tcpReplicationHandler, servoEventsListenerFactory);
         this.networkRouter = networkRouter;

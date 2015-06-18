@@ -25,7 +25,7 @@ public final class Names {
     public static final String EUREKA_HTTPS = "https";
 
     public static final String REGISTRATION = "registration";
-    public static final String DISCOVERY = "discovery";
+    public static final String INTEREST = "interest";
     public static final String REPLICATION = "replication";
 
     private Names() {

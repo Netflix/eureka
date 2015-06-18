@@ -8,6 +8,7 @@ import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
+import com.netflix.eureka2.integration.IntegrationTestClassSetup;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
@@ -34,7 +35,7 @@ import static org.junit.Assert.assertThat;
  * @author Tomasz Bak
  */
 @Category(IntegrationTest.class)
-public class EurekaClientIntegrationTest {
+public class EurekaClientIntegrationTest extends IntegrationTestClassSetup {
 
     @Rule
     public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResource(1, 1);

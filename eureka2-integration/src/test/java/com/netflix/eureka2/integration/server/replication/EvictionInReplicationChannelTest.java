@@ -1,7 +1,6 @@
 package com.netflix.eureka2.integration.server.replication;
 
 import com.netflix.eureka2.integration.EurekaDeploymentClients;
-import com.netflix.eureka2.junit.categories.ExperimentalTest;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
@@ -18,7 +17,7 @@ import static com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResour
 /**
  * @author Tomasz Bak
  */
-@Category({IntegrationTest.class, ExperimentalTest.class})
+@Category(IntegrationTest.class)
 public class EvictionInReplicationChannelTest {
 
     private static final int CLUSTER_SIZE = 20;
@@ -50,19 +49,19 @@ public class EvictionInReplicationChannelTest {
 
         // Now simulate network failure
         NetworkLink replicationLink = eurekaDeployment.getNetworkRouter()
-                .getLinkTo(eurekaDeployment.getWriteCluster().getServer(0).getReplicationPort());
+                .getLinkTo(eurekaDeployment.getWriteCluster().getServer(1).getReplicationPort());
         replicationLink.disconnect();
 
         InstanceInfo secondTemplate = SampleInstanceInfo.Backend.build();
-        eurekaDeploymentClients.fillUpRegistryOfServer(1, CLUSTER_SIZE, secondTemplate);
+        eurekaDeploymentClients.fillUpRegistryOfServer(0, CLUSTER_SIZE, secondTemplate);
 
-        eurekaDeploymentClients.verifyWriteServerRegistryContent(0, firstTemplate.getApp(), CLUSTER_SIZE);
-        eurekaDeploymentClients.verifyWriteServerHasNoInstance(0, secondTemplate.getApp());
+        eurekaDeploymentClients.verifyWriteServerRegistryContent(1, firstTemplate.getApp(), CLUSTER_SIZE);
+        eurekaDeploymentClients.verifyWriteServerHasNoInstance(1, secondTemplate.getApp());
 
         // Restore replication channel
         replicationLink.connect();
 
-        eurekaDeploymentClients.verifyWriteServerRegistryContent(0, secondTemplate.getApp(), CLUSTER_SIZE);
-        eurekaDeploymentClients.verifyWriteServerHasNoInstance(0, firstTemplate.getApp());
+        eurekaDeploymentClients.verifyWriteServerRegistryContent(1, firstTemplate.getApp(), CLUSTER_SIZE);
+        eurekaDeploymentClients.verifyWriteServerRegistryContent(1, secondTemplate.getApp(), CLUSTER_SIZE);
     }
 }

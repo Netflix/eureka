@@ -15,6 +15,7 @@ public interface NetworkLink {
     boolean isUp();
 
     /**
+     * TODO Return observable that completes when connection is ready
      * Connect two endpoints.
      *
      * @return true if the connection actually happened (endpoints where disconnected prior to calling this method)
@@ -22,6 +23,8 @@ public interface NetworkLink {
     boolean connect();
 
     /**
+     * TODO Return observable that completes when connection is disconnected
+     *
      * Disconnect two endpoints.
      *
      * @return true if the disconnect actually happened (endpoints where connected prior to calling this method)

@@ -1,7 +1,9 @@
 package com.netflix.eureka2.channel;
 
+import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
 import rx.functions.Action0;
@@ -31,35 +33,42 @@ public class TestSenderReplicationChannel extends TestChannel<ReplicationChannel
     }
 
     @Override
-    public Observable<Void> register(final InstanceInfo instanceInfo) {
-        return delegate.register(instanceInfo)
+    public Observable<Void> replicate(final ChangeNotification<InstanceInfo> notification) {
+        return delegate.replicate(notification)
                 .doOnCompleted(new Action0() {
                     @Override
                     public void call() {
-                        replicationItems.add(new ReplicationItem(instanceInfo.getId(), ReplicationItem.Type.Register));
+                        switch (notification.getKind()) {
+                            case Add:
+                            case Modify:
+                                replicationItems.add(new ReplicationItem(notification.getData().getId(), ReplicationItem.Type.Register));
+                                break;
+                            case Delete:
+                                replicationItems.add(new ReplicationItem(notification.getData().getId(), ReplicationItem.Type.Unregister));
+                                break;
+                            case BufferSentinel:
+                                break;   // no op
+                            default:
+                                throw new IllegalStateException("Unexpected state");
+                        }
                     }
                 })
                 .doOnError(new Action1<Throwable>() {
                     @Override
                     public void call(Throwable throwable) {
-                        failedReplicationItems.add(new ReplicationItem(instanceInfo.getId(), ReplicationItem.Type.Register));
-                    }
-                });
-    }
-
-    @Override
-    public Observable<Void> unregister(final String instanceId) {
-        return delegate.unregister(instanceId)
-                .doOnCompleted(new Action0() {
-                    @Override
-                    public void call() {
-                        replicationItems.add(new ReplicationItem(instanceId, ReplicationItem.Type.Unregister));
-                    }
-                })
-                .doOnError(new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable throwable) {
-                        failedReplicationItems.add(new ReplicationItem(instanceId, ReplicationItem.Type.Unregister));
+                        switch (notification.getKind()) {
+                            case Add:
+                            case Modify:
+                                failedReplicationItems.add(new ReplicationItem(notification.getData().getId(), ReplicationItem.Type.Register));
+                                break;
+                            case Delete:
+                                failedReplicationItems.add(new ReplicationItem(notification.getData().getId(), ReplicationItem.Type.Unregister));
+                                break;
+                            case BufferSentinel:
+                                break;   // no op
+                            default:
+                                throw new IllegalStateException("Unexpected state");
+                        }
                     }
                 });
     }
@@ -74,6 +83,11 @@ public class TestSenderReplicationChannel extends TestChannel<ReplicationChannel
             Thread.sleep(20);
         }
         return false;
+    }
+
+    @Override
+    public Source getSource() {
+        return new Source(Source.Origin.REPLICATED, "test");
     }
 
     public static class ReplicationItem {

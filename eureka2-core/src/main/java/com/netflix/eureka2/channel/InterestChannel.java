@@ -1,6 +1,8 @@
 package com.netflix.eureka2.channel;
 
+import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
+import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
 
@@ -18,7 +20,7 @@ import rx.Observable;
  *
  * @author Nitesh Kant
  */
-public interface InterestChannel extends ServiceChannel {
+public interface InterestChannel extends ServiceChannel, Sourced {
 
     enum STATE {Idle, Open, Closed}
 
@@ -35,4 +37,9 @@ public interface InterestChannel extends ServiceChannel {
      * @return An acknowledgment for this change.
      */
     Observable<Void> change(Interest<InstanceInfo> newInterest);
+
+    /**
+     * @return the change notification input stream from this channel
+     */
+    Observable<ChangeNotification<InstanceInfo>> getChangeNotificationStream();
 }

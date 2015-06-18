@@ -74,7 +74,7 @@ task buildReplicationSchema (type: JavaExec, dependsOn: 'prepareOutputDir') {
             "build/classes/main/replication-schema.avpr"
     ]
 }
-task buildDiscoverySchema (type: JavaExec, dependsOn: 'prepareOutputDir') {
+task buildInterestSchema (type: JavaExec, dependsOn: 'prepareOutputDir') {
     group = "Avro"
     description = "Process Avro IDL files and generate Avro schema documents for discovery protocol"
 
@@ -82,12 +82,12 @@ task buildDiscoverySchema (type: JavaExec, dependsOn: 'prepareOutputDir') {
     classpath = configurations.avroTool
     args = [
             "idl",
-            "src/main/avro/discovery-schema.avdl",
-            "build/classes/main/discovery-schema.avpr"
+            "src/main/avro/interest-schema.avdl",
+            "build/classes/main/interest-schema.avpr"
     ]
 }
 
 task avroSchemas << {}
-avroSchemas.dependsOn buildRegistrationSchema, buildReplicationSchema, buildDiscoverySchema
+avroSchemas.dependsOn buildRegistrationSchema, buildReplicationSchema, buildInterestSchema
 
 compileJava.dependsOn avroSchemas

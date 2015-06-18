@@ -1,5 +1,6 @@
 package com.netflix.eureka2.client.channel;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -14,11 +15,11 @@ import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.InterestChannelMetrics;
-import com.netflix.eureka2.protocol.discovery.AddInstance;
-import com.netflix.eureka2.protocol.discovery.DeleteInstance;
-import com.netflix.eureka2.protocol.discovery.InterestSetNotification;
-import com.netflix.eureka2.protocol.discovery.SampleAddInstance;
-import com.netflix.eureka2.protocol.discovery.StreamStateUpdate;
+import com.netflix.eureka2.protocol.common.AddInstance;
+import com.netflix.eureka2.protocol.common.DeleteInstance;
+import com.netflix.eureka2.protocol.common.InterestSetNotification;
+import com.netflix.eureka2.protocol.interest.SampleAddInstance;
+import com.netflix.eureka2.protocol.common.StreamStateUpdate;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -28,12 +29,15 @@ import com.netflix.eureka2.testkit.data.builder.SampleInterest;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.TransportClient;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 import rx.Observable;
 import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 import rx.subjects.PublishSubject;
@@ -41,9 +45,8 @@ import rx.subjects.ReplaySubject;
 
 import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
 import static com.netflix.eureka2.metric.EurekaRegistryMetricFactory.registryMetrics;
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.bufferingChangeNotification;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.*;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -80,7 +83,17 @@ public class InterestChannelImplTest {
 
     protected Interest<InstanceInfo> sampleInterestAll = Interests.forFullRegistry();
 
-    protected Observable<AddInstance> sampleAddMessagesAll = sampleAddMessagesZuul.concatWith(sampleAddMessagesDiscovery);
+    @BeforeClass
+    public static void setUpClass() {
+        System.setProperty("eureka.hacks.interestChannel.bufferHintDelayMs", "10");
+        System.setProperty("eureka.hacks.interestChannel.maxBufferHintDelayMs", "100");
+    }
+
+    @AfterClass
+    public static void tearDownClass() {
+        System.clearProperty("eureka.hacks.interestChannel.bufferHintDelayMs");
+        System.clearProperty("eureka.hacks.interestChannel.maxBufferHintDelayMs");
+    }
 
     @Before
     public void setup() throws Throwable {
@@ -90,7 +103,7 @@ public class InterestChannelImplTest {
         when(serverConnection.lifecycleObservable()).thenReturn(serverConnectionLifecycle);
         when(transportClient.connect()).thenReturn(Observable.just(serverConnection));
 
-        channel = new InterestChannelImpl(registry, remoteBatchingRegistry, transportClient, interestChannelMetrics);
+        channel = new InterestChannelImpl(registry, remoteBatchingRegistry, transportClient, 0, interestChannelMetrics);
     }
 
     @After
@@ -209,23 +222,38 @@ public class InterestChannelImplTest {
         ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
         channel.change(interest).subscribe(testSubscriber);
 
-        ExtTestSubscriber<ChangeNotification<InstanceInfo>> notificationSubscriber = new ExtTestSubscriber<>();
-        registry.forInterest(interest).subscribe(notificationSubscriber);
+        TestSubscriber<ChangeNotification<InstanceInfo>> networkInterestSubscriber = new TestSubscriber<>();
+        channel.channelInterestStream.subscribe(networkInterestSubscriber);
+
+        // a subscriber that subscribes to the registry before it has any data
+        TestSubscriber<ChangeNotification<InstanceInfo>> registrySubscriber1 = new TestSubscriber<>();
+        registry.forInterest(interest).subscribe(registrySubscriber1);
 
         // Issue batch of data
         incomingSubject.onNext(new StreamStateUpdate(StreamStateNotification.bufferStartNotification(interest)));
-
         incomingSubject.onNext(message1);
-        testScheduler.triggerActions();
         incomingSubject.onNext(message2);
+        incomingSubject.onNext(new StreamStateUpdate(StreamStateNotification.bufferEndNotification(interest)));
         testScheduler.triggerActions();
 
-        incomingSubject.onNext(new StreamStateUpdate(StreamStateNotification.bufferEndNotification(interest)));
+        // check the conversion from network to channel level datastructures
+        assertThat(networkInterestSubscriber.getOnNextEvents().size(), is(4));
+        assertThat(networkInterestSubscriber.getOnNextEvents().get(0), is(bufferStartNotification()));
+        assertThat(networkInterestSubscriber.getOnNextEvents().get(1), is(addChangeNotificationOf(original1)));
+        assertThat(networkInterestSubscriber.getOnNextEvents().get(2), is(addChangeNotificationOf(original2)));
+        assertThat(networkInterestSubscriber.getOnNextEvents().get(3), is(bufferEndNotification()));
 
-        // We should have got <original 1> <original 2> <buffering sentinel> from registry
-        assertThat(notificationSubscriber.takeNextOrFail(), is(addChangeNotificationOf(original1)));
-        assertThat(notificationSubscriber.takeNextOrFail(), is(addChangeNotificationOf(original2)));
-        assertThat(notificationSubscriber.takeNextOrFail(), is(bufferingChangeNotification()));
+        // FIXME remove once we fix buffer hint issue
+        Thread.sleep(200);  // sleep for the buffer hint delay
+
+        // check the returns from the registry
+        assertThat(registrySubscriber1.getOnNextEvents().size(), is(3));
+        List<InstanceInfo> received = Arrays.asList(
+                registrySubscriber1.getOnNextEvents().get(0).getData(),
+                registrySubscriber1.getOnNextEvents().get(1).getData()
+        );
+        assertThat(received, containsInAnyOrder(original1, original2));
+        assertThat(registrySubscriber1.getOnNextEvents().get(2), is(bufferingChangeNotification()));
     }
 
     @Test(timeout = 60000)

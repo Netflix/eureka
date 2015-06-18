@@ -29,6 +29,11 @@ public class NetworkLinkImpl implements NetworkLink {
 
     @Override
     public boolean connect() {
+        // FIXME Workaround for existing race conditions
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException ignore) {
+        }
         boolean hasChanged = isConnected.compareAndSet(false, true);
         if (hasChanged) {
             linkEventSubject.onNext(new LinkEvent(this));
@@ -38,6 +43,11 @@ public class NetworkLinkImpl implements NetworkLink {
 
     @Override
     public boolean disconnect() {
+        // FIXME Workaround for existing race conditions
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException ignore) {
+        }
         boolean hasChanged = isConnected.compareAndSet(true, false);
         if (hasChanged) {
             linkEventSubject.onNext(new LinkEvent(this));

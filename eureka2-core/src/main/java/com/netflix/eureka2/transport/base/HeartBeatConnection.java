@@ -19,7 +19,7 @@ package com.netflix.eureka2.transport.base;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.netflix.eureka2.protocol.Heartbeat;
+import com.netflix.eureka2.protocol.common.Heartbeat;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

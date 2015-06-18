@@ -22,16 +22,24 @@ public class Source {
 
     private final Origin origin;
     private final String name;  // nullable
-    private final String id;
+    private final long id;
+
+    private Source() {  // for Json and Avro
+        this(null);
+    }
 
     public Source(Origin origin) {
         this(origin, null);
     }
 
     public Source(Origin origin, String name) {
+        this(origin, name, UUID.randomUUID().getLeastSignificantBits());
+    }
+
+    public Source(Origin origin, String name, long id) {
         this.origin = origin;
         this.name = name;
-        this.id = UUID.randomUUID().toString();
+        this.id = id;
     }
 
     public Origin getOrigin() {
@@ -42,7 +50,7 @@ public class Source {
         return name;
     }
 
-    public String getId() {
+    public long getId() {
         return id;
     }
 
@@ -53,7 +61,7 @@ public class Source {
 
         Source source = (Source) o;
 
-        if (id != null ? !id.equals(source.id) : source.id != null) return false;
+        if (id != source.id) return false;
         if (name != null ? !name.equals(source.name) : source.name != null) return false;
         if (origin != source.origin) return false;
 
@@ -64,7 +72,7 @@ public class Source {
     public int hashCode() {
         int result = origin != null ? origin.hashCode() : 0;
         result = 31 * result + (name != null ? name.hashCode() : 0);
-        result = 31 * result + (id != null ? id.hashCode() : 0);
+        result = 31 * result + (int) (id ^ (id >>> 32));
         return result;
     }
 
@@ -84,6 +92,10 @@ public class Source {
                 return (source == null)
                         ? (another == null)
                         : source.equals(another);
+            }
+            @Override
+            public String toString() {
+                return "Matcher{" + source.toString() + "}";
             }
         };
     }

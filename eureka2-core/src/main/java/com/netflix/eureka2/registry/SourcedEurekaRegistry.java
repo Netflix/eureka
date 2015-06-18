@@ -16,8 +16,6 @@
 
 package com.netflix.eureka2.registry;
 
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.Interest;
 import rx.Observable;
 
 /**
@@ -25,27 +23,15 @@ import rx.Observable;
  *
  * @author Tomasz Bak
  */
-public interface SourcedEurekaRegistry<T> {
+public interface SourcedEurekaRegistry<T> extends EurekaRegistrationProcessor<T>, EurekaRegistryView<T> {
 
     int size();
 
     /**
-     * @return a boolean to denote whether the register added a new entry or updated an existing entry
+     * Evict all registry info for all sources that matches the matcher
+     * @return an observable of long denoting the number of holder items touched for the eviction
      */
-    Observable<Boolean> register(T instanceInfo, Source source);
-
-    /**
-     * @return a boolean to denote whether the unregister removed an existing entry
-     */
-    Observable<Boolean> unregister(T instanceInfo, Source source);
-
-    Observable<T> forSnapshot(Interest<T> interest);
-
-    Observable<T> forSnapshot(Interest<T> interest, Source.SourceMatcher sourceMatcher);
-
-    Observable<ChangeNotification<T>> forInterest(Interest<T> interest);
-
-    Observable<ChangeNotification<T>> forInterest(Interest<T> interest, Source.SourceMatcher sourceMatcher);
+    Observable<Long> evictAll(Source.SourceMatcher evictionMatcher);
 
     /**
      * Evict all registry info for all sources except those that matches the matcher
@@ -55,6 +41,7 @@ public interface SourcedEurekaRegistry<T> {
 
     Observable<? extends MultiSourcedDataHolder<T>> getHolders();
 
+    @Override
     Observable<Void> shutdown();
 
     /**
@@ -63,5 +50,6 @@ public interface SourcedEurekaRegistry<T> {
      *
      * @param cause error to propagate to subscription clients
      */
+    @Override
     Observable<Void> shutdown(Throwable cause);
 }

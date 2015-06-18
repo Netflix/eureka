@@ -1,42 +1,27 @@
 @namespace("com.netflix.eureka2.protocol.replication")
 protocol ReplicationProtocol {
 
-    import idl "eureka-registry-model.avdl";
-
-    @namespace("com.netflix.eureka2.transport")
-    record Acknowledgement {
-    }
-
-    @namespace("com.netflix.eureka2.protocol")
-    record Heartbeat {
-    }
+    import idl "eureka-common-model.avdl";
 
     record ReplicationHello {
-        string sourceId;
+        com.netflix.eureka2.registry.Source source;
         int registrySize;
     }
 
     record ReplicationHelloReply {
-        string sourceId;
+        com.netflix.eureka2.registry.Source source;
         boolean sendSnapshot;
-    }
-
-    record RegisterCopy {
-        com.netflix.eureka2.registry.instance.InstanceInfo instanceInfo;
-    }
-
-    record UnregisterCopy {
-        string instanceId;
     }
 
     record ReplicationMessages {
         union {
-            ReplicationHello,
-            ReplicationHelloReply,
-            RegisterCopy,
-            UnregisterCopy,
             com.netflix.eureka2.transport.Acknowledgement,
-            com.netflix.eureka2.protocol.Heartbeat
+            com.netflix.eureka2.protocol.common.AddInstance,
+            com.netflix.eureka2.protocol.common.DeleteInstance,
+            com.netflix.eureka2.protocol.common.StreamStateUpdate,
+            com.netflix.eureka2.protocol.common.Heartbeat,
+            ReplicationHello,
+            ReplicationHelloReply
         } message;
     }
 }

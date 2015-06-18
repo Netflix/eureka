@@ -19,6 +19,7 @@ import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
 import rx.schedulers.Schedulers;
+import rx.schedulers.TestScheduler;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -42,12 +43,14 @@ public class BackupClusterBootstrapServiceTest {
             StreamStateNotification.bufferEndNotification(Interests.forFullRegistry())
     );
 
+    private final TestScheduler testScheduler = Schedulers.test();
+
     private final LightEurekaInterestClient lightEurekaInterestClient = mock(LightEurekaInterestClient.class);
     private final EurekaClusterResolver resolver = mock(EurekaClusterResolver.class);
 
     private RegistryBootstrapService bootstrapService;
 
-    private final SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics());
+    private final SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics(), testScheduler);
 
     @Before
     public void setUp() throws Exception {
@@ -74,6 +77,8 @@ public class BackupClusterBootstrapServiceTest {
         when(lightEurekaInterestClient.forInterest(any(Interest.class))).thenReturn(FOR_INTEREST_REPLY);
 
         bootstrapService.loadIntoRegistry(registry, SOURCE).toBlocking().firstOrDefault(null);
+        testScheduler.triggerActions();
+
         assertThat(registry.size(), is(equalTo(1)));
     }
 
@@ -85,6 +90,8 @@ public class BackupClusterBootstrapServiceTest {
         );
 
         bootstrapService.loadIntoRegistry(registry, SOURCE).toBlocking().firstOrDefault(null);
+        testScheduler.triggerActions();
+
         assertThat(registry.size(), is(equalTo(1)));
     }
 
@@ -96,6 +103,8 @@ public class BackupClusterBootstrapServiceTest {
         );
 
         bootstrapService.loadIntoRegistry(registry, SOURCE).toBlocking().firstOrDefault(null);
+        testScheduler.triggerActions();
+
         assertThat(registry.size(), is(equalTo(1)));
     }
 }

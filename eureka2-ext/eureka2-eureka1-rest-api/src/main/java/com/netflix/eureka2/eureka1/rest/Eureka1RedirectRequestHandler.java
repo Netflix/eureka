@@ -66,7 +66,7 @@ public class Eureka1RedirectRequestHandler extends AbstractEureka1RequestHandler
             return;
         }
 
-        subscription = context.getLocalRegistry()
+        subscription = context.getLocalRegistryView()
                 .forInterest(Interests.forVips(redirectTarget))
                 .compose(ChangeNotifications.<InstanceInfo>delineatedBuffers())
                 .compose(ChangeNotifications.<InstanceInfo>snapshots())

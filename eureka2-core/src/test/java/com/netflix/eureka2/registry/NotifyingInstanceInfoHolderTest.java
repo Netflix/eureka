@@ -1,307 +1,213 @@
 package com.netflix.eureka2.registry;
 
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.registry.NotifyingInstanceInfoHolder.NotificationTaskInvoker;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
-import com.netflix.eureka2.utils.rx.PauseableSubject;
-import org.junit.Rule;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.rules.ExternalResource;
-import rx.schedulers.Schedulers;
+import rx.subjects.PublishSubject;
 
-import static com.netflix.eureka2.metric.client.EurekaClientMetricFactory.clientMetrics;
+import static com.netflix.eureka2.metric.EurekaRegistryMetricFactory.registryMetrics;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.modifyChangeNotificationOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 
 /**
  * @author David Liu
  */
 public class NotifyingInstanceInfoHolderTest {
 
-    private PauseableSubject<ChangeNotification<InstanceInfo>> pauseableSubject;
-    private MultiSourcedDataHolder.HolderStoreAccessor<NotifyingInstanceInfoHolder> storeAccessor;
-    private NotificationTaskInvoker invoker;
-    private Source localSource;
+    private final PublishSubject<ChangeNotification<InstanceInfo>> notificationSubject = PublishSubject.create();
+    private final ExtTestSubscriber<ChangeNotification<InstanceInfo>> notificationSubscriber = new ExtTestSubscriber<>();
 
-    @Rule
-    public final ExternalResource testResource = new ExternalResource() {
-        @Override
-        protected void before() throws Throwable {
-            pauseableSubject = PauseableSubject.create();
-            storeAccessor = new MultiSourcedDataHolder.HolderStoreAccessor<NotifyingInstanceInfoHolder>() {
-                @Override
-                public void add(NotifyingInstanceInfoHolder holder) {
-                }
+    private final Source localSource = new Source(Source.Origin.LOCAL);
+    private final InstanceInfo.Builder builder = SampleInstanceInfo.DiscoveryServer.builder();
 
-                @Override
-                public NotifyingInstanceInfoHolder get(String id) {
-                    return null;
-                }
+    InstanceInfo firstInfo = builder.withStatus(InstanceInfo.Status.STARTING).build();
+    InstanceInfo secondInfo = builder.withStatus(InstanceInfo.Status.UP).build();
+    InstanceInfo thirdInfo = builder.withStatus(InstanceInfo.Status.DOWN).build();
 
-                @Override
-                public void remove(String id) {
-                }
+    private final NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(
+            notificationSubject, firstInfo.getId(), registryMetrics().getEurekaServerRegistryMetrics()
+    );
 
-                @Override
-                public boolean contains(String id) {
-                    return false;
-                }
-            };
-            invoker = new NotificationTaskInvoker(
-                    clientMetrics().getSerializedTaskInvokerMetrics(NotificationTaskInvoker.class),
-                    Schedulers.computation()
-            );
-            localSource = new Source(Source.Origin.LOCAL);
-        }
-    };
-
-    @Test(timeout = 60000)
-    public void testUpdateSameSource() throws Exception {
-        InstanceInfo.Builder builder = SampleInstanceInfo.DiscoveryServer.builder();
-        InstanceInfo firstInfo = builder
-                .withStatus(InstanceInfo.Status.STARTING)
-                .build();
-
-        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, pauseableSubject, invoker, firstInfo.getId());
-        holder.update(localSource, firstInfo).toBlocking().firstOrDefault(null);
-
-        assertThat(holder.size(), equalTo(1));
-        assertThat(holder.get(), equalTo(firstInfo));
-
-        InstanceInfo secondInfo = builder
-                .withStatus(InstanceInfo.Status.UP)
-                .build();
-
-        holder.update(localSource, secondInfo).toBlocking().firstOrDefault(null);
-
-        assertThat(holder.size(), equalTo(1));
-        assertThat(holder.get(), not(equalTo(firstInfo)));
-        assertThat(holder.get(), equalTo(secondInfo));
+    @Before
+    public void setUp() throws Exception {
+        notificationSubject.subscribe(notificationSubscriber);
     }
 
-
-    @Test(timeout = 60000)
-    public void testUpdateSameSourceDiffIdAlsoUpdateSnapshot() throws Exception {
-        InstanceInfo.Builder builder = SampleInstanceInfo.DiscoveryServer.builder();
-        InstanceInfo firstInfo = builder
-                .withStatus(InstanceInfo.Status.STARTING)
-                .build();
-
-        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, pauseableSubject, invoker, firstInfo.getId());
-        holder.update(localSource, firstInfo).toBlocking().firstOrDefault(null);
+    @Test
+    public void testAddFirst() throws Exception {
+        holder.update(localSource, firstInfo);
 
         assertThat(holder.size(), equalTo(1));
         assertThat(holder.get(), equalTo(firstInfo));
         assertThat(holder.getSource(), equalTo(localSource));
+        assertThat(notificationSubscriber.takeNextOrFail(), is(addChangeNotificationOf(firstInfo)));
+    }
 
-        InstanceInfo secondInfo = builder
-                .withStatus(InstanceInfo.Status.UP)
-                .build();
+    @Test
+    public void testUpdateSameSource() throws Exception {
+        injectFirst();
 
-        Source newLocalSource = new Source(localSource.getOrigin(), localSource.getName());
-        holder.update(newLocalSource, secondInfo).toBlocking().firstOrDefault(null);
+        holder.update(localSource, secondInfo);
 
         assertThat(holder.size(), equalTo(1));
-        assertThat(holder.get(), not(equalTo(firstInfo)));
+        assertThat(holder.get(), equalTo(secondInfo));
+        assertThat(notificationSubscriber.takeNextOrFail(), is(modifyChangeNotificationOf(secondInfo)));
+    }
+
+    @Test
+    public void testUpdateSameSourceDiffIdAlsoUpdateSnapshot() throws Exception {
+        injectFirst();
+
+        InstanceInfo secondInfo = builder.withStatus(InstanceInfo.Status.UP).build();
+        Source newLocalSource = new Source(localSource.getOrigin(), localSource.getName());
+        holder.update(newLocalSource, secondInfo);
+
+        assertThat(holder.size(), equalTo(1));
         assertThat(holder.get(), equalTo(secondInfo));
         assertThat(holder.getSource(), equalTo(newLocalSource));
+        assertThat(notificationSubscriber.takeNextOrFail(), is(modifyChangeNotificationOf(secondInfo)));
     }
 
-    @Test(timeout = 60000)
+    @Test
     public void testUpdateDifferentSources() throws Exception {
-        InstanceInfo.Builder builder = SampleInstanceInfo.DiscoveryServer.builder();
-        InstanceInfo firstInfo = builder
-                .withStatus(InstanceInfo.Status.STARTING)
-                .build();
+        injectFirst();
 
-        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, pauseableSubject, invoker, firstInfo.getId());
-        holder.update(localSource, firstInfo).toBlocking().firstOrDefault(null);
-
-        assertThat(holder.size(), equalTo(1));
-        assertThat(holder.get(), equalTo(firstInfo));
-
-        InstanceInfo secondInfo = builder
-                .withStatus(InstanceInfo.Status.UP)
-                .build();
+        InstanceInfo secondInfo = builder.withStatus(InstanceInfo.Status.UP).build();
 
         Source fooSource = new Source(Source.Origin.REPLICATED, "foo");
-        holder.update(fooSource, secondInfo).toBlocking().firstOrDefault(null);
+        holder.update(fooSource, secondInfo);
 
         assertThat(holder.size(), equalTo(2));
         assertThat(holder.get(), equalTo(firstInfo));
-        assertThat(holder.get(), not(equalTo(secondInfo)));
-
         assertThat(holder.get(fooSource), equalTo(secondInfo));
+        assertThat(notificationSubscriber.takeNext(), is(nullValue()));
 
-        InstanceInfo thirdInfo = builder
-                .withStatus(InstanceInfo.Status.DOWN)
-                .build();
 
-        holder.update(fooSource, thirdInfo).toBlocking().firstOrDefault(null);
+        holder.update(fooSource, thirdInfo);
 
         assertThat(holder.size(), equalTo(2));
         assertThat(holder.get(), equalTo(firstInfo));
-        assertThat(holder.get(), not(equalTo(secondInfo)));
-
         assertThat(holder.get(fooSource), equalTo(thirdInfo));
+        assertThat(notificationSubscriber.takeNext(), is(nullValue()));
     }
 
-
-    @Test(timeout = 60000)
+    @Test
     public void testUpdateDifferentSourcesPromoteLocal() throws Exception {
-        InstanceInfo.Builder builder = SampleInstanceInfo.DiscoveryServer.builder();
-        InstanceInfo firstInfo = builder
-                .withStatus(InstanceInfo.Status.STARTING)
-                .build();
-
         Source fooSource = new Source(Source.Origin.REPLICATED, "foo");
-        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, pauseableSubject, invoker, firstInfo.getId());
-        holder.update(fooSource, firstInfo).toBlocking().firstOrDefault(null);
 
-        assertThat(holder.size(), equalTo(1));
-        assertThat(holder.get(), equalTo(firstInfo));
-
-        InstanceInfo secondInfo = builder
-                .withStatus(InstanceInfo.Status.UP)
-                .build();
-
-        holder.update(localSource, secondInfo).toBlocking().firstOrDefault(null);
+        holder.update(fooSource, firstInfo);
+        assertThat(notificationSubscriber.takeNextOrFail(), is(addChangeNotificationOf(firstInfo)));
 
         // verify promotion of local source happened
+        holder.update(localSource, secondInfo);
+
         assertThat(holder.size(), equalTo(2));
         assertThat(holder.get(), equalTo(secondInfo));
-        assertThat(holder.get(), not(equalTo(firstInfo)));
         assertThat(holder.get(fooSource), equalTo(firstInfo));
+        assertThat(notificationSubscriber.takeNextOrFail(), is(addChangeNotificationOf(secondInfo)));
 
-        InstanceInfo thirdInfo = builder
-                .withStatus(InstanceInfo.Status.DOWN)
-                .build();
-
-        holder.update(fooSource, thirdInfo).toBlocking().firstOrDefault(null);
+        // Now modify foo source, which should not trigger any notification changes
+        holder.update(fooSource, thirdInfo);
 
         assertThat(holder.size(), equalTo(2));
         assertThat(holder.get(), equalTo(secondInfo));
         assertThat(holder.get(fooSource), equalTo(thirdInfo));
+        assertThat(notificationSubscriber.takeNext(), is(nullValue()));
 
-        InstanceInfo fourthSource = builder
-                .withStatus(InstanceInfo.Status.OUT_OF_SERVICE)
-                .build();
+        // Now modify local source, which should trigger notification
+        InstanceInfo fourthInfo = builder.withStatus(InstanceInfo.Status.OUT_OF_SERVICE).build();
 
-        holder.update(localSource, fourthSource).toBlocking().firstOrDefault(null);
+        holder.update(localSource, fourthInfo);
 
         assertThat(holder.size(), equalTo(2));
-        assertThat(holder.get(), equalTo(fourthSource));
-        assertThat(holder.get(localSource), equalTo(fourthSource));
+        assertThat(holder.get(), equalTo(fourthInfo));
+        assertThat(holder.get(localSource), equalTo(fourthInfo));
+        assertThat(notificationSubscriber.takeNextOrFail(), is(modifyChangeNotificationOf(fourthInfo)));
     }
 
-    @Test(timeout = 60000)
+    @Test
     public void testRemoveSameSource() throws Exception {
-        InstanceInfo.Builder builder = SampleInstanceInfo.DiscoveryServer.builder();
-        InstanceInfo firstInfo = builder
-                .withStatus(InstanceInfo.Status.UP)
-                .build();
+        injectFirst();
 
-        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, pauseableSubject, invoker, firstInfo.getId());
-        holder.update(localSource, firstInfo).toBlocking().firstOrDefault(null);
-
-        assertThat(holder.size(), equalTo(1));
-        assertThat(holder.get(), equalTo(firstInfo));
-
-        holder.remove(localSource).toBlocking().firstOrDefault(null);
+        holder.remove(localSource);
 
         assertThat(holder.size(), equalTo(0));
         assertThat(holder.get(), equalTo(null));
         assertThat(holder.get(localSource), equalTo(null));
+        assertThat(notificationSubscriber.takeNextOrFail(), is(deleteChangeNotificationOf(firstInfo)));
     }
 
-    @Test(timeout = 60000)
+    @Test
     public void testRemoveExistingSourceWithDifferentId() throws Exception {
-        InstanceInfo.Builder builder = SampleInstanceInfo.DiscoveryServer.builder();
-        InstanceInfo firstInfo = builder
-                .withStatus(InstanceInfo.Status.UP)
-                .build();
-
-        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, pauseableSubject, invoker, firstInfo.getId());
-        holder.update(localSource, firstInfo).toBlocking().firstOrDefault(null);
-
-        assertThat(holder.size(), equalTo(1));
-        assertThat(holder.get(), equalTo(firstInfo));
+        injectFirst();
 
         Source newLocalSource = new Source(localSource.getOrigin(), localSource.getName());
-        MultiSourcedDataHolder.Status status = holder.remove(newLocalSource).toBlocking().firstOrDefault(null);
+        boolean removeStatus = holder.remove(newLocalSource);
 
-        assertThat(status, equalTo(MultiSourcedDataHolder.Status.RemoveExpired));
+        assertThat(removeStatus, is(false));
         assertThat(holder.size(), equalTo(1));
         assertThat(holder.get(), equalTo(firstInfo));
         assertThat(holder.get(localSource), equalTo(firstInfo));
+        assertThat(notificationSubscriber.takeNext(), is(nullValue()));
     }
 
-    @Test(timeout = 60000)
+    @Test
     public void testRemoveNonSnapshotCopy() throws Exception {
-        InstanceInfo.Builder builder = SampleInstanceInfo.DiscoveryServer.builder();
-        InstanceInfo localInfo = builder
-                .withStatus(InstanceInfo.Status.STARTING)
-                .build();
+        injectFirst();
 
-        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, pauseableSubject, invoker, localInfo.getId());
-        holder.update(localSource, localInfo).toBlocking().firstOrDefault(null);
-
-        assertThat(holder.size(), equalTo(1));
-        assertThat(holder.get(), equalTo(localInfo));
-
-        InstanceInfo fooInfo = builder
-                .withStatus(InstanceInfo.Status.UP)
-                .build();
-
+        // Add non-snapshot copy
         Source fooSource = new Source(Source.Origin.REPLICATED, "foo");
-        holder.update(fooSource, fooInfo).toBlocking().firstOrDefault(null);
+        holder.update(fooSource, secondInfo);
 
         assertThat(holder.size(), equalTo(2));
-        assertThat(holder.get(), equalTo(localInfo));
-        assertThat(holder.get(), not(equalTo(fooInfo)));
+        assertThat(holder.get(), equalTo(firstInfo));
+        assertThat(holder.get(fooSource), equalTo(secondInfo));
+        assertThat(notificationSubscriber.takeNext(), is(nullValue()));
 
-        assertThat(holder.get(fooSource), equalTo(fooInfo));
-
-        holder.remove(fooSource).toBlocking().firstOrDefault(null);
+        // Remove non-snapshot copy
+        holder.remove(fooSource);
 
         assertThat(holder.size(), equalTo(1));
-        assertThat(holder.get(), equalTo(localInfo));
+        assertThat(holder.get(), equalTo(firstInfo));
         assertThat(holder.get(fooSource), equalTo(null));
+        assertThat(notificationSubscriber.takeNext(), is(nullValue()));
     }
 
-    @Test(timeout = 60000)
+    @Test
     public void testRemoveSnapshotCopyPromoteAnother() throws Exception {
-        InstanceInfo.Builder builder = SampleInstanceInfo.DiscoveryServer.builder();
-        InstanceInfo localInfo = builder
-                .withStatus(InstanceInfo.Status.STARTING)
-                .build();
+        injectFirst();
 
-        NotifyingInstanceInfoHolder holder = new NotifyingInstanceInfoHolder(storeAccessor, pauseableSubject, invoker, localInfo.getId());
-        holder.update(localSource, localInfo).toBlocking().firstOrDefault(null);
-
-        assertThat(holder.size(), equalTo(1));
-        assertThat(holder.get(), equalTo(localInfo));
-
-        InstanceInfo fooInfo = builder
-                .withStatus(InstanceInfo.Status.UP)
-                .build();
-
+        // Add second
         Source fooSource = new Source(Source.Origin.REPLICATED, "foo");
-        holder.update(fooSource, fooInfo).toBlocking().firstOrDefault(null);
+        holder.update(fooSource, secondInfo);
 
         assertThat(holder.size(), equalTo(2));
-        assertThat(holder.get(), equalTo(localInfo));
-        assertThat(holder.get(), not(equalTo(fooInfo)));
+        assertThat(holder.get(), equalTo(firstInfo));
+        assertThat(holder.get(fooSource), equalTo(secondInfo));
+        assertThat(notificationSubscriber.takeNext(), is(nullValue()));
 
-        assertThat(holder.get(fooSource), equalTo(fooInfo));
-
-        holder.remove(localSource).toBlocking().firstOrDefault(null);
+        // Now remove snapshot
+        holder.remove(localSource);
 
         assertThat(holder.size(), equalTo(1));
-        assertThat(holder.get(), equalTo(fooInfo));
-        assertThat(holder.get(fooSource), equalTo(fooInfo));
-        assertThat(holder.get(localSource), not(equalTo(localInfo)));
+        assertThat(holder.get(), equalTo(secondInfo));
+        assertThat(holder.get(fooSource), equalTo(secondInfo));
+        assertThat(holder.get(localSource), not(equalTo(secondInfo)));
+        assertThat(notificationSubscriber.takeNextOrFail(), is(deleteChangeNotificationOf(firstInfo)));
+        assertThat(notificationSubscriber.takeNextOrFail(), is(addChangeNotificationOf(secondInfo)));
+    }
+
+    private void injectFirst() {
+        holder.update(localSource, firstInfo);
+        notificationSubscriber.takeNext();
     }
 }

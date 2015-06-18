@@ -3,7 +3,6 @@ package com.netflix.eureka2.server.channel;
 import com.netflix.eureka2.channel.AbstractServiceChannel;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.metric.StateMachineMetrics;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.slf4j.Logger;
@@ -23,16 +22,12 @@ public abstract class AbstractHandlerChannel<STATE extends Enum<STATE>> extends 
     private static final Logger logger = LoggerFactory.getLogger(AbstractHandlerChannel.class);
 
     protected final MessageConnection transport;
-    protected final SourcedEurekaRegistry<InstanceInfo> registry;
-
 
     protected AbstractHandlerChannel(STATE initState,
                                      MessageConnection transport,
-                                     final SourcedEurekaRegistry<InstanceInfo> registry,
                                      StateMachineMetrics<STATE> metrics) {
         super(initState, metrics);
         this.transport = transport;
-        this.registry = registry;
     }
 
     @Override

@@ -3,8 +3,10 @@ package com.netflix.eureka2.client.channel;
 import java.util.concurrent.Callable;
 
 import com.netflix.eureka2.channel.InterestChannel;
+import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.utils.SerializedTaskInvoker;
 import rx.Observable;
@@ -46,9 +48,14 @@ public class InterestChannelInvoker extends SerializedTaskInvoker implements Int
     }
 
     @Override
+    public Observable<ChangeNotification<InstanceInfo>> getChangeNotificationStream() {
+        return delegate.getChangeNotificationStream();
+    }
+
+    @Override
     public void close() {
         try {
-            shutdown();
+            shutdownTaskInvoker();
         } finally {
             delegate.close();
         }
@@ -57,7 +64,7 @@ public class InterestChannelInvoker extends SerializedTaskInvoker implements Int
     @Override
     public void close(Throwable error) {
         try {
-            shutdown();
+            shutdownTaskInvoker();
         } finally {
             delegate.close(error);
         }
@@ -66,5 +73,10 @@ public class InterestChannelInvoker extends SerializedTaskInvoker implements Int
     @Override
     public Observable<Void> asLifecycleObservable() {
         return delegate.asLifecycleObservable();
+    }
+
+    @Override
+    public Source getSource() {
+        return delegate.getSource();
     }
 }

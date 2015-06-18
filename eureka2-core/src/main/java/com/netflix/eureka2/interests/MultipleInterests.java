@@ -23,6 +23,9 @@ import java.util.Set;
  * Eureka client can subscribe to multiple interests at the same time. This class
  * describes such multiple interests subscription.
  *
+ * Note after a multipleInterests is created, the internal set of interests are always
+ * flattened to the base-level interests
+ *
  * @author Tomasz Bak
  */
 public class MultipleInterests<T> extends Interest<T> {

@@ -16,13 +16,15 @@
 
 package com.netflix.eureka2.server.transport.tcp.registration;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+
+import com.netflix.eureka2.Names;
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.channel.RegistrationChannelFactory;
-import com.netflix.eureka2.registry.eviction.EvictionQueue;
-import com.netflix.eureka2.server.channel.ServerChannelFactory;
+import com.netflix.eureka2.server.channel.RegistrationChannelImpl;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
@@ -32,41 +34,38 @@ import io.reactivex.netty.channel.ObservableConnection;
 import rx.Observable;
 import rx.schedulers.Schedulers;
 
-import javax.inject.Inject;
-
 /**
  * @author Tomasz Bak
  */
 public class TcpRegistrationHandler implements ConnectionHandler<Object, Object> {
 
     private final WriteServerConfig config;
-    private final SourcedEurekaRegistry<InstanceInfo> registry;
-    private final EvictionQueue evictionQueue;
+    private final EurekaRegistrationProcessor<InstanceInfo> registrationProcessor;
     private final WriteServerMetricFactory metricFactory;
 
     @Inject
     public TcpRegistrationHandler(WriteServerConfig config,
-                                  SourcedEurekaRegistry registry,
-                                  EvictionQueue evictionQueue,
+                                  @Named(Names.REGISTRATION) EurekaRegistrationProcessor registrationProcessor,
                                   WriteServerMetricFactory metricFactory) {
         this.config = config;
-        this.registry = registry;
-        this.evictionQueue = evictionQueue;
+        this.registrationProcessor = registrationProcessor;
         this.metricFactory = metricFactory;
     }
 
     @Override
     public Observable<Void> handle(ObservableConnection<Object, Object> connection) {
         MessageConnection broker = new HeartBeatConnection(
-                new BaseMessageConnection("registration", connection, metricFactory.getRegistrationConnectionMetrics()),
+                new BaseMessageConnection(Names.REGISTRATION, connection, metricFactory.getRegistrationConnectionMetrics()),
                 config.getHeartbeatIntervalMs(), 3,
                 Schedulers.computation()
         );
-        final ServerChannelFactory<RegistrationChannel> channelFactory
-                = new RegistrationChannelFactory(registry, broker, evictionQueue, metricFactory);
 
-        return channelFactory.newChannel()
-                .asLifecycleObservable(); // Since this is a discovery handler which only handles interest subscriptions,
+
+        RegistrationChannel registrationChannel =
+                new RegistrationChannelImpl(registrationProcessor, broker, metricFactory.getRegistrationChannelMetrics());
+
+        // Since this is a discovery handler which only handles interest subscriptions,
         // the channel is created on connection accept.
+        return registrationChannel.asLifecycleObservable();
     }
 }

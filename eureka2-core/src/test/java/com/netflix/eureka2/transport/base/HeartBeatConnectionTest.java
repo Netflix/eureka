@@ -19,7 +19,7 @@ package com.netflix.eureka2.transport.base;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.protocol.Heartbeat;
+import com.netflix.eureka2.protocol.common.Heartbeat;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.junit.Before;
 import org.junit.Test;

@@ -49,7 +49,7 @@ public enum SampleServicePort {
     EurekaDiscoveryPort() {
         @Override
         public ServicePort build() {
-            return new ServicePort(Names.DISCOVERY, EurekaTransports.DEFAULT_DISCOVERY_PORT, false);
+            return new ServicePort(Names.INTEREST, EurekaTransports.DEFAULT_DISCOVERY_PORT, false);
         }
     },
     EurekaReplicationPort() {

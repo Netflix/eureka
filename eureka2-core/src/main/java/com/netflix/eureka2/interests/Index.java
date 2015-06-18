@@ -69,10 +69,10 @@ import rx.subjects.Subject;
 public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<T>> {
 
     private final Interest<T> interest;
-    private final PauseableSubject<ChangeNotification<T>> notificationsSubject;
+    private final Subject<ChangeNotification<T>, ChangeNotification<T>> dataSourceSubject;
 
     protected Index(final Interest<T> interest, final InitStateHolder<T> initStateHolder,
-                    final Subject<ChangeNotification<T>, ChangeNotification<T>> realTimeSource) {
+                    final Subject<ChangeNotification<T>, ChangeNotification<T>> dataSourceSubject) {
         super(new OnSubscribe<ChangeNotification<T>>() {
             @Override
             public void call(Subscriber<? super ChangeNotification<T>> subscriber) {
@@ -83,7 +83,7 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
                 // TODO can we make this buffering cheaper?
                 final PauseableSubject<ChangeNotification<T>> realTimeSubject = PauseableSubject.create();
                 realTimeSubject.pause();
-                final Subscription realTimeSubscription = realTimeSource.subscribe(realTimeSubject);
+                final Subscription realTimeSubscription = dataSourceSubject.subscribe(realTimeSubject);
 
                 realTimeSubject.mergeWith(Observable.from(initStateHolder).doOnCompleted(new Action0() {
                     @Override
@@ -100,9 +100,8 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
         });
 
         this.interest = interest;
-        this.notificationsSubject = initStateHolder.getNotificationSubject();
-        this.notificationsSubject.subscribe(initStateHolder);// It is important to ALWAYS update init state first otherwise, we will lose data (see class javadoc)
-        this.notificationsSubject.subscribe(realTimeSource);
+        this.dataSourceSubject = dataSourceSubject;
+        this.dataSourceSubject.subscribe(initStateHolder);// It is important to ALWAYS update init state first otherwise, we will lose data (see class javadoc)
     }
 
     public Interest getInterest() {
@@ -111,37 +110,39 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
 
     @Override
     public void onCompleted() {
-        notificationsSubject.onCompleted();
+        dataSourceSubject.onCompleted();
     }
 
     @Override
     public void onError(Throwable e) {
-        notificationsSubject.onError(e);
+        dataSourceSubject.onError(e);
     }
 
     @Override
     public void onNext(ChangeNotification<T> notification) {
-        notificationsSubject.onNext(notification);
+        dataSourceSubject.onNext(notification);
     }
 
     public static <T> Index<T> forInterest(final Interest<T> interest,
                                            final Observable<ChangeNotification<T>> dataSource,
                                            final InitStateHolder<T> initStateHolder) {
-        Subject<ChangeNotification<T>, ChangeNotification<T>> realTimeSource = PublishSubject.create();
-        Index<T> toReturn = new Index<T>(interest, initStateHolder, realTimeSource);
+        PublishSubject<ChangeNotification<T>> dataSourceSubject = PublishSubject.create();
+        Index<T> index = new Index<>(interest, initStateHolder, dataSourceSubject);
 
+        // connect the index to the data source.
+        // data source sends all notifications irrespective of the interest set. Here we filter based on interest.
         dataSource.filter(new Func1<ChangeNotification<T>, Boolean>() {
             @Override
             public Boolean call(ChangeNotification<T> notification) {
                 return interest.matches(notification.getData());
             }
-        }).subscribe(toReturn); // data source sends all notifications irrespective of the interest set. Here we filter based on interest.
-        return toReturn;
+        }).subscribe(index);
+        return index;
     }
 
     @Override
     public boolean hasObservers() {
-        return notificationsSubject.hasObservers();
+        return dataSourceSubject.hasObservers();
     }
 
     /**
@@ -185,11 +186,6 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
         };
 
         private volatile boolean done;
-        private final PauseableSubject<ChangeNotification<T>> notificationSubject;
-
-        protected InitStateHolder(PauseableSubject<ChangeNotification<T>> notificationSubject) {
-            this.notificationSubject = notificationSubject;
-        }
 
         @Override
         public Iterator<ChangeNotification<T>> iterator() {
@@ -198,12 +194,7 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
                 return EMPTY_ITERATOR;
             }
 
-            try {
-                notificationSubject.pause();
-                return _newIterator();
-            } finally {
-                notificationSubject.resume();
-            }
+            return _newIterator();
         }
 
         @Override
@@ -226,18 +217,14 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
             addNotification(notification);
         }
 
-        protected PauseableSubject<ChangeNotification<T>> getNotificationSubject() {
-            return notificationSubject;
-        }
-
         protected boolean isDone() {
             return done;
         }
 
-        protected abstract void addNotification(ChangeNotification<T> notification);
+        public abstract void addNotification(ChangeNotification<T> notification);
 
-        protected abstract void clearAllNotifications();
+        public abstract void clearAllNotifications();
 
-        protected abstract Iterator<ChangeNotification<T>> _newIterator();
+        public abstract Iterator<ChangeNotification<T>> _newIterator();
     }
 }

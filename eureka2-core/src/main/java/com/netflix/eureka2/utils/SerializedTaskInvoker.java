@@ -85,7 +85,7 @@ public abstract class SerializedTaskInvoker {
         });
     }
 
-    protected void shutdown() {
+    protected void shutdownTaskInvoker() {
         worker.unsubscribe();
     }
 }
