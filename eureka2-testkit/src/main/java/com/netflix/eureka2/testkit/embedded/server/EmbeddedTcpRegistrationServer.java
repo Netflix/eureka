@@ -26,7 +26,7 @@ public class EmbeddedTcpRegistrationServer extends TcpRegistrationServer {
     @Inject
     public EmbeddedTcpRegistrationServer(WriteServerConfig config,
                                          @Named(Names.REGISTRATION) MetricEventsListenerFactory servoEventsListenerFactory,
-                                         Provider<TcpRegistrationHandler> tcpRegistrationHandler,
+                                         TcpRegistrationHandler tcpRegistrationHandler,
                                          NetworkRouter networkRouter) {
         super(config, servoEventsListenerFactory, tcpRegistrationHandler);
         this.networkRouter = networkRouter;

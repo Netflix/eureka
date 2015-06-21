@@ -12,6 +12,8 @@ import com.netflix.eureka2.server.utils.guice.PostInjector;
 import rx.Observable;
 import rx.subjects.ReplaySubject;
 
+import javax.annotation.PostConstruct;
+
 /**
  * Collects health status providers, and makes them available via {@link HealthStatusProviderRegistry#activate()}
  * method. If no provider is registered, a default {@link AlwaysHealthyStatusProvider} is returned, to
@@ -32,7 +34,8 @@ public class HealthStatusProviderRegistry {
         return providerSubject;
     }
 
-    @PostInjector
+//    @PostInjector
+    @PostConstruct
     public void activate() {
         if (providers.isEmpty()) {
             List<HealthStatusProvider<?>> providers = Collections.<HealthStatusProvider<?>>singletonList(

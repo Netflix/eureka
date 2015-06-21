@@ -1,4 +1,4 @@
-package com.netflix.eureka2.server.health;
+package com.netflix.eureka2.server.module;
 
 import javax.inject.Provider;
 import java.lang.reflect.Method;
@@ -13,13 +13,14 @@ import com.google.inject.spi.TypeEncounter;
 import com.google.inject.spi.TypeListener;
 import com.netflix.eureka2.health.EurekaHealthStatusAggregator;
 import com.netflix.eureka2.health.HealthStatusProvider;
+import com.netflix.eureka2.server.health.HealthStatusProviderRegistry;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 
 /**
  * This module injects interceptors that collect all components implementing {@link HealthStatusProvider}
  * interface, excluding {@link EurekaHealthStatusAggregator}. The collected components are available via
- * {@link HealthStatusProviderRegistry} that should be injected in places where it is needed.
+ * {@link com.netflix.eureka2.server.health.HealthStatusProviderRegistry} that should be injected in places where it is needed.
  *
  * @author Tomasz Bak
  */
@@ -30,6 +31,7 @@ public class EurekaHealthStatusModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(HealthStatusProviderRegistry.class).toInstance(registry);
+
         bindInterceptor(new AbstractMatcher<Class<?>>() {
             @Override
             public boolean matches(Class<?> aClass) {

@@ -26,7 +26,7 @@ public class EmbeddedTcpInterestServer extends TcpInterestServer {
     @Inject
     public EmbeddedTcpInterestServer(EurekaServerConfig config,
                                      @Named(Names.INTEREST) MetricEventsListenerFactory servoEventsListenerFactory,
-                                     Provider<TcpInterestHandler> tcpDiscoveryHandler,
+                                     TcpInterestHandler tcpDiscoveryHandler,
                                      NetworkRouter networkRouter) {
         super(config, servoEventsListenerFactory, tcpDiscoveryHandler);
         this.networkRouter = networkRouter;

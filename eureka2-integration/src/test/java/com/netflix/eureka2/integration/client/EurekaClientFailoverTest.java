@@ -87,29 +87,35 @@ public class EurekaClientFailoverTest {
     }
 
     private void executeFailoverTest(Runnable failureInjector) throws Exception {
-        // Subscribe to instance registration updates
-        ExtTestSubscriber<ChangeNotification<InstanceInfo>> interestSubscriber = subscribeTo(INSTANCE_UP);
-
-        // Register
-        PublishSubject<InstanceInfo> registrationSubject = PublishSubject.create();
         EurekaRegistrationClient registrationClient = eurekaDeploymentResource.getEurekaDeployment().registrationClientToWriteCluster();
-        Subscription registrationSubscription = registrationClient.register(registrationSubject).subscribe();
-        registrationSubject.onNext(INSTANCE_UP);
+        EurekaInterestClient interestClient = eurekaDeploymentResource.getEurekaDeployment().cannonicalInterestClient();
 
-        assertThat(interestSubscriber.takeNext(60, TimeUnit.SECONDS), is(addChangeNotificationOf(INSTANCE_UP)));
+        try {
+            // Subscribe to instance registration updates
+            ExtTestSubscriber<ChangeNotification<InstanceInfo>> interestSubscriber = subscribeTo(interestClient, INSTANCE_UP);
 
-        // Inject failure
-        failureInjector.run();
+            // Register
+            PublishSubject<InstanceInfo> registrationSubject = PublishSubject.create();
+            Subscription registrationSubscription = registrationClient.register(registrationSubject).subscribe();
+            registrationSubject.onNext(INSTANCE_UP);
 
-        // Update instance status, and verify that it was handled
-        registrationSubject.onNext(INSTANCE_DOWN);
+            assertThat(interestSubscriber.takeNext(60, TimeUnit.SECONDS), is(addChangeNotificationOf(INSTANCE_UP)));
 
-        assertThat(registrationSubscription.isUnsubscribed(), is(false));
-        assertThat(interestSubscriber.takeNext(60, TimeUnit.SECONDS), is(modifyChangeNotificationOf(INSTANCE_DOWN)));
+            // Inject failure
+            failureInjector.run();
+
+            // Update instance status, and verify that it was handled
+            registrationSubject.onNext(INSTANCE_DOWN);
+
+            assertThat(registrationSubscription.isUnsubscribed(), is(false));
+            assertThat(interestSubscriber.takeNext(60, TimeUnit.SECONDS), is(modifyChangeNotificationOf(INSTANCE_DOWN)));
+        } finally {
+            registrationClient.shutdown();
+            interestClient.shutdown();
+        }
     }
 
-    private ExtTestSubscriber<ChangeNotification<InstanceInfo>> subscribeTo(InstanceInfo instanceInfo) {
-        EurekaInterestClient interestClient = eurekaDeploymentResource.getEurekaDeployment().cannonicalInterestClient();
+    private ExtTestSubscriber<ChangeNotification<InstanceInfo>> subscribeTo(EurekaInterestClient interestClient, InstanceInfo instanceInfo) {
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> interestSubscriber = new ExtTestSubscriber<>();
         interestClient.forInterest(Interests.forInstance(Operator.Equals, instanceInfo.getId()))
                 .filter(dataOnlyFilter())

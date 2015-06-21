@@ -24,7 +24,7 @@ public class EmbeddedTcpReplicationServer extends TcpReplicationServer {
 
     @Inject
     public EmbeddedTcpReplicationServer(WriteServerConfig config,
-                                        Provider<TcpReplicationHandler> tcpReplicationHandler,
+                                        TcpReplicationHandler tcpReplicationHandler,
                                         @Named(Names.REPLICATION) MetricEventsListenerFactory servoEventsListenerFactory,
                                         NetworkRouter networkRouter) {
         super(config, tcpReplicationHandler, servoEventsListenerFactory);

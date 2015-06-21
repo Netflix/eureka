@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2;
 
+import com.google.inject.AbstractModule;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.config.EurekaDashboardConfig;
@@ -23,7 +24,6 @@ import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.SpectatorEurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.metric.client.SpectatorEurekaClientMetricFactory;
-import com.netflix.eureka2.server.AbstractEurekaServerModule;
 import com.netflix.eureka2.server.EurekaInterestClientProvider;
 import com.netflix.eureka2.server.EurekaRegistrationClientProvider;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
@@ -33,7 +33,7 @@ import com.netflix.eureka2.server.service.SelfRegistrationService;
 /**
  * @author Tomasz Bak
  */
-public class EurekaDashboardModule extends AbstractEurekaServerModule {
+public class EurekaDashboardModule extends AbstractModule {
 
     private final EurekaDashboardConfig config;
     private final EurekaRegistrationClient registrationClient;
@@ -56,7 +56,7 @@ public class EurekaDashboardModule extends AbstractEurekaServerModule {
     }
 
     @Override
-    protected void configureEureka() {
+    protected void configure() {
         if (config == null) {
             bind(EurekaDashboardConfig.class).asEagerSingleton();
             bind(EurekaCommonConfig.class).to(EurekaDashboardConfig.class);

@@ -20,6 +20,7 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import com.google.inject.Provider;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
@@ -42,13 +43,13 @@ public class AuditServiceController {
 
     private final SourcedEurekaRegistry<InstanceInfo> registry;
     private final AuditService auditService;
-    private final SelfInfoResolver serverIdentity;
+    private final Provider<SelfInfoResolver> serverIdentity;
 
     @Inject
     public AuditServiceController(
             SourcedEurekaRegistry registry,
             AuditService auditService,
-            SelfInfoResolver serverIdentity) {
+            Provider<SelfInfoResolver> serverIdentity) {
         this.registry = registry;
         this.auditService = auditService;
         this.serverIdentity = serverIdentity;
@@ -57,7 +58,7 @@ public class AuditServiceController {
     @PostConstruct
     public void startRegistryAuditing() {
         // TODO: this should be only Origin.Local, but since bridge works on replication channel we would not audit eureka 1.0 entries.
-        serverIdentity.resolve().take(1).flatMap(new Func1<InstanceInfo, Observable<Void>>() {
+        serverIdentity.get().resolve().take(1).flatMap(new Func1<InstanceInfo, Observable<Void>>() {
             @Override
             public Observable<Void> call(InstanceInfo ownInstanceInfo) {
                 final String ownServerId = ownInstanceInfo == null ? null : ownInstanceInfo.getId();

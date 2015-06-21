@@ -14,7 +14,12 @@ import com.netflix.eureka2.transport.MessageConnection;
  */
 public class TestTcpReplicationHandler extends TcpReplicationHandler {
 
-    public TestTcpReplicationHandler(WriteServerConfig config, SelfInfoResolver selfIdentityService, SourcedEurekaRegistry registry, WriteServerMetricFactory metricFactory) {
+    public TestTcpReplicationHandler(
+            WriteServerConfig config,
+            SelfInfoResolver selfIdentityService,
+            SourcedEurekaRegistry registry,
+            WriteServerMetricFactory metricFactory
+    ) {
         super(config, selfIdentityService, registry, metricFactory);
     }
 

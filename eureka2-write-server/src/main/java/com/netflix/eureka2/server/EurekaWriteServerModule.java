@@ -17,6 +17,7 @@
 package com.netflix.eureka2.server;
 
 import com.google.inject.name.Names;
+import com.netflix.archaius.inject.ApplicationLayer;
 import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.interests.IndexRegistry;
 import com.netflix.eureka2.interests.IndexRegistryImpl;
@@ -31,6 +32,7 @@ import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
+import com.netflix.eureka2.server.module.EurekaMetricsModule;
 import com.netflix.eureka2.server.registry.EvictionQuotaKeeper;
 import com.netflix.eureka2.server.registry.EvictionQuotaKeeperImpl;
 import com.netflix.eureka2.registry.eviction.EvictionStrategy;

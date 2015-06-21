@@ -88,7 +88,7 @@ public class EurekaHealthStatusAggregatorImpl implements EurekaHealthStatusAggre
                     @Override
                     public HealthStatusUpdate<EurekaHealthStatusAggregator> call(Status status) {
                         logger.info("New health status update: {}", status);
-                        return new HealthStatusUpdate<EurekaHealthStatusAggregator>(status, DESCRIPTOR);
+                        return new HealthStatusUpdate<>(status, DESCRIPTOR);
                     }
                 });
         BehaviorSubject<HealthStatusUpdate<EurekaHealthStatusAggregator>> subject = BehaviorSubject.create();
