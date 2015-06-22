@@ -19,8 +19,6 @@ package com.netflix.eureka;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import java.util.Date;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.CloudInstanceConfig;
@@ -35,8 +33,12 @@ import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.converters.JsonXStream;
 import com.netflix.discovery.converters.StringCache;
 import com.netflix.discovery.converters.XmlXStream;
+import com.netflix.discovery.util.EurekaEnvironmentImpl;
+import com.netflix.eureka.aws.AmazonEC2Provider;
+import com.netflix.eureka.aws.EIPManager;
+import com.netflix.eureka.aws.Ec2ClassicEIPManager;
+import com.netflix.eureka.aws.VpcEniManager;
 import com.netflix.eureka.cluster.PeerEurekaNode;
-import com.netflix.eureka.util.EIPManager;
 import com.netflix.eureka.util.EurekaMonitors;
 import com.thoughtworks.xstream.XStream;
 import org.slf4j.Logger;
@@ -73,10 +75,10 @@ public class EurekaBootStrap implements ServletContextListener {
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaBootStrap.class);
 
-    private static final int EIP_BIND_SLEEP_TIME_MS = 1000;
-    private static final Timer timer = new Timer("Eureka-EIPBinder", true);
-
     private final StringCache stringCache = new StringCache();
+
+    private EurekaEnvironmentImpl eurekaEnvironment;
+    private EIPManager eipManager;
 
     /**
      * Initializes Eureka, including syncing up with other Eureka peers and publishing the registry.
@@ -103,9 +105,34 @@ public class EurekaBootStrap implements ServletContextListener {
             int registryCount = registry.syncUp();
             registry.openForTraffic(registryCount);
 
+            this.eurekaEnvironment = new EurekaEnvironmentImpl();
             // Only in AWS, enable the binding functionality
             if (Name.Amazon.equals(info.getDataCenterInfo().getName())) {
-                handleEIPBinding(registry);
+                AmazonEC2Provider amazonEC2Provider = new AmazonEC2Provider(
+                        DiscoveryManager.getInstance().getEurekaClientConfig(),
+                        EurekaServerConfigurationManager.getInstance().getConfiguration()
+                );
+                if (eurekaEnvironment.isEc2Vpc()) {
+                    this.eipManager = new VpcEniManager(
+                            DiscoveryManager.getInstance().getEurekaClientConfig(),
+                            EurekaServerConfigurationManager.getInstance().getConfiguration(),
+                            DiscoveryManager.getInstance().getEurekaClient(),
+                            ApplicationInfoManager.getInstance(),
+                            registry,
+                            amazonEC2Provider.get()
+                    );
+                } else {
+                    this.eipManager = new Ec2ClassicEIPManager(
+                            DiscoveryManager.getInstance().getEurekaClientConfig(),
+                            EurekaServerConfigurationManager.getInstance().getConfiguration(),
+                            DiscoveryManager.getInstance().getEurekaClient(),
+                            ApplicationInfoManager.getInstance(),
+                            registry,
+                            amazonEC2Provider.get()
+                    );
+                }
+
+                eipManager.start();
             }
             // Initialize available remote registry
             PeerAwareInstanceRegistry.getInstance().initRemoteRegionRegistry();
@@ -173,11 +200,10 @@ public class EurekaBootStrap implements ServletContextListener {
             InstanceInfo info = ApplicationInfoManager.getInstance().getInfo();
             // Unregister all MBeans associated w/ DSCounters
             EurekaMonitors.shutdown();
-            for (int i = 0; i < EurekaServerConfigurationManager.getInstance()
-                    .getConfiguration().getEIPBindRebindRetries(); i++) {
+            for (int i = 0; i < EurekaServerConfigurationManager.getInstance().getConfiguration().getEIPBindRebindRetries(); i++) {
                 try {
-                    if (Name.Amazon.equals(info.getDataCenterInfo().getName())) {
-                        EIPManager.getInstance().unbindEIP();
+                    if (eipManager != null) {
+                        eipManager.stop();
                     }
                     break;
                 } catch (Throwable e) {
@@ -199,72 +225,5 @@ public class EurekaBootStrap implements ServletContextListener {
      * Users can override to clean up the environment themselves.
      */
     protected void destroyEurekaEnvironment() {
-
     }
-
-    /**
-     * Handles EIP binding process in AWS Cloud.
-     *
-     * @throws InterruptedException
-     */
-    private void handleEIPBinding(PeerAwareInstanceRegistry registry)
-            throws InterruptedException {
-        EurekaServerConfig eurekaServerConfig = EurekaServerConfigurationManager.getInstance().getConfiguration();
-        int retries = eurekaServerConfig.getEIPBindRebindRetries();
-        // Bind to EIP if needed
-        EIPManager eipManager = EIPManager.getInstance();
-        for (int i = 0; i < retries; i++) {
-            try {
-                if (eipManager.isEIPBound()) {
-                    break;
-                } else {
-                    eipManager.bindEIP();
-                }
-            } catch (Throwable e) {
-                logger.error("Cannot bind to EIP", e);
-                Thread.sleep(EIP_BIND_SLEEP_TIME_MS);
-            }
-        }
-        // Schedule a timer which periodically checks for EIP binding.
-        scheduleEIPBindTask(eurekaServerConfig, registry);
-    }
-
-    /**
-     * Schedules a EIP binding timer task which constantly polls for EIP in the
-     * same zone and binds it to itself.If the EIP is taken away for some
-     * reason, this task tries to get the EIP back. Hence it is advised to take
-     * one EIP assignment per instance in a zone.
-     *
-     * @param eurekaServerConfig
-     *            the Eureka Server Configuration.
-     */
-    private void scheduleEIPBindTask(
-            EurekaServerConfig eurekaServerConfig, final PeerAwareInstanceRegistry registry) {
-        timer.schedule(new TimerTask() {
-
-                           @Override
-                           public void run() {
-                               try {
-                                   // If the EIP is not bound, the registry could  be stale
-                                   // First sync up the registry from the neighboring node before
-                                   // trying to bind the EIP
-                                   EIPManager eipManager = EIPManager.getInstance();
-                                   if (!eipManager.isEIPBound()) {
-                                       registry.clearRegistry();
-                                       int count = registry.syncUp();
-                                       registry.openForTraffic(count);
-                                   } else {
-                                       // An EIP is already bound
-                                       return;
-                                   }
-                                   eipManager.bindEIP();
-                               } catch (Throwable e) {
-                                   logger.error("Could not bind to EIP", e);
-                               }
-                           }
-                       }, eurekaServerConfig.getEIPBindingRetryIntervalMs(),
-                eurekaServerConfig.getEIPBindingRetryIntervalMs());
-    }
-
-
 }

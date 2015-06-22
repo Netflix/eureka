@@ -66,6 +66,10 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.EurekaJerseyClient;
 import com.netflix.discovery.shared.EurekaJerseyClient.JerseyClient;
+import com.netflix.discovery.util.DnsResolver;
+import com.netflix.discovery.util.DnsResolverImpl;
+import com.netflix.discovery.util.EurekaEnvironment;
+import com.netflix.discovery.util.EurekaEnvironmentImpl;
 import com.netflix.eventbus.spi.EventBus;
 import com.netflix.governator.guice.lazy.FineGrainedLazySingleton;
 import com.netflix.servo.monitor.Counter;
@@ -168,6 +172,9 @@ public class DiscoveryClient implements EurekaClient {
 
     private ApplicationInfoManager.StatusChangeListener statusChangeListener;
 
+    private final DnsResolver dnsResolver = new DnsResolverImpl();
+    private final EurekaEnvironment eurekaEnvironment = new EurekaEnvironmentImpl();
+
     private enum Action {
         Register, Cancel, Renew, Refresh, Refresh_Delta
     }
@@ -225,6 +232,7 @@ public class DiscoveryClient implements EurekaClient {
     public DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
         this(applicationInfoManager, config, args, new Provider<BackupRegistry>() {
             private volatile BackupRegistry backupRegistryInstance;
+
             @Override
             public synchronized BackupRegistry get() {
                 if (backupRegistryInstance == null) {
@@ -329,7 +337,7 @@ public class DiscoveryClient implements EurekaClient {
             remoteRegionsToFetch = new AtomicReference<String>(clientConfig.fetchRegistryForRemoteRegions());
             AzToRegionMapper azToRegionMapper;
             if (clientConfig.shouldUseDnsForFetchingServiceUrls()) {
-                azToRegionMapper = new DNSBasedAzToRegionMapper();
+                azToRegionMapper = new DNSBasedAzToRegionMapper(dnsResolver);
             } else {
                 azToRegionMapper = new PropertyBasedAzToRegionMapper(clientConfig);
             }
@@ -888,7 +896,7 @@ public class DiscoveryClient implements EurekaClient {
 
         // Notify about cache refresh before updating the instance remote status
         onCacheRefreshed();
-        
+
         // Update remote status based on refreshed data held in the cache
         updateInstanceRemoteStatus();
 
@@ -914,8 +922,8 @@ public class DiscoveryClient implements EurekaClient {
 
         // Notify if status changed
         if (lastRemoteInstanceStatus != currentRemoteInstanceStatus) {
-        	onRemoteStatusChanged(lastRemoteInstanceStatus, currentRemoteInstanceStatus);
-        	lastRemoteInstanceStatus = currentRemoteInstanceStatus;
+            onRemoteStatusChanged(lastRemoteInstanceStatus, currentRemoteInstanceStatus);
+            lastRemoteInstanceStatus = currentRemoteInstanceStatus;
         }
     }
 
@@ -1268,11 +1276,11 @@ public class DiscoveryClient implements EurekaClient {
         throw new IOException(message);
     }
 
-    private static URI getRedirectBaseUri(URI targetUrl) {
+    private URI getRedirectBaseUri(URI targetUrl) {
         Matcher pathMatcher = REDIRECT_PATH_REGEX.matcher(targetUrl.getPath());
         if (pathMatcher.matches()) {
             return UriBuilder.fromUri(targetUrl)
-                    .host(DnsResolver.resolve(targetUrl.getHost()))
+                    .host(dnsResolver.resolve(targetUrl.getHost()))
                     .replacePath(pathMatcher.group(1))
                     .replaceQuery(null)
                     .build();
@@ -1495,7 +1503,7 @@ public class DiscoveryClient implements EurekaClient {
         String region = getRegion();
         // Get zone-specific DNS names for the given region so that we can get a
         // list of available zones
-        Map<String, List<String>> zoneDnsNamesMap = getZoneBasedDiscoveryUrlsFromRegion(region);
+        Map<String, List<String>> zoneDnsNamesMap = getZoneBasedDiscoveryUrlsFromRegion(dnsResolver, region);
         Set<String> availableZones = zoneDnsNamesMap.keySet();
         List<String> zones = new ArrayList<String>(availableZones);
         if (zones.isEmpty()) {
@@ -1617,13 +1625,15 @@ public class DiscoveryClient implements EurekaClient {
     /**
      * Get the zone based CNAMES that are bound to a region.
      *
+     *
+     * @param dnsResolver
      * @param region
      *            - The region for which the zone names need to be retrieved
      * @return - The list of CNAMES from which the zone-related information can
      *         be retrieved
      */
     static Map<String, List<String>> getZoneBasedDiscoveryUrlsFromRegion(
-            String region) {
+            DnsResolver dnsResolver, String region) {
         String discoveryDnsName = null;
         try {
             discoveryDnsName = "txt." + region + "."
@@ -1632,7 +1642,7 @@ public class DiscoveryClient implements EurekaClient {
             logger.debug("The region url to be looked up is {} :",
                     discoveryDnsName);
             Set<String> zoneCnamesForRegion = new TreeSet<String>(
-                    DnsResolver.getCNamesFromTxtRecord(discoveryDnsName));
+                    dnsResolver.getCNamesFromTxtRecord(discoveryDnsName));
             Map<String, List<String>> zoneCnameMapForRegion = new TreeMap<String, List<String>>();
             for (String zoneCname : zoneCnamesForRegion) {
                 String zone = null;
@@ -1663,7 +1673,7 @@ public class DiscoveryClient implements EurekaClient {
     }
 
     private static boolean isEC2Url(String zoneCname) {
-        return zoneCname.startsWith("ec2");
+        return zoneCname.startsWith("ec2") || zoneCname.startsWith("vpc");
     }
 
     /**
@@ -1675,16 +1685,16 @@ public class DiscoveryClient implements EurekaClient {
      *            - CNAME or EIP that needs to be retrieved
      * @return - The list of EC2 URLs associated with the dns name
      */
-    public static Set<String> getEC2DiscoveryUrlsFromZone(String dnsName,
-                                                          DiscoveryUrlType type) {
+    public Set<String> getEC2DiscoveryUrlsFromZone(String dnsName,
+                                                   DiscoveryUrlType type) {
         Set<String> eipsForZone = null;
         try {
             dnsName = "txt." + dnsName;
             logger.debug("The zone url to be looked up is {} :", dnsName);
-            Set<String> ec2UrlsForZone = DnsResolver.getCNamesFromTxtRecord(dnsName);
+
+            Set<String> ec2UrlsForZone = dnsResolver.getCNamesFromTxtRecord(dnsName);
             for (String ec2Url : ec2UrlsForZone) {
-                logger.debug("The eureka url for the dns name {} is {}",
-                        dnsName, ec2Url);
+                logger.debug("The eureka url for the dns name {} is {}", dnsName, ec2Url);
                 ec2UrlsForZone.add(ec2Url);
             }
             if (DiscoveryUrlType.CNAME.equals(type)) {
@@ -1803,7 +1813,7 @@ public class DiscoveryClient implements EurekaClient {
 
     /**
      * The heartbeat task that renews the lease in the given intervals.
-`     */
+     */
     private class HeartbeatThread implements Runnable {
 
         public void run() {
@@ -2031,36 +2041,34 @@ public class DiscoveryClient implements EurekaClient {
         }
     }
 
-    
     /**
      * Invoked when the remote status of this client has changed.
      * Subclasses may override this method to implement custom behavior if needed.
-     * 
+     *
      * @param oldStatus the previous remote {@link InstanceStatus}
      * @param newStatus the new remote {@link InstanceStatus} 
      */
     protected void onRemoteStatusChanged(InstanceInfo.InstanceStatus oldStatus, InstanceInfo.InstanceStatus newStatus) {
-    	fireEvent(new StatusChangeEvent(oldStatus, newStatus));
+        fireEvent(new StatusChangeEvent(oldStatus, newStatus));
     }
-    
+
     /**
      * Invoked every time the local registry cache is refreshed (whether changes have 
      * been detected or not).
-     * 
+     *
      * Subclasses may override this method to implement custom behavior if needed.
      */
     protected void onCacheRefreshed() {
-    	fireEvent(new CacheRefreshedEvent());
+        fireEvent(new CacheRefreshedEvent());
     }
-
 
     /**
      * Send the given event on the EventBus if one is available
-     * 
+     *
      * @param event the event to send on the eventBus
      */
     protected void fireEvent(DiscoveryEvent event) {
-    	// Publish event if an EventBus is available
+        // Publish event if an EventBus is available
         if (eventBus != null) {
             eventBus.publish(event);
         }

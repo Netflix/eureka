@@ -4,7 +4,7 @@ plugins {
 
 ext {
     githubProjectName = 'eureka'
-    awsVersion='1.9.3'
+    awsVersion='1.9.16'
     servletVersion='2.5'
     jerseyVersion='1.11'
     governatorVersion='1.3.3'
