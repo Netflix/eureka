@@ -26,12 +26,10 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> exte
     private final boolean withExt;
     private final boolean withAdminUI;
     private final ServerType serverType;
-    protected final C config;
 
     protected EmbeddedEurekaServer(ServerType serverType, C config, boolean withExt, boolean withAdminUI) {
         super(config);
         this.serverType = serverType;
-        this.config = config;
         this.withExt = withExt;
         this.withAdminUI = withAdminUI;
     }

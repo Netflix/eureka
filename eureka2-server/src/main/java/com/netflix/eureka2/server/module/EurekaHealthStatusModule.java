@@ -6,6 +6,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.matcher.AbstractMatcher;
 import com.google.inject.spi.InjectionListener;
@@ -26,11 +27,12 @@ import org.aopalliance.intercept.MethodInvocation;
  */
 public class EurekaHealthStatusModule extends AbstractModule {
 
-    private final HealthStatusProviderRegistry registry = new HealthStatusProviderRegistry();
+    private final HealthStatusProviderRegistry.ProviderHolder holder = new HealthStatusProviderRegistry.ProviderHolder();
 
     @Override
     protected void configure() {
-        bind(HealthStatusProviderRegistry.class).toInstance(registry);
+        bind(HealthStatusProviderRegistry.ProviderHolder.class).toInstance(holder);
+        bind(HealthStatusProviderRegistry.class).in(Scopes.SINGLETON);
 
         bindInterceptor(new AbstractMatcher<Class<?>>() {
             @Override
@@ -66,7 +68,7 @@ public class EurekaHealthStatusModule extends AbstractModule {
                 nested = true;
                 try {
                     Object result = invocation.proceed();
-                    registry.add((HealthStatusProvider) result);
+                    holder.add((HealthStatusProvider) result);
                     return result;
                 } finally {
                     nested = false;
@@ -85,7 +87,7 @@ public class EurekaHealthStatusModule extends AbstractModule {
                         new InjectionListener<T>() {
                             @Override
                             public void afterInjection(T healthStatusProvider) {
-                                registry.add((HealthStatusProvider) healthStatusProvider);
+                                holder.add((HealthStatusProvider) healthStatusProvider);
                             }
                         });
             }
