@@ -43,7 +43,7 @@ public class EurekaClientFailoverTest {
 
     @Rule
     public final EurekaDeploymentResource eurekaDeploymentResource =
-            anEurekaDeploymentResource(1, 1).withNetworkRouter(true).build();
+            anEurekaDeploymentResource(2, 1).withNetworkRouter(true).build();
 
     private NetworkRouter networkRouter;
     private EmbeddedWriteCluster writeCluster;
@@ -54,6 +54,20 @@ public class EurekaClientFailoverTest {
         networkRouter = eurekaDeploymentResource.getEurekaDeployment().getNetworkRouter();
         writeCluster = eurekaDeploymentResource.getEurekaDeployment().getWriteCluster();
         readCluster = eurekaDeploymentResource.getEurekaDeployment().getReadCluster();
+    }
+
+
+    @Test
+    public void testInterestFailover() throws Exception {
+        executeFailoverTest(new Runnable() {
+            @Override
+            public void run() {
+                // Scale the read cluster up, and break the network connection to the first read server
+                readCluster.scaleUpByOne();
+                NetworkLink networkLink = networkRouter.getLinkTo(readCluster.getServer(0).getDiscoveryPort());
+                networkLink.disconnect();
+            }
+        });
     }
 
     @Test
@@ -69,19 +83,6 @@ public class EurekaClientFailoverTest {
                 interestLink.disconnect();
                 replicationLink.disconnect();
                 registrationLink.disconnect();
-            }
-        });
-    }
-
-    @Test
-    public void testInterestFailover() throws Exception {
-        executeFailoverTest(new Runnable() {
-            @Override
-            public void run() {
-                // Scale the read cluster up, and break the network connection to the first read server
-                readCluster.scaleUpByOne();
-                NetworkLink networkLink = networkRouter.getLinkTo(readCluster.getServer(0).getDiscoveryPort());
-                networkLink.disconnect();
             }
         });
     }
