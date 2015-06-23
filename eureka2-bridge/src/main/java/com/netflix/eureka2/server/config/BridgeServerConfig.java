@@ -23,7 +23,7 @@ public class BridgeServerConfig extends WriteServerConfig {
     protected BridgeServerConfig(
             // common server configs
             ResolverType resolverType,
-            String[] serverList,
+            String serverList,
             String appName,
             String vipAddress,
             String readClusterVipAddress,

@@ -32,7 +32,6 @@ public class EurekaDashboardServer extends AbstractEurekaServer<EurekaDashboardC
     protected Module getModule() {
         return Modules.combine(Arrays.asList(
                 new CommonEurekaServerModule(name),
-                new EurekaExtensionModule(ServerType.Dashboard),
                 new EurekaDashboardModule(config)
         ));
     }

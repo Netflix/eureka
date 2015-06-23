@@ -3,7 +3,6 @@ package com.netflix.eureka2.integration.server.startup;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.config.ConfigurationManager;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
@@ -47,26 +46,33 @@ public abstract class AbstractStartupAndShutdownIntegrationTest<C extends Eureka
     @Rule
     public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResource(1, 0);
 
-    protected String[] writeServerList;
+    protected String writeServerList;
 
     @Before
     public void setUp() throws Exception {
         EmbeddedWriteServer server = eurekaDeploymentResource.getEurekaDeployment().getWriteCluster().getServer(0);
-        writeServerList = new String[]{
-                "localhost:" + server.getRegistrationPort() + ':' + server.getDiscoveryPort() + ':' + server.getReplicationPort()
-        };
+        writeServerList = "localhost:" + server.getRegistrationPort() + ':' + server.getDiscoveryPort() + ':' + server.getReplicationPort();
     }
 
     protected void verifyThatStartsWithFileBasedConfiguration(String serverName, S server) throws Exception {
         injectConfigurationValuesViaSystemProperties(serverName);
-        executeAndVerifyLifecycle(server, serverName);
+        try {
+            executeAndVerifyLifecycle(server, serverName);
+        } finally {
+            removeConfigurationValuesViaSystemProperties();
+        }
     }
 
     protected void injectConfigurationValuesViaSystemProperties(String appName) {
         // These properties are resolved in {write|read|dashboard|bridge}-server-startupAndShutdown.properties, and
         // write-server-startupAndShutdown.properties file.
-        ConfigurationManager.getConfigInstance().setProperty("eureka.test.startupAndShutdown.serverList", writeServerList[0]);
-        ConfigurationManager.getConfigInstance().setProperty("eureka.test.startupAndShutdown.appName", appName);
+        System.setProperty("eureka.test.startupAndShutdown.serverList", writeServerList);
+        System.setProperty("eureka.test.startupAndShutdown.appName", appName);
+    }
+
+    protected void removeConfigurationValuesViaSystemProperties() {
+        System.clearProperty("eureka.test.startupAndShutdown.serverList");
+        System.clearProperty("eureka.test.startupAndShutdown.appName");
     }
 
     protected void executeAndVerifyLifecycle(S server, String applicationName) throws Exception {

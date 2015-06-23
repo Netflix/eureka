@@ -18,10 +18,8 @@ package com.netflix.eureka2.server;
 
 import java.util.Arrays;
 
-import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
-import com.netflix.archaius.inject.ApplicationLayer;
 import com.netflix.eureka2.server.config.WriteCommandLineParser;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.module.CommonEurekaServerModule;
@@ -50,13 +48,7 @@ public class EurekaWriteServer extends AbstractEurekaServer<WriteServerConfig> {
         return Modules.combine(Arrays.asList(
                 new CommonEurekaServerModule(name),
                 new EurekaExtensionModule(ServerType.Write),
-                new EurekaWriteServerModule(config),
-                new AbstractModule() {
-                    @Override
-                    protected void configure() {
-                        bind(String.class).annotatedWith(ApplicationLayer.class).toInstance(name);
-                    }
-                }
+                new EurekaWriteServerModule(config)
         ));
     }
 

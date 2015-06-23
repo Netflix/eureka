@@ -45,7 +45,7 @@ public class EurekaDashboardConfig extends EurekaCommonConfig {
     protected EurekaDashboardConfig(
             // common configs
             ResolverType resolverType,
-            String[] serverList,
+            String serverList,
             String appName,
             String vipAddress,
             String readClusterVipAddress,

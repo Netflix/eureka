@@ -19,6 +19,7 @@ package com.netflix.eureka2.server;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
+import com.netflix.archaius.inject.ApplicationLayer;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
 import com.netflix.eureka2.server.service.EurekaShutdownService;
@@ -74,19 +75,28 @@ public abstract class AbstractEurekaServer<C extends EurekaCommonConfig> extends
     protected abstract Module getModule();
 
     public void start() {
-        Module module;
-        if (config != null) {
-            module = Modules.override(getModule()).with(new AbstractModule() {
-                @Override
-                protected void configure() {
-                    bind(AdminConfigImpl.class).toInstance(new MyAdminContainerConfig(config.getWebAdminPort()));
+        injector = Governator.createInjector(new AbstractModule() {
+            @Override
+            protected void configure() {
+                if (name != null) {  // TODO this is not clean. Should not need name or config
+                    bind(String.class).annotatedWith(ApplicationLayer.class).toInstance(name);
                 }
-            });
-        } else {
-            module = getModule();
-        }
 
-        injector = Governator.createInjector(module);
+                if (config != null) {
+                    install(
+                            // hack to override admin console port as admin console is not yet archaius2
+                            Modules.override(getModule()).with(new AbstractModule() {
+                                @Override
+                                protected void configure() {
+                                    bind(AdminConfigImpl.class).toInstance(new MyAdminContainerConfig(config.getWebAdminPort()));
+                                }
+                            })
+                    );
+                } else {
+                    install(getModule());
+                }
+            }
+        });
     }
 
     public void waitTillShutdown() {
