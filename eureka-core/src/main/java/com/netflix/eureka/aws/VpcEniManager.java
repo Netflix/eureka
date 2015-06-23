@@ -39,9 +39,9 @@ import org.slf4j.LoggerFactory;
  * @author Tomasz Bak
  */
 @Singleton
-public class VpcEniManager2 extends AbstractEipManager {
+public class VpcEniManager extends AbstractEipManager {
 
-    private static final Logger logger = LoggerFactory.getLogger(VpcEniManager2.class);
+    private static final Logger logger = LoggerFactory.getLogger(VpcEniManager.class);
 
     private static final Pattern VPC_DNS_RE = Pattern.compile(".*vpc-(\\d+)-(\\d+)-(\\d+)-(\\d+)[.].*");
 
@@ -57,12 +57,12 @@ public class VpcEniManager2 extends AbstractEipManager {
     private final AmazonEC2 amazonEC2;
 
     @Inject
-    public VpcEniManager2(EurekaClientConfig eurekaClientConfig,
-                          EurekaServerConfig eurekaServerConfig,
-                          EurekaClient eurekaClient,
-                          ApplicationInfoManager infoManager,
-                          PeerAwareInstanceRegistry registry,
-                          AmazonEC2 amazonEC2) {
+    public VpcEniManager(EurekaClientConfig eurekaClientConfig,
+                         EurekaServerConfig eurekaServerConfig,
+                         EurekaClient eurekaClient,
+                         ApplicationInfoManager infoManager,
+                         PeerAwareInstanceRegistry registry,
+                         AmazonEC2 amazonEC2) {
         super(eurekaServerConfig, registry);
         this.eurekaClientConfig = eurekaClientConfig;
         this.eurekaClient = eurekaClient;
