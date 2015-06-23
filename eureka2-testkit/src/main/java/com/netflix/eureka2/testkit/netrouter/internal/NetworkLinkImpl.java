@@ -1,7 +1,6 @@
 package com.netflix.eureka2.testkit.netrouter.internal;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.netflix.eureka2.testkit.netrouter.NetworkLink;
 import rx.Observable;
@@ -14,7 +13,7 @@ import rx.subjects.Subject;
  */
 public class NetworkLinkImpl implements NetworkLink {
 
-    private final AtomicBoolean isConnected = new AtomicBoolean(true);
+    private volatile boolean isConnected = true;
 
     private final Subject<LinkEvent, LinkEvent> linkEventSubject = new SerializedSubject<>(PublishSubject.<LinkEvent>create());
 
@@ -24,35 +23,33 @@ public class NetworkLinkImpl implements NetworkLink {
 
     @Override
     public boolean isUp() {
-        return isConnected.get();
+        return isConnected;
     }
 
     @Override
-    public boolean connect() {
-        // FIXME Workaround for existing race conditions
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException ignore) {
-        }
-        boolean hasChanged = isConnected.compareAndSet(false, true);
-        if (hasChanged) {
-            linkEventSubject.onNext(new LinkEvent(this));
-        }
-        return hasChanged;
+    public Observable<Void> connect() {
+        isConnected = true;
+        LinkEvent event = new LinkEvent(this);
+        linkEventSubject.onNext(event);
+        return event.processed();
     }
 
     @Override
-    public boolean disconnect() {
-        // FIXME Workaround for existing race conditions
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException ignore) {
-        }
-        boolean hasChanged = isConnected.compareAndSet(true, false);
-        if (hasChanged) {
-            linkEventSubject.onNext(new LinkEvent(this));
-        }
-        return hasChanged;
+    public void connect(long timeout, TimeUnit timeUnit) {
+        connect().timeout(timeout, timeUnit).toBlocking().firstOrDefault(null);
+    }
+
+    @Override
+    public Observable<Void> disconnect() {
+        isConnected = false;
+        LinkEvent event = new LinkEvent(this);
+        linkEventSubject.onNext(event);
+        return event.processed();
+    }
+
+    @Override
+    public void disconnect(long timeout, TimeUnit timeUnit) {
+        disconnect().timeout(timeout, timeUnit).toBlocking().firstOrDefault(null);
     }
 
     @Override

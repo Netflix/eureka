@@ -1,5 +1,7 @@
 package com.netflix.eureka2.integration.server.replication;
 
+import java.util.concurrent.TimeUnit;
+
 import com.netflix.eureka2.integration.EurekaDeploymentClients;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -50,7 +52,7 @@ public class EvictionInReplicationChannelTest {
         // Now simulate network failure
         NetworkLink replicationLink = eurekaDeployment.getNetworkRouter()
                 .getLinkTo(eurekaDeployment.getWriteCluster().getServer(1).getReplicationPort());
-        replicationLink.disconnect();
+        replicationLink.disconnect(1, TimeUnit.SECONDS);
 
         InstanceInfo secondTemplate = SampleInstanceInfo.Backend.build();
         eurekaDeploymentClients.fillUpRegistryOfServer(0, CLUSTER_SIZE, secondTemplate);
@@ -59,7 +61,7 @@ public class EvictionInReplicationChannelTest {
         eurekaDeploymentClients.verifyWriteServerHasNoInstance(1, secondTemplate.getApp());
 
         // Restore replication channel
-        replicationLink.connect();
+        replicationLink.connect(1, TimeUnit.SECONDS);
 
         eurekaDeploymentClients.verifyWriteServerRegistryContent(1, firstTemplate.getApp(), CLUSTER_SIZE);
         eurekaDeploymentClients.verifyWriteServerRegistryContent(1, secondTemplate.getApp(), CLUSTER_SIZE);
