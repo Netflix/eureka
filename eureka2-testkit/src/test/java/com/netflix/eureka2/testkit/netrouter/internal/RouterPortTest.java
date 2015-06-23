@@ -60,7 +60,7 @@ public class RouterPortTest {
     @Test
     public void testLinkCanBeDisconnectedAndConnectedAgain() throws Exception {
         // First bring the link down and verify that connectivity is blocked
-        routerPort.getLink().disconnect();
+        routerPort.getLink().disconnect(1, TimeUnit.SECONDS);
         try {
             sendHello();
             fail("Connection failure expected");
@@ -69,7 +69,7 @@ public class RouterPortTest {
         }
 
         // Now bring the link up, and verify that connectivity works again
-        routerPort.getLink().connect();
+        routerPort.getLink().connect(1, TimeUnit.SECONDS);
         assertThat(sendHello(), is(equalTo("REPLY: HELLO!")));
     }
 

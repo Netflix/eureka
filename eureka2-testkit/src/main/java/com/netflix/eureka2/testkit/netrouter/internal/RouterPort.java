@@ -55,6 +55,7 @@ public class RouterPort {
         } else {
             closePort();
         }
+        linkEvent.acknowledge();
     }
 
     public int getLocalPort() {

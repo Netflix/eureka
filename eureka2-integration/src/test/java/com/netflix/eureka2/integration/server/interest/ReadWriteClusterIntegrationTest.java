@@ -1,5 +1,7 @@
 package com.netflix.eureka2.integration.server.interest;
 
+import java.util.concurrent.TimeUnit;
+
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.integration.IntegrationTestClassSetup;
@@ -87,7 +89,7 @@ public class ReadWriteClusterIntegrationTest extends IntegrationTestClassSetup {
         // Disconnect network connection to the first write node
         NetworkLink networkLink = eurekaDeployment.getNetworkRouter()
                 .getLinkTo(eurekaDeployment.getWriteCluster().getServer(0).getDiscoveryPort());
-        networkLink.disconnect();
+        networkLink.disconnect(1, TimeUnit.SECONDS);
 
         // Register
         registrationClient.register(Observable.just(registeringInfo)).subscribe();

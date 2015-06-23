@@ -2,6 +2,8 @@ package com.netflix.eureka2.testkit.netrouter;
 
 import java.util.concurrent.TimeUnit;
 
+import rx.Observable;
+
 /**
  *  A link between two servers with capabilities to inject different transmission properties
  * (throughput, data loss, etc).
@@ -15,21 +17,28 @@ public interface NetworkLink {
     boolean isUp();
 
     /**
-     * TODO Return observable that completes when connection is ready
      * Connect two endpoints.
      *
      * @return true if the connection actually happened (endpoints where disconnected prior to calling this method)
      */
-    boolean connect();
+    Observable<Void> connect();
 
     /**
-     * TODO Return observable that completes when connection is disconnected
-     *
+     * Convenience method that blocks until connect operation is completed.
+     */
+    void connect(long timeout, TimeUnit timeUnit);
+
+    /**
      * Disconnect two endpoints.
      *
      * @return true if the disconnect actually happened (endpoints where connected prior to calling this method)
      */
-    boolean disconnect();
+    Observable<Void> disconnect();
+
+    /**
+     * Convenience method that blocks until disconnect operation is completed.
+     */
+    void disconnect(long timeout, TimeUnit timeUnit);
 
     /**
      * Limit link bandwidth to a given throughput, queueing up excessive data.
