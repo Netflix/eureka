@@ -3,6 +3,7 @@ package com.netflix.eureka2.server.module;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
+import com.netflix.archaius.bridge.StaticArchaiusBridgeModule;
 import com.netflix.archaius.guice.ArchaiusModule;
 import com.netflix.archaius.inject.ApplicationLayer;
 import com.netflix.eureka2.health.EurekaHealthStatusAggregator;
@@ -65,6 +66,7 @@ public class CommonEurekaServerModule extends AbstractModule {
         install(new EurekaHealthStatusModule());
 
         // web admin
+        install(new StaticArchaiusBridgeModule());  // required to bridge archaius1 that is still used by adminModule
         install(new KaryonWebAdminModule());
     }
 }

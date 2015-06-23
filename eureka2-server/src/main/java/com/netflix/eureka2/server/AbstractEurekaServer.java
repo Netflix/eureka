@@ -18,8 +18,8 @@ package com.netflix.eureka2.server;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
-import com.google.inject.util.Modules;
 import com.netflix.archaius.inject.ApplicationLayer;
+import com.netflix.config.ConfigurationManager;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
 import com.netflix.eureka2.server.service.EurekaShutdownService;
@@ -82,19 +82,13 @@ public abstract class AbstractEurekaServer<C extends EurekaCommonConfig> extends
                     bind(String.class).annotatedWith(ApplicationLayer.class).toInstance(name);
                 }
 
+                // hack around adminConsole and need for archaius1 bridge
                 if (config != null) {
-                    install(
-                            // hack to override admin console port as admin console is not yet archaius2
-                            Modules.override(getModule()).with(new AbstractModule() {
-                                @Override
-                                protected void configure() {
-                                    bind(AdminConfigImpl.class).toInstance(new MyAdminContainerConfig(config.getWebAdminPort()));
-                                }
-                            })
-                    );
-                } else {
-                    install(getModule());
+                    ConfigurationManager.getConfigInstance().setProperty(
+                            "netflix.platform.admin.resources.port", Integer.toString(config.getWebAdminPort()));
                 }
+
+                install(getModule());
             }
         });
     }
