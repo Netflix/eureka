@@ -37,7 +37,7 @@ import com.netflix.discovery.util.EurekaEnvironmentImpl;
 import com.netflix.eureka.aws.AmazonEC2Provider;
 import com.netflix.eureka.aws.EIPManager;
 import com.netflix.eureka.aws.Ec2ClassicEIPManager;
-import com.netflix.eureka.aws.VpcEniManager;
+import com.netflix.eureka.aws.VpcEniManager2;
 import com.netflix.eureka.cluster.PeerEurekaNode;
 import com.netflix.eureka.util.EurekaMonitors;
 import com.thoughtworks.xstream.XStream;
@@ -113,7 +113,7 @@ public class EurekaBootStrap implements ServletContextListener {
                         EurekaServerConfigurationManager.getInstance().getConfiguration()
                 );
                 if (eurekaEnvironment.isEc2Vpc()) {
-                    this.eipManager = new VpcEniManager(
+                    this.eipManager = new VpcEniManager2(
                             DiscoveryManager.getInstance().getEurekaClientConfig(),
                             EurekaServerConfigurationManager.getInstance().getConfiguration(),
                             DiscoveryManager.getInstance().getEurekaClient(),

@@ -2,7 +2,6 @@ package com.netflix.eureka.aws;
 
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.netflix.appinfo.ApplicationInfoManager;
-import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.eureka.EurekaServerConfig;
@@ -15,7 +14,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
 /**
- * TODO PeerAwareInstanceRegistry has complex dependencies and that prevents unit testing {@link VpcEniManager}.
+ * TODO PeerAwareInstanceRegistry has complex dependencies and that prevents unit testing {@link VpcEniManager2}.
  * There is a refactoring on branch that fixes that. Once it is merged this test can be completed.
  *
  * @author Tomasz Bak
@@ -31,11 +30,11 @@ public class VpcEniManagerTest {
     //    private final PeerAwareInstanceRegistry registry = mock(PeerAwareInstanceRegistry.class);
     private final AmazonEC2 amazonEC2 = mock(AmazonEC2.class);
 
-    private VpcEniManager vpcEniManager;
+    private VpcEniManager2 vpcEniManager;
 
     @Before
     public void setUp() throws Exception {
-        vpcEniManager = new VpcEniManager(
+        vpcEniManager = new VpcEniManager2(
                 eurekaClientConfig,
                 eurekaServerConfig,
                 eurekaClient,
