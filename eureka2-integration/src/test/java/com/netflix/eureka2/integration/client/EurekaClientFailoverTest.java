@@ -31,6 +31,7 @@ import static com.netflix.eureka2.testkit.junit.EurekaMatchers.modifyChangeNotif
 import static com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource.anEurekaDeploymentResource;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 /**
  * @author Tomasz Bak
@@ -43,7 +44,7 @@ public class EurekaClientFailoverTest {
 
     @Rule
     public final EurekaDeploymentResource eurekaDeploymentResource =
-            anEurekaDeploymentResource(2, 1).withNetworkRouter(true).build();
+            anEurekaDeploymentResource(1, 1).withNetworkRouter(true).build();
 
     private NetworkRouter networkRouter;
     private EmbeddedWriteCluster writeCluster;
@@ -54,6 +55,35 @@ public class EurekaClientFailoverTest {
         networkRouter = eurekaDeploymentResource.getEurekaDeployment().getNetworkRouter();
         writeCluster = eurekaDeploymentResource.getEurekaDeployment().getWriteCluster();
         readCluster = eurekaDeploymentResource.getEurekaDeployment().getReadCluster();
+    }
+
+    @Test
+    public void testRegistrationFailover() throws Exception {
+        executeFailoverTest(new Runnable() {
+            @Override
+            public void run() {
+                // Scale the write cluster up, and break network connection to the first node
+                writeCluster.scaleUpByOne();
+
+                // before we break the links, verify that replication has completed to the new server (serverId 1)
+                EurekaInterestClient interestClient = eurekaDeploymentResource.getEurekaDeployment().interestClientToWriteServer(1);
+                ExtTestSubscriber<ChangeNotification<InstanceInfo>> interestSubscriber = subscribeTo(interestClient, INSTANCE_UP);
+                try {
+                    assertThat(interestSubscriber.takeNext(60, TimeUnit.SECONDS), is(addChangeNotificationOf(INSTANCE_UP)));
+                } catch (InterruptedException e) {
+                    fail("test fail");
+                } finally {
+                    interestClient.shutdown();
+                }
+
+                NetworkLink registrationLink = networkRouter.getLinkTo(writeCluster.getServer(0).getRegistrationPort());
+                NetworkLink interestLink = networkRouter.getLinkTo(writeCluster.getServer(0).getDiscoveryPort());
+                NetworkLink replicationLink = networkRouter.getLinkTo(writeCluster.getServer(1).getReplicationPort());
+                interestLink.disconnect();
+                replicationLink.disconnect();
+                registrationLink.disconnect();
+            }
+        });
     }
 
 
@@ -70,50 +100,27 @@ public class EurekaClientFailoverTest {
         });
     }
 
-    @Test
-    public void testRegistrationFailover() throws Exception {
-        executeFailoverTest(new Runnable() {
-            @Override
-            public void run() {
-                // Scale the write cluster up, and break network connection to the first node
-                writeCluster.scaleUpByOne();
-                NetworkLink registrationLink = networkRouter.getLinkTo(writeCluster.getServer(0).getRegistrationPort());
-                NetworkLink interestLink = networkRouter.getLinkTo(writeCluster.getServer(0).getDiscoveryPort());
-                NetworkLink replicationLink = networkRouter.getLinkTo(writeCluster.getServer(1).getReplicationPort());
-                interestLink.disconnect();
-                replicationLink.disconnect();
-                registrationLink.disconnect();
-            }
-        });
-    }
-
     private void executeFailoverTest(Runnable failureInjector) throws Exception {
         EurekaRegistrationClient registrationClient = eurekaDeploymentResource.getEurekaDeployment().registrationClientToWriteCluster();
         EurekaInterestClient interestClient = eurekaDeploymentResource.getEurekaDeployment().cannonicalInterestClient();
+        // Subscribe to instance registration updates
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> interestSubscriber = subscribeTo(interestClient, INSTANCE_UP);
 
-        try {
-            // Subscribe to instance registration updates
-            ExtTestSubscriber<ChangeNotification<InstanceInfo>> interestSubscriber = subscribeTo(interestClient, INSTANCE_UP);
+        // Register
+        PublishSubject<InstanceInfo> registrationSubject = PublishSubject.create();
+        Subscription registrationSubscription = registrationClient.register(registrationSubject).subscribe();
+        registrationSubject.onNext(INSTANCE_UP);
 
-            // Register
-            PublishSubject<InstanceInfo> registrationSubject = PublishSubject.create();
-            Subscription registrationSubscription = registrationClient.register(registrationSubject).subscribe();
-            registrationSubject.onNext(INSTANCE_UP);
+        assertThat(interestSubscriber.takeNext(60, TimeUnit.SECONDS), is(addChangeNotificationOf(INSTANCE_UP)));
 
-            assertThat(interestSubscriber.takeNext(60, TimeUnit.SECONDS), is(addChangeNotificationOf(INSTANCE_UP)));
+        // Inject failure
+        failureInjector.run();
 
-            // Inject failure
-            failureInjector.run();
+        // Update instance status, and verify that it was handled
+        registrationSubject.onNext(INSTANCE_DOWN);
 
-            // Update instance status, and verify that it was handled
-            registrationSubject.onNext(INSTANCE_DOWN);
-
-            assertThat(registrationSubscription.isUnsubscribed(), is(false));
-            assertThat(interestSubscriber.takeNext(60, TimeUnit.SECONDS), is(modifyChangeNotificationOf(INSTANCE_DOWN)));
-        } finally {
-            registrationClient.shutdown();
-            interestClient.shutdown();
-        }
+        assertThat(registrationSubscription.isUnsubscribed(), is(false));
+        assertThat(interestSubscriber.takeNext(60, TimeUnit.SECONDS), is(modifyChangeNotificationOf(INSTANCE_DOWN)));
     }
 
     private ExtTestSubscriber<ChangeNotification<InstanceInfo>> subscribeTo(EurekaInterestClient interestClient, InstanceInfo instanceInfo) {
