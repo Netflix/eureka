@@ -10,10 +10,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.Builder;
 import com.netflix.appinfo.LeaseInfo;
+import com.netflix.appinfo.MyDataCenterInstanceConfig;
 import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.converters.EntityBodyConverter;
@@ -124,13 +126,15 @@ public class Eureka1Server {
         builder.setLeaseInfo(leaseInfo);
         InstanceInfo instanceInfo = builder.build();
 
+        ApplicationInfoManager manager = new ApplicationInfoManager(new MyDataCenterInstanceConfig(), instanceInfo);
+
         DefaultEurekaClientConfig config = new DefaultEurekaClientConfig() {
             @Override
             public List<String> getEurekaServerServiceUrls(String myZone) {
                 return Collections.singletonList("http://localhost:" + getServerPort() + "/discovery/v2/");
             }
         };
-        return new DiscoveryClient(instanceInfo, config);
+        return new DiscoveryClient(manager, config);
     }
 
     public InstanceInfo findInstance(String instanceId) {

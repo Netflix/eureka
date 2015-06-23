@@ -36,7 +36,7 @@ public class TcpInterestServer extends AbstractTcpServer {
     @Inject
     public TcpInterestServer(EurekaServerConfig config,
                              @Named(Names.INTEREST) MetricEventsListenerFactory servoEventsListenerFactory,
-                             Provider<TcpInterestHandler> tcpDiscoveryHandler) {
+                             TcpInterestHandler tcpDiscoveryHandler) {
         super(servoEventsListenerFactory, config, config.getDiscoveryPort(),
                 EurekaTransports.interestPipeline(config.getCodec()), tcpDiscoveryHandler);
     }

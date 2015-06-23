@@ -25,7 +25,7 @@ public class EurekaServerConfig extends EurekaCommonConfig {
 
     protected EurekaServerConfig(
             ResolverType resolverType,
-            String[] serverList,
+            String serverList,
             String appName,
             String vipAddress,
             String readClusterVipAddress,

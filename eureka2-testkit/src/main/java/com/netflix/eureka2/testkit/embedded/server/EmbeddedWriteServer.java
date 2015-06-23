@@ -4,11 +4,11 @@ import java.util.Properties;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.google.inject.Scopes;
+import com.google.inject.util.Modules;
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
-import com.netflix.eureka2.eureka1.rest.Eureka1Configuration;
-import com.netflix.eureka2.eureka1.rest.Eureka1RestApiModule;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.server.EurekaWriteServerModule;
 import com.netflix.eureka2.server.InterestPeerAddressProvider;
@@ -44,26 +44,26 @@ public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig,
     }
 
     @Override
-    public void start() {
-        Module[] modules = {
-                new EurekaWriteServerModule(config),
-                new AbstractModule() {
+    protected Module getModule() {
+        Module embeddedWriteServerModule = Modules.override(new EurekaWriteServerModule(config))
+                .with(new AbstractModule() {
                     @Override
                     protected void configure() {
                         bind(InterestPeerAddressProvider.class).toInstance(new InterestPeerAddressProvider(interestPeers));
                         bind(ReplicationPeerAddressesProvider.class).toInstance(new ReplicationPeerAddressesProvider(replicationPeers));
+
                         if (networkRouter != null) {
                             bind(NetworkRouter.class).toInstance(networkRouter);
-                            bind(TcpRegistrationServer.class).to(EmbeddedTcpRegistrationServer.class);
-                            bind(TcpInterestServer.class).to(EmbeddedTcpInterestServer.class);
-                            bind(TcpReplicationServer.class).to(EmbeddedTcpReplicationServer.class);
+                            bind(TcpRegistrationServer.class).to(EmbeddedTcpRegistrationServer.class).in(Scopes.SINGLETON);
+                            bind(TcpReplicationServer.class).to(EmbeddedTcpReplicationServer.class).in(Scopes.SINGLETON);
+                            bind(TcpInterestServer.class).to(EmbeddedTcpInterestServer.class).in(Scopes.SINGLETON);
                         }
                     }
-                },
-                new Eureka1RestApiModule(new Eureka1Configuration(), ServerType.Write)
-        };
+                });
 
-        setup(modules);
+        return Modules.combine(
+                super.getModule(),
+                embeddedWriteServerModule);
     }
 
     @Override

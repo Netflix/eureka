@@ -18,7 +18,6 @@ package com.netflix.eureka2.server.transport.tcp.replication;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Provider;
 
 import com.google.inject.Singleton;
 import com.netflix.eureka2.Names;
@@ -35,7 +34,7 @@ public class TcpReplicationServer extends AbstractTcpServer {
 
     @Inject
     public TcpReplicationServer(WriteServerConfig config,
-                                Provider<TcpReplicationHandler> tcpReplicationHandler,
+                                TcpReplicationHandler tcpReplicationHandler,
                                 @Named(Names.REPLICATION) MetricEventsListenerFactory servoEventsListenerFactory) {
         super(servoEventsListenerFactory, config, config.getReplicationPort(), EurekaTransports.replicationPipeline(config.getCodec()), tcpReplicationHandler);
     }

@@ -4,6 +4,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.HashSet;
 
+import com.google.inject.Provider;
 import com.netflix.eureka2.Names;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.ServicePort;
@@ -27,9 +28,9 @@ public class EurekaWriteServerSelfInfoResolver implements SelfInfoResolver {
     public EurekaWriteServerSelfInfoResolver(
             final EurekaServerConfig config,
             final EurekaHttpServer httpServer,
-            final TcpRegistrationServer registrationServer,
-            final TcpReplicationServer replicationServer,
-            final TcpInterestServer discoveryServer) {
+            final Provider<TcpRegistrationServer> registrationServer,
+            final Provider<TcpReplicationServer> replicationServer,
+            final Provider<TcpInterestServer> discoveryServer) {
         SelfInfoResolverChain resolverChain = new SelfInfoResolverChain(
                 new ConfigSelfInfoResolver(config),
                 // write server specific resolver
@@ -38,9 +39,9 @@ public class EurekaWriteServerSelfInfoResolver implements SelfInfoResolver {
                             @Override
                             public InstanceInfo.Builder call(HashSet<ServicePort> ports) {
                                 ports.add(new ServicePort(Names.EUREKA_HTTP, httpServer.serverPort(), false));
-                                ports.add(new ServicePort(Names.REGISTRATION, registrationServer.serverPort(), false));
-                                ports.add(new ServicePort(Names.REPLICATION, replicationServer.serverPort(), false));
-                                ports.add(new ServicePort(Names.INTEREST, discoveryServer.serverPort(), false));
+                                ports.add(new ServicePort(Names.REGISTRATION, registrationServer.get().serverPort(), false));
+                                ports.add(new ServicePort(Names.REPLICATION, replicationServer.get().serverPort(), false));
+                                ports.add(new ServicePort(Names.INTEREST, discoveryServer.get().serverPort(), false));
 
                                 return new InstanceInfo.Builder().withPorts(ports);
                             }

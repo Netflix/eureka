@@ -67,7 +67,7 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
                 .withRegistrationPort(writeServerAddress.getRegistrationPort())
                 .withDiscoveryPort(writeServerAddress.getInterestPort())
                 .withReplicationPort(writeServerAddress.getReplicationPort())
-                .withServerList(new String[]{writeServerAddress.toWriteAddressString()})
+                .withServerList(writeServerAddress.toWriteAddressString())
                 .withCodec(codec)
                 .withHttpPort(httpPort)
                 .withShutDownPort(0) // We do not run shutdown service in embedded server

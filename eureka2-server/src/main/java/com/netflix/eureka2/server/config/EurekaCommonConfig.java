@@ -35,7 +35,7 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
     protected String resolverType = ResolverType.Fixed.name();
 
     @Configuration("eureka.common.writeCluster.serverList")
-    protected String[] serverList = {"localhost:12102:12103:12104"};
+    protected String serverList = "localhost:12102:12103:12104";
 
     // instance info configs
     @Configuration("eureka.instanceInfo.appName")
@@ -89,7 +89,7 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
 
     protected EurekaCommonConfig(
             ResolverType resolverType,
-            String[] serverList,
+            String serverList,
             String appName,
             String vipAddress,
             String readClusterVipAddress,
@@ -124,7 +124,7 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
     }
 
     public String[] getServerList() {
-        return serverList;
+        return serverList.split(",");
     }
 
     public ResolverType getServerResolverType() {
@@ -222,7 +222,7 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
     // builder
     public abstract static class EurekaCommonConfigBuilder<C extends EurekaCommonConfig, B extends EurekaCommonConfigBuilder<C, B>> {
         protected ResolverType resolverType;
-        protected String[] serverList;
+        protected String serverList;
         protected String appName;
         protected String vipAddress;
         protected String readClusterVipAddress;
@@ -250,7 +250,7 @@ public abstract class EurekaCommonConfig implements EurekaTransportConfig, Eurek
             return self();
         }
 
-        public B withServerList(String[] serverList) {
+        public B withServerList(String serverList) {
             this.serverList = serverList;
             return self();
         }

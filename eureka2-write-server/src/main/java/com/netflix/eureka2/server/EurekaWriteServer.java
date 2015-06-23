@@ -17,14 +17,14 @@
 package com.netflix.eureka2.server;
 
 import java.util.Arrays;
-import java.util.List;
 
+import com.google.inject.Module;
+import com.google.inject.util.Modules;
 import com.netflix.eureka2.server.config.WriteCommandLineParser;
 import com.netflix.eureka2.server.config.WriteServerConfig;
+import com.netflix.eureka2.server.module.CommonEurekaServerModule;
+import com.netflix.eureka2.server.module.EurekaExtensionModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
-import com.netflix.eureka2.server.spi.ExtensionLoader;
-import com.netflix.governator.guice.BootstrapBinder;
-import com.netflix.governator.guice.BootstrapModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,14 +44,12 @@ public class EurekaWriteServer extends AbstractEurekaServer<WriteServerConfig> {
     }
 
     @Override
-    protected void additionalModules(List<BootstrapModule> bootstrapModules) {
-        bootstrapModules.add(new BootstrapModule() {
-            @Override
-            public void configure(BootstrapBinder binder) {
-                binder.include(new EurekaWriteServerModule(config));
-            }
-        });
-        bootstrapModules.add(new ExtensionLoader().asBootstrapModule(ServerType.Write));
+    protected Module getModule() {
+        return Modules.combine(Arrays.asList(
+                new CommonEurekaServerModule(name),
+                new EurekaExtensionModule(ServerType.Write),
+                new EurekaWriteServerModule(config)
+        ));
     }
 
     public static void main(String[] args) {

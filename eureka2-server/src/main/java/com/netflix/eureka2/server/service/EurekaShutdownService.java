@@ -1,16 +1,14 @@
-package com.netflix.eureka2.server;
+package com.netflix.eureka2.server.service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import com.google.inject.Injector;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
-import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.utils.rx.NoOpSubscriber;
-import com.netflix.governator.lifecycle.LifecycleManager;
+import com.netflix.governator.LifecycleShutdownSignal;
 import netflix.karyon.ShutdownListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,16 +24,18 @@ public class EurekaShutdownService {
     private static final Logger logger = LoggerFactory.getLogger(EurekaShutdownService.class);
 
     private final int port;
-    private final LifecycleManager lifecycleManager;
+    private final LifecycleShutdownSignal shutdownSignal;
     private final SelfRegistrationService selfRegistrationService;
 
     private ShutdownListener shutdownListener;
 
     @Inject
-    public EurekaShutdownService(EurekaCommonConfig config, Injector injector) {
-        this.lifecycleManager = injector.getInstance(LifecycleManager.class);
-        this.selfRegistrationService = injector.getInstance(SelfRegistrationService.class);
+    public EurekaShutdownService(EurekaCommonConfig config,
+                                 LifecycleShutdownSignal shutdownSignal,
+                                 SelfRegistrationService selfRegistrationService) {
         this.port = config.getShutDownPort();
+        this.shutdownSignal = shutdownSignal;
+        this.selfRegistrationService = selfRegistrationService;
     }
 
     public int getShutdownPort() {
@@ -54,7 +54,7 @@ public class EurekaShutdownService {
                 selfRegistrationService.shutdown();
 
                 logger.info("Shutting down service container...");
-                lifecycleManager.close();
+                shutdownSignal.signal();
             }
         });
         shutdownListener.start();

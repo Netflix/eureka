@@ -19,6 +19,7 @@ package com.netflix.eureka2.utils.rx;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.rx.ExtTestSubscriber;
@@ -26,7 +27,6 @@ import com.netflix.eureka2.utils.rx.ResourceObservable.ResourceLoader;
 import com.netflix.eureka2.utils.rx.ResourceObservable.ResourceLoaderException;
 import com.netflix.eureka2.utils.rx.ResourceObservable.ResourceUpdate;
 import com.netflix.eureka2.utils.rx.ResourceObservableTest.ItemUpdate.Operation;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.junit.Test;
 import rx.Observable;
 import rx.Subscription;
@@ -34,6 +34,7 @@ import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
+import static java.util.Collections.newSetFromMap;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -191,8 +192,8 @@ public class ResourceObservableTest {
 
     static class ItemLoader implements ResourceLoader<ItemUpdate> {
 
-        private volatile Set<ItemUpdate> addQueue = new ConcurrentHashSet<>();
-        private volatile Set<ItemUpdate> removeQueue = new ConcurrentHashSet<>();
+        private volatile Set<ItemUpdate> addQueue = newSetFromMap(new ConcurrentHashMap<ItemUpdate, Boolean>());
+        private volatile Set<ItemUpdate> removeQueue = newSetFromMap(new ConcurrentHashMap<ItemUpdate, Boolean>());
         private volatile ResourceLoaderException error;
 
         @Override
@@ -201,9 +202,9 @@ public class ResourceObservableTest {
                 throw error;
             }
             Set<ItemUpdate> newItems = addQueue;
-            addQueue = new ConcurrentHashSet<>();
+            addQueue = newSetFromMap(new ConcurrentHashMap<ItemUpdate, Boolean>());
             Set<ItemUpdate> cancelled = removeQueue;
-            removeQueue = new ConcurrentHashSet<>();
+            removeQueue = newSetFromMap(new ConcurrentHashMap<ItemUpdate, Boolean>());
             return new ResourceUpdate<>(newItems, cancelled);
         }
 

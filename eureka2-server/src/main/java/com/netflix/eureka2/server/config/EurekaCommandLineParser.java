@@ -72,7 +72,7 @@ public abstract class EurekaCommandLineParser<C extends EurekaCommonConfig, B ex
                         break;
                     case "fixed":
                         if (cli.getArgList().size() < 1) {
-                            throw new IllegalArgumentException("provide Eureka Write cluster server <addresse:reg:disc:repl>s as parameter list");
+                            throw new IllegalArgumentException("provide Eureka Write cluster server <addresses:reg:disc:repl>s as parameter list");
                         }
                         break;
                     default:
@@ -87,7 +87,14 @@ public abstract class EurekaCommandLineParser<C extends EurekaCommonConfig, B ex
             builder.withAppName(cli.getOptionValue("n"));
             builder.withHttpPort(Integer.parseInt(cli.getOptionValue("b", "8080")));
             builder.withWebAdminPort(Integer.parseInt(cli.getOptionValue("a", "8077")));
-            builder.withServerList((((List<String>) cli.getArgList()).toArray(new String[cli.getArgList().size()])));
+
+            List<String> serverList = (List<String>) cli.getArgList();
+            String result = "";
+            for (String s : serverList) {
+                result += s + ",";
+            }
+            result = result.substring(0, result.length() - 1);
+            builder.withServerList(result);
         }
     }
 

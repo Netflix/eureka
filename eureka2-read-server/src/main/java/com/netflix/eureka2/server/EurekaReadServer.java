@@ -16,16 +16,17 @@
 
 package com.netflix.eureka2.server;
 
-import java.util.List;
-
+import com.google.inject.Module;
+import com.google.inject.util.Modules;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.config.ReadCommandLineParser;
+import com.netflix.eureka2.server.module.CommonEurekaServerModule;
+import com.netflix.eureka2.server.module.EurekaExtensionModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
-import com.netflix.eureka2.server.spi.ExtensionLoader;
-import com.netflix.governator.guice.BootstrapBinder;
-import com.netflix.governator.guice.BootstrapModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
 
 /**
  * @author Tomasz Bak
@@ -43,14 +44,12 @@ public class EurekaReadServer extends AbstractEurekaServer<EurekaServerConfig> {
     }
 
     @Override
-    protected void additionalModules(List<BootstrapModule> bootstrapModules) {
-        bootstrapModules.add(new BootstrapModule() {
-            @Override
-            public void configure(BootstrapBinder binder) {
-                binder.include(new EurekaReadServerModule(config));
-            }
-        });
-        bootstrapModules.add(new ExtensionLoader().asBootstrapModule(ServerType.Read));
+    protected Module getModule() {
+        return Modules.combine(Arrays.asList(
+                new CommonEurekaServerModule(name),
+                new EurekaExtensionModule(ServerType.Read),
+                new EurekaReadServerModule(config)
+        ));
     }
 
     public static void main(String[] args) {

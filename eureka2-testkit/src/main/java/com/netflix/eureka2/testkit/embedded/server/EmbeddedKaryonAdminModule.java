@@ -94,6 +94,16 @@ public abstract class EmbeddedKaryonAdminModule extends AbstractModule {
         }
 
         @Override
+        public boolean shouldIsolateResources() {
+            return AdminConfigImpl.ISOLATE_RESOURCES_DEFAULT;
+        }
+
+        @Override
+        public boolean shouldEnable() {
+            return AdminConfigImpl.SERVER_ENABLE_DEFAULT;
+        }
+
+        @Override
         public String templateResourceContext() {
             return AdminConfigImpl.TEMPLATE_CONTEXT_DEFAULT;
         }

@@ -40,14 +40,14 @@ public abstract class AbstractTcpServer {
     protected final MetricEventsListenerFactory servoEventsListenerFactory;
     private final int serverPort;
     private final PipelineConfigurator<Object, Object> pipelineConfigurator;
-    private final Provider<? extends ConnectionHandler<Object, Object>> tcpHandlerProvider;
+    private final ConnectionHandler<Object, Object> tcpHandlerProvider;
     protected RxServer<Object, Object> server;
 
     protected AbstractTcpServer(MetricEventsListenerFactory servoEventsListenerFactory,
                                 EurekaServerConfig config,
                                 int serverPort,
                                 PipelineConfigurator<Object, Object> pipelineConfigurator,
-                                Provider<? extends ConnectionHandler<Object, Object>> tcpHandlerProvider) {
+                                ConnectionHandler<Object, Object> tcpHandlerProvider) {
         this.servoEventsListenerFactory = servoEventsListenerFactory;
         this.config = config;
         this.serverPort = serverPort;
@@ -57,7 +57,7 @@ public abstract class AbstractTcpServer {
 
     @PostConstruct
     public void start() {
-        server = RxNetty.newTcpServerBuilder(serverPort, tcpHandlerProvider.get())
+        server = RxNetty.newTcpServerBuilder(serverPort, tcpHandlerProvider)
                 .pipelineConfigurator(pipelineConfigurator)
                 .withMetricEventsListenerFactory(servoEventsListenerFactory)
                 .build()

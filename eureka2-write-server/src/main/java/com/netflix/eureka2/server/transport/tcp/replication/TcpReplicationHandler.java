@@ -33,7 +33,6 @@ import io.reactivex.netty.channel.ConnectionHandler;
 import io.reactivex.netty.channel.ObservableConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rx.Notification;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Func1;

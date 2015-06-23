@@ -24,12 +24,12 @@ dependencies {
     compile "commons-cli:commons-cli:${commons_cli_version}"
 
     compile "org.codehaus.jettison:jettison:${jettison_version}"
+    compile "com.netflix.archaius:archaius2-guice:${archaius2_version}"
+    compile "com.netflix.archaius:archaius2-archaius1-bridge:${archaius2_version}"
     compile "com.netflix.governator:governator:${governator_version}"
     compile "io.reactivex:rxnetty-spectator:${rxnetty_version}"
 
-    compile "com.netflix.karyon:karyon2-governator:${karyon_version}"
-    compile "com.netflix.karyon:karyon2-archaius:${karyon_version}"
-    // Karyon admin and its dependencies
+    compile "com.netflix.karyon:karyon2-core:${karyon_version}"
     compile("com.netflix.karyon:karyon2-admin-web:${karyon_version}") {
         exclude module: 'eureka-client'
     }

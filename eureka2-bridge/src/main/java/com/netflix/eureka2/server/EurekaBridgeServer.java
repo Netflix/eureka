@@ -1,16 +1,16 @@
 package com.netflix.eureka2.server;
 
-import java.util.List;
-
-import com.google.inject.AbstractModule;
-import com.netflix.discovery.DiscoveryClient;
+import com.google.inject.Module;
+import com.google.inject.util.Modules;
+import com.netflix.discovery.guice.EurekaModule;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
+import com.netflix.eureka2.server.module.CommonEurekaServerModule;
+import com.netflix.eureka2.server.module.EurekaExtensionModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
-import com.netflix.eureka2.server.spi.ExtensionLoader;
-import com.netflix.governator.guice.BootstrapBinder;
-import com.netflix.governator.guice.BootstrapModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
 
 /**
  * A Bridge (Write) server that captures snapshots of Eureka 1.0 Data and replicates changes of the 1.0 data
@@ -27,29 +27,13 @@ public class EurekaBridgeServer extends AbstractEurekaServer<BridgeServerConfig>
     }
 
     @Override
-    protected void additionalModules(List<BootstrapModule> bootstrapModules) {
-        bootstrapModules.add(new BootstrapModule() {
-            @Override
-            public void configure(BootstrapBinder binder) {
-                binder.include(createEureka1ClientModule());
-                binder.include(new EurekaBridgeServerModule(config));
-            }
-        });
-        bootstrapModules.add(new ExtensionLoader().asBootstrapModule(ServerType.Write));
-    }
-
-    /**
-     * Default implementation is driven solely by configuration properties.
-     * We allow it to be overridden for testing purpose to more tightly
-     * control the client.
-     */
-    protected AbstractModule createEureka1ClientModule() {
-        return new AbstractModule() {
-            @Override
-            protected void configure() {
-                bind(DiscoveryClient.class).asEagerSingleton();
-            }
-        };
+    protected Module getModule() {
+        return Modules.combine(Arrays.asList(
+                new CommonEurekaServerModule(name),
+                new EurekaExtensionModule(ServerType.Write),
+                new EurekaBridgeServerModule(config),
+                new EurekaModule()  // eureka 1
+        ));
     }
 
     public static void main(String[] args) {

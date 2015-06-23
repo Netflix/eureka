@@ -3,10 +3,12 @@ package com.netflix.eureka2.testkit.junit.resources;
 import java.util.Collections;
 import java.util.List;
 
+import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.Builder;
 import com.netflix.appinfo.LeaseInfo;
+import com.netflix.appinfo.MyDataCenterInstanceConfig;
 import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources.EurekaExternalResource;
@@ -52,6 +54,8 @@ public class Eureka1ClientResource extends EurekaExternalResource {
         builder.setLeaseInfo(leaseInfo);
         InstanceInfo instanceInfo = builder.build();
 
+        ApplicationInfoManager manager = new ApplicationInfoManager(new MyDataCenterInstanceConfig(), instanceInfo);
+
         DefaultEurekaClientConfig config = new DefaultEurekaClientConfig() {
             @Override
             public List<String> getEurekaServerServiceUrls(String myZone) {
@@ -63,7 +67,7 @@ public class Eureka1ClientResource extends EurekaExternalResource {
                 return 1;
             }
         };
-        eurekaClient = new DiscoveryClient(instanceInfo, config);
+        eurekaClient = new DiscoveryClient(manager, config);
     }
 
     @Override

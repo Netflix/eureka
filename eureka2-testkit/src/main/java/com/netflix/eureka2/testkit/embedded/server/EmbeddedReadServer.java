@@ -1,9 +1,12 @@
 package com.netflix.eureka2.testkit.embedded.server;
 
+import java.util.Arrays;
 import java.util.Properties;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.google.inject.Scopes;
+import com.google.inject.util.Modules;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
@@ -15,8 +18,6 @@ import com.netflix.eureka2.client.interest.BatchingRegistry;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
-import com.netflix.eureka2.eureka1.rest.Eureka1Configuration;
-import com.netflix.eureka2.eureka1.rest.Eureka1RestApiModule;
 import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
@@ -57,7 +58,7 @@ public class EmbeddedReadServer extends EmbeddedEurekaServer<EurekaServerConfig,
     }
 
     @Override
-    public void start() {
+    protected Module getModule() {
         EurekaRegistrationClient registrationClient = Eurekas.newRegistrationClientBuilder()
                 .withServerResolver(registrationResolver)
                 .build();
@@ -80,21 +81,21 @@ public class EmbeddedReadServer extends EmbeddedEurekaServer<EurekaServerConfig,
 
         EurekaInterestClient interestClient = new FullFetchInterestClient(registry, channelFactory);
 
-        Module[] modules = {
-                new EurekaReadServerModule(config, registrationClient, interestClient),
-                new AbstractModule() {
+        Module embeddedReadServerModule = Modules.override(new EurekaReadServerModule(config, registrationClient, interestClient))
+                .with(new AbstractModule() {
                     @Override
                     protected void configure() {
                         if (networkRouter != null) {
                             bind(NetworkRouter.class).toInstance(networkRouter);
-                            bind(TcpInterestServer.class).to(EmbeddedTcpInterestServer.class);
+                            bind(TcpInterestServer.class).to(EmbeddedTcpInterestServer.class).in(Scopes.SINGLETON);
                         }
                     }
-                },
-                new Eureka1RestApiModule(new Eureka1Configuration(), registrationClient)
-        };
+                });
 
-        setup(modules);
+        return Modules.combine(Arrays.asList(
+                super.getModule(),
+                embeddedReadServerModule
+        ));
     }
 
     @Override

@@ -4,54 +4,38 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.codahale.metrics.JmxReporter;
-import com.codahale.metrics.MetricRegistry;
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.server.AbstractEurekaServer;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
-import com.netflix.eureka2.server.health.EurekaHealthStatusModule;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
+import com.netflix.eureka2.server.module.CommonEurekaServerModule;
+import com.netflix.eureka2.server.module.EurekaExtensionModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
-import com.netflix.eureka2.server.spi.ExtensionLoader;
-import com.netflix.eureka2.server.utils.guice.PostInjectorModule;
-import com.netflix.governator.guice.LifecycleInjector;
-import com.netflix.governator.guice.LifecycleInjectorBuilder;
-import com.netflix.governator.guice.transformer.OverrideAllDuplicateBindings;
-import com.netflix.governator.lifecycle.LifecycleManager;
-import com.netflix.spectator.api.Clock;
-import com.netflix.spectator.api.ExtendedRegistry;
-import com.netflix.spectator.metrics3.MetricsRegistry;
 import netflix.adminresources.AdminResourcesContainer;
 import netflix.adminresources.resources.Eureka2InterestClientProviderImpl;
 
 /**
  * @author Tomasz Bak
  */
-public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
+public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> extends AbstractEurekaServer<C> {
     private final boolean withExt;
     private final boolean withAdminUI;
     private final ServerType serverType;
-    protected final C config;
-
-    protected Injector injector;
-    protected Injector webAdminInjector;
-    protected LifecycleManager lifecycleManager;
 
     protected EmbeddedEurekaServer(ServerType serverType, C config, boolean withExt, boolean withAdminUI) {
+        super(config);
         this.serverType = serverType;
-        this.config = config;
         this.withExt = withExt;
         this.withAdminUI = withAdminUI;
     }
 
-    public abstract void start();
-
     public void shutdown() {
-        lifecycleManager.close();
+        injector.shutdown();
     }
 
     public Injector getInjector() {
@@ -64,7 +48,7 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
 
     public int getWebAdminPort() {
         // Since server might be started on the ephemeral port, we need to get it directly from RxNetty server
-        return webAdminInjector == null ? -1 : webAdminInjector.getInstance(AdminResourcesContainer.class).getServerPort();
+        return injector == null ? -1 : injector.getInstance(AdminResourcesContainer.class).getServerPort();
     }
 
     public int getHttpServerPort() {
@@ -76,34 +60,18 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
 
     public abstract R serverReport();
 
-    protected void setup(Module[] modules) {
-        LifecycleInjectorBuilder builder = LifecycleInjector.builder()
-                .withModuleTransformer(new OverrideAllDuplicateBindings());
-        builder.withAdditionalModules(PostInjectorModule.forLifecycleInjectorBuilder(builder));
-        builder.withAdditionalModules(modules);
-
-        // Extensions
-        builder.withAdditionalModules(new ExtensionLoader(!withExt).asModuleArray(serverType));
-
-        bindMetricsRegistry(builder);
-
-        EurekaHealthStatusModule healthStatusModule = new EurekaHealthStatusModule();
-        builder.withAdditionalModules(healthStatusModule);
-
-        injector = builder.build().createInjector();
-
-        lifecycleManager = injector.getInstance(LifecycleManager.class);
-        try {
-            lifecycleManager.start();
-
-            // Admin console
-            if (withAdminUI) {
-                EmbeddedKaryonAdminModule adminUIModule = createAdminUIModule();
-                webAdminInjector = injector.createChildInjector(adminUIModule);
+    @Override
+    protected Module getModule() {
+        return new AbstractModule() {
+            @Override
+            protected void configure() {
+                install(new CommonEurekaServerModule());
+                install(new EurekaExtensionModule(serverType));
+                if (withAdminUI) {
+                    install(createAdminUIModule());
+                }
             }
-        } catch (Exception e) {
-            throw new RuntimeException("Container setup failure", e);
-        }
+        };
     }
 
     protected EmbeddedKaryonAdminModule createAdminUIModule() {
@@ -124,20 +92,6 @@ public abstract class EmbeddedEurekaServer<C extends EurekaCommonConfig, R> {
                 return EmbeddedEurekaServer.this.getInterestResolver();
             }
         };
-    }
-
-    protected void bindMetricsRegistry(LifecycleInjectorBuilder bootstrapBinder) {
-        bootstrapBinder.withAdditionalModules(new AbstractModule() {
-            @Override
-            protected void configure() {
-                MetricRegistry internalRegistry = new MetricRegistry();
-                final JmxReporter reporter = JmxReporter.forRegistry(internalRegistry).build();
-                reporter.start();
-
-                ExtendedRegistry registry = new ExtendedRegistry(new MetricsRegistry(Clock.SYSTEM, internalRegistry));
-                bind(ExtendedRegistry.class).toInstance(registry);
-            }
-        });
     }
 
     protected void loadInstanceProperties(Properties props) {

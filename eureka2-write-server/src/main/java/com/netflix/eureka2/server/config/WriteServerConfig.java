@@ -65,7 +65,7 @@ public class WriteServerConfig extends EurekaServerConfig {
 
     public WriteServerConfig(
             ResolverType resolverType,
-            String[] serverList,
+            String serverList,
             String appName,
             String vipAddress,
             String readClusterVipAddress,

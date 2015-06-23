@@ -4,6 +4,7 @@ import java.util.Properties;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.google.inject.util.Modules;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.eureka2.Server;
@@ -41,8 +42,9 @@ public class EmbeddedBridgeServer extends EmbeddedEurekaServer<BridgeServerConfi
     }
 
     @Override
-    public void start() {
-        Module[] modules = {
+    protected Module getModule() {
+        return Modules.combine(
+                super.getModule(),
                 new EurekaBridgeServerModule(config),
                 new AbstractModule() {
                     @Override
@@ -50,9 +52,7 @@ public class EmbeddedBridgeServer extends EmbeddedEurekaServer<BridgeServerConfi
                         bind(ReplicationPeerAddressesProvider.class).toInstance(new ReplicationPeerAddressesProvider(replicationPeers));
                     }
                 }
-        };
-
-        setup(modules);
+        );
     }
 
     @Override

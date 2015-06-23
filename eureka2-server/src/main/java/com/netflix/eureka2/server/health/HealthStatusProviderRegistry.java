@@ -8,9 +8,12 @@ import com.netflix.eureka2.health.HealthStatusProvider;
 import com.netflix.eureka2.health.HealthStatusUpdate;
 import com.netflix.eureka2.health.SubsystemDescriptor;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
-import com.netflix.eureka2.server.utils.guice.PostInjector;
+import com.netflix.governator.LifecycleListener;
+import com.netflix.governator.LifecycleManager;
 import rx.Observable;
 import rx.subjects.ReplaySubject;
+
+import javax.inject.Inject;
 
 /**
  * Collects health status providers, and makes them available via {@link HealthStatusProviderRegistry#activate()}
@@ -21,18 +24,35 @@ import rx.subjects.ReplaySubject;
  */
 public class HealthStatusProviderRegistry {
 
-    private final List<HealthStatusProvider<?>> providers = new CopyOnWriteArrayList<>();
+    private final List<HealthStatusProvider<?>> providers;
     private final ReplaySubject<List<HealthStatusProvider<?>>> providerSubject = ReplaySubject.create();
-
-    public void add(HealthStatusProvider<?> provider) {
-        providers.add(provider);
-    }
 
     public Observable<List<HealthStatusProvider<?>>> healthStatusProviders() {
         return providerSubject;
     }
 
-    @PostInjector
+    @Inject
+    public HealthStatusProviderRegistry(LifecycleManager lifecycleManager, ProviderHolder providerHolder) {
+        this.providers = providerHolder.providers;
+
+        lifecycleManager.addListener(new LifecycleListener() {
+            @Override
+            public void onStartFailed(Throwable t) {
+
+            }
+
+            @Override
+            public void onStopped() {
+                providerSubject.onCompleted();
+            }
+
+            @Override
+            public void onStarted() {
+                activate();
+            }
+        });
+    }
+
     public void activate() {
         if (providers.isEmpty()) {
             List<HealthStatusProvider<?>> providers = Collections.<HealthStatusProvider<?>>singletonList(
@@ -53,7 +73,16 @@ public class HealthStatusProviderRegistry {
 
         @Override
         public Observable<HealthStatusUpdate<AlwaysHealthyStatusProvider>> healthStatus() {
-            return Observable.just(new HealthStatusUpdate<AlwaysHealthyStatusProvider>(Status.UP, DESCRIPTOR));
+            return Observable.just(new HealthStatusUpdate<>(Status.UP, DESCRIPTOR));
+        }
+    }
+
+    // holder for injection time use
+    public static class ProviderHolder {
+        final List<HealthStatusProvider<?>> providers = new CopyOnWriteArrayList<>();
+
+        public void add(HealthStatusProvider<?> provider) {
+            providers.add(provider);
         }
     }
 }

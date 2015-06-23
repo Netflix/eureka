@@ -1,5 +1,6 @@
 package com.netflix.eureka2.server.audit;
 
+import com.google.inject.util.Providers;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
@@ -41,7 +42,7 @@ public class AuditServiceControllerTest {
 
     @Test
     public void testWritesAuditEntryWithOwnServerId() throws Exception {
-        AuditServiceController controller = new AuditServiceController(registry, auditService, selfInfoResolver);
+        AuditServiceController controller = new AuditServiceController(registry, auditService, Providers.of(selfInfoResolver));
         controller.startRegistryAuditing();
 
         ArgumentCaptor<AuditRecord> recordCaptor = ArgumentCaptor.forClass(AuditRecord.class);

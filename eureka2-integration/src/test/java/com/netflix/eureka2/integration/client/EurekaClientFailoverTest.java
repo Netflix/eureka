@@ -31,6 +31,7 @@ import static com.netflix.eureka2.testkit.junit.EurekaMatchers.modifyChangeNotif
 import static com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource.anEurekaDeploymentResource;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 /**
  * @author Tomasz Bak
@@ -63,6 +64,18 @@ public class EurekaClientFailoverTest {
             public void run() {
                 // Scale the write cluster up, and break network connection to the first node
                 writeCluster.scaleUpByOne();
+
+                // before we break the links, verify that replication has completed to the new server (serverId 1)
+                EurekaInterestClient interestClient = eurekaDeploymentResource.getEurekaDeployment().interestClientToWriteServer(1);
+                ExtTestSubscriber<ChangeNotification<InstanceInfo>> interestSubscriber = subscribeTo(interestClient, INSTANCE_UP);
+                try {
+                    assertThat(interestSubscriber.takeNext(60, TimeUnit.SECONDS), is(addChangeNotificationOf(INSTANCE_UP)));
+                } catch (InterruptedException e) {
+                    fail("test fail");
+                } finally {
+                    interestClient.shutdown();
+                }
+
                 NetworkLink registrationLink = networkRouter.getLinkTo(writeCluster.getServer(0).getRegistrationPort());
                 NetworkLink interestLink = networkRouter.getLinkTo(writeCluster.getServer(0).getDiscoveryPort());
                 NetworkLink replicationLink = networkRouter.getLinkTo(writeCluster.getServer(1).getReplicationPort());
@@ -72,6 +85,7 @@ public class EurekaClientFailoverTest {
             }
         });
     }
+
 
     @Test
     public void testInterestFailover() throws Exception {
@@ -87,12 +101,13 @@ public class EurekaClientFailoverTest {
     }
 
     private void executeFailoverTest(Runnable failureInjector) throws Exception {
+        EurekaRegistrationClient registrationClient = eurekaDeploymentResource.getEurekaDeployment().registrationClientToWriteCluster();
+        EurekaInterestClient interestClient = eurekaDeploymentResource.getEurekaDeployment().cannonicalInterestClient();
         // Subscribe to instance registration updates
-        ExtTestSubscriber<ChangeNotification<InstanceInfo>> interestSubscriber = subscribeTo(INSTANCE_UP);
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> interestSubscriber = subscribeTo(interestClient, INSTANCE_UP);
 
         // Register
         PublishSubject<InstanceInfo> registrationSubject = PublishSubject.create();
-        EurekaRegistrationClient registrationClient = eurekaDeploymentResource.getEurekaDeployment().registrationClientToWriteCluster();
         Subscription registrationSubscription = registrationClient.register(registrationSubject).subscribe();
         registrationSubject.onNext(INSTANCE_UP);
 
@@ -108,8 +123,7 @@ public class EurekaClientFailoverTest {
         assertThat(interestSubscriber.takeNext(60, TimeUnit.SECONDS), is(modifyChangeNotificationOf(INSTANCE_DOWN)));
     }
 
-    private ExtTestSubscriber<ChangeNotification<InstanceInfo>> subscribeTo(InstanceInfo instanceInfo) {
-        EurekaInterestClient interestClient = eurekaDeploymentResource.getEurekaDeployment().cannonicalInterestClient();
+    private ExtTestSubscriber<ChangeNotification<InstanceInfo>> subscribeTo(EurekaInterestClient interestClient, InstanceInfo instanceInfo) {
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> interestSubscriber = new ExtTestSubscriber<>();
         interestClient.forInterest(Interests.forInstance(Operator.Equals, instanceInfo.getId()))
                 .filter(dataOnlyFilter())
