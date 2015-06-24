@@ -88,6 +88,7 @@ public class ReplicationTaskProcessor {
 
     private void executeSingle(List<ReplicationTask> tasks) {
         for (ReplicationTask task : tasks) {
+            long lastNetworkErrorTime = 0;
             boolean done;
             do {
                 done = true;
@@ -112,7 +113,15 @@ public class ReplicationTaskProcessor {
                     }
                 } catch (Throwable e) {
                     if (isNetworkConnectException(e)) {
-                        logger.error("Network level connection to peer " + peerId + " for task " + task.getTaskName() + "; retrying after delay", e);
+                        long now = System.currentTimeMillis();
+                        // We want to retry eagerly, but without flooding log file with tons of error entries.
+                        // As tasks are executed by a pool of threads the error logging multiplies. For example:
+                        // 20 threads * 100ms delay == 200 error entries / sec worst case
+                        // Still we would like to see the exception samples, so we print samples at regular intervals.
+                        if (now - lastNetworkErrorTime > 10000) {
+                            lastNetworkErrorTime = now;
+                            logger.error("Network level connection to peer " + peerId + " for task " + task.getTaskName() + "; retrying after delay", e);
+                        }
                         try {
                             Thread.sleep(retrySleepTimeMs);
                         } catch (InterruptedException ignore) {
@@ -136,6 +145,7 @@ public class ReplicationTaskProcessor {
         Action action = list.getReplicationList().get(0).getAction();
         DynamicCounter.increment("Batch_" + action + "_tries");
 
+        long lastNetworkErrorTime = 0;
         boolean done;
         do {
             done = true;
@@ -157,7 +167,16 @@ public class ReplicationTaskProcessor {
                 handleBatchResponse(tasks, response.getEntity().getResponseList());
             } catch (Throwable e) {
                 if (isNetworkConnectException(e)) {
-                    logger.error("Network level connection to peer " + peerId + "; retrying after delay", e);
+                    long now = System.currentTimeMillis();
+                    // We want to retry eagerly, but without flooding log file with tons of error entries.
+                    // As tasks are executed by a pool of threads the error logging multiplies. For example:
+                    // 20 threads * 100ms delay == 200 error entries / sec worst case
+                    // Still we would like to see the exception samples, so we print samples at regular intervals
+                    if (now - lastNetworkErrorTime > 10000) {
+                        lastNetworkErrorTime = now;
+                        logger.error("Network level connection to peer " + peerId + "; retrying after delay", e);
+                    }
+
                     try {
                         Thread.sleep(retrySleepTimeMs);
                     } catch (InterruptedException ignore) {

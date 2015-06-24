@@ -406,7 +406,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 InstanceInfo info = lease.getHolder();
                 // Lease is always created with its instance info object.
                 // This log statement is provided as a safeguard, in case this invariant is violated.
-                logger.error("Found Lease without a holder for instance id {}", id);
+                if (info == null) {
+                    logger.error("Found Lease without a holder for instance id {}", id);
+                }
                 if ((info != null) && !(info.getStatus().equals(newStatus))) {
                     // Mark service as UP if needed
                     if (InstanceStatus.UP.equals(newStatus)) {
@@ -476,12 +478,14 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 return false;
             } else {
                 lease.renew();
+                InstanceInfo info = lease.getHolder();
 
                 // Lease is always created with its instance info object.
                 // This log statement is provided as a safeguard, in case this invariant is violated.
-                logger.error("Found Lease without a holder for instance id {}", id);
+                if (info == null) {
+                    logger.error("Found Lease without a holder for instance id {}", id);
+                }
 
-                InstanceInfo info = lease.getHolder();
                 InstanceStatus currentOverride = overriddenInstanceStatusMap.remove(id);
                 if (currentOverride != null && info != null) {
                     info.setOverriddenStatus(InstanceStatus.UNKNOWN);
