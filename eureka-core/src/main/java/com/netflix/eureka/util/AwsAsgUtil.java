@@ -106,7 +106,7 @@ public class AwsAsgUtil {
     // Cache for the AWS ASG information
     private final LoadingCache<CacheKey, Boolean> asgCache = CacheBuilder
             .newBuilder().initialCapacity(500)
-            .expireAfterAccess(5, TimeUnit.MINUTES)
+            .expireAfterAccess(10, TimeUnit.MINUTES)
             .build(new CacheLoader<CacheKey, Boolean>() {
                 @Override
                 public Boolean load(CacheKey key) throws Exception {
