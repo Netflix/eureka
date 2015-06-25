@@ -292,6 +292,12 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     }
 
     @Override
+    public long getASGCacheExpiryTimeoutMs() {
+        return configInstance.getIntProperty(namespace + "asgCacheExpiryTimeoutMs",
+                (10 * 60 * 1000)).get();  // defaults to longer than the asg update interval
+    }
+
+    @Override
     public long getResponseCacheAutoExpirationInSeconds() {
         return configInstance.getIntProperty(
                 namespace + "responseCacheAutoExpirationInSeconds", 180).get();
