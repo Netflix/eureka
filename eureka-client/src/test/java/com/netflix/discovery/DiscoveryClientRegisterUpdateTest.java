@@ -49,10 +49,11 @@ public class DiscoveryClientRegisterUpdateTest {
 
     @Test
     public void registerUpdateLifecycleTest() throws Exception {
+        Thread.sleep(1200);  // give some execution time (the allowed on-demand interval is 60/min)
         applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.UP);
-        Thread.sleep(400);  // give some execution time
+        Thread.sleep(1200);  // give some execution time
         applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.UNKNOWN);
-        Thread.sleep(400);  // give some execution time
+        Thread.sleep(1200);  // give some execution time
         applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.DOWN);
 
         Thread.sleep(2400);

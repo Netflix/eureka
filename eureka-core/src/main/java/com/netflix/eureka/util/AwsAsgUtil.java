@@ -43,6 +43,7 @@ import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.eureka.PeerAwareInstanceRegistryImpl;
+import com.netflix.appinfo.DataCenterInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,7 +113,6 @@ public class AwsAsgUtil {
                 public Boolean load(CacheKey key) throws Exception {
                     return isASGEnabledinAWS(key.asgAccountId, key.asgName);
                 }
-
                 @Override
                 public ListenableFuture<Boolean> reload(final CacheKey key, Boolean oldValue) throws Exception {
                     return listeningCacheReloadExecutor.submit(new Callable<Boolean>() {
@@ -158,12 +158,13 @@ public class AwsAsgUtil {
      */
     public boolean isASGEnabled(InstanceInfo instanceInfo) {
         CacheKey cacheKey = new CacheKey(getAccountId(instanceInfo, accountId), instanceInfo.getASGName());
-        asgCache.refresh(cacheKey);
         Boolean result = asgCache.getIfPresent(cacheKey);
         if (result != null) {
             return result;
         } else {
-            logger.warn("Cache value for asg {} does not exist yet", cacheKey.asgName);
+            logger.info("Cache value for asg {} does not exist yet, async refreshing.", cacheKey.asgName);
+            // Only do an async refresh if it does not yet exist. Do this to refrain from calling aws api too much
+            asgCache.refresh(cacheKey);
             return true;
         }
     }
@@ -445,7 +446,13 @@ public class AwsAsgUtil {
     }
 
     private String getAccountId(InstanceInfo instanceInfo, String fallbackId) {
-        String localAccountId = ((AmazonInfo) instanceInfo.getDataCenterInfo()).get(MetaDataKey.accountId);
+        String localAccountId = null;
+
+        DataCenterInfo dataCenterInfo = instanceInfo.getDataCenterInfo();
+        if (dataCenterInfo instanceof AmazonInfo) {
+            localAccountId = ((AmazonInfo) dataCenterInfo).get(MetaDataKey.accountId);
+        }
+
         return localAccountId == null ? fallbackId : localAccountId;
     }
 

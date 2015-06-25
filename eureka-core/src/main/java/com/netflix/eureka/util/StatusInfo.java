@@ -19,7 +19,7 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
  *
  * @author Greg Kim
  */
-@Serializer("com.netflix.eureka.converters.EntityBodyConverter")
+@Serializer("com.netflix.discovery.converters.EntityBodyConverter")
 @XStreamAlias("status")
 public class StatusInfo {
     private static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss Z";
