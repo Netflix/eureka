@@ -34,7 +34,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
 
     public static final String EUREKA_API_BASE_PATH = "/eureka/v2/";
 
-    private static Pattern HOSTNAME_PATTERN = Pattern.compile("\"hostName\"\\s?:\\s?\\\"([A-Za-z0-9\\.]*)\\\"");
+    private static Pattern HOSTNAME_PATTERN = Pattern.compile("\"hostName\"\\s?:\\s?\\\"([A-Za-z0-9\\.-]*)\\\"");
     private static Pattern STATUS_PATTERN = Pattern.compile("\"status\"\\s?:\\s?\\\"([A-Z_]*)\\\"");
 
     private int port;
