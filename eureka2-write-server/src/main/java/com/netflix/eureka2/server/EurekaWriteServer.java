@@ -24,6 +24,7 @@ import com.netflix.eureka2.server.config.WriteCommandLineParser;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.module.CommonEurekaServerModule;
 import com.netflix.eureka2.server.module.EurekaExtensionModule;
+import com.netflix.eureka2.server.service.overrides.OverridesModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +48,7 @@ public class EurekaWriteServer extends AbstractEurekaServer<WriteServerConfig> {
     protected Module getModule() {
         return Modules.combine(Arrays.asList(
                 new CommonEurekaServerModule(name),
+                new OverridesModule(),
                 new EurekaExtensionModule(ServerType.Write),
                 new EurekaWriteServerModule(config)
         ));

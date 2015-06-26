@@ -53,7 +53,8 @@ public class CommonEurekaServerModule extends AbstractModule {
         install(new ConfigurationModule());
 
         // metrics
-        install(new EurekaMetricsModule());
+        install(new SpectatorDefaultMetricsModule());
+//        install(new SpectatorCodahaleMetricsModule()); // Loaded only if codehala metrics are available on classpath
 
         // common eureka server functions
         bind(EurekaShutdownService.class).asEagerSingleton();

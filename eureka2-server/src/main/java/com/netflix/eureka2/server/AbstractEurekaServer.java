@@ -16,8 +16,12 @@
 
 package com.netflix.eureka2.server;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.google.inject.util.Modules;
 import com.netflix.archaius.inject.ApplicationLayer;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.eureka2.server.config.EurekaCommonConfig;
@@ -29,9 +33,6 @@ import com.netflix.governator.LifecycleInjector;
 import netflix.admin.AdminConfigImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  *
@@ -75,7 +76,7 @@ public abstract class AbstractEurekaServer<C extends EurekaCommonConfig> extends
     protected abstract Module getModule();
 
     public void start() {
-        injector = Governator.createInjector(new AbstractModule() {
+        Module eurekaServerModule = new AbstractModule() {
             @Override
             protected void configure() {
                 if (name != null) {  // TODO this is not clean. Should not need name or config
@@ -87,10 +88,9 @@ public abstract class AbstractEurekaServer<C extends EurekaCommonConfig> extends
                     ConfigurationManager.getConfigInstance().setProperty(
                             "netflix.platform.admin.resources.port", Integer.toString(config.getWebAdminPort()));
                 }
-
-                install(getModule());
             }
-        });
+        };
+        injector = Governator.createInjector(Modules.override(getModule()).with(eurekaServerModule));
     }
 
     public void waitTillShutdown() {

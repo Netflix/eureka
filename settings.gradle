@@ -16,5 +16,6 @@ include 'eureka2-client',\
         'eureka2-ext:eureka2-eureka1-support',\
         'eureka2-ext:eureka2-eureka1-rest-api',\
         'eureka2-ext:eureka2-client-shaded',\
+        'eureka2-ext:eureka2-aws',\
         'eureka2-testkit',\
         'eureka2-examples'

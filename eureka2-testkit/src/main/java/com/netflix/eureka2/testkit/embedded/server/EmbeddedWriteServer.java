@@ -14,6 +14,7 @@ import com.netflix.eureka2.server.EurekaWriteServerModule;
 import com.netflix.eureka2.server.InterestPeerAddressProvider;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.config.WriteServerConfig;
+import com.netflix.eureka2.server.service.overrides.OverridesModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
@@ -63,6 +64,7 @@ public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig,
 
         return Modules.combine(
                 super.getModule(),
+                new OverridesModule(),
                 embeddedWriteServerModule);
     }
 
