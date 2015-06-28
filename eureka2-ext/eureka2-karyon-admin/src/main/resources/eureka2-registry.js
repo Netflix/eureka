@@ -8,11 +8,11 @@ $(document).ready(function () {
   console.log("Making ajax call - " + source);
     $('#discovery-table-2').dataTable({
         "aoColumns"      : [
-            {"sTitle": "Application", "mDataProp": "appId", sDefaultContent: '-'},
-            {"sTitle": "Instance Id", "mDataProp": "instId", sDefaultContent: '-', bSortable: false},
+            {"sTitle": "Application", "mDataProp": "application", sDefaultContent: '-'},
+            {"sTitle": "Instance Id", "mDataProp": "instanceId", sDefaultContent: '-', bSortable: false},
             {"sTitle": "Status", "mDataProp": "status", sDefaultContent: '-'},
-            {"sTitle": "IP Address", "mDataProp": "ip", sDefaultContent: '-', bSortable: false},
-            {"sTitle": "VIP", "mDataProp": "vip", sDefaultContent: '-'},
+            {"sTitle": "IP Address", "mDataProp": "ipAddress", sDefaultContent: '-', bSortable: false},
+            {"sTitle": "VIP", "mDataProp": "vipAddress", sDefaultContent: '-'},
             {"sTitle": "Hostname", "mDataProp": "hostname", sDefaultContent: '-'}
         ],
       "sAjaxSource": source,

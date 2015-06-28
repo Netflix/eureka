@@ -3,6 +3,7 @@ package com.netflix.eureka2.server.registry;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Provider;
+import javax.inject.Singleton;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -15,6 +16,7 @@ import com.netflix.eureka2.server.service.overrides.OverridesService;
 /**
  * @author Tomasz Bak
  */
+@Singleton
 public class RegistrationChannelProcessorProvider implements Provider<EurekaRegistrationProcessor> {
 
     private final PreservableRegistryProcessor preservableRegistrationProcessor;

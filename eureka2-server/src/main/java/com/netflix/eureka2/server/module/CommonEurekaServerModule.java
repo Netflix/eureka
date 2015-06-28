@@ -14,7 +14,6 @@ import com.netflix.eureka2.server.http.HealthConnectionHandler;
 import com.netflix.eureka2.server.service.EurekaShutdownService;
 import com.netflix.governator.ConfigurationModule;
 import com.netflix.governator.configuration.ConfigurationProvider;
-import netflix.adminresources.resources.KaryonWebAdminModule;
 import netflix.karyon.health.HealthCheckHandler;
 
 /**
@@ -68,6 +67,5 @@ public class CommonEurekaServerModule extends AbstractModule {
 
         // web admin
         install(new StaticArchaiusBridgeModule());  // required to bridge archaius1 that is still used by adminModule
-        install(new KaryonWebAdminModule());
     }
 }

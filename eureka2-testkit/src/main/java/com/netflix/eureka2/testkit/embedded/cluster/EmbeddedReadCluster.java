@@ -12,6 +12,7 @@ import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedReadCluster.ReadClusterReport;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer.ReadServerReport;
+import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServerBuilder;
 import com.netflix.eureka2.testkit.netrouter.NetworkRouter;
 
 /**
@@ -23,7 +24,7 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
     public static final int READ_SERVER_PORTS_FROM = 14000;
 
     private final ServerResolver registrationResolver;
-    private final ServerResolver discoveryResolver;
+    private final ServerResolver interestResolver;
     private final boolean withExt;
     private final boolean withAdminUI;
     private final boolean ephemeralPorts;
@@ -33,16 +34,16 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
     private int nextAvailablePort = READ_SERVER_PORTS_FROM;
 
     public EmbeddedReadCluster(ServerResolver registrationResolver,
-                               ServerResolver discoveryResolver,
+                               ServerResolver interestResolver,
                                boolean withExt,
                                boolean withAdminUI,
                                boolean ephemeralPorts,
                                NetworkRouter networkRouter) {
-        this(registrationResolver, discoveryResolver, withExt, withAdminUI, ephemeralPorts, CodecType.Avro, networkRouter);
+        this(registrationResolver, interestResolver, withExt, withAdminUI, ephemeralPorts, CodecType.Avro, networkRouter);
     }
 
     public EmbeddedReadCluster(ServerResolver registrationResolver,
-                               ServerResolver discoveryResolver,
+                               ServerResolver interestResolver,
                                boolean withExt,
                                boolean withAdminUI,
                                boolean ephemeralPorts,
@@ -50,7 +51,7 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
                                NetworkRouter networkRouter) {
         super(READ_SERVER_NAME);
         this.registrationResolver = registrationResolver;
-        this.discoveryResolver = discoveryResolver;
+        this.interestResolver = interestResolver;
         this.withExt = withExt;
         this.withAdminUI = withAdminUI;
         this.ephemeralPorts = ephemeralPorts;
@@ -77,27 +78,23 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
                 .build();
 
         EmbeddedReadServer newServer = newServer(config);
-        newServer.start();
-
         nextAvailablePort += 10;
 
         if (ephemeralPorts) {
-            discoveryPort = newServer.getDiscoveryPort();
+            discoveryPort = newServer.getInterestPort();
         }
 
         return scaleUpByOne(newServer, new Server("localhost", discoveryPort));
     }
 
     protected EmbeddedReadServer newServer(EurekaServerConfig config) {
-        return new EmbeddedReadServer(
-                nextAvailableServerId(),
-                config,
-                registrationResolver,
-                discoveryResolver,
-                networkRouter,
-                withExt,
-                withAdminUI
-        );
+        return new EmbeddedReadServerBuilder(nextAvailableServerId())
+                .withConfiguration(config)
+                .withRegistrationResolver(registrationResolver)
+                .withInterestResolver(interestResolver)
+                .withNetworkRouter(networkRouter)
+                .withAdminUI(withAdminUI)
+                .build();
     }
 
     @Override

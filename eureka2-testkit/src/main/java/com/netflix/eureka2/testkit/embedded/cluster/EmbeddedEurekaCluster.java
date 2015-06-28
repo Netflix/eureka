@@ -7,14 +7,14 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.testkit.embedded.server.EmbeddedEurekaServer;
+import com.netflix.eureka2.server.AbstractEurekaServer;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
 /**
  * @author Tomasz Bak
  */
-public abstract class EmbeddedEurekaCluster<S extends EmbeddedEurekaServer, A, R> {
+public abstract class EmbeddedEurekaCluster<S extends AbstractEurekaServer, A, R> {
 
     private final String clusterVip;
 
@@ -60,20 +60,6 @@ public abstract class EmbeddedEurekaCluster<S extends EmbeddedEurekaServer, A, R
         }
     }
 
-    public void startUp(int idx) {
-        S server = servers.get(idx);
-        if (server != null) {
-            server.start();
-        }
-    }
-
-    public void bringDown(int idx) {
-        S server = servers.get(idx);
-        if (server != null) {
-            server.shutdown();
-        }
-    }
-
     public void shutdown() {
         for (S server : servers) {
             server.shutdown();
@@ -86,6 +72,10 @@ public abstract class EmbeddedEurekaCluster<S extends EmbeddedEurekaServer, A, R
 
     public S getServer(int idx) {
         return servers.get(idx);
+    }
+
+    public List<S> getServers() {
+        return servers;
     }
 
     public SourcedEurekaRegistry<InstanceInfo> getEurekaServerRegistry(int idx) {

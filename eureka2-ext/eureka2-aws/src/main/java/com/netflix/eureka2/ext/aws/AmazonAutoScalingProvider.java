@@ -13,6 +13,7 @@ import com.amazonaws.services.autoscaling.AmazonAutoScalingClient;
  * @author Tomasz Bak
  */
 public class AmazonAutoScalingProvider implements Provider<AmazonAutoScaling> {
+
     private final AmazonAutoScaling amazonAutoScaling;
 
     @Inject

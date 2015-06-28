@@ -39,7 +39,7 @@ public class EmbeddedWriteServerTest {
                 .build();
 
         EurekaInterestClient interestClient = Eurekas.newInterestClientBuilder()
-                .withServerResolver(ServerResolvers.fromHostname("localhost").withPort(writeServer.getDiscoveryPort()))
+                .withServerResolver(ServerResolvers.fromHostname("localhost").withPort(writeServer.getInterestPort()))
                 .build();
 
         InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();

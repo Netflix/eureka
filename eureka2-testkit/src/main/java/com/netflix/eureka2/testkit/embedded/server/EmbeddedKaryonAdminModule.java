@@ -1,10 +1,6 @@
 package com.netflix.eureka2.testkit.embedded.server;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provider;
-import com.netflix.eureka2.client.Eurekas;
-import com.netflix.eureka2.client.EurekaInterestClient;
-import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.server.health.KaryonHealthCheckHandler;
 import netflix.admin.AdminConfigImpl;
 import netflix.admin.AdminContainerConfig;
@@ -13,9 +9,6 @@ import netflix.adminresources.AdminResourcesContainer;
 import netflix.adminresources.pages.EnvPage;
 import netflix.adminresources.pages.Eureka2Page;
 import netflix.adminresources.pages.Eureka2StatusPage;
-import netflix.adminresources.resources.Eureka2InterestClientProvider;
-import netflix.adminresources.resources.Eureka2InterestClientProviderImpl;
-import netflix.adminresources.resources.StatusRegistry;
 import netflix.karyon.health.HealthCheckHandler;
 import netflix.karyon.health.HealthCheckInvocationStrategy;
 import netflix.karyon.health.SyncHealthCheckInvocationStrategy;
@@ -28,7 +21,13 @@ import netflix.karyon.health.SyncHealthCheckInvocationStrategy;
  *
  * @author Tomasz Bak
  */
-public abstract class EmbeddedKaryonAdminModule extends AbstractModule {
+public class EmbeddedKaryonAdminModule extends AbstractModule {
+
+    private final int webAdminPort;
+
+    public EmbeddedKaryonAdminModule(int webAdminPort) {
+        this.webAdminPort = webAdminPort;
+    }
 
     @Override
     protected void configure() {
@@ -37,52 +36,12 @@ public abstract class EmbeddedKaryonAdminModule extends AbstractModule {
         adminRegistry.add(new Eureka2Page());
         adminRegistry.add(new Eureka2StatusPage());
 
-        bind(AdminContainerConfig.class).toInstance(new EmbeddedAdminContainerConfig(getEurekaWebAdminPort()));
+        bind(AdminContainerConfig.class).toInstance(new EmbeddedAdminContainerConfig(webAdminPort));
         bind(AdminPageRegistry.class).toInstance(adminRegistry);
         bind(AdminResourcesContainer.class).asEagerSingleton();
 
-        bindEureka2RegistryUI();
-        bindEureka2StatusUI();
-
         bind(HealthCheckHandler.class).to(KaryonHealthCheckHandler.class).asEagerSingleton();
         bind(HealthCheckInvocationStrategy.class).to(SyncHealthCheckInvocationStrategy.class).asEagerSingleton();
-    }
-
-    protected abstract int getEurekaWebAdminPort();
-
-    protected abstract int getEurekaHttpServerPort();
-
-    protected abstract ServerResolver getInterestResolver();
-
-    private void bindEureka2RegistryUI() {
-        bind(Eureka2InterestClientProvider.class).toInstance(new Eureka2InterestClientProviderImpl() {
-            EurekaInterestClient interestClient;
-
-            @Override
-            public EurekaInterestClient get() {
-                if (interestClient == null) {
-                    interestClient = Eurekas.newInterestClientBuilder()
-                            .withServerResolver(getInterestResolver())
-                            .build();
-                }
-                return interestClient;
-            }
-        });
-    }
-
-    private void bindEureka2StatusUI() {
-        bind(StatusRegistry.class).toProvider(new Provider<StatusRegistry>() {
-            StatusRegistry statusRegistry;
-
-            @Override
-            public StatusRegistry get() {
-                if (statusRegistry == null) {
-                    statusRegistry = new StatusRegistry(getEurekaHttpServerPort());
-                    statusRegistry.start();
-                }
-                return statusRegistry;
-            }
-        });
     }
 
     public static class EmbeddedAdminContainerConfig implements AdminContainerConfig {

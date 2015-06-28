@@ -20,9 +20,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
+import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
@@ -104,7 +104,7 @@ public class Session {
 
     public void connectToRegister(String host, int port) {
         ServerResolver serverResolver;
-        if(host.indexOf('.') == -1) {
+        if (host.indexOf('.') == -1) {
             serverResolver = ServerResolvers.fromHostname(host).withPort(port);
         } else {
             serverResolver = ServerResolvers.fromDnsName(host).withPort(port);
@@ -118,9 +118,15 @@ public class Session {
     }
 
     public void connectToRead(String host, int port) {
+        ServerResolver serverResolver;
+        if (host.indexOf('.') == -1) {
+            serverResolver = ServerResolvers.fromHostname(host).withPort(port);
+        } else {
+            serverResolver = ServerResolvers.fromDnsName(host).withPort(port);
+        }
         interestClient = Eurekas.newInterestClientBuilder()
                 .withTransportConfig(context.getTransportConfig())
-                .withServerResolver(ServerResolvers.fromHostname(host).withPort(port))
+                .withServerResolver(serverResolver)
                 .build();
 
         mode = Mode.Read;
@@ -129,7 +135,7 @@ public class Session {
     public void connectToCluster(String host, int registrationPort, int interestPort, String readClusterVip) {
         registrationClient = Eurekas.newRegistrationClientBuilder()
                 .withTransportConfig(context.getTransportConfig())
-                .withServerResolver(ServerResolvers.fromHostname(host).withPort(registrationPort))
+                .withServerResolver(ServerResolvers.fromDnsName(host).withPort(registrationPort))
                 .build();
 
         interestClient = Eurekas.newInterestClientBuilder()
@@ -163,9 +169,9 @@ public class Session {
                     return false;
                 }
                 return true;
-           default:
-               System.out.println("Unknown mode state: " + mode);
-               return false;
+            default:
+                System.out.println("Unknown mode state: " + mode);
+                return false;
         }
     }
 
