@@ -46,7 +46,7 @@ public class OverridesServiceImpl implements OverridesService {
                     }
                 });
 
-        Observable<InstanceInfo> overridenUpdates = RxFunctions.combineWithOptional(
+        Observable<InstanceInfo> overriddenUpdates = RxFunctions.combineWithOptional(
                 sharedUpdates,
                 instanceOverrides,
                 new Func2<InstanceInfo, ChangeNotification<Overrides>, InstanceInfo>() {
@@ -65,7 +65,7 @@ public class OverridesServiceImpl implements OverridesService {
                     }
                 });
 
-        return delegate.register(id, overridenUpdates, source);
+        return delegate.register(id, overriddenUpdates, source);
     }
 
     @Override

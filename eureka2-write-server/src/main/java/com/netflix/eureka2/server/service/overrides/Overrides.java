@@ -25,16 +25,16 @@ public class Overrides {
         return id;
     }
 
+    public Set<Delta<?>> getDeltas() {
+        return deltas;
+    }
+
     @Override
     public String toString() {
         return "Overrides{" +
                 "id='" + id + '\'' +
                 ", deltas=" + deltas +
                 '}';
-    }
-
-    public Set<Delta<?>> getDeltas() {
-        return deltas;
     }
 
     @Override

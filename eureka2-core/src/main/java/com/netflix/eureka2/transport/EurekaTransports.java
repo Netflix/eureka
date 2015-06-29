@@ -30,6 +30,7 @@ import com.netflix.eureka2.codec.json.EurekaJsonCodec;
 import com.netflix.eureka2.protocol.common.Heartbeat;
 import com.netflix.eureka2.protocol.common.AddInstance;
 import com.netflix.eureka2.protocol.common.DeleteInstance;
+import com.netflix.eureka2.protocol.interest.DeltaDTO;
 import com.netflix.eureka2.protocol.interest.InterestRegistration;
 import com.netflix.eureka2.protocol.common.StreamStateUpdate;
 import com.netflix.eureka2.protocol.interest.UnregisterInterestSet;
@@ -89,7 +90,7 @@ public final class EurekaTransports {
     static final String INTEREST_ENVELOPE_TYPE = "com.netflix.eureka2.protocol.interest.InterestMessage";
 
     static final Class<?>[] INTEREST_PROTOCOL_MODEL = {
-            InterestRegistration.class, UnregisterInterestSet.class, Heartbeat.class,
+            InterestRegistration.class, UnregisterInterestSet.class, Heartbeat.class, DeltaDTO.class,
             AddInstance.class, DeleteInstance.class, UpdateInstanceInfo.class, StreamStateUpdate.class
     };
     static final Set<Class<?>> INTEREST_PROTOCOL_MODEL_SET = new HashSet<>(Arrays.asList(INTEREST_PROTOCOL_MODEL));
