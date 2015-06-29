@@ -24,13 +24,20 @@ public class OverridesServiceImpl implements OverridesService {
 
     private static final Logger logger = LoggerFactory.getLogger(OverridesServiceImpl.class);
 
-    private final EurekaRegistrationProcessor<InstanceInfo> delegate;
     private final OverridesRegistry overridesRegistry;
+    private volatile EurekaRegistrationProcessor<InstanceInfo> delegate;
 
     @Inject
-    public OverridesServiceImpl(EurekaRegistrationProcessor<InstanceInfo> delegate, OverridesRegistry overridesRegistry) {
-        this.delegate = delegate;
+    public OverridesServiceImpl(OverridesRegistry overridesRegistry) {
         this.overridesRegistry = overridesRegistry;
+    }
+
+    @Override
+    public void addOutboundHandler(EurekaRegistrationProcessor<InstanceInfo> delegate) {
+        if (this.delegate != null) {
+            throw new IllegalStateException("Second outbound handler injection not allowed");
+        }
+        this.delegate = delegate;
     }
 
     @Override

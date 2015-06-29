@@ -15,13 +15,8 @@ public class EmbeddedRunner {
 
     private final EurekaDeployment deployment;
 
-    public EmbeddedRunner(int writeSize, int readSize) {
-        this(writeSize, readSize, false, false, false, false, false, false);
-    }
-
     public EmbeddedRunner(int writeSize,
                           int readSize,
-                          boolean withBridge,
                           boolean withDashboard,
                           boolean withExt,
                           boolean withAdminUI,
@@ -30,7 +25,6 @@ public class EmbeddedRunner {
         deployment = new EurekaDeploymentBuilder()
                 .withWriteClusterSize(writeSize)
                 .withReadClusterSize(readSize)
-                .withBridge(withBridge)
                 .withDashboard(withDashboard)
                 .withExtensions(withExt)
                 .withAdminUI(withAdminUI)
@@ -75,32 +69,28 @@ public class EmbeddedRunner {
         int writeCount = Integer.valueOf(args[0]);
         int readCount = Integer.valueOf(args[1]);
 
-        boolean withBridge = false;
-        if (args.length >= 3) {
-            withBridge = Boolean.valueOf(args[2]);
-        }
         boolean withDashboard = false;
-        if (args.length >= 4) {
-            withDashboard = Boolean.valueOf(args[3]);
+        if (args.length >= 3) {
+            withDashboard = Boolean.valueOf(args[2]);
         }
         boolean withDeploymentView = false;
-        if (args.length >= 5) {
-            withDeploymentView = Boolean.valueOf(args[4]);
+        if (args.length >= 4) {
+            withDeploymentView = Boolean.valueOf(args[3]);
         }
         boolean withExt = false;
-        if (args.length >= 6) {
-            withExt = Boolean.valueOf(args[5]);
+        if (args.length >= 5) {
+            withExt = Boolean.valueOf(args[4]);
         }
         boolean witAdminUI = false;
-        if (args.length >= 7) {
-            witAdminUI = Boolean.valueOf(args[6]);
+        if (args.length >= 6) {
+            witAdminUI = Boolean.valueOf(args[5]);
         }
         boolean withEphemeralPorts = false;
-        if (args.length >= 8) {
-            withEphemeralPorts = Boolean.valueOf(args[7]);
+        if (args.length >= 7) {
+            withEphemeralPorts = Boolean.valueOf(args[6]);
         }
 
-        new EmbeddedRunner(writeCount, readCount, withBridge, withDashboard, withExt, witAdminUI, withDeploymentView, withEphemeralPorts).waitTillShutdown();
+        EmbeddedRunner runner = new EmbeddedRunner(writeCount, readCount, withDashboard, withExt, witAdminUI, withDeploymentView, withEphemeralPorts);
+        runner.waitTillShutdown();
     }
-
 }

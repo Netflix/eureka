@@ -10,8 +10,7 @@ import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
-import com.netflix.eureka2.server.AbstractEurekaServer;
-import com.netflix.eureka2.server.config.EurekaCommonConfig;
+import com.netflix.eureka2.server.EurekaServerRunner;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
 import com.netflix.eureka2.utils.Json;
@@ -37,7 +36,7 @@ import static org.junit.Assert.assertThat;
 /**
  * @author Tomasz Bak
  */
-public abstract class AbstractStartupAndShutdownIntegrationTest<C extends EurekaCommonConfig, S extends AbstractEurekaServer<C>> {
+public abstract class AbstractStartupAndShutdownIntegrationTest<RUNNER extends EurekaServerRunner> {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractStartupAndShutdownIntegrationTest.class);
 
@@ -51,10 +50,10 @@ public abstract class AbstractStartupAndShutdownIntegrationTest<C extends Eureka
     @Before
     public void setUp() throws Exception {
         EmbeddedWriteServer server = eurekaDeploymentResource.getEurekaDeployment().getWriteCluster().getServer(0);
-        writeServerList = "localhost:" + server.getRegistrationPort() + ':' + server.getDiscoveryPort() + ':' + server.getReplicationPort();
+        writeServerList = "localhost:" + server.getRegistrationPort() + ':' + server.getInterestPort() + ':' + server.getReplicationPort();
     }
 
-    protected void verifyThatStartsWithFileBasedConfiguration(String serverName, S server) throws Exception {
+    protected void verifyThatStartsWithFileBasedConfiguration(String serverName, RUNNER server) throws Exception {
         injectConfigurationValuesViaSystemProperties(serverName);
         try {
             executeAndVerifyLifecycle(server, serverName);
@@ -75,11 +74,11 @@ public abstract class AbstractStartupAndShutdownIntegrationTest<C extends Eureka
         System.clearProperty("eureka.test.startupAndShutdown.appName");
     }
 
-    protected void executeAndVerifyLifecycle(S server, String applicationName) throws Exception {
-        server.start();
+    protected void executeAndVerifyLifecycle(RUNNER serverRunner, String applicationName) throws Exception {
+        serverRunner.start();
 
         // Verify that server health status is up
-        verifyHealthStatusIsUp(server);
+        verifyHealthStatusIsUp(serverRunner);
 
         // Subscribe to write cluster and verify that read server connected properly
         EurekaInterestClient interestClient = eurekaDeploymentResource.interestClientToWriteCluster();
@@ -91,16 +90,17 @@ public abstract class AbstractStartupAndShutdownIntegrationTest<C extends Eureka
         assertThat(notification.getKind(), is(equalTo(Kind.Add)));
 
         // Shutdown read server
-        sendShutdownCommand(server.getShutdownPort());
-        server.waitTillShutdown();
+        sendShutdownCommand(serverRunner.getEurekaServer().getShutdownPort());
+        serverRunner.awaitTermination();
 
         // Verify that read server registry entry is removed
         notification = testSubscriber.takeNextOrWait();
         assertThat(notification.getKind(), is(equalTo(Kind.Delete)));
     }
 
-    private void verifyHealthStatusIsUp(S server) {
-        RxNetty.newWebSocketClientBuilder("localhost", server.getHttpServerPort()).withWebSocketURI("/health").build()
+    private void verifyHealthStatusIsUp(RUNNER serverRunner) {
+        int httpPort = serverRunner.getEurekaServer().getHttpServerPort();
+        RxNetty.newWebSocketClientBuilder("localhost", httpPort).withWebSocketURI("/health").build()
                 .connect()
                 .flatMap(new Func1<ObservableConnection<WebSocketFrame, WebSocketFrame>, Observable<Status>>() {
                     @Override

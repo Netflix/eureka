@@ -7,6 +7,7 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
+import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServerBuilder;
 import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources.EurekaExternalResource;
 import rx.Observable;
 
@@ -55,8 +56,10 @@ public class WriteServerResource extends EurekaExternalResource {
                 .build();
 
         Observable<ChangeNotification<Server>> noPeers = Observable.never();
-        server = new EmbeddedWriteServer(config, noPeers, noPeers, null, false, false);
-        server.start();
+        server = new EmbeddedWriteServerBuilder()
+                .withConfiguration(config)
+                .withReplicationPeers(noPeers)
+                .build();
     }
 
     @Override
@@ -75,7 +78,7 @@ public class WriteServerResource extends EurekaExternalResource {
     }
 
     public int getDiscoveryPort() {
-        return server.getDiscoveryPort();
+        return server.getInterestPort();
     }
 
     public ServerResolver getRegistrationResolver() {

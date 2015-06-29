@@ -1,16 +1,19 @@
 package netflix.adminresources.resources;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.inject.Inject;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.registry.datacenter.AwsDataCenterInfo;
 import netflix.adminresources.tableview.TableViewResource;
-
-import java.util.*;
 
 public class RegistryTableView implements TableViewResource {
     private final Gson gson;
@@ -58,7 +61,7 @@ public class RegistryTableView implements TableViewResource {
     @Inject
     public RegistryTableView(InstanceRegistryCache cache) {
         this.registryCache = cache;
-        gson = new GsonBuilder().registerTypeAdapter(InstanceInfo.class, new Eureka2RegistryItemTypeAdapter()).create();
+        gson = new GsonBuilder().create();
     }
 
     @Override
@@ -91,9 +94,9 @@ public class RegistryTableView implements TableViewResource {
 
     @Override
     public JsonArray getData() {
-        final Map<String, InstanceInfo> registryMap = registryCache.get();
+        final Map<String, InstanceInfoSummary> registryMap = registryCache.get();
         if (registryMap != null) {
-            Collection<InstanceInfo> instanceInfoList = registryMap.values();
+            Collection<InstanceInfoSummary> instanceInfoList = registryMap.values();
             totalRecords = instanceInfoList.size();
             instanceInfoList = applyFiltering(instanceInfoList);
             instanceInfoList = applySorting(instanceInfoList);
@@ -108,19 +111,20 @@ public class RegistryTableView implements TableViewResource {
         return new JsonArray();
     }
 
-    private Collection<InstanceInfo> applySorting(Collection<InstanceInfo> instanceInfoList) {
+    private Collection<InstanceInfoSummary> applySorting(Collection<InstanceInfoSummary> instanceInfoList) {
         if (currentPage != null && currentPage.sortColumn != null) {
-            final Comparator<InstanceInfo> instanceInfoComparator = RegistryTableComparatorFactory.makeComparator(currentPage.sortColumn, currentPage.sortDescending);
+            final Comparator<InstanceInfoSummary> instanceInfoComparator =
+                    RegistryTableComparatorFactory.makeComparator(currentPage.sortColumn, currentPage.sortDescending);
             if (instanceInfoComparator == null) {
                 // no applicable comparator
                 return instanceInfoList;
             }
 
             if (instanceInfoList instanceof List) {
-                Collections.sort((List<InstanceInfo>) instanceInfoList, instanceInfoComparator);
+                Collections.sort((List<InstanceInfoSummary>) instanceInfoList, instanceInfoComparator);
                 return instanceInfoList;
             } else {
-                final ArrayList<InstanceInfo> instanceInfos = Lists.newArrayList(instanceInfoList);
+                final ArrayList<InstanceInfoSummary> instanceInfos = Lists.newArrayList(instanceInfoList);
                 Collections.sort(instanceInfos, instanceInfoComparator);
                 return instanceInfos;
             }
@@ -129,15 +133,15 @@ public class RegistryTableView implements TableViewResource {
         return instanceInfoList;
     }
 
-    private Collection<InstanceInfo> applyPagination(Collection<InstanceInfo> instanceInfoList) {
+    private Collection<InstanceInfoSummary> applyPagination(Collection<InstanceInfoSummary> instanceInfoList) {
         if (currentPage == null || currentPage.count == 0) {
             return instanceInfoList;
         }
-        List<InstanceInfo> result = new ArrayList<>(instanceInfoList.size());
+        List<InstanceInfoSummary> result = new ArrayList<>(instanceInfoList.size());
 
         int index = 0;
         int endIndex = currentPage.startIndex + currentPage.count;
-        for (InstanceInfo property : instanceInfoList) {
+        for (InstanceInfoSummary property : instanceInfoList) {
             if (index >= currentPage.startIndex && index < endIndex) {
                 result.add(property);
             }
@@ -151,12 +155,12 @@ public class RegistryTableView implements TableViewResource {
         return result;
     }
 
-    private Collection<InstanceInfo> applyFiltering(Collection<InstanceInfo> instanceInfoList) {
+    private Collection<InstanceInfoSummary> applyFiltering(Collection<InstanceInfoSummary> instanceInfoList) {
         if (searchTerm != null && !searchTerm.isEmpty()) {
-            List<InstanceInfo> result = new ArrayList<>();
-            for (InstanceInfo instanceInfo : instanceInfoList) {
-                final String app = instanceInfo.getApp();
-                if (containsIn(instanceInfo.getApp()) ||
+            List<InstanceInfoSummary> result = new ArrayList<>();
+            for (InstanceInfoSummary instanceInfo : instanceInfoList) {
+                final String app = instanceInfo.getApplication();
+                if (containsIn(instanceInfo.getApplication()) ||
                         containsIn(instanceInfo.getVipAddress()) ||
                         (instanceInfo.getStatus() != null && containsIn(instanceInfo.getStatus().name()))) {
                     result.add(instanceInfo);
@@ -189,14 +193,6 @@ public class RegistryTableView implements TableViewResource {
             currentPage = new PageInfo(startIndex, count);
         }
         return this;
-    }
-
-    public static String extractHostname(InstanceInfo instanceInfo) {
-        if (AwsDataCenterInfo.class.isAssignableFrom(instanceInfo.getDataCenterInfo().getClass())) {
-            final AwsDataCenterInfo dataCenterInfo = (AwsDataCenterInfo) instanceInfo.getDataCenterInfo();
-            return dataCenterInfo.getPublicAddress().getHostName();
-        }
-        return "";
     }
 
     private boolean containsIn(String target) {

@@ -12,6 +12,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import static com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource.anEurekaDeploymentResource;
+
 /**
  * @author Tomasz Bak
  */
@@ -19,7 +21,7 @@ import org.junit.experimental.categories.Category;
 public class SimpleAppIntegrationTest extends IntegrationTestClassSetup {
 
     @Rule
-    public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResource(1, 1);
+    public final EurekaDeploymentResource eurekaDeploymentResource = anEurekaDeploymentResource(1, 1).build();
 
     private EmbeddedWriteCluster writeCluster;
     private EmbeddedReadCluster readCluster;
@@ -35,7 +37,7 @@ public class SimpleAppIntegrationTest extends IntegrationTestClassSetup {
         SimpleApp sampleApp = new SimpleApp(
                 "localhost",
                 writeCluster.getServer(0).getRegistrationPort(),
-                readCluster.getServer(0).getDiscoveryPort(),
+                readCluster.getServer(0).getInterestPort(),
                 readCluster.getVip()
         );
         sampleApp.run();

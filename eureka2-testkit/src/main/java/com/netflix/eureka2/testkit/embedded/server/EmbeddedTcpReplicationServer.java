@@ -4,7 +4,6 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import com.netflix.eureka2.Names;
@@ -35,8 +34,10 @@ public class EmbeddedTcpReplicationServer extends TcpReplicationServer {
     @PostConstruct
     @Override
     public void start() {
-        super.start();
-        proxyPort = networkRouter.bridgeTo(super.serverPort());
+        if (server == null) {
+            super.start();
+            proxyPort = networkRouter.bridgeTo(super.serverPort());
+        }
     }
 
     @PreDestroy

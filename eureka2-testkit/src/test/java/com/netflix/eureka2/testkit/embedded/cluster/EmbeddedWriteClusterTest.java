@@ -2,22 +2,24 @@ package com.netflix.eureka2.testkit.embedded.cluster;
 
 import java.util.List;
 
+import com.netflix.eureka2.Server;
+import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
-import com.netflix.eureka2.server.resolver.ClusterAddress.ServiceType;
 import com.netflix.eureka2.server.config.WriteServerConfig;
+import com.netflix.eureka2.server.resolver.ClusterAddress.ServiceType;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster.WriteClusterReport;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
-import com.netflix.eureka2.Server;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import rx.observers.TestSubscriber;
 
-import static java.util.Collections.*;
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static java.util.Collections.singletonList;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 
 /**
  * @author Tomasz Bak
@@ -30,7 +32,7 @@ public class EmbeddedWriteClusterTest {
 
     @Before
     public void setUp() throws Exception {
-        writeCluster = new EmbeddedWriteCluster(false, false, false, null) {
+        writeCluster = new EmbeddedWriteCluster(false, false, false, CodecType.Avro, null) {
             @Override
             protected EmbeddedWriteServer newServer(WriteServerConfig config) {
                 return writeServer;
@@ -47,7 +49,7 @@ public class EmbeddedWriteClusterTest {
     public void testClusterScaleUp() throws Exception {
         writeCluster.scaleUpBy(1);
 
-        verify(writeServer, times(1)).start();
+        assertThat(writeCluster.getServer(0), is(equalTo(writeServer)));
 
         // Verify replication peers observable
         TestSubscriber<ChangeNotification<Server>> replicationPeerSubscriber = new TestSubscriber<>();
@@ -81,7 +83,7 @@ public class EmbeddedWriteClusterTest {
 
         // Now scale down
         writeCluster.scaleDownBy(1);
-        verify(writeServer, times(1)).shutdown();
+        assertThat(writeCluster.getServers().size(), is(equalTo(1)));
 
         // Verify we have server remove
         List<ChangeNotification<Server>> updates = replicationPeerSubscriber.getOnNextEvents();

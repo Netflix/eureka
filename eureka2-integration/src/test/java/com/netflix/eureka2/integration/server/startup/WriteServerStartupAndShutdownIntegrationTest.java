@@ -2,7 +2,7 @@ package com.netflix.eureka2.integration.server.startup;
 
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.junit.categories.LongRunningTest;
-import com.netflix.eureka2.server.EurekaWriteServer;
+import com.netflix.eureka2.server.EurekaWriteServerRunner;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.config.WriteServerConfig.WriteServerConfigBuilder;
 import com.netflix.eureka2.server.resolver.EurekaClusterResolvers.ResolverType;
@@ -16,8 +16,7 @@ import org.junit.experimental.categories.Category;
  * @author Tomasz Bak
  */
 @Category({IntegrationTest.class, LongRunningTest.class})
-public class WriteServerStartupAndShutdownIntegrationTest
-        extends AbstractStartupAndShutdownIntegrationTest<WriteServerConfig, EurekaWriteServer> {
+public class WriteServerStartupAndShutdownIntegrationTest extends AbstractStartupAndShutdownIntegrationTest<EurekaWriteServerRunner> {
 
     public static final String SERVER_NAME = "write-server-startupAndShutdown";
 
@@ -33,12 +32,12 @@ public class WriteServerStartupAndShutdownIntegrationTest
                 .withShutDownPort(0)
                 .withServerList(writeServerList)
                 .build();
-        EurekaWriteServer server = new EurekaWriteServer(config);
-        executeAndVerifyLifecycle(server, SERVER_NAME);
+        EurekaWriteServerRunner serverRunner = new EurekaWriteServerRunner(config);
+        executeAndVerifyLifecycle(serverRunner, SERVER_NAME);
     }
 
     @Test(timeout = 60000)
     public void testStartsWithFileBasedConfiguration() throws Exception {
-        verifyThatStartsWithFileBasedConfiguration(SERVER_NAME, new EurekaWriteServer(SERVER_NAME));
+        verifyThatStartsWithFileBasedConfiguration(SERVER_NAME, new EurekaWriteServerRunner(SERVER_NAME));
     }
 }

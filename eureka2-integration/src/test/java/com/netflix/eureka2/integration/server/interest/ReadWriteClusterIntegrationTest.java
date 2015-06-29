@@ -88,7 +88,7 @@ public class ReadWriteClusterIntegrationTest extends IntegrationTestClassSetup {
 
         // Disconnect network connection to the first write node
         NetworkLink networkLink = eurekaDeployment.getNetworkRouter()
-                .getLinkTo(eurekaDeployment.getWriteCluster().getServer(0).getDiscoveryPort());
+                .getLinkTo(eurekaDeployment.getWriteCluster().getServer(0).getInterestPort());
         networkLink.disconnect(1, TimeUnit.SECONDS);
 
         // Register

@@ -33,13 +33,15 @@ public class OverridesServiceImplTest {
 
     private final OverridesRegistry overridesRegistry = mock(OverridesRegistry.class);
 
-    private final OverridesServiceImpl overridesService = new OverridesServiceImpl(registrationDelegate, overridesRegistry);
+    private final OverridesServiceImpl overridesService = new OverridesServiceImpl(overridesRegistry);
 
     private final PublishSubject<ChangeNotification<Overrides>> overridesSubject = PublishSubject.create();
     private final PublishSubject<InstanceInfo> registrationSubject = PublishSubject.create();
 
     @Before
     public void setUp() throws Exception {
+        overridesService.addOutboundHandler(registrationDelegate);
+
         when(overridesRegistry.forUpdates(anyString())).thenReturn(overridesSubject);
         overridesService.register(FIRST_INSTANCE_INFO.getId(), registrationSubject, SOURCE).subscribe();
     }
