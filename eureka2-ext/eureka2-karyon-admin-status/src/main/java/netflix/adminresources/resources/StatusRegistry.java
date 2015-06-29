@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.netflix.eureka2.server.config.EurekaCommonConfig;
+import com.netflix.eureka2.server.AbstractEurekaServer;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ObservableConnection;
@@ -31,23 +31,20 @@ public class StatusRegistry {
     private static final Logger logger = LoggerFactory.getLogger(StatusRegistry.class);
 
     private final ObjectMapper mapper = new ObjectMapper();
-    private final int port;
+    private final AbstractEurekaServer eurekaServer;
     private WebSocketClient<TextWebSocketFrame, TextWebSocketFrame> wsClient;
 
     private final Map<String, GenericHealthStatusUpdate> statusMap = new ConcurrentHashMap<>();
     private volatile GenericHealthStatusUpdate aggregated;
 
     @Inject
-    public StatusRegistry(EurekaCommonConfig config) {
-        this.port = config.getHttpPort();
-    }
-
-    public StatusRegistry(int port) {
-        this.port = port;
+    public StatusRegistry(AbstractEurekaServer eurekaServer) {
+        this.eurekaServer = eurekaServer;
     }
 
     @PostConstruct
     public void start() {
+        int port = eurekaServer.getHttpServerPort();
         wsClient = RxNetty.<TextWebSocketFrame, TextWebSocketFrame>newWebSocketClientBuilder("localhost", port).withWebSocketURI("/healthcheck").build();
         wsClient.connect().flatMap(new Func1<ObservableConnection<TextWebSocketFrame, TextWebSocketFrame>, Observable<TextWebSocketFrame>>() {
             @Override

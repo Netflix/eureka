@@ -7,9 +7,12 @@ import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 /**
  * @author Tomasz Bak
@@ -36,7 +39,7 @@ public class EmbeddedReadClusterTest {
     @Test(timeout = 60000)
     public void testClusterScaleUp() throws Exception {
         readCluster.scaleUpBy(1);
-        verify(readServer, times(1)).start();
+        assertThat(readCluster.getServer(0), is(equalTo(readServer)));
     }
 
     @Test(timeout = 60000)

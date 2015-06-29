@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Tomasz Bak
  */
-public class EurekaReadServerRegistryViewTest {
+public class EurekaReadServerRunnerRegistryViewTest {
 
     private static final Interest<InstanceInfo> INTEREST = Interests.forVips("testVip");
     private static final ChangeNotification<InstanceInfo> BUFFER_START = StreamStateNotification.bufferStartNotification(INTEREST);

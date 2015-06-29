@@ -4,7 +4,6 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import com.netflix.eureka2.Names;
@@ -35,8 +34,11 @@ public class EmbeddedTcpRegistrationServer extends TcpRegistrationServer {
     @PostConstruct
     @Override
     public void start() {
-        super.start();
-        proxyPort = networkRouter.bridgeTo(super.serverPort());
+        // FIXME For some reason start method is called twice and we must guard against it here
+        if (server == null) {
+            super.start();
+            proxyPort = networkRouter.bridgeTo(super.serverPort());
+        }
     }
 
     @PreDestroy

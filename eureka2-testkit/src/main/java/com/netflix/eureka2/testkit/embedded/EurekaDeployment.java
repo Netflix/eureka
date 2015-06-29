@@ -9,12 +9,13 @@ import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
+import com.netflix.eureka2.config.EurekaDashboardConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
-import com.netflix.eureka2.server.resolver.ClusterAddress.ServiceType;
+import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedReadCluster;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster;
-import com.netflix.eureka2.testkit.embedded.server.EmbeddedBridgeServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedDashboardServer;
+import com.netflix.eureka2.testkit.embedded.server.EmbeddedDashboardServerBuilder;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import com.netflix.eureka2.testkit.embedded.view.ClusterViewHttpServer;
@@ -28,10 +29,12 @@ import static com.netflix.eureka2.interests.Interests.forVips;
  */
 public class EurekaDeployment {
 
+    private static final String DASHBOARD_SERVER_NAME = "eureka2-dashboard";
+    private static final int DASHBOARD_SERVER_PORTS_FROM = 16000;
+
     private final EurekaTransportConfig transportConfig;
     private final EmbeddedWriteCluster writeCluster;
     private final EmbeddedReadCluster readCluster;
-    private final EmbeddedBridgeServer bridgeServer;
     private final EmbeddedDashboardServer dashboardServer;
     private final NetworkRouter networkRouter;
 
@@ -43,14 +46,12 @@ public class EurekaDeployment {
     protected EurekaDeployment(EurekaTransportConfig transportConfig,
                                EmbeddedWriteCluster writeCluster,
                                EmbeddedReadCluster readCluster,
-                               EmbeddedBridgeServer bridgeServer,
                                EmbeddedDashboardServer dashboardServer,
                                NetworkRouter networkRouter,
                                boolean viewEnabled) {
         this.transportConfig = transportConfig;
         this.writeCluster = writeCluster;
         this.readCluster = readCluster;
-        this.bridgeServer = bridgeServer;
         this.dashboardServer = dashboardServer;
         this.networkRouter = networkRouter;
 
@@ -68,10 +69,6 @@ public class EurekaDeployment {
 
     public EmbeddedReadCluster getReadCluster() {
         return readCluster;
-    }
-
-    public EmbeddedBridgeServer getBridgeServer() {
-        return bridgeServer;
     }
 
     public EmbeddedDashboardServer getDashboardServer() {
@@ -189,9 +186,6 @@ public class EurekaDeployment {
 
         writeCluster.shutdown();
         readCluster.shutdown();
-        if (bridgeServer != null) {
-            bridgeServer.shutdown();
-        }
         if (dashboardServer != null) {
             dashboardServer.shutdown();
         }
@@ -207,7 +201,6 @@ public class EurekaDeployment {
         private int readClusterSize;
         private boolean ephemeralPorts;
         private boolean networkRouterEnabled;
-        private boolean bridgeEnabled;
         private boolean dashboardEnabled;
         private boolean adminUIEnabled;
         private boolean extensionsEnabled;
@@ -238,11 +231,6 @@ public class EurekaDeployment {
             return this;
         }
 
-        public EurekaDeploymentBuilder withBridge(boolean bridgeEnabled) {
-            this.bridgeEnabled = bridgeEnabled;
-            return this;
-        }
-
         public EurekaDeploymentBuilder withDashboard(boolean dashboardEnabled) {
             this.dashboardEnabled = dashboardEnabled;
             return this;
@@ -268,42 +256,47 @@ public class EurekaDeployment {
                 transportConfig = new BasicEurekaTransportConfig.Builder().build();
             }
             NetworkRouter networkRouter = networkRouterEnabled ? NetworkRouters.aRouter() : null;
+
+            // Write cluster
             EmbeddedWriteCluster writeCluster = new EmbeddedWriteCluster(extensionsEnabled, adminUIEnabled, ephemeralPorts, transportConfig.getCodec(), networkRouter);
             writeCluster.scaleUpBy(writeClusterSize);
 
+            // Read cluster
             EmbeddedReadCluster readCluster = new EmbeddedReadCluster(writeCluster.registrationResolver(),
                     writeCluster.interestResolver(), extensionsEnabled, adminUIEnabled, ephemeralPorts, transportConfig.getCodec(), networkRouter);
             readCluster.scaleUpBy(readClusterSize);
 
-            EmbeddedBridgeServer bridgeServer = null;
-            if (bridgeEnabled) {
-                bridgeServer = EmbeddedBridgeServer.newBridge(writeCluster.resolvePeers(ServiceType.Replication), extensionsEnabled, adminUIEnabled, transportConfig.getCodec());
-                bridgeServer.start();
-            }
+            // Dashboard
             EmbeddedDashboardServer dashboardServer = null;
             if (dashboardEnabled) {
-                int discoveryPort;
                 ServerResolver readClusterResolver;
                 if (readClusterSize > 0) {
-                    discoveryPort = readCluster.getServer(0).getDiscoveryPort();
                     readClusterResolver = ServerResolvers.fromEureka(writeCluster.interestResolver()).forInterest(forVips(readCluster.getVip()));
                 } else {
-                    discoveryPort = writeCluster.getServer(0).getDiscoveryPort();
                     readClusterResolver = writeCluster.interestResolver();
                 }
 
-                dashboardServer = EmbeddedDashboardServer.newDashboard(
-                        writeCluster.registrationResolver(),
-                        readClusterResolver,
-                        discoveryPort,
-                        extensionsEnabled,
-                        adminUIEnabled,
-                        ephemeralPorts,
-                        transportConfig.getCodec()
-                );
-                dashboardServer.start();
+                int dashboardPort = ephemeralPorts ? 0 : DASHBOARD_SERVER_PORTS_FROM;
+                int webAdminPort = ephemeralPorts ? 0 : DASHBOARD_SERVER_PORTS_FROM + 1;
+                int shutdownPort = ephemeralPorts ? 0 : DASHBOARD_SERVER_PORTS_FROM + 2;
+
+                EurekaDashboardConfig config = EurekaDashboardConfig.newBuilder()
+                        .withAppName(DASHBOARD_SERVER_NAME)
+                        .withVipAddress(DASHBOARD_SERVER_NAME)
+                        .withDataCenterType(DataCenterType.Basic)
+                        .withCodec(transportConfig.getCodec())
+                        .withShutDownPort(shutdownPort)
+                        .withWebAdminPort(webAdminPort)
+                        .withDashboardPort(dashboardPort)
+                        .build();
+
+                dashboardServer = new EmbeddedDashboardServerBuilder()
+                        .withConfiguration(config)
+                        .withInterestResolver(readClusterResolver)
+                        .withRegistrationResolver(writeCluster.registrationResolver())
+                        .build();
             }
-            return new EurekaDeployment(transportConfig, writeCluster, readCluster, bridgeServer, dashboardServer, networkRouter, viewEnabled);
+            return new EurekaDeployment(transportConfig, writeCluster, readCluster, dashboardServer, networkRouter, viewEnabled);
         }
     }
 }

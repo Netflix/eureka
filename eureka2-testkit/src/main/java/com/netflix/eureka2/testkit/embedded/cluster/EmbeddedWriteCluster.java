@@ -16,6 +16,7 @@ import com.netflix.eureka2.server.resolver.ClusterAddress.ServiceType;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster.WriteClusterReport;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer.WriteServerReport;
+import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServerBuilder;
 import com.netflix.eureka2.testkit.netrouter.NetworkRouter;
 import com.netflix.eureka2.utils.rx.RxFunctions;
 import rx.Observable;
@@ -36,10 +37,6 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
     private final NetworkRouter networkRouter;
 
     private int nextAvailablePort = WRITE_SERVER_PORTS_FROM;
-
-    public EmbeddedWriteCluster(boolean withExt, boolean withAdminUI, boolean ephemeralPorts, NetworkRouter networkRouter) {
-        this(withExt, withAdminUI, ephemeralPorts, CodecType.Avro, networkRouter);
-    }
 
     public EmbeddedWriteCluster(boolean withExt, boolean withAdminUI, boolean ephemeralPorts, CodecType codec, NetworkRouter networkRouter) {
         super(WRITE_SERVER_NAME);
@@ -74,28 +71,25 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
                 .withWebAdminPort(adminPort)
                 .withReplicationRetryMillis(1000)
                 .build();
-        EmbeddedWriteServer newServer = newServer(config);
-        newServer.start();
+        EmbeddedWriteServer writeServer = newServer(config);
 
         nextAvailablePort += 10;
 
         if (ephemeralPorts) {
-            writeServerAddress = ClusterAddress.writeClusterAddressFrom("localhost", newServer.getRegistrationPort(),
-                    newServer.getDiscoveryPort(), newServer.getReplicationPort());
+            writeServerAddress = ClusterAddress.writeClusterAddressFrom("localhost", writeServer.getRegistrationPort(),
+                    writeServer.getInterestPort(), writeServer.getReplicationPort());
         }
 
-        return scaleUpByOne(newServer, writeServerAddress);
+        return scaleUpByOne(writeServer, writeServerAddress);
     }
 
     protected EmbeddedWriteServer newServer(WriteServerConfig config) {
-        return new EmbeddedWriteServer(
-                config,
-                resolvePeers(ServiceType.Interest),
-                resolvePeers(ServiceType.Replication),
-                networkRouter,
-                withExt,
-                withAdminUI
-        );
+        return new EmbeddedWriteServerBuilder()
+                .withConfiguration(config)
+                .withReplicationPeers(resolvePeers(ServiceType.Replication))
+                .withNetworkRouter(networkRouter)
+                .withAdminUI(withAdminUI)
+                .build();
     }
 
     @Override

@@ -35,13 +35,13 @@ public class EmbeddedReadServerTest {
     public TestRule ruleChain = RuleChain.outerRule(writeServerResource).around(readServerResource);
 
     @Test(timeout = 10000)
-    public void testDiscoveryServices() throws Exception {
+    public void testInterestServices() throws Exception {
         EurekaRegistrationClient registrationClient = Eurekas.newRegistrationClientBuilder()
                 .withServerResolver(ServerResolvers.fromHostname("localhost").withPort(writeServerResource.getRegistrationPort()))
                 .build();
 
         EurekaInterestClient interestClient = Eurekas.newInterestClientBuilder()
-                .withServerResolver(ServerResolvers.fromHostname("localhost").withPort(readServerResource.getDiscoveryPort()))
+                .withServerResolver(ServerResolvers.fromHostname("localhost").withPort(readServerResource.getInterestPort()))
                 .build();
 
         InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();

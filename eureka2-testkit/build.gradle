@@ -18,7 +18,6 @@ dependencies {
     compile project(':eureka2-client')
     compile project(':eureka2-read-server')
     compile project(':eureka2-write-server')
-    compile project(':eureka2-bridge')
     compile project(':eureka2-dashboard')
     compile "com.netflix.karyon:karyon2-admin-healthcheck-plugin:${karyon_version}"
     compile project(':eureka2-ext:eureka2-karyon-admin')

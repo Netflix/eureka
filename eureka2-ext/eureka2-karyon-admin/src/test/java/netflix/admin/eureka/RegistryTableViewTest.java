@@ -1,7 +1,9 @@
 package netflix.admin.eureka;
 
+import java.util.Map;
+
 import com.google.gson.JsonArray;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import netflix.adminresources.resources.InstanceInfoSummary;
 import netflix.adminresources.resources.InstanceRegistryCache;
 import netflix.adminresources.resources.RegistryTableView;
 import org.junit.Rule;
@@ -10,8 +12,6 @@ import org.junit.rules.ExternalResource;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-
-import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -33,7 +33,7 @@ public class RegistryTableViewTest {
 
     @Test(timeout = 60000)
     public void checkFilter() {
-        final Map<String, InstanceInfo> registryMap = registryCache.get();
+        final Map<String, InstanceInfoSummary> registryMap = registryCache.get();
         assertTrue(registryMap != null);
         assertEquals(5, registryMap.size());
 
@@ -47,7 +47,7 @@ public class RegistryTableViewTest {
 
     @Test(timeout = 60000)
     public void checkPaginate() {
-        final Map<String, InstanceInfo> registryMap = registryCache.get();
+        final Map<String, InstanceInfoSummary> registryMap = registryCache.get();
         assertTrue(registryMap != null);
         assertEquals(5, registryMap.size());
 
@@ -61,7 +61,7 @@ public class RegistryTableViewTest {
 
     @Test(timeout = 60000)
     public void checkSorting() {
-        final Map<String, InstanceInfo> registryMap = registryCache.get();
+        final Map<String, InstanceInfoSummary> registryMap = registryCache.get();
         assertTrue(registryMap != null);
         assertEquals(5, registryMap.size());
 
@@ -72,20 +72,20 @@ public class RegistryTableViewTest {
         assertTrue(regData != null);
         assertEquals(5, regData.size());
 
-        String firstAppId = regData.get(0).getAsJsonObject().get("appId").getAsString();
+        String firstAppId = regData.get(0).getAsJsonObject().get("application").getAsString();
         assertEquals("App_3", firstAppId);
 
         registryView.enableColumnSort("Application", false);
         regData = registryView.getData();
         assertTrue(regData != null);
         assertEquals(5, regData.size());
-        firstAppId = regData.get(0).getAsJsonObject().get("appId").getAsString();
+        firstAppId = regData.get(0).getAsJsonObject().get("application").getAsString();
         assertEquals("App_1", firstAppId);
     }
 
     @Test(timeout = 60000)
     public void checkFilteredSize() {
-        final Map<String, InstanceInfo> registryMap = registryCache.get();
+        final Map<String, InstanceInfoSummary> registryMap = registryCache.get();
         assertTrue(registryMap != null);
         assertEquals(5, registryMap.size());
 

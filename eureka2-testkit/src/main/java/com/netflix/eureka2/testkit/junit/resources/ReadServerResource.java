@@ -6,6 +6,7 @@ import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterTyp
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
+import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServerBuilder;
 import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources.EurekaExternalResource;
 import com.netflix.eureka2.codec.CodecType;
 
@@ -22,7 +23,7 @@ public class ReadServerResource extends EurekaExternalResource {
     private final CodecType codec;
 
     private EmbeddedReadServer server;
-    private int discoveryPort;
+    private int interestPort;
 
     public ReadServerResource(WriteServerResource writeServerResource) {
         this(DEFAULT_READ_CLUSTER_NAME, writeServerResource);
@@ -51,12 +52,15 @@ public class ReadServerResource extends EurekaExternalResource {
                 .withCodec(codec)
                 .build();
         ServerResolver registrationResolver = ServerResolvers.fromHostname("localhost").withPort(writeServerResource.getRegistrationPort());
-        ServerResolver discoveryResolver = ServerResolvers.fromHostname("localhost").withPort(writeServerResource.getDiscoveryPort());
-        server = new EmbeddedReadServer(EMBEDDED_READ_CLIENT_ID, config, registrationResolver, discoveryResolver, null, false, false);
-        server.start();
+        ServerResolver interestResolver = ServerResolvers.fromHostname("localhost").withPort(writeServerResource.getDiscoveryPort());
+        server = new EmbeddedReadServerBuilder(EMBEDDED_READ_CLIENT_ID)
+                .withConfiguration(config)
+                .withRegistrationResolver(registrationResolver)
+                .withInterestResolver(interestResolver)
+                .build();
 
         // Find ephemeral port numbers
-        discoveryPort = server.getInjector().getInstance(TcpInterestServer.class).serverPort();
+        interestPort = server.getInjector().getInstance(TcpInterestServer.class).serverPort();
     }
 
     @Override
@@ -70,11 +74,11 @@ public class ReadServerResource extends EurekaExternalResource {
         return name;
     }
 
-    public int getDiscoveryPort() {
-        return discoveryPort;
+    public int getInterestPort() {
+        return interestPort;
     }
 
     public ServerResolver getInterestResolver() {
-        return ServerResolvers.fromHostname("localhost").withPort(discoveryPort);
+        return ServerResolvers.fromHostname("localhost").withPort(interestPort);
     }
 }

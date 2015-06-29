@@ -1,37 +1,36 @@
 package netflix.adminresources.resources;
 
-import com.netflix.eureka2.registry.instance.InstanceInfo;
-
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 
-public class RegistryTableComparatorFactory {
-    private static Map<RegistryTableView.Column, Comparator<InstanceInfo>> columnComparatorAscMap = new HashMap<>(10);
-    private static Map<RegistryTableView.Column, Comparator<InstanceInfo>> columnComparatorDescMap = new HashMap<>(10);
+public final class RegistryTableComparatorFactory {
+
+    private static final Map<RegistryTableView.Column, Comparator<InstanceInfoSummary>> columnComparatorAscMap = new EnumMap<>(RegistryTableView.Column.class);
+    private static final Map<RegistryTableView.Column, Comparator<InstanceInfoSummary>> columnComparatorDescMap = new EnumMap<>(RegistryTableView.Column.class);
 
     static {
-        columnComparatorAscMap.put(RegistryTableView.Column.Application, new Comparator<InstanceInfo>() {
+        columnComparatorAscMap.put(RegistryTableView.Column.Application, new Comparator<InstanceInfoSummary>() {
             @Override
-            public int compare(InstanceInfo o1, InstanceInfo o2) {
-                if (o1 != null && o2 != null && o1.getApp() != null && o2.getApp() != null) {
-                    return o1.getApp().compareToIgnoreCase(o2.getApp());
+            public int compare(InstanceInfoSummary o1, InstanceInfoSummary o2) {
+                if (o1 != null && o2 != null && o1.getApplication() != null && o2.getApplication() != null) {
+                    return o1.getApplication().compareToIgnoreCase(o2.getApplication());
                 }
-                if (o1 != null && o1.getApp() != null) {
+                if (o1 != null && o1.getApplication() != null) {
                     return 1;
                 }
-                if (o2 != null && o2.getApp() != null) {
+                if (o2 != null && o2.getApplication() != null) {
                     return -1;
                 }
                 return 0;
             }
         });
 
-        columnComparatorAscMap.put(RegistryTableView.Column.Hostname, new Comparator<InstanceInfo>() {
+        columnComparatorAscMap.put(RegistryTableView.Column.Hostname, new Comparator<InstanceInfoSummary>() {
             @Override
-            public int compare(InstanceInfo o1, InstanceInfo o2) {
-                final String hostName1 = RegistryTableView.extractHostname(o1);
-                final String hostName2 = RegistryTableView.extractHostname(o2);
+            public int compare(InstanceInfoSummary o1, InstanceInfoSummary o2) {
+                final String hostName1 = o1.getIpAddress();
+                final String hostName2 = o1.getIpAddress();
                 if (!hostName1.isEmpty() && !hostName2.isEmpty()) {
                     return hostName1.compareTo(hostName2);
                 }
@@ -45,9 +44,9 @@ public class RegistryTableComparatorFactory {
             }
         });
 
-        columnComparatorAscMap.put(RegistryTableView.Column.Status, new Comparator<InstanceInfo>() {
+        columnComparatorAscMap.put(RegistryTableView.Column.Status, new Comparator<InstanceInfoSummary>() {
             @Override
-            public int compare(InstanceInfo o1, InstanceInfo o2) {
+            public int compare(InstanceInfoSummary o1, InstanceInfoSummary o2) {
                 if (o1 != null && o2 != null && o1.getStatus() != null && o2.getStatus() != null) {
                     return o1.getStatus().name().compareTo(o2.getStatus().name());
                 }
@@ -61,9 +60,9 @@ public class RegistryTableComparatorFactory {
             }
         });
 
-        columnComparatorAscMap.put(RegistryTableView.Column.VipAddress, new Comparator<InstanceInfo>() {
+        columnComparatorAscMap.put(RegistryTableView.Column.VipAddress, new Comparator<InstanceInfoSummary>() {
             @Override
-            public int compare(InstanceInfo o1, InstanceInfo o2) {
+            public int compare(InstanceInfoSummary o1, InstanceInfoSummary o2) {
                 if (o1 != null && o2 != null && o1.getVipAddress() != null && o2.getVipAddress() != null) {
                     return o1.getVipAddress().compareTo(o2.getVipAddress());
                 }
@@ -78,27 +77,27 @@ public class RegistryTableComparatorFactory {
         });
 
         //  descending comparators
-        columnComparatorDescMap.put(RegistryTableView.Column.Application, new Comparator<InstanceInfo>() {
+        columnComparatorDescMap.put(RegistryTableView.Column.Application, new Comparator<InstanceInfoSummary>() {
             @Override
-            public int compare(InstanceInfo o1, InstanceInfo o2) {
-                if (o1 != null && o2 != null && o1.getApp() != null && o2.getApp() != null) {
-                    return o2.getApp().compareToIgnoreCase(o1.getApp());
+            public int compare(InstanceInfoSummary o1, InstanceInfoSummary o2) {
+                if (o1 != null && o2 != null && o1.getApplication() != null && o2.getApplication() != null) {
+                    return o2.getApplication().compareToIgnoreCase(o1.getApplication());
                 }
-                if (o1 != null && o1.getApp() != null) {
+                if (o1 != null && o1.getApplication() != null) {
                     return -1;
                 }
-                if (o2 != null && o2.getApp() != null) {
+                if (o2 != null && o2.getApplication() != null) {
                     return 1;
                 }
                 return 0;
             }
         });
 
-        columnComparatorDescMap.put(RegistryTableView.Column.Hostname, new Comparator<InstanceInfo>() {
+        columnComparatorDescMap.put(RegistryTableView.Column.Hostname, new Comparator<InstanceInfoSummary>() {
             @Override
-            public int compare(InstanceInfo o1, InstanceInfo o2) {
-                final String hostName1 = RegistryTableView.extractHostname(o1);
-                final String hostName2 = RegistryTableView.extractHostname(o2);
+            public int compare(InstanceInfoSummary o1, InstanceInfoSummary o2) {
+                final String hostName1 = o1.getIpAddress();
+                final String hostName2 = o1.getIpAddress();
                 if (!hostName1.isEmpty() && !hostName2.isEmpty()) {
                     return hostName2.compareTo(hostName1);
                 }
@@ -112,9 +111,9 @@ public class RegistryTableComparatorFactory {
             }
         });
 
-        columnComparatorDescMap.put(RegistryTableView.Column.Status, new Comparator<InstanceInfo>() {
+        columnComparatorDescMap.put(RegistryTableView.Column.Status, new Comparator<InstanceInfoSummary>() {
             @Override
-            public int compare(InstanceInfo o1, InstanceInfo o2) {
+            public int compare(InstanceInfoSummary o1, InstanceInfoSummary o2) {
                 if (o1 != null && o2 != null && o1.getStatus() != null && o2.getStatus() != null) {
                     return o2.getStatus().name().compareTo(o1.getStatus().name());
                 }
@@ -128,9 +127,9 @@ public class RegistryTableComparatorFactory {
             }
         });
 
-        columnComparatorDescMap.put(RegistryTableView.Column.VipAddress, new Comparator<InstanceInfo>() {
+        columnComparatorDescMap.put(RegistryTableView.Column.VipAddress, new Comparator<InstanceInfoSummary>() {
             @Override
-            public int compare(InstanceInfo o1, InstanceInfo o2) {
+            public int compare(InstanceInfoSummary o1, InstanceInfoSummary o2) {
                 if (o1 != null && o2 != null && o1.getVipAddress() != null && o2.getVipAddress() != null) {
                     return o2.getVipAddress().compareTo(o1.getVipAddress());
                 }
@@ -145,7 +144,10 @@ public class RegistryTableComparatorFactory {
         });
     }
 
-    public static Comparator<InstanceInfo> makeComparator(RegistryTableView.Column column, boolean isDescending) {
+    private RegistryTableComparatorFactory() {
+    }
+
+    public static Comparator<InstanceInfoSummary> makeComparator(RegistryTableView.Column column, boolean isDescending) {
         if (isDescending) {
             return columnComparatorDescMap.get(column);
         }

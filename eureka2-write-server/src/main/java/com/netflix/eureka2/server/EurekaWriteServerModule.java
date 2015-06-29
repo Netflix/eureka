@@ -17,7 +17,6 @@
 package com.netflix.eureka2.server;
 
 import com.google.inject.name.Names;
-import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.interests.IndexRegistry;
 import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
@@ -31,14 +30,11 @@ import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
-import com.netflix.eureka2.server.registry.EvictionQuotaKeeper;
-import com.netflix.eureka2.server.registry.EvictionQuotaKeeperImpl;
 import com.netflix.eureka2.registry.eviction.EvictionStrategy;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
 import com.netflix.eureka2.server.audit.AuditServiceController;
-import com.netflix.eureka2.server.config.EurekaCommonConfig;
-import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.eureka2.server.config.WriteServerConfig;
+import com.netflix.eureka2.server.registry.EvictionQuotaKeeper;
+import com.netflix.eureka2.server.registry.EvictionQuotaKeeperImpl;
 import com.netflix.eureka2.server.registry.RegistrationChannelProcessorProvider;
 import com.netflix.eureka2.server.rest.WriteServerRootResource;
 import com.netflix.eureka2.server.service.EurekaWriteServerSelfInfoResolver;
@@ -65,29 +61,8 @@ import static com.netflix.eureka2.Names.REGISTRATION;
  */
 public class EurekaWriteServerModule extends AbstractEurekaServerModule {
 
-    private final WriteServerConfig config;
-
-    public EurekaWriteServerModule() {
-        this(null);
-    }
-
-    public EurekaWriteServerModule(WriteServerConfig config) {
-        this.config = config;
-    }
-
     @Override
     public void configureEureka() {
-        if (config == null) {
-            bind(WriteServerConfig.class).asEagerSingleton();
-            bind(EurekaCommonConfig.class).to(WriteServerConfig.class);
-            bind(EurekaRegistryConfig.class).to(WriteServerConfig.class);
-        } else {
-            bind(EurekaRegistryConfig.class).toInstance(config);
-            bind(EurekaCommonConfig.class).toInstance(config);
-            bind(EurekaServerConfig.class).toInstance(config);
-            bind(WriteServerConfig.class).toInstance(config);
-        }
-
         bind(IndexRegistry.class).to(IndexRegistryImpl.class).asEagerSingleton();
 
         bind(SourcedEurekaRegistry.class).annotatedWith(Names.named("delegate")).to(SourcedEurekaRegistryImpl.class).asEagerSingleton();
@@ -127,5 +102,7 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
         // Self registration
         bind(SelfInfoResolver.class).to(EurekaWriteServerSelfInfoResolver.class).asEagerSingleton();
         bind(SelfRegistrationService.class).to(EurekaWriteServerSelfRegistrationService.class).asEagerSingleton();
+
+        bind(AbstractEurekaServer.class).to(EurekaWriteServer.class);
     }
 }

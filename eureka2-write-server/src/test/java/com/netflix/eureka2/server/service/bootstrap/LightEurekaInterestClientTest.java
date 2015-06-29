@@ -34,7 +34,7 @@ public class LightEurekaInterestClientTest {
     @Before
     public void setUp() throws Exception {
         EmbeddedWriteServer writeServer = deploymentResource.getEurekaDeployment().getWriteCluster().getServer(0);
-        Server server = new Server("localhost", writeServer.getDiscoveryPort());
+        Server server = new Server("localhost", writeServer.getInterestPort());
         lightInterestClient = new LightEurekaInterestClient(server, Schedulers.computation());
     }
 

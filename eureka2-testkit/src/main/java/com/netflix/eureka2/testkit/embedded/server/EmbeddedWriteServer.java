@@ -1,108 +1,42 @@
 package com.netflix.eureka2.testkit.embedded.server;
 
-import java.util.Properties;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Module;
-import com.google.inject.Scopes;
-import com.google.inject.util.Modules;
-import com.netflix.eureka2.Server;
+import com.google.inject.Injector;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.server.EurekaWriteServerModule;
-import com.netflix.eureka2.server.InterestPeerAddressProvider;
-import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
-import com.netflix.eureka2.server.config.WriteServerConfig;
-import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
-import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
-import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
-import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
-import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer.WriteServerReport;
-import com.netflix.eureka2.testkit.netrouter.NetworkRouter;
-import rx.Observable;
+import com.netflix.eureka2.server.EurekaWriteServer;
 
 /**
  * @author Tomasz Bak
  */
-public class EmbeddedWriteServer extends EmbeddedEurekaServer<WriteServerConfig, WriteServerReport> {
+@Singleton
+public class EmbeddedWriteServer extends EurekaWriteServer {
 
-    private final Observable<ChangeNotification<Server>> interestPeers;
-    private final Observable<ChangeNotification<Server>> replicationPeers;
-    private final NetworkRouter networkRouter;
-
-    public EmbeddedWriteServer(final WriteServerConfig config,
-                               final Observable<ChangeNotification<Server>> interestPeers,
-                               final Observable<ChangeNotification<Server>> replicationPeers,
-                               NetworkRouter networkRouter,
-                               boolean withExt,
-                               boolean withDashboards) {
-        super(ServerType.Write, config, withExt, withDashboards);
-        this.interestPeers = interestPeers;
-        this.replicationPeers = replicationPeers;
-        this.networkRouter = networkRouter;
-    }
-
-    @Override
-    protected Module getModule() {
-        Module embeddedWriteServerModule = Modules.override(new EurekaWriteServerModule(config))
-                .with(new AbstractModule() {
-                    @Override
-                    protected void configure() {
-                        bind(InterestPeerAddressProvider.class).toInstance(new InterestPeerAddressProvider(interestPeers));
-                        bind(ReplicationPeerAddressesProvider.class).toInstance(new ReplicationPeerAddressesProvider(replicationPeers));
-
-                        if (networkRouter != null) {
-                            bind(NetworkRouter.class).toInstance(networkRouter);
-                            bind(TcpRegistrationServer.class).to(EmbeddedTcpRegistrationServer.class).in(Scopes.SINGLETON);
-                            bind(TcpReplicationServer.class).to(EmbeddedTcpReplicationServer.class).in(Scopes.SINGLETON);
-                            bind(TcpInterestServer.class).to(EmbeddedTcpInterestServer.class).in(Scopes.SINGLETON);
-                        }
-                    }
-                });
-
-        return Modules.combine(
-                super.getModule(),
-                embeddedWriteServerModule);
-    }
-
-    @Override
-    protected void loadInstanceProperties(Properties props) {
-        super.loadInstanceProperties(props);
-        props.setProperty("eureka.client.discovery-endpoint.port", Integer.toString(config.getDiscoveryPort()));
-    }
-
-    public int getRegistrationPort() {
-        // Since server might be started on the ephemeral port, we need to get it directly from RxNetty server
-        return injector.getInstance(TcpRegistrationServer.class).serverPort();
-    }
-
-    public int getDiscoveryPort() {
-        // Since server might be started on the ephemeral port, we need to get it directly from RxNetty server
-        return injector.getInstance(TcpInterestServer.class).serverPort();
-    }
-
-    public int getReplicationPort() {
-        // Since server might be started on the ephemeral port, we need to get it directly from RxNetty server
-        return injector.getInstance(TcpReplicationServer.class).serverPort();
+    @Inject
+    public EmbeddedWriteServer(Injector injector) {
+        super(injector);
     }
 
     public ServerResolver getRegistrationResolver() {
-        return ServerResolvers.fromHostname("localhost").withPort(getRegistrationPort());
+        return ServerResolvers.fromHostname("localhost")
+                .withPort(injector.getInstance(EurekaWriteServer.class).getRegistrationPort());
     }
 
-    @Override
     public ServerResolver getInterestResolver() {
-        return ServerResolvers.fromHostname("localhost").withPort(getDiscoveryPort());
+        return ServerResolvers.fromHostname("localhost")
+                .withPort(injector.getInstance(EurekaWriteServer.class).getInterestPort());
     }
 
-    @Override
     public WriteServerReport serverReport() {
+        EurekaWriteServer eurekaWriteServer = injector.getInstance(EurekaWriteServer.class);
         return new WriteServerReport(
-                getRegistrationPort(),
-                getDiscoveryPort(),
-                getReplicationPort(),
-                getEurekaServerRegistry().size(), getHttpServerPort(),
+                eurekaWriteServer.getRegistrationPort(),
+                eurekaWriteServer.getInterestPort(),
+                eurekaWriteServer.getReplicationPort(),
+                getEurekaServerRegistry().size(),
+                getHttpServerPort(),
                 getWebAdminPort()
         );
     }

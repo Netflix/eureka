@@ -36,7 +36,8 @@ public class PeerAddressesProvider implements Provider<Observable<ChangeNotifica
     }
 
     private static Observable<ChangeNotification<Server>> addressStreamFromConfig(EurekaServerConfig config, final ServiceType serviceType) {
-        Observable<ChangeNotification<Server>> addressStream;ResolverType resolverType = config.getServerResolverType();
+        Observable<ChangeNotification<Server>> addressStream;
+        ResolverType resolverType = config.getServerResolverType();
         if (resolverType == null) {
             throw new IllegalArgumentException("Write cluster resolver type not defined");
         }

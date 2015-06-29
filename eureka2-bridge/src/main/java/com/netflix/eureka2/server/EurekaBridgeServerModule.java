@@ -2,7 +2,6 @@ package com.netflix.eureka2.server;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
-import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.interests.IndexRegistry;
 import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
@@ -19,10 +18,6 @@ import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
 import com.netflix.eureka2.registry.eviction.EvictionStrategy;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
-import com.netflix.eureka2.server.config.BridgeServerConfig;
-import com.netflix.eureka2.server.config.EurekaCommonConfig;
-import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.registry.EurekaBridgeRegistry;
 import com.netflix.eureka2.server.service.BridgeService;
 import com.netflix.eureka2.server.service.EurekaBridgeServerSelfInfoResolver;
@@ -41,30 +36,8 @@ import io.reactivex.netty.spectator.SpectatorEventsListenerFactory;
  */
 public class EurekaBridgeServerModule extends AbstractModule {
 
-    private final BridgeServerConfig config;
-
-    public EurekaBridgeServerModule() {
-        this(null);
-    }
-
-    public EurekaBridgeServerModule(BridgeServerConfig config) {
-        this.config = config;
-    }
-
     @Override
     public void configure() {
-        if (config == null) {
-            bind(BridgeServerConfig.class).asEagerSingleton();
-            bind(EurekaCommonConfig.class).to(BridgeServerConfig.class);
-            bind(EurekaRegistryConfig.class).to(BridgeServerConfig.class);
-        } else {
-            bind(EurekaRegistryConfig.class).toInstance(config);
-            bind(EurekaCommonConfig.class).toInstance(config);
-            bind(EurekaServerConfig.class).toInstance(config);
-            bind(WriteServerConfig.class).toInstance(config);
-            bind(BridgeServerConfig.class).toInstance(config);
-        }
-
         bind(IndexRegistry.class).to(IndexRegistryImpl.class).asEagerSingleton();
 
         bind(SourcedEurekaRegistry.class).annotatedWith(Names.named("delegate")).to(EurekaBridgeRegistry.class).asEagerSingleton();
@@ -93,5 +66,7 @@ public class EurekaBridgeServerModule extends AbstractModule {
         bind(EurekaServerMetricFactory.class).to(SpectatorWriteServerMetricFactory.class).asEagerSingleton();
         bind(WriteServerMetricFactory.class).to(SpectatorWriteServerMetricFactory.class).asEagerSingleton();
         bind(BridgeServerMetricFactory.class).to(SpectatorBridgeServerMetricFactory.class).asEagerSingleton();
+
+        bind(AbstractEurekaServer.class).to(EurekaBridgeServer.class);
     }
 }

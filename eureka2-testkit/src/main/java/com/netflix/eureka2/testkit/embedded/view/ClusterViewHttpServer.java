@@ -5,7 +5,6 @@ import java.io.IOException;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedReadCluster.ReadClusterReport;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster.WriteClusterReport;
-import com.netflix.eureka2.testkit.embedded.server.EmbeddedBridgeServer.BridgeServerReport;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedDashboardServer.DashboardServerReport;
 import io.netty.buffer.ByteBuf;
 import io.reactivex.netty.RxNetty;
@@ -64,30 +63,23 @@ public class ClusterViewHttpServer {
     private DeploymentReport createReport() {
         WriteClusterReport writeClusterReport = deployment.getWriteCluster().clusterReport();
         ReadClusterReport readClusterReport = deployment.getReadCluster().clusterReport();
-        BridgeServerReport bridgeServerReport = null;
-        if (deployment.getBridgeServer() != null) {
-            bridgeServerReport = deployment.getBridgeServer().serverReport();
-        }
         DashboardServerReport dashboardServerReport = null;
         if (deployment.getDashboardServer() != null) {
             dashboardServerReport = deployment.getDashboardServer().serverReport();
         }
-        return new DeploymentReport(writeClusterReport, readClusterReport, bridgeServerReport, dashboardServerReport);
+        return new DeploymentReport(writeClusterReport, readClusterReport, dashboardServerReport);
     }
 
     public static class DeploymentReport {
         private final WriteClusterReport writeClusterReport;
         private final ReadClusterReport readClusterReport;
-        private final BridgeServerReport bridgeServerReport;
         private final DashboardServerReport dashboardServerReport;
 
         public DeploymentReport(WriteClusterReport writeClusterReport,
                                 ReadClusterReport readClusterReport,
-                                BridgeServerReport bridgeServerReport,
                                 DashboardServerReport dashboardServerReport) {
             this.writeClusterReport = writeClusterReport;
             this.readClusterReport = readClusterReport;
-            this.bridgeServerReport = bridgeServerReport;
             this.dashboardServerReport = dashboardServerReport;
         }
 
@@ -97,10 +89,6 @@ public class ClusterViewHttpServer {
 
         public ReadClusterReport getReadClusterReport() {
             return readClusterReport;
-        }
-
-        public BridgeServerReport getBridgeServerReport() {
-            return bridgeServerReport;
         }
 
         public DashboardServerReport getDashboardServerReport() {

@@ -26,8 +26,6 @@ import com.netflix.eureka2.metric.client.SpectatorEurekaClientMetricFactory;
 import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
 import com.netflix.eureka2.metric.server.SpectatorEurekaServerMetricFactory;
 import com.netflix.eureka2.registry.EurekaRegistryView;
-import com.netflix.eureka2.server.config.EurekaCommonConfig;
-import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.registry.EurekaReadServerRegistryView;
 import com.netflix.eureka2.server.service.EurekaReadServerSelfInfoResolver;
 import com.netflix.eureka2.server.service.EurekaReadServerSelfRegistrationService;
@@ -42,35 +40,21 @@ import io.reactivex.netty.spectator.SpectatorEventsListenerFactory;
  */
 public class EurekaReadServerModule extends AbstractEurekaServerModule {
 
-    private final EurekaServerConfig config;
     private final EurekaRegistrationClient registrationClient;
     private final EurekaInterestClient interestClient;
 
     public EurekaReadServerModule() {
-        this(null);
+        this(null, null);
     }
 
-    public EurekaReadServerModule(EurekaServerConfig config) {
-        this(config, null, null);
-    }
-
-    public EurekaReadServerModule(EurekaServerConfig config,
-                                  EurekaRegistrationClient registrationClient,
+    public EurekaReadServerModule(EurekaRegistrationClient registrationClient,
                                   EurekaInterestClient interestClient) {
-        this.config = config;
         this.registrationClient = registrationClient;
         this.interestClient = interestClient;
     }
 
     @Override
     public void configureEureka() {
-        if (config == null) {
-            bind(EurekaServerConfig.class).asEagerSingleton();
-            bind(EurekaCommonConfig.class).to(EurekaServerConfig.class);
-        } else {
-            bind(EurekaCommonConfig.class).toInstance(config);
-            bind(EurekaServerConfig.class).toInstance(config);
-        }
         if (registrationClient == null) {
             bind(EurekaRegistrationClient.class).toProvider(EurekaRegistrationClientProvider.class);
         } else {
@@ -94,5 +78,7 @@ public class EurekaReadServerModule extends AbstractEurekaServerModule {
 
         bind(SelfInfoResolver.class).to(EurekaReadServerSelfInfoResolver.class).asEagerSingleton();
         bind(SelfRegistrationService.class).to(EurekaReadServerSelfRegistrationService.class).asEagerSingleton();
+
+        bind(AbstractEurekaServer.class).to(EurekaReadServer.class);
     }
 }
