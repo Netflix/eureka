@@ -1,6 +1,7 @@
 package com.netflix.discovery.converters;
 
 import com.netflix.discovery.shared.Applications;
+import com.netflix.discovery.util.InstanceInfoGenerator;
 import com.thoughtworks.xstream.XStream;
 import org.junit.Test;
 
@@ -14,7 +15,7 @@ public class XmlCodecTest {
 
     @Test
     public void testEncodingDecodingWithoutMetaData() throws Exception {
-        Applications applications = new InstanceInfoGenerator(10, 2, false).toApplications();
+        Applications applications = InstanceInfoGenerator.newBuilder(10, 2).withMetaData(false).build().toApplications();
 
         XStream xstream = XmlXStream.getInstance();
         String xmlDocument = xstream.toXML(applications);
@@ -26,7 +27,7 @@ public class XmlCodecTest {
 
     @Test
     public void testEncodingDecodingWithMetaData() throws Exception {
-        Applications applications = new InstanceInfoGenerator(10, 2, true).toApplications();
+        Applications applications = InstanceInfoGenerator.newBuilder(10, 2).withMetaData(true).build().toApplications();
 
         XStream xstream = XmlXStream.getInstance();
         String xmlDocument = xstream.toXML(applications);

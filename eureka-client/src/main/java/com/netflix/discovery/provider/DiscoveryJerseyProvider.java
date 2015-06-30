@@ -92,7 +92,7 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter,
         // Use Jackson for JSON
         if (mediaType.equals(MediaType.APPLICATION_JSON_TYPE)) {
             try {
-                return EurekaJacksonCodec.getInstance().readFromEnvelope(serializableClass, inputStream);
+                return EurekaJacksonCodec.getInstance().readValue(serializableClass, inputStream);
             } catch (Error e) {
                 LOGGER.error("Unexpected error occured during de-serialization of discovery data, doing connection "
                         + "cleanup.", e);
@@ -165,7 +165,7 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter,
             throws IOException, WebApplicationException {
 
         if (mediaType.equals(MediaType.APPLICATION_JSON_TYPE)) {
-            EurekaJacksonCodec.getInstance().writeWithEnvelopeTo(serializableObject, outputStream);
+            EurekaJacksonCodec.getInstance().writeTo(serializableObject, outputStream);
         } else {
             ISerializer serializer = getSerializer(serializableClass);
             if (null != serializer) {

@@ -42,6 +42,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.ApplicationInfoManager;
+import com.netflix.eureka.PeerAwareInstanceRegistryImpl;
 import com.netflix.appinfo.DataCenterInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +67,6 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfigurationManager;
-import com.netflix.eureka.PeerAwareInstanceRegistry;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
@@ -404,7 +404,7 @@ public class AwsAsgUtil {
      */
     private Set<CacheKey> getCacheKeys() {
         Set<CacheKey> cacheKeys = new HashSet<CacheKey>();
-        Applications apps = PeerAwareInstanceRegistry.getInstance().getApplications(false);
+        Applications apps = PeerAwareInstanceRegistryImpl.getInstance().getApplications(false);
         for (Application app : apps.getRegisteredApplications()) {
             for (InstanceInfo instanceInfo : app.getInstances()) {
                 String localAccountId = getAccountId(instanceInfo, accountId);
@@ -427,7 +427,7 @@ public class AwsAsgUtil {
      * @return the account id
      */
     private String getASGAccount(String asgName) {
-        Applications apps = PeerAwareInstanceRegistry.getInstance().getApplications(false);
+        Applications apps = PeerAwareInstanceRegistryImpl.getInstance().getApplications(false);
 
         for (Application app : apps.getRegisteredApplications()) {
             for (InstanceInfo instanceInfo : app.getInstances()) {

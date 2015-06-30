@@ -45,7 +45,7 @@ public class AbstractTester {
     protected final Map<String, Application> remoteRegionApps = new HashMap<String, Application>();
     protected final Map<String, Application> remoteRegionAppsDelta = new HashMap<String, Application>();
     protected MockRemoteEurekaServer mockRemoteEurekaServer;
-    protected PeerAwareInstanceRegistry registry;
+    protected PeerAwareInstanceRegistryImpl registry;
     protected EurekaClient client;
     public static final String REMOTE_ZONE = "us-east-1c";
 
@@ -162,7 +162,7 @@ public class AbstractTester {
         remoteRegionAppsDelta.put(REMOTE_REGION_APP_NAME, myappDelta);
     }
 
-    private static class TestPeerAwareInstanceRegistry extends PeerAwareInstanceRegistry {
+    private static class TestPeerAwareInstanceRegistry extends PeerAwareInstanceRegistryImpl {
 
         @Override
         public boolean isLeaseExpirationEnabled() {

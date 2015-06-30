@@ -5,7 +5,7 @@
 <div id="header">
   <% 
   DataCenterInfo info = ApplicationInfoManager.getInstance().getInfo().getDataCenterInfo();
-  PeerAwareInstanceRegistry registry = PeerAwareInstanceRegistry.getInstance();
+  PeerAwareInstanceRegistryImpl registry = PeerAwareInstanceRegistryImpl.getInstance();
   AmazonInfo amazonInfo = null;
   if(info.getName() == DataCenterInfo.Name.Amazon) {
       amazonInfo = (AmazonInfo)info;

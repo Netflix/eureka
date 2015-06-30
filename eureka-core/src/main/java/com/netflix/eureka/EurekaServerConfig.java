@@ -133,6 +133,12 @@ public interface EurekaServerConfig {
     int getPeerEurekaNodesUpdateIntervalMs();
 
     /**
+     * If set to true, the replicated data send in the request will be always compressed.
+     * This does not define response path, which is driven by "Accept-Encoding" header.
+     */
+    boolean shouldEnableReplicatedRequestCompression();
+
+    /**
      * Get the number of times the replication events should be retried with
      * peers.
      * <p>

@@ -16,9 +16,11 @@
 
 package com.netflix.eureka.lease;
 
+import com.netflix.eureka.AbstractInstanceRegistry;
+
 /**
  * Describes a time-based availability of a {@link T}. Purpose is to avoid
- * accumulation of instances in {@link com.netflix.eureka.InstanceRegistry} as result of ungraceful
+ * accumulation of instances in {@link AbstractInstanceRegistry} as result of ungraceful
  * shutdowns that is not uncommon in AWS environments.
  *
  * If a lease elapses without renewals, it will eventually expire consequently

@@ -23,8 +23,11 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.eureka.PeerAwareInstanceRegistry.Action;
-import com.netflix.eureka.cluster.PeerEurekaNode;
+import com.netflix.eureka.cluster.protocol.ReplicationInstance;
+import com.netflix.eureka.cluster.protocol.ReplicationInstanceResponse;
+import com.netflix.eureka.cluster.protocol.ReplicationInstanceResponse.Builder;
+import com.netflix.eureka.cluster.protocol.ReplicationList;
+import com.netflix.eureka.cluster.protocol.ReplicationListResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,16 +40,17 @@ import org.slf4j.LoggerFactory;
 @Path("/{version}/peerreplication")
 @Produces({"application/xml", "application/json"})
 public class PeerReplicationResource {
-    private static final String REPLICATION = "true";
+
     private static final Logger logger = LoggerFactory.getLogger(PeerReplicationResource.class);
 
+    private static final String REPLICATION = "true";
 
     /**
      * Process batched replication events from peer eureka nodes.
      *
      * <p>
      *  The batched events are delegated to underlying resources to generate a
-     *  {@link PeerEurekaNode.ReplicationListResponse} containing the individual responses to the batched events
+     *  {@link ReplicationListResponse} containing the individual responses to the batched events
      * </p>
      *
      * @param replicationList
@@ -55,72 +59,97 @@ public class PeerReplicationResource {
      */
     @Path("batch")
     @POST
-    public Response batchReplication(
-            PeerEurekaNode.ReplicationList replicationList) {
-        Response response = null;
+    public Response batchReplication(ReplicationList replicationList) {
         try {
-
-            PeerEurekaNode.ReplicationListResponse batchResponse = new PeerEurekaNode.ReplicationListResponse();
-            for (PeerEurekaNode.ReplicationInstance instanceInfo : replicationList
-                    .getList()) {
-                ApplicationResource applicationResource = new ApplicationResource(
-                        instanceInfo.getAppName());
-                InstanceResource resource = new InstanceResource(
-                        applicationResource, instanceInfo.getId());
-                String lastDirtyTimestamp = (instanceInfo
-                        .getLastDirtyTimestamp() == null ? null : instanceInfo
-                        .getLastDirtyTimestamp().toString());
-                String overriddenStatus = (instanceInfo.getOverriddenStatus() == null ? null
-                        : instanceInfo.getOverriddenStatus());
-                String instanceStatus = (instanceInfo.getStatus() == null ? null
-                        : instanceInfo.getStatus());
-                PeerEurekaNode.ReplicationInstanceResponse.Builder singleResponseBuilder =
-                        new PeerEurekaNode.ReplicationInstanceResponse.Builder();
-                if (instanceInfo.getAction() == Action.Heartbeat) {
-                    response = resource.renewLease(REPLICATION, overriddenStatus,
-                            instanceStatus, lastDirtyTimestamp);
-
-                    singleResponseBuilder.setStatusCode(response.getStatus());
-                    if (response.getStatus() == Response.Status.OK
-                            .getStatusCode() && response.getEntity() != null) {
-                        singleResponseBuilder
-                                .setResponseEntity((InstanceInfo) response
-                                        .getEntity());
-                    }
-                } else if (instanceInfo.getAction() == Action.Register) {
-                    applicationResource.addInstance(
-                            instanceInfo.getInstanceInfo(), REPLICATION);
-
-                    singleResponseBuilder = new PeerEurekaNode.ReplicationInstanceResponse.Builder()
-                            .setStatusCode(Status.OK.getStatusCode());
-                } else if (instanceInfo.getAction() == Action.StatusUpdate) {
-                    response = resource.statusUpdate(instanceInfo.getStatus(),
-                            REPLICATION, instanceInfo.getLastDirtyTimestamp()
-                                    .toString());
-
-                    singleResponseBuilder = new PeerEurekaNode.ReplicationInstanceResponse.Builder()
-                            .setStatusCode(response.getStatus());
-                } else if (instanceInfo.getAction() == Action.DeleteStatusOverride) {
-                    response = resource.deleteStatusUpdate(REPLICATION, instanceInfo.getStatus(),
-                            instanceInfo.getLastDirtyTimestamp().toString());
-
-                    singleResponseBuilder = new PeerEurekaNode.ReplicationInstanceResponse.Builder()
-                            .setStatusCode(response.getStatus());
-                } else if (instanceInfo.getAction() == Action.Cancel) {
-                    response = resource.cancelLease(REPLICATION);
-
-                    singleResponseBuilder = new PeerEurekaNode.ReplicationInstanceResponse.Builder()
-                            .setStatusCode(response.getStatus());
+            ReplicationListResponse batchResponse = new ReplicationListResponse();
+            for (ReplicationInstance instanceInfo : replicationList.getReplicationList()) {
+                try {
+                    batchResponse.addResponse(dispatch(instanceInfo));
+                } catch (Exception e) {
+                    batchResponse.addResponse(new ReplicationInstanceResponse(Status.INTERNAL_SERVER_ERROR.getStatusCode(), null));
+                    logger.error(instanceInfo.getAction() + " request processing failed for batch item "
+                            + instanceInfo.getAppName() + '/' + instanceInfo.getId(), e);
                 }
-
-                batchResponse.addResponse(singleResponseBuilder.build());
             }
             return Response.ok(batchResponse).build();
         } catch (Throwable e) {
             logger.error("Cannot execute batch Request", e);
             return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-
         }
+    }
 
+    private ReplicationInstanceResponse dispatch(ReplicationInstance instanceInfo) {
+        ApplicationResource applicationResource = createApplicationResource(instanceInfo);
+        InstanceResource resource = createInstanceResource(instanceInfo, applicationResource);
+
+        String lastDirtyTimestamp = toString(instanceInfo.getLastDirtyTimestamp());
+        String overriddenStatus = toString(instanceInfo.getOverriddenStatus());
+        String instanceStatus = toString(instanceInfo.getStatus());
+
+        Builder singleResponseBuilder = new Builder();
+        switch (instanceInfo.getAction()) {
+            case Register:
+                singleResponseBuilder = handleRegister(instanceInfo, applicationResource);
+                break;
+            case Heartbeat:
+                singleResponseBuilder = handleHeartbeat(resource, lastDirtyTimestamp, overriddenStatus, instanceStatus);
+                break;
+            case Cancel:
+                singleResponseBuilder = handleCancel(resource);
+                break;
+            case StatusUpdate:
+                singleResponseBuilder = handleStatusUpdate(instanceInfo, resource);
+                break;
+            case DeleteStatusOverride:
+                singleResponseBuilder = handleDeleteStatusOverride(instanceInfo, resource);
+                break;
+        }
+        return singleResponseBuilder.build();
+    }
+
+    /* Visible for testing */ ApplicationResource createApplicationResource(ReplicationInstance instanceInfo) {
+        return new ApplicationResource(instanceInfo.getAppName());
+    }
+
+    /* Visible for testing */ InstanceResource createInstanceResource(ReplicationInstance instanceInfo,
+                                                                      ApplicationResource applicationResource) {
+        return new InstanceResource(applicationResource, instanceInfo.getId());
+    }
+
+    private static Builder handleRegister(ReplicationInstance instanceInfo, ApplicationResource applicationResource) {
+        applicationResource.addInstance(instanceInfo.getInstanceInfo(), REPLICATION);
+        return new Builder().setStatusCode(Status.OK.getStatusCode());
+    }
+
+    private static Builder handleCancel(InstanceResource resource) {
+        Response response = resource.cancelLease(REPLICATION);
+        return new Builder().setStatusCode(response.getStatus());
+    }
+
+    private static Builder handleHeartbeat(InstanceResource resource, String lastDirtyTimestamp, String overriddenStatus, String instanceStatus) {
+        Response response = resource.renewLease(REPLICATION, overriddenStatus, instanceStatus, lastDirtyTimestamp);
+        Builder responseBuilder = new Builder().setStatusCode(response.getStatus());
+        if (response.getStatus() == Status.OK.getStatusCode() && response.getEntity() != null) {
+            responseBuilder.setResponseEntity((InstanceInfo) response.getEntity());
+        }
+        return responseBuilder;
+    }
+
+    private static Builder handleStatusUpdate(ReplicationInstance instanceInfo, InstanceResource resource) {
+        Response response = resource.statusUpdate(instanceInfo.getStatus(), REPLICATION, toString(instanceInfo.getLastDirtyTimestamp()));
+        return new Builder().setStatusCode(response.getStatus());
+    }
+
+    private static Builder handleDeleteStatusOverride(ReplicationInstance instanceInfo, InstanceResource resource) {
+        Response response = resource.deleteStatusUpdate(REPLICATION, instanceInfo.getStatus(),
+                instanceInfo.getLastDirtyTimestamp().toString());
+        return new Builder().setStatusCode(response.getStatus());
+    }
+
+    private static <T> String toString(T value) {
+        if (value == null) {
+            return null;
+        }
+        return value.toString();
     }
 }

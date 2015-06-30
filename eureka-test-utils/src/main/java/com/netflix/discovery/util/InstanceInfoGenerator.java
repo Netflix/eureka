@@ -1,13 +1,16 @@
-package com.netflix.discovery.converters;
+package com.netflix.discovery.util;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.appinfo.InstanceInfo.Builder;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.InstanceInfo.PortType;
@@ -15,21 +18,47 @@ import com.netflix.appinfo.LeaseInfo;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 
+import static com.netflix.discovery.util.ApplicationFunctions.toApplicationMap;
+
 /**
+ * Test data generator.
+ *
  * @author Tomasz Bak
  */
 public class InstanceInfoGenerator {
-
-    public static final int RENEW_INTERVAL = 30000;
+    public static final int RENEW_INTERVAL = 5;
 
     private final int instanceCount;
     private final int applicationCount;
-    private final boolean withMetaData;
 
-    public InstanceInfoGenerator(int instanceCount, int applicationCount, boolean withMetaData) {
-        this.instanceCount = instanceCount;
-        this.applicationCount = applicationCount;
-        this.withMetaData = withMetaData;
+    private Iterator<InstanceInfo> currentIt;
+    private Applications allApplications = new Applications();
+    private final boolean withMetaData;
+    private final boolean includeAsg;
+
+    InstanceInfoGenerator(InstanceInfoGeneratorBuilder builder) {
+        this.instanceCount = builder.instanceCount;
+        this.applicationCount = builder.applicationCount;
+        this.withMetaData = builder.includeMetaData;
+        this.includeAsg = builder.includeAsg;
+    }
+
+    public Applications takeDelta(int count) {
+        if (currentIt == null) {
+            currentIt = serviceIterator();
+            allApplications = new Applications();
+        }
+        List<InstanceInfo> instanceBatch = new ArrayList<InstanceInfo>();
+        for (int i = 0; i < count; i++) {
+            InstanceInfo next = currentIt.next();
+            next.setActionType(ActionType.ADDED);
+            instanceBatch.add(next);
+        }
+        Applications nextBatch = ApplicationFunctions.toApplications(toApplicationMap(instanceBatch));
+        allApplications = ApplicationFunctions.merge(allApplications, nextBatch);
+        nextBatch.setAppsHashCode(allApplications.getAppsHashCode());
+
+        return nextBatch;
     }
 
     public Iterator<InstanceInfo> serviceIterator() {
@@ -64,7 +93,7 @@ public class InstanceInfoGenerator {
     }
 
     public Applications toApplications() {
-        Map<String, Application> appsByName = new HashMap<String, Application>();
+        Map<String, Application> appsByName = new HashMap<>();
         Iterator<InstanceInfo> it = serviceIterator();
         while (it.hasNext()) {
             InstanceInfo instanceInfo = it.next();
@@ -86,6 +115,14 @@ public class InstanceInfoGenerator {
         applications.setAppsHashCode(applications.getReconcileHashCode());
 
         return applications;
+    }
+
+    public static InstanceInfo takeOne() {
+        return newBuilder(1, 1).withMetaData(true).build().serviceIterator().next();
+    }
+
+    public static InstanceInfoGeneratorBuilder newBuilder(int instanceCount, int applicationCount) {
+        return new InstanceInfoGeneratorBuilder(instanceCount, applicationCount);
     }
 
     private InstanceInfo generateInstanceInfo(int appIndex, int appInstanceId) {
@@ -115,7 +152,6 @@ public class InstanceInfoGenerator {
         Builder builder = InstanceInfo.Builder.newBuilder()
                 .setAppGroupName("AppGroup" + appIndex)
                 .setAppName("App" + appIndex)
-                .setASGName("ASG" + appIndex)
                 .setHostName(hostName)
                 .setIPAddr(publicIp)
                 .setPort(8080)
@@ -133,9 +169,40 @@ public class InstanceInfoGenerator {
                 .setLastDirtyTimestamp(System.currentTimeMillis() - 100)
                 .setIsCoordinatingDiscoveryServer(true)
                 .enablePort(PortType.UNSECURE, true);
+        if (includeAsg) {
+            builder.setASGName("ASG" + appIndex);
+        }
         if (withMetaData) {
             builder.add("appKey" + appIndex, Integer.toString(appInstanceId));
         }
         return builder.build();
+    }
+
+    public static class InstanceInfoGeneratorBuilder {
+
+        private final int instanceCount;
+        private final int applicationCount;
+
+        private boolean includeMetaData;
+        private boolean includeAsg = true;
+
+        public InstanceInfoGeneratorBuilder(int instanceCount, int applicationCount) {
+            this.instanceCount = instanceCount;
+            this.applicationCount = applicationCount;
+        }
+
+        public InstanceInfoGeneratorBuilder withMetaData(boolean includeMetaData) {
+            this.includeMetaData = includeMetaData;
+            return this;
+        }
+
+        public InstanceInfoGeneratorBuilder withAsg(boolean includeAsg) {
+            this.includeAsg = includeAsg;
+            return this;
+        }
+
+        public InstanceInfoGenerator build() {
+            return new InstanceInfoGenerator(this);
+        }
     }
 }
