@@ -7,7 +7,7 @@ import javax.inject.Singleton;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import com.netflix.eureka2.server.config.EurekaCommonConfig;
+import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import com.netflix.eureka2.server.http.proxy.ForwardingRule;
 import com.netflix.eureka2.server.http.proxy.RxHttpReverseProxy;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
@@ -36,7 +36,7 @@ public class EurekaHttpServer {
     private final RxHttpReverseProxy proxy;
 
     @Inject
-    public EurekaHttpServer(EurekaCommonConfig config) {
+    public EurekaHttpServer(EurekaServerTransportConfig config) {
         this.proxy = new RxHttpReverseProxy(config.getHttpPort());
     }
 

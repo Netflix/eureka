@@ -33,7 +33,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.rx.TestableObservableConnection;
-import com.netflix.eureka2.server.config.EurekaServerConfig;
+import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
 import com.netflix.eureka2.transport.Acknowledgement;
 import org.junit.Before;
@@ -65,7 +65,7 @@ public class TcpInterestHandlerTest {
 
     private final TestableObservableConnection<Object, Object> observableConnection = new TestableObservableConnection<>();
     private final EurekaHealthStatusAggregator systemHealthStatus = mock(EurekaHealthStatusAggregator.class);
-    private final EurekaServerConfig config = EurekaServerConfig.baseBuilder().build();
+    private final EurekaServerTransportConfig config = mock(EurekaServerTransportConfig.class);
 
     private final ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
 
@@ -73,6 +73,7 @@ public class TcpInterestHandlerTest {
 
     @Before
     public void setUp() {
+        when(config.getHeartbeatIntervalMs()).thenReturn(30000L);
         when(registry.forInterest(any(Interest.class))).thenReturn(Observable.<ChangeNotification<InstanceInfo>>empty());
     }
 

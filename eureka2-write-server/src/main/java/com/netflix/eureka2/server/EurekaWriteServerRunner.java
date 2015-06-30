@@ -18,8 +18,6 @@ package com.netflix.eureka2.server;
 
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
-import com.netflix.eureka2.server.config.EurekaCommandLineParser;
-import com.netflix.eureka2.server.config.WriteCommandLineParser;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.module.CommonEurekaServerModule;
 import com.netflix.eureka2.server.module.EurekaExtensionModule;
@@ -31,29 +29,30 @@ import netflix.adminresources.resources.KaryonWebAdminModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.netflix.eureka2.server.config.ServerConfigurationNames.DEFAULT_CONFIG_PREFIX;
+
 /**
  * @author Tomasz Bak
  */
-public class EurekaWriteServerRunner extends EurekaServerRunner<WriteServerConfig, EurekaWriteServer> {
+public class EurekaWriteServerRunner extends EurekaServerRunner<EurekaWriteServer> {
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaWriteServerRunner.class);
 
-    public EurekaWriteServerRunner(String[] args) {
-        super(args, EurekaWriteServer.class);
-    }
+    private final WriteServerConfig config;
 
     public EurekaWriteServerRunner(WriteServerConfig config) {
-        super(config, EurekaWriteServer.class);
+        super(EurekaWriteServer.class);
+        this.config = config;
     }
 
     public EurekaWriteServerRunner(String name) {
         super(name, EurekaWriteServer.class);
+        config = null;
     }
 
     @Override
     protected LifecycleInjector createInjector() {
-        Module configModule = config == null ? EurekaWriteServerConfigurationModules.fromArchaius() :
-                EurekaWriteServerConfigurationModules.fromConfig(config);
+        Module configModule = config == null ? EurekaWriteServerConfigurationModule.fromArchaius(DEFAULT_CONFIG_PREFIX) : EurekaWriteServerConfigurationModule.fromConfig(config);
 
         Module applicationModule = Modules.combine(
                 configModule,
@@ -67,14 +66,9 @@ public class EurekaWriteServerRunner extends EurekaServerRunner<WriteServerConfi
         return Governator.createInjector(applicationModule);
     }
 
-    @Override
-    protected EurekaCommandLineParser newCommandLineParser(String[] args) {
-        return new WriteCommandLineParser(args);
-    }
-
     public static void main(String[] args) {
         logger.info("Eureka 2.0 Write Server");
-        EurekaWriteServerRunner runner = new EurekaWriteServerRunner(args);
+        EurekaWriteServerRunner runner = new EurekaWriteServerRunner("eureka-write-server");
         if (runner.start()) {
             runner.awaitTermination();
         }

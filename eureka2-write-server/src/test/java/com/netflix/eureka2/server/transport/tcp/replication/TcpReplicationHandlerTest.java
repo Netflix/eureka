@@ -8,7 +8,6 @@ import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.ReceiverReplicationChannel;
-import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.transport.MessageConnection;
@@ -20,9 +19,12 @@ import org.mockito.ArgumentCaptor;
 import rx.Observable;
 import rx.subjects.ReplaySubject;
 
-import static com.netflix.eureka2.interests.Interests.*;
-import static com.netflix.eureka2.interests.StreamStateNotification.BufferState.*;
-import static com.netflix.eureka2.registry.Source.*;
+import static com.netflix.eureka2.interests.Interests.forFullRegistry;
+import static com.netflix.eureka2.interests.StreamStateNotification.BufferState.BufferEnd;
+import static com.netflix.eureka2.interests.StreamStateNotification.BufferState.BufferStart;
+import static com.netflix.eureka2.registry.Source.Origin;
+import static com.netflix.eureka2.registry.Source.SourceMatcher;
+import static com.netflix.eureka2.server.config.bean.WriteServerConfigBean.aWriteServerConfig;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
@@ -71,7 +73,7 @@ public class TcpReplicationHandlerTest {
         when(selfInfoResolver.resolve()).thenReturn(Observable.just(SampleInstanceInfo.CliServer.build()));
 
         handler = new TcpReplicationHandler(
-                WriteServerConfig.writeBuilder().build(),
+                aWriteServerConfig().build(),
                 selfInfoResolver,
                 registry,
                 WriteServerMetricFactory.writeServerMetrics()

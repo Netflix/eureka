@@ -68,7 +68,7 @@ abstract class DnsEurekaClusterResolver implements EurekaClusterResolver {
 
         @Override
         protected ClusterAddress createClusterAddress(String hostName) {
-            return ClusterAddress.writeClusterAddressFrom(hostName, registrationPort, interestPort, replicationPort);
+            return ClusterAddress.valueOf(hostName, registrationPort, interestPort, replicationPort);
         }
     }
 

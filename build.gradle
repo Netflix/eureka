@@ -21,7 +21,6 @@ buildscript {
     }
     if (project.hasProperty('useMavenLocal')) {
         repositories {
-            println "Adding mavenLocal()"
             mavenLocal()
         }
         configurations.all {

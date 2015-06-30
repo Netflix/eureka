@@ -78,14 +78,14 @@ public class ClusterAddress {
         return hostname + ':' + interestPort;
     }
 
-    public static ClusterAddress writeClusterAddressFrom(String domainName, int registrationPort, int interestPort, int replicationPort) {
+    public static ClusterAddress valueOf(String domainName, int registrationPort, int interestPort, int replicationPort) {
         return new ClusterAddress(domainName, registrationPort, interestPort, replicationPort);
     }
 
     /**
      * The argument should be in the format: {@code <host_name>:<registration_port>:<interest_port>:<replication_port>}
      */
-    public static ClusterAddress writeClusterAddressFrom(String hostnameAndPorts) {
+    public static ClusterAddress valueOf(String hostnameAndPorts) {
         try {
             String[] parts = hostnameAndPorts.split(":");
             String hostname = parts[0];
@@ -99,12 +99,12 @@ public class ClusterAddress {
     }
 
     /**
-     * The argument should contain a list of addresses in format described in {@link #writeClusterAddressFrom(String)}.
+     * The argument should contain a list of addresses in format described in {@link #valueOf(String)}.
      */
-    public static List<ClusterAddress> writeClusterAddressesFrom(List<String> hostnameAndPortsList) {
+    public static List<ClusterAddress> valueOf(List<String> hostnameAndPortsList) {
         List<ClusterAddress> addresses = new ArrayList<>(hostnameAndPortsList.size());
         for (String aHostnameAndPortsList : hostnameAndPortsList) {
-            addresses.add(writeClusterAddressFrom(aHostnameAndPortsList));
+            addresses.add(valueOf(aHostnameAndPortsList));
         }
         return addresses;
     }

@@ -7,7 +7,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 import com.netflix.eureka2.Names;
-import com.netflix.eureka2.server.config.EurekaServerConfig;
+import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestHandler;
 import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import com.netflix.eureka2.testkit.netrouter.NetworkRouter;
@@ -23,7 +23,7 @@ public class EmbeddedTcpInterestServer extends TcpInterestServer {
     private int proxyPort;
 
     @Inject
-    public EmbeddedTcpInterestServer(EurekaServerConfig config,
+    public EmbeddedTcpInterestServer(EurekaServerTransportConfig config,
                                      @Named(Names.INTEREST) MetricEventsListenerFactory servoEventsListenerFactory,
                                      TcpInterestHandler tcpDiscoveryHandler,
                                      NetworkRouter networkRouter) {

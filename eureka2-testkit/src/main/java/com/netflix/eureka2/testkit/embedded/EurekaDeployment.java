@@ -8,10 +8,10 @@ import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
-import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.config.EurekaDashboardConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
+import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedReadCluster;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedDashboardServer;
@@ -22,7 +22,12 @@ import com.netflix.eureka2.testkit.embedded.view.ClusterViewHttpServer;
 import com.netflix.eureka2.testkit.netrouter.NetworkRouter;
 import com.netflix.eureka2.testkit.netrouter.NetworkRouters;
 
+import static com.netflix.eureka2.config.bean.EurekaDashboardConfigBean.aDashboardConfig;
 import static com.netflix.eureka2.interests.Interests.forVips;
+import static com.netflix.eureka2.server.config.bean.EurekaClusterDiscoveryConfigBean.anEurekaClusterDiscoveryConfig;
+import static com.netflix.eureka2.server.config.bean.EurekaInstanceInfoConfigBean.anEurekaInstanceInfoConfig;
+import static com.netflix.eureka2.server.config.bean.EurekaServerRegistryConfigBean.anEurekaServerRegistryConfig;
+import static com.netflix.eureka2.server.config.bean.EurekaServerTransportConfigBean.anEurekaServerTransportConfig;
 
 /**
  * @author Tomasz Bak
@@ -196,7 +201,7 @@ public class EurekaDeployment {
 
     public static class EurekaDeploymentBuilder {
 
-        private EurekaTransportConfig transportConfig;
+        private EurekaServerTransportConfig transportConfig;
         private int writeClusterSize;
         private int readClusterSize;
         private boolean ephemeralPorts;
@@ -226,7 +231,7 @@ public class EurekaDeployment {
             return this;
         }
 
-        public EurekaDeploymentBuilder withTransportConfig(EurekaTransportConfig transportConfig) {
+        public EurekaDeploymentBuilder withTransportConfig(EurekaServerTransportConfig transportConfig) {
             this.transportConfig = transportConfig;
             return this;
         }
@@ -253,7 +258,7 @@ public class EurekaDeployment {
 
         public EurekaDeployment build() {
             if (transportConfig == null) {
-                transportConfig = new BasicEurekaTransportConfig.Builder().build();
+                transportConfig = anEurekaServerTransportConfig().build();
             }
             NetworkRouter networkRouter = networkRouterEnabled ? NetworkRouters.aRouter() : null;
 
@@ -280,13 +285,22 @@ public class EurekaDeployment {
                 int webAdminPort = ephemeralPorts ? 0 : DASHBOARD_SERVER_PORTS_FROM + 1;
                 int shutdownPort = ephemeralPorts ? 0 : DASHBOARD_SERVER_PORTS_FROM + 2;
 
-                EurekaDashboardConfig config = EurekaDashboardConfig.newBuilder()
-                        .withAppName(DASHBOARD_SERVER_NAME)
-                        .withVipAddress(DASHBOARD_SERVER_NAME)
-                        .withDataCenterType(DataCenterType.Basic)
-                        .withCodec(transportConfig.getCodec())
-                        .withShutDownPort(shutdownPort)
-                        .withWebAdminPort(webAdminPort)
+                EurekaDashboardConfig config = aDashboardConfig()
+                        .withRegistryConfig(anEurekaServerRegistryConfig().build())
+                        .withClusterDiscoveryConfig(anEurekaClusterDiscoveryConfig().build())
+                        .withInstanceInfoConfig(
+                                anEurekaInstanceInfoConfig()
+                                        .withDataCenterType(DataCenterType.Basic)
+                                        .withEurekaApplicationName(DASHBOARD_SERVER_NAME)
+                                        .withEurekaVipAddress(DASHBOARD_SERVER_NAME)
+                                        .build()
+                        )
+                        .withTransportConfig(
+                                anEurekaServerTransportConfig(transportConfig)
+                                        .withWebAdminPort(webAdminPort)
+                                        .withShutDownPort(shutdownPort)
+                                        .build()
+                        )
                         .withDashboardPort(dashboardPort)
                         .build();
 

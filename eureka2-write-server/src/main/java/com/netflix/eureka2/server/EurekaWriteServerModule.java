@@ -105,4 +105,5 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
 
         install(new OverridesModule());
     }
+
 }

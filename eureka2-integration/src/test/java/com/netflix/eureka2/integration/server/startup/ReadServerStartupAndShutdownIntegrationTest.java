@@ -4,10 +4,14 @@ import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.junit.categories.LongRunningTest;
 import com.netflix.eureka2.server.EurekaReadServerRunner;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.eureka2.server.config.EurekaServerConfig.EurekaServerConfigBuilder;
 import com.netflix.eureka2.server.resolver.EurekaClusterResolvers.ResolverType;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+
+import static com.netflix.eureka2.server.config.bean.EurekaClusterDiscoveryConfigBean.anEurekaClusterDiscoveryConfig;
+import static com.netflix.eureka2.server.config.bean.EurekaInstanceInfoConfigBean.anEurekaInstanceInfoConfig;
+import static com.netflix.eureka2.server.config.bean.EurekaServerConfigBean.anEurekaServerConfig;
+import static com.netflix.eureka2.server.config.bean.EurekaServerTransportConfigBean.anEurekaServerTransportConfig;
 
 /**
  * This test suite verifies that read server starts up successfully, given configuration
@@ -21,15 +25,30 @@ public class ReadServerStartupAndShutdownIntegrationTest extends AbstractStartup
     public static final String SERVER_NAME = "read-server-startupAndShutdown";
 
     @Test(timeout = 60000)
-    public void testStartsWithCommandLineParameters() throws Exception {
-        EurekaServerConfig config = new EurekaServerConfigBuilder()
-                .withAppName(SERVER_NAME)
-                .withResolverType(ResolverType.Fixed)
-                .withDiscoveryPort(0)  // use ephemeral port
-                .withWebAdminPort(0)
-                .withShutDownPort(0)
-                .withServerList(writeServerList)
+    public void testStartsWithExplicitConfig() throws Exception {
+        EurekaServerConfig config = anEurekaServerConfig()
+                .withInstanceInfoConfig(
+                        anEurekaInstanceInfoConfig()
+                                .withEurekaApplicationName(SERVER_NAME)
+                                .withEurekaVipAddress(SERVER_NAME)
+                                .build()
+                )
+                .withTransportConfig(
+                        anEurekaServerTransportConfig()
+                                .withHttpPort(0)
+                                .withInterestPort(0)
+                                .withShutDownPort(0)
+                                .withWebAdminPort(0)
+                                .build()
+                )
+                .withClusterDiscoveryConfig(
+                        anEurekaClusterDiscoveryConfig()
+                                .withClusterAddresses(clusterAddresses)
+                                .withClusterResolverType(ResolverType.Fixed)
+                                .build()
+                )
                 .build();
+
         EurekaReadServerRunner server = new EurekaReadServerRunner(config);
         executeAndVerifyLifecycle(server, SERVER_NAME);
     }

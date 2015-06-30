@@ -9,7 +9,6 @@ import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
-import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.resolver.ClusterAddress;
 import com.netflix.eureka2.server.resolver.ClusterAddress.ServiceType;
@@ -21,6 +20,10 @@ import com.netflix.eureka2.testkit.netrouter.NetworkRouter;
 import com.netflix.eureka2.utils.rx.RxFunctions;
 import rx.Observable;
 import rx.functions.Func1;
+
+import static com.netflix.eureka2.server.config.bean.EurekaInstanceInfoConfigBean.anEurekaInstanceInfoConfig;
+import static com.netflix.eureka2.server.config.bean.EurekaServerTransportConfigBean.anEurekaServerTransportConfig;
+import static com.netflix.eureka2.server.config.bean.WriteServerConfigBean.aWriteServerConfig;
 
 /**
  * @author Tomasz Bak
@@ -50,33 +53,39 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
     @Override
     public int scaleUpByOne() {
         ClusterAddress writeServerAddress = ephemeralPorts ?
-                ClusterAddress.writeClusterAddressFrom("localhost", 0, 0, 0) :
-                ClusterAddress.writeClusterAddressFrom("localhost", nextAvailablePort, nextAvailablePort + 1, nextAvailablePort + 2);
+                ClusterAddress.valueOf("localhost", 0, 0, 0) :
+                ClusterAddress.valueOf("localhost", nextAvailablePort, nextAvailablePort + 1, nextAvailablePort + 2);
 
         int httpPort = ephemeralPorts ? 0 : nextAvailablePort + 3;
         int adminPort = ephemeralPorts ? 0 : nextAvailablePort + 4;
 
-        WriteServerConfig config = WriteServerConfig.writeBuilder()
-                .withAppName(WRITE_SERVER_NAME)
-                .withVipAddress(WRITE_SERVER_NAME)
-                .withReadClusterVipAddress(EmbeddedReadCluster.READ_SERVER_NAME)
-                .withDataCenterType(DataCenterType.Basic)
-                .withRegistrationPort(writeServerAddress.getRegistrationPort())
-                .withDiscoveryPort(writeServerAddress.getInterestPort())
-                .withReplicationPort(writeServerAddress.getReplicationPort())
-                .withServerList(writeServerAddress.toWriteAddressString())
-                .withCodec(codec)
-                .withHttpPort(httpPort)
-                .withShutDownPort(0) // We do not run shutdown service in embedded server
-                .withWebAdminPort(adminPort)
-                .withReplicationRetryMillis(1000)
+        WriteServerConfig config = aWriteServerConfig()
+                .withInstanceInfoConfig(
+                        anEurekaInstanceInfoConfig()
+                                .withEurekaApplicationName(WRITE_SERVER_NAME)
+                                .withEurekaVipAddress(WRITE_SERVER_NAME)
+                                .build()
+                )
+                .withTransportConfig(
+                        anEurekaServerTransportConfig()
+                                .withCodec(codec)
+                                .withHttpPort(httpPort)
+                                .withInterestPort(writeServerAddress.getInterestPort())
+                                .withRegistrationPort(writeServerAddress.getRegistrationPort())
+                                .withReplicationPort(writeServerAddress.getReplicationPort())
+                                .withShutDownPort(0)
+                                .withWebAdminPort(adminPort)
+                                .build()
+                )
+                .withBootstrapEnabled(false)
                 .build();
+
         EmbeddedWriteServer writeServer = newServer(config);
 
         nextAvailablePort += 10;
 
         if (ephemeralPorts) {
-            writeServerAddress = ClusterAddress.writeClusterAddressFrom("localhost", writeServer.getRegistrationPort(),
+            writeServerAddress = ClusterAddress.valueOf("localhost", writeServer.getRegistrationPort(),
                     writeServer.getInterestPort(), writeServer.getReplicationPort());
         }
 

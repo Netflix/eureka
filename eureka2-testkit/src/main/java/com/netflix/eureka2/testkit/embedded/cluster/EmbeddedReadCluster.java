@@ -8,12 +8,19 @@ import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
+import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider.StrategyType;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedReadCluster.ReadClusterReport;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer.ReadServerReport;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServerBuilder;
 import com.netflix.eureka2.testkit.netrouter.NetworkRouter;
+
+import static com.netflix.eureka2.server.config.bean.EurekaClusterDiscoveryConfigBean.anEurekaClusterDiscoveryConfig;
+import static com.netflix.eureka2.server.config.bean.EurekaInstanceInfoConfigBean.anEurekaInstanceInfoConfig;
+import static com.netflix.eureka2.server.config.bean.EurekaServerConfigBean.anEurekaServerConfig;
+import static com.netflix.eureka2.server.config.bean.EurekaServerRegistryConfigBean.anEurekaServerRegistryConfig;
+import static com.netflix.eureka2.server.config.bean.EurekaServerTransportConfigBean.anEurekaServerTransportConfig;
 
 /**
  * @author Tomasz Bak
@@ -25,8 +32,8 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
 
     private final ServerResolver registrationResolver;
     private final ServerResolver interestResolver;
-    private final boolean withExt;
-    private final boolean withAdminUI;
+    private final boolean ext;
+    private final boolean adminUI;
     private final boolean ephemeralPorts;
     private final CodecType codec;
     private final NetworkRouter networkRouter;
@@ -35,25 +42,25 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
 
     public EmbeddedReadCluster(ServerResolver registrationResolver,
                                ServerResolver interestResolver,
-                               boolean withExt,
-                               boolean withAdminUI,
+                               boolean ext,
+                               boolean adminUI,
                                boolean ephemeralPorts,
                                NetworkRouter networkRouter) {
-        this(registrationResolver, interestResolver, withExt, withAdminUI, ephemeralPorts, CodecType.Avro, networkRouter);
+        this(registrationResolver, interestResolver, ext, adminUI, ephemeralPorts, CodecType.Avro, networkRouter);
     }
 
     public EmbeddedReadCluster(ServerResolver registrationResolver,
                                ServerResolver interestResolver,
-                               boolean withExt,
-                               boolean withAdminUI,
+                               boolean ext,
+                               boolean adminUI,
                                boolean ephemeralPorts,
                                CodecType codec,
                                NetworkRouter networkRouter) {
         super(READ_SERVER_NAME);
         this.registrationResolver = registrationResolver;
         this.interestResolver = interestResolver;
-        this.withExt = withExt;
-        this.withAdminUI = withAdminUI;
+        this.ext = ext;
+        this.adminUI = adminUI;
         this.ephemeralPorts = ephemeralPorts;
         this.codec = codec;
         this.networkRouter = networkRouter;
@@ -65,16 +72,22 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
         int httpPort = ephemeralPorts ? 0 : nextAvailablePort + 1;
         int adminPort = ephemeralPorts ? 0 : nextAvailablePort + 2;
 
-        EurekaServerConfig config = EurekaServerConfig.baseBuilder()
-                .withAppName(READ_SERVER_NAME)
-                .withVipAddress(READ_SERVER_NAME)
-                .withReadClusterVipAddress(READ_SERVER_NAME)
-                .withDataCenterType(DataCenterType.Basic)
-                .withDiscoveryPort(discoveryPort)
-                .withHttpPort(httpPort)
-                .withShutDownPort(0) // We do not run shutdown service in embedded server
-                .withWebAdminPort(adminPort)
-                .withCodec(codec)
+        EurekaServerConfig config = anEurekaServerConfig()
+                .withInstanceInfoConfig(
+                        anEurekaInstanceInfoConfig()
+                                .withEurekaApplicationName(READ_SERVER_NAME)
+                                .withEurekaVipAddress(READ_SERVER_NAME)
+                                .build()
+                )
+                .withTransportConfig(
+                        anEurekaServerTransportConfig()
+                                .withCodec(codec)
+                                .withHttpPort(httpPort)
+                                .withInterestPort(discoveryPort)
+                                .withShutDownPort(0)
+                                .withWebAdminPort(adminPort)
+                                .build()
+                )
                 .build();
 
         EmbeddedReadServer newServer = newServer(config);
@@ -93,7 +106,8 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
                 .withRegistrationResolver(registrationResolver)
                 .withInterestResolver(interestResolver)
                 .withNetworkRouter(networkRouter)
-                .withAdminUI(withAdminUI)
+                .withAdminUI(adminUI)
+                .withExt(ext)
                 .build();
     }
 

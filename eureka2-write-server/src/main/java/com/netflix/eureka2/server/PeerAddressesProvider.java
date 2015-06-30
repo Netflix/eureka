@@ -6,7 +6,7 @@ import java.util.Arrays;
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
-import com.netflix.eureka2.server.config.EurekaServerConfig;
+import com.netflix.eureka2.server.config.EurekaClusterDiscoveryConfig;
 import com.netflix.eureka2.server.resolver.ClusterAddress;
 import com.netflix.eureka2.server.resolver.ClusterAddress.ServiceType;
 import com.netflix.eureka2.server.resolver.EurekaClusterResolvers;
@@ -26,7 +26,7 @@ public class PeerAddressesProvider implements Provider<Observable<ChangeNotifica
         this.addressStream = addressStream;
     }
 
-    public PeerAddressesProvider(EurekaServerConfig config, final ServiceType serviceType) {
+    public PeerAddressesProvider(EurekaClusterDiscoveryConfig config, final ServiceType serviceType) {
         this(addressStreamFromConfig(config, serviceType));
     }
 
@@ -35,15 +35,15 @@ public class PeerAddressesProvider implements Provider<Observable<ChangeNotifica
         return addressStream;
     }
 
-    private static Observable<ChangeNotification<Server>> addressStreamFromConfig(EurekaServerConfig config, final ServiceType serviceType) {
+    private static Observable<ChangeNotification<Server>> addressStreamFromConfig(EurekaClusterDiscoveryConfig config, final ServiceType serviceType) {
         Observable<ChangeNotification<Server>> addressStream;
-        ResolverType resolverType = config.getServerResolverType();
+        ResolverType resolverType = config.getClusterResolverType();
         if (resolverType == null) {
             throw new IllegalArgumentException("Write cluster resolver type not defined");
         }
         addressStream = EurekaClusterResolvers.writeClusterResolverFromConfiguration(
                 resolverType,
-                Arrays.asList(config.getServerList()),
+                Arrays.asList(config.getClusterAddresses()),
                 Schedulers.computation()
         ).clusterTopologyChanges().map(new Func1<ChangeNotification<ClusterAddress>, ChangeNotification<Server>>() {
             @Override

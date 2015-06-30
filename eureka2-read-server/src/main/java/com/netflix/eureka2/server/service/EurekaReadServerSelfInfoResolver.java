@@ -29,7 +29,7 @@ public class EurekaReadServerSelfInfoResolver implements SelfInfoResolver {
                                             EurekaHealthStatusAggregatorImpl healthStatusAggregator) {
 
         SelfInfoResolverChain resolverChain = new SelfInfoResolverChain(
-                new ConfigSelfInfoResolver(config),
+                new ConfigSelfInfoResolver(config.getEurekaInstance(), config.getEurekaTransport()),
                 new StatusInfoResolver(healthStatusAggregator),
                 // read server specific resolver
                 new ChainableSelfInfoResolver(Observable.just(new HashSet<ServicePort>())
@@ -42,7 +42,7 @@ public class EurekaReadServerSelfInfoResolver implements SelfInfoResolver {
                             }
                         })
                 ),
-                new PeriodicDataCenterInfoResolver(config)
+                new PeriodicDataCenterInfoResolver(config.getEurekaInstance())
         );
 
         delegate = new CachingSelfInfoResolver(resolverChain);

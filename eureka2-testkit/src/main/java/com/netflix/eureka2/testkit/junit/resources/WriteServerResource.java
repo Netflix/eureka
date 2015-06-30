@@ -4,12 +4,15 @@ import com.netflix.eureka2.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServerBuilder;
 import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources.EurekaExternalResource;
 import rx.Observable;
+
+import static com.netflix.eureka2.server.config.bean.EurekaInstanceInfoConfigBean.anEurekaInstanceInfoConfig;
+import static com.netflix.eureka2.server.config.bean.EurekaServerTransportConfigBean.anEurekaServerTransportConfig;
+import static com.netflix.eureka2.server.config.bean.WriteServerConfigBean.aWriteServerConfig;
 
 /**
  * @author Tomasz Bak
@@ -40,19 +43,25 @@ public class WriteServerResource extends EurekaExternalResource {
 
     @Override
     protected void before() throws Throwable {
-        WriteServerConfig config = WriteServerConfig.writeBuilder()
-                .withAppName(name)
-                .withVipAddress(name)
-                .withReadClusterVipAddress(readClusterName)
-                .withDataCenterType(DataCenterType.Basic)
-                .withHttpPort(0)
-                .withRegistrationPort(0)
-                .withDiscoveryPort(0)
-                .withReplicationPort(0)
-                .withCodec(codec)
-                .withShutDownPort(0)
-                .withWebAdminPort(0)
-                .withReplicationRetryMillis(1000)
+        WriteServerConfig config = aWriteServerConfig()
+                .withInstanceInfoConfig(
+                        anEurekaInstanceInfoConfig()
+                                .withEurekaApplicationName(name)
+                                .withEurekaVipAddress(name)
+                                .build()
+                )
+                .withTransportConfig(
+                        anEurekaServerTransportConfig()
+                                .withCodec(codec)
+                                .withHttpPort(0)
+                                .withInterestPort(0)
+                                .withRegistrationPort(0)
+                                .withReplicationPort(0)
+                                .withShutDownPort(0)
+                                .withWebAdminPort(0)
+                                .build()
+                )
+                .withBootstrapEnabled(false)
                 .build();
 
         Observable<ChangeNotification<Server>> noPeers = Observable.never();

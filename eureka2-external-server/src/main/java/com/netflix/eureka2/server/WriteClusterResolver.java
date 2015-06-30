@@ -7,7 +7,7 @@ import com.netflix.eureka2.client.resolver.RoundRobinServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
-import com.netflix.eureka2.server.config.EurekaCommonConfig;
+import com.netflix.eureka2.server.config.EurekaClusterDiscoveryConfig;
 import com.netflix.eureka2.server.resolver.ClusterAddress;
 import com.netflix.eureka2.server.resolver.ClusterAddress.ServiceType;
 import com.netflix.eureka2.server.resolver.EurekaClusterResolver;
@@ -46,15 +46,15 @@ public class WriteClusterResolver extends RoundRobinServerResolver {
                 });
     }
 
-    public static ServerResolver createRegistrationResolver(EurekaCommonConfig config) {
+    public static ServerResolver createRegistrationResolver(EurekaClusterDiscoveryConfig config) {
         return new WriteClusterResolver(createEurekaEndpointResolver(config), ServiceType.Registration);
     }
 
-    public static ServerResolver createInterestResolver(EurekaCommonConfig config) {
+    public static ServerResolver createInterestResolver(EurekaClusterDiscoveryConfig config) {
         return new WriteClusterResolver(createEurekaEndpointResolver(config), ServiceType.Interest);
     }
 
-    private static EurekaClusterResolver createEurekaEndpointResolver(EurekaCommonConfig config) {
-        return EurekaClusterResolvers.writeClusterResolverFromConfiguration(config.getServerResolverType(), Arrays.asList(config.getServerList()), Schedulers.computation());
+    private static EurekaClusterResolver createEurekaEndpointResolver(EurekaClusterDiscoveryConfig config) {
+        return EurekaClusterResolvers.writeClusterResolverFromConfiguration(config.getClusterResolverType(), Arrays.asList(config.getClusterAddresses()), Schedulers.computation());
     }
 }

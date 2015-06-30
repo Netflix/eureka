@@ -1,7 +1,12 @@
 package com.netflix.eureka2.server;
 
+import javax.inject.Singleton;
+
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.google.inject.name.Names;
+import com.netflix.archaius.ConfigProxyFactory;
+import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.interests.IndexRegistry;
 import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
@@ -18,6 +23,9 @@ import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
 import com.netflix.eureka2.registry.eviction.EvictionStrategy;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
+import com.netflix.eureka2.server.config.BridgeServerConfig;
+import com.netflix.eureka2.server.config.EurekaClusterDiscoveryConfig;
+import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import com.netflix.eureka2.server.registry.EurekaBridgeRegistry;
 import com.netflix.eureka2.server.service.BridgeService;
 import com.netflix.eureka2.server.service.EurekaBridgeServerSelfInfoResolver;
@@ -35,6 +43,12 @@ import io.reactivex.netty.spectator.SpectatorEventsListenerFactory;
  * @author David Liu
  */
 public class EurekaBridgeServerModule extends AbstractModule {
+
+    private final String prefix;
+
+    public EurekaBridgeServerModule(String prefix) {
+        this.prefix = prefix;
+    }
 
     @Override
     public void configure() {
@@ -68,5 +82,29 @@ public class EurekaBridgeServerModule extends AbstractModule {
         bind(BridgeServerMetricFactory.class).to(SpectatorBridgeServerMetricFactory.class).asEagerSingleton();
 
         bind(AbstractEurekaServer.class).to(EurekaBridgeServer.class);
+    }
+
+    @Provides
+    @Singleton
+    public BridgeServerConfig getConfiguration(ConfigProxyFactory factory) {
+        return factory.newProxy(BridgeServerConfig.class, prefix);
+    }
+
+    @Provides
+    @Singleton
+    public EurekaServerTransportConfig getEurekaServerTransportConfig(BridgeServerConfig rootConfig) {
+        return rootConfig.getEurekaTransport();
+    }
+
+    @Provides
+    @Singleton
+    public EurekaRegistryConfig getEurekaRegistryConfig(BridgeServerConfig rootConfig) {
+        return rootConfig.getEurekaRegistry();
+    }
+
+    @Provides
+    @Singleton
+    public EurekaClusterDiscoveryConfig getEurekaClusterDiscoveryConfig(BridgeServerConfig rootConfig) {
+        return rootConfig.getEurekaClusterDiscovery();
     }
 }

@@ -17,6 +17,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import rx.Observable;
 
+import static com.netflix.eureka2.server.config.bean.WriteServerConfigBean.aWriteServerConfig;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -47,7 +48,7 @@ public class RegistryBootstrapCoordinatorTest {
             }
         });
 
-        WriteServerConfig config = WriteServerConfig.writeBuilder().withBootstrapEnabled(true).build();
+        WriteServerConfig config = aWriteServerConfig().withBootstrapEnabled(true).build();
         bootstrapCoordinator = new RegistryBootstrapCoordinator(config, bootstrapService, registry);
     }
 

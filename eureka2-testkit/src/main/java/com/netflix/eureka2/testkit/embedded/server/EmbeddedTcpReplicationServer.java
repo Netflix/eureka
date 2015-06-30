@@ -7,7 +7,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 import com.netflix.eureka2.Names;
-import com.netflix.eureka2.server.config.WriteServerConfig;
+import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationHandler;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
 import com.netflix.eureka2.testkit.netrouter.NetworkRouter;
@@ -22,7 +22,7 @@ public class EmbeddedTcpReplicationServer extends TcpReplicationServer {
     private int proxyPort;
 
     @Inject
-    public EmbeddedTcpReplicationServer(WriteServerConfig config,
+    public EmbeddedTcpReplicationServer(EurekaServerTransportConfig config,
                                         TcpReplicationHandler tcpReplicationHandler,
                                         @Named(Names.REPLICATION) MetricEventsListenerFactory servoEventsListenerFactory,
                                         NetworkRouter networkRouter) {

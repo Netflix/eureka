@@ -9,14 +9,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.config.BasicEurekaTransportConfig;
-import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.data.toplogy.ServiceTopologyGenerator;
 import com.netflix.eureka2.data.toplogy.TopologyDataProviders;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment.EurekaDeploymentBuilder;
 import org.apache.commons.cli.CommandLine;
@@ -37,6 +36,8 @@ import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
 
+import static com.netflix.eureka2.server.config.bean.EurekaServerTransportConfigBean.anEurekaServerTransportConfig;
+
 /**
  * Eureka2 embedded cluster performance benchmarking tool.
  *
@@ -48,7 +49,7 @@ public class EurekaPerf {
 
     private static final int LATENCY_THRESHOLD = 1000;
 
-    private final EurekaTransportConfig transportConfig = new BasicEurekaTransportConfig.Builder().build();
+    private final EurekaServerTransportConfig transportConfig = anEurekaServerTransportConfig().build();
 
     private final Configuration config;
 

@@ -23,6 +23,7 @@ dependencies {
     compile "org.mockito:mockito-core:${mockito_version}"
     compile "org.hamcrest:hamcrest-library:${hamcrest_version}"
     compile "org.hdrhistogram:HdrHistogram:${hdrhistogram_version}"
+    compile "commons-cli:commons-cli:${commons_cli_version}"
 }
 
 // This simplistic setup is enough while we have single script.

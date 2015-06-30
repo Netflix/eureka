@@ -11,6 +11,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.server.EurekaServerRunner;
+import com.netflix.eureka2.server.resolver.ClusterAddress;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
 import com.netflix.eureka2.utils.Json;
@@ -36,7 +37,7 @@ import static org.junit.Assert.assertThat;
 /**
  * @author Tomasz Bak
  */
-public abstract class AbstractStartupAndShutdownIntegrationTest<RUNNER extends EurekaServerRunner> {
+public abstract class AbstractStartupAndShutdownIntegrationTest<RUNNER extends EurekaServerRunner<?>> {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractStartupAndShutdownIntegrationTest.class);
 
@@ -46,11 +47,13 @@ public abstract class AbstractStartupAndShutdownIntegrationTest<RUNNER extends E
     public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResource(1, 0);
 
     protected String writeServerList;
+    protected ClusterAddress[] clusterAddresses;
 
     @Before
     public void setUp() throws Exception {
         EmbeddedWriteServer server = eurekaDeploymentResource.getEurekaDeployment().getWriteCluster().getServer(0);
         writeServerList = "localhost:" + server.getRegistrationPort() + ':' + server.getInterestPort() + ':' + server.getReplicationPort();
+        clusterAddresses = new ClusterAddress[]{ClusterAddress.valueOf(writeServerList)};
     }
 
     protected void verifyThatStartsWithFileBasedConfiguration(String serverName, RUNNER server) throws Exception {
