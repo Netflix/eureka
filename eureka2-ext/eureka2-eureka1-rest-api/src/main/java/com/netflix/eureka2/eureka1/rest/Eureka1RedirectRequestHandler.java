@@ -60,7 +60,7 @@ public class Eureka1RedirectRequestHandler extends AbstractEureka1RequestHandler
 
     @PostConstruct
     public void start() {
-        String redirectTarget = context.getConfig().getReadClusterVipAddress();
+        String redirectTarget = context.getConfig().getEurekaClusterDiscovery().getReadClusterVipAddress();
         if (redirectTarget == null || redirectTarget.isEmpty()) {
             logger.warn("Not starting Eureka1RedirectRequestHandler, redirect target not available");
             return;

@@ -18,11 +18,10 @@ package com.netflix.eureka2.server.transport.tcp.interest;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import com.netflix.eureka2.Names;
-import com.netflix.eureka2.server.config.EurekaServerConfig;
+import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import com.netflix.eureka2.server.transport.tcp.AbstractTcpServer;
 import com.netflix.eureka2.transport.EurekaTransports;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
@@ -34,10 +33,10 @@ import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 public class TcpInterestServer extends AbstractTcpServer {
 
     @Inject
-    public TcpInterestServer(EurekaServerConfig config,
+    public TcpInterestServer(EurekaServerTransportConfig config,
                              @Named(Names.INTEREST) MetricEventsListenerFactory servoEventsListenerFactory,
                              TcpInterestHandler tcpDiscoveryHandler) {
-        super(servoEventsListenerFactory, config, config.getDiscoveryPort(),
+        super(servoEventsListenerFactory, config, config.getInterestPort(),
                 EurekaTransports.interestPipeline(config.getCodec()), tcpDiscoveryHandler);
     }
 }

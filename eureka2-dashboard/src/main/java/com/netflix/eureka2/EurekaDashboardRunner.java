@@ -3,7 +3,6 @@ package com.netflix.eureka2;
 import com.google.inject.Module;
 import com.google.inject.Singleton;
 import com.google.inject.util.Modules;
-import com.netflix.eureka2.config.DashboardCommandLineParser;
 import com.netflix.eureka2.config.EurekaDashboardConfig;
 import com.netflix.eureka2.server.EurekaServerRunner;
 import com.netflix.eureka2.server.module.CommonEurekaServerModule;
@@ -13,42 +12,43 @@ import netflix.adminresources.resources.KaryonWebAdminModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.netflix.eureka2.server.config.ServerConfigurationNames.DEFAULT_CONFIG_PREFIX;
+
 @Singleton
-public class EurekaDashboardRunner extends EurekaServerRunner<EurekaDashboardConfig, EurekaDashboardServer> {
+public class EurekaDashboardRunner extends EurekaServerRunner<EurekaDashboardServer> {
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaDashboardRunner.class);
 
-    public EurekaDashboardRunner(String[] args) {
-        super(args, EurekaDashboardServer.class);
-    }
+    private final EurekaDashboardConfig config;
 
     public EurekaDashboardRunner(EurekaDashboardConfig config) {
-        super(config, EurekaDashboardServer.class);
+        super(EurekaDashboardServer.class);
+        this.config = config;
     }
 
     public EurekaDashboardRunner(String name) {
         super(name, EurekaDashboardServer.class);
+        this.config = null;
     }
 
     @Override
     protected LifecycleInjector createInjector() {
+        Module configModule = config == null ? EurekaDashboardConfigurationModule.fromArchaius(DEFAULT_CONFIG_PREFIX) :
+                EurekaDashboardConfigurationModule.fromConfig(config);
+
         Module applicationModule = Modules.combine(
+                configModule,
                 new CommonEurekaServerModule(name),
-                new EurekaDashboardModule(config),
+                new EurekaDashboardModule(),
                 new KaryonWebAdminModule()
         );
 
         return Governator.createInjector(applicationModule);
     }
 
-    @Override
-    protected DashboardCommandLineParser newCommandLineParser(String[] args) {
-        return new DashboardCommandLineParser(args);
-    }
-
     public static void main(String[] args) {
         logger.info("Eureka 2.0 Dashboard Server");
-        EurekaDashboardRunner runner = args.length == 0 ? new EurekaDashboardRunner("eureka-dashboard-server") : new EurekaDashboardRunner(args);
+        EurekaDashboardRunner runner = new EurekaDashboardRunner("eureka-dashboard-server");
         if (runner.start()) {
             runner.awaitTermination();
         }

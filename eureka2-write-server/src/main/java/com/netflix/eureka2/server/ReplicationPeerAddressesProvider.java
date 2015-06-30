@@ -5,8 +5,8 @@ import javax.inject.Singleton;
 
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.server.config.EurekaClusterDiscoveryConfig;
 import com.netflix.eureka2.server.resolver.ClusterAddress.ServiceType;
-import com.netflix.eureka2.server.config.EurekaServerConfig;
 import rx.Observable;
 
 /**
@@ -18,7 +18,7 @@ import rx.Observable;
 public class ReplicationPeerAddressesProvider extends PeerAddressesProvider {
 
     @Inject
-    public ReplicationPeerAddressesProvider(EurekaServerConfig config) {
+    public ReplicationPeerAddressesProvider(EurekaClusterDiscoveryConfig config) {
         super(config, ServiceType.Replication);
     }
 

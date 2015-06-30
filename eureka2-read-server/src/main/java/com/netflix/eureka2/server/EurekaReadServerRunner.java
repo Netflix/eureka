@@ -18,9 +18,7 @@ package com.netflix.eureka2.server;
 
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
-import com.netflix.eureka2.server.config.EurekaCommandLineParser;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.eureka2.server.config.ReadCommandLineParser;
 import com.netflix.eureka2.server.module.CommonEurekaServerModule;
 import com.netflix.eureka2.server.module.EurekaExtensionModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
@@ -30,29 +28,30 @@ import netflix.adminresources.resources.KaryonWebAdminModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.netflix.eureka2.server.config.ServerConfigurationNames.DEFAULT_CONFIG_PREFIX;
+
 /**
  * @author Tomasz Bak
  */
-public class EurekaReadServerRunner extends EurekaServerRunner<EurekaServerConfig, EurekaReadServer> {
+public class EurekaReadServerRunner extends EurekaServerRunner<EurekaReadServer> {
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaReadServerRunner.class);
-
-    public EurekaReadServerRunner(String[] args) {
-        super(args, EurekaReadServer.class);
-    }
+    private final EurekaServerConfig config;
 
     public EurekaReadServerRunner(EurekaServerConfig config) {
-        super(config, EurekaReadServer.class);
+        super(EurekaReadServer.class);
+        this.config = config;
     }
 
     public EurekaReadServerRunner(String name) {
         super(name, EurekaReadServer.class);
+        config = null;
     }
 
     @Override
     protected LifecycleInjector createInjector() {
-        Module configModule = config == null ? EurekaReadServerConfigurationModules.fromArchaius() :
-                EurekaReadServerConfigurationModules.fromConfig(config);
+        Module configModule = config == null ? EurekaReadServerConfigurationModule.fromArchaius(DEFAULT_CONFIG_PREFIX) :
+                EurekaReadServerConfigurationModule.fromConfig(config);
 
         Module applicationModule = Modules.combine(
                 configModule,
@@ -65,14 +64,9 @@ public class EurekaReadServerRunner extends EurekaServerRunner<EurekaServerConfi
         return Governator.createInjector(applicationModule);
     }
 
-    @Override
-    protected EurekaCommandLineParser newCommandLineParser(String[] args) {
-        return new ReadCommandLineParser(args);
-    }
-
     public static void main(String[] args) {
         logger.info("Eureka 2.0 Read Server");
-        EurekaReadServerRunner runner = args.length == 0 ? new EurekaReadServerRunner("eureka-read-server") : new EurekaReadServerRunner(args);
+        EurekaReadServerRunner runner = new EurekaReadServerRunner("eureka-read-server");
         if (runner.start()) {
             runner.awaitTermination();
         }

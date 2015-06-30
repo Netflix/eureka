@@ -2,13 +2,12 @@ package com.netflix.eureka2.server.registry;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.config.WriteServerConfig;
-import com.netflix.eureka2.server.config.WriteServerConfig.WriteServerConfigBuilder;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.After;
 import org.junit.Before;
@@ -16,6 +15,7 @@ import org.junit.Test;
 import rx.Subscriber;
 import rx.subjects.PublishSubject;
 
+import static com.netflix.eureka2.server.config.bean.EurekaServerRegistryConfigBean.anEurekaServerRegistryConfig;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -42,7 +42,7 @@ public class EvictionQuotaKeeperImplTest {
     public void setUp() throws Exception {
         when(registry.forInterest(Interests.forFullRegistry())).thenReturn(interestSubject);
 
-        WriteServerConfig config = new WriteServerConfigBuilder()
+        EurekaRegistryConfig config = anEurekaServerRegistryConfig()
                 .withEvictionAllowedPercentageDrop(ALLOWED_PERCENTAGE_DROP)
                 .build();
 

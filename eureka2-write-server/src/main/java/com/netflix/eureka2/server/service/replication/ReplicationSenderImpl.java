@@ -1,5 +1,9 @@
 package com.netflix.eureka2.server.service.replication;
 
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+
+import com.netflix.eureka2.Server;
 import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.ReplicationChannel;
 import com.netflix.eureka2.connection.RetryableConnection;
@@ -14,16 +18,12 @@ import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.SenderReplicationChannelFactory;
 import com.netflix.eureka2.server.config.WriteServerConfig;
-import com.netflix.eureka2.Server;
 import com.netflix.eureka2.utils.rx.RetryStrategyFunc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Func1;
-
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author David Liu
@@ -34,10 +34,8 @@ public class ReplicationSenderImpl implements ReplicationSender {
 
     private static final Logger logger = LoggerFactory.getLogger(ReplicationSenderImpl.class);
 
-    private static final int DEFAULT_RETRY_WAIT_MILLIS = 500;
-
     private final ChannelFactory<ReplicationChannel> channelFactory;
-    private final int retryWaitMillis;
+    private final long retryWaitMillis;
     private final RetryableConnection<ReplicationChannel> connection;
     private final Subscriber<Void> replicationSubscriber;
     private final AtomicReference<STATE> stateRef;
@@ -48,12 +46,12 @@ public class ReplicationSenderImpl implements ReplicationSender {
                                  final SourcedEurekaRegistry<InstanceInfo> registry,
                                  final InstanceInfo selfInfo,
                                  final WriteServerMetricFactory metricFactory) {
-        this(new SenderReplicationChannelFactory(config, address, metricFactory), DEFAULT_RETRY_WAIT_MILLIS, registry, selfInfo);
+        this(new SenderReplicationChannelFactory(config.getEurekaTransport(), address, metricFactory), config.getReplicationReconnectDelayMs(), registry, selfInfo);
     }
 
     /*visible for testing*/ ReplicationSenderImpl(
             final ChannelFactory<ReplicationChannel> channelFactory,
-            final int retryWaitMillis,
+            final long retryWaitMillis,
             final SourcedEurekaRegistry<InstanceInfo> registry,
             final InstanceInfo selfInfo) {
         this.stateRef = new AtomicReference<>(STATE.Idle);

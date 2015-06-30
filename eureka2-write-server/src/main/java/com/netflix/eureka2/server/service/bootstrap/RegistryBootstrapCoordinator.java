@@ -61,7 +61,7 @@ public class RegistryBootstrapCoordinator extends AbstractHealthStatusProvider<R
 
         logger.info("Starting registry bootstrapping using {}...", registryBootstrapService.getClass().getName());
         bootstrapSubscription = registryBootstrapService.loadIntoRegistry(registry, source)
-                .timeout(config.getBootstrapTimeoutMillis(), TimeUnit.MILLISECONDS)
+                .timeout(config.getBootstrapTimeoutMs(), TimeUnit.MILLISECONDS)
                 .subscribe(
                         new Subscriber<Void>() {
                             @Override

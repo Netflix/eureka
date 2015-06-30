@@ -54,7 +54,7 @@ public class ExtensionContext {
      * Unique name assigned to read or write cluster.
      */
     public String getEurekaClusterName() {
-        return config.getAppName();
+        return config.getEurekaInstance().getEurekaApplicationName();
     }
 
     public EurekaRegistryView<InstanceInfo> getLocalRegistryView() {

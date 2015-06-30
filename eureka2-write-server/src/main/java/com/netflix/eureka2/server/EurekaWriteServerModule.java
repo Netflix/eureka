@@ -105,4 +105,5 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
 
         bind(AbstractEurekaServer.class).to(EurekaWriteServer.class);
     }
+
 }

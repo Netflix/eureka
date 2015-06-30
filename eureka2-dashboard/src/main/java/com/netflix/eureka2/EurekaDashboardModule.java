@@ -19,14 +19,12 @@ package com.netflix.eureka2;
 import com.google.inject.AbstractModule;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.config.EurekaDashboardConfig;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.SpectatorEurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.metric.client.SpectatorEurekaClientMetricFactory;
 import com.netflix.eureka2.server.EurekaInterestClientProvider;
 import com.netflix.eureka2.server.EurekaRegistrationClientProvider;
-import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
 
@@ -35,35 +33,22 @@ import com.netflix.eureka2.server.service.SelfRegistrationService;
  */
 public class EurekaDashboardModule extends AbstractModule {
 
-    private final EurekaDashboardConfig config;
     private final EurekaRegistrationClient registrationClient;
     private final EurekaInterestClient interestClient;
 
     public EurekaDashboardModule() {
-        this(null);
+        this.registrationClient = null;
+        this.interestClient = null;
     }
 
-    public EurekaDashboardModule(EurekaDashboardConfig config) {
-        this(config, null, null);
-    }
-
-    public EurekaDashboardModule(EurekaDashboardConfig config,
-                                 EurekaRegistrationClient registrationClient,
+    public EurekaDashboardModule(EurekaRegistrationClient registrationClient,
                                  EurekaInterestClient interestClient) {
-        this.config = config;
         this.registrationClient = registrationClient;
         this.interestClient = interestClient;
     }
 
     @Override
     protected void configure() {
-        if (config == null) {
-            bind(EurekaDashboardConfig.class).asEagerSingleton();
-            bind(EurekaCommonConfig.class).to(EurekaDashboardConfig.class);
-        } else {
-            bind(EurekaCommonConfig.class).toInstance(config);
-            bind(EurekaDashboardConfig.class).toInstance(config);
-        }
         if (registrationClient == null) {
             bind(EurekaRegistrationClient.class).toProvider(EurekaRegistrationClientProvider.class);
         } else {

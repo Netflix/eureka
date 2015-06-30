@@ -5,10 +5,7 @@ import javax.inject.Singleton;
 import com.amazonaws.services.autoscaling.AmazonAutoScaling;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
-import com.netflix.archaius.Config;
-import com.netflix.archaius.PropertyFactory;
-import com.netflix.archaius.ProxyFactory;
-import com.netflix.archaius.property.PrefixedObservablePropertyFactory;
+import com.netflix.archaius.ConfigProxyFactory;
 import com.netflix.eureka2.server.service.overrides.OverridesService;
 import com.netflix.eureka2.server.spi.ExtAbstractModule;
 
@@ -29,9 +26,7 @@ public class AwsServiceModule extends ExtAbstractModule {
 
     @Provides
     @Singleton
-    public AwsConfiguration getAwsConfiguration(Config archaiusConfig, PropertyFactory propertyFactory) {
-        PrefixedObservablePropertyFactory prefixedPropertyFactory = new PrefixedObservablePropertyFactory(AWS_CONFIG_PREFIX, propertyFactory);
-        ProxyFactory proxyFactory = new ProxyFactory(archaiusConfig.getDecoder());
-        return proxyFactory.newProxy(AwsConfiguration.class, prefixedPropertyFactory);
+    public AwsConfiguration getAwsConfiguration(ConfigProxyFactory factory) {
+        return factory.newProxy(AwsConfiguration.class, AWS_CONFIG_PREFIX);
     }
 }

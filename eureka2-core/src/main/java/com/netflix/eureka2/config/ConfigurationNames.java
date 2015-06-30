@@ -22,5 +22,6 @@ public final class ConfigurationNames {
         public static final String evictionTimeoutMsName = EUREKA_PREFIX + PREFIX + "evictionTimeoutMs";
         public static final String evictionStrategyTypeName = EUREKA_PREFIX + PREFIX + "evictionStrategy.type";
         public static final String evictionStrategyValueName = EUREKA_PREFIX + PREFIX + "evictionStrategy.value";
+        public static final String evictionAllowedPercentageDropName = EUREKA_PREFIX + PREFIX + "evictionAllowedPercentageDrop";
     }
 }

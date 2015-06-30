@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.netflix.eureka2.Server;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
@@ -28,20 +29,25 @@ import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
-import com.netflix.eureka2.Server;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
 import rx.subjects.ReplaySubject;
 
-import static com.netflix.eureka2.metric.server.WriteServerMetricFactory.*;
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static com.netflix.eureka2.metric.server.WriteServerMetricFactory.writeServerMetrics;
+import static com.netflix.eureka2.server.config.bean.WriteServerConfigBean.aWriteServerConfig;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
-* @author Tomasz Bak
-*/
+ * @author Tomasz Bak
+ */
 public class ReplicationServiceTest {
 
     private static final InstanceInfo SELF_INFO = SampleInstanceInfo.DiscoveryServer.build();
@@ -50,7 +56,7 @@ public class ReplicationServiceTest {
     private static final Server ADDRESS2 = new Server("host2", 456);
     private static final Server ADDRESS3 = new Server("host3", 789);
 
-    private final WriteServerConfig config = WriteServerConfig.writeBuilder().build();
+    private final WriteServerConfig config = aWriteServerConfig().build();
     private final SourcedEurekaRegistry<InstanceInfo> eurekaRegistry = mock(SourcedEurekaRegistry.class);
     private final SelfInfoResolver selfIdentityService = mock(SelfInfoResolver.class);
     private final ReplicationPeerAddressesProvider peerAddressProvider = mock(ReplicationPeerAddressesProvider.class);
@@ -128,7 +134,7 @@ public class ReplicationServiceTest {
         replicationService.close();
 
         assertThat(addressVsHandler.size(), is(0));
-        for(ReplicationSender spyHandler : spies) {
+        for (ReplicationSender spyHandler : spies) {
             verify(spyHandler, times(1)).shutdown();
         }
 

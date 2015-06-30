@@ -6,7 +6,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.config.EurekaCommonConfig;
+import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import com.netflix.eureka2.utils.rx.NoOpSubscriber;
 import com.netflix.governator.LifecycleShutdownSignal;
 import netflix.karyon.ShutdownListener;
@@ -30,7 +30,7 @@ public class EurekaShutdownService {
     private ShutdownListener shutdownListener;
 
     @Inject
-    public EurekaShutdownService(EurekaCommonConfig config,
+    public EurekaShutdownService(EurekaServerTransportConfig config,
                                  LifecycleShutdownSignal shutdownSignal,
                                  SelfRegistrationService selfRegistrationService) {
         this.port = config.getShutDownPort();

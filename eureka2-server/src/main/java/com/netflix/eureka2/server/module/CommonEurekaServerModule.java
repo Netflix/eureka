@@ -33,7 +33,6 @@ public class CommonEurekaServerModule extends AbstractModule {
 
     @Override
     protected void configure() {
-
         // configurations
         Module configurations;
         if (name != null) {

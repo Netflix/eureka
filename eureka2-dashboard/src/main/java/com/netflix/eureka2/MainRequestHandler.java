@@ -19,7 +19,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 
-import static io.netty.handler.codec.http.HttpResponseStatus.*;
+import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
+import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 
 public class MainRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
 
@@ -60,7 +61,7 @@ public class MainRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
             }
 
             URI fileUri = resolveUri(request.getPath());
-            if(fileUri == null) {
+            if (fileUri == null) {
                 return Observable.error(new HttpError(NOT_FOUND));
             }
             response.setStatus(OK);

@@ -2,7 +2,6 @@ package com.netflix.eureka2;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.net.SocketAddress;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;

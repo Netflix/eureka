@@ -28,7 +28,7 @@ import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import com.netflix.eureka2.server.channel.InterestChannelImpl;
-import com.netflix.eureka2.server.config.EurekaCommonConfig;
+import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
@@ -54,7 +54,7 @@ public class TcpInterestHandler implements ConnectionHandler<Object, Object> {
 
     /* Visible for testing */ static final int RETRY_INTERVAL_MS = 1000;
 
-    private final EurekaCommonConfig config;
+    private final EurekaServerTransportConfig config;
     private final EurekaRegistryView<InstanceInfo> registry;
     private final EurekaServerMetricFactory metricFactory;
     private final Subscription healthStatusSubscription;
@@ -62,14 +62,14 @@ public class TcpInterestHandler implements ConnectionHandler<Object, Object> {
     private volatile boolean afterBootstrap;
 
     @Inject
-    public TcpInterestHandler(EurekaCommonConfig config,
+    public TcpInterestHandler(EurekaServerTransportConfig config,
                               EurekaRegistryView registry,
                               EurekaHealthStatusAggregator systemHealthStatus,
                               EurekaServerMetricFactory metricFactory) {
         this(config, registry, systemHealthStatus, metricFactory, Schedulers.computation());
     }
 
-    public TcpInterestHandler(EurekaCommonConfig config,
+    public TcpInterestHandler(EurekaServerTransportConfig config,
                               EurekaRegistryView registry,
                               EurekaHealthStatusAggregator systemHealthStatus,
                               EurekaServerMetricFactory metricFactory,

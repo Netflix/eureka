@@ -56,7 +56,7 @@ public class TcpRegistrationHandler implements ConnectionHandler<Object, Object>
     public Observable<Void> handle(ObservableConnection<Object, Object> connection) {
         MessageConnection broker = new HeartBeatConnection(
                 new BaseMessageConnection(Names.REGISTRATION, connection, metricFactory.getRegistrationConnectionMetrics()),
-                config.getHeartbeatIntervalMs(), 3,
+                config.getEurekaTransport().getHeartbeatIntervalMs(), 3,
                 Schedulers.computation()
         );
 

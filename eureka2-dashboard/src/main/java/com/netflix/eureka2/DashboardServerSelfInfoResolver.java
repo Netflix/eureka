@@ -4,10 +4,10 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.HashSet;
 
+import com.netflix.eureka2.config.EurekaDashboardConfig;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Builder;
 import com.netflix.eureka2.registry.instance.ServicePort;
-import com.netflix.eureka2.server.config.EurekaCommonConfig;
 import com.netflix.eureka2.server.service.CachingSelfInfoResolver;
 import com.netflix.eureka2.server.service.ChainableSelfInfoResolver;
 import com.netflix.eureka2.server.service.ConfigSelfInfoResolver;
@@ -15,7 +15,6 @@ import com.netflix.eureka2.server.service.PeriodicDataCenterInfoResolver;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.server.service.SelfInfoResolverChain;
 import rx.Observable;
-import rx.Subscriber;
 import rx.functions.Func1;
 
 /**
@@ -29,10 +28,10 @@ public class DashboardServerSelfInfoResolver implements SelfInfoResolver {
     private final SelfInfoResolver delegate;
 
     @Inject
-    public DashboardServerSelfInfoResolver(final EurekaCommonConfig config, final WebSocketServer webSocketServer) {
+    public DashboardServerSelfInfoResolver(final EurekaDashboardConfig config, final WebSocketServer webSocketServer) {
 
         SelfInfoResolverChain resolverChain = new SelfInfoResolverChain(
-                new ConfigSelfInfoResolver(config),
+                new ConfigSelfInfoResolver(config.getEurekaInstance(), config.getEurekaTransport()),
                 // dashboard server specific resolver
                 new ChainableSelfInfoResolver(Observable.just(new HashSet<ServicePort>())
                         .map(new Func1<HashSet<ServicePort>, Builder>() {
@@ -43,7 +42,7 @@ public class DashboardServerSelfInfoResolver implements SelfInfoResolver {
                             }
                         })
                 ),
-                new PeriodicDataCenterInfoResolver(config),
+                new PeriodicDataCenterInfoResolver(config.getEurekaInstance()),
                 // TODO override with more meaningful health check
                 new ChainableSelfInfoResolver(Observable.just(new InstanceInfo.Builder().withStatus(InstanceInfo.Status.UP)))
         );

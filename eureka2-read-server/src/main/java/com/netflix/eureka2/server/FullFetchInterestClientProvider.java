@@ -17,7 +17,7 @@ import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.config.EurekaCommonConfig;
+import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.interest.FullFetchBatchingRegistry;
 import com.netflix.eureka2.server.interest.FullFetchInterestClient;
 
@@ -28,12 +28,12 @@ public class FullFetchInterestClientProvider implements Provider<FullFetchIntere
 
     private static final String EUREKA_READ_CLIENT_ID = "eurekaReadClient";
 
-    private final EurekaCommonConfig config;
+    private final EurekaServerConfig config;
     private final EurekaClientMetricFactory clientMetricFactory;
     private final EurekaRegistryMetricFactory registryMetricFactory;
 
     @Inject
-    public FullFetchInterestClientProvider(EurekaCommonConfig config,
+    public FullFetchInterestClientProvider(EurekaServerConfig config,
                                            EurekaClientMetricFactory clientMetricFactory,
                                            EurekaRegistryMetricFactory registryMetricFactory) {
         this.config = config;
@@ -50,7 +50,7 @@ public class FullFetchInterestClientProvider implements Provider<FullFetchIntere
         BasicEurekaTransportConfig transportConfig = new BasicEurekaTransportConfig.Builder().build();
 
         SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(indexRegistry, registryMetricFactory);
-        ServerResolver discoveryResolver = WriteClusterResolver.createInterestResolver(config);
+        ServerResolver discoveryResolver = WriteClusterResolver.createInterestResolver(config.getEurekaClusterDiscovery());
 
         ClientChannelFactory<InterestChannel> channelFactory = new InterestChannelFactory(
                 EUREKA_READ_CLIENT_ID,
