@@ -256,6 +256,13 @@ public interface EurekaServerConfig {
     long getASGUpdateIntervalMs();
 
     /**
+     * Get the expiration value for the cached <em>ASG</em> information
+     *
+     * @return time in milliseconds.
+     */
+    long getASGCacheExpiryTimeoutMs();
+
+    /**
      * Gets the time for which the registry payload should be kept in the cache
      * if it is not invalidated by change events.
      *
