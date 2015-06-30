@@ -3,26 +3,34 @@ package com.netflix.eureka2.server;
 import javax.inject.Provider;
 
 import com.google.inject.Inject;
-import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
+import com.netflix.eureka2.client.Eurekas;
+import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
-import com.netflix.eureka2.server.config.EurekaCommonConfig;
+import com.netflix.eureka2.server.config.EurekaClusterDiscoveryConfig;
+import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 
 /**
  * @author Tomasz Bak
  */
 public class EurekaRegistrationClientProvider implements Provider<EurekaRegistrationClient> {
 
-    private final EurekaCommonConfig config;
+    private final EurekaServerTransportConfig transportConfig;
+    private final EurekaRegistryConfig registryConfig;
+    private final EurekaClusterDiscoveryConfig clusterDiscoveryConfig;
     private final EurekaClientMetricFactory clientMetricFactory;
     private final EurekaRegistryMetricFactory registryMetricFactory;
 
     @Inject
-    public EurekaRegistrationClientProvider(EurekaCommonConfig config,
+    public EurekaRegistrationClientProvider(EurekaServerTransportConfig transportConfig,
+                                            EurekaRegistryConfig registryConfig,
+                                            EurekaClusterDiscoveryConfig clusterDiscoveryConfig,
                                             EurekaClientMetricFactory clientMetricFactory,
                                             EurekaRegistryMetricFactory registryMetricFactory) {
-        this.config = config;
+        this.transportConfig = transportConfig;
+        this.registryConfig = registryConfig;
+        this.clusterDiscoveryConfig = clusterDiscoveryConfig;
         this.clientMetricFactory = clientMetricFactory;
         this.registryMetricFactory = registryMetricFactory;
     }
@@ -30,11 +38,11 @@ public class EurekaRegistrationClientProvider implements Provider<EurekaRegistra
     @Override
     public EurekaRegistrationClient get() {
         return Eurekas.newRegistrationClientBuilder()
-                .withTransportConfig(config)
-                .withRegistryConfig(config)
+                .withTransportConfig(transportConfig)
+                .withRegistryConfig(registryConfig)
                 .withClientMetricFactory(clientMetricFactory)
                 .withRegistryMetricFactory(registryMetricFactory)
-                .withServerResolver(WriteClusterResolver.createRegistrationResolver(config))
+                .withServerResolver(WriteClusterResolver.createRegistrationResolver(clusterDiscoveryConfig))
                 .build();
     }
 }

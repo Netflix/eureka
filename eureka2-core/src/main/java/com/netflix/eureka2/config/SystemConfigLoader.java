@@ -23,6 +23,18 @@ public final class SystemConfigLoader {
         return result;
     }
 
+    public static int getFromSystemPropertySafe(String key, int defaultValue) {
+        int result;
+        try {
+            result = Integer.parseInt(System.getProperty(key, ""+defaultValue));
+        } catch (Exception e) {
+            logger.warn("Error loading system property {}. Using a default {}", key, defaultValue);
+            result = defaultValue;
+        }
+
+        return result;
+    }
+
     public static String getFromSystemPropertySafe(String key, String defaultValue) {
         String result;
         try {

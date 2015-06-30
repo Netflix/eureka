@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.netflix.eureka2.Server;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
@@ -31,7 +32,6 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
-import com.netflix.eureka2.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;

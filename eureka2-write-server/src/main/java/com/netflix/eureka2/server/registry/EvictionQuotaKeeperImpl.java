@@ -4,11 +4,11 @@ import javax.inject.Inject;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.config.WriteServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -57,7 +57,7 @@ public class EvictionQuotaKeeperImpl implements EvictionQuotaKeeper {
     private final AtomicReference<EvictionState> evictionStateRef = new AtomicReference<>();
 
     @Inject
-    public EvictionQuotaKeeperImpl(final SourcedEurekaRegistry registry, WriteServerConfig config) {
+    public EvictionQuotaKeeperImpl(final SourcedEurekaRegistry registry, EurekaRegistryConfig config) {
         this.registry = registry;
         this.allowedPercentageDrop = config.getEvictionAllowedPercentageDrop();
 

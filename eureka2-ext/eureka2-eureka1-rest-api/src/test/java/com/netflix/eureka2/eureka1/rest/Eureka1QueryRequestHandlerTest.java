@@ -8,8 +8,6 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka2.eureka1.rest.query.Eureka2RegistryViewCache;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.eureka2.server.config.EurekaServerConfig.EurekaServerConfigBuilder;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import io.netty.buffer.ByteBuf;
@@ -28,6 +26,7 @@ import rx.functions.Func2;
 
 import static com.netflix.eureka2.eureka1.rest.AbstractEureka1RequestHandler.ROOT_PATH;
 import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka1xInstanceInfo;
+import static com.netflix.eureka2.server.config.bean.EurekaServerTransportConfigBean.anEurekaServerTransportConfig;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -56,8 +55,7 @@ public class Eureka1QueryRequestHandlerTest {
         V1_APPLICATIONS.setAppsHashCode("test");
     }
 
-    private final EurekaServerConfig config = new EurekaServerConfigBuilder().withHttpPort(0).build();
-    private final EurekaHttpServer httpServer = new EurekaHttpServer(config);
+    private final EurekaHttpServer httpServer = new EurekaHttpServer(anEurekaServerTransportConfig().build());
     private final Eureka2RegistryViewCache registryViewCache = mock(Eureka2RegistryViewCache.class);
     private Eureka1QueryRequestHandler queryResource;
 

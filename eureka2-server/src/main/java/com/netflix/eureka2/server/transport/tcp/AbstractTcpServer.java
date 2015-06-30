@@ -18,9 +18,8 @@ package com.netflix.eureka2.server.transport.tcp;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.inject.Provider;
 
-import com.netflix.eureka2.server.config.EurekaServerConfig;
+import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ConnectionHandler;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
@@ -36,7 +35,7 @@ public abstract class AbstractTcpServer {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractTcpServer.class);
 
-    protected final EurekaServerConfig config;
+    protected final EurekaServerTransportConfig config;
     protected final MetricEventsListenerFactory servoEventsListenerFactory;
     private final int serverPort;
     private final PipelineConfigurator<Object, Object> pipelineConfigurator;
@@ -44,7 +43,7 @@ public abstract class AbstractTcpServer {
     protected RxServer<Object, Object> server;
 
     protected AbstractTcpServer(MetricEventsListenerFactory servoEventsListenerFactory,
-                                EurekaServerConfig config,
+                                EurekaServerTransportConfig config,
                                 int serverPort,
                                 PipelineConfigurator<Object, Object> pipelineConfigurator,
                                 ConnectionHandler<Object, Object> tcpHandlerProvider) {

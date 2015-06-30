@@ -1,16 +1,16 @@
 package com.netflix.eureka2.server.service;
 
-import com.netflix.eureka2.Names;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.registry.instance.ServicePort;
-import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
-import rx.Observable;
-import rx.functions.Func1;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.HashSet;
+
+import com.netflix.eureka2.Names;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.instance.ServicePort;
+import com.netflix.eureka2.server.config.BridgeServerConfig;
+import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
+import rx.Observable;
+import rx.functions.Func1;
 
 /**
  * @author David Liu
@@ -22,11 +22,10 @@ public class EurekaBridgeServerSelfInfoResolver implements SelfInfoResolver {
 
     @Inject
     public EurekaBridgeServerSelfInfoResolver(
-            final EurekaServerConfig config,
-            final TcpInterestServer discoveryServer)
-    {
+            final BridgeServerConfig config,
+            final TcpInterestServer discoveryServer) {
         SelfInfoResolverChain resolverChain = new SelfInfoResolverChain(
-                new ConfigSelfInfoResolver(config),
+                new ConfigSelfInfoResolver(config.getEurekaInstance(), config.getEurekaTransport()),
                 // read server specific resolver
                 new ChainableSelfInfoResolver(Observable.just(new HashSet<ServicePort>())
                         .map(new Func1<HashSet<ServicePort>, InstanceInfo.Builder>() {
@@ -35,9 +34,9 @@ public class EurekaBridgeServerSelfInfoResolver implements SelfInfoResolver {
                                 ports.add(new ServicePort(Names.INTEREST, discoveryServer.serverPort(), false));
                                 return new InstanceInfo.Builder().withPorts(ports);
                             }
-                       })
+                        })
                 ),
-                new PeriodicDataCenterInfoResolver(config),
+                new PeriodicDataCenterInfoResolver(config.getEurekaInstance()),
                 // TODO override with more meaningful health check
                 new ChainableSelfInfoResolver(Observable.just(new InstanceInfo.Builder().withStatus(InstanceInfo.Status.UP)))
         );

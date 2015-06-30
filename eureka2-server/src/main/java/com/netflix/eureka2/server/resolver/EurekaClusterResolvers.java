@@ -37,67 +37,63 @@ public final class EurekaClusterResolvers {
         return new DnsWriteServerClusterResolver(domainName, registrationPort, interestPort, replicationPort, scheduler);
     }
 
-    public static EurekaClusterResolver writeClusterResolverFromConfiguration(String hostnameAndPorts, boolean attemptDnsResolve, Scheduler scheduler) {
-        ClusterAddress address = ClusterAddress.writeClusterAddressFrom(hostnameAndPorts);
+    public static EurekaClusterResolver writeClusterResolverFromConfiguration(ClusterAddress address, boolean attemptDnsResolve, Scheduler scheduler) {
         if (!attemptDnsResolve) {
             return new StaticEurekaClusterResolver(address);
         }
         return writeClusterResolverFromDns(address.getHostName(), address.getRegistrationPort(), address.getInterestPort(), address.getReplicationPort(), scheduler);
     }
 
-    public static EurekaClusterResolver writeClusterResolverFromConfiguration(List<String> hostnameAndPortsList, boolean attemptDnsResolve, Scheduler scheduler) {
-        if (hostnameAndPortsList.isEmpty()) {
+    public static EurekaClusterResolver writeClusterResolverFromConfiguration(List<ClusterAddress> clusterAddresses, boolean attemptDnsResolve, Scheduler scheduler) {
+        if (clusterAddresses.isEmpty()) {
             throw new IllegalArgumentException("Empty host name list provided");
         }
-        if (hostnameAndPortsList.size() == 1) {
-            return writeClusterResolverFromConfiguration(hostnameAndPortsList.get(0), attemptDnsResolve, scheduler);
+        if (clusterAddresses.size() == 1) {
+            return writeClusterResolverFromConfiguration(clusterAddresses.get(0), attemptDnsResolve, scheduler);
         }
-        List<ClusterAddress> clusterAddresses = ClusterAddress.writeClusterAddressesFrom(hostnameAndPortsList);
         if (!attemptDnsResolve) {
             return new StaticEurekaClusterResolver(clusterAddresses);
         }
-        List<EurekaClusterResolver> resolvers = new ArrayList<>(hostnameAndPortsList.size());
+        List<EurekaClusterResolver> resolvers = new ArrayList<>(clusterAddresses.size());
         for (ClusterAddress address : clusterAddresses) {
             resolvers.add(writeClusterResolverFromDns(address.getHostName(), address.getRegistrationPort(), address.getInterestPort(), address.getReplicationPort(), scheduler));
         }
         return new CompositeEurekaClusterResolver(resolvers);
     }
 
-    public static EurekaClusterResolver writeClusterResolverFromConfiguration(ResolverType type, List<String> hostnameAndPortsList, Scheduler scheduler) {
-        return writeClusterResolverFromConfiguration(hostnameAndPortsList, type == ResolverType.Dns, scheduler);
+    public static EurekaClusterResolver writeClusterResolverFromConfiguration(ResolverType type, List<ClusterAddress> clusterAddresses, Scheduler scheduler) {
+        return writeClusterResolverFromConfiguration(clusterAddresses, type == ResolverType.Dns, scheduler);
     }
 
     public static EurekaClusterResolver readClusterResolverFromDns(String domainName, int interestPort, Scheduler scheduler) {
         return new DnsReadServerClusterResolver(domainName, interestPort, scheduler);
     }
 
-    public static EurekaClusterResolver readClusterResolverFromConfiguration(String hostnameAndPorts, boolean attemptDnsResolve, Scheduler scheduler) {
-        ClusterAddress address = ClusterAddress.readClusterAddressFrom(hostnameAndPorts);
+    public static EurekaClusterResolver readClusterResolverFromConfiguration(ClusterAddress address, boolean attemptDnsResolve, Scheduler scheduler) {
         if (!attemptDnsResolve) {
             return new StaticEurekaClusterResolver(address);
         }
         return readClusterResolverFromDns(address.getHostName(), address.getInterestPort(), scheduler);
     }
 
-    public static EurekaClusterResolver readClusterResolverFromConfiguration(List<String> hostnameAndPortsList, boolean attemptDnsResolve, Scheduler scheduler) {
-        if (hostnameAndPortsList.isEmpty()) {
+    public static EurekaClusterResolver readClusterResolverFromConfiguration(List<ClusterAddress> clusterAddresses, boolean attemptDnsResolve, Scheduler scheduler) {
+        if (clusterAddresses.isEmpty()) {
             throw new IllegalArgumentException("Empty host name list provided");
         }
-        if (hostnameAndPortsList.size() == 1) {
-            return readClusterResolverFromConfiguration(hostnameAndPortsList.get(0), attemptDnsResolve, scheduler);
+        if (clusterAddresses.size() == 1) {
+            return readClusterResolverFromConfiguration(clusterAddresses.get(0), attemptDnsResolve, scheduler);
         }
-        List<ClusterAddress> clusterAddresses = ClusterAddress.readClusterAddressesFrom(hostnameAndPortsList);
         if (!attemptDnsResolve) {
             return new StaticEurekaClusterResolver(clusterAddresses);
         }
-        List<EurekaClusterResolver> resolvers = new ArrayList<>(hostnameAndPortsList.size());
+        List<EurekaClusterResolver> resolvers = new ArrayList<>(clusterAddresses.size());
         for (ClusterAddress address : clusterAddresses) {
             resolvers.add(readClusterResolverFromDns(address.getHostName(), address.getInterestPort(), scheduler));
         }
         return new CompositeEurekaClusterResolver(resolvers);
     }
 
-    public static EurekaClusterResolver readClusterResolverFromConfiguration(ResolverType type, List<String> hostnameAndPortsList, Scheduler scheduler) {
+    public static EurekaClusterResolver readClusterResolverFromConfiguration(ResolverType type, List<ClusterAddress> hostnameAndPortsList, Scheduler scheduler) {
         return readClusterResolverFromConfiguration(hostnameAndPortsList, type == ResolverType.Dns, scheduler);
     }
 }

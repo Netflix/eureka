@@ -20,11 +20,14 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
-import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.Eurekas;
+import com.netflix.eureka2.config.EurekaRegistryConfig;
+import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
-import com.netflix.eureka2.server.config.EurekaCommonConfig;
+import com.netflix.eureka2.server.config.EurekaClusterDiscoveryConfig;
+import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 
 /**
  * @author Tomasz Bak
@@ -32,15 +35,21 @@ import com.netflix.eureka2.server.config.EurekaCommonConfig;
 @Singleton
 public class EurekaInterestClientProvider implements Provider<EurekaInterestClient> {
 
-    private final EurekaCommonConfig config;
+    private final EurekaTransportConfig transportConfig;
+    private final EurekaRegistryConfig registryConfig;
+    private final EurekaClusterDiscoveryConfig clusterDiscoveryConfig;
     private final EurekaClientMetricFactory clientMetricFactory;
     private final EurekaRegistryMetricFactory registryMetricFactory;
 
     @Inject
-    public EurekaInterestClientProvider(EurekaCommonConfig config,
+    public EurekaInterestClientProvider(EurekaServerTransportConfig transportConfig,
+                                        EurekaRegistryConfig registryConfig,
+                                        EurekaClusterDiscoveryConfig clusterDiscoveryConfig,
                                         EurekaClientMetricFactory clientMetricFactory,
                                         EurekaRegistryMetricFactory registryMetricFactory) {
-        this.config = config;
+        this.transportConfig = transportConfig;
+        this.registryConfig = registryConfig;
+        this.clusterDiscoveryConfig = clusterDiscoveryConfig;
         this.clientMetricFactory = clientMetricFactory;
         this.registryMetricFactory = registryMetricFactory;
     }
@@ -48,11 +57,11 @@ public class EurekaInterestClientProvider implements Provider<EurekaInterestClie
     @Override
     public EurekaInterestClient get() {
         return Eurekas.newInterestClientBuilder()
-                .withTransportConfig(config)
-                .withRegistryConfig(config)
+                .withTransportConfig(transportConfig)
+                .withRegistryConfig(registryConfig)
                 .withClientMetricFactory(clientMetricFactory)
                 .withRegistryMetricFactory(registryMetricFactory)
-                .withServerResolver(WriteClusterResolver.createInterestResolver(config))
+                .withServerResolver(WriteClusterResolver.createInterestResolver(clusterDiscoveryConfig))
                 .build();
     }
 }

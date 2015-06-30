@@ -18,11 +18,10 @@ package com.netflix.eureka2.server.transport.tcp.registration;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import com.netflix.eureka2.Names;
-import com.netflix.eureka2.server.config.WriteServerConfig;
+import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import com.netflix.eureka2.server.transport.tcp.AbstractTcpServer;
 import com.netflix.eureka2.transport.EurekaTransports;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
@@ -34,7 +33,7 @@ import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 public class TcpRegistrationServer extends AbstractTcpServer {
 
     @Inject
-    public TcpRegistrationServer(WriteServerConfig config,
+    public TcpRegistrationServer(EurekaServerTransportConfig config,
                                  @Named(Names.REGISTRATION) MetricEventsListenerFactory servoEventsListenerFactory,
                                  TcpRegistrationHandler tcpRegistrationHandler) {
         super(servoEventsListenerFactory, config, config.getRegistrationPort(),

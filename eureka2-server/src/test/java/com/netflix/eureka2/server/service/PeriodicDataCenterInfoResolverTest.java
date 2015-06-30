@@ -1,9 +1,12 @@
 package com.netflix.eureka2.server.service;
 
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.config.EurekaCommonConfig;
+import com.netflix.eureka2.server.config.EurekaInstanceInfoConfig;
 import com.netflix.eureka2.testkit.data.builder.SampleAwsDataCenterInfo;
 import org.junit.Before;
 import org.junit.Test;
@@ -13,34 +16,32 @@ import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * @author David Liu
  */
 public class PeriodicDataCenterInfoResolverTest {
 
-    private static final long RESOLVE_INTERVAL = 30l;
+    private static final long RESOLVE_INTERVAL = 30L;
 
     private final TestScheduler scheduler = Schedulers.test();
     private final TestSubscriber<InstanceInfo.Builder> testSubscriber = new TestSubscriber<>();
     private final DataCenterInfo dataCenterInfo1 = SampleAwsDataCenterInfo.UsEast1a.build();
     private final DataCenterInfo dataCenterInfo2 = SampleAwsDataCenterInfo.UsEast1c.build();
 
-    private EurekaCommonConfig mockConfig;
+    private EurekaInstanceInfoConfig mockConfig;
     private Func0 dataCenterInfoFunc;
     private PeriodicDataCenterInfoResolver resolver;
 
     @Before
     public void setUp() {
-        mockConfig = mock(EurekaCommonConfig.class);
+        mockConfig = mock(EurekaInstanceInfoConfig.class);
         when(mockConfig.getDataCenterResolveIntervalSec()).thenReturn(RESOLVE_INTERVAL);
-        when(mockConfig.getMyDataCenterType()).thenReturn(LocalDataCenterInfo.DataCenterType.AWS);
+        when(mockConfig.getDataCenterType()).thenReturn(LocalDataCenterInfo.DataCenterType.AWS);
 
         dataCenterInfoFunc = mock(Func0.class);
         when(dataCenterInfoFunc.call())

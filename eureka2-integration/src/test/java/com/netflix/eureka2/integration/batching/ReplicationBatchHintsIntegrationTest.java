@@ -1,5 +1,8 @@
 package com.netflix.eureka2.integration.batching;
 
+import java.util.Arrays;
+import java.util.List;
+
 import com.netflix.eureka2.client.interest.BatchAwareIndexRegistry;
 import com.netflix.eureka2.client.interest.BatchingRegistry;
 import com.netflix.eureka2.client.interest.BatchingRegistryImpl;
@@ -8,6 +11,7 @@ import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
+import com.netflix.eureka2.junit.categories.LongRunningTest;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
 import com.netflix.eureka2.protocol.common.InterestSetNotification;
@@ -18,7 +22,6 @@ import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.ReceiverReplicationChannel;
-import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
 import com.netflix.eureka2.server.transport.tcp.replication.TestTcpReplicationHandler;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
@@ -30,9 +33,7 @@ import org.junit.experimental.categories.Category;
 import rx.Observable;
 import rx.subjects.ReplaySubject;
 
-import java.util.Arrays;
-import java.util.List;
-
+import static com.netflix.eureka2.server.config.bean.WriteServerConfigBean.aWriteServerConfig;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -41,7 +42,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author David Liu
  */
-@Category(IntegrationTest.class)
+@Category({IntegrationTest.class, LongRunningTest.class})
 public class ReplicationBatchHintsIntegrationTest extends AbstractBatchHintsIntegrationTest {
 
     private ChannelSet channelSet1;
@@ -70,7 +71,7 @@ public class ReplicationBatchHintsIntegrationTest extends AbstractBatchHintsInte
         when(selfInfoResolver.resolve()).thenReturn(Observable.just(SampleInstanceInfo.CliServer.build()));
 
         handler = new TestTcpReplicationHandler(
-                WriteServerConfig.writeBuilder().build(),
+                aWriteServerConfig().build(),
                 selfInfoResolver,
                 registry,
                 WriteServerMetricFactory.writeServerMetrics()

@@ -2,11 +2,12 @@ package com.netflix.eureka2.testkit.junit.resources;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.config.BasicEurekaTransportConfig;
-import com.netflix.eureka2.config.EurekaTransportConfig;
+import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment.EurekaDeploymentBuilder;
 import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources.EurekaExternalResource;
+
+import static com.netflix.eureka2.server.config.bean.EurekaServerTransportConfigBean.anEurekaServerTransportConfig;
 
 /**
  * @author Tomasz Bak
@@ -15,7 +16,7 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
 
     private final int writeClusterSize;
     private final int readClusterSize;
-    private final EurekaTransportConfig transportConfig;
+    private final EurekaServerTransportConfig transportConfig;
     private final boolean networkRouterEnabled;
 
     private EurekaDeployment eurekaDeployment;
@@ -25,14 +26,14 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
      */
     @Deprecated
     public EurekaDeploymentResource(int writeClusterSize, int readClusterSize) {
-        this(writeClusterSize, readClusterSize, new BasicEurekaTransportConfig.Builder().build());
+        this(writeClusterSize, readClusterSize, anEurekaServerTransportConfig().build());
     }
 
     /**
      * Use builder instead {@link EurekaDeploymentResourceBuilder}.
      */
     @Deprecated
-    public EurekaDeploymentResource(int writeClusterSize, int readClusterSize, EurekaTransportConfig transportConfig) {
+    public EurekaDeploymentResource(int writeClusterSize, int readClusterSize, EurekaServerTransportConfig transportConfig) {
         this.writeClusterSize = writeClusterSize;
         this.readClusterSize = readClusterSize;
         this.transportConfig = transportConfig;
@@ -133,7 +134,7 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
         private final int writeClusterSize;
         private final int readClusterSize;
 
-        private EurekaTransportConfig transportConfig;
+        private EurekaServerTransportConfig transportConfig;
         private boolean networkRouterEnabled;
 
         public EurekaDeploymentResourceBuilder(int writeClusterSize, int readClusterSize) {
@@ -146,7 +147,7 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
             return this;
         }
 
-        public EurekaDeploymentResourceBuilder withTransportConfig(EurekaTransportConfig transportConfig) {
+        public EurekaDeploymentResourceBuilder withTransportConfig(EurekaServerTransportConfig transportConfig) {
             this.transportConfig = transportConfig;
             return this;
         }

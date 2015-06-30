@@ -7,9 +7,13 @@ import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider.StrategyTy
  */
 public interface EurekaRegistryConfig {
 
-    public long getEvictionTimeoutMs();
+    long getEvictionTimeoutMs();
 
-    public StrategyType getEvictionStrategyType();
+    @Deprecated
+    StrategyType getEvictionStrategyType();
 
-    public String getEvictionStrategyValue();
+    @Deprecated
+    String getEvictionStrategyValue();
+
+    int getEvictionAllowedPercentageDrop();
 }

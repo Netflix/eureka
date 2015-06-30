@@ -16,6 +16,8 @@
 
 package com.netflix.eureka2.server.transport.tcp.replication;
 
+import javax.inject.Inject;
+
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
@@ -37,8 +39,6 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
-
-import javax.inject.Inject;
 
 /**
  * @author Tomasz Bak
@@ -67,7 +67,7 @@ public class TcpReplicationHandler implements ConnectionHandler<Object, Object> 
     public Observable<Void> handle(ObservableConnection<Object, Object> connection) {
         final MessageConnection broker = new HeartBeatConnection(
                 new BaseMessageConnection("replicationReceiver", connection, metricFactory.getReplicationReceiverConnectionMetrics()),
-                config.getHeartbeatIntervalMs(), 3,
+                config.getEurekaTransport().getHeartbeatIntervalMs(), 3,
                 Schedulers.computation()
         );
 

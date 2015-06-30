@@ -22,7 +22,7 @@ import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.AbstractEurekaServer;
-import com.netflix.eureka2.server.EurekaReadServerConfigurationModules;
+import com.netflix.eureka2.server.EurekaReadServerConfigurationModule;
 import com.netflix.eureka2.server.EurekaReadServerModule;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.interest.FullFetchBatchingRegistry;
@@ -31,32 +31,25 @@ import com.netflix.eureka2.server.module.CommonEurekaServerModule;
 import com.netflix.eureka2.server.module.EurekaExtensionModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
-import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer.ReadServerReport;
 import com.netflix.eureka2.testkit.netrouter.NetworkRouter;
 import com.netflix.governator.Governator;
 import com.netflix.governator.LifecycleInjector;
 
 import static com.netflix.eureka2.metric.EurekaRegistryMetricFactory.registryMetrics;
 import static com.netflix.eureka2.metric.client.EurekaClientMetricFactory.clientMetrics;
+import static com.netflix.eureka2.server.config.ServerConfigurationNames.DEFAULT_CONFIG_PREFIX;
 
 /**
  * @author Tomasz Bak
  */
-public class EmbeddedReadServerBuilder extends EmbeddedServerBuilder<EurekaServerConfig, ReadServerReport> {
+public class EmbeddedReadServerBuilder extends EmbeddedServerBuilder<EurekaServerConfig, EmbeddedReadServerBuilder> {
+
     private final String serverId;
-    private EurekaServerConfig configuration;
     private ServerResolver registrationResolver;
     private ServerResolver interestResolver;
-    private NetworkRouter networkRouter;
-    private boolean adminUI;
 
     public EmbeddedReadServerBuilder(String serverId) {
         this.serverId = serverId;
-    }
-
-    public EmbeddedReadServerBuilder withConfiguration(EurekaServerConfig configuration) {
-        this.configuration = configuration;
-        return this;
     }
 
     public EmbeddedReadServerBuilder withRegistrationResolver(ServerResolver registrationResolver) {
@@ -66,16 +59,6 @@ public class EmbeddedReadServerBuilder extends EmbeddedServerBuilder<EurekaServe
 
     public EmbeddedReadServerBuilder withInterestResolver(ServerResolver interestResolver) {
         this.interestResolver = interestResolver;
-        return this;
-    }
-
-    public EmbeddedReadServerBuilder withNetworkRouter(NetworkRouter networkRouter) {
-        this.networkRouter = networkRouter;
-        return this;
-    }
-
-    public EmbeddedReadServerBuilder withAdminUI(boolean adminUI) {
-        this.adminUI = adminUI;
         return this;
     }
 
@@ -102,19 +85,20 @@ public class EmbeddedReadServerBuilder extends EmbeddedServerBuilder<EurekaServe
 
         EurekaInterestClient interestClient = new FullFetchInterestClient(registry, channelFactory);
 
-
         List<Module> coreModules = new ArrayList<>();
 
         if (configuration == null) {
-            coreModules.add(EurekaReadServerConfigurationModules.fromArchaius());
+            coreModules.add(EurekaReadServerConfigurationModule.fromArchaius(DEFAULT_CONFIG_PREFIX));
         } else {
-            coreModules.add(EurekaReadServerConfigurationModules.fromConfig(configuration));
+            coreModules.add(EurekaReadServerConfigurationModule.fromConfig(configuration));
         }
         coreModules.add(new CommonEurekaServerModule());
-        coreModules.add(new EurekaExtensionModule(ServerType.Read));
+        if (ext) {
+            coreModules.add(new EurekaExtensionModule(ServerType.Read));
+        }
         coreModules.add(new EurekaReadServerModule(registrationClient, interestClient));
         if (adminUI) {
-            coreModules.add(new EmbeddedKaryonAdminModule(configuration.getWebAdminPort()));
+            coreModules.add(new EmbeddedKaryonAdminModule(configuration.getEurekaTransport().getWebAdminPort()));
         }
 
         List<Module> overrides = new ArrayList<>();

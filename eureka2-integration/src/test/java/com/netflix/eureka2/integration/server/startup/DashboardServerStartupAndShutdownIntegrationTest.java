@@ -1,12 +1,21 @@
 package com.netflix.eureka2.integration.server.startup;
 
 import com.netflix.eureka2.EurekaDashboardRunner;
+import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.config.EurekaDashboardConfig;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.junit.categories.LongRunningTest;
+import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
+import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider.StrategyType;
 import com.netflix.eureka2.server.resolver.EurekaClusterResolvers.ResolverType;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+
+import static com.netflix.eureka2.config.bean.EurekaDashboardConfigBean.aDashboardConfig;
+import static com.netflix.eureka2.server.config.bean.EurekaClusterDiscoveryConfigBean.anEurekaClusterDiscoveryConfig;
+import static com.netflix.eureka2.server.config.bean.EurekaInstanceInfoConfigBean.anEurekaInstanceInfoConfig;
+import static com.netflix.eureka2.server.config.bean.EurekaServerRegistryConfigBean.anEurekaServerRegistryConfig;
+import static com.netflix.eureka2.server.config.bean.EurekaServerTransportConfigBean.anEurekaServerTransportConfig;
 
 /**
  * @author Tomasz Bak
@@ -17,14 +26,42 @@ public class DashboardServerStartupAndShutdownIntegrationTest extends AbstractSt
     public static final String SERVER_NAME = "dashboard-server-startupAndShutdown";
 
     @Test(timeout = 60000)
-    public void testStartsWithCommandLineParameters() throws Exception {
-        EurekaDashboardConfig config = EurekaDashboardConfig.newBuilder()
-                .withAppName(SERVER_NAME)
-                .withResolverType(ResolverType.Fixed)
-                .withWebAdminPort(0)
-                .withShutDownPort(0)
-                .withServerList(writeServerList)
+    public void testStartsWithExplicitConfig() throws Exception {
+        EurekaDashboardConfig config = aDashboardConfig()
+                .withRegistryConfig(
+                        anEurekaServerRegistryConfig()
+                                .withEvictionStrategyType(StrategyType.PercentageDrop)
+                                .withEvictionStrategyValue("20")
+                                .withEvictionTimeoutMs(30000)
+                                .build()
+                )
+                .withInstanceInfoConfig(
+                        anEurekaInstanceInfoConfig()
+                                .withDataCenterResolveIntervalSec(30000)
+                                .withDataCenterType(DataCenterType.Basic)
+                                .withEurekaApplicationName(SERVER_NAME)
+                                .withEurekaVipAddress(SERVER_NAME)
+                                .build()
+                )
+                .withTransportConfig(
+                        anEurekaServerTransportConfig()
+                                .withCodec(CodecType.Avro)
+                                .withConnectionAutoTimeoutMs(30 * 60 * 1000)
+                                .withHeartbeatIntervalMs(30000)
+                                .withHttpPort(0)
+                                .withInterestPort(0)
+                                .withShutDownPort(0)
+                                .withWebAdminPort(0)
+                                .build()
+                )
+                .withClusterDiscoveryConfig(
+                        anEurekaClusterDiscoveryConfig()
+                                .withClusterAddresses(clusterAddresses)
+                                .withClusterResolverType(ResolverType.Fixed)
+                                .build()
+                )
                 .build();
+
         EurekaDashboardRunner server = new EurekaDashboardRunner(config);
         executeAndVerifyLifecycle(server, SERVER_NAME);
     }

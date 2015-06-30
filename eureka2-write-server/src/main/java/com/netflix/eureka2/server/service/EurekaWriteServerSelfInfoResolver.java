@@ -8,7 +8,7 @@ import com.google.inject.Provider;
 import com.netflix.eureka2.Names;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.ServicePort;
-import com.netflix.eureka2.server.config.EurekaServerConfig;
+import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
 import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
@@ -26,13 +26,13 @@ public class EurekaWriteServerSelfInfoResolver implements SelfInfoResolver {
 
     @Inject
     public EurekaWriteServerSelfInfoResolver(
-            final EurekaServerConfig config,
+            final WriteServerConfig config,
             final EurekaHttpServer httpServer,
             final Provider<TcpRegistrationServer> registrationServer,
             final Provider<TcpReplicationServer> replicationServer,
             final Provider<TcpInterestServer> discoveryServer) {
         SelfInfoResolverChain resolverChain = new SelfInfoResolverChain(
-                new ConfigSelfInfoResolver(config),
+                new ConfigSelfInfoResolver(config.getEurekaInstance(), config.getEurekaTransport()),
                 // write server specific resolver
                 new ChainableSelfInfoResolver(Observable.just(new HashSet<ServicePort>())
                         .map(new Func1<HashSet<ServicePort>, InstanceInfo.Builder>() {
@@ -47,7 +47,7 @@ public class EurekaWriteServerSelfInfoResolver implements SelfInfoResolver {
                             }
                         })
                 ),
-                new PeriodicDataCenterInfoResolver(config),
+                new PeriodicDataCenterInfoResolver(config.getEurekaInstance()),
                 // TODO override with more meaningful health check
                 new ChainableSelfInfoResolver(Observable.just(new InstanceInfo.Builder().withStatus(InstanceInfo.Status.UP)))
         );

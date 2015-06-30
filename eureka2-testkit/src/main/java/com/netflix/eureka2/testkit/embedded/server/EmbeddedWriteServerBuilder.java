@@ -10,7 +10,7 @@ import com.google.inject.util.Modules;
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.server.AbstractEurekaServer;
-import com.netflix.eureka2.server.EurekaWriteServerConfigurationModules;
+import com.netflix.eureka2.server.EurekaWriteServerConfigurationModule;
 import com.netflix.eureka2.server.EurekaWriteServerModule;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.config.WriteServerConfig;
@@ -21,39 +21,22 @@ import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
-import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer.WriteServerReport;
 import com.netflix.eureka2.testkit.netrouter.NetworkRouter;
 import com.netflix.governator.Governator;
 import com.netflix.governator.LifecycleInjector;
 import rx.Observable;
 
+import static com.netflix.eureka2.server.config.ServerConfigurationNames.DEFAULT_CONFIG_PREFIX;
+
 /**
  * @author Tomasz Bak
  */
-public class EmbeddedWriteServerBuilder extends EmbeddedServerBuilder<WriteServerConfig, WriteServerReport> {
+public class EmbeddedWriteServerBuilder extends EmbeddedServerBuilder<WriteServerConfig, EmbeddedWriteServerBuilder> {
 
-    private WriteServerConfig configuration;
     private Observable<ChangeNotification<Server>> replicationPeers;
-    private NetworkRouter networkRouter;
-    private boolean adminUI;
-
-    public EmbeddedWriteServerBuilder withConfiguration(WriteServerConfig configuration) {
-        this.configuration = configuration;
-        return this;
-    }
 
     public EmbeddedWriteServerBuilder withReplicationPeers(Observable<ChangeNotification<Server>> replicationPeers) {
         this.replicationPeers = replicationPeers;
-        return this;
-    }
-
-    public EmbeddedWriteServerBuilder withNetworkRouter(NetworkRouter networkRouter) {
-        this.networkRouter = networkRouter;
-        return this;
-    }
-
-    public EmbeddedWriteServerBuilder withAdminUI(boolean adminUI) {
-        this.adminUI = adminUI;
         return this;
     }
 
@@ -61,16 +44,16 @@ public class EmbeddedWriteServerBuilder extends EmbeddedServerBuilder<WriteServe
         List<Module> coreModules = new ArrayList<>();
 
         if (configuration == null) {
-            coreModules.add(EurekaWriteServerConfigurationModules.fromArchaius());
+            coreModules.add(EurekaWriteServerConfigurationModule.fromArchaius(DEFAULT_CONFIG_PREFIX));
         } else {
-            coreModules.add(EurekaWriteServerConfigurationModules.fromConfig(configuration));
+            coreModules.add(EurekaWriteServerConfigurationModule.fromConfig(configuration));
         }
         coreModules.add(new CommonEurekaServerModule());
         coreModules.add(new OverridesModule());
         coreModules.add(new EurekaExtensionModule(ServerType.Write));
         coreModules.add(new EurekaWriteServerModule());
         if (adminUI) {
-            coreModules.add(new EmbeddedKaryonAdminModule(configuration.getWebAdminPort()));
+            coreModules.add(new EmbeddedKaryonAdminModule(configuration.getEurekaTransport().getWebAdminPort()));
         }
 
         List<Module> overrides = new ArrayList<>();

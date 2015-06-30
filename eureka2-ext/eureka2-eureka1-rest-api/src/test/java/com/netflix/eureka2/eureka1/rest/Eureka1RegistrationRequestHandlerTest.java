@@ -10,8 +10,6 @@ import com.netflix.eureka2.eureka1.rest.codec.XStreamEureka1DataCodec;
 import com.netflix.eureka2.eureka1.rest.registry.Eureka1RegistryProxy;
 import com.netflix.eureka2.eureka1.rest.registry.Eureka1RegistryProxy.Result;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.eureka2.server.config.EurekaServerConfig.EurekaServerConfigBuilder;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import io.netty.buffer.ByteBuf;
@@ -29,6 +27,7 @@ import rx.functions.Func1;
 
 import static com.netflix.eureka2.eureka1.rest.AbstractEureka1RequestHandler.ROOT_PATH;
 import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka1xInstanceInfo;
+import static com.netflix.eureka2.server.config.bean.EurekaServerTransportConfigBean.anEurekaServerTransportConfig;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -45,8 +44,7 @@ public class Eureka1RegistrationRequestHandlerTest {
     private static final com.netflix.appinfo.InstanceInfo V1_SAMPLE_INSTANCE =
             toEureka1xInstanceInfo(V2_SAMPLE_INSTANCE);
 
-    private final EurekaServerConfig config = new EurekaServerConfigBuilder().withHttpPort(0).build();
-    private final EurekaHttpServer httpServer = new EurekaHttpServer(config);
+    private final EurekaHttpServer httpServer = new EurekaHttpServer(anEurekaServerTransportConfig().build());
 
     private final Eureka1RegistryProxy registryProxy = mock(Eureka1RegistryProxy.class);
 
