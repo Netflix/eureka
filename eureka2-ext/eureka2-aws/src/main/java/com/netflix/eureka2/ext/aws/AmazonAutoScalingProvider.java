@@ -35,8 +35,6 @@ public class AmazonAutoScalingProvider implements Provider<AmazonAutoScaling> {
 
     @PreDestroy
     public void shutdown() {
-        if (amazonAutoScaling != null) {
-            amazonAutoScaling.shutdown();
-        }
+        amazonAutoScaling.shutdown();
     }
 }

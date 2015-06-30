@@ -17,6 +17,7 @@
 dependencies {
     compile project(':eureka2-write-server')
 
+    compile "com.amazonaws:aws-java-sdk-s3:${aws_version}"
     compile "com.amazonaws:aws-java-sdk-ec2:${aws_version}"
     compile "com.amazonaws:aws-java-sdk-autoscaling:${aws_version}"
 

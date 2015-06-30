@@ -108,6 +108,13 @@ public class ExtTestSubscriber<T> extends Subscriber<T> {
         return available.poll(24, TimeUnit.HOURS);
     }
 
+    public T getLatestItem() {
+        if (items.isEmpty()) {
+            return null;
+        }
+        return items.get(items.size() - 1);
+    }
+
     public List<T> getOnNextItems() {
         return new ArrayList<>(items);
     }

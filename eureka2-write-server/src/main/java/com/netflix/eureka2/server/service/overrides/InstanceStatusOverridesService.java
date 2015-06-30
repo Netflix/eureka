@@ -1,4 +1,4 @@
-package com.netflix.eureka2.ext.aws;
+package com.netflix.eureka2.server.service.overrides;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -6,28 +6,29 @@ import javax.inject.Singleton;
 import com.netflix.eureka2.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
-import com.netflix.eureka2.server.service.overrides.OverridesService;
 import com.netflix.eureka2.utils.rx.RxFunctions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Func1;
 import rx.functions.Func2;
 
 /**
- * Override service loading ASG status from AWS.
+ * An overrides service implementation that loads overrides from a specified override source.
  *
  * @author Tomasz Bak
  */
 @Singleton
-public class AsgOverrideService implements OverridesService {
+public class InstanceStatusOverridesService implements OverridesService {
 
+    private static final Logger logger = LoggerFactory.getLogger(InstanceStatusOverridesService.class);
 
-    private final AsgStatusRegistry asgStatusRegistry;
+    private final InstanceStatusOverridesView overridesRegistry;
     private volatile EurekaRegistrationProcessor<InstanceInfo> delegate;
 
     @Inject
-    public AsgOverrideService(AsgStatusRegistry asgStatusRegistry) {
-        this.asgStatusRegistry = asgStatusRegistry;
+    public InstanceStatusOverridesService(InstanceStatusOverridesView overridesRegistry) {
+        this.overridesRegistry = overridesRegistry;
     }
 
     @Override
@@ -47,33 +48,33 @@ public class AsgOverrideService implements OverridesService {
                 .concatMap(new Func1<InstanceInfo, Observable<Boolean>>() {
                     @Override
                     public Observable<Boolean> call(InstanceInfo instanceInfo) {
-                        return asgStatusRegistry.asgStatusUpdates(instanceInfo.getAsg());
+                        return overridesRegistry.shouldApplyOutOfService(instanceInfo);
                     }
                 });
 
-        Observable<InstanceInfo> overridenUpdates = RxFunctions.combineWithOptional(
+        Observable<InstanceInfo> overriddenUpdates = RxFunctions.combineWithOptional(
                 sharedUpdates,
                 asgOverrides,
                 new Func2<InstanceInfo, Boolean, InstanceInfo>() {
                     @Override
-                    public InstanceInfo call(InstanceInfo instanceInfo, Boolean asgOpen) {
-                        if (asgOpen || instanceInfo.getStatus() == Status.DOWN) {
+                    public InstanceInfo call(InstanceInfo instanceInfo, Boolean shouldApply) {
+                        if (!shouldApply || instanceInfo.getStatus() == InstanceInfo.Status.DOWN) {
                             return instanceInfo;
                         }
-                        return new InstanceInfo.Builder().withInstanceInfo(instanceInfo).withStatus(Status.OUT_OF_SERVICE).build();
+                        return new InstanceInfo.Builder().withInstanceInfo(instanceInfo).withStatus(InstanceInfo.Status.OUT_OF_SERVICE).build();
                     }
                 });
 
-        return delegate.register(id, overridenUpdates, source);
+        return delegate.register(id, overriddenUpdates, source);
     }
 
     @Override
-    public Observable<Boolean> register(InstanceInfo registrant, Source source) {
+    public Observable<Boolean> register(final InstanceInfo instanceInfo, final Source source) {
         throw new IllegalStateException("method not implemented");
     }
 
     @Override
-    public Observable<Boolean> unregister(InstanceInfo registrant, Source source) {
+    public Observable<Boolean> unregister(final InstanceInfo instanceInfo, final Source source) {
         throw new IllegalStateException("method not implemented");
     }
 

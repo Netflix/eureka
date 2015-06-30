@@ -1,7 +1,7 @@
 package com.netflix.eureka2.server.service.overrides;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.MapBinder;
 
 /**
  * A Governator/Guice module for the override functionality.
@@ -11,10 +11,12 @@ import com.google.inject.multibindings.Multibinder;
 public class OverridesModule extends AbstractModule {
     @Override
     protected void configure() {
-        Multibinder<OverridesService> multibinder = Multibinder.newSetBinder(binder(), OverridesService.class);
-        multibinder.addBinding().to(OverridesServiceImpl.class);
 
-        // override this binding with more specific impls in non-local-testing environments
-        bind(OverridesRegistry.class).to(InMemoryOverridesRegistry.class);
+        bind(InstanceStatusOverridesSource.class).to(InMemoryStatusOverridesRegistry.class);
+        bind(InstanceStatusOverridesView.class).to(InMemoryStatusOverridesRegistry.class);
+
+        MapBinder<Integer, OverridesService> mapbinder = MapBinder.newMapBinder(binder(), Integer.class, OverridesService.class);
+        // for ordering
+        mapbinder.addBinding(0).to(InstanceStatusOverridesService.class);
     }
 }

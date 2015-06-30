@@ -16,7 +16,6 @@
 
 package com.netflix.eureka2.server;
 
-import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.netflix.eureka2.interests.IndexRegistry;
 import com.netflix.eureka2.interests.IndexRegistryImpl;
@@ -45,9 +44,7 @@ import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.server.service.bootstrap.BackupClusterBootstrapService;
 import com.netflix.eureka2.server.service.bootstrap.RegistryBootstrapCoordinator;
 import com.netflix.eureka2.server.service.bootstrap.RegistryBootstrapService;
-import com.netflix.eureka2.server.service.overrides.InMemoryOverridesSource;
-import com.netflix.eureka2.server.service.overrides.LoadingOverridesRegistry;
-import com.netflix.eureka2.server.service.overrides.OverridesRegistry;
+import com.netflix.eureka2.server.service.overrides.OverridesModule;
 import com.netflix.eureka2.server.service.replication.ReplicationService;
 import com.netflix.eureka2.server.spi.ExtensionContext;
 import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
@@ -73,8 +70,6 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
 
         bind(EurekaRegistrationProcessor.class).annotatedWith(Names.named(REGISTRATION)).toProvider(RegistrationChannelProcessorProvider.class);
         bind(EvictionQuotaKeeper.class).to(EvictionQuotaKeeperImpl.class);
-        bind(LoadingOverridesRegistry.ExternalOverridesSource.class).to(InMemoryOverridesSource.class).in(Scopes.SINGLETON);
-        bind(OverridesRegistry.class).to(LoadingOverridesRegistry.class);
 
         bind(EvictionQueue.class).to(EvictionQueueImpl.class).asEagerSingleton();
         bind(EvictionStrategy.class).toProvider(EvictionStrategyProvider.class);
@@ -107,5 +102,7 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
         bind(SelfRegistrationService.class).to(EurekaWriteServerSelfRegistrationService.class).asEagerSingleton();
 
         bind(AbstractEurekaServer.class).to(EurekaWriteServer.class);
+
+        install(new OverridesModule());
     }
 }

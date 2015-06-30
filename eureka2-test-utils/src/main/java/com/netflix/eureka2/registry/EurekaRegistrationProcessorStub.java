@@ -51,7 +51,7 @@ public class EurekaRegistrationProcessorStub implements EurekaRegistrationProces
     }
 
     public void verifyRegisteredWith(InstanceInfo expected) {
-        InstanceInfo next = registrationUpdateSubscriber.takeNext();
+        InstanceInfo next = registrationUpdateSubscriber.getLatestItem();
         assertThat(next, is(notNullValue()));
         assertThat(next, is(equalTo(expected)));
     }

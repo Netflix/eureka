@@ -3,12 +3,15 @@ package com.netflix.eureka2.ext.aws;
 import javax.inject.Singleton;
 
 import com.amazonaws.services.autoscaling.AmazonAutoScaling;
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.google.inject.Provides;
-import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.MapBinder;
 import com.netflix.archaius.Config;
 import com.netflix.archaius.PropertyFactory;
 import com.netflix.archaius.ProxyFactory;
 import com.netflix.archaius.property.PrefixedObservablePropertyFactory;
+import com.netflix.eureka2.server.service.overrides.InstanceStatusOverridesSource;
+import com.netflix.eureka2.server.service.overrides.InstanceStatusOverridesView;
 import com.netflix.eureka2.server.service.overrides.OverridesService;
 import com.netflix.eureka2.server.spi.ExtAbstractModule;
 
@@ -22,9 +25,16 @@ public class AwsServiceModule extends ExtAbstractModule {
     @Override
     protected void configure() {
         bind(AmazonAutoScaling.class).toProvider(AmazonAutoScalingProvider.class);
+        bind(AmazonS3Client.class).toProvider(AmazonS3ClientProvider.class);
 
-        Multibinder<OverridesService> multibinder = Multibinder.newSetBinder(binder(), OverridesService.class);
-        multibinder.addBinding().to(AsgOverrideService.class);
+        bind(InstanceStatusOverridesView.class).to(AsgStatusOverridesView.class);
+        bind(InstanceStatusOverridesView.class).to(S3StatusOverridesRegistry.class);
+        bind(InstanceStatusOverridesSource.class).to(S3StatusOverridesRegistry.class);
+
+        MapBinder<Integer, OverridesService> mapbinder = MapBinder.newMapBinder(binder(), Integer.class, OverridesService.class);
+        // for ordering
+        mapbinder.addBinding(0).to(AsgStatusOverridesService.class);
+        mapbinder.addBinding(1).to(S3StatusOverridesService.class);
     }
 
     @Provides

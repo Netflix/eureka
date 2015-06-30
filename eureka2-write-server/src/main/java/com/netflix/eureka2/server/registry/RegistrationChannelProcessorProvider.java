@@ -5,7 +5,8 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.util.Iterator;
-import java.util.Set;
+import java.util.Map;
+import java.util.TreeMap;
 
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.registry.EurekaRegistrationProcessor;
@@ -23,7 +24,7 @@ public class RegistrationChannelProcessorProvider implements Provider<EurekaRegi
 
     @Inject
     public RegistrationChannelProcessorProvider(SourcedEurekaRegistry sourcedEurekaRegistry,
-                                                Set<OverridesService> overrideServices,
+                                                Map<Integer, OverridesService> overrideServices,
                                                 EvictionQuotaKeeper evictionQuotaKeeper,
                                                 EurekaRegistryMetricFactory metricFactory) {
         this.preservableRegistrationProcessor = new PreservableRegistryProcessor(
@@ -43,11 +44,12 @@ public class RegistrationChannelProcessorProvider implements Provider<EurekaRegi
         return preservableRegistrationProcessor;
     }
 
-    private static OverridesService combine(SourcedEurekaRegistry sourcedEurekaRegistry, Set<OverridesService> overrideServices) {
+    private static OverridesService combine(SourcedEurekaRegistry sourcedEurekaRegistry, Map<Integer, OverridesService> overrideServices) {
         if (overrideServices.isEmpty()) {
             throw new IllegalArgumentException("No override service provided");
         }
-        Iterator<OverridesService> it = overrideServices.iterator();
+        TreeMap<Integer, OverridesService> sorted = new TreeMap<>(overrideServices);
+        Iterator<OverridesService> it = sorted.values().iterator();
         OverridesService head = it.next();
         OverridesService tail = head;
         while (it.hasNext()) {
