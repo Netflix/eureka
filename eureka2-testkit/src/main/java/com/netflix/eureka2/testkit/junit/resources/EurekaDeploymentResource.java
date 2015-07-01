@@ -18,6 +18,7 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
     private final int readClusterSize;
     private final EurekaServerTransportConfig transportConfig;
     private final boolean networkRouterEnabled;
+    private final boolean extensionsEnabled;
 
     private EurekaDeployment eurekaDeployment;
 
@@ -38,6 +39,7 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
         this.readClusterSize = readClusterSize;
         this.transportConfig = transportConfig;
         this.networkRouterEnabled = false;
+        this.extensionsEnabled = false;
     }
 
     private EurekaDeploymentResource(EurekaDeploymentResourceBuilder builder) {
@@ -45,6 +47,7 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
         this.readClusterSize = builder.readClusterSize;
         this.transportConfig = builder.transportConfig;
         this.networkRouterEnabled = builder.networkRouterEnabled;
+        this.extensionsEnabled = builder.includeExtensions;
     }
 
     public EurekaDeployment getEurekaDeployment() {
@@ -115,6 +118,7 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
                 .withEphemeralPorts(true)
                 .withTransportConfig(transportConfig)
                 .withNetworkRouter(networkRouterEnabled)
+                .withExtensions(extensionsEnabled)
                 .build();
     }
 
@@ -136,6 +140,7 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
 
         private EurekaServerTransportConfig transportConfig;
         private boolean networkRouterEnabled;
+        private boolean includeExtensions;
 
         public EurekaDeploymentResourceBuilder(int writeClusterSize, int readClusterSize) {
             this.writeClusterSize = writeClusterSize;
@@ -144,6 +149,11 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
 
         public EurekaDeploymentResourceBuilder withNetworkRouter(boolean networkRouterEnabled) {
             this.networkRouterEnabled = networkRouterEnabled;
+            return this;
+        }
+
+        public EurekaDeploymentResourceBuilder withExtensions(boolean includeExtensions) {
+            this.includeExtensions = includeExtensions;
             return this;
         }
 

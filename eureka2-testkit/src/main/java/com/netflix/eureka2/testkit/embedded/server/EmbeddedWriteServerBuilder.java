@@ -50,7 +50,6 @@ public class EmbeddedWriteServerBuilder extends EmbeddedServerBuilder<WriteServe
         }
         coreModules.add(new CommonEurekaServerModule());
         coreModules.add(new OverridesModule());
-        coreModules.add(new EurekaExtensionModule(ServerType.Write));
         coreModules.add(new EurekaWriteServerModule());
         if (adminUI) {
             coreModules.add(new EmbeddedKaryonAdminModule(configuration.getEurekaTransport().getWebAdminPort()));
@@ -68,6 +67,10 @@ public class EmbeddedWriteServerBuilder extends EmbeddedServerBuilder<WriteServe
         );
         if (networkRouter != null) {
             overrides.add(new NetworkRouterModule(networkRouter));
+        }
+
+        if(ext) {
+            coreModules.add(new EurekaExtensionModule(ServerType.Write));
         }
 
         LifecycleInjector injector = Governator.createInjector(Modules.override(Modules.combine(coreModules)).with(overrides));

@@ -98,6 +98,7 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
                 .withReplicationPeers(resolvePeers(ServiceType.Replication))
                 .withNetworkRouter(networkRouter)
                 .withAdminUI(withAdminUI)
+                .withExt(withExt)
                 .build();
     }
 

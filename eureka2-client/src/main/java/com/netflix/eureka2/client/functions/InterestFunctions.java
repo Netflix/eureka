@@ -15,7 +15,11 @@ import rx.functions.Func1;
 /**
  * A collection of functions that can be applied to an Eureka interest stream.
  * For more generic versions of some of these functions that may not be InstanceInfo specific,
- * see {@link com.netflix.eureka2.interests.ChangeNotifications}
+ * see {@link com.netflix.eureka2.interests.ChangeNotifications}.
+ *
+ * Typical usages will be:
+ *   Observable<ChangeNotification<InstanceInfo>>.buffers().collapse() to return collapsed lists of InstanceInfo updates
+ *   Observable<ChangeNotification<InstanceInfo>>.buffers().snapshots() to return snapshot lists of InstanceInfos
  *
  * @author Tomasz Bak
  */
@@ -92,6 +96,25 @@ public final class InterestFunctions {
      * @return observable of distinct set objects
      */
     public static Transformer<List<ChangeNotification<InstanceInfo>>, LinkedHashSet<InstanceInfo>> snapshots() {
-        return ChangeNotifications.snapshots();
+        return ChangeNotifications.snapshots(ChangeNotifications.instanceInfoIdentity());
+    }
+
+    /**
+     * An Rx compose operator that given a list of change notifications, collapses changes for each instance
+     * to its final value. The following rules are applied:
+     * <ul>
+     *     <li>{ Add, Delete } = { Delete }</li>
+     *     <li>{ Add, Modify } = { Add }</li>
+     *     <li>{ Modify, Add } = { Add }</li>
+     *     <li>{ Modify, Delete } = { Delete }</li>
+     *     <li>{ Delete, Add } = { Add }</li>
+     *     <li>{ Delete, Modify } = { Modify }</li>
+     * </ul>
+     * <p>
+     * For example if there is a change notification list [ A{Add}, B{Modify}, A{Modify}, B{Remove}, C{Remove} ],
+     * applying this operator to the list will result in a new list [ A{Add}, B{Remove}, C{Remove}].
+     */
+    public static Transformer<List<ChangeNotification<InstanceInfo>>, List<ChangeNotification<InstanceInfo>>> collapse() {
+        return ChangeNotifications.collapse(ChangeNotifications.instanceInfoIdentity());
     }
 }

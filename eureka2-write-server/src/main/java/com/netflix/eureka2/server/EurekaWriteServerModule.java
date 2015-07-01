@@ -44,7 +44,6 @@ import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.server.service.bootstrap.BackupClusterBootstrapService;
 import com.netflix.eureka2.server.service.bootstrap.RegistryBootstrapCoordinator;
 import com.netflix.eureka2.server.service.bootstrap.RegistryBootstrapService;
-import com.netflix.eureka2.server.service.overrides.OverridesModule;
 import com.netflix.eureka2.server.service.replication.ReplicationService;
 import com.netflix.eureka2.server.spi.ExtensionContext;
 import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
@@ -73,7 +72,6 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
 
         bind(EvictionQueue.class).to(EvictionQueueImpl.class).asEagerSingleton();
         bind(EvictionStrategy.class).toProvider(EvictionStrategyProvider.class);
-        bind(AuditServiceController.class).asEagerSingleton();
         bind(RegistryBootstrapCoordinator.class).asEagerSingleton();
         bind(RegistryBootstrapService.class).to(BackupClusterBootstrapService.class);
 
@@ -102,8 +100,6 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
         bind(SelfRegistrationService.class).to(EurekaWriteServerSelfRegistrationService.class).asEagerSingleton();
 
         bind(AbstractEurekaServer.class).to(EurekaWriteServer.class);
-
-        install(new OverridesModule());
     }
 
 }

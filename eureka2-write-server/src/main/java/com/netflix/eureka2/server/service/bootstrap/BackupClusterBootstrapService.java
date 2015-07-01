@@ -11,15 +11,11 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.ChangeNotifications;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.Source.Origin;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.resolver.ClusterAddress;
 import com.netflix.eureka2.server.resolver.EurekaClusterResolver;
-import com.netflix.eureka2.server.resolver.EurekaClusterResolvers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Notification;
@@ -55,7 +51,7 @@ public class BackupClusterBootstrapService implements RegistryBootstrapService {
     public Observable<Void> loadIntoRegistry(final SourcedEurekaRegistry<InstanceInfo> registry, final Source source) {
         return bootstrapResolver.clusterTopologyChanges()
                 .compose(ChangeNotifications.<ClusterAddress>buffers())
-                .compose(ChangeNotifications.<ClusterAddress>snapshots())
+                .compose(ChangeNotifications.snapshots(CLUSTER_ADDRESS_IDENTITY))
                 .take(1)
                 .flatMap(new Func1<LinkedHashSet<ClusterAddress>, Observable<Void>>() {
                     @Override
@@ -154,4 +150,12 @@ public class BackupClusterBootstrapService implements RegistryBootstrapService {
     protected LightEurekaInterestClient createLightEurekaInterestClient(Server server) {
         return new LightEurekaInterestClient(server, scheduler);
     }
+
+    private static ChangeNotifications.Identity<ClusterAddress, String> CLUSTER_ADDRESS_IDENTITY =
+            new ChangeNotifications.Identity<ClusterAddress, String>() {
+                @Override
+                public String getId(ClusterAddress data) {
+                    return data.getHostName();
+                }
+            };
 }

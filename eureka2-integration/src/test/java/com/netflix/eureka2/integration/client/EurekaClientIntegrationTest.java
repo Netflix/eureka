@@ -19,6 +19,7 @@ import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
+import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource.EurekaDeploymentResourceBuilder;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -38,7 +39,7 @@ import static org.junit.Assert.assertThat;
 public class EurekaClientIntegrationTest extends IntegrationTestClassSetup {
 
     @Rule
-    public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResource(1, 1);
+    public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResourceBuilder(1, 1).build();
 
     private EurekaDeployment deployment;
 

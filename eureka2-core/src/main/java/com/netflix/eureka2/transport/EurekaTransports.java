@@ -90,7 +90,7 @@ public final class EurekaTransports {
     static final String INTEREST_ENVELOPE_TYPE = "com.netflix.eureka2.protocol.interest.InterestMessage";
 
     static final Class<?>[] INTEREST_PROTOCOL_MODEL = {
-            InterestRegistration.class, UnregisterInterestSet.class, Heartbeat.class, DeltaDTO.class,
+            InterestRegistration.class, UnregisterInterestSet.class, Heartbeat.class,
             AddInstance.class, DeleteInstance.class, UpdateInstanceInfo.class, StreamStateUpdate.class
     };
     static final Set<Class<?>> INTEREST_PROTOCOL_MODEL_SET = new HashSet<>(Arrays.asList(INTEREST_PROTOCOL_MODEL));

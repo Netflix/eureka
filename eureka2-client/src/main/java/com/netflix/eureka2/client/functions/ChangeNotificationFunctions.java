@@ -2,14 +2,12 @@ package com.netflix.eureka2.client.functions;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
-import com.netflix.eureka2.interests.ChangeNotifications;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.selector.ServiceSelector;
 import com.netflix.eureka2.utils.rx.RxFunctions;
@@ -125,20 +123,5 @@ public final class ChangeNotificationFunctions {
                         });
             }
         };
-    }
-
-    /**
-     * Collapse observable of change notification batches into a set of currently known items.
-     * Use a LinkedHashSet to maintain order based on insertion order.
-     *
-     * Note that the same batch can be emitted multiple times if the transformer receive "empty" prompts
-     * from the buffers transformer. Users should apply .distinctUntilChanged() if this is not desired
-     * behaviour.
-     *
-     * @return observable of distinct set objects
-     */
-    @Deprecated
-    public static <T> Transformer<List<ChangeNotification<T>>, LinkedHashSet<T>> snapshots() {
-        return ChangeNotifications.snapshots();
     }
 }

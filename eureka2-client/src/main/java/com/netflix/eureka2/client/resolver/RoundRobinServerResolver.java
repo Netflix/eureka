@@ -89,7 +89,7 @@ public class RoundRobinServerResolver implements ServerResolver {
     private Observable<List<Server>> refreshServerCache() {
         return serverSource
                 .compose(ChangeNotifications.<Server>buffers())
-                .compose(ChangeNotifications.<Server>snapshots())
+                .compose(ChangeNotifications.snapshots(ChangeNotifications.serverIdentity()))
                 .materialize()
                 .concatMap(new Func1<Notification<LinkedHashSet<Server>>, Observable<? extends List<Server>>>() {
                     @Override

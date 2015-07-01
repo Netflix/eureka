@@ -4,9 +4,11 @@ import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.junit.categories.LongRunningTest;
 import com.netflix.eureka2.server.EurekaWriteServerRunner;
 import com.netflix.eureka2.server.config.WriteServerConfig;
+import com.netflix.eureka2.server.resolver.EurekaClusterResolvers;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import static com.netflix.eureka2.server.config.bean.EurekaClusterDiscoveryConfigBean.anEurekaClusterDiscoveryConfig;
 import static com.netflix.eureka2.server.config.bean.EurekaInstanceInfoConfigBean.anEurekaInstanceInfoConfig;
 import static com.netflix.eureka2.server.config.bean.EurekaServerTransportConfigBean.anEurekaServerTransportConfig;
 import static com.netflix.eureka2.server.config.bean.WriteServerConfigBean.aWriteServerConfig;
@@ -39,6 +41,12 @@ public class WriteServerStartupAndShutdownIntegrationTest extends AbstractStartu
                                 .withReplicationPort(0)
                                 .withShutDownPort(0)
                                 .withWebAdminPort(0)
+                                .build()
+                )
+                .withClusterDiscoveryConfig(
+                        anEurekaClusterDiscoveryConfig()
+                                .withClusterAddresses(clusterAddresses)
+                                .withClusterResolverType(EurekaClusterResolvers.ResolverType.Fixed)
                                 .build()
                 )
                 .withBootstrapEnabled(false)

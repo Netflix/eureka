@@ -5,7 +5,8 @@ import javax.inject.Singleton;
 import com.amazonaws.services.autoscaling.AmazonAutoScaling;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.google.inject.Provides;
-import com.google.inject.multibindings.Multibinder;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.MapBinder;
 import com.netflix.archaius.ConfigProxyFactory;
 import com.netflix.eureka2.server.service.overrides.OverridesService;
 import com.netflix.eureka2.server.spi.ExtAbstractModule;
@@ -22,9 +23,8 @@ public class AwsServiceModule extends ExtAbstractModule {
         bind(AmazonAutoScaling.class).toProvider(AmazonAutoScalingProvider.class);
         bind(AmazonS3Client.class).toProvider(AmazonS3ClientProvider.class);
 
-        bind(InstanceStatusOverridesView.class).to(AsgStatusOverridesView.class);
-        bind(InstanceStatusOverridesView.class).to(S3StatusOverridesRegistry.class);
-        bind(InstanceStatusOverridesSource.class).to(S3StatusOverridesRegistry.class);
+        bind(AsgStatusOverridesView.class).in(Scopes.SINGLETON);
+        bind(S3StatusOverridesRegistry.class).in(Scopes.SINGLETON);
 
         MapBinder<Integer, OverridesService> mapbinder = MapBinder.newMapBinder(binder(), Integer.class, OverridesService.class);
         // for ordering
