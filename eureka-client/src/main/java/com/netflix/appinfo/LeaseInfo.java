@@ -16,6 +16,9 @@
 
 package com.netflix.appinfo;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonRootName;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 
 /**
@@ -31,6 +34,7 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
  * @author Karthik Ranganathan, Greg Kim
  *
  */
+@JsonRootName("leaseInfo")
 public class LeaseInfo {
 
     public static final int DEFAULT_LEASE_RENEWAL_INTERVAL = 30;
@@ -155,6 +159,21 @@ public class LeaseInfo {
     private LeaseInfo() {
     }
 
+    @JsonCreator
+    public LeaseInfo(@JsonProperty("renewalIntervalInSecs") int renewalIntervalInSecs,
+                     @JsonProperty("durationInSecs") int durationInSecs,
+                     @JsonProperty("registrationTimestamp") long registrationTimestamp,
+                     @JsonProperty("lastRenewalTimestamp") long lastRenewalTimestamp,
+                     @JsonProperty("evictionTimestamp") long evictionTimestamp,
+                     @JsonProperty("serviceUpTimestamp") long serviceUpTimestamp) {
+        this.renewalIntervalInSecs = renewalIntervalInSecs;
+        this.durationInSecs = durationInSecs;
+        this.registrationTimestamp = registrationTimestamp;
+        this.lastRenewalTimestamp = lastRenewalTimestamp;
+        this.evictionTimestamp = evictionTimestamp;
+        this.serviceUpTimestamp = serviceUpTimestamp;
+    }
+
     /**
      * Returns the registration timestamp.
      *
@@ -169,6 +188,7 @@ public class LeaseInfo {
      *
      * @return time in milliseconds since epoch.
      */
+    @JsonProperty("lastRenewalTimestamp")
     public long getRenewalTimestamp() {
         return lastRenewalTimestamp;
     }

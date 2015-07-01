@@ -23,6 +23,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonRootName;
 import com.google.inject.ProvidedBy;
 import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
 import com.netflix.config.DynamicPropertyFactory;
@@ -47,6 +51,7 @@ import org.slf4j.LoggerFactory;
 @ProvidedBy(EurekaConfigBasedInstanceInfoProvider.class)
 @Serializer("com.netflix.discovery.converters.EntityBodyConverter")
 @XStreamAlias("instance")
+@JsonRootName("instance")
 public class InstanceInfo {
     private static final Logger logger = LoggerFactory.getLogger(InstanceInfo.class);
     private static final Pattern VIP_ATTRIBUTES_PATTERN = Pattern.compile("\\$\\{(.*?)\\}");
@@ -117,6 +122,62 @@ public class InstanceInfo {
     private String version = "unknown";
 
     private InstanceInfo() {
+    }
+
+    @JsonCreator
+    public InstanceInfo(
+            @JsonProperty("app") String appName,
+            @JsonProperty("appGroupName") String appGroupName,
+            @JsonProperty("ipAddr") String ipAddr,
+            @JsonProperty("sid") String sid,
+            @JsonProperty("port") int port,
+            @JsonProperty("portEnabled") boolean portEnabled,
+            @JsonProperty("securePort") int securePort,
+            @JsonProperty("securePortEnabled") boolean securePortEnabled,
+            @JsonProperty("homePageUrl") String homePageUrl,
+            @JsonProperty("statusPageUrl") String statusPageUrl,
+            @JsonProperty("healthCheckUrl") String healthCheckUrl,
+            @JsonProperty("secureHealthCheckUrl") String secureHealthCheckUrl,
+            @JsonProperty("vipAddress") String vipAddress,
+            @JsonProperty("secureVipAddress") String secureVipAddress,
+            @JsonProperty("countryId") int countryId,
+            @JsonProperty("dataCenterInfo") DataCenterInfo dataCenterInfo,
+            @JsonProperty("hostName") String hostName,
+            @JsonProperty("status") InstanceStatus status,
+            @JsonProperty("overriddenstatus") InstanceStatus overriddenstatus,
+            @JsonProperty("leaseInfo") LeaseInfo leaseInfo,
+            @JsonProperty("isCoordinatingDiscoveryServer") Boolean isCoordinatingDiscoveryServer,
+            @JsonProperty("metadata") Map<String, String> metadata,
+            @JsonProperty("lastUpdatedTimestamp") Long lastUpdatedTimestamp,
+            @JsonProperty("lastDirtyTimestamp") Long lastDirtyTimestamp,
+            @JsonProperty("actionType") ActionType actionType,
+            @JsonProperty("asgName") String asgName) {
+        this.appName = appName;
+        this.appGroupName = appGroupName;
+        this.ipAddr = ipAddr;
+        this.sid = sid;
+        this.port = port;
+        this.isUnsecurePortEnabled = portEnabled;
+        this.securePort = securePort;
+        this.isSecurePortEnabled = securePortEnabled;
+        this.homePageUrl = homePageUrl;
+        this.statusPageUrl = statusPageUrl;
+        this.healthCheckUrl = healthCheckUrl;
+        this.secureHealthCheckUrl = secureHealthCheckUrl;
+        this.vipAddress = vipAddress;
+        this.secureVipAddress = secureVipAddress;
+        this.countryId = countryId;
+        this.dataCenterInfo = dataCenterInfo;
+        this.hostName = hostName;
+        this.status = status;
+        this.overriddenstatus = overriddenstatus;
+        this.leaseInfo = leaseInfo;
+        this.isCoordinatingDiscoveryServer = isCoordinatingDiscoveryServer;
+        this.metadata = metadata;
+        this.lastUpdatedTimestamp = lastUpdatedTimestamp;
+        this.lastDirtyTimestamp = lastDirtyTimestamp;
+        this.actionType = actionType;
+        this.asgName = asgName;
     }
 
     /**
@@ -763,6 +824,7 @@ public class InstanceInfo {
     }
 
     @Deprecated
+    @JsonIgnore
     public String getSID() {
         return sid;
     }
@@ -773,6 +835,7 @@ public class InstanceInfo {
      *
      * @return the unique id.
      */
+    @JsonIgnore
     public String getId() {
         if (dataCenterInfo instanceof UniqueIdentifier) {
             return ((UniqueIdentifier) dataCenterInfo).getId();
@@ -786,6 +849,7 @@ public class InstanceInfo {
      *
      * @return - the ip address, in AWS scenario it is a private IP.
      */
+    @JsonProperty("ipAddr")
     public String getIPAddr() {
         return ipAddr;
     }
@@ -796,6 +860,7 @@ public class InstanceInfo {
      *
      * @return - the non-secure port number.
      */
+    @JsonIgnore
     public int getPort() {
         return port;
     }
@@ -866,6 +931,7 @@ public class InstanceInfo {
      *
      * @return the secure port.
      */
+    @JsonIgnore
     public int getSecurePort() {
         return securePort;
     }
@@ -877,6 +943,7 @@ public class InstanceInfo {
      *            indicates whether it is secure or non-secure port.
      * @return true if the port is enabled, false otherwise.
      */
+    @JsonIgnore
     public boolean isPortEnabled(PortType type) {
         if (type == PortType.SECURE) {
             return isSecurePortEnabled;
@@ -929,6 +996,7 @@ public class InstanceInfo {
      * @return A Set containing the string representation of health check urls
      *         for secure and non secure protocols
      */
+    @JsonIgnore
     public Set<String> getHealthCheckUrls() {
         Set<String> healthCheckUrlSet = new LinkedHashSet<String>();
         if (this.isUnsecurePortEnabled && healthCheckUrl != null && !healthCheckUrl.isEmpty()) {
@@ -940,12 +1008,21 @@ public class InstanceInfo {
         return healthCheckUrlSet;
     }
 
+    public String getHealthCheckUrl() {
+        return healthCheckUrl;
+    }
+
+    public String getSecureHealthCheckUrl() {
+        return secureHealthCheckUrl;
+    }
+
     /**
      * Gets the Virtual Internet Protocol address for this instance. Defaults to
      * hostname if not specified.
      *
      * @return - The Virtual Internet Protocol address
      */
+    @JsonProperty("vipAddress")
     public String getVIPAddress() {
         return vipAddress;
     }
@@ -1026,6 +1103,7 @@ public class InstanceInfo {
      *
      * @return true if the {@link InstanceInfo} is dirty, false otherwise.
      */
+    @JsonIgnore
     public boolean isDirty() {
         return isInstanceInfoDirty;
     }
@@ -1105,6 +1183,7 @@ public class InstanceInfo {
      * @return - true, if this instance is the coordinating discovery server,
      *         false otherwise.
      */
+    @JsonProperty("isCoordinatingDiscoveryServer")
     public Boolean isCoordinatingDiscoveryServer() {
         return isCoordinatingDiscoveryServer;
     }
@@ -1135,6 +1214,7 @@ public class InstanceInfo {
      *
      * @return autoscaling group name of this instance.
      */
+    @JsonProperty("asgName")
     public String getASGName() {
         return this.asgName;
     }
@@ -1145,6 +1225,7 @@ public class InstanceInfo {
      * @return the string indicating the version of the application.
      */
     @Deprecated
+    @JsonIgnore
     public String getVersion() {
         return version;
     }

@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.netflix.appinfo.AmazonInfo;
@@ -197,8 +198,11 @@ public class EurekaJacksonCodec {
     }
 
     private static class DataCenterInfoSerializer extends JsonSerializer<DataCenterInfo> {
+
         @Override
-        public void serialize(DataCenterInfo dataCenterInfo, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+        public void serializeWithType(DataCenterInfo dataCenterInfo, JsonGenerator jgen,
+                                      SerializerProvider provider, TypeSerializer typeSer)
+                throws IOException, JsonProcessingException {
             jgen.writeStartObject();
 
             // XStream encoded adds this for backwards compatibility issue. Not sure if needed anymore
@@ -215,6 +219,11 @@ public class EurekaJacksonCodec {
                 jgen.writeObjectField(DATACENTER_METADATA, aInfo.getMetadata());
             }
             jgen.writeEndObject();
+        }
+
+        @Override
+        public void serialize(DataCenterInfo dataCenterInfo, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+            serializeWithType(dataCenterInfo, jgen, provider, null);
         }
     }
 

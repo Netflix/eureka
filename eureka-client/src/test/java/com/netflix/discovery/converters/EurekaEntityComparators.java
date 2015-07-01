@@ -136,9 +136,6 @@ public final class EurekaEntityComparators {
         if (first.getSecureVipAddress() != null ? !first.getSecureVipAddress().equals(second.getSecureVipAddress()) : second.getSecureVipAddress() != null) {
             return false;
         }
-        if (first.getSID() != null ? !first.getSID().equals(second.getSID()) : second.getSID() != null) {
-            return false;
-        }
         if (first.getStatus() != null ? !first.getStatus().equals(second.getStatus()) : second.getStatus() != null) {
             return false;
         }

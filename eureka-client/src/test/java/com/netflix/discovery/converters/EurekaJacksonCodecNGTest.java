@@ -1,0 +1,144 @@
+package com.netflix.discovery.converters;
+
+import java.util.Iterator;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.appinfo.AmazonInfo;
+import com.netflix.appinfo.DataCenterInfo;
+import com.netflix.appinfo.DataCenterInfo.Name;
+import com.netflix.appinfo.InstanceInfo;
+import com.netflix.appinfo.LeaseInfo;
+import com.netflix.discovery.shared.Application;
+import com.netflix.discovery.shared.Applications;
+import com.netflix.discovery.util.InstanceInfoGenerator;
+import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
+/**
+ * @author Tomasz Bak
+ */
+public class EurekaJacksonCodecNGTest {
+
+    private final InstanceInfoGenerator infoGenerator = InstanceInfoGenerator.newBuilder(4, 2).withMetaData(true).build();
+    private final Iterator<InstanceInfo> infoIterator = infoGenerator.serviceIterator();
+
+    private final EurekaJacksonCodecNG codec = new EurekaJacksonCodecNG();
+
+    @Test
+    public void testAmazonInfoEncodeDecodeWithJson() throws Exception {
+        doAmazonInfoEncodeDecodeTest(codec.getJsonMapper());
+    }
+
+    @Test
+    public void testAmazonInfoEncodeDecodeWithXml() throws Exception {
+        doAmazonInfoEncodeDecodeTest(codec.getXmlMapper());
+    }
+
+    private void doAmazonInfoEncodeDecodeTest(ObjectMapper mapper) throws Exception {
+        AmazonInfo amazonInfo = (AmazonInfo) infoIterator.next().getDataCenterInfo();
+        String encodedString = mapper.writeValueAsString(amazonInfo);
+
+        DataCenterInfo decodedValue = mapper.readValue(encodedString, DataCenterInfo.class);
+        assertThat(EurekaEntityComparators.equal(amazonInfo, decodedValue), is(true));
+    }
+
+    @Test
+    public void testMyDataCenterInfoEncodeDecodeWithJson() throws Exception {
+        doMyDataCenterInfoEncodeDecodeTest(codec.getJsonMapper());
+    }
+
+    @Test
+    public void testMyDataCenterInfoEncodeDecodeWithXml() throws Exception {
+        doMyDataCenterInfoEncodeDecodeTest(codec.getXmlMapper());
+    }
+
+    private void doMyDataCenterInfoEncodeDecodeTest(ObjectMapper mapper) throws Exception {
+        DataCenterInfo myDataCenterInfo = new DataCenterInfo() {
+            @Override
+            public Name getName() {
+                return Name.MyOwn;
+            }
+        };
+
+        String encodedString = mapper.writeValueAsString(myDataCenterInfo);
+        DataCenterInfo decodedValue = mapper.readValue(encodedString, DataCenterInfo.class);
+        assertThat(decodedValue.getName(), is(equalTo(Name.MyOwn)));
+    }
+
+    @Test
+    public void testLeaseInfoEncodeDecodeWithJson() throws Exception {
+        doLeaseInfoEncodeDecode(codec.getJsonMapper());
+    }
+
+    @Test
+    public void testLeaseInfoEncodeDecodeWithXml() throws Exception {
+        doLeaseInfoEncodeDecode(codec.getXmlMapper());
+    }
+
+    private void doLeaseInfoEncodeDecode(ObjectMapper mapper) throws Exception {
+        LeaseInfo leaseInfo = infoIterator.next().getLeaseInfo();
+
+        String encodedString = mapper.writeValueAsString(leaseInfo);
+        LeaseInfo decodedValue = mapper.readValue(encodedString, LeaseInfo.class);
+        assertThat(EurekaEntityComparators.equal(leaseInfo, decodedValue), is(true));
+    }
+
+    @Test
+    public void testInstanceInfoEncodeDecodeWithJson() throws Exception {
+        doInstanceInfoEncodeDecode(codec.getJsonMapper());
+    }
+
+    @Test
+    public void testInstanceInfoEncodeDecodeWithXml() throws Exception {
+        doInstanceInfoEncodeDecode(codec.getXmlMapper());
+    }
+
+    private void doInstanceInfoEncodeDecode(ObjectMapper mapper) throws Exception {
+        InstanceInfo instanceInfo = infoIterator.next();
+
+        String encodedString = mapper.writeValueAsString(instanceInfo);
+        InstanceInfo decodedValue = mapper.readValue(encodedString, InstanceInfo.class);
+        assertThat(EurekaEntityComparators.equal(instanceInfo, decodedValue), is(true));
+    }
+
+    @Test
+    public void testApplicationEncodeDecodeWithJson() throws Exception {
+        doApplicationEncodeDecode(codec.getJsonMapper());
+    }
+
+    @Test
+    public void testApplicationEncodeDecodeWithXml() throws Exception {
+        doApplicationEncodeDecode(codec.getXmlMapper());
+    }
+
+    private void doApplicationEncodeDecode(ObjectMapper mapper) throws Exception {
+        Application application = new Application("testApp");
+        application.addInstance(infoIterator.next());
+        application.addInstance(infoIterator.next());
+
+        String encodedString = mapper.writeValueAsString(application);
+        Application decodedValue = mapper.readValue(encodedString, Application.class);
+        assertThat(EurekaEntityComparators.equal(application, decodedValue), is(true));
+    }
+
+    @Test
+    public void testApplicationsEncodeDecodeWithJson() throws Exception {
+        doApplicationsEncodeDecode(codec.getJsonMapper());
+    }
+
+    @Test
+    public void testApplicationsEncodeDecodeWithXml() throws Exception {
+        doApplicationsEncodeDecode(codec.getXmlMapper());
+    }
+
+    private void doApplicationsEncodeDecode(ObjectMapper mapper) throws Exception {
+        Applications applications = infoGenerator.takeDelta(2);
+
+        String encodedString = mapper.writeValueAsString(applications);
+        Applications decodedValue = mapper.readValue(encodedString, Applications.class);
+        assertThat(EurekaEntityComparators.equal(applications, decodedValue), is(true));
+    }
+}

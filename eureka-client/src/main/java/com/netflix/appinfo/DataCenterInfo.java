@@ -16,7 +16,11 @@
 
 package com.netflix.appinfo;
 
-import com.thoughtworks.xstream.annotations.XStreamAlias;
+import com.fasterxml.jackson.annotation.JsonRootName;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
+import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
+import com.netflix.discovery.converters.DataCenterTypeInfoResolver;
 
 /**
  * A simple interface for indicating which <em>datacenter</em> a particular instance belongs.
@@ -24,11 +28,11 @@ import com.thoughtworks.xstream.annotations.XStreamAlias;
  * @author Karthik Ranganathan
  *
  */
-@XStreamAlias("datacenter")
+@JsonRootName("dataCenterInfo")
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = As.PROPERTY, property = "@class")
+@JsonTypeIdResolver(DataCenterTypeInfoResolver.class)
 public interface DataCenterInfo {
     enum Name {Netflix, Amazon, MyOwn}
-
-    ;
 
     Name getName();
 }
