@@ -33,7 +33,7 @@ public class S3StatusOverridesRegistryTest {
 
     private final TestScheduler testScheduler = Schedulers.test();
 
-    private final S3OverridesConfiguration config = mock(S3OverridesConfiguration.class);
+    private final AwsConfiguration config = mock(AwsConfiguration.class);
 
     private final MockS3Service mockS3Service = new MockS3Service();
     private S3StatusOverridesRegistry registry;

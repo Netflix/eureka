@@ -39,7 +39,7 @@ public class S3StatusOverridesRegistry implements InstanceStatusOverridesView, I
     private static final Logger logger = LoggerFactory.getLogger(S3StatusOverridesRegistry.class);
 
     private final AmazonS3Client amazonS3Client;
-    private final S3OverridesConfiguration config;
+    private final AwsConfiguration config;
     private final Scheduler scheduler;
 
     private final BehaviorSubject<Map<String, Boolean>> overridesSubject;
@@ -47,11 +47,11 @@ public class S3StatusOverridesRegistry implements InstanceStatusOverridesView, I
     private volatile Subscription refreshSubscription;
 
     @Inject
-    public S3StatusOverridesRegistry(AmazonS3Client amazonS3Client, S3OverridesConfiguration config) {
+    public S3StatusOverridesRegistry(AmazonS3Client amazonS3Client, AwsConfiguration config) {
         this(amazonS3Client, config, Schedulers.io());
     }
 
-    public S3StatusOverridesRegistry(AmazonS3Client amazonS3Client, S3OverridesConfiguration config, Scheduler scheduler) {
+    public S3StatusOverridesRegistry(AmazonS3Client amazonS3Client, AwsConfiguration config, Scheduler scheduler) {
         this.amazonS3Client = amazonS3Client;
         this.config = config;
         this.scheduler = scheduler;

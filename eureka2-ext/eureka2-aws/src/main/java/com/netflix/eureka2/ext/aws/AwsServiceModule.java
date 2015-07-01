@@ -6,17 +6,20 @@ import com.amazonaws.services.autoscaling.AmazonAutoScaling;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
+import com.google.inject.multibindings.Multibinder;
 import com.netflix.archaius.ConfigProxyFactory;
+import com.netflix.eureka2.server.service.overrides.OverridesModule;
 import com.netflix.eureka2.server.service.overrides.OverridesService;
 import com.netflix.eureka2.server.spi.ExtAbstractModule;
+import com.netflix.governator.auto.annotations.OverrideModule;
 
 /**
  * @author Tomasz Bak
  */
+@OverrideModule(OverridesModule.class)
 public class AwsServiceModule extends ExtAbstractModule {
 
-    private static final String AWS_CONFIG_PREFIX = "eureka.ext.aws";
+    private static final String AWS_CONFIG_PREFIX = "eureka2.ext.aws";
 
     @Override
     protected void configure() {
@@ -26,21 +29,15 @@ public class AwsServiceModule extends ExtAbstractModule {
         bind(AsgStatusOverridesView.class).in(Scopes.SINGLETON);
         bind(S3StatusOverridesRegistry.class).in(Scopes.SINGLETON);
 
-        MapBinder<Integer, OverridesService> mapbinder = MapBinder.newMapBinder(binder(), Integer.class, OverridesService.class);
-        // for ordering
-        mapbinder.addBinding(0).to(AsgStatusOverridesService.class);
-        mapbinder.addBinding(1).to(S3StatusOverridesService.class);
+        Multibinder<OverridesService> multibinder = Multibinder.newSetBinder(binder(), OverridesService.class);
+        multibinder.addBinding().to(AsgStatusOverridesService.class);
+        multibinder.addBinding().to(S3StatusOverridesService.class);
     }
 
     @Provides
     @Singleton
     public AwsConfiguration getAwsConfiguration(ConfigProxyFactory factory) {
-        return factory.newProxy(AwsConfiguration.class, AWS_CONFIG_PREFIX);
-    }
-
-    @Provides
-    @Singleton
-    public S3OverridesConfiguration getS3OverridesConfiguration(ConfigProxyFactory factory) {
-        return factory.newProxy(S3OverridesConfiguration.class, AWS_CONFIG_PREFIX);
+        AwsConfiguration configuration = factory.newProxy(AwsConfiguration.class, AWS_CONFIG_PREFIX);
+        return configuration;
     }
 }

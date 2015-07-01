@@ -15,4 +15,13 @@ public interface AwsConfiguration {
 
     @DefaultValue("30")
     long getRefreshIntervalSec();
+
+    //
+    // for the s3 override service
+    //
+
+    String getBucketName();
+
+    @DefaultValue("eureka2.overrides")
+    String getPrefix();
 }

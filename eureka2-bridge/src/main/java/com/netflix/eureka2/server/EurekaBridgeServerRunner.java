@@ -5,7 +5,6 @@ import com.google.inject.util.Modules;
 import com.netflix.discovery.guice.EurekaModule;
 import com.netflix.eureka2.server.module.CommonEurekaServerModule;
 import com.netflix.eureka2.server.module.EurekaExtensionModule;
-import com.netflix.eureka2.server.service.overrides.OverridesModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.governator.Governator;
 import com.netflix.governator.LifecycleInjector;
@@ -38,7 +37,6 @@ public class EurekaBridgeServerRunner extends EurekaServerRunner<EurekaBridgeSer
     protected LifecycleInjector createInjector() {
         Module applicationModule = Modules.combine(
                 new CommonEurekaServerModule(name),
-                new OverridesModule(),
                 new EurekaExtensionModule(ServerType.Write),
                 new EurekaBridgeServerModule(DEFAULT_CONFIG_PREFIX),
                 new EurekaModule(),  // eureka 1

@@ -16,7 +16,7 @@ public class AmazonS3ClientProvider implements Provider<AmazonS3Client> {
     private final AmazonS3Client amazonS3Client;
 
     @Inject
-    public AmazonS3ClientProvider(S3OverridesConfiguration configuration) {
+    public AmazonS3ClientProvider(AwsConfiguration configuration) {
         if (configuration.getAwsAccessId() != null && configuration.getAwsSecretKey() != null) {
             amazonS3Client = new AmazonS3Client(new BasicAWSCredentials(configuration.getAwsAccessId(), configuration.getAwsSecretKey()));
         } else {
@@ -24,7 +24,11 @@ public class AmazonS3ClientProvider implements Provider<AmazonS3Client> {
         }
 
         String region = configuration.getRegion().trim().toLowerCase();
-        amazonS3Client.setEndpoint("ec2." + region + ".amazonaws.com");
+        if (region.equals("us-east-1")) {
+            amazonS3Client.setEndpoint("s3.amazonaws.com");
+        } else {
+            amazonS3Client.setEndpoint("s3-" + region + ".amazonaws.com");
+        }
     }
 
     @Override

@@ -22,8 +22,8 @@ import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 import rx.subjects.PublishSubject;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Mockito.mock;
@@ -55,8 +55,7 @@ public class CombinedStatusOverridesTest {
 
     private final TestScheduler testScheduler = Schedulers.test();
 
-    private final AwsConfiguration asgConfig = mock(AwsConfiguration.class);
-    private final S3OverridesConfiguration s3Config = mock(S3OverridesConfiguration.class);
+    private final AwsConfiguration config = mock(AwsConfiguration.class);
 
     private final EurekaRegistrationProcessorStub registrationDelegate = new EurekaRegistrationProcessorStub();
     private final PublishSubject<InstanceInfo> registrationSubject = PublishSubject.create();
@@ -70,29 +69,28 @@ public class CombinedStatusOverridesTest {
 
     @Before
     public void setUp() throws Exception {
-        when(asgConfig.getRefreshIntervalSec()).thenReturn(REFRESH_INTERVAL_SEC);
-        when(s3Config.getRefreshIntervalSec()).thenReturn(REFRESH_INTERVAL_SEC);
-        when(s3Config.getBucketName()).thenReturn("myBucketName");
-        when(s3Config.getPrefix()).thenReturn("eureka2.overrides.test");
+        when(config.getRefreshIntervalSec()).thenReturn(REFRESH_INTERVAL_SEC);
+        when(config.getBucketName()).thenReturn("myBucketName");
+        when(config.getPrefix()).thenReturn("eureka2.overrides.test");
 
         AmazonS3Client amazonS3Client = mockS3Service.getAmazonS3Client();
         AmazonAutoScaling amazonAutoScaling = mockAutoScalingService.getAmazonAutoScaling();
-        s3Overrides = new S3StatusOverridesRegistry(amazonS3Client, s3Config, testScheduler);
-        asgOverrides = new AsgStatusOverridesView(selfInfoResolver, amazonAutoScaling, asgConfig, testScheduler);
+        s3Overrides = new S3StatusOverridesRegistry(amazonS3Client, config, testScheduler);
+        asgOverrides = new AsgStatusOverridesView(selfInfoResolver, amazonAutoScaling, config, testScheduler);
 
         s3Overrides.start();
         asgOverrides.start();
 
-        Map<Integer, OverridesService> overridesServiceMap = new HashMap<>();
-        overridesServiceMap.put(0, new AsgStatusOverridesService(asgOverrides));
-        overridesServiceMap.put(1, new S3StatusOverridesService(s3Overrides));
+        Set<OverridesService> overridesServices = new HashSet<>();
+        overridesServices.add(new AsgStatusOverridesService(asgOverrides));
+        overridesServices.add(new S3StatusOverridesService(s3Overrides));
 
         EvictionQuotaKeeper keeper = mock(EvictionQuotaKeeper.class);
         when(keeper.quota()).thenReturn(Observable.<Long>never());
 
         RegistrationChannelProcessorProvider combined = new RegistrationChannelProcessorProvider(
                 registrationDelegate,
-                overridesServiceMap,
+                overridesServices,
                 keeper,
                 EurekaRegistryMetricFactory.registryMetrics()
         );
