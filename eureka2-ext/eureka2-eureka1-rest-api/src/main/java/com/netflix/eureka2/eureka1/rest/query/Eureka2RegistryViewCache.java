@@ -112,7 +112,7 @@ public class Eureka2RegistryViewCache {
     public Observable<com.netflix.appinfo.InstanceInfo> findInstance(String instanceId) {
         return registryView.forInterest(Interests.forInstance(Operator.Equals, instanceId))
                 .compose(ChangeNotifications.<InstanceInfo>delineatedBuffers())
-                .compose(ChangeNotifications.<InstanceInfo>snapshots())
+                .compose(ChangeNotifications.snapshots(ChangeNotifications.instanceInfoIdentity()))
                 .flatMap(new Func1<LinkedHashSet<InstanceInfo>, Observable<com.netflix.appinfo.InstanceInfo>>() {
                     @Override
                     public Observable<com.netflix.appinfo.InstanceInfo> call(LinkedHashSet<InstanceInfo> latestSnapshot) {

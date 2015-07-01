@@ -69,7 +69,7 @@ public class Eureka1RedirectRequestHandler extends AbstractEureka1RequestHandler
         subscription = context.getLocalRegistryView()
                 .forInterest(Interests.forVips(redirectTarget))
                 .compose(ChangeNotifications.<InstanceInfo>delineatedBuffers())
-                .compose(ChangeNotifications.<InstanceInfo>snapshots())
+                .compose(ChangeNotifications.snapshots(ChangeNotifications.instanceInfoIdentity()))
                 .subscribe(new Subscriber<Set<InstanceInfo>>() {
                     @Override
                     public void onCompleted() {
@@ -84,7 +84,7 @@ public class Eureka1RedirectRequestHandler extends AbstractEureka1RequestHandler
                     @Override
                     public void onNext(Set<InstanceInfo> instanceInfos) {
                         logger.info("Updating read server cluster to: {}", instanceInfos);
-                        readServers = new ArrayList<InstanceInfo>(instanceInfos);
+                        readServers = new ArrayList<>(instanceInfos);
                     }
                 });
     }

@@ -18,8 +18,10 @@ package com.netflix.eureka2.server.audit.kafka;
 
 import java.net.InetSocketAddress;
 
+import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.netflix.eureka2.server.audit.AuditService;
+import com.netflix.eureka2.server.audit.AuditServiceController;
 import com.netflix.eureka2.server.spi.ExtAbstractModule;
 import com.netflix.eureka2.server.spi.ExtensionLoader.StandardExtension;
 import com.netflix.eureka2.utils.StreamedDataCollector;
@@ -43,6 +45,7 @@ public class KafkaAuditServiceModule extends ExtAbstractModule {
     @Override
     protected void configure() {
         bind(STREAMED_DATA_COLLECTOR_TYPE_LITERAL).toProvider(KafkaServersProvider.class);
+        bind(AuditServiceController.class).in(Scopes.SINGLETON);
         bind(AuditService.class).to(KafkaAuditService.class);
     }
 

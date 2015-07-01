@@ -2,6 +2,7 @@ package com.netflix.eureka2.eureka1.rest.query;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -27,7 +28,7 @@ import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka1
 import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.v1InstanceIdentityComparator;
 import static com.netflix.eureka2.interests.ChangeNotifications.emitAndAggregateChanges;
 import static com.netflix.eureka2.interests.ChangeNotifications.collapseAndExtract;
-import static com.netflix.eureka2.interests.ChangeNotifications.instanceInfoIdentityComparator;
+import static com.netflix.eureka2.interests.ChangeNotifications.instanceInfoIdentity;
 
 /**
  * A special view of full registry, which provides both full {@link Applications} data
@@ -66,7 +67,7 @@ public class Eureka2FullFetchWithDeltaView {
         subscription = notifications
                 .compose(ChangeNotifications.<InstanceInfo>delineatedBuffers())
                 .compose(emitAndAggregateChanges(
-                        instanceInfoIdentityComparator(),
+                        instanceInfoIdentity(),
                         refreshIntervalMs,
                         TimeUnit.MILLISECONDS,
                         scheduler
@@ -91,7 +92,7 @@ public class Eureka2FullFetchWithDeltaView {
     private RegistryFetch updateSnapshot(List<ChangeNotification<InstanceInfo>> latestUpdates) {
         RegistryFetch newCopy;
         if (latestCopy.get() == null) {
-            SortedSet<InstanceInfo> allInstances = collapseAndExtract(latestUpdates, instanceInfoIdentityComparator());
+            LinkedHashSet<InstanceInfo> allInstances = collapseAndExtract(latestUpdates, instanceInfoIdentity());
             newCopy = new RegistryFetch(allInstances);
         } else {
             newCopy = latestCopy.get().apply(latestUpdates);
@@ -106,7 +107,7 @@ public class Eureka2FullFetchWithDeltaView {
         private final Applications deltaChanges;
 
         RegistryFetch(Collection<InstanceInfo> v2Instances) {
-            this.allInstances = new TreeSet<com.netflix.appinfo.InstanceInfo>(v1InstanceIdentityComparator());
+            this.allInstances = new TreeSet<>(v1InstanceIdentityComparator());
             this.allInstances.addAll(toEureka1xInstanceInfos(v2Instances));
 
             this.applications = toEureka1xApplications(this.allInstances);

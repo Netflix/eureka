@@ -18,17 +18,14 @@ package com.netflix.eureka2.interests;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.netflix.eureka2.Server;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.StreamStateNotification.BufferState;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -63,18 +60,29 @@ public final class ChangeNotifications {
                 }
             };
 
-    private static final Comparator<InstanceInfo> INSTANCE_INFO_IDENTITY_COMPARATOR = new Comparator<InstanceInfo>() {
+    private static final Identity<InstanceInfo, String> INSTANCE_INFO_IDENTITY = new Identity<InstanceInfo, String>() {
         @Override
-        public int compare(InstanceInfo o1, InstanceInfo o2) {
-            return o1.getId().compareTo(o2.getId());
+        public String getId(InstanceInfo instanceInfo) {
+            return instanceInfo.getId();
+        }
+    };
+
+    private static final Identity<Server, String> SERVER_IDENTITY = new Identity<Server, String>() {
+        @Override
+        public String getId(Server server) {
+            return server.getHost();
         }
     };
 
     private ChangeNotifications() {
     }
 
-    public static Comparator<InstanceInfo> instanceInfoIdentityComparator() {
-        return INSTANCE_INFO_IDENTITY_COMPARATOR;
+    public static Identity<InstanceInfo, String> instanceInfoIdentity() {
+        return INSTANCE_INFO_IDENTITY;
+    }
+
+    public static Identity<Server, String> serverIdentity() {
+        return SERVER_IDENTITY;
     }
 
     public static <T> Observable<ChangeNotification<T>> from(T... values) {
@@ -122,12 +130,12 @@ public final class ChangeNotifications {
      * For example, applying this method to list [ A{Add}, B{Add}, A{Modify}, B{Remove} ] will result in [A].
      *
      */
-    public static <T> SortedSet<T> collapseAndExtract(List<ChangeNotification<T>> notifications, Comparator<T> identityComparator) {
-        List<ChangeNotification<T>> collapsed = collapse(notifications, identityComparator);
-        TreeSet<T> result = new TreeSet<T>(identityComparator);
-        for (ChangeNotification<T> item : collapsed) {
-            if (item.getKind() == Kind.Add || item.getKind() == Kind.Modify) {
-                result.add(item.getData());
+    public static <T, ID> LinkedHashSet<T> collapseAndExtract(List<ChangeNotification<T>> notifications, Identity<T, ID> identity) {
+        List<ChangeNotification<T>> collapsed = collapse(notifications, identity);
+        LinkedHashSet<T> result = new LinkedHashSet<>();
+        for (ChangeNotification<T> notification : collapsed) {
+            if (notification.getKind() == Kind.Add || notification.getKind() == Kind.Modify) {
+                result.add(notification.getData());
             }
         }
         return result;
@@ -162,7 +170,7 @@ public final class ChangeNotifications {
                             }
                         } else if (bufferStart.get()) {
                             if (buffer == null) {
-                                bufferRef.set(buffer = new ArrayList<ChangeNotification<T>>());
+                                bufferRef.set(buffer = new ArrayList<>());
                             }
                             buffer.add(notification);
                         } else {
@@ -237,8 +245,8 @@ public final class ChangeNotifications {
      *
      * @return observable of distinct set objects
      */
-    public static <T> Transformer<List<ChangeNotification<T>>, LinkedHashSet<T>> snapshots() {
-        final LinkedHashSet<T> snapshotSet = new LinkedHashSet<>();
+    public static <T, ID> Transformer<List<ChangeNotification<T>>, LinkedHashSet<T>> snapshots(final Identity<T, ID> identity) {
+        final LinkedHashMap<ID, T> snapshotMap = new LinkedHashMap<>();
         return new Transformer<List<ChangeNotification<T>>, LinkedHashSet<T>>() {
             @Override
             public Observable<LinkedHashSet<T>> call(Observable<List<ChangeNotification<T>>> batches) {
@@ -246,19 +254,22 @@ public final class ChangeNotifications {
                     @Override
                     public LinkedHashSet<T> call(List<ChangeNotification<T>> batch) {
                         for (ChangeNotification<T> item : batch) {
+                            T data = item.getData();
                             switch (item.getKind()) {
                                 case Add:
                                 case Modify:
-                                    snapshotSet.add(item.getData());
+                                    // remove and re-add to update the insertion order
+                                    snapshotMap.remove(identity.getId(data));
+                                    snapshotMap.put(identity.getId(data), data);
                                     break;
                                 case Delete:
-                                    snapshotSet.remove(item.getData());
+                                    snapshotMap.remove(identity.getId(data));
                                     break;
                                 default:
                                     // no-op
                             }
                         }
-                        return new LinkedHashSet<>(snapshotSet);
+                        return new LinkedHashSet<T>(snapshotMap.values());
                     }
                 });
             }
@@ -280,14 +291,14 @@ public final class ChangeNotifications {
      * For example if there is a change notification list [ A{Add}, B{Modify}, A{Modify}, B{Remove}, C{Remove} ],
      * applying this operator to the list will result in a new list [ A{Add}, B{Remove}, C{Remove}].
      */
-    public static <T> Transformer<List<ChangeNotification<T>>, List<ChangeNotification<T>>> collapse(final Comparator<T> identityComparator) {
+    public static <T, ID> Transformer<List<ChangeNotification<T>>, List<ChangeNotification<T>>> collapse(final Identity<T, ID> identity) {
         return new Transformer<List<ChangeNotification<T>>, List<ChangeNotification<T>>>() {
             @Override
             public Observable<List<ChangeNotification<T>>> call(Observable<List<ChangeNotification<T>>> listObservable) {
                 return listObservable.map(new Func1<List<ChangeNotification<T>>, List<ChangeNotification<T>>>() {
                     @Override
                     public List<ChangeNotification<T>> call(List<ChangeNotification<T>> notifications) {
-                        return collapse(notifications, identityComparator);
+                        return collapse(notifications, identity);
                     }
                 });
             }
@@ -296,26 +307,24 @@ public final class ChangeNotifications {
     }
 
     /**
-     * This is a variant of collapse operator (see {@link #collapse(Comparator)}), that accepts nested lists of
+     * This is a variant of collapse operator (see {@link #collapse(Identity)}), that accepts nested lists of
      * change notifications. It is useful in scenarios where batches of change notifications are aggregated over
      * a specific amount of time, and must be ultimately collapsed. It is equivalent to joining sub lists into
-     * single list and applying {@link #collapse(Comparator)} transformation, but by combining both steps it is
+     * single list and applying {@link #collapse(Identity)} transformation, but by combining both steps it is
      * more efficient.
      */
-    public static <T> Transformer<List<List<ChangeNotification<T>>>, List<ChangeNotification<T>>> collapseLists(final Comparator<T> identityComparator) {
+    public static <T, ID> Transformer<List<List<ChangeNotification<T>>>, List<ChangeNotification<T>>> collapseLists(final Identity<T, ID> identity) {
         return new Transformer<List<List<ChangeNotification<T>>>, List<ChangeNotification<T>>>() {
             @Override
             public Observable<List<ChangeNotification<T>>> call(Observable<List<List<ChangeNotification<T>>>> listOfListObservable) {
                 return listOfListObservable.map(new Func1<List<List<ChangeNotification<T>>>, List<ChangeNotification<T>>>() {
                     @Override
                     public List<ChangeNotification<T>> call(List<List<ChangeNotification<T>>> notificationLists) {
-                        Map<T, Integer> markers = new TreeMap<>(identityComparator);
-                        List<ChangeNotification<T>> result = new ArrayList<ChangeNotification<T>>();
-                        for (int i = notificationLists.size() - 1; i >= 0; i--) {
-                            collapse(notificationLists.get(i), markers, result);
+                        LinkedHashMap<ID, ChangeNotification<T>> collapsed = new LinkedHashMap<>();
+                        for (List<ChangeNotification<T>> notifications : notificationLists) {
+                            collapse(notifications, identity, collapsed);
                         }
-                        Collections.reverse(result);
-                        return result;
+                        return new ArrayList<>(collapsed.values());
                     }
                 });
             }
@@ -328,12 +337,12 @@ public final class ChangeNotifications {
      * emitted items/delineated batches for a specific amount of time, after which all the accumulated data
      * are collapsed into single list of most recently visible updates per each data item.
      */
-    public static <T> Transformer<List<ChangeNotification<T>>, List<ChangeNotification<T>>> aggregateChanges(
-            final Comparator<T> identityComparator, final long interval, final TimeUnit timeUnit, final Scheduler scheduler) {
+    public static <T, ID> Transformer<List<ChangeNotification<T>>, List<ChangeNotification<T>>> aggregateChanges(
+            final Identity<T, ID> identity, final long interval, final TimeUnit timeUnit, final Scheduler scheduler) {
         return new Transformer<List<ChangeNotification<T>>, List<ChangeNotification<T>>>() {
             @Override
             public Observable<List<ChangeNotification<T>>> call(Observable<List<ChangeNotification<T>>> batchUpdates) {
-                return batchUpdates.buffer(interval, timeUnit, scheduler).compose(collapseLists(identityComparator));
+                return batchUpdates.buffer(interval, timeUnit, scheduler).compose(collapseLists(identity));
             }
         };
     }
@@ -343,48 +352,50 @@ public final class ChangeNotifications {
      * is applied only afterwards. This fits the Eureka registration model, where first batch will contain the full
      * current registry content, which is followed by live updates.
      */
-    public static <T> Transformer<List<ChangeNotification<T>>, List<ChangeNotification<T>>> emitAndAggregateChanges(
-            final Comparator<T> identityComparator, final long interval, final TimeUnit timeUnit, final Scheduler scheduler) {
+    public static <T, ID> Transformer<List<ChangeNotification<T>>, List<ChangeNotification<T>>> emitAndAggregateChanges(
+            final Identity<T, ID> identity, final long interval, final TimeUnit timeUnit, final Scheduler scheduler) {
         return new Transformer<List<ChangeNotification<T>>, List<ChangeNotification<T>>>() {
 
             @Override
             public Observable<List<ChangeNotification<T>>> call(Observable<List<ChangeNotification<T>>> batchUpdates) {
-                return batchUpdates.buffer(Observable.timer(0, interval, timeUnit, scheduler)).compose(collapseLists(identityComparator));
+                return batchUpdates.buffer(Observable.timer(0, interval, timeUnit, scheduler)).compose(collapseLists(identity));
 
             }
         };
     }
 
     /**
-     * See {@link #emitAndAggregateChanges(Comparator, long, TimeUnit, Scheduler)}.
+     * See {@link #emitAndAggregateChanges(Identity, long, TimeUnit, Scheduler)}.
      */
-    public static <T> Transformer<List<ChangeNotification<T>>, List<ChangeNotification<T>>> emitAndAggregateChanges(
-            final Comparator<T> identityComparator, final long interval, final TimeUnit timeUnit) {
-        return emitAndAggregateChanges(identityComparator, interval, timeUnit, Schedulers.computation());
+    public static <T, ID> Transformer<List<ChangeNotification<T>>, List<ChangeNotification<T>>> emitAndAggregateChanges(
+            final Identity<T, ID> identity, final long interval, final TimeUnit timeUnit) {
+        return emitAndAggregateChanges(identity, interval, timeUnit, Schedulers.computation());
     }
 
-    private static <T> List<ChangeNotification<T>> collapse(List<ChangeNotification<T>> notifications, Comparator<T> identityComparator) {
-        List<ChangeNotification<T>> result = new ArrayList<>();
-        collapse(notifications, new TreeMap<T, Integer>(identityComparator), result);
-        Collections.reverse(result);
-        return result;
+    private static <T, ID> List<ChangeNotification<T>> collapse(List<ChangeNotification<T>> notifications, Identity<T, ID> identity) {
+        LinkedHashMap<ID, ChangeNotification<T>> collapsed = new LinkedHashMap<>();
+        collapse(notifications, identity, collapsed);
+        return new ArrayList<>(collapsed.values());
     }
 
-    private static <T> void collapse(List<ChangeNotification<T>> notifications, Map<T, Integer> markers, List<ChangeNotification<T>> result) {
-        for (int i = notifications.size() - 1; i >= 0; i--) {
-            ChangeNotification<T> next = notifications.get(i);
-            if(next.isDataNotification()) {
-                T data = next.getData();
-                if (markers.keySet().contains(data)) {
-                    int idx = markers.get(data);
-                    if (next.getKind() == Kind.Add && result.get(idx).getKind() == Kind.Modify) {
-                        result.set(idx, next);
-                    }
-                } else {
-                    markers.put(data, result.size());
-                    result.add(next);
-                }
+    private static <T, ID> void collapse(List<ChangeNotification<T>> notifications, Identity<T, ID> identity, LinkedHashMap<ID, ChangeNotification<T>> collapsed) {
+        for (ChangeNotification<T> notification : notifications) {
+            T data = notification.getData();
+            if (notification.isDataNotification()) {
+                // remove and re-add the notification to update the insertion order
+                collapsed.remove(identity.getId(data));
+                collapsed.put(identity.getId(data), notification);
             }
         }
+    }
+
+    /**
+     * Interface for a way to extract the id of an arbitrary data type
+     *
+     * @param <T> the type of the data to extract id from
+     * @param <ID> the type of the id to return
+     */
+    public interface Identity<T, ID> {
+        ID getId(T data);
     }
 }

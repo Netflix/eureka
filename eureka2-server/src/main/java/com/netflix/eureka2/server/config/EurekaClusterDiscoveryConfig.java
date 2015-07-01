@@ -15,6 +15,6 @@ public interface EurekaClusterDiscoveryConfig {
     @DefaultValue("localhost:12102:12103:12104")
     ClusterAddress[] getClusterAddresses();
 
-    @DefaultValue("eureka-read")
+    @DefaultValue("eureka2-read")
     String getReadClusterVipAddress();
 }

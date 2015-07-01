@@ -7,6 +7,7 @@ import com.netflix.archaius.annotations.DefaultValue;
  */
 public interface AwsConfiguration {
 
+    @DefaultValue("us-east-1")
     String getRegion();
 
     String getAwsAccessId();
@@ -15,4 +16,14 @@ public interface AwsConfiguration {
 
     @DefaultValue("30")
     long getRefreshIntervalSec();
+
+    //
+    // for the s3 override service
+    //
+
+    @DefaultValue("doesNotExit")
+    String getBucketName();
+
+    @DefaultValue("eureka2.overrides")
+    String getPrefix();
 }

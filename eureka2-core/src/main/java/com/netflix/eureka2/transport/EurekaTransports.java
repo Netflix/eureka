@@ -30,6 +30,7 @@ import com.netflix.eureka2.codec.json.EurekaJsonCodec;
 import com.netflix.eureka2.protocol.common.Heartbeat;
 import com.netflix.eureka2.protocol.common.AddInstance;
 import com.netflix.eureka2.protocol.common.DeleteInstance;
+import com.netflix.eureka2.protocol.interest.DeltaDTO;
 import com.netflix.eureka2.protocol.interest.InterestRegistration;
 import com.netflix.eureka2.protocol.common.StreamStateUpdate;
 import com.netflix.eureka2.protocol.interest.UnregisterInterestSet;

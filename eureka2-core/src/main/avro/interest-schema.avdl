@@ -3,39 +3,39 @@ protocol InterestProtocol {
 
     import idl "eureka-common-model.avdl";
 
-    @namespace("com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$")
+    @namespace("com.netflix.eureka2.protocol.interest.DeltaDTO$")
     record StringDeltaDTO {
         string id;
         string fieldName;
         union { null, string } value;
     }
-    @namespace("com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$")
+    @namespace("com.netflix.eureka2.protocol.interest.DeltaDTO$")
     record EnumDeltaDTO {
         string id;
         string fieldName;
         union { null, com.netflix.eureka2.registry.instance.InstanceInfo$.Status } value;
     }
-    @namespace("com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$")
+    @namespace("com.netflix.eureka2.protocol.interest.DeltaDTO$")
     record SetServicePortDeltaDTO {
         string id;
         string fieldName;
         union { null, @java-class("java.util.HashSet") array<com.netflix.eureka2.registry.instance.ServicePort> } value;
     }
-    @namespace("com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$")
+    @namespace("com.netflix.eureka2.protocol.interest.DeltaDTO$")
     record SetStringDeltaDTO {
         string id;
         string fieldName;
         union { null, @java-class("java.util.HashSet") array<string> } value;
     }
 
-    @namespace("com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$")
+    @namespace("com.netflix.eureka2.protocol.interest.DeltaDTO$")
     record MapStringDeltaDTO {
         string id;
         string fieldName;
         union { null, @java-class("java.util.HashMap") map<string> } value;
     }
 
-    @namespace("com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$")
+    @namespace("com.netflix.eureka2.protocol.interest.DeltaDTO$")
     record DataCenterInfoDTO {
         string id;
         string fieldName;
@@ -48,12 +48,12 @@ protocol InterestProtocol {
 
     record UpdateInstanceInfo {
         union {
-            com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$.StringDeltaDTO,
-            com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$.EnumDeltaDTO,
-            com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$.SetServicePortDeltaDTO,
-            com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$.SetStringDeltaDTO,
-            com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$.MapStringDeltaDTO,
-            com.netflix.eureka2.protocol.interest.UpdateInstanceInfo$.DataCenterInfoDTO
+            com.netflix.eureka2.protocol.interest.DeltaDTO$.StringDeltaDTO,
+            com.netflix.eureka2.protocol.interest.DeltaDTO$.EnumDeltaDTO,
+            com.netflix.eureka2.protocol.interest.DeltaDTO$.SetServicePortDeltaDTO,
+            com.netflix.eureka2.protocol.interest.DeltaDTO$.SetStringDeltaDTO,
+            com.netflix.eureka2.protocol.interest.DeltaDTO$.MapStringDeltaDTO,
+            com.netflix.eureka2.protocol.interest.DeltaDTO$.DataCenterInfoDTO
         } deltaDTO;
     }
 

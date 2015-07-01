@@ -1,13 +1,13 @@
 package com.netflix.eureka2.interests;
 
 import java.util.Collections;
-import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
+import com.netflix.eureka2.interests.ChangeNotifications.Identity;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import org.junit.Test;
 import rx.Observable;
@@ -18,8 +18,8 @@ import rx.subjects.ReplaySubject;
 
 import static com.netflix.eureka2.utils.ExtCollections.asSet;
 import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
@@ -33,15 +33,22 @@ public class ChangeNotificationsTest {
 
     private static final Interest<String> INTEREST = new FullRegistryInterest<>();
 
-    private static final ChangeNotification<String> ADD_A = new ChangeNotification<>(Kind.Add, "A");
-    private static final ChangeNotification<String> DELETE_A = new ChangeNotification<>(Kind.Delete, "A");
-    private static final ChangeNotification<String> MODIFY_A = new ChangeNotification<>(Kind.Modify, "A");
-    private static final ChangeNotification<String> ADD_B = new ChangeNotification<>(Kind.Add, "B");
-    private static final ChangeNotification<String> MODIFY_B = new ChangeNotification<>(Kind.Add, "B");
-    private static final ChangeNotification<String> ADD_C = new ChangeNotification<>(Kind.Add, "C");
-    private static final ChangeNotification<String> MODIFY_D = new ChangeNotification<>(Kind.Modify, "D");
-    private static final ChangeNotification<String> DELETE_E = new ChangeNotification<>(Kind.Delete, "E");
-    private static final ChangeNotification<String> ADD_D = new ChangeNotification<>(Kind.Add, "D");
+    private static final Identity<String, String> CUSTOM_TEST_IDENTITY = new Identity<String, String>() {
+        @Override
+        public String getId(String data) {
+            return data.substring(0, 1);  // use the first char of the test data as the identity
+        }
+    };
+
+    private static final ChangeNotification<String> ADD_A = new ChangeNotification<>(Kind.Add, "AA");
+    private static final ChangeNotification<String> DELETE_A = new ChangeNotification<>(Kind.Delete, "AA");
+    private static final ChangeNotification<String> MODIFY_A = new ChangeNotification<>(Kind.Modify, "Aa");
+    private static final ChangeNotification<String> ADD_B = new ChangeNotification<>(Kind.Add, "BB");
+    private static final ChangeNotification<String> MODIFY_B = new ChangeNotification<>(Kind.Add, "Bb");
+    private static final ChangeNotification<String> ADD_C = new ChangeNotification<>(Kind.Add, "CC");
+    private static final ChangeNotification<String> ADD_D = new ChangeNotification<>(Kind.Add, "DD");
+    private static final ChangeNotification<String> MODIFY_D = new ChangeNotification<>(Kind.Modify, "Dd");
+    private static final ChangeNotification<String> DELETE_E = new ChangeNotification<>(Kind.Delete, "EE");
 
     private static final List<ChangeNotification<String>> FIRST_BATCH = asList(ADD_A, ADD_B);
     private static final List<ChangeNotification<String>> SECOND_BATCH = asList(DELETE_A, ADD_C);
@@ -51,21 +58,14 @@ public class ChangeNotificationsTest {
     );
     private static final List<ChangeNotification<String>> NOTIFICATION_LIST_2 = asList(DELETE_A, MODIFY_B, ADD_C);
 
-    private static final List<ChangeNotification<String>> COLLAPSED_NOTIFICATION_LIST_1 = asList(ADD_B, ADD_A, MODIFY_D, DELETE_E);
+    private static final List<ChangeNotification<String>> COLLAPSED_NOTIFICATION_LIST_1 = asList(ADD_B, MODIFY_A, MODIFY_D, DELETE_E);
     private static final List<ChangeNotification<String>> COLLAPSED_NOTIFICATION_LIST_2 = NOTIFICATION_LIST_2;
-    private static final List<ChangeNotification<String>> COLLAPSED_NOTIFICATION_LISTS_1_AND_2 = asList(MODIFY_D, DELETE_E, DELETE_A, ADD_B, ADD_C);
-
-    private static final Comparator<String> STRING_COMPARATOR = new Comparator<String>() {
-        @Override
-        public int compare(String o1, String o2) {
-            return o1.compareTo(o2);
-        }
-    };
+    private static final List<ChangeNotification<String>> COLLAPSED_NOTIFICATION_LISTS_1_AND_2 = asList(MODIFY_D, DELETE_E, DELETE_A, MODIFY_B, ADD_C);
 
     @Test
     public void testChangeNotificationListEvaluation() throws Exception {
-        SortedSet<String> result = ChangeNotifications.collapseAndExtract(NOTIFICATION_LIST_1, STRING_COMPARATOR);
-        assertThat(result, hasItems("A", "B"));
+        LinkedHashSet<String> result = ChangeNotifications.collapseAndExtract(NOTIFICATION_LIST_1, CUSTOM_TEST_IDENTITY);
+        assertThat(result, contains("BB", "Aa", "Dd"));
     }
 
     @Test
@@ -93,30 +93,56 @@ public class ChangeNotificationsTest {
     }
 
     @Test
+    public void testDelineatedBuffersThenSnapshotsHandleModify() throws Exception {
+        PublishSubject<ChangeNotification<String>> notificationSubject = PublishSubject.create();
+
+        ExtTestSubscriber<Set<String>> testSubscriber = new ExtTestSubscriber<>();
+        notificationSubject
+                .compose(ChangeNotifications.<String>delineatedBuffers())
+                .compose(ChangeNotifications.snapshots(CUSTOM_TEST_IDENTITY))
+                .subscribe(testSubscriber);
+
+        // Emit initial add
+        notificationSubject.onNext(StreamStateNotification.bufferStartNotification(INTEREST));
+        notificationSubject.onNext(ADD_A);
+        notificationSubject.onNext(StreamStateNotification.bufferEndNotification(INTEREST));
+        assertThat(testSubscriber.takeNext().size(), is(equalTo(1)));
+
+        // Emit modify
+        notificationSubject.onNext(MODIFY_A);
+        assertThat(testSubscriber.takeNext().size(), is(equalTo(1)));
+
+        // Ensure empty batches are not emitted
+        notificationSubject.onNext(StreamStateNotification.bufferStartNotification(INTEREST));
+        notificationSubject.onNext(StreamStateNotification.bufferEndNotification(INTEREST));
+        assertThat(testSubscriber.takeNext(), is(nullValue()));
+    }
+
+    @Test
     public void testSnapshotFunctionGeneratesDistinctValueSets() throws Exception {
         PublishSubject<List<ChangeNotification<String>>> notificationSubject = PublishSubject.create();
 
         ExtTestSubscriber<Set<String>> testSubscriber = new ExtTestSubscriber<>();
-        notificationSubject.compose(ChangeNotifications.<String>snapshots()).subscribe(testSubscriber);
+        notificationSubject.compose(ChangeNotifications.snapshots(CUSTOM_TEST_IDENTITY)).subscribe(testSubscriber);
 
         notificationSubject.onNext(FIRST_BATCH);
-        assertThat(testSubscriber.takeNext(), is(equalTo((Set) asSet("A", "B"))));
+        assertThat(testSubscriber.takeNext(), is(equalTo((Set) asSet("AA", "BB"))));
         notificationSubject.onNext(SECOND_BATCH);
-        assertThat(testSubscriber.takeNext(), is(equalTo((Set) asSet("B", "C"))));
+        assertThat(testSubscriber.takeNext(), is(equalTo((Set) asSet("BB", "CC"))));
 
         // Verify that the same snapshot is issued if no data are changed on a prompt
         notificationSubject.onNext(SECOND_BATCH);
-        assertThat(testSubscriber.takeNext(), is(equalTo((Set) asSet("B", "C"))));
+        assertThat(testSubscriber.takeNext(), is(equalTo((Set) asSet("BB", "CC"))));
 
         // Verify that the same snapshot is issued if an empty prompt arrives
         notificationSubject.onNext(Collections.EMPTY_LIST);
-        assertThat(testSubscriber.takeNext(), is(equalTo((Set) asSet("B", "C"))));
+        assertThat(testSubscriber.takeNext(), is(equalTo((Set) asSet("BB", "CC"))));
     }
 
     @Test
     public void testCollapsingOfChangeNotificationList() throws Exception {
         List<ChangeNotification<String>> collapsed = Observable.just(NOTIFICATION_LIST_1)
-                .compose(ChangeNotifications.collapse(String.CASE_INSENSITIVE_ORDER))
+                .compose(ChangeNotifications.collapse(CUSTOM_TEST_IDENTITY))
                 .toBlocking().first();
 
         assertThat(collapsed, is(equalTo(COLLAPSED_NOTIFICATION_LIST_1)));
@@ -126,7 +152,7 @@ public class ChangeNotificationsTest {
     public void testCollapsingOfChangeNotificationListOfList() throws Exception {
         List<ChangeNotification<String>> collapsed = Observable.just(
                 asList(NOTIFICATION_LIST_1, NOTIFICATION_LIST_2)
-        ).compose(ChangeNotifications.collapseLists(String.CASE_INSENSITIVE_ORDER)).toBlocking().first();
+        ).compose(ChangeNotifications.collapseLists(CUSTOM_TEST_IDENTITY)).toBlocking().first();
 
         assertThat(collapsed, is(equalTo(COLLAPSED_NOTIFICATION_LISTS_1_AND_2)));
     }
@@ -137,7 +163,7 @@ public class ChangeNotificationsTest {
 
         ExtTestSubscriber<List<ChangeNotification<String>>> testSubscriber = new ExtTestSubscriber<>();
         source.compose(
-                ChangeNotifications.aggregateChanges(STRING_COMPARATOR, 1, TimeUnit.SECONDS, testScheduler)
+                ChangeNotifications.aggregateChanges(CUSTOM_TEST_IDENTITY, 1, TimeUnit.SECONDS, testScheduler)
         ).subscribe(testSubscriber);
 
         // Emit first item before interval passes
@@ -158,7 +184,7 @@ public class ChangeNotificationsTest {
 
         ExtTestSubscriber<List<ChangeNotification<String>>> testSubscriber = new ExtTestSubscriber<>();
         source.compose(
-                ChangeNotifications.emitAndAggregateChanges(STRING_COMPARATOR, 1, TimeUnit.SECONDS, testScheduler)
+                ChangeNotifications.emitAndAggregateChanges(CUSTOM_TEST_IDENTITY, 1, TimeUnit.SECONDS, testScheduler)
         ).subscribe(testSubscriber);
 
         testScheduler.triggerActions();

@@ -21,7 +21,6 @@ import com.google.inject.util.Modules;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.module.CommonEurekaServerModule;
 import com.netflix.eureka2.server.module.EurekaExtensionModule;
-import com.netflix.eureka2.server.service.overrides.OverridesModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.governator.Governator;
 import com.netflix.governator.LifecycleInjector;
@@ -57,7 +56,6 @@ public class EurekaWriteServerRunner extends EurekaServerRunner<EurekaWriteServe
         Module applicationModule = Modules.combine(
                 configModule,
                 new CommonEurekaServerModule(name),
-                new OverridesModule(),
                 new EurekaExtensionModule(ServerType.Write),
                 new EurekaWriteServerModule(),
                 new KaryonWebAdminModule()

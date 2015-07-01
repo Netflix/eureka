@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
+import rx.functions.Action0;
 import rx.functions.Func1;
 
 import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
@@ -141,9 +142,14 @@ public abstract class AbstractStartupAndShutdownIntegrationTest<RUNNER extends E
             public void run() {
                 RxNetty.createTcpClient("localhost", port).connect().flatMap(new Func1<ObservableConnection<ByteBuf, ByteBuf>, Observable<Void>>() {
                     @Override
-                    public Observable<Void> call(ObservableConnection<ByteBuf, ByteBuf> connection) {
-                        connection.writeStringAndFlush(SHUTDOWN_CMD);
-                        return connection.close();
+                    public Observable<Void> call(final ObservableConnection<ByteBuf, ByteBuf> connection) {
+                        return connection.writeStringAndFlush(SHUTDOWN_CMD)
+                                .finallyDo(new Action0() {
+                                    @Override
+                                    public void call() {
+                                        connection.close().subscribe();
+                                    }
+                                });
                     }
                 }).subscribe(
                         new Subscriber<Void>() {

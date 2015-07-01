@@ -42,7 +42,7 @@ public class EurekaClusterDiscoveryConfigBean implements EurekaClusterDiscoveryC
     public static class Builder {
         private ResolverType clusterResolverType = ResolverType.Fixed;
         private ClusterAddress[] clusterAddresses = {ClusterAddress.valueOf("localhost", 12102, 12103, 12104)};
-        private String readClusterVipAddress = "eureka-read";
+        private String readClusterVipAddress = "eureka2-read";
 
         private Builder() {
         }

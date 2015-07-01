@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.server;
 
+import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.netflix.eureka2.interests.IndexRegistry;
 import com.netflix.eureka2.interests.IndexRegistryImpl;
@@ -32,7 +33,6 @@ import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
 import com.netflix.eureka2.registry.eviction.EvictionStrategy;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
-import com.netflix.eureka2.server.audit.AuditServiceController;
 import com.netflix.eureka2.server.registry.EvictionQuotaKeeper;
 import com.netflix.eureka2.server.registry.EvictionQuotaKeeperImpl;
 import com.netflix.eureka2.server.registry.RegistrationChannelProcessorProvider;
@@ -44,8 +44,6 @@ import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.server.service.bootstrap.BackupClusterBootstrapService;
 import com.netflix.eureka2.server.service.bootstrap.RegistryBootstrapCoordinator;
 import com.netflix.eureka2.server.service.bootstrap.RegistryBootstrapService;
-import com.netflix.eureka2.server.service.overrides.InMemoryOverridesRegistry;
-import com.netflix.eureka2.server.service.overrides.OverridesRegistry;
 import com.netflix.eureka2.server.service.replication.ReplicationService;
 import com.netflix.eureka2.server.spi.ExtensionContext;
 import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
@@ -66,25 +64,24 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
         bind(IndexRegistry.class).to(IndexRegistryImpl.class).asEagerSingleton();
 
         bind(SourcedEurekaRegistry.class).annotatedWith(Names.named("delegate")).to(SourcedEurekaRegistryImpl.class).asEagerSingleton();
+        bind(EurekaRegistrationProcessor.class).annotatedWith(Names.named(com.netflix.eureka2.Names.REGISTRY)).to(SourcedEurekaRegistryImpl.class);
         bind(SourcedEurekaRegistry.class).to(SourcedEurekaRegistryImpl.class);
         bind(EurekaRegistryView.class).to(SourcedEurekaRegistryImpl.class);
 
         bind(EurekaRegistrationProcessor.class).annotatedWith(Names.named(REGISTRATION)).toProvider(RegistrationChannelProcessorProvider.class);
         bind(EvictionQuotaKeeper.class).to(EvictionQuotaKeeperImpl.class);
-        bind(OverridesRegistry.class).to(InMemoryOverridesRegistry.class);
 
         bind(EvictionQueue.class).to(EvictionQueueImpl.class).asEagerSingleton();
         bind(EvictionStrategy.class).toProvider(EvictionStrategyProvider.class);
-        bind(AuditServiceController.class).asEagerSingleton();
         bind(RegistryBootstrapCoordinator.class).asEagerSingleton();
         bind(RegistryBootstrapService.class).to(BackupClusterBootstrapService.class);
 
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named(com.netflix.eureka2.Names.REGISTRATION)).toInstance(new SpectatorEventsListenerFactory("registration-rx-client-", "registration-rx-server-"));
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named(com.netflix.eureka2.Names.INTEREST)).toInstance(new SpectatorEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named(com.netflix.eureka2.Names.REPLICATION)).toInstance(new SpectatorEventsListenerFactory("replication-rx-client-", "replication-rx-server-"));
-        bind(TcpRegistrationServer.class).asEagerSingleton();
-        bind(TcpInterestServer.class).asEagerSingleton();
-        bind(TcpReplicationServer.class).asEagerSingleton();
+        bind(TcpRegistrationServer.class).in(Scopes.SINGLETON);
+        bind(TcpInterestServer.class).in(Scopes.SINGLETON);
+        bind(TcpReplicationServer.class).in(Scopes.SINGLETON);
 
         bind(ReplicationService.class).asEagerSingleton();
 

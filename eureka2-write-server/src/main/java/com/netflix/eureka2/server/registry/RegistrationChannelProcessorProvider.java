@@ -1,15 +1,14 @@
 package com.netflix.eureka2.server.registry;
 
 import javax.annotation.PreDestroy;
-import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import java.util.Iterator;
-import java.util.Set;
 
+import com.google.inject.Inject;
+import com.netflix.eureka2.Names;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.registry.EurekaRegistrationProcessor;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.service.overrides.OverridesService;
 
@@ -19,43 +18,58 @@ import com.netflix.eureka2.server.service.overrides.OverridesService;
 @Singleton
 public class RegistrationChannelProcessorProvider implements Provider<EurekaRegistrationProcessor> {
 
-    private final PreservableRegistryProcessor preservableRegistrationProcessor;
+    private final EurekaRegistrationProcessor sourcedEurekaRegistry;
+    private final OverridesService overridesService;
+    private final EvictionQuotaKeeper evictionQuotaKeeper;
+    private final EurekaRegistryMetricFactory metricFactory;
+
+    private volatile PreservableRegistryProcessor preservableRegistrationProcessor;
+
+    // Since
+    public static class OptionalOverridesService {
+        @Inject(optional = true) OverridesService arg;
+
+        public void setArg(OverridesService arg) {  // useful for testing
+            this.arg = arg;
+        }
+    }
 
     @Inject
-    public RegistrationChannelProcessorProvider(SourcedEurekaRegistry sourcedEurekaRegistry,
-                                                Set<OverridesService> overrideServices,
+    public RegistrationChannelProcessorProvider(@Named(Names.REGISTRY) EurekaRegistrationProcessor sourcedEurekaRegistry,
+                                                OptionalOverridesService optionalOverridesService,
                                                 EvictionQuotaKeeper evictionQuotaKeeper,
                                                 EurekaRegistryMetricFactory metricFactory) {
-        this.preservableRegistrationProcessor = new PreservableRegistryProcessor(
-                combine(sourcedEurekaRegistry, overrideServices),
-                evictionQuotaKeeper,
-                metricFactory
-        );
+        this.sourcedEurekaRegistry = sourcedEurekaRegistry;
+        this.overridesService = optionalOverridesService.arg;
+        this.evictionQuotaKeeper = evictionQuotaKeeper;
+        this.metricFactory = metricFactory;
     }
 
     @PreDestroy
     public void shutdown() {
-        preservableRegistrationProcessor.shutdown();
+        if (preservableRegistrationProcessor != null) {
+            preservableRegistrationProcessor.shutdown();
+        }
     }
 
     @Override
-    public EurekaRegistrationProcessor<InstanceInfo> get() {
+    public synchronized EurekaRegistrationProcessor<InstanceInfo> get() {
+        if (preservableRegistrationProcessor == null) {
+            preservableRegistrationProcessor = new PreservableRegistryProcessor(
+                    combine(sourcedEurekaRegistry, overridesService),
+                    evictionQuotaKeeper,
+                    metricFactory
+            );
+        }
         return preservableRegistrationProcessor;
     }
 
-    private static OverridesService combine(SourcedEurekaRegistry sourcedEurekaRegistry, Set<OverridesService> overrideServices) {
-        if (overrideServices.isEmpty()) {
-            throw new IllegalArgumentException("No override service provided");
+    private static EurekaRegistrationProcessor<InstanceInfo> combine(EurekaRegistrationProcessor sourcedEurekaRegistry, OverridesService overrideService) {
+        if (overrideService == null) {
+            return sourcedEurekaRegistry;
         }
-        Iterator<OverridesService> it = overrideServices.iterator();
-        OverridesService head = it.next();
-        OverridesService tail = head;
-        while (it.hasNext()) {
-            OverridesService next = it.next();
-            tail.addOutboundHandler(next);
-            tail = next;
-        }
-        tail.addOutboundHandler(sourcedEurekaRegistry);
-        return head;
+
+        overrideService.addOutboundHandler(sourcedEurekaRegistry);
+        return overrideService;
     }
 }
