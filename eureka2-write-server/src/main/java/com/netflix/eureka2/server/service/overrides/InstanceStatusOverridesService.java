@@ -80,11 +80,11 @@ public class InstanceStatusOverridesService implements OverridesService {
 
     @Override
     public Observable<Void> shutdown() {
-        return Observable.empty();
+        return delegate.shutdown();
     }
 
     @Override
     public Observable<Void> shutdown(Throwable cause) {
-        return Observable.empty();
+        return delegate.shutdown(cause);
     }
 }

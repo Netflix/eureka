@@ -19,11 +19,11 @@ package com.netflix.eureka2.server.transport.tcp.registration;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import com.google.inject.Provider;
 import com.netflix.eureka2.Names;
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
 import com.netflix.eureka2.registry.EurekaRegistrationProcessor;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.RegistrationChannelImpl;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.transport.MessageConnection;
@@ -40,12 +40,12 @@ import rx.schedulers.Schedulers;
 public class TcpRegistrationHandler implements ConnectionHandler<Object, Object> {
 
     private final WriteServerConfig config;
-    private final EurekaRegistrationProcessor<InstanceInfo> registrationProcessor;
+    private final Provider<EurekaRegistrationProcessor> registrationProcessor;
     private final WriteServerMetricFactory metricFactory;
 
     @Inject
     public TcpRegistrationHandler(WriteServerConfig config,
-                                  @Named(Names.REGISTRATION) EurekaRegistrationProcessor registrationProcessor,
+                                  @Named(Names.REGISTRATION) Provider<EurekaRegistrationProcessor> registrationProcessor,
                                   WriteServerMetricFactory metricFactory) {
         this.config = config;
         this.registrationProcessor = registrationProcessor;
@@ -62,7 +62,7 @@ public class TcpRegistrationHandler implements ConnectionHandler<Object, Object>
 
 
         RegistrationChannel registrationChannel =
-                new RegistrationChannelImpl(registrationProcessor, broker, metricFactory.getRegistrationChannelMetrics());
+                new RegistrationChannelImpl(registrationProcessor.get(), broker, metricFactory.getRegistrationChannelMetrics());
 
         // Since this is a discovery handler which only handles interest subscriptions,
         // the channel is created on connection accept.

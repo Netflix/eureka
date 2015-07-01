@@ -63,7 +63,7 @@ public class S3StatusOverridesRegistry implements InstanceStatusOverridesView, I
 
     @PostConstruct
     public void start() {
-        refreshSubscription = Observable.timer(0, config.getRefreshIntervalSec(), TimeUnit.SECONDS, scheduler)
+        refreshSubscription = Observable.timer(config.getRefreshIntervalSec()/2, config.getRefreshIntervalSec(), TimeUnit.SECONDS, scheduler)
                 .doOnNext(new Action1<Long>() {
                     @Override
                     public void call(Long aLong) {

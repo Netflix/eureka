@@ -9,11 +9,14 @@ import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.registry.EvictionQuotaKeeper;
 import com.netflix.eureka2.server.registry.RegistrationChannelProcessorProvider;
+import com.netflix.eureka2.server.registry.RegistrationChannelProcessorProvider.OptionalOverridesService;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
+import com.netflix.eureka2.server.service.overrides.CompositeOverridesService;
 import com.netflix.eureka2.server.service.overrides.OverridesService;
-import com.netflix.eureka2.testkit.aws.MockAutoScalingService;
-import com.netflix.eureka2.testkit.aws.MockS3Service;
+import com.netflix.eureka2.aws.MockAutoScalingService;
+import com.netflix.eureka2.aws.MockS3Service;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
+import com.netflix.eureka2.utils.ExtCollections;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,8 +25,6 @@ import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 import rx.subjects.PublishSubject;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Mockito.mock;
@@ -81,16 +82,20 @@ public class CombinedStatusOverridesTest {
         s3Overrides.start();
         asgOverrides.start();
 
-        Set<OverridesService> overridesServices = new HashSet<>();
-        overridesServices.add(new AsgStatusOverridesService(asgOverrides));
-        overridesServices.add(new S3StatusOverridesService(s3Overrides));
+        OverridesService overridesService = new CompositeOverridesService(ExtCollections.asSet(
+                (OverridesService) new AsgStatusOverridesService(asgOverrides),
+                new S3StatusOverridesService(s3Overrides)
+        ));
+
+        OptionalOverridesService optionalOverridesService = new OptionalOverridesService();
+        optionalOverridesService.setArg(overridesService);
 
         EvictionQuotaKeeper keeper = mock(EvictionQuotaKeeper.class);
         when(keeper.quota()).thenReturn(Observable.<Long>never());
 
         RegistrationChannelProcessorProvider combined = new RegistrationChannelProcessorProvider(
                 registrationDelegate,
-                overridesServices,
+                optionalOverridesService,
                 keeper,
                 EurekaRegistryMetricFactory.registryMetrics()
         );

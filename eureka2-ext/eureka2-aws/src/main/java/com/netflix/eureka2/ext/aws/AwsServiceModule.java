@@ -8,15 +8,13 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.netflix.archaius.ConfigProxyFactory;
-import com.netflix.eureka2.server.service.overrides.OverridesModule;
+import com.netflix.eureka2.server.service.overrides.CompositeOverridesService;
 import com.netflix.eureka2.server.service.overrides.OverridesService;
 import com.netflix.eureka2.server.spi.ExtAbstractModule;
-import com.netflix.governator.auto.annotations.OverrideModule;
 
 /**
  * @author Tomasz Bak
  */
-@OverrideModule(OverridesModule.class)
 public class AwsServiceModule extends ExtAbstractModule {
 
     private static final String AWS_CONFIG_PREFIX = "eureka2.ext.aws";
@@ -29,6 +27,8 @@ public class AwsServiceModule extends ExtAbstractModule {
         bind(AsgStatusOverridesView.class).in(Scopes.SINGLETON);
         bind(S3StatusOverridesRegistry.class).in(Scopes.SINGLETON);
 
+        bind(OverridesService.class).to(CompositeOverridesService.class).in(Scopes.SINGLETON);
+
         Multibinder<OverridesService> multibinder = Multibinder.newSetBinder(binder(), OverridesService.class);
         multibinder.addBinding().to(AsgStatusOverridesService.class);
         multibinder.addBinding().to(S3StatusOverridesService.class);
@@ -37,7 +37,6 @@ public class AwsServiceModule extends ExtAbstractModule {
     @Provides
     @Singleton
     public AwsConfiguration getAwsConfiguration(ConfigProxyFactory factory) {
-        AwsConfiguration configuration = factory.newProxy(AwsConfiguration.class, AWS_CONFIG_PREFIX);
-        return configuration;
+        return factory.newProxy(AwsConfiguration.class, AWS_CONFIG_PREFIX);
     }
 }

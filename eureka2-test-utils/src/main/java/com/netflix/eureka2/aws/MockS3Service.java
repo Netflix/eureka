@@ -1,4 +1,4 @@
-package com.netflix.eureka2.testkit.aws;
+package com.netflix.eureka2.aws;
 
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ListObjectsRequest;

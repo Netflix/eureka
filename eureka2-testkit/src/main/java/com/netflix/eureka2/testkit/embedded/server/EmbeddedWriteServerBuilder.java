@@ -8,7 +8,6 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.util.Modules;
 import com.netflix.eureka2.Server;
-import com.netflix.eureka2.ext.aws.AwsServiceModule;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.server.AbstractEurekaServer;
 import com.netflix.eureka2.server.EurekaWriteServerConfigurationModule;
@@ -17,7 +16,6 @@ import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.module.CommonEurekaServerModule;
 import com.netflix.eureka2.server.module.EurekaExtensionModule;
-import com.netflix.eureka2.server.service.overrides.OverridesModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
@@ -50,7 +48,6 @@ public class EmbeddedWriteServerBuilder extends EmbeddedServerBuilder<WriteServe
             coreModules.add(EurekaWriteServerConfigurationModule.fromConfig(configuration));
         }
         coreModules.add(new CommonEurekaServerModule());
-        coreModules.add(new OverridesModule());
         coreModules.add(new EurekaWriteServerModule());
         if (adminUI) {
             coreModules.add(new EmbeddedKaryonAdminModule(configuration.getEurekaTransport().getWebAdminPort()));

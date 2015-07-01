@@ -3,7 +3,7 @@ package com.netflix.eureka2.ext.aws;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
-import com.netflix.eureka2.testkit.aws.MockS3Service;
+import com.netflix.eureka2.aws.MockS3Service;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.After;
 import org.junit.Before;

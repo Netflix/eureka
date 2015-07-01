@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.server;
 
+import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.netflix.eureka2.interests.IndexRegistry;
 import com.netflix.eureka2.interests.IndexRegistryImpl;
@@ -32,7 +33,6 @@ import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
 import com.netflix.eureka2.registry.eviction.EvictionStrategy;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
-import com.netflix.eureka2.server.audit.AuditServiceController;
 import com.netflix.eureka2.server.registry.EvictionQuotaKeeper;
 import com.netflix.eureka2.server.registry.EvictionQuotaKeeperImpl;
 import com.netflix.eureka2.server.registry.RegistrationChannelProcessorProvider;
@@ -79,9 +79,9 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named(com.netflix.eureka2.Names.REGISTRATION)).toInstance(new SpectatorEventsListenerFactory("registration-rx-client-", "registration-rx-server-"));
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named(com.netflix.eureka2.Names.INTEREST)).toInstance(new SpectatorEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named(com.netflix.eureka2.Names.REPLICATION)).toInstance(new SpectatorEventsListenerFactory("replication-rx-client-", "replication-rx-server-"));
-        bind(TcpRegistrationServer.class).asEagerSingleton();
-        bind(TcpInterestServer.class).asEagerSingleton();
-        bind(TcpReplicationServer.class).asEagerSingleton();
+        bind(TcpRegistrationServer.class).in(Scopes.SINGLETON);
+        bind(TcpInterestServer.class).in(Scopes.SINGLETON);
+        bind(TcpReplicationServer.class).in(Scopes.SINGLETON);
 
         bind(ReplicationService.class).asEagerSingleton();
 

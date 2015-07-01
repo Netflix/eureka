@@ -5,7 +5,7 @@ import com.amazonaws.services.autoscaling.model.DescribeAutoScalingGroupsRequest
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
-import com.netflix.eureka2.testkit.aws.MockAutoScalingService;
+import com.netflix.eureka2.aws.MockAutoScalingService;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.After;
 import org.junit.Before;
