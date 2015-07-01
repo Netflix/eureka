@@ -174,27 +174,30 @@ public class AsgStatusOverridesView implements InstanceStatusOverridesView {
 
             int total = 0;
             String nextToken = null;
-            do {
-                // TODO better exception handling
-                DescribeAutoScalingGroupsRequest request = new DescribeAutoScalingGroupsRequest();
-                request.setMaxRecords(PAGE_SIZE);
-                request.setNextToken(nextToken);
-                DescribeAutoScalingGroupsResult result = amazonAutoScaling.describeAutoScalingGroups(request);
+            try {
+                do {
+                    DescribeAutoScalingGroupsRequest request = new DescribeAutoScalingGroupsRequest();
+                    request.setMaxRecords(PAGE_SIZE);
+                    request.setNextToken(nextToken);
+                    DescribeAutoScalingGroupsResult result = amazonAutoScaling.describeAutoScalingGroups(request);
 
-                for (AutoScalingGroup asg : result.getAutoScalingGroups()) {
-                    if (isAddToLoadBalancerSuspended(asg)) {
-                        asgSnapshot.put(new AsgAndAccount(asg.getAutoScalingGroupName(), defaultAccountId), true);
+                    for (AutoScalingGroup asg : result.getAutoScalingGroups()) {
+                        if (isAddToLoadBalancerSuspended(asg)) {
+                            asgSnapshot.put(new AsgAndAccount(asg.getAutoScalingGroupName(), defaultAccountId), true);
+                        }
                     }
-                }
 
-                nextToken = result.getNextToken();
-                total += result.getAutoScalingGroups().size();
-            } while (nextToken != null);
+                    nextToken = result.getNextToken();
+                    total += result.getAutoScalingGroups().size();
+                } while (nextToken != null);
 
-            logger.debug("Retrieved {} ASGs", total);
+                logger.debug("Retrieved {} ASGs", total);
 
-            overridesMap = asgSnapshot;
-            overridesSubject.onNext(overridesMap);
+                overridesMap = asgSnapshot;
+                overridesSubject.onNext(overridesMap);
+            } catch (Exception e) {
+                logger.error("failed updating ASG data", e);
+            }
         }
 
         /**

@@ -37,4 +37,10 @@ public class AwsServiceModule extends ExtAbstractModule {
     public AwsConfiguration getAwsConfiguration(ConfigProxyFactory factory) {
         return factory.newProxy(AwsConfiguration.class, AWS_CONFIG_PREFIX);
     }
+
+    @Provides
+    @Singleton
+    public S3OverridesConfiguration getS3OverridesConfiguration(ConfigProxyFactory factory) {
+        return factory.newProxy(S3OverridesConfiguration.class, AWS_CONFIG_PREFIX);
+    }
 }

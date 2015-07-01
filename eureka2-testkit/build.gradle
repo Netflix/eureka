@@ -23,9 +23,11 @@ dependencies {
     compile project(':eureka2-ext:eureka2-karyon-admin')
     compile project(':eureka2-ext:eureka2-karyon-admin-status')
     compile project(':eureka2-ext:eureka2-eureka1-rest-api')
+    compile project(':eureka2-ext:eureka2-aws')
     compile "jline:jline:${jline_version}"
     compile "junit:junit:${junit_version}"
     compile "org.hamcrest:hamcrest-library:${hamcrest_version}"
+    compile "org.mockito:mockito-core:${mockito_version}"
     testCompile project(':eureka2-test-utils')
 }
 

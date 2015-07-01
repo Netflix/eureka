@@ -16,7 +16,7 @@ public class AmazonS3ClientProvider implements Provider<AmazonS3Client> {
     private final AmazonS3Client amazonS3Client;
 
     @Inject
-    public AmazonS3ClientProvider(AwsConfiguration configuration) {
+    public AmazonS3ClientProvider(S3OverridesConfiguration configuration) {
         if (configuration.getAwsAccessId() != null && configuration.getAwsSecretKey() != null) {
             amazonS3Client = new AmazonS3Client(new BasicAWSCredentials(configuration.getAwsAccessId(), configuration.getAwsSecretKey()));
         } else {

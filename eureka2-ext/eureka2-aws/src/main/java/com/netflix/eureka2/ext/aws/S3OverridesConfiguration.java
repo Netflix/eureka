@@ -5,7 +5,16 @@ import com.netflix.archaius.annotations.DefaultValue;
 /**
  * @author David Liu
  */
-public interface S3OverridesConfiguration extends AwsConfiguration {
+public interface S3OverridesConfiguration {
+
+    String getRegion();
+
+    String getAwsAccessId();
+
+    String getAwsSecretKey();
+
+    @DefaultValue("30")
+    long getRefreshIntervalSec();
 
     String getBucketName();
 

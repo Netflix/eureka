@@ -1,13 +1,11 @@
 package com.netflix.eureka2.ext.aws;
 
 import com.amazonaws.services.autoscaling.AmazonAutoScaling;
-import com.amazonaws.services.autoscaling.model.AutoScalingGroup;
 import com.amazonaws.services.autoscaling.model.DescribeAutoScalingGroupsRequest;
-import com.amazonaws.services.autoscaling.model.DescribeAutoScalingGroupsResult;
-import com.amazonaws.services.autoscaling.model.SuspendedProcess;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.server.service.SelfInfoResolver;
+import com.netflix.eureka2.testkit.aws.MockAutoScalingService;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.After;
 import org.junit.Before;
@@ -16,10 +14,8 @@ import rx.Observable;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
-import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
-import static com.netflix.eureka2.ext.aws.AsgStatusOverridesView.PROP_ADD_TO_LOAD_BALANCER;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -47,23 +43,28 @@ public class AsgStatusOverridesViewTest {
         }
     };
 
-    private final AmazonAutoScaling amazonAutoScaling = mock(AmazonAutoScaling.class);
-    private final AwsConfiguration configuration = mock(AwsConfiguration.class);
-
-    private final AsgStatusOverridesView registry = new AsgStatusOverridesView(
-            selfInfoResolver,
-            amazonAutoScaling,
-            configuration,
-            testScheduler
-    );
-
     private final InstanceInfo asgAInfo = SampleInstanceInfo.WebServer.builder()
             .withAsg(ASG_A)
             .build();
 
+    private final AwsConfiguration configuration = mock(AwsConfiguration.class);
+    private final MockAutoScalingService mockAutoScalingService = new MockAutoScalingService();
+    private AmazonAutoScaling amazonAutoScaling;
+    private AsgStatusOverridesView registry;
+
+
     @Before
     public void setUp() throws Exception {
         when(configuration.getRefreshIntervalSec()).thenReturn(REFRESH_INTERVAL_SEC);
+
+        amazonAutoScaling = mockAutoScalingService.getAmazonAutoScaling();
+        registry = new AsgStatusOverridesView(
+                selfInfoResolver,
+                amazonAutoScaling,
+                configuration,
+                testScheduler
+        );
+
         registry.start();
     }
 
@@ -90,19 +91,14 @@ public class AsgStatusOverridesViewTest {
         testScheduler.triggerActions();
         assertThat(testSubscriber.takeNext(), is(false));
 
-        // Verify receives ASG status true
-        when(amazonAutoScaling.describeAutoScalingGroups(any(DescribeAutoScalingGroupsRequest.class)))
-                .thenReturn(createDescribeAutoScalingGroupsResult(ASG_A, true));
-
+        mockAutoScalingService.disableAsg(ASG_A);
         testScheduler.advanceTimeBy(REFRESH_INTERVAL_SEC, TimeUnit.SECONDS);
 
         verify(amazonAutoScaling, times(1)).describeAutoScalingGroups(any(DescribeAutoScalingGroupsRequest.class));
         assertThat(testSubscriber.takeNext(), is(true));
 
         // Verify receives ASG status false
-        when(amazonAutoScaling.describeAutoScalingGroups(any(DescribeAutoScalingGroupsRequest.class)))
-                .thenReturn(createDescribeAutoScalingGroupsResult(ASG_A, false));
-
+        mockAutoScalingService.enableAsg(ASG_A);
         testScheduler.advanceTimeBy(REFRESH_INTERVAL_SEC, TimeUnit.SECONDS);
 
         verify(amazonAutoScaling, times(2)).describeAutoScalingGroups(any(DescribeAutoScalingGroupsRequest.class));
@@ -119,9 +115,7 @@ public class AsgStatusOverridesViewTest {
         assertThat(testSubscriber1.takeNext(), is(false));
 
         // Verify testSubscriber1 receives status true
-        when(amazonAutoScaling.describeAutoScalingGroups(any(DescribeAutoScalingGroupsRequest.class)))
-                .thenReturn(createDescribeAutoScalingGroupsResult(ASG_A, true));
-
+        mockAutoScalingService.disableAsg(ASG_A);
         testScheduler.advanceTimeBy(REFRESH_INTERVAL_SEC, TimeUnit.SECONDS);
 
         assertThat(testSubscriber1.takeNext(), is(true));
@@ -144,23 +138,5 @@ public class AsgStatusOverridesViewTest {
         testScheduler.advanceTimeBy(REFRESH_INTERVAL_SEC, TimeUnit.SECONDS);
 
         assertThat(registry.getSize(), is(equalTo(1)));
-    }
-
-    private static DescribeAutoScalingGroupsResult createDescribeAutoScalingGroupsResult(String asgName, boolean status) {
-        DescribeAutoScalingGroupsResult asgResult = new DescribeAutoScalingGroupsResult();
-        AutoScalingGroup asg = createAutoScalingGroup(asgName, status);
-        asgResult.setAutoScalingGroups(Collections.singletonList(asg));
-        return asgResult;
-    }
-
-    private static AutoScalingGroup createAutoScalingGroup(String asgName, boolean status) {
-        AutoScalingGroup asg = new AutoScalingGroup();
-        asg.setAutoScalingGroupName(asgName);
-        if (status) {
-            SuspendedProcess suspendedProcess = new SuspendedProcess();
-            suspendedProcess.setProcessName(PROP_ADD_TO_LOAD_BALANCER);
-            asg.setSuspendedProcesses(Collections.singletonList(suspendedProcess));
-        }
-        return asg;
     }
 }

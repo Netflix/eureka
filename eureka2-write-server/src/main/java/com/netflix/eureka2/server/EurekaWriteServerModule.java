@@ -64,6 +64,7 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
         bind(IndexRegistry.class).to(IndexRegistryImpl.class).asEagerSingleton();
 
         bind(SourcedEurekaRegistry.class).annotatedWith(Names.named("delegate")).to(SourcedEurekaRegistryImpl.class).asEagerSingleton();
+        bind(EurekaRegistrationProcessor.class).annotatedWith(Names.named(com.netflix.eureka2.Names.REGISTRY)).to(SourcedEurekaRegistryImpl.class);
         bind(SourcedEurekaRegistry.class).to(SourcedEurekaRegistryImpl.class);
         bind(EurekaRegistryView.class).to(SourcedEurekaRegistryImpl.class);
 
