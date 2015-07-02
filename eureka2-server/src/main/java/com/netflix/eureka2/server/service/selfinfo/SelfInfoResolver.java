@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server.service;
+package com.netflix.eureka2.server.service.selfinfo;
 
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;

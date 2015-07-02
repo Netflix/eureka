@@ -8,7 +8,7 @@ import com.amazonaws.services.autoscaling.model.SuspendedProcess;
 import com.netflix.eureka2.registry.datacenter.AwsDataCenterInfo;
 import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.service.SelfInfoResolver;
+import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.server.service.overrides.InstanceStatusOverridesView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -20,12 +20,13 @@ public class RetryStrategyFunc implements Func1<Observable<? extends Throwable>,
     private final Scheduler scheduler;
 
     /**
-     * Create a retry strategy that retries infinitely with the retryIntervalMillis as the set delay between retries
+     * Create a retry strategy that retries infinitely with the retryInterval as the set delay between retries
      *
-     * @param retryIntervalMillis the initial wait between retries in milliseconds
+     * @param retryInterval the initial wait between retries
+     * @param timeUnit the timeUnit of the retryInterval
      */
-    public RetryStrategyFunc(long retryIntervalMillis) {
-        this(retryIntervalMillis, -1, false);
+    public RetryStrategyFunc(long retryInterval, TimeUnit timeUnit) {
+        this(TimeUnit.MILLISECONDS.convert(retryInterval, timeUnit), -1, false);
     }
 
     public RetryStrategyFunc(long retryIntervalMillis, Scheduler scheduler) {

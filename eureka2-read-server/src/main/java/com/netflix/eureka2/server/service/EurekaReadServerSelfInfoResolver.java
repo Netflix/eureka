@@ -10,6 +10,13 @@ import com.netflix.eureka2.registry.instance.ServicePort;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.health.EurekaHealthStatusAggregatorImpl;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
+import com.netflix.eureka2.server.service.selfinfo.CachingSelfInfoResolver;
+import com.netflix.eureka2.server.service.selfinfo.ChainableSelfInfoResolver;
+import com.netflix.eureka2.server.service.selfinfo.ConfigSelfInfoResolver;
+import com.netflix.eureka2.server.service.selfinfo.PeriodicDataCenterInfoResolver;
+import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
+import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolverChain;
+import com.netflix.eureka2.server.service.selfinfo.StatusInfoResolver;
 import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import rx.Observable;
 import rx.functions.Func1;
@@ -29,7 +36,7 @@ public class EurekaReadServerSelfInfoResolver implements SelfInfoResolver {
                                             EurekaHealthStatusAggregatorImpl healthStatusAggregator) {
 
         SelfInfoResolverChain resolverChain = new SelfInfoResolverChain(
-                new ConfigSelfInfoResolver(config.getEurekaInstance(), config.getEurekaTransport()),
+                new ConfigSelfInfoResolver(config.getEurekaInstance()),
                 new StatusInfoResolver(healthStatusAggregator),
                 // read server specific resolver
                 new ChainableSelfInfoResolver(Observable.just(new HashSet<ServicePort>())
@@ -42,7 +49,7 @@ public class EurekaReadServerSelfInfoResolver implements SelfInfoResolver {
                             }
                         })
                 ),
-                new PeriodicDataCenterInfoResolver(config.getEurekaInstance())
+                new PeriodicDataCenterInfoResolver(config.getEurekaInstance(), config.getEurekaTransport())
         );
 
         delegate = new CachingSelfInfoResolver(resolverChain);

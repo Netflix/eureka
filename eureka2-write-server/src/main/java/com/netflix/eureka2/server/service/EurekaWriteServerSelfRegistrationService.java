@@ -7,6 +7,7 @@ import javax.inject.Singleton;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;

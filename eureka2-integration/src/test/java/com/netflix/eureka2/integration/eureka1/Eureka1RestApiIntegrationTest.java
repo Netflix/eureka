@@ -34,7 +34,6 @@ import static org.junit.Assert.fail;
 
 /**
  * The integration test uses Eureka 1.x client.
- * Note that this does not run in intelliJ right now due to the extension loader
  *
  * @author Tomasz Bak
  */
