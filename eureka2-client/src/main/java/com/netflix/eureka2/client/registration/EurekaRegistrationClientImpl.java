@@ -18,6 +18,8 @@ import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.subjects.AsyncSubject;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * TODO: use a more sophisticated retry policy that creates channels that connects to different write servers?
  *
@@ -61,7 +63,7 @@ public class EurekaRegistrationClientImpl implements EurekaRegistrationClient {
         Observable<Void> initObservable = retryableConnection.getInitObservable();
 
         Observable<Void> lifecycle = retryableConnection.getRetryableLifecycle()
-                .retryWhen(new RetryStrategyFunc(retryWaitMillis))
+                .retryWhen(new RetryStrategyFunc(retryWaitMillis, TimeUnit.MILLISECONDS))
                 .takeUntil(shutdownSubject)
                 .doOnUnsubscribe(new Action0() {
                     @Override

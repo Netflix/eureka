@@ -1,5 +1,6 @@
 package com.netflix.eureka2.server.service.replication;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -116,7 +117,7 @@ public class ReplicationSenderImpl implements ReplicationSender {
         if (stateRef.compareAndSet(STATE.Idle, STATE.Replicating)) {
             // TODO better retry func?
             connection.getRetryableLifecycle()
-                    .retryWhen(new RetryStrategyFunc(retryWaitMillis))
+                    .retryWhen(new RetryStrategyFunc(retryWaitMillis, TimeUnit.MILLISECONDS))
                     .subscribe(replicationSubscriber);
         }
     }

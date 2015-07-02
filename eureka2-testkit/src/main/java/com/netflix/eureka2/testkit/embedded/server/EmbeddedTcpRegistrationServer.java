@@ -1,7 +1,5 @@
 package com.netflix.eureka2.testkit.embedded.server;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -31,21 +29,14 @@ public class EmbeddedTcpRegistrationServer extends TcpRegistrationServer {
         this.networkRouter = networkRouter;
     }
 
-    @PostConstruct
     @Override
     public void start() {
-        // FIXME For some reason start method is called twice and we must guard against it here
-        if (server == null) {
-            super.start();
-            proxyPort = networkRouter.bridgeTo(super.serverPort());
-        }
+        proxyPort = networkRouter.bridgeTo(super.serverPort());
     }
 
-    @PreDestroy
     @Override
     public void stop() {
         networkRouter.removeBridgeTo(super.serverPort());
-        super.stop();
     }
 
     @Override

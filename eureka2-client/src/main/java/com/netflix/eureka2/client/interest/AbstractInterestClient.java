@@ -1,5 +1,6 @@
 package com.netflix.eureka2.client.interest;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.netflix.eureka2.channel.InterestChannel;
@@ -151,7 +152,7 @@ public abstract class AbstractInterestClient implements EurekaInterestClient {
     protected void lifecycleSubscribe(RetryableConnection<InterestChannel> retryableConnection) {
         // subscribe to the lifecycle to initiate the interest subscription
         retryableConnection.getRetryableLifecycle()
-                .retryWhen(new RetryStrategyFunc(retryWaitMillis))
+                .retryWhen(new RetryStrategyFunc(retryWaitMillis, TimeUnit.MILLISECONDS))
                 .subscribe(new Subscriber<Void>() {
                     @Override
                     public void onCompleted() {

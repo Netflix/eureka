@@ -33,7 +33,7 @@ import com.netflix.eureka2.server.registry.EurekaBridgeRegistry;
 import com.netflix.eureka2.server.service.BridgeService;
 import com.netflix.eureka2.server.service.EurekaBridgeServerSelfInfoResolver;
 import com.netflix.eureka2.server.service.EurekaBridgeServerSelfRegistrationService;
-import com.netflix.eureka2.server.service.SelfInfoResolver;
+import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.server.service.replication.ReplicationService;
 import com.netflix.eureka2.server.spi.ExtensionContext;

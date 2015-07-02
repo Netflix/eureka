@@ -70,7 +70,7 @@ public final class ChangeNotifications {
     private static final Identity<Server, String> SERVER_IDENTITY = new Identity<Server, String>() {
         @Override
         public String getId(Server server) {
-            return server.getHost();
+            return server.hashCode() + "";  // match both hostname and port
         }
     };
 

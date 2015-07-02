@@ -13,6 +13,7 @@ import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.BridgeChannelImpl;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
+import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Subscriber;

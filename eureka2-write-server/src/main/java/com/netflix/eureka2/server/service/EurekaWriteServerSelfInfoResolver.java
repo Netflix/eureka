@@ -10,6 +10,12 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.ServicePort;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
+import com.netflix.eureka2.server.service.selfinfo.CachingSelfInfoResolver;
+import com.netflix.eureka2.server.service.selfinfo.ChainableSelfInfoResolver;
+import com.netflix.eureka2.server.service.selfinfo.ConfigSelfInfoResolver;
+import com.netflix.eureka2.server.service.selfinfo.PeriodicDataCenterInfoResolver;
+import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
+import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolverChain;
 import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
@@ -32,7 +38,7 @@ public class EurekaWriteServerSelfInfoResolver implements SelfInfoResolver {
             final Provider<TcpReplicationServer> replicationServer,
             final Provider<TcpInterestServer> discoveryServer) {
         SelfInfoResolverChain resolverChain = new SelfInfoResolverChain(
-                new ConfigSelfInfoResolver(config.getEurekaInstance(), config.getEurekaTransport()),
+                new ConfigSelfInfoResolver(config.getEurekaInstance()),
                 // write server specific resolver
                 new ChainableSelfInfoResolver(Observable.just(new HashSet<ServicePort>())
                         .map(new Func1<HashSet<ServicePort>, InstanceInfo.Builder>() {
@@ -47,9 +53,7 @@ public class EurekaWriteServerSelfInfoResolver implements SelfInfoResolver {
                             }
                         })
                 ),
-                new PeriodicDataCenterInfoResolver(config.getEurekaInstance()),
-                // TODO override with more meaningful health check
-                new ChainableSelfInfoResolver(Observable.just(new InstanceInfo.Builder().withStatus(InstanceInfo.Status.UP)))
+                new PeriodicDataCenterInfoResolver(config.getEurekaInstance(), config.getEurekaTransport())
         );
 
         delegate = new CachingSelfInfoResolver(resolverChain);

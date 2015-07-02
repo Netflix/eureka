@@ -7,8 +7,6 @@ import com.netflix.eureka2.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.codec.CodecType;
-import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
-import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider.StrategyType;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedReadCluster.ReadClusterReport;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
@@ -19,7 +17,6 @@ import com.netflix.eureka2.testkit.netrouter.NetworkRouter;
 import static com.netflix.eureka2.server.config.bean.EurekaClusterDiscoveryConfigBean.anEurekaClusterDiscoveryConfig;
 import static com.netflix.eureka2.server.config.bean.EurekaInstanceInfoConfigBean.anEurekaInstanceInfoConfig;
 import static com.netflix.eureka2.server.config.bean.EurekaServerConfigBean.anEurekaServerConfig;
-import static com.netflix.eureka2.server.config.bean.EurekaServerRegistryConfigBean.anEurekaServerRegistryConfig;
 import static com.netflix.eureka2.server.config.bean.EurekaServerTransportConfigBean.anEurekaServerTransportConfig;
 
 /**

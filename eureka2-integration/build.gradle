@@ -18,4 +18,8 @@ dependencies {
     compile project(':eureka2-test-utils')
     compile project(':eureka2-bridge')
     compile project(':eureka2-examples')
+
+    // runtime dep for extension loading
+    runtime project(':eureka2-ext:eureka2-aws')
+    runtime project(':eureka2-ext:eureka2-eureka1-rest-api')
 }

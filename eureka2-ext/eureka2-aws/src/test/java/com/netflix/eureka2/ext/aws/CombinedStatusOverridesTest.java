@@ -10,7 +10,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.registry.EvictionQuotaKeeper;
 import com.netflix.eureka2.server.registry.RegistrationChannelProcessorProvider;
 import com.netflix.eureka2.server.registry.RegistrationChannelProcessorProvider.OptionalOverridesService;
-import com.netflix.eureka2.server.service.SelfInfoResolver;
+import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.server.service.overrides.CompositeOverridesService;
 import com.netflix.eureka2.server.service.overrides.OverridesService;
 import com.netflix.eureka2.aws.MockAutoScalingService;

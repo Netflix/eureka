@@ -8,6 +8,12 @@ import com.netflix.eureka2.Names;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.ServicePort;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
+import com.netflix.eureka2.server.service.selfinfo.CachingSelfInfoResolver;
+import com.netflix.eureka2.server.service.selfinfo.ChainableSelfInfoResolver;
+import com.netflix.eureka2.server.service.selfinfo.ConfigSelfInfoResolver;
+import com.netflix.eureka2.server.service.selfinfo.PeriodicDataCenterInfoResolver;
+import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
+import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolverChain;
 import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import rx.Observable;
 import rx.functions.Func1;
@@ -25,7 +31,7 @@ public class EurekaBridgeServerSelfInfoResolver implements SelfInfoResolver {
             final BridgeServerConfig config,
             final TcpInterestServer discoveryServer) {
         SelfInfoResolverChain resolverChain = new SelfInfoResolverChain(
-                new ConfigSelfInfoResolver(config.getEurekaInstance(), config.getEurekaTransport()),
+                new ConfigSelfInfoResolver(config.getEurekaInstance()),
                 // read server specific resolver
                 new ChainableSelfInfoResolver(Observable.just(new HashSet<ServicePort>())
                         .map(new Func1<HashSet<ServicePort>, InstanceInfo.Builder>() {
@@ -36,9 +42,7 @@ public class EurekaBridgeServerSelfInfoResolver implements SelfInfoResolver {
                             }
                         })
                 ),
-                new PeriodicDataCenterInfoResolver(config.getEurekaInstance()),
-                // TODO override with more meaningful health check
-                new ChainableSelfInfoResolver(Observable.just(new InstanceInfo.Builder().withStatus(InstanceInfo.Status.UP)))
+                new PeriodicDataCenterInfoResolver(config.getEurekaInstance(), config.getEurekaTransport())
         );
 
         delegate = new CachingSelfInfoResolver(resolverChain);

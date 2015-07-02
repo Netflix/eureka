@@ -1,4 +1,4 @@
-package com.netflix.eureka2.server.service;
+package com.netflix.eureka2.server.service.selfinfo;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -7,6 +7,7 @@ import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.config.EurekaInstanceInfoConfig;
+import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import com.netflix.eureka2.testkit.data.builder.SampleAwsDataCenterInfo;
 import org.junit.Before;
 import org.junit.Test;
@@ -27,21 +28,26 @@ import static org.mockito.Mockito.when;
 public class PeriodicDataCenterInfoResolverTest {
 
     private static final long RESOLVE_INTERVAL = 30L;
+    private static final int WEB_ADMIN_PORT = 8088;
 
     private final TestScheduler scheduler = Schedulers.test();
     private final TestSubscriber<InstanceInfo.Builder> testSubscriber = new TestSubscriber<>();
     private final DataCenterInfo dataCenterInfo1 = SampleAwsDataCenterInfo.UsEast1a.build();
     private final DataCenterInfo dataCenterInfo2 = SampleAwsDataCenterInfo.UsEast1c.build();
 
-    private EurekaInstanceInfoConfig mockConfig;
+    private EurekaInstanceInfoConfig mockInstanceConfig;
+    private EurekaServerTransportConfig mockTransportConfig;
     private Func0 dataCenterInfoFunc;
     private PeriodicDataCenterInfoResolver resolver;
 
     @Before
     public void setUp() {
-        mockConfig = mock(EurekaInstanceInfoConfig.class);
-        when(mockConfig.getDataCenterResolveIntervalSec()).thenReturn(RESOLVE_INTERVAL);
-        when(mockConfig.getDataCenterType()).thenReturn(LocalDataCenterInfo.DataCenterType.AWS);
+        mockInstanceConfig = mock(EurekaInstanceInfoConfig.class);
+        when(mockInstanceConfig.getDataCenterResolveIntervalSec()).thenReturn(RESOLVE_INTERVAL);
+        when(mockInstanceConfig.getDataCenterType()).thenReturn(LocalDataCenterInfo.DataCenterType.AWS);
+
+        mockTransportConfig = mock(EurekaServerTransportConfig.class);
+        when(mockTransportConfig.getWebAdminPort()).thenReturn(WEB_ADMIN_PORT);
 
         dataCenterInfoFunc = mock(Func0.class);
         when(dataCenterInfoFunc.call())
@@ -51,7 +57,7 @@ public class PeriodicDataCenterInfoResolverTest {
 
     @Test
     public void testUpdatesToDataCenterInfo() throws Exception {
-        resolver = new PeriodicDataCenterInfoResolver(mockConfig, dataCenterInfoFunc, scheduler);
+        resolver = new PeriodicDataCenterInfoResolver(mockInstanceConfig, mockTransportConfig, dataCenterInfoFunc, scheduler);
 
         // use resolveMutable to get the builder the .build() will fail due to not having an InstanceInfo id
         resolver.resolveMutable().subscribe(testSubscriber);
@@ -77,7 +83,7 @@ public class PeriodicDataCenterInfoResolverTest {
                 .thenReturn(Observable.error(new Exception("test error")))
                 .thenReturn(Observable.just(dataCenterInfo1));
 
-        resolver = new PeriodicDataCenterInfoResolver(mockConfig, dataCenterInfoFunc, scheduler);
+        resolver = new PeriodicDataCenterInfoResolver(mockInstanceConfig, mockTransportConfig, dataCenterInfoFunc, scheduler);
 
         // use resolveMutable to get the builder the .build() will fail due to not having an InstanceInfo id
         resolver.resolveMutable().subscribe(testSubscriber);

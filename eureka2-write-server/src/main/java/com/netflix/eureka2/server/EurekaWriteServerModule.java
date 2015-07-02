@@ -39,7 +39,7 @@ import com.netflix.eureka2.server.registry.RegistrationChannelProcessorProvider;
 import com.netflix.eureka2.server.rest.WriteServerRootResource;
 import com.netflix.eureka2.server.service.EurekaWriteServerSelfInfoResolver;
 import com.netflix.eureka2.server.service.EurekaWriteServerSelfRegistrationService;
-import com.netflix.eureka2.server.service.SelfInfoResolver;
+import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.server.service.bootstrap.BackupClusterBootstrapService;
 import com.netflix.eureka2.server.service.bootstrap.RegistryBootstrapCoordinator;
@@ -97,8 +97,8 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
         bind(WriteServerMetricFactory.class).to(SpectatorWriteServerMetricFactory.class).asEagerSingleton();
 
         // Self registration
-        bind(SelfInfoResolver.class).to(EurekaWriteServerSelfInfoResolver.class).asEagerSingleton();
-        bind(SelfRegistrationService.class).to(EurekaWriteServerSelfRegistrationService.class).asEagerSingleton();
+        bind(SelfInfoResolver.class).to(EurekaWriteServerSelfInfoResolver.class);
+        bind(SelfRegistrationService.class).to(EurekaWriteServerSelfRegistrationService.class);
 
         bind(AbstractEurekaServer.class).to(EurekaWriteServer.class);
     }
