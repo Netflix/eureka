@@ -37,7 +37,7 @@ public class EurekaWriteServerRunner extends EurekaServerRunner<EurekaWriteServe
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaWriteServerRunner.class);
 
-    private final WriteServerConfig config;
+    protected final WriteServerConfig config;
 
     public EurekaWriteServerRunner(WriteServerConfig config) {
         super(EurekaWriteServer.class);

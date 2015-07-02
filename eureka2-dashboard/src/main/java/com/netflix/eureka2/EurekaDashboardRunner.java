@@ -19,7 +19,7 @@ public class EurekaDashboardRunner extends EurekaServerRunner<EurekaDashboardSer
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaDashboardRunner.class);
 
-    private final EurekaDashboardConfig config;
+    protected final EurekaDashboardConfig config;
 
     public EurekaDashboardRunner(EurekaDashboardConfig config) {
         super(EurekaDashboardServer.class);

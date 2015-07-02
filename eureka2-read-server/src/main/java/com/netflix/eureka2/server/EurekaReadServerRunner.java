@@ -36,7 +36,7 @@ import static com.netflix.eureka2.server.config.ServerConfigurationNames.DEFAULT
 public class EurekaReadServerRunner extends EurekaServerRunner<EurekaReadServer> {
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaReadServerRunner.class);
-    private final EurekaServerConfig config;
+    protected final EurekaServerConfig config;
 
     public EurekaReadServerRunner(EurekaServerConfig config) {
         super(EurekaReadServer.class);
