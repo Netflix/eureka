@@ -1,4 +1,4 @@
-package netflix.adminresources.resources;
+package netflix.adminresources.resources.eureka.status;
 
 import javax.inject.Inject;
 import java.util.ArrayList;

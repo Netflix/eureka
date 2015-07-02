@@ -1,4 +1,4 @@
-package netflix.adminresources.resources;
+package netflix.adminresources.resources.eureka.status;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;

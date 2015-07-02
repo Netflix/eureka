@@ -1,4 +1,4 @@
-package netflix.adminresources.resources;
+package netflix.adminresources.resources.eureka.registry;
 
 import javax.annotation.PostConstruct;
 import java.util.Map;

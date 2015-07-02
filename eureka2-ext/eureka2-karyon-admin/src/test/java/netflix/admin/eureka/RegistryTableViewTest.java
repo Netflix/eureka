@@ -3,9 +3,9 @@ package netflix.admin.eureka;
 import java.util.Map;
 
 import com.google.gson.JsonArray;
-import netflix.adminresources.resources.InstanceInfoSummary;
-import netflix.adminresources.resources.InstanceRegistryCache;
-import netflix.adminresources.resources.RegistryTableView;
+import netflix.adminresources.resources.eureka.registry.InstanceInfoSummary;
+import netflix.adminresources.resources.eureka.registry.InstanceRegistryCache;
+import netflix.adminresources.resources.eureka.registry.RegistryTableView;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;

@@ -12,40 +12,25 @@ import javax.ws.rs.core.UriInfo;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
+import netflix.adminresources.resources.eureka.registry.RegistryTableView;
 import netflix.adminresources.tableview.DataTableHelper;
-import netflix.adminresources.tableview.TableViewResource;
 
-/**
- * @author Tomasz Bak
- */
-@Path("/eurekaStatus")
+@Path("/eureka2")
 @Produces(MediaType.APPLICATION_JSON)
-public class Eureka2StatusResource {
+public class Eureka2RegistryResource {
 
     @Inject(optional = false)
-    private StatusTableView statusTableView;
-
-    @Inject(optional = false)
-    private AggregatedStatusTableView aggregatedTableView;
+    private RegistryTableView registryTableView;
 
     @GET
-    public Response getComponentStatuses(@Context UriInfo uriInfo) {
-        return statusListFor(uriInfo, statusTableView);
-    }
-
-    @GET
-    @Path("/aggregated")
-    public Response getAggregatedStatus(@Context UriInfo uriInfo) {
-        return statusListFor(uriInfo, aggregatedTableView);
-    }
-
-    private static Response statusListFor(UriInfo uriInfo, TableViewResource tableView) {
-        if (tableView != null) {
+    public Response getProperties(@Context UriInfo uriInfo) {
+        if (registryTableView != null) {
             MultivaluedMap<String, String> queryParams = uriInfo.getQueryParameters();
-            JsonObject output = DataTableHelper.buildOutput(tableView, queryParams);
+            JsonObject output = DataTableHelper.buildOutput(registryTableView, queryParams);
             return Response.ok().entity(new Gson().toJson(output)).build();
         } else {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
     }
+
 }
