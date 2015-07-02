@@ -1,9 +1,12 @@
 package com.netflix.eureka2.server.module;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.netflix.governator.auto.annotations.ConditionalOnMissingBinding;
 import com.netflix.spectator.api.ExtendedRegistry;
 import com.netflix.spectator.api.Spectator;
+
+import javax.inject.Singleton;
 
 /**
  * @author Tomasz Bak
@@ -12,6 +15,11 @@ import com.netflix.spectator.api.Spectator;
 public class SpectatorDefaultMetricsModule extends AbstractModule {
     @Override
     protected void configure() {
-        bind(ExtendedRegistry.class).toInstance(Spectator.registry());
+    }
+
+    @Provides
+    @Singleton
+    public ExtendedRegistry getExtendedRegistry() {
+        return Spectator.registry();
     }
 }
