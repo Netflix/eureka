@@ -13,6 +13,9 @@ import com.netflix.eureka2.server.AbstractEurekaServer;
 import com.netflix.eureka2.server.EurekaWriteServerConfigurationModule;
 import com.netflix.eureka2.server.EurekaWriteServerModule;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
+import com.netflix.eureka2.server.audit.AuditService;
+import com.netflix.eureka2.server.audit.AuditServiceController;
+import com.netflix.eureka2.server.audit.SimpleAuditService;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.module.CommonEurekaServerModule;
 import com.netflix.eureka2.server.module.EurekaExtensionModule;
@@ -49,6 +52,7 @@ public class EmbeddedWriteServerBuilder extends EmbeddedServerBuilder<WriteServe
         }
         coreModules.add(new CommonEurekaServerModule());
         coreModules.add(new EurekaWriteServerModule());
+
         if (adminUI) {
             coreModules.add(new EmbeddedKaryonAdminModule(configuration.getEurekaTransport().getWebAdminPort()));
         }
@@ -69,6 +73,14 @@ public class EmbeddedWriteServerBuilder extends EmbeddedServerBuilder<WriteServe
 
         if(ext) {
             coreModules.add(new EurekaExtensionModule(ServerType.Write));
+        } else {  // enable log level audits
+            coreModules.add(new AbstractModule() {
+                @Override
+                protected void configure() {
+                    bind(AuditServiceController.class).in(Scopes.SINGLETON);
+                    bind(AuditService.class).to(SimpleAuditService.class).in(Scopes.SINGLETON);
+                }
+            });
         }
 
         LifecycleInjector injector = Governator.createInjector(Modules.override(Modules.combine(coreModules)).with(overrides));

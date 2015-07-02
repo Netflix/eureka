@@ -31,6 +31,7 @@ import rx.functions.Action0;
 import rx.functions.Func1;
 
 import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
+import static com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource.anEurekaDeploymentResource;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -45,7 +46,7 @@ public abstract class AbstractStartupAndShutdownIntegrationTest<RUNNER extends E
     private static final String SHUTDOWN_CMD = "shutdown\n";
 
     @Rule
-    public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResource(1, 0);
+    public final EurekaDeploymentResource eurekaDeploymentResource = anEurekaDeploymentResource(1, 0).build();
 
     protected String writeServerList;
     protected ClusterAddress[] clusterAddresses;
@@ -84,7 +85,7 @@ public abstract class AbstractStartupAndShutdownIntegrationTest<RUNNER extends E
         // Verify that server health status is up
         verifyHealthStatusIsUp(serverRunner);
 
-        // Subscribe to write cluster and verify that read server connected properly
+        // Subscribe to write cluster and verify that new server connected properly
         EurekaInterestClient interestClient = eurekaDeploymentResource.interestClientToWriteCluster();
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
@@ -93,7 +94,7 @@ public abstract class AbstractStartupAndShutdownIntegrationTest<RUNNER extends E
         ChangeNotification<InstanceInfo> notification = testSubscriber.takeNextOrWait();
         assertThat(notification.getKind(), is(equalTo(Kind.Add)));
 
-        // Shutdown read server
+        // Shutdown new server
         sendShutdownCommand(serverRunner.getEurekaServer().getShutdownPort());
         serverRunner.awaitTermination();
 

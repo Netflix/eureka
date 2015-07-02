@@ -3,6 +3,7 @@ package com.netflix.eureka2.server.service;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.utils.rx.RetryStrategyFunc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,6 +1,8 @@
-package com.netflix.eureka2.server.service;
+package com.netflix.eureka2.server.service.selfinfo;
 
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.server.service.selfinfo.CachingSelfInfoResolver;
+import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Test;
 import rx.Observable;

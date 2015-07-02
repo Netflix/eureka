@@ -25,7 +25,7 @@ import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.metric.client.SpectatorEurekaClientMetricFactory;
 import com.netflix.eureka2.server.EurekaInterestClientProvider;
 import com.netflix.eureka2.server.EurekaRegistrationClientProvider;
-import com.netflix.eureka2.server.service.SelfInfoResolver;
+import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
 
 /**

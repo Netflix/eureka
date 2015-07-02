@@ -6,7 +6,7 @@ import javax.inject.Singleton;
 
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.server.service.SelfInfoResolver;
+import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
 import rx.Observable;
 

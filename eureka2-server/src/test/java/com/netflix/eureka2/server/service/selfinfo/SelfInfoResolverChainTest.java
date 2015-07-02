@@ -1,6 +1,8 @@
-package com.netflix.eureka2.server.service;
+package com.netflix.eureka2.server.service.selfinfo;
 
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.server.service.selfinfo.ChainableSelfInfoResolver;
+import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolverChain;
 import org.junit.Assert;
 import org.junit.Test;
 import rx.Observable;

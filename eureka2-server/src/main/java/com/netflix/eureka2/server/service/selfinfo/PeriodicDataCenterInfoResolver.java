@@ -1,11 +1,14 @@
-package com.netflix.eureka2.server.service;
+package com.netflix.eureka2.server.service.selfinfo;
 
+import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.selector.AddressSelector;
 import com.netflix.eureka2.server.config.EurekaInstanceInfoConfig;
+import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -29,8 +32,8 @@ public class PeriodicDataCenterInfoResolver extends ChainableSelfInfoResolver {
 
     private static final Logger logger = LoggerFactory.getLogger(PeriodicDataCenterInfoResolver.class);
 
-    public PeriodicDataCenterInfoResolver(final EurekaInstanceInfoConfig config) {
-        this(config, new Func0<Observable<? extends DataCenterInfo>>() {
+    public PeriodicDataCenterInfoResolver(final EurekaInstanceInfoConfig config, final EurekaServerTransportConfig transportConfig) {
+        this(config, transportConfig, new Func0<Observable<? extends DataCenterInfo>>() {
             @Override
             public Observable<? extends DataCenterInfo> call() {
                 return LocalDataCenterInfo.forDataCenterType(config.getDataCenterType());
@@ -41,6 +44,7 @@ public class PeriodicDataCenterInfoResolver extends ChainableSelfInfoResolver {
     @SuppressWarnings("unchecked")
     /*visible for testing */ PeriodicDataCenterInfoResolver(
             final EurekaInstanceInfoConfig config,
+            final EurekaServerTransportConfig transportConfig,
             final Func0<Observable<? extends DataCenterInfo>> dataCenterInfoFunc,
             final Scheduler scheduler) {
         super(Observable.timer(0, config.getDataCenterResolveIntervalSec(), TimeUnit.SECONDS, scheduler)
@@ -62,7 +66,14 @@ public class PeriodicDataCenterInfoResolver extends ChainableSelfInfoResolver {
                         .map(new Func1<DataCenterInfo, InstanceInfo.Builder>() {
                             @Override
                             public InstanceInfo.Builder call(DataCenterInfo dataCenterInfo) {
+
+                                // also update the healthcheck urls
+                                String address = AddressSelector.selectBy().publicIp(true).or().any().returnNameOrIp(dataCenterInfo.getAddresses());
+                                HashSet<String> healthCheckUrls = new HashSet<>();
+                                healthCheckUrls.add("http://" + address + ':' + transportConfig.getWebAdminPort() + "/healthcheck");
+
                                 return new InstanceInfo.Builder()
+                                        .withHealthCheckUrls(healthCheckUrls)
                                         .withDataCenterInfo(dataCenterInfo);
                             }
                         })

@@ -29,7 +29,7 @@ import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.server.registry.EurekaReadServerRegistryView;
 import com.netflix.eureka2.server.service.EurekaReadServerSelfInfoResolver;
 import com.netflix.eureka2.server.service.EurekaReadServerSelfRegistrationService;
-import com.netflix.eureka2.server.service.SelfInfoResolver;
+import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
