@@ -54,8 +54,20 @@ public abstract class AbstractTcpServer {
         this.tcpHandlerProvider = tcpHandlerProvider;
     }
 
-    @PostConstruct
+    /**
+     * override for additional start up needs
+     */
     public void start() {
+    }
+
+    /**
+     * override for additional shutdown needs
+     */
+    public void stop() {
+    }
+
+    @PostConstruct
+    protected void _start() {
         server = RxNetty.newTcpServerBuilder(serverPort, tcpHandlerProvider)
                 .pipelineConfigurator(pipelineConfigurator)
                 .withMetricEventsListenerFactory(servoEventsListenerFactory)
@@ -63,11 +75,15 @@ public abstract class AbstractTcpServer {
 //                .withErrorHandler()  TODO use a custom handler (?) as the default emits extraneous error logs
                 .start();
 
+        start();
+
         logger.info("Starting {} on port {} with {} encoding...", getClass().getSimpleName(), server.getServerPort(), config.getCodec());
     }
 
     @PreDestroy
-    public void stop() {
+    protected void _stop() {
+        stop();
+
         if (server != null) {
             try {
                 server.shutdown();
@@ -79,7 +95,6 @@ public abstract class AbstractTcpServer {
             }
         }
     }
-
 
     public int serverPort() {
         return server.getServerPort();

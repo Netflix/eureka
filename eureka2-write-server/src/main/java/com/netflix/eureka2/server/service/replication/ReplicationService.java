@@ -22,6 +22,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.eureka2.Server;
@@ -32,6 +33,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
+import com.netflix.eureka2.utils.rx.RetryStrategyFunc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -94,6 +96,7 @@ public class ReplicationService {
                         return peerAddressesProvider.get();
                     }
                 })
+                .retryWhen(new RetryStrategyFunc(1, TimeUnit.SECONDS))
                 .subscribe(new Subscriber<ChangeNotification<Server>>() {
                     @Override
                     public void onCompleted() {

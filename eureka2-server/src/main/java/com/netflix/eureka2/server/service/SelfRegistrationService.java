@@ -1,5 +1,6 @@
 package com.netflix.eureka2.server.service;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -31,7 +32,7 @@ public abstract class SelfRegistrationService implements SelfInfoResolver {
 
     public void init() {
         Observable<InstanceInfo> selfInfoStream = resolve().distinctUntilChanged();
-        subscription = connect(selfInfoStream).retryWhen(new RetryStrategyFunc(500)).subscribe();
+        subscription = connect(selfInfoStream).retryWhen(new RetryStrategyFunc(500, TimeUnit.MILLISECONDS)).subscribe();
     }
 
     @PreDestroy

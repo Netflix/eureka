@@ -36,9 +36,9 @@ abstract class DnsEurekaClusterResolver implements EurekaClusterResolver {
                         }
                         ClusterAddress address = createClusterAddress(hostNotification.getData());
                         if (kind == Kind.Add || kind == Kind.Modify) {
-                            return new ChangeNotification<ClusterAddress>(Kind.Add, address);
+                            return new ChangeNotification<>(Kind.Add, address);
                         }
-                        return new ChangeNotification<ClusterAddress>(Kind.Delete, address);
+                        return new ChangeNotification<>(Kind.Delete, address);
                     }
                 });
     }

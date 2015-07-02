@@ -1,7 +1,5 @@
 package com.netflix.eureka2.testkit.embedded.server;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -31,20 +29,14 @@ public class EmbeddedTcpInterestServer extends TcpInterestServer {
         this.networkRouter = networkRouter;
     }
 
-    @PostConstruct
     @Override
     public void start() {
-        if (server == null) {
-            super.start();
-            proxyPort = networkRouter.bridgeTo(super.serverPort());
-        }
+        proxyPort = networkRouter.bridgeTo(super.serverPort());
     }
 
-    @PreDestroy
     @Override
     public void stop() {
         networkRouter.removeBridgeTo(super.serverPort());
-        super.stop();
     }
 
     @Override
