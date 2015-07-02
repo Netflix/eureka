@@ -1,11 +1,11 @@
 package com.netflix.eureka2.server.config.bean;
 
 import com.netflix.eureka2.server.config.BootstrapConfig;
+import com.netflix.eureka2.server.config.BridgeServerConfig;
 import com.netflix.eureka2.server.config.EurekaClusterDiscoveryConfig;
 import com.netflix.eureka2.server.config.EurekaInstanceInfoConfig;
 import com.netflix.eureka2.server.config.EurekaServerRegistryConfig;
 import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
-import com.netflix.eureka2.server.config.WriteServerConfig;
 
 import static com.netflix.eureka2.server.config.bean.EurekaClusterDiscoveryConfigBean.anEurekaClusterDiscoveryConfig;
 import static com.netflix.eureka2.server.config.bean.EurekaInstanceInfoConfigBean.anEurekaInstanceInfoConfig;
@@ -15,30 +15,24 @@ import static com.netflix.eureka2.server.config.bean.EurekaServerTransportConfig
 /**
  * @author Tomasz Bak
  */
-public class WriteServerConfigBean extends EurekaServerConfigBean implements WriteServerConfig {
+public class BridgeServerConfigBean extends WriteServerConfigBean implements BridgeServerConfig {
 
-    private final BootstrapConfig bootstrapConfig;
-    private final long replicationReconnectDelayMillis;
+    private final int refreshRateSec;
 
-    public WriteServerConfigBean(EurekaClusterDiscoveryConfig clusterDiscoveryConfig, EurekaInstanceInfoConfig instanceInfoConfig,
-                                 EurekaServerTransportConfig transportConfig, EurekaServerRegistryConfig registryConfig,
-                                 BootstrapConfig bootstrapConfig, long replicationReconnectDelayMillis) {
-        super(clusterDiscoveryConfig, instanceInfoConfig, transportConfig, registryConfig);
-        this.bootstrapConfig = bootstrapConfig;
-        this.replicationReconnectDelayMillis = replicationReconnectDelayMillis;
+    public BridgeServerConfigBean(EurekaClusterDiscoveryConfig clusterDiscoveryConfig, EurekaInstanceInfoConfig instanceInfoConfig,
+                                  EurekaServerTransportConfig transportConfig, EurekaServerRegistryConfig registryConfig,
+                                  BootstrapConfig bootstrapConfig, long replicationReconnectDelayMillis, int refreshRateSec) {
+        super(clusterDiscoveryConfig, instanceInfoConfig, transportConfig, registryConfig,
+                bootstrapConfig, replicationReconnectDelayMillis);
+        this.refreshRateSec = refreshRateSec;
     }
 
     @Override
-    public long getReplicationReconnectDelayMs() {
-        return replicationReconnectDelayMillis;
+    public int getRefreshRateSec() {
+        return refreshRateSec;
     }
 
-    @Override
-    public BootstrapConfig getBootstrap() {
-        return bootstrapConfig;
-    }
-
-    public static Builder aWriteServerConfig() {
+    public static Builder aBridgeServerConfig() {
         return new Builder();
     }
 
@@ -49,6 +43,7 @@ public class WriteServerConfigBean extends EurekaServerConfigBean implements Wri
         private EurekaServerRegistryConfig registryConfig = anEurekaServerRegistryConfig().build();
         private BootstrapConfig bootstrapConfig = BootstrapConfigBean.aBootstrapConfig().build();
         private long replicationReconnectDelayMillis = DEFAULT_REPLICATION_RECONNECT_DELAY_MS;
+        private int refreshRateSec;
 
         private Builder() {
         }
@@ -73,30 +68,36 @@ public class WriteServerConfigBean extends EurekaServerConfigBean implements Wri
             return this;
         }
 
-        public Builder withReplicationReconnectDelayMillis(long replicationReconnectDelayMillis) {
-            this.replicationReconnectDelayMillis = replicationReconnectDelayMillis;
-            return this;
-        }
-
         public Builder withBootstrapConfig(BootstrapConfig bootstrapConfig) {
             this.bootstrapConfig = bootstrapConfig;
             return this;
         }
 
+        public Builder withReplicationReconnectDelayMillis(long replicationReconnectDelayMillis) {
+            this.replicationReconnectDelayMillis = replicationReconnectDelayMillis;
+            return this;
+        }
+
+        private Builder withRefreshRateSec(int refreshRateSec) {
+            this.refreshRateSec = refreshRateSec;
+            return this;
+        }
+
         public Builder but() {
-            return aWriteServerConfig()
+            return aBridgeServerConfig()
                     .withClusterDiscoveryConfig(clusterDiscoveryConfig)
                     .withInstanceInfoConfig(instanceInfoConfig)
                     .withTransportConfig(transportConfig)
                     .withRegistryConfig(registryConfig)
                     .withReplicationReconnectDelayMillis(replicationReconnectDelayMillis)
-                    .withBootstrapConfig(bootstrapConfig);
+                    .withBootstrapConfig(bootstrapConfig)
+                    .withRefreshRateSec(refreshRateSec);
         }
 
-        public WriteServerConfigBean build() {
-            return new WriteServerConfigBean(
+        public BridgeServerConfig build() {
+            return new BridgeServerConfigBean(
                     clusterDiscoveryConfig, instanceInfoConfig, transportConfig, registryConfig,
-                    bootstrapConfig, replicationReconnectDelayMillis);
+                    bootstrapConfig, replicationReconnectDelayMillis, refreshRateSec);
         }
     }
 }

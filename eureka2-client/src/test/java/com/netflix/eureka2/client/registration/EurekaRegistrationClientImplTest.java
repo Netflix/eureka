@@ -1,12 +1,17 @@
 package com.netflix.eureka2.client.registration;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.channel.TestChannelFactory;
 import com.netflix.eureka2.channel.TestRegistrationChannel;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.channel.RegistrationChannelFactory;
 import com.netflix.eureka2.client.channel.RegistrationChannelImpl;
-import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.metric.RegistrationChannelMetrics;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
@@ -20,12 +25,9 @@ import org.mockito.stubbing.Answer;
 import rx.Observable;
 import rx.Subscriber;
 import rx.observers.TestSubscriber;
+import rx.schedulers.Schedulers;
+import rx.schedulers.TestScheduler;
 import rx.subjects.ReplaySubject;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -41,6 +43,9 @@ import static org.mockito.Mockito.when;
 public class EurekaRegistrationClientImplTest {
 
     private static final int RETRY_WAIT_MILLIS = 10;
+
+    private final TestScheduler testScheduler = Schedulers.test();
+
     private final AtomicInteger channelId = new AtomicInteger(0);
 
     private List<InstanceInfo> infos;
@@ -68,7 +73,7 @@ public class EurekaRegistrationClientImplTest {
         registrationSubject = ReplaySubject.create();
         mockFactory = mock(RegistrationChannelFactory.class);
         factory = new TestChannelFactory<>(mockFactory);
-        client = spy(new EurekaRegistrationClientImpl(factory, RETRY_WAIT_MILLIS));
+        client = spy(new EurekaRegistrationClientImpl(factory, RETRY_WAIT_MILLIS, testScheduler));
 
         initSubscriber = new TestSubscriber<>();
         testSubscriber = new TestSubscriber<>();
@@ -172,7 +177,7 @@ public class EurekaRegistrationClientImplTest {
         assertThat(testChannel0.operations.size(), is(1));
         assertThat(testChannel0.operations.toArray(), equalTo(infos.subList(0, 1).toArray()));
 
-        factory.awaitChannels(2, RETRY_WAIT_MILLIS + 500);  // wait out the retry period configured for .retryWhen()
+        testScheduler.advanceTimeBy(RETRY_WAIT_MILLIS, TimeUnit.MILLISECONDS);
 
         // send the next info
         registrationSubject.onNext(infos.get(1));
@@ -242,7 +247,7 @@ public class EurekaRegistrationClientImplTest {
         assertThat(testChannel0.operations.size(), is(1));
         assertThat(testChannel0.operations.toArray(), equalTo(infos.subList(0, 1).toArray()));
 
-        factory.awaitChannels(2, failTimeMillis + RETRY_WAIT_MILLIS + 500);  // wait out the retry period configured for .retryWhen()
+        testScheduler.advanceTimeBy(failTimeMillis + RETRY_WAIT_MILLIS, TimeUnit.MILLISECONDS);
 
         assertThat(factory.getAllChannels().size(), is(2));
 
@@ -250,7 +255,7 @@ public class EurekaRegistrationClientImplTest {
         assertThat(testChannel0.id, is(0));
         assertThat(testChannel0.hasUnregistered, is(false));
         assertThat(testChannel0.closeCalled, is(true));
-        assertThat  (testChannel0.operations.size(), is(1));
+        assertThat(testChannel0.operations.size(), is(1));
         assertThat(testChannel0.operations.toArray(), equalTo(infos.subList(0, 1).toArray()));
 
         TestRegistrationChannel testChannel1;
@@ -408,7 +413,7 @@ public class EurekaRegistrationClientImplTest {
         return new TestRegistrationChannel(channel, id);
     }
 
-    private static RegistrationChannel newTimedFailChannel(Integer id, int failAfterMillis) {
+    private RegistrationChannel newTimedFailChannel(Integer id, int failAfterMillis) {
         MessageConnection messageConnection = newMockMessageConnection();
         when(messageConnection.submitWithAck(anyObject())).thenReturn(Observable.<Void>empty());
 
@@ -417,7 +422,7 @@ public class EurekaRegistrationClientImplTest {
 
         final RegistrationChannel channel = new RegistrationChannelImpl(transportClient, mock(RegistrationChannelMetrics.class));
 
-        Observable.empty().delay(failAfterMillis, TimeUnit.MILLISECONDS).subscribe(new Subscriber<Object>() {
+        Observable.empty().delay(failAfterMillis, TimeUnit.MILLISECONDS, testScheduler).subscribe(new Subscriber<Object>() {
             @Override
             public void onCompleted() {
                 channel.close(new Exception("test: channel error"));

@@ -9,7 +9,7 @@ import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
-import com.netflix.eureka2.server.config.WriteServerConfig;
+import com.netflix.eureka2.server.config.bean.BootstrapConfigBean;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Before;
 import org.junit.Test;
@@ -17,7 +17,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import rx.Observable;
 
-import static com.netflix.eureka2.server.config.bean.WriteServerConfigBean.aWriteServerConfig;
+import static com.netflix.eureka2.server.config.bean.BootstrapConfigBean.aBootstrapConfig;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -48,7 +48,7 @@ public class RegistryBootstrapCoordinatorTest {
             }
         });
 
-        WriteServerConfig config = aWriteServerConfig().withBootstrapEnabled(true).build();
+        BootstrapConfigBean config = aBootstrapConfig().withBootstrapEnabled(true).build();
         bootstrapCoordinator = new RegistryBootstrapCoordinator(config, bootstrapService, registry);
     }
 
