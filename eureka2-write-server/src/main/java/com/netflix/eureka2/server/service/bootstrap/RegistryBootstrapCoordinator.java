@@ -13,7 +13,7 @@ import com.netflix.eureka2.registry.Source.Origin;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
-import com.netflix.eureka2.server.config.WriteServerConfig;
+import com.netflix.eureka2.server.config.BootstrapConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Subscriber;
@@ -33,14 +33,14 @@ public class RegistryBootstrapCoordinator extends AbstractHealthStatusProvider<R
             "Bootstrap registry loader from external source"
     );
 
-    private final WriteServerConfig config;
+    private final BootstrapConfig config;
     private final RegistryBootstrapService registryBootstrapService;
     private final SourcedEurekaRegistry<InstanceInfo> registry;
 
     private Subscription bootstrapSubscription;
 
     @Inject
-    public RegistryBootstrapCoordinator(WriteServerConfig config,
+    public RegistryBootstrapCoordinator(BootstrapConfig config,
                                         RegistryBootstrapService registryBootstrapService,
                                         SourcedEurekaRegistry registry) {
         super(Status.STARTING, DESCRIPTOR);

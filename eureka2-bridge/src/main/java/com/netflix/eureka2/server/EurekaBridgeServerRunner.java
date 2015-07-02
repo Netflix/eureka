@@ -39,11 +39,18 @@ public class EurekaBridgeServerRunner extends EurekaServerRunner<EurekaBridgeSer
                 new CommonEurekaServerModule(name),
                 new EurekaExtensionModule(ServerType.Write),
                 new EurekaBridgeServerModule(DEFAULT_CONFIG_PREFIX),
-                new EurekaModule(),  // eureka 1
+                applyEurekaOverride(new EurekaModule()),  // eureka 1
                 new KaryonWebAdminModule()
         );
 
-        return Governator.createInjector(applicationModule);
+        return Governator.createInjector(applyEurekaOverride(applicationModule));
+    }
+
+    /**
+     * Primary purpose of this class is to override Eureka1 bindings in the integration test scenarios.
+     */
+    protected Module applyEurekaOverride(Module module) {
+        return module;
     }
 
     public static void main(String[] args) {

@@ -10,6 +10,7 @@ import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServerBuilder;
 import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources.EurekaExternalResource;
 import rx.Observable;
 
+import static com.netflix.eureka2.server.config.bean.BootstrapConfigBean.aBootstrapConfig;
 import static com.netflix.eureka2.server.config.bean.EurekaInstanceInfoConfigBean.anEurekaInstanceInfoConfig;
 import static com.netflix.eureka2.server.config.bean.EurekaServerTransportConfigBean.anEurekaServerTransportConfig;
 import static com.netflix.eureka2.server.config.bean.WriteServerConfigBean.aWriteServerConfig;
@@ -61,7 +62,7 @@ public class WriteServerResource extends EurekaExternalResource {
                                 .withWebAdminPort(0)
                                 .build()
                 )
-                .withBootstrapEnabled(false)
+                .withBootstrapConfig(aBootstrapConfig().withBootstrapEnabled(false).build())
                 .build();
 
         Observable<ChangeNotification<Server>> noPeers = Observable.never();

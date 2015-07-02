@@ -21,6 +21,7 @@ import com.netflix.eureka2.utils.rx.RxFunctions;
 import rx.Observable;
 import rx.functions.Func1;
 
+import static com.netflix.eureka2.server.config.bean.BootstrapConfigBean.aBootstrapConfig;
 import static com.netflix.eureka2.server.config.bean.EurekaInstanceInfoConfigBean.anEurekaInstanceInfoConfig;
 import static com.netflix.eureka2.server.config.bean.EurekaServerTransportConfigBean.anEurekaServerTransportConfig;
 import static com.netflix.eureka2.server.config.bean.WriteServerConfigBean.aWriteServerConfig;
@@ -77,7 +78,7 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
                                 .withWebAdminPort(adminPort)
                                 .build()
                 )
-                .withBootstrapEnabled(false)
+                .withBootstrapConfig(aBootstrapConfig().withBootstrapEnabled(false).build())
                 .build();
 
         EmbeddedWriteServer writeServer = newServer(config);

@@ -18,10 +18,10 @@ public class BackupClusterResolverProvider implements Provider<EurekaClusterReso
 
     @Inject
     public BackupClusterResolverProvider(WriteServerConfig config) {
-        if (config.getBootstrapClusterAddresses() != null) {
+        if (config.getBootstrap().getBootstrapClusterAddresses() != null) {
             resolver = EurekaClusterResolvers.readClusterResolverFromConfiguration(
-                    config.getBootstrapResolverType(),
-                    Arrays.asList(config.getBootstrapClusterAddresses()),
+                    config.getBootstrap().getBootstrapResolverType(),
+                    Arrays.asList(config.getBootstrap().getBootstrapClusterAddresses()),
                     Schedulers.computation()
             );
         } else {

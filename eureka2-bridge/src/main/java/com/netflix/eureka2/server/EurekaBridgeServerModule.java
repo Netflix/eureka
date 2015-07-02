@@ -23,9 +23,12 @@ import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
 import com.netflix.eureka2.registry.eviction.EvictionStrategy;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
+import com.netflix.eureka2.server.config.BootstrapConfig;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
 import com.netflix.eureka2.server.config.EurekaClusterDiscoveryConfig;
+import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
+import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.registry.EurekaBridgeRegistry;
 import com.netflix.eureka2.server.service.BridgeService;
 import com.netflix.eureka2.server.service.EurekaBridgeServerSelfInfoResolver;
@@ -92,6 +95,18 @@ public class EurekaBridgeServerModule extends AbstractModule {
 
     @Provides
     @Singleton
+    public EurekaServerConfig getEurekaServerConfig(BridgeServerConfig rootConfig) {
+        return rootConfig;
+    }
+
+    @Provides
+    @Singleton
+    public WriteServerConfig getWriteServerConfig(BridgeServerConfig rootConfig) {
+        return rootConfig;
+    }
+
+    @Provides
+    @Singleton
     public EurekaServerTransportConfig getEurekaServerTransportConfig(BridgeServerConfig rootConfig) {
         return rootConfig.getEurekaTransport();
     }
@@ -106,5 +121,11 @@ public class EurekaBridgeServerModule extends AbstractModule {
     @Singleton
     public EurekaClusterDiscoveryConfig getEurekaClusterDiscoveryConfig(BridgeServerConfig rootConfig) {
         return rootConfig.getEurekaClusterDiscovery();
+    }
+
+    @Provides
+    @Singleton
+    public BootstrapConfig getBootstrapConfig(BridgeServerConfig rootConfig) {
+        return rootConfig.getBootstrap();
     }
 }
