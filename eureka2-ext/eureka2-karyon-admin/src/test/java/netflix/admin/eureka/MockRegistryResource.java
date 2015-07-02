@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
-import netflix.adminresources.resources.InstanceInfoSummary;
+import netflix.adminresources.resources.eureka.registry.InstanceInfoSummary;
 import org.junit.rules.ExternalResource;
 
 public class MockRegistryResource extends ExternalResource {

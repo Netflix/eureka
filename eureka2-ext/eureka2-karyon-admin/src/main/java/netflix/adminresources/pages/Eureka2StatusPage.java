@@ -18,6 +18,6 @@ public class Eureka2StatusPage extends AbstractAdminPageInfo {
 
     @Override
     public String getPageTemplate() {
-        return "/eureka2-status.ftl";
+        return "/webadmin/eureka/status/eureka2-status.ftl";
     }
 }
