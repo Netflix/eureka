@@ -1,6 +1,7 @@
 package com.netflix.eureka2.integration.server.batching;
 
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.functions.InterestFunctions;
@@ -13,6 +14,7 @@ import com.netflix.eureka2.junit.categories.LongRunningTest;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
+import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
 import org.junit.Before;
 import org.junit.Rule;
@@ -58,7 +60,10 @@ public class ReadServerNotificationBatchingTest extends IntegrationTestClassSetu
         eurekaDeploymentClients.fillUpRegistry(REGISTRY_INITIAL_SIZE, SampleInstanceInfo.WebServer.build());
 
         // Bootstrap read server and connect Eureka client immediately
-        eurekaDeploymentResource.getEurekaDeployment().getReadCluster().scaleUpByOne();
+        int serverId = eurekaDeploymentResource.getEurekaDeployment().getReadCluster().scaleUpByOne();
+        EmbeddedReadServer newServer = eurekaDeploymentResource.getEurekaDeployment().getReadCluster().getServer(serverId);
+        assertThat(newServer.waitForUpStatus(5, TimeUnit.SECONDS), is(true));
+
         EurekaInterestClient eurekaClient = eurekaDeploymentResource.interestClientToReadCluster();
 
         ExtTestSubscriber<Set<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
@@ -81,7 +86,10 @@ public class ReadServerNotificationBatchingTest extends IntegrationTestClassSetu
     @Test(timeout = 60000)
     public void testHotCacheDataBatching() throws Exception {
         // Bootstrap read server and connect Eureka client immediately
-        eurekaDeploymentResource.getEurekaDeployment().getReadCluster().scaleUpByOne();
+        int serverId = eurekaDeploymentResource.getEurekaDeployment().getReadCluster().scaleUpByOne();
+        EmbeddedReadServer newServer = eurekaDeploymentResource.getEurekaDeployment().getReadCluster().getServer(serverId);
+        assertThat(newServer.waitForUpStatus(5, TimeUnit.SECONDS), is(true));
+
         EurekaInterestClient eurekaClient = eurekaDeploymentResource.interestClientToReadCluster();
 
         // Fill in the registry
