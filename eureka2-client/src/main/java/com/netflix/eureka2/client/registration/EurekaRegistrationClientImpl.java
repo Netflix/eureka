@@ -13,12 +13,12 @@ import com.netflix.eureka2.utils.rx.RetryStrategyFunc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.Scheduler;
 import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.functions.Func2;
+import rx.schedulers.Schedulers;
 import rx.subjects.AsyncSubject;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * TODO: use a more sophisticated retry policy that creates channels that connects to different write servers?
@@ -35,13 +35,17 @@ public class EurekaRegistrationClientImpl implements EurekaRegistrationClient {
     private final int retryWaitMillis;
 
     private final AsyncSubject<Void> shutdownSubject = AsyncSubject.create();
+    private final Scheduler scheduler;
 
     @Inject
     public EurekaRegistrationClientImpl(ChannelFactory<RegistrationChannel> channelFactory) {
-        this(channelFactory, DEFAULT_RETRY_WAIT_MILLIS);
+        this(channelFactory, DEFAULT_RETRY_WAIT_MILLIS, Schedulers.computation());
     }
 
-    /*visible for testing*/ EurekaRegistrationClientImpl(ChannelFactory<RegistrationChannel> channelFactory, int retryWaitMillis) {
+    /*visible for testing*/ EurekaRegistrationClientImpl(ChannelFactory<RegistrationChannel> channelFactory,
+                                                         int retryWaitMillis,
+                                                         Scheduler scheduler) {
+        this.scheduler = scheduler;
         this.retryableConnectionFactory = new RetryableConnectionFactory<>(channelFactory);
         this.retryWaitMillis = retryWaitMillis;
     }
@@ -63,7 +67,7 @@ public class EurekaRegistrationClientImpl implements EurekaRegistrationClient {
         Observable<Void> initObservable = retryableConnection.getInitObservable();
 
         Observable<Void> lifecycle = retryableConnection.getRetryableLifecycle()
-                .retryWhen(new RetryStrategyFunc(retryWaitMillis, TimeUnit.MILLISECONDS))
+                .retryWhen(new RetryStrategyFunc(retryWaitMillis, scheduler))
                 .takeUntil(shutdownSubject)
                 .doOnUnsubscribe(new Action0() {
                     @Override
