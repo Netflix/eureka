@@ -1,4 +1,4 @@
-package com.netflix.discovery.converters;
+package com.netflix.discovery.converters.jackson;
 
 import java.util.Map;
 

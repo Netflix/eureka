@@ -1,14 +1,10 @@
-package com.netflix.discovery.converters;
+package com.netflix.discovery.converters.jackson;
 
 import java.io.IOException;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.BeanDescription;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.BeanSerializer;
-import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import com.fasterxml.jackson.databind.ser.std.BeanSerializerBase;
 import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
 import com.fasterxml.jackson.dataformat.xml.ser.XmlBeanSerializer;
@@ -18,36 +14,7 @@ import com.netflix.appinfo.InstanceInfo.PortType;
 /**
  * @author Tomasz Bak
  */
-public final class InstanceInfoBeanSerializer {
-
-    private InstanceInfoBeanSerializer() {
-    }
-
-    public static BeanSerializerModifier createJsonSerializer() {
-        return new BeanSerializerModifier() {
-            @Override
-            public JsonSerializer<?> modifySerializer(SerializationConfig config,
-                                                      BeanDescription beanDesc, JsonSerializer<?> serializer) {
-                if (!beanDesc.getBeanClass().isAssignableFrom(InstanceInfo.class)) {
-                    return serializer;
-                }
-                return new InstanceInfoJsonBeanSerializer((BeanSerializerBase) serializer);
-            }
-        };
-    }
-
-    public static BeanSerializerModifier createXmlSerializer() {
-        return new BeanSerializerModifier() {
-            @Override
-            public JsonSerializer<?> modifySerializer(SerializationConfig config,
-                                                      BeanDescription beanDesc, JsonSerializer<?> serializer) {
-                if (!beanDesc.getBeanClass().isAssignableFrom(InstanceInfo.class)) {
-                    return serializer;
-                }
-                return new InstanceInfoXmlBeanSerializer((BeanSerializerBase) serializer);
-            }
-        };
-    }
+final class InstanceInfoBeanSerializers {
 
     static class InstanceInfoJsonBeanSerializer extends BeanSerializer {
         InstanceInfoJsonBeanSerializer(BeanSerializerBase src) {
@@ -102,17 +69,6 @@ public final class InstanceInfoBeanSerializer {
             xgen.setNextIsUnwrapped(true);
             xgen.writeString(Integer.toString(instanceInfo.getSecurePort()));
             xgen.writeEndObject();
-        }
-    }
-
-    static class InstanceInfoXmlBeanSerializerModifier extends BeanSerializerModifier {
-        @Override
-        public JsonSerializer<?> modifySerializer(SerializationConfig config,
-                                                  BeanDescription beanDesc, JsonSerializer<?> serializer) {
-            if (!beanDesc.getBeanClass().isAssignableFrom(InstanceInfo.class)) {
-                return serializer;
-            }
-            return new InstanceInfoXmlBeanSerializer((BeanSerializerBase) serializer);
         }
     }
 }

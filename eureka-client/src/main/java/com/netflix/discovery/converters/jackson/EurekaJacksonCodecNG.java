@@ -1,4 +1,4 @@
-package com.netflix.discovery.converters;
+package com.netflix.discovery.converters.jackson;
 
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,6 +24,7 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.discovery.converters.KeyFormatter;
 
 /**
  * @author Tomasz Bak
@@ -31,42 +33,63 @@ public class EurekaJacksonCodecNG {
 
     private final ObjectMapper jsonMapper = new ObjectMapper();
 
-    private final XmlMapper xmlMapper = new XmlMapper() {
-        public ObjectMapper registerModule(Module module) {
-            setSerializerFactory(
-                    getSerializerFactory().withSerializerModifier(InstanceInfoBeanSerializer.createXmlSerializer())
-            );
-            return super.registerModule(module);
-        }
-    };
+    private final XmlMapper xmlMapper;
 
-    private static final Set<String> MINI_META_INFO_KEYS = new HashSet<>(
-            Arrays.asList("accountId", "instance-id", "ami-id", "instance-type")
+    private static final Set<String> MINI_META_INFO_INCLUDE_KEYS = new HashSet<>(
+            Arrays.asList("instance-id", "public-ipv4", "public-hostname", "local-ipv4", "availability-zone")
     );
 
     public EurekaJacksonCodecNG() {
-        this(false);
+        this(KeyFormatter.defaultKeyFormatter(), false);
     }
 
-    public EurekaJacksonCodecNG(boolean compact) {
+    public EurekaJacksonCodecNG(final KeyFormatter keyFormatter, boolean compact) {
         // JSON
         SimpleModule jsonModule = new SimpleModule();
-        jsonModule.setSerializerModifier(InstanceInfoBeanSerializer.createJsonSerializer());
-        jsonModule.setDeserializerModifier(InstanceInfoBeanDeserializer.createJsonDeserializerModifier());
+        jsonModule.setSerializerModifier(EurekaJacksonModifiers.createJsonSerializerModifier(keyFormatter));
+        jsonModule.setDeserializerModifier(EurekaJacksonModifiers.createJsonDeserializerModifier(keyFormatter));
         jsonMapper.registerModule(jsonModule);
+        jsonMapper.setSerializationInclusion(Include.NON_NULL);
         jsonMapper.configure(SerializationFeature.WRAP_ROOT_VALUE, true);
+        jsonMapper.configure(SerializationFeature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED, true);
         jsonMapper.configure(DeserializationFeature.UNWRAP_ROOT_VALUE, true);
+        jsonMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
 
         // XML
+        xmlMapper = new XmlMapper() {
+            public ObjectMapper registerModule(Module module) {
+                setSerializerFactory(
+                        getSerializerFactory().withSerializerModifier(EurekaJacksonModifiers.createXmlSerializerModifier(keyFormatter))
+                );
+                return super.registerModule(module);
+            }
+        };
+        xmlMapper.setSerializationInclusion(Include.NON_NULL);
         xmlMapper.addMixInAnnotations(DataCenterInfo.class, DataCenterInfoXmlMixIn.class);
         SimpleModule xmlModule = new SimpleModule();
-        xmlModule.setDeserializerModifier(InstanceInfoBeanDeserializer.createXmlDeserializerModifier());
+        xmlModule.setDeserializerModifier(EurekaJacksonModifiers.createXmlDeserializerModifier(keyFormatter));
         xmlMapper.registerModule(xmlModule);
 
         if (compact) {
             addMiniConfig(jsonMapper);
             addMiniConfig(xmlMapper);
         }
+    }
+
+    public ObjectMapper getJsonMapper() {
+        return jsonMapper;
+    }
+
+    public ObjectMapper getXmlMapper() {
+        return xmlMapper;
+    }
+
+    public <T> T readValue(Class<T> type, InputStream entityStream, MediaType mediaType) throws IOException {
+        return getMapper(mediaType).readValue(entityStream, type);
+    }
+
+    public <T> void writeTo(T object, OutputStream entityStream, MediaType mediaType) throws IOException {
+        getMapper(mediaType).writeValue(entityStream, object);
     }
 
     private void addMiniConfig(ObjectMapper mapper) {
@@ -94,26 +117,10 @@ public class EurekaJacksonCodecNG {
 
             @Override
             protected boolean include(PropertyWriter writer) {
-                return MINI_META_INFO_KEYS.contains(writer.getName());
+                return MINI_META_INFO_INCLUDE_KEYS.contains(writer.getName());
             }
         });
         mapper.setFilters(filters);
-    }
-
-    public ObjectMapper getJsonMapper() {
-        return jsonMapper;
-    }
-
-    public ObjectMapper getXmlMapper() {
-        return xmlMapper;
-    }
-
-    public <T> T readValue(Class<T> type, InputStream entityStream, MediaType mediaType) throws IOException {
-        return getMapper(mediaType).readValue(entityStream, type);
-    }
-
-    public <T> void writeTo(T object, OutputStream entityStream, MediaType mediaType) throws IOException {
-        getMapper(mediaType).writeValue(entityStream, object);
     }
 
     private ObjectMapper getMapper(MediaType mediaType) {

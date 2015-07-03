@@ -94,10 +94,13 @@ public class Applications {
         this.applications = new ConcurrentLinkedQueue<Application>();
     }
 
+    /**
+     * Note that appsHashCode and versionDelta key names are formatted in a custom/configurable way.
+     */
     @JsonCreator
     public Applications(
             @JsonProperty("appsHashCode") String appsHashCode,
-            @JsonProperty("version") Long versionDelta,
+            @JsonProperty("versionDelta") Long versionDelta,
             @JsonProperty("application") List<Application> registeredApplications) {
         this(registeredApplications);
         this.appsHashCode = appsHashCode;
@@ -197,6 +200,7 @@ public class Applications {
     }
 
     @Deprecated
+    @JsonIgnore // Handled directly due to legacy name formatting
     public Long getVersion() {
         return this.versionDelta;
     }
@@ -215,6 +219,7 @@ public class Applications {
      * @return the string indicating the hashcode based on the applications stored.
      *
      */
+    @JsonIgnore // Handled directly due to legacy name formatting
     public String getAppsHashCode() {
         return this.appsHashCode;
     }

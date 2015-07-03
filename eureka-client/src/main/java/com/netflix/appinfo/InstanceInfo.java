@@ -800,6 +800,7 @@ public class InstanceInfo {
      *
      * @return the string denoting the application name.
      */
+    @JsonProperty("app")
     public String getAppName() {
         return appName;
     }
@@ -1309,5 +1310,4 @@ public class InstanceInfo {
         }
         return instanceZone;
     }
-
 }

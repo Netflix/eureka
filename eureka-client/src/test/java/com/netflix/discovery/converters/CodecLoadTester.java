@@ -1,8 +1,10 @@
 package com.netflix.discovery.converters;
 
 import javax.ws.rs.core.MediaType;
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -10,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.discovery.converters.jackson.EurekaJacksonCodecNG;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.util.InstanceInfoGenerator;
@@ -21,16 +24,17 @@ public class CodecLoadTester {
 
     private final List<InstanceInfo> instanceInfoList = new ArrayList<InstanceInfo>();
     private final List<Application> applicationList = new ArrayList<Application>();
-    private final Applications applications = new Applications();
+    private final Applications applications;
 
     private final EntityBodyConverter xstreamCodec = new EntityBodyConverter();
-    private final EurekaJacksonCodec jacksonCodec = new EurekaJacksonCodec();
+    private final EurekaJacksonCodec legacyJacksonCodec = new EurekaJacksonCodec();
     private final EurekaJacksonCodecNG jacksonCodecNG = new EurekaJacksonCodecNG();
-    private final EurekaJacksonCodecNG jacksonCodecNgCompact = new EurekaJacksonCodecNG(true);
+    private final EurekaJacksonCodecNG jacksonCodecNgCompact = new EurekaJacksonCodecNG(KeyFormatter.defaultKeyFormatter(), true);
 
     public CodecLoadTester(int instanceCount, int appCount) {
         Iterator<InstanceInfo> instanceIt = InstanceInfoGenerator.newBuilder(instanceCount, appCount)
                 .withMetaData(true).build().serviceIterator();
+        applications = new Applications();
         int appIdx = 0;
         while (instanceIt.hasNext()) {
             InstanceInfo next = instanceIt.next();
@@ -48,6 +52,35 @@ public class CodecLoadTester {
             applications.addApplication(app);
         }
         applications.setAppsHashCode(applications.getReconcileHashCode());
+    }
+
+    public CodecLoadTester(String[] args) throws Exception {
+        if (args.length != 1) {
+            System.err.println("ERROR: too many command line arguments; file name expected only");
+            throw new IllegalArgumentException();
+        }
+        String fileName = args[0];
+        Applications applications;
+        try {
+            System.out.println("Attempting to load " + fileName + " in XML format...");
+            applications = loadWithCodec(fileName, MediaType.APPLICATION_XML_TYPE);
+        } catch (Exception e) {
+            System.out.println("Attempting to load " + fileName + " in JSON format...");
+            applications = loadWithCodec(fileName, MediaType.APPLICATION_JSON_TYPE);
+        }
+        this.applications = applications;
+
+        long totalInstances = 0;
+        for (Application a : applications.getRegisteredApplications()) {
+            totalInstances += a.getInstances().size();
+        }
+        System.out.printf("Loaded %d applications with %d instances\n", applications.getRegisteredApplications().size(), totalInstances);
+    }
+
+    private Applications loadWithCodec(String fileName, MediaType mediaType) throws IOException {
+        FileInputStream fis = new FileInputStream(fileName);
+        BufferedInputStream bis = new BufferedInputStream(fis);
+        return (Applications) xstreamCodec.read(bis, Applications.class, mediaType);
     }
 
     public void runApplicationsLoadTest(int loops, Func0<Applications> action) {
@@ -118,16 +151,19 @@ public class CodecLoadTester {
         return String.format("%.2f [MB]", size / (1024f * 1024f));
     }
 
+    interface Func0<T> {
+        int call(T data);
+    }
 
-    Func0 jacksonAction = new Func0<Object>() {
+    Func0 legacyJacksonAction = new Func0<Object>() {
         @Override
         public int call(Object object) {
             ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
             try {
-                jacksonCodec.writeTo(object, captureStream);
+                legacyJacksonCodec.writeTo(object, captureStream);
                 byte[] bytes = captureStream.toByteArray();
                 InputStream source = new ByteArrayInputStream(bytes);
-                jacksonCodec.readValue(object.getClass(), source);
+                legacyJacksonCodec.readValue(object.getClass(), source);
 
                 return bytes.length;
             } catch (IOException e) {
@@ -195,10 +231,10 @@ public class CodecLoadTester {
         System.gc();
         long start = System.currentTimeMillis();
 
-//        runInstanceInfoLoadTest(loop, jacksonAction);
+//        runInstanceInfoLoadTest(loop, legacyJacksonAction);
 //        runInstanceInfoLoadTest(loop, xstreamAction);
 
-//        runApplicationLoadTest(loop, jacksonAction);
+//        runApplicationLoadTest(loop, legacyJacksonAction);
 //        runApplicationLoadTest(loop, xstreamAction);
 
         // ----------------------------------------------------------------
@@ -206,12 +242,12 @@ public class CodecLoadTester {
 //        runApplicationsLoadTest(loop, xstreamJsonAction);
 //        runApplicationsLoadTest(loop, xstreamXmlAction);
 
-//                runApplicationsLoadTest(loop, jacksonAction);
+//        runApplicationsLoadTest(loop, legacyJacksonAction);
 
         runApplicationsLoadTest(loop, createJacksonNgAction(MediaType.APPLICATION_XML_TYPE, true));
 
         long executionTime = System.currentTimeMillis() - start;
-        System.out.println("Execution time: " + executionTime);
+        System.out.printf("Execution time: %d[ms]\n", executionTime);
     }
 
     public void runIntervals() {
@@ -219,21 +255,21 @@ public class CodecLoadTester {
         int intervalMs = 1000;
         long durationSec = 600;
 
-//        runInstanceInfoIntervalTest(batch, intervalMs, durationSec, jacksonAction);
+//        runInstanceInfoIntervalTest(batch, intervalMs, durationSec, legacyJacksonAction);
         runInstanceInfoIntervalTest(batch, intervalMs, durationSec, xstreamJsonAction);
 
-//        runApplicationIntervalTest(batch, intervalMs, durationSec, jacksonAction);
+//        runApplicationIntervalTest(batch, intervalMs, durationSec, legacyJacksonAction);
 //        runApplicationIntervalTest(batch, intervalMs, durationSec, xstreamAction);
     }
 
 
-    public static void main(String[] args) throws IOException {
-        CodecLoadTester loadTester = new CodecLoadTester(20000, 400);
+    public static void main(String[] args) throws Exception {
+        CodecLoadTester loadTester;
+        if (args.length == 0) {
+            loadTester = new CodecLoadTester(20000, 400);
+        } else {
+            loadTester = new CodecLoadTester(args);
+        }
         loadTester.runFullSpeed();
-//        new CodecLoadTester(10000, 100).runIntervals();
-    }
-
-    interface Func0<T> {
-        int call(T data);
     }
 }

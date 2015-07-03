@@ -4,10 +4,12 @@ import java.util.Iterator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.appinfo.AmazonInfo;
+import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.LeaseInfo;
+import com.netflix.discovery.converters.jackson.EurekaJacksonCodecNG;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.util.InstanceInfoGenerator;
@@ -26,6 +28,7 @@ public class EurekaJacksonCodecNGTest {
     private final Iterator<InstanceInfo> infoIterator = infoGenerator.serviceIterator();
 
     private final EurekaJacksonCodecNG codec = new EurekaJacksonCodecNG();
+    private final EurekaJacksonCodecNG compactCodec = new EurekaJacksonCodecNG(KeyFormatter.defaultKeyFormatter(), true);
 
     @Test
     public void testAmazonInfoEncodeDecodeWithJson() throws Exception {
@@ -43,6 +46,25 @@ public class EurekaJacksonCodecNGTest {
 
         DataCenterInfo decodedValue = mapper.readValue(encodedString, DataCenterInfo.class);
         assertThat(EurekaEntityComparators.equal(amazonInfo, decodedValue), is(true));
+    }
+
+    @Test
+    public void testAmazonInfoCompactEncodeDecodeWithJson() throws Exception {
+        doAmazonInfoCompactEncodeDecodeTest(compactCodec.getJsonMapper());
+    }
+
+    @Test
+    public void testAmazonInfoCompactEncodeDecodeWithXml() throws Exception {
+        doAmazonInfoCompactEncodeDecodeTest(compactCodec.getXmlMapper());
+    }
+
+    private void doAmazonInfoCompactEncodeDecodeTest(ObjectMapper mapper) throws Exception {
+        AmazonInfo amazonInfo = (AmazonInfo) infoIterator.next().getDataCenterInfo();
+        String encodedString = mapper.writeValueAsString(amazonInfo);
+
+        AmazonInfo decodedValue = (AmazonInfo) mapper.readValue(encodedString, DataCenterInfo.class);
+
+        assertThat(decodedValue.get(MetaDataKey.publicHostname), is(equalTo(amazonInfo.get(MetaDataKey.publicHostname))));
     }
 
     @Test
@@ -102,6 +124,25 @@ public class EurekaJacksonCodecNGTest {
         String encodedString = mapper.writeValueAsString(instanceInfo);
         InstanceInfo decodedValue = mapper.readValue(encodedString, InstanceInfo.class);
         assertThat(EurekaEntityComparators.equal(instanceInfo, decodedValue), is(true));
+    }
+
+    @Test
+    public void testInstanceInfoCompactEncodeDecodeWithJson() throws Exception {
+        doInstanceInfoCompactEncodeDecode(compactCodec.getJsonMapper());
+    }
+
+    @Test
+    public void testInstanceInfoCompactEncodeDecodeWithXml() throws Exception {
+        doInstanceInfoCompactEncodeDecode(compactCodec.getXmlMapper());
+    }
+
+    private void doInstanceInfoCompactEncodeDecode(ObjectMapper mapper) throws Exception {
+        InstanceInfo instanceInfo = infoIterator.next();
+
+        String encodedString = mapper.writeValueAsString(instanceInfo);
+        InstanceInfo decodedValue = mapper.readValue(encodedString, InstanceInfo.class);
+
+        assertThat(decodedValue.getId(), is(equalTo(instanceInfo.getId())));
     }
 
     @Test
