@@ -2,7 +2,9 @@ package com.netflix.eureka2.server.http.proxy;
 
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.netty.buffer.ByteBuf;
 import io.reactivex.netty.RxNetty;
@@ -14,9 +16,7 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action0;
-import rx.functions.Action1;
 import rx.functions.Func1;
-import rx.subjects.ReplaySubject;
 
 
 /**
@@ -67,21 +67,30 @@ public class RxHttpReverseProxy {
 
         @Override
         public Observable<Void> handle(final ObservableConnection<ByteBuf, ByteBuf> proxyConnection) {
-            final ReplaySubject<ByteBuf> forwardingSubject = ReplaySubject.create();
+            final AtomicReference<ObservableConnection<ByteBuf, ByteBuf>> targetConnectionRef = new AtomicReference<>();
 
             return proxyConnection.getInput().flatMap(new Func1<ByteBuf, Observable<Void>>() {
 
+                private final ConcurrentLinkedQueue<ByteBuf> requestBuf = new ConcurrentLinkedQueue<>();
                 private final StringBuffer sb = new StringBuffer();
-                private boolean resolved;
+                private boolean targetFound;
 
                 @Override
                 public Observable<Void> call(ByteBuf byteBuf) {
-                    forwardingSubject.onNext(byteBuf.retain());
-                    if (resolved) {
-                        return Observable.empty();
+                    byteBuf.retain(1);
+
+                    if (targetConnectionRef.get() != null) {
+                        return targetConnectionRef.get().writeAndFlush(byteBuf);
                     }
 
+                    requestBuf.add(byteBuf);
+                    if (targetFound) {
+                        // This condition is needed as RxNetty may deliver another ByteBuf before RxClient connection
+                        // observable below completes. Why?
+                        return Observable.empty();
+                    }
                     sb.append(byteBuf.toString(Charset.defaultCharset()));
+
                     String path = extractPath(sb);
                     if (path == null) {
                         return Observable.empty();
@@ -91,50 +100,46 @@ public class RxHttpReverseProxy {
                     if (targetPort == -1) {
                         return replyWithNotFoundError(proxyConnection);
                     }
-                    resolved = true;
-
+                    targetFound = true;
                     return RxNetty.createTcpClient("localhost", targetPort).connect().flatMap(
                             new Func1<ObservableConnection<ByteBuf, ByteBuf>, Observable<Void>>() {
                                 @Override
-                                public Observable<Void> call(final ObservableConnection<ByteBuf, ByteBuf> targetConnection) {
-                                    forwardingSubject.subscribe(new Subscriber<ByteBuf>() {
-                                        @Override
-                                        public void onCompleted() {
-                                            targetConnection.close();
-                                        }
-
-                                        @Override
-                                        public void onError(Throwable e) {
-                                            logger.error("Error in proxy connection", e);
-                                            targetConnection.close();
-                                        }
-
-                                        @Override
-                                        public void onNext(ByteBuf byteBuf) {
-                                            targetConnection.writeAndFlush(byteBuf);
-                                        }
-                                    });
-
-                                    return targetConnection.getInput().flatMap(new Func1<ByteBuf, Observable<Void>>() {
+                                public Observable<Void> call(final ObservableConnection<ByteBuf, ByteBuf> newConnection) {
+                                    targetConnectionRef.set(newConnection);
+                                    newConnection.getInput().flatMap(new Func1<ByteBuf, Observable<Void>>() {
                                         @Override
                                         public Observable<Void> call(ByteBuf byteBuf) {
                                             byteBuf.retain();
                                             return proxyConnection.writeAndFlush(byteBuf);
                                         }
-                                    }).doOnError(new Action1<Throwable>() {
+                                    }).subscribe(new Subscriber<Void>() {
                                         @Override
-                                        public void call(Throwable e) {
-                                            logger.error("Error in target connection", e);
+                                        public void onCompleted() {
+                                        }
+
+                                        @Override
+                                        public void onError(Throwable e) {
+                                            targetConnectionRef.get().close();
                                             proxyConnection.close();
                                         }
+
+                                        @Override
+                                        public void onNext(Void aVoid) {
+                                        }
                                     });
+                                    for (ByteBuf byteBuf : requestBuf) {
+                                        newConnection.write(byteBuf);
+                                    }
+                                    return newConnection.flush();
                                 }
                             });
                 }
             }).doOnTerminate(new Action0() {
                 @Override
                 public void call() {
-                    forwardingSubject.onCompleted();
+                    if (targetConnectionRef.get() != null) {
+                        targetConnectionRef.get().close();
+                    }
                 }
             });
         }
