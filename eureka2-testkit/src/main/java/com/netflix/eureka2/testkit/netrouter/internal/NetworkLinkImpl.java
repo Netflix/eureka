@@ -3,6 +3,8 @@ package com.netflix.eureka2.testkit.netrouter.internal;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.testkit.netrouter.NetworkLink;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 import rx.subjects.SerializedSubject;
@@ -13,9 +15,16 @@ import rx.subjects.Subject;
  */
 public class NetworkLinkImpl implements NetworkLink {
 
+    private static final Logger logger = LoggerFactory.getLogger(NetworkLinkImpl.class);
+
     private volatile boolean isConnected = true;
 
     private final Subject<LinkEvent, LinkEvent> linkEventSubject = new SerializedSubject<>(PublishSubject.<LinkEvent>create());
+    private final String name;
+
+    public NetworkLinkImpl(String name) {
+        this.name = name;
+    }
 
     public Observable<LinkEvent> linkEvents() {
         return linkEventSubject;
@@ -37,6 +46,7 @@ public class NetworkLinkImpl implements NetworkLink {
     @Override
     public void connect(long timeout, TimeUnit timeUnit) {
         connect().timeout(timeout, timeUnit).toBlocking().firstOrDefault(null);
+        logger.info("Connected networkLink: {}", name);
     }
 
     @Override
@@ -50,6 +60,7 @@ public class NetworkLinkImpl implements NetworkLink {
     @Override
     public void disconnect(long timeout, TimeUnit timeUnit) {
         disconnect().timeout(timeout, timeUnit).toBlocking().firstOrDefault(null);
+        logger.info("Disconnected networkLink: {}", name);
     }
 
     @Override

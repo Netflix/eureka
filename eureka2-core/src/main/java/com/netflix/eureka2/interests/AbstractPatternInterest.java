@@ -41,6 +41,10 @@ public abstract class AbstractPatternInterest<T> extends Interest<T> {
         return operator;
     }
 
+    /*visible for testing*/ Pattern getCompiledPattern() {
+        return compiledPattern;
+    }
+
     @Override
     public boolean matches(T data) {
         String value = getValue(data);
@@ -58,6 +62,7 @@ public abstract class AbstractPatternInterest<T> extends Interest<T> {
 
     protected abstract String getValue(T data);
 
+    // compiledPattern is NOT part of equals
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -67,8 +72,6 @@ public abstract class AbstractPatternInterest<T> extends Interest<T> {
 
         AbstractPatternInterest that = (AbstractPatternInterest) o;
 
-        if (compiledPattern != null ? !compiledPattern.equals(that.compiledPattern) : that.compiledPattern != null)
-            return false;
         if (operator != that.operator)
             return false;
         if (pattern != null ? !pattern.equals(that.pattern) : that.pattern != null)
@@ -77,11 +80,11 @@ public abstract class AbstractPatternInterest<T> extends Interest<T> {
         return true;
     }
 
+    // compiledPattern is NOT part of hashCode
     @Override
     public int hashCode() {
         int result = pattern != null ? pattern.hashCode() : 0;
         result = 31 * result + (operator != null ? operator.hashCode() : 0);
-        result = 31 * result + (compiledPattern != null ? compiledPattern.hashCode() : 0);
         return result;
     }
 
