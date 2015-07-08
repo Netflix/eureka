@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.testkit.cli.command;
+package com.netflix.eureka2.testkit.cli.command.session;
 
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.cli.Command;
@@ -41,10 +41,6 @@ public class RegisterCommand extends Command {
     protected boolean executeCommand(Context context, String[] args) {
         Session activeSession = context.getActiveSession();
 
-        if (!activeSession.isConnected()) {
-            System.err.printf("ERROR: no active session; run connect command first");
-            return false;
-        }
         if (!activeSession.expectedRegistrationStatus(Status.NotStarted, Status.Failed)) {
             System.err.printf("ERROR: registration already done");
             return false;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.testkit.cli.command;
+package com.netflix.eureka2.testkit.cli.command.session;
 
 import com.netflix.eureka2.testkit.cli.Command;
 import com.netflix.eureka2.testkit.cli.Context;
@@ -39,11 +39,6 @@ public class UnregisterCommand extends Command {
     protected boolean executeCommand(Context context, String[] args) {
         Session activeSession = context.getActiveSession();
 
-        if (!activeSession.isConnected()) {
-            System.err.printf("ERROR: no active session; run connect command first");
-            return false;
-
-        }
         if (!activeSession.expectedRegistrationStatus(Status.Complete)) {
             System.err.printf("ERROR: already unregistered");
             return false;

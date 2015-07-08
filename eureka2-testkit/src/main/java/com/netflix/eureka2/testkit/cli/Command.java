@@ -21,16 +21,21 @@ package com.netflix.eureka2.testkit.cli;
  */
 public abstract class Command {
     private final String name;
-    private final int paramCount;
+    private final int paramCountFrom;
+    private final int paramCountTo;
 
     protected Command(String name) {
-        this.name = name;
-        this.paramCount = -1;
+        this(name, -1, -1);
     }
 
     protected Command(String name, int paramCount) {
+        this(name, paramCount, paramCount);
+    }
+
+    protected Command(String name, int paramCountFrom, int paramCountTo) {
         this.name = name;
-        this.paramCount = paramCount;
+        this.paramCountFrom = paramCountFrom;
+        this.paramCountTo = paramCountTo;
     }
 
     public String getName() {
@@ -44,8 +49,13 @@ public abstract class Command {
     public abstract String getDescription();
 
     public boolean execute(Context context, String... args) {
-        if (paramCount != -1 && args.length != paramCount) {
-            System.err.format("ERROR: command %s expects %d arguments, while there are %d provided\n", name, paramCount, args.length);
+        if (paramCountFrom != -1 && (args.length < paramCountFrom || args.length > paramCountTo)) {
+            if (paramCountFrom != paramCountTo) {
+                System.err.format("ERROR: command %s expects between %d and %d arguments, while there are %d provided\n",
+                        name, paramCountFrom, paramCountTo, args.length);
+            } else {
+                System.err.format("ERROR: command %s expects %d arguments, while there are %d provided\n", name, paramCountFrom, args.length);
+            }
             return false;
         }
         return executeCommand(context, args);

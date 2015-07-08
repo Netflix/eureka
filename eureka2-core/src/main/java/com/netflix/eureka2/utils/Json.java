@@ -16,6 +16,9 @@
 
 package com.netflix.eureka2.utils;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
@@ -26,9 +29,6 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig.Feature;
 import org.codehaus.jackson.map.annotate.JsonSerialize.Inclusion;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-
 /**
  * A set of helper methods to convert to/from JSON format.
  *
@@ -36,6 +36,7 @@ import java.io.IOException;
  */
 public final class Json {
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectMapper FORMATTED_MAPPER = new ObjectMapper();
 
     static {
         MAPPER.setVisibility(JsonMethod.FIELD, Visibility.ANY);
@@ -44,6 +45,14 @@ public final class Json {
         MAPPER.setVisibility(JsonMethod.SETTER, Visibility.NONE);
         MAPPER.configure(Feature.FAIL_ON_EMPTY_BEANS, false);
         MAPPER.setSerializationInclusion(Inclusion.NON_NULL);
+
+        FORMATTED_MAPPER.setVisibility(JsonMethod.FIELD, Visibility.ANY);
+        FORMATTED_MAPPER.setVisibility(JsonMethod.GETTER, Visibility.NONE);
+        FORMATTED_MAPPER.setVisibility(JsonMethod.IS_GETTER, Visibility.NONE);
+        FORMATTED_MAPPER.setVisibility(JsonMethod.SETTER, Visibility.NONE);
+        FORMATTED_MAPPER.configure(Feature.FAIL_ON_EMPTY_BEANS, false);
+        FORMATTED_MAPPER.setSerializationInclusion(Inclusion.NON_NULL);
+        FORMATTED_MAPPER.configure(Feature.INDENT_OUTPUT, true);
     }
 
     private Json() {
@@ -51,6 +60,10 @@ public final class Json {
 
     public static ObjectMapper getMapper() {
         return MAPPER;
+    }
+
+    public static ObjectMapper getFormattedMapper() {
+        return FORMATTED_MAPPER;
     }
 
     public static <T> T fromJson(byte[] byteBuf, Class<T> type) {
