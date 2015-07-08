@@ -35,7 +35,7 @@ public class RouterPort {
 
     public RouterPort(int targetPort) {
         this.targetPort = targetPort;
-        this.link = new NetworkLinkImpl();
+        this.link = new NetworkLinkImpl(""+targetPort);
         rxClient = RxNetty.<ByteBuf, ByteBuf>newTcpClientBuilder("localhost", targetPort).build();
         link.linkEvents().subscribe(
                 new Action1<LinkEvent>() {
