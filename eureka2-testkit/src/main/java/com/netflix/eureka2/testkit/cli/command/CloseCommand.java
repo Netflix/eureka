@@ -37,14 +37,8 @@ public class CloseCommand extends Command {
     @Override
     protected boolean executeCommand(Context context, String[] args) {
         Session activeSession = context.getActiveSession();
-
-        if (!activeSession.isConnected()) {
-            System.err.printf("ERROR: no active session; run connect command first");
-            return false;
-        }
-
         activeSession.close();
-
+        context.setActiveSession(null);
         return true;
     }
 }

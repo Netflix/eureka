@@ -62,12 +62,19 @@ public class ClusterAddress {
 
     @Override
     public String toString() {
-        return "ClusterAddress{" +
-                "hostname='" + hostname + '\'' +
-                ", registrationPort=" + registrationPort +
-                ", interestPort=" + interestPort +
-                ", replicationPort=" + replicationPort +
-                '}';
+        StringBuilder sb = new StringBuilder("ClusterAddress{");
+        sb.append("hostname='").append(hostname).append('\'');
+        if (registrationPort >= 0) {
+            sb.append(", registrationPort=").append(registrationPort);
+        }
+        if (interestPort >= 0) {
+            sb.append(", interestPort=").append(interestPort);
+        }
+        if (replicationPort >= 0) {
+            sb.append(", replicationPort=").append(replicationPort);
+        }
+        sb.append('}');
+        return sb.toString();
     }
 
     public String toWriteAddressString() {

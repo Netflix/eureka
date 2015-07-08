@@ -16,19 +16,17 @@
 
 package com.netflix.eureka2.testkit.cli;
 
+import java.io.PrintStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.registration.RegistrationObservable;
-import com.netflix.eureka2.client.resolver.ServerResolver;
-import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.utils.ExtCollections;
 import rx.Subscriber;
@@ -64,9 +62,25 @@ public class Session {
 
     private final AtomicInteger streamIds = new AtomicInteger();
     private final Map<String, InterestSubscriber> subscriptions = new HashMap<>();
+    private final Map<String, Subscription> pendingSubscriptions = new HashMap<>();
 
-    public Session(Context context) {
+    public Session(Context context, EurekaRegistrationClient registrationClient, EurekaInterestClient interestClient) {
         this.context = context;
+        this.registrationClient = registrationClient;
+        this.interestClient = interestClient;
+        this.mode = registrationClient == null ? Mode.Read : Mode.ReadWrite;
+    }
+
+    public EurekaRegistrationClient getRegistrationClient() {
+        return registrationClient;
+    }
+
+    public EurekaInterestClient getInterestClient() {
+        return interestClient;
+    }
+
+    public String getPrompt() {
+        return "session";
     }
 
     public Status getRegistrationStatus() {
@@ -94,85 +108,8 @@ public class Session {
         return false;
     }
 
-    public int getSessionId() {
-        return sessionId;
-    }
-
     public InstanceInfo getInstanceInfo() {
         return lastInstanceInfo;
-    }
-
-    public void connectToRegister(String host, int port) {
-        ServerResolver serverResolver;
-        if (host.indexOf('.') == -1) {
-            serverResolver = ServerResolvers.fromHostname(host).withPort(port);
-        } else {
-            serverResolver = ServerResolvers.fromDnsName(host).withPort(port);
-        }
-        registrationClient = Eurekas.newRegistrationClientBuilder()
-                .withTransportConfig(context.getTransportConfig())
-                .withServerResolver(serverResolver)
-                .build();
-
-        mode = Mode.Write;
-    }
-
-    public void connectToRead(String host, int port) {
-        ServerResolver serverResolver;
-        if (host.indexOf('.') == -1) {
-            serverResolver = ServerResolvers.fromHostname(host).withPort(port);
-        } else {
-            serverResolver = ServerResolvers.fromDnsName(host).withPort(port);
-        }
-        interestClient = Eurekas.newInterestClientBuilder()
-                .withTransportConfig(context.getTransportConfig())
-                .withServerResolver(serverResolver)
-                .build();
-
-        mode = Mode.Read;
-    }
-
-    public void connectToCluster(String host, int registrationPort, int interestPort, String readClusterVip) {
-        registrationClient = Eurekas.newRegistrationClientBuilder()
-                .withTransportConfig(context.getTransportConfig())
-                .withServerResolver(ServerResolvers.fromDnsName(host).withPort(registrationPort))
-                .build();
-
-        interestClient = Eurekas.newInterestClientBuilder()
-                .withTransportConfig(context.getTransportConfig())
-                .withServerResolver(ServerResolvers.fromEureka(
-                                ServerResolvers.fromDnsName(host).withPort(interestPort))
-                                .forInterest(Interests.forVips(readClusterVip))
-                )
-                .build();
-
-        mode = Mode.ReadWrite;
-    }
-
-    public boolean isConnected() {
-        switch (mode) {
-            case Read:
-                if (interestClient == null) {
-                    System.out.println("ERROR: connect first to Eureka server");
-                    return false;
-                }
-                return true;
-            case Write:
-                if (registrationClient == null) {
-                    System.out.println("ERROR: connect first to Eureka server");
-                    return false;
-                }
-                return true;
-            case ReadWrite:
-                if (registrationClient == null || interestClient == null) {
-                    System.out.println("ERROR: connect first to Eureka server");
-                    return false;
-                }
-                return true;
-            default:
-                System.out.println("Unknown mode state: " + mode);
-                return false;
-        }
     }
 
     public void register(final InstanceInfo instanceInfo) {
@@ -229,17 +166,37 @@ public class Session {
         registrationStatus = Status.NotStarted;
     }
 
+    public String nextSubscriptionId() {
+        return sessionId + "#" + streamIds.incrementAndGet();
+    }
+
+    public void addSubscription(String id, Subscription subscription) {
+        pendingSubscriptions.put(id, subscription);
+    }
+
     public void forInterest(Interest<InstanceInfo> interest) {
         if (mode == Mode.Write) {
             System.err.println("ERROR: registration-only session");
             return;
         }
-        String id = sessionId + "#" + streamIds.incrementAndGet();
+        String id = nextSubscriptionId();
         InterestSubscriber subscriber = new InterestSubscriber(interest, id);
         subscriptions.put(id, subscriber);
         interestClient.forInterest(interest).subscribe(subscriber);
 
         System.out.println("Stream_" + id + ": Subscribing to Interest: " + interest);
+    }
+
+    public boolean disconnect(String sessionId) {
+        if (subscriptions.containsKey(sessionId)) {
+            subscriptions.remove(sessionId).unsubscribe();
+            return true;
+        }
+        if (pendingSubscriptions.containsKey(sessionId)) {
+            pendingSubscriptions.remove(sessionId).unsubscribe();
+            return true;
+        }
+        return false;
     }
 
     public void close() {
@@ -257,29 +214,55 @@ public class Session {
         mode = null;
     }
 
-    public void printStatus() {
-        System.out.println("Session " + sessionId);
+    public void printFormatted(PrintStream out, int indentSize) {
+        char[] indent = new char[indentSize];
+        Arrays.fill(indent, ' ');
+
+        out.print(indent);
+        out.println("Session " + sessionId);
         if (mode == null) {
-            System.out.println("Connection status: disconnected");
+            out.print(indent);
+            out.print(indent);
+            out.println("connection status: disconnected");
         } else {
-            System.out.println("Connection status: connected in mode " + mode);
+            out.print(indent);
+            out.println("connection status: connected in mode " + mode);
             switch (registrationStatus) {
                 case NotStarted:
-                    System.out.println("Registration status: unregistered");
+                    out.print(indent);
+                    out.print(indent);
+                    out.println("Registration status: unregistered");
                     break;
                 case Initiated:
-                    System.out.println("Registration status: Initiated but not completed.");
+                    out.print(indent);
+                    out.print(indent);
+                    out.println("Registration status: Initiated but not completed.");
                     break;
                 case Complete:
-                    System.out.println("Registration status: registered");
+                    out.print(indent);
+                    out.print(indent);
+                    out.println("Registration status: registered");
                     break;
                 case Failed:
-                    System.out.println("Registration status: failed");
+                    out.print(indent);
+                    out.print(indent);
+                    out.println("Registration status: failed");
                     break;
             }
-            System.out.println("Number of subscriptions: " + subscriptions.size());
+            out.print(indent);
+            out.print(indent);
+            out.println("Number of subscriptions: " + (subscriptions.size() + pendingSubscriptions.size()));
             for (Map.Entry<String, InterestSubscriber> entry : subscriptions.entrySet()) {
-                System.out.println("Stream_" + entry.getKey() + " -> " + entry.getValue().interest);
+                out.print(indent);
+                out.print(indent);
+                out.print(indent);
+                out.println(entry.getKey() + " -> " + entry.getValue().interest);
+            }
+            for (String id : pendingSubscriptions.keySet()) {
+                out.print(indent);
+                out.print(indent);
+                out.print(indent);
+                out.println(id + " -> query");
             }
         }
         System.out.println();
@@ -318,5 +301,4 @@ public class Session {
             System.out.println("Stream_" + id + ": Interest " + interest + " NEXT: " + notification);
         }
     }
-
 }

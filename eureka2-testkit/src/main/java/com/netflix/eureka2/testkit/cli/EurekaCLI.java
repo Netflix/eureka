@@ -16,32 +16,31 @@
 
 package com.netflix.eureka2.testkit.cli;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.LineNumberReader;
 import java.util.Arrays;
-import java.util.ListIterator;
 import java.util.TreeMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
+import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.testkit.cli.command.CloseCommand;
-import com.netflix.eureka2.testkit.cli.command.ConnectCommand;
-import com.netflix.eureka2.testkit.cli.command.InterestCommand;
-import com.netflix.eureka2.testkit.cli.command.RegisterCommand;
 import com.netflix.eureka2.testkit.cli.command.StatusCommand;
-import com.netflix.eureka2.testkit.cli.command.UnregisterCommand;
-import com.netflix.eureka2.testkit.cli.command.UpdateCommand;
-import com.netflix.eureka2.codec.CodecType;
+import com.netflix.eureka2.testkit.cli.command.bootstrap.BootstrapCommand;
+import com.netflix.eureka2.testkit.cli.command.connect.ConnectCanonicalCommand;
+import com.netflix.eureka2.testkit.cli.command.connect.ConnectReadClusterCommand;
+import com.netflix.eureka2.testkit.cli.command.connect.ConnectReadNodeCommand;
+import com.netflix.eureka2.testkit.cli.command.connect.ConnectWriteClusterCommand;
+import com.netflix.eureka2.testkit.cli.command.connect.ConnectWriteNodeCommand;
+import com.netflix.eureka2.testkit.cli.command.session.DescribeCommand;
+import com.netflix.eureka2.testkit.cli.command.session.DisconnectCommand;
+import com.netflix.eureka2.testkit.cli.command.session.InterestCommand;
+import com.netflix.eureka2.testkit.cli.command.session.QueryCommand;
+import com.netflix.eureka2.testkit.cli.command.session.RegisterCommand;
+import com.netflix.eureka2.testkit.cli.command.session.UnregisterCommand;
+import com.netflix.eureka2.testkit.cli.command.session.UpdateCommand;
 import jline.Terminal;
 import jline.TerminalFactory;
 import jline.console.ConsoleReader;
-import jline.console.history.History;
-import jline.console.history.History.Entry;
 
 /**
  * Simple command line Eureka client interface.
@@ -51,47 +50,59 @@ import jline.console.history.History.Entry;
 @SuppressWarnings("CallToPrintStackTrace")
 public class EurekaCLI {
 
-    private static final File CONFIGURATION_FILE =
-            System.getProperty("user.home") == null ? null : new File(System.getProperty("user.home"), ".eurekarc");
-
-    private static final File HISTORY_FILE =
-            System.getProperty("user.home") == null ? null : new File(System.getProperty("user.home"), ".eureka_history");
-
-    private static final Pattern INCLUDE_PATTERN = Pattern.compile("\\s*include\\s+(.+)\\s*");
-    private static final Pattern ALIAS_DEF_PATTERN = Pattern.compile("\\s*alias\\s+([\\w\\d-_]+)=(.*)");
-
-    private final Command[] commands = {
+    private final Command[] sharedCommands = {
             new HelpCommand(),
             new AliasCommand(),
             new HistoryCommand(),
             new ReloadCommand(),
-            ConnectCommand.toRegister(),
-            ConnectCommand.toSubscribe(),
-            ConnectCommand.toCluster(),
+            new StatusCommand()
+    };
+
+    private final Command[] bootstrapCommands = merge(sharedCommands,
+            new BootstrapCommand()
+    );
+
+    private final Command[] connectCommands = merge(sharedCommands,
+            new ConnectWriteClusterCommand(),
+            new ConnectWriteNodeCommand(),
+            new ConnectReadClusterCommand(),
+            new ConnectReadNodeCommand(),
+            new ConnectCanonicalCommand()
+    );
+
+    private final Command[] sessionCommands = merge(sharedCommands,
             new RegisterCommand(),
             new UpdateCommand(),
             new UnregisterCommand(),
+            new DisconnectCommand(),
             new CloseCommand(),
             InterestCommand.forFullRegistry(),
             InterestCommand.forApps(),
             InterestCommand.forVips(),
             InterestCommand.forSecureVips(),
-            new StatusCommand()
-    };
+            new QueryCommand(),
+            new DescribeCommand()
+    );
 
-    enum CmdResult {Ok, Error, Quit}
 
-    private final Context context;
+    enum CmdResult {Ok, Error, Quit;}
+
+    private final EurekaTransportConfig transportConfig;
+
+    private final ConfigurationLoader configurationLoader = new ConfigurationLoader();
+
     private final ConsoleReader consoleReader;
-    private final TreeMap<String, String> aliasMap = new TreeMap<>();
+
+    private TreeMap<String, String> aliasMap;
+    private final Context context = new Context();
 
     public EurekaCLI(EurekaTransportConfig transportConfig) throws IOException {
-        this.context = new Context(transportConfig);
+        this.transportConfig = transportConfig;
         Terminal terminal = TerminalFactory.create();
         terminal.setEchoEnabled(false);
         consoleReader = new ConsoleReader(System.in, System.out, terminal);
-        loadConfiguration();
-        loadHistory();
+        this.aliasMap = configurationLoader.loadConfiguration();
+        configurationLoader.loadHistory(consoleReader);
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
             public void run() {
@@ -100,96 +111,18 @@ public class EurekaCLI {
         }));
     }
 
-    private void loadConfiguration() {
-        aliasMap.clear();
-
-        if (CONFIGURATION_FILE != null && CONFIGURATION_FILE.exists()) {
-            try {
-                loadConfigurationFrom(CONFIGURATION_FILE);
-            } catch (IOException ignored) {
-                System.err.println("ERROR: could not load configuration file from ~/.eureka_history");
-            }
-        }
-    }
-
-    private void loadConfigurationFrom(File file) throws IOException {
-        System.out.println("Loading configuration from " + file + "...");
-        try (LineNumberReader reader = new LineNumberReader(new FileReader(file))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                // Remove comments and empty lines
-                line = line.trim();
-                int cpos = line.indexOf('#');
-                if (cpos != -1) {
-                    line = line.substring(0, cpos);
-                }
-                if (!line.isEmpty()) {
-                    Matcher includeMatcher = INCLUDE_PATTERN.matcher(line);
-                    if (includeMatcher.matches()) {
-                        String fileName = includeMatcher.group(1);
-                        File nestedFile;
-                        if (fileName.startsWith("/")) {
-                            nestedFile = new File(fileName);
-                        } else {
-                            nestedFile = new File(CONFIGURATION_FILE.getParentFile(), fileName);
-                        }
-                        loadConfigurationFrom(nestedFile);
-                    } else {
-                        Matcher aliasMatcher = ALIAS_DEF_PATTERN.matcher(line);
-                        if (aliasMatcher.matches()) {
-                            aliasMap.put(aliasMatcher.group(1), aliasMatcher.group(2));
-                        } else {
-                            System.err.format("WARN: syntax error at %s#%d: %s...\n", file, reader.getLineNumber(),
-                                    line.substring(0, Math.min(32, line.length())));
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private void loadHistory() {
-        if (HISTORY_FILE != null && HISTORY_FILE.exists()) {
-            try {
-                try (LineNumberReader reader = new LineNumberReader(new FileReader(HISTORY_FILE))) {
-                    History history = consoleReader.getHistory();
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        history.add(line);
-                    }
-                }
-            } catch (IOException ignored) {
-                System.err.println("ERROR: could not load history file from ~/.eureka_history");
-            }
-        }
-    }
-
-    private void saveHistory() {
-        if (HISTORY_FILE != null) {
-            if (HISTORY_FILE.exists()) {
-                boolean deleted = HISTORY_FILE.delete();
-                if (!deleted) {
-                    System.err.println("Failed to delete the history file.");
-                }
-            }
-            try {
-                ListIterator<Entry> iterator = consoleReader.getHistory().entries();
-                try (FileWriter writer = new FileWriter(HISTORY_FILE)) {
-                    while (iterator.hasNext()) {
-                        writer.write(iterator.next().value().toString());
-                        writer.write('\n');
-                    }
-                }
-            } catch (IOException ignored) {
-                System.err.println("ERROR: could not save history file into ~/.eureka_history");
-            }
-        }
-    }
-
     public void readExecutePrintLoop() throws IOException {
         System.out.println("Eureka 2.0 Command Line Client");
         while (true) {
-            String line = consoleReader.readLine("> ");
+            String prompt;
+            if (context.getActiveSession() != null) {
+                prompt = context.getActiveSession().getPrompt() + "> ";
+            } else if (context.hasClusterResolver()) {
+                prompt = "configured> ";
+            } else {
+                prompt = "bootstrap> ";
+            }
+            String line = consoleReader.readLine(prompt);
             if (line != null && !(line = line.trim()).isEmpty()) {
                 if (executeLine(line) == CmdResult.Quit) {
                     return;
@@ -221,13 +154,13 @@ public class EurekaCLI {
         String cmd = parts[0];
         String[] args = Arrays.copyOfRange(parts, 1, parts.length);
         if ("quit".equals(cmd)) {
-            saveHistory();
+            configurationLoader.saveHistory(consoleReader);
             System.out.println("Terminating...");
             return CmdResult.Quit;
         }
         try {
             boolean matched = false;
-            for (Command c : commands) {
+            for (Command c : getActiveCommands()) {
                 if (cmd.equals(c.getName())) {
                     c.execute(context, args);
                     matched = true;
@@ -242,6 +175,23 @@ public class EurekaCLI {
             e.printStackTrace();
         }
         return CmdResult.Ok;
+    }
+
+    private Command[] getActiveCommands() {
+        if (context.getActiveSession() != null) {
+            return sessionCommands;
+        }
+        if (context.hasClusterResolver()) {
+            return connectCommands;
+        }
+        return bootstrapCommands;
+    }
+
+    private static Command[] merge(Command[] sharedCommands, Command... mainCommands) {
+        Command[] merged = new Command[sharedCommands.length + mainCommands.length];
+        System.arraycopy(sharedCommands, 0, merged, 0, sharedCommands.length);
+        System.arraycopy(mainCommands, 0, merged, sharedCommands.length, mainCommands.length);
+        return merged;
     }
 
     public static void main(String[] args) throws IOException {
@@ -278,12 +228,12 @@ public class EurekaCLI {
         protected boolean executeCommand(Context context, String[] args) {
             System.out.println("Available commands:");
             int maxLen = -1;
-            for (Command cmd : commands) {
+            for (Command cmd : getActiveCommands()) {
                 maxLen = Math.max(cmd.getInvocationSyntax().length(), maxLen);
             }
             maxLen += 2;
             String lineFormat = "  %-" + maxLen + "s%s\n";
-            for (Command cmd : commands) {
+            for (Command cmd : getActiveCommands()) {
                 System.out.format(lineFormat, cmd.getInvocationSyntax(), cmd.getDescription());
             }
             return true;
@@ -348,12 +298,12 @@ public class EurekaCLI {
 
         @Override
         public String getDescription() {
-            return "reload " + CONFIGURATION_FILE + " file";
+            return "reload " + ConfigurationLoader.CONFIGURATION_FILE + " file";
         }
 
         @Override
         protected boolean executeCommand(Context context, String[] args) {
-            loadConfiguration();
+            aliasMap = configurationLoader.loadConfiguration();
             return true;
         }
     }
