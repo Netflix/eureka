@@ -19,10 +19,6 @@ import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
 import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
-import com.netflix.eureka2.registry.eviction.EvictionQueue;
-import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
-import com.netflix.eureka2.registry.eviction.EvictionStrategy;
-import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
 import com.netflix.eureka2.server.config.BootstrapConfig;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
 import com.netflix.eureka2.server.config.EurekaClusterDiscoveryConfig;
@@ -33,9 +29,9 @@ import com.netflix.eureka2.server.registry.EurekaBridgeRegistry;
 import com.netflix.eureka2.server.service.BridgeService;
 import com.netflix.eureka2.server.service.EurekaBridgeServerSelfInfoResolver;
 import com.netflix.eureka2.server.service.EurekaBridgeServerSelfRegistrationService;
-import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.server.service.replication.ReplicationService;
+import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.server.spi.ExtensionContext;
 import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
@@ -60,9 +56,6 @@ public class EurekaBridgeServerModule extends AbstractModule {
         bind(SourcedEurekaRegistry.class).annotatedWith(Names.named("delegate")).to(EurekaBridgeRegistry.class).asEagerSingleton();
         bind(SourcedEurekaRegistry.class).to(SourcedEurekaRegistryImpl.class);
         bind(EurekaRegistryView.class).to(SourcedEurekaRegistryImpl.class);
-
-        bind(EvictionQueue.class).to(EvictionQueueImpl.class).asEagerSingleton();
-        bind(EvictionStrategy.class).toProvider(EvictionStrategyProvider.class);
 
         bind(SelfInfoResolver.class).to(EurekaBridgeServerSelfInfoResolver.class).asEagerSingleton();
         bind(SelfRegistrationService.class).to(EurekaBridgeServerSelfRegistrationService.class).asEagerSingleton();
