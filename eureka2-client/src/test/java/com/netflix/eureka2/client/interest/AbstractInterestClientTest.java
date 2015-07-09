@@ -13,6 +13,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
+import rx.schedulers.Schedulers;
 import rx.subjects.ReplaySubject;
 
 import static org.mockito.Matchers.any;
@@ -23,6 +24,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
+ * Tests the abstract class {@link AbstractInterestClient}.
+ *
  * @author David Liu
  */
 public class AbstractInterestClientTest {
@@ -81,7 +84,6 @@ public class AbstractInterestClientTest {
     }
 
 
-
     private ChangeNotification<InstanceInfo> newBufferStart() {
         return StreamStateNotification.bufferStartNotification(Interests.forFullRegistry());
     }
@@ -92,7 +94,7 @@ public class AbstractInterestClientTest {
 
     class MyInterestClient extends AbstractInterestClient {
         protected MyInterestClient(SourcedEurekaRegistry<InstanceInfo> registry, int retryWaitMillis) {
-            super(registry, retryWaitMillis);
+            super(registry, retryWaitMillis, Schedulers.computation());
         }
 
         @Override

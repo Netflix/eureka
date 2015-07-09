@@ -22,46 +22,41 @@ import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.InterestChannelMetrics;
+import com.netflix.eureka2.registry.MultiSourcedDataHolder;
 import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
-import com.netflix.eureka2.registry.eviction.EvictionQueue;
-import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInterest;
-import com.netflix.eureka2.testkit.junit.EurekaMatchers;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.TransportClient;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import rx.Observable;
 import rx.Subscriber;
-import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 import rx.subjects.ReplaySubject;
 
 import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.modifyChangeNotificationOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -70,8 +65,8 @@ import static org.mockito.Mockito.when;
 public class EurekaInterestClientImplTest {
 
     private static final int RETRY_WAIT_MILLIS = 10;
-    private static final long EVICTION_TIMEOUT_MS = 30 * 1000;
-    private static final int EVICTION_ALLOWED_PERCENTAGE_DROP_THRESHOLD = 50;//%
+    public static final int FAILING_CHANNEL_FAILURE_DELAY_MS = 10;
+
     private final AtomicInteger channelId = new AtomicInteger(0);
 
     private TransportClient transportClient;
@@ -84,10 +79,8 @@ public class EurekaInterestClientImplTest {
     private List<InstanceInfo> zuulInfos;
     private List<InstanceInfo> allInfos;
 
-    private TestScheduler registryScheduler;
-    private TestScheduler evictionScheduler;
+    private TestScheduler testScheduler;
     private SourcedEurekaRegistry<InstanceInfo> registry;
-    private EvictionQueue evictionQueue;
 
     private ChannelFactory<InterestChannel> mockFactory;
     private TestChannelFactory<InterestChannel> factory;
@@ -96,6 +89,9 @@ public class EurekaInterestClientImplTest {
     private ExtTestSubscriber<ChangeNotification<InstanceInfo>> discoverySubscriber;
     private ExtTestSubscriber<ChangeNotification<InstanceInfo>> zuulSubscriber;
     private ExtTestSubscriber<ChangeNotification<InstanceInfo>> allSubscriber;
+
+    private TestInterestChannel channel0;
+    private TestInterestChannel channel1;
 
     @Before
     public void setUp() {
@@ -127,17 +123,15 @@ public class EurekaInterestClientImplTest {
         allInfos = new ArrayList<>(discoveryInfos);
         allInfos.addAll(zuulInfos);
 
-        registryScheduler = Schedulers.test();
-        evictionScheduler = Schedulers.test();
-        evictionQueue = spy(new EvictionQueueImpl(EVICTION_TIMEOUT_MS, EurekaRegistryMetricFactory.registryMetrics(), evictionScheduler));
+        testScheduler = Schedulers.test();
 
         BatchingRegistry<InstanceInfo> remoteBatchingRegistry = new BatchingRegistryImpl<>();
         IndexRegistry<InstanceInfo> indexRegistry = new BatchAwareIndexRegistry<>(new IndexRegistryImpl<InstanceInfo>(), remoteBatchingRegistry);
         SourcedEurekaRegistry<InstanceInfo> delegateRegistry = new SourcedEurekaRegistryImpl(
                 indexRegistry, EurekaRegistryMetricFactory.registryMetrics(),
-                registryScheduler
+                testScheduler
         );
-        registry = spy(delegateRegistry);
+        registry = delegateRegistry;
 
         mockFactory = mock(InterestChannelFactory.class);
         factory = new TestChannelFactory<>(mockFactory);
@@ -167,7 +161,7 @@ public class EurekaInterestClientImplTest {
             }
         });
 
-        client = new EurekaInterestClientImpl(registry, factory, RETRY_WAIT_MILLIS);
+        client = new EurekaInterestClientImpl(registry, factory, RETRY_WAIT_MILLIS, testScheduler);
 
         List<ChangeNotification<InstanceInfo>> expectedDiscovery = Arrays.asList(
                 SampleChangeNotification.DiscoveryAdd.newNotification(discoveryInfos.get(0)),
@@ -176,7 +170,7 @@ public class EurekaInterestClientImplTest {
         );
 
         client.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(discoverySubscriber);
-        discoverySubscriber.assertProducesInAnyOrder(expectedDiscovery);
+        discoverySubscriber.assertContainsInAnyOrder(expectedDiscovery);
 
         assertThat(factory.getAllChannels().size(), is(1));
         TestInterestChannel channel0 = (TestInterestChannel) factory.getAllChannels().get(0);
@@ -193,7 +187,7 @@ public class EurekaInterestClientImplTest {
         );
 
         client.forInterest(zuulInterest).filter(dataOnlyFilter()).subscribe(zuulSubscriber);
-        zuulSubscriber.assertProducesInAnyOrder(expectedZuul);
+        zuulSubscriber.assertContainsInAnyOrder(expectedZuul);
 
         assertThat(factory.getAllChannels().size(), is(1));
         channel0 = (TestInterestChannel) factory.getAllChannels().get(0);
@@ -217,12 +211,11 @@ public class EurekaInterestClientImplTest {
             }
         });
 
-        testChannelFailOver();
+        doChannelFailOverTest();
     }
 
     // note this is different to the above test as the error in this case come from the channel without any operation
     @Test
-    @Ignore // TODO preservation mode dropped; must be replaced with client specific policy
     public void testRetryOnChannelDisconnectError() throws Exception {
         when(mockFactory.newChannel()).then(new Answer<InterestChannel>() {
             @Override
@@ -234,11 +227,11 @@ public class EurekaInterestClientImplTest {
             }
         });
 
-        testChannelFailOver();
+        doChannelFailOverTest();
     }
 
-    private void testChannelFailOver() throws Exception {
-        client = new EurekaInterestClientImpl(registry, factory, RETRY_WAIT_MILLIS);
+    private void doChannelFailOverTest() throws Exception {
+        client = new EurekaInterestClientImpl(registry, factory, RETRY_WAIT_MILLIS, testScheduler);
 
         List<ChangeNotification<InstanceInfo>> expected = Arrays.asList(
                 SampleChangeNotification.DiscoveryAdd.newNotification(discoveryInfos.get(0)),
@@ -247,21 +240,38 @@ public class EurekaInterestClientImplTest {
         );
 
         client.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(discoverySubscriber);
-        discoverySubscriber.assertProducesInAnyOrder(expected);
 
+        testScheduler.advanceTimeBy(RETRY_WAIT_MILLIS + FAILING_CHANNEL_FAILURE_DELAY_MS, TimeUnit.MILLISECONDS);
+
+        discoverySubscriber.assertContainsInAnyOrder(expected);
         assertThat(factory.getAllChannels().size(), is(2));
 
-        TestInterestChannel channel0 = (TestInterestChannel) factory.getAllChannels().get(0);
+        channel0 = (TestInterestChannel) factory.getAllChannels().get(0);
         assertThat(channel0.id, is(0));
         assertThat(channel0.operations.size(), is(1));
         assertThat(channel0.closeCalled, is(true));
         assertThat(matchInterests(channel0.operations.iterator().next(), discoveryInterest), is(true));
 
-        TestInterestChannel channel1 = (TestInterestChannel) factory.getAllChannels().get(1);
+        channel1 = (TestInterestChannel) factory.getAllChannels().get(1);
         assertThat(channel1.id, is(1));
         assertThat(channel1.operations.size(), is(1));
         assertThat(channel1.closeCalled, is(false));
         assertThat(matchInterests(channel1.operations.iterator().next(), discoveryInterest), is(true));
+
+        // verify that a new subscriber can subscribe and see latest changes
+        ExtTestSubscriber<ChangeNotification<InstanceInfo>> newSubscriber = new ExtTestSubscriber<>();
+        client.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(newSubscriber);
+
+        newSubscriber.assertContainsInAnyOrder(expected);
+
+        InstanceInfo update = new InstanceInfo.Builder().withInstanceInfo(discoveryInfos.get(0))
+                .withStatus(InstanceInfo.Status.OUT_OF_SERVICE)
+                .build();
+
+        registry.register(update, channel1.getSource()).subscribe();
+        testScheduler.triggerActions();
+
+        assertThat(newSubscriber.takeNext(), is(modifyChangeNotificationOf(update)));
     }
 
     @Test
@@ -273,7 +283,7 @@ public class EurekaInterestClientImplTest {
             }
         });
 
-        client = new EurekaInterestClientImpl(registry, factory, RETRY_WAIT_MILLIS);
+        client = new EurekaInterestClientImpl(registry, factory, RETRY_WAIT_MILLIS, testScheduler);
 
         client.forInterest(discoveryInterest).subscribe(discoverySubscriber);
 
@@ -310,7 +320,7 @@ public class EurekaInterestClientImplTest {
             }
         });
 
-        client = new EurekaInterestClientImpl(registry, factory, RETRY_WAIT_MILLIS);
+        client = new EurekaInterestClientImpl(registry, factory, RETRY_WAIT_MILLIS, testScheduler);
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber1 = new ExtTestSubscriber<>();
         client.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber1);
@@ -342,7 +352,7 @@ public class EurekaInterestClientImplTest {
             }
         });
 
-        client = new EurekaInterestClientImpl(registry, factory, RETRY_WAIT_MILLIS);
+        client = new EurekaInterestClientImpl(registry, factory, RETRY_WAIT_MILLIS, testScheduler);
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber1 = new ExtTestSubscriber<>();
         client.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber1);
@@ -374,7 +384,7 @@ public class EurekaInterestClientImplTest {
             }
         });
 
-        client = new EurekaInterestClientImpl(registry, factory, RETRY_WAIT_MILLIS);
+        client = new EurekaInterestClientImpl(registry, factory, RETRY_WAIT_MILLIS, testScheduler);
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber1 = new ExtTestSubscriber<>();
         client.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber1);
@@ -404,7 +414,6 @@ public class EurekaInterestClientImplTest {
     }
 
     @Test
-    @Ignore // TODO preservation mode dropped; must be replaced with client specific policy
     public void testNewChannelCreationEvictAllOlderSourcedRegistryData() throws Exception {
         when(mockFactory.newChannel()).then(new Answer<InterestChannel>() {
             @Override
@@ -415,78 +424,19 @@ public class EurekaInterestClientImplTest {
                 return newAlwaysSuccessChannel(channelId.getAndIncrement());
             }
         });
+        doChannelFailOverTest();
 
-        client = new EurekaInterestClientImpl(registry, factory, RETRY_WAIT_MILLIS);
+        // Verify data copies from the first channel are evicted
+        List<? extends MultiSourcedDataHolder<InstanceInfo>> holders =
+                registry.getHolders().take(3).toList().timeout(1, TimeUnit.SECONDS).toBlocking().first();
 
-        List<ChangeNotification<InstanceInfo>> expected = Arrays.asList(
-                SampleChangeNotification.DiscoveryAdd.newNotification(discoveryInfos.get(0)),
-                SampleChangeNotification.DiscoveryAdd.newNotification(discoveryInfos.get(1)),
-                SampleChangeNotification.DiscoveryAdd.newNotification(discoveryInfos.get(2))
-        );
-
-        ArgumentCaptor<InstanceInfo> infoCaptor = ArgumentCaptor.forClass(InstanceInfo.class);
-        ArgumentCaptor<Source> sourceCaptor = ArgumentCaptor.forClass(Source.class);
-
-        client.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(discoverySubscriber);
-
-        discoverySubscriber.assertProducesInAnyOrder(expected, new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
-            @Override
-            public ChangeNotification<InstanceInfo> call(ChangeNotification<InstanceInfo> notification) {
-                return notification;
-            }
-        }, 10, TimeUnit.SECONDS);
-
-        assertThat(factory.getAllChannels().size(), is(2));
-
-        TestInterestChannel channel0 = (TestInterestChannel) factory.getAllChannels().get(0);
-        assertThat(channel0.id, is(0));
-        assertThat(channel0.operations.size(), is(1));
-        assertThat(channel0.closeCalled, is(true));
-        assertThat(matchInterests(channel0.operations.iterator().next(), discoveryInterest), is(true));
-
-        TestInterestChannel channel1 = (TestInterestChannel) factory.getAllChannels().get(1);
-        assertThat(channel1.id, is(1));
-        assertThat(channel1.operations.size(), is(1));
-        assertThat(channel1.closeCalled, is(false));
-        assertThat(matchInterests(channel1.operations.iterator().next(), discoveryInterest), is(true));
-
-        assertThat(evictionQueue.size(), is(2));  // 2 stuck in queue (because we have not yet advanced the evictionQueue scheduler
-
-        verify(evictionQueue, times(2)).add(infoCaptor.capture(), sourceCaptor.capture());
-
-        assertThat(infoCaptor.getAllValues(), containsInAnyOrder(discoveryInfos.subList(0, 2).toArray()));
-        Source channel0Source = channel0.getSource();
-        assertThat(sourceCaptor.getAllValues().get(0), is(channel0Source));
-        assertThat(sourceCaptor.getAllValues().get(1), is(channel0Source));
-        assertThat(sourceCaptor.getAllValues().size(), is(2));
-
-        evictionScheduler.advanceTimeBy(EVICTION_TIMEOUT_MS + 1, TimeUnit.MILLISECONDS);
-        registryScheduler.advanceTimeBy(EVICTION_TIMEOUT_MS + 1, TimeUnit.MILLISECONDS);  // need to advance the registry scheduler to execute the unregisters from eviction
-
-        evictionScheduler.advanceTimeBy(EVICTION_TIMEOUT_MS + 1, TimeUnit.MILLISECONDS);
-        registryScheduler.advanceTimeBy(EVICTION_TIMEOUT_MS + 1, TimeUnit.MILLISECONDS);
-
-        assertThat(evictionQueue.size(), is(0));  // all gone
-
-        // verify that a new subscriber can subscribe and see latest changes
-        ExtTestSubscriber<ChangeNotification<InstanceInfo>> newSubscriber = new ExtTestSubscriber<>();
-        client.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(newSubscriber);
-
-        newSubscriber.assertProducesInAnyOrder(expected, new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
-            @Override
-            public ChangeNotification<InstanceInfo> call(ChangeNotification<InstanceInfo> notification) {
-                return notification;
-            }
-        }, 10, TimeUnit.SECONDS);
-
-        InstanceInfo update = new InstanceInfo.Builder().withInstanceInfo(discoveryInfos.get(0))
-                .withStatus(InstanceInfo.Status.OUT_OF_SERVICE)
-                .build();
-
-        registry.register(update, channel1.getSource()).subscribe();
-        registryScheduler.triggerActions();
-
-        assertThat(newSubscriber.takeNext(1, 5, TimeUnit.SECONDS).get(0), EurekaMatchers.modifyChangeNotificationOf(update));
+        for (MultiSourcedDataHolder<InstanceInfo> holder : holders) {
+            assertThat("Registry data holder expected to contain only one copy", holder.getAllSources().size(), is(equalTo(1)));
+            assertThat(
+                    "Registry data holder expected to contain copy from the second channel",
+                    holder.get(channel1.getSource()), is(notNullValue())
+            );
+        }
     }
 
 
@@ -561,26 +511,26 @@ public class EurekaInterestClientImplTest {
         when(channel.change(argThat(new InterestMatcher(discoveryInterest)))).thenAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
-                registerAll(discoveryInfos.subList(0, 2), ((Sourced) channel).getSource());
+                registerAll(discoveryInfos.subList(0, 2), channel.getSource());
                 return Observable.empty();
             }
         });
 
-        int failAfterMillis = 10;
-        Observable.empty().delay(failAfterMillis, TimeUnit.MILLISECONDS).subscribe(new Subscriber<Object>() {
-            @Override
-            public void onCompleted() {
-                channel.close(new Exception("test: channel error"));
-            }
+        Observable.empty().delay(FAILING_CHANNEL_FAILURE_DELAY_MS, TimeUnit.MILLISECONDS, testScheduler)
+                .subscribe(new Subscriber<Object>() {
+                    @Override
+                    public void onCompleted() {
+                        channel.close(new Exception("test: channel error"));
+                    }
 
-            @Override
-            public void onError(Throwable e) {
-            }
+                    @Override
+                    public void onError(Throwable e) {
+                    }
 
-            @Override
-            public void onNext(Object o) {
-            }
-        });
+                    @Override
+                    public void onNext(Object o) {
+                    }
+                });
 
         return new TestInterestChannel(channel, id);
     }
@@ -588,7 +538,7 @@ public class EurekaInterestClientImplTest {
     private void registerAll(List<InstanceInfo> infos, Source source) {
         for (InstanceInfo info : infos) {
             registry.register(info, source).subscribe();
-            registryScheduler.triggerActions();
+            testScheduler.triggerActions();
         }
     }
 
@@ -601,7 +551,7 @@ public class EurekaInterestClientImplTest {
 
         private final Interest<InstanceInfo> interest;
 
-        public InterestMatcher(Interest<InstanceInfo> interest) {
+        InterestMatcher(Interest<InstanceInfo> interest) {
             this.interest = interest;
         }
 
@@ -617,6 +567,5 @@ public class EurekaInterestClientImplTest {
             return false;
         }
     }
-
 }
 

@@ -361,6 +361,10 @@ public class InstanceInfo {
     // Builder
     // ------------------------------------------
 
+    public static Builder anInstanceInfo() {
+        return new Builder();
+    }
+
     public static final class Builder {
         private String id;
 

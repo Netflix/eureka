@@ -1,6 +1,5 @@
 package com.netflix.eureka2.server.service.replication;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -23,18 +22,22 @@ import com.netflix.eureka2.utils.rx.RetryStrategyFunc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Func1;
+import rx.schedulers.Schedulers;
 
 /**
  * @author David Liu
  */
 public class ReplicationSenderImpl implements ReplicationSender {
 
+
     enum STATE {Idle, Replicating, Closed}
 
     private static final Logger logger = LoggerFactory.getLogger(ReplicationSenderImpl.class);
 
+    private final Scheduler scheduler;
     private final ChannelFactory<ReplicationChannel> channelFactory;
     private final long retryWaitMillis;
     private final RetryableConnection<ReplicationChannel> connection;
@@ -47,18 +50,25 @@ public class ReplicationSenderImpl implements ReplicationSender {
                                  final SourcedEurekaRegistry<InstanceInfo> registry,
                                  final InstanceInfo selfInfo,
                                  final WriteServerMetricFactory metricFactory) {
-        this(new SenderReplicationChannelFactory(config.getEurekaTransport(), address, metricFactory), config.getReplicationReconnectDelayMs(), registry, selfInfo);
+        this(new SenderReplicationChannelFactory(config.getEurekaTransport(), address, metricFactory),
+                config.getReplicationReconnectDelayMs(),
+                registry,
+                selfInfo,
+                Schedulers.computation()
+        );
     }
 
     /*visible for testing*/ ReplicationSenderImpl(
             final ChannelFactory<ReplicationChannel> channelFactory,
             final long retryWaitMillis,
             final SourcedEurekaRegistry<InstanceInfo> registry,
-            final InstanceInfo selfInfo) {
+            final InstanceInfo selfInfo,
+            Scheduler scheduler) {
         this.stateRef = new AtomicReference<>(STATE.Idle);
         this.retryWaitMillis = retryWaitMillis;
         this.channelFactory = channelFactory;
         this.senderGenerationId = new AtomicLong(System.currentTimeMillis());  // seed with system time to avoid reset on reboot
+        this.scheduler = scheduler;
 
         final String ownInstanceId = selfInfo.getId();
 
@@ -117,7 +127,7 @@ public class ReplicationSenderImpl implements ReplicationSender {
         if (stateRef.compareAndSet(STATE.Idle, STATE.Replicating)) {
             // TODO better retry func?
             connection.getRetryableLifecycle()
-                    .retryWhen(new RetryStrategyFunc(retryWaitMillis, TimeUnit.MILLISECONDS))
+                    .retryWhen(new RetryStrategyFunc(retryWaitMillis, scheduler))
                     .subscribe(replicationSubscriber);
         }
     }

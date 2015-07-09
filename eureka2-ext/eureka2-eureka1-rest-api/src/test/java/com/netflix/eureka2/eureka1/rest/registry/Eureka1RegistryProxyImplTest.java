@@ -4,28 +4,20 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
-import org.junit.Before;
+import com.netflix.eureka2.testkit.junit.stubs.EurekaRegistrationClientStub;
 import org.junit.Test;
-import rx.Observable;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
-import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.*;
+import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka1xInstanceInfo;
+import static com.netflix.eureka2.registry.instance.InstanceInfo.anInstanceInfo;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
- * TODO Eureka client API is difficult to mock and hence the tests here have weak assertions.
- *
  * @author Tomasz Bak
  */
 public class Eureka1RegistryProxyImplTest {
@@ -35,20 +27,15 @@ public class Eureka1RegistryProxyImplTest {
 
     private final TestScheduler testScheduler = Schedulers.test();
 
-    private final EurekaRegistrationClient registrationClient = mock(EurekaRegistrationClient.class);
-    private final RegistrationObservable registrationResult = TestableRegistrationObservable.create();
+    private final EurekaRegistrationClientStub registrationClient = new EurekaRegistrationClientStub();
 
     private final Eureka1RegistryProxyImpl registryProxy = new Eureka1RegistryProxyImpl(registrationClient, testScheduler);
-
-    @Before
-    public void setUp() throws Exception {
-        when(registrationClient.register(any(Observable.class))).thenReturn(registrationResult);
-    }
 
     @Test
     public void testEureka1xRegistrationRequestEstablishesEureka2xClientConnection() throws Exception {
         registryProxy.register(V1_SAMPLE_INSTANCE);
-        verify(registrationClient, times(1)).register(any(Observable.class));
+        assertThat(registrationClient.getPendingRegistrations().size(), is(equalTo(1)));
+        assertThat(toEureka1xInstanceInfo(registrationClient.getLastRegistrationUpdate()), is(equalTo(V1_SAMPLE_INSTANCE)));
     }
 
     @Test
@@ -58,32 +45,39 @@ public class Eureka1RegistryProxyImplTest {
         meta.put("keyA", "valueA");
         registryProxy.appendMeta(V1_SAMPLE_INSTANCE.getAppName(), V1_SAMPLE_INSTANCE.getId(), meta);
 
-        assertThat(TestableRegistrationObservable.lifecycleSubscriber.isUnsubscribed(), is(false));
+        InstanceInfo v2InstanceWithMeta = anInstanceInfo()
+                .withInstanceInfo(V2_SAMPLE_INSTANCE)
+                .withMetaData(meta)
+                .build();
+        com.netflix.appinfo.InstanceInfo v1InstanceWithMeta = toEureka1xInstanceInfo(v2InstanceWithMeta);
+
+        assertThat(registrationClient.getPendingRegistrations().size(), is(equalTo(1)));
+        assertThat(toEureka1xInstanceInfo(registrationClient.getLastRegistrationUpdate()), is(equalTo(v1InstanceWithMeta)));
     }
 
     @Test
     public void testLeaseExpiryClosesEureka2xRegistrationChannel() throws Exception {
         registryProxy.register(V1_SAMPLE_INSTANCE);
-        assertThat(TestableRegistrationObservable.lifecycleSubscriber.isUnsubscribed(), is(false));
+        assertThat(registrationClient.hasSubscribedRegistrations(), is(true));
 
         // Expire the lease
         testScheduler.advanceTimeBy(V1_SAMPLE_INSTANCE.getLeaseInfo().getDurationInSecs() * 1000, TimeUnit.MILLISECONDS);
-        assertThat(TestableRegistrationObservable.lifecycleSubscriber.isUnsubscribed(), is(true));
+        assertThat(registrationClient.hasSubscribedRegistrations(), is(false));
     }
 
     @Test
     public void testUnregisterClosesEureka2xRegistrationChannel() throws Exception {
         registryProxy.register(V1_SAMPLE_INSTANCE);
-        assertThat(TestableRegistrationObservable.lifecycleSubscriber.isUnsubscribed(), is(false));
+        assertThat(registrationClient.hasSubscribedRegistrations(), is(true));
 
         registryProxy.unregister(V1_SAMPLE_INSTANCE.getAppName(), V1_SAMPLE_INSTANCE.getId());
-        assertThat(TestableRegistrationObservable.lifecycleSubscriber.isUnsubscribed(), is(true));
+        assertThat(registrationClient.hasSubscribedRegistrations(), is(false));
     }
 
     @Test
     public void testRenewLeaseShiftsExpiryTime() throws Exception {
         registryProxy.register(V1_SAMPLE_INSTANCE);
-        assertThat(TestableRegistrationObservable.lifecycleSubscriber.isUnsubscribed(), is(false));
+        assertThat(registrationClient.hasSubscribedRegistrations(), is(true));
 
         // Advance time just before expiry, and than renew the lease
         testScheduler.advanceTimeBy(V1_SAMPLE_INSTANCE.getLeaseInfo().getDurationInSecs() - 1, TimeUnit.SECONDS);
@@ -91,20 +85,19 @@ public class Eureka1RegistryProxyImplTest {
 
         // We have got extra lease time
         testScheduler.advanceTimeBy(V1_SAMPLE_INSTANCE.getLeaseInfo().getDurationInSecs() - 1, TimeUnit.SECONDS);
-        assertThat(TestableRegistrationObservable.lifecycleSubscriber.isUnsubscribed(), is(false));
+        assertThat(registrationClient.hasSubscribedRegistrations(), is(true));
 
         // Now we cross it
         testScheduler.advanceTimeBy(2, TimeUnit.SECONDS);
-        assertThat(TestableRegistrationObservable.lifecycleSubscriber.isUnsubscribed(), is(true));
+        assertThat(registrationClient.hasSubscribedRegistrations(), is(false));
     }
 
     @Test
     public void testShutdownClosesOpenRegistrations() throws Exception {
         registryProxy.register(V1_SAMPLE_INSTANCE);
-        assertThat(TestableRegistrationObservable.lifecycleSubscriber.isUnsubscribed(), is(false));
+        assertThat(registrationClient.hasSubscribedRegistrations(), is(true));
 
         registryProxy.shutdown();
-        assertThat(TestableRegistrationObservable.lifecycleSubscriber.isUnsubscribed(), is(true));
+        assertThat(registrationClient.hasSubscribedRegistrations(), is(false));
     }
-
 }
