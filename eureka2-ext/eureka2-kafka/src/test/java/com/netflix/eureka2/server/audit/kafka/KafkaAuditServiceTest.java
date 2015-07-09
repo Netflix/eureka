@@ -20,16 +20,15 @@ import java.util.ServiceLoader;
 
 import com.google.inject.Module;
 import com.netflix.eureka2.server.audit.AuditRecord;
-import com.netflix.eureka2.testkit.data.builder.SampleAuditRecord;
 import com.netflix.eureka2.server.spi.ExtAbstractModule;
-import com.netflix.eureka2.server.spi.ExtensionContext;
-import com.netflix.eureka2.server.spi.ExtensionContext.ExtensionContextBuilder;
+import com.netflix.eureka2.testkit.data.builder.SampleAuditRecord;
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.lang.String.format;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * @author Tomasz Bak
@@ -39,10 +38,6 @@ public class KafkaAuditServiceTest {
     private KafkaAuditService auditService;
 
     public void setUpAuditService() throws Exception {
-        ExtensionContext context = new ExtensionContextBuilder()
-                .withEurekaClusterName("eureka2-test")
-                .build();
-
         String kafkaPropertyValue = System.getProperty(KafkaAuditConfig.KAFKA_SERVERS_KEY);
         if (kafkaPropertyValue == null) {
             fail(format("This is integration test and requires that system property %s is set", KafkaAuditConfig.KAFKA_SERVERS_KEY));
@@ -53,8 +48,8 @@ public class KafkaAuditServiceTest {
         }
         KafkaAuditConfig config = new KafkaAuditConfig(kafkaPropertyValue, null, -1, kafkaTopic,
                 KafkaAuditConfig.DEFAULT_RETRY_INTERVAL_MS, KafkaAuditConfig.DEFAULT_MAX_QUEUE_SIZE);
-        KafkaServersProvider kafkaServersProvider = new KafkaServersProvider(context, config);
-        auditService = new KafkaAuditService(context, config, kafkaServersProvider);
+        KafkaServersProvider kafkaServersProvider = new KafkaServersProvider(null, config);
+        auditService = new KafkaAuditService(null, config, kafkaServersProvider);
         auditService.start();
     }
 

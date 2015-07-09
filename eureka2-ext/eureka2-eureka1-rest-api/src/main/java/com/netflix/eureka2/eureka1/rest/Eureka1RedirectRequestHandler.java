@@ -13,6 +13,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.ServiceEndpoint;
 import com.netflix.eureka2.registry.instance.NetworkAddress.ProtocolType;
 import com.netflix.eureka2.registry.selector.ServiceSelector;
+import com.netflix.eureka2.server.config.EurekaClusterDiscoveryConfig;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
 import com.netflix.eureka2.server.spi.ExtensionContext;
 import io.netty.buffer.ByteBuf;
@@ -46,6 +47,7 @@ public class Eureka1RedirectRequestHandler extends AbstractEureka1RequestHandler
             .serviceLabel(com.netflix.eureka2.Names.EUREKA_HTTP);
 
     private final ExtensionContext context;
+    private final EurekaClusterDiscoveryConfig clusterDiscoveryConfig;
 
     private Subscription subscription;
     private volatile List<InstanceInfo> readServers;
@@ -53,14 +55,16 @@ public class Eureka1RedirectRequestHandler extends AbstractEureka1RequestHandler
 
     @Inject
     public Eureka1RedirectRequestHandler(ExtensionContext context,
+                                         EurekaClusterDiscoveryConfig clusterDiscoveryConfig,
                                          EurekaHttpServer httpServer) {
+        this.clusterDiscoveryConfig = clusterDiscoveryConfig;
         this.context = context;
         httpServer.connectHttpEndpoint(ROOT_PATH, this);
     }
 
     @PostConstruct
     public void start() {
-        String redirectTarget = context.getConfig().getEurekaClusterDiscovery().getReadClusterVipAddress();
+        String redirectTarget = clusterDiscoveryConfig.getReadClusterVipAddress();
         if (redirectTarget == null || redirectTarget.isEmpty()) {
             logger.warn("Not starting Eureka1RedirectRequestHandler, redirect target not available");
             return;
@@ -114,7 +118,7 @@ public class Eureka1RedirectRequestHandler extends AbstractEureka1RequestHandler
                                                HttpServerResponse<ByteBuf> response) {
         ServiceEndpoint serviceEndpoint = HTTP_PUBLIC_SERVICE_SELECTOR.returnServiceEndpoint(readServerInfo);
         String redirectHost = serviceEndpoint == null ? null : serviceEndpoint.getAddress().getHostName();
-        if(redirectHost == null) {
+        if (redirectHost == null) {
             serviceEndpoint = HTTP_PRIVATE_SERVICE_SELECTOR.returnServiceEndpoint(readServerInfo);
             redirectHost = serviceEndpoint.getAddress().getIpAddress();
         }

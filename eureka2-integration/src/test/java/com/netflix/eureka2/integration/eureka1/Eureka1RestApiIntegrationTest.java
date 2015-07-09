@@ -1,18 +1,22 @@
 package com.netflix.eureka2.integration.eureka1;
 
+import java.util.concurrent.TimeUnit;
+
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
-import com.netflix.eureka2.eureka1.rest.Eureka1Configuration;
+import com.netflix.eureka2.eureka1.rest.Eureka1RestApiReadModule;
+import com.netflix.eureka2.eureka1.rest.Eureka1RestApiWriteModule;
+import com.netflix.eureka2.eureka1.rest.config.Eureka1Configuration;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotifications;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.junit.categories.LongRunningTest;
-import com.netflix.eureka2.junit.rule.SystemPropertyOverride;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.junit.resources.Eureka1ClientResource;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
@@ -25,8 +29,8 @@ import rx.Observable;
 import rx.functions.Func0;
 import rx.observers.TestSubscriber;
 
-import java.util.concurrent.TimeUnit;
-
+import static com.netflix.eureka2.eureka1.rest.config.Eureka1ConfigurationBean.anEureka1ConfigurationBean;
+import static com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource.anEurekaDeploymentResource;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
@@ -44,13 +48,15 @@ public class Eureka1RestApiIntegrationTest {
     private static final String MY_APP_NAME = "myapp";
     private static final long TIMEOUT_MS = 60000;
 
-    // TODO Via system property until pluggable components configuration is more flexible
     @Rule
-    public final SystemPropertyOverride override = new SystemPropertyOverride(Eureka1Configuration.CACHE_REFRESH_INTERVAL_KEY, "1000");
-
-    @Rule
-    public final EurekaDeploymentResource deploymentResource = new EurekaDeploymentResource.EurekaDeploymentResourceBuilder(1, 1)
-            .withExtensions(true)
+    public final EurekaDeploymentResource deploymentResource = anEurekaDeploymentResource(1, 1)
+            .withExtensionModule(ServerType.Write, Eureka1RestApiWriteModule.class)
+            .withExtensionModule(ServerType.Read, Eureka1RestApiReadModule.class)
+            .withConfiguration(
+                    ServerType.Read,
+                    Eureka1Configuration.class,
+                    anEureka1ConfigurationBean().withCacheRefreshIntervalMs(1000).build()
+            )
             .build();
 
     @Rule

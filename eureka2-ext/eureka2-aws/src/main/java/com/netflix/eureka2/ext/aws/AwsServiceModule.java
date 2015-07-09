@@ -11,10 +11,12 @@ import com.netflix.archaius.ConfigProxyFactory;
 import com.netflix.eureka2.server.service.overrides.CompositeOverridesService;
 import com.netflix.eureka2.server.service.overrides.OverridesService;
 import com.netflix.eureka2.server.spi.ExtAbstractModule;
+import com.netflix.governator.auto.annotations.ConditionalOnProfile;
 
 /**
  * @author Tomasz Bak
  */
+@ConditionalOnProfile(ExtAbstractModule.WRITE_PROFILE)
 public class AwsServiceModule extends ExtAbstractModule {
 
     private static final String AWS_CONFIG_PREFIX = "eureka2.ext.aws";

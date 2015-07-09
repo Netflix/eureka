@@ -13,19 +13,19 @@ import com.netflix.eureka2.server.AbstractEurekaServer;
 import com.netflix.eureka2.server.EurekaWriteServerConfigurationModule;
 import com.netflix.eureka2.server.EurekaWriteServerModule;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
-import com.netflix.eureka2.server.audit.AuditService;
-import com.netflix.eureka2.server.audit.AuditServiceController;
-import com.netflix.eureka2.server.audit.SimpleAuditService;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.module.CommonEurekaServerModule;
-import com.netflix.eureka2.server.module.EurekaExtensionModule;
+import com.netflix.eureka2.server.spi.ExtAbstractModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
 import com.netflix.eureka2.testkit.netrouter.NetworkRouter;
+import com.netflix.governator.DefaultGovernatorConfiguration;
+import com.netflix.governator.DefaultGovernatorConfiguration.Builder;
 import com.netflix.governator.Governator;
 import com.netflix.governator.LifecycleInjector;
+import com.netflix.governator.auto.ModuleListProviders;
 import rx.Observable;
 
 import static com.netflix.eureka2.server.config.ServerConfigurationNames.DEFAULT_CONFIG_PREFIX;
@@ -71,19 +71,17 @@ public class EmbeddedWriteServerBuilder extends EmbeddedServerBuilder<WriteServe
             overrides.add(new NetworkRouterModule(networkRouter));
         }
 
-        if(ext) {
-            coreModules.add(new EurekaExtensionModule(ServerType.Write));
-        } else {  // enable log level audits
-            coreModules.add(new AbstractModule() {
-                @Override
-                protected void configure() {
-                    bind(AuditServiceController.class).in(Scopes.SINGLETON);
-                    bind(AuditService.class).to(SimpleAuditService.class).in(Scopes.SINGLETON);
-                }
-            });
-        }
+        Module applicationModules = combineWithExtensionModules(Modules.combine(coreModules));
+        applicationModules = combineWithConfigurationOverrides(applicationModules, overrides);
 
-        LifecycleInjector injector = Governator.createInjector(Modules.override(Modules.combine(coreModules)).with(overrides));
+        Builder<?> configurationBuilder = DefaultGovernatorConfiguration.builder().addProfile(ServerType.Write.name());
+        if (ext) {
+            configurationBuilder.addModuleListProvider(ModuleListProviders.forServiceLoader(ExtAbstractModule.class));
+        }
+        LifecycleInjector injector = Governator.createInjector(
+                configurationBuilder.build(),
+                applicationModules
+        );
         return injector.getInstance(EmbeddedWriteServer.class);
     }
 

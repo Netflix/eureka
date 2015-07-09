@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.server.audit;
 
+import com.google.inject.ImplementedBy;
 import rx.Observable;
 
 /**
@@ -33,6 +34,7 @@ import rx.Observable;
  *
  * @author Tomasz Bak
  */
+@ImplementedBy(SimpleAuditService.class)
 public interface AuditService {
 
     /**

@@ -33,6 +33,7 @@ import com.netflix.eureka2.registry.eviction.EvictionQueue;
 import com.netflix.eureka2.registry.eviction.EvictionQueueImpl;
 import com.netflix.eureka2.registry.eviction.EvictionStrategy;
 import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider;
+import com.netflix.eureka2.server.audit.AuditServiceController;
 import com.netflix.eureka2.server.registry.EvictionQuotaKeeper;
 import com.netflix.eureka2.server.registry.EvictionQuotaKeeperImpl;
 import com.netflix.eureka2.server.registry.RegistrationChannelProcessorProvider;
@@ -75,6 +76,8 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
         bind(EvictionStrategy.class).toProvider(EvictionStrategyProvider.class);
         bind(RegistryBootstrapCoordinator.class).asEagerSingleton();
         bind(RegistryBootstrapService.class).to(BackupClusterBootstrapService.class);
+
+        bind(AuditServiceController.class).in(Scopes.SINGLETON);
 
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named(com.netflix.eureka2.Names.REGISTRATION)).toInstance(new SpectatorEventsListenerFactory("registration-rx-client-", "registration-rx-server-"));
         bind(MetricEventsListenerFactory.class).annotatedWith(Names.named(com.netflix.eureka2.Names.INTEREST)).toInstance(new SpectatorEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));

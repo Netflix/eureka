@@ -28,12 +28,15 @@ import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.interest.FullFetchBatchingRegistry;
 import com.netflix.eureka2.server.interest.FullFetchInterestClient;
 import com.netflix.eureka2.server.module.CommonEurekaServerModule;
-import com.netflix.eureka2.server.module.EurekaExtensionModule;
+import com.netflix.eureka2.server.spi.ExtAbstractModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import com.netflix.eureka2.testkit.netrouter.NetworkRouter;
+import com.netflix.governator.DefaultGovernatorConfiguration;
+import com.netflix.governator.DefaultGovernatorConfiguration.Builder;
 import com.netflix.governator.Governator;
 import com.netflix.governator.LifecycleInjector;
+import com.netflix.governator.auto.ModuleListProviders;
 
 import static com.netflix.eureka2.metric.EurekaRegistryMetricFactory.registryMetrics;
 import static com.netflix.eureka2.metric.client.EurekaClientMetricFactory.clientMetrics;
@@ -93,9 +96,6 @@ public class EmbeddedReadServerBuilder extends EmbeddedServerBuilder<EurekaServe
             coreModules.add(EurekaReadServerConfigurationModule.fromConfig(configuration));
         }
         coreModules.add(new CommonEurekaServerModule());
-        if (ext) {
-            coreModules.add(new EurekaExtensionModule(ServerType.Read));
-        }
         coreModules.add(new EurekaReadServerModule(registrationClient, interestClient));
         if (adminUI) {
             coreModules.add(new EmbeddedKaryonAdminModule(configuration.getEurekaTransport().getWebAdminPort()));
@@ -114,7 +114,18 @@ public class EmbeddedReadServerBuilder extends EmbeddedServerBuilder<EurekaServe
             overrides.add(new NetworkRouterModule(networkRouter));
         }
 
-        LifecycleInjector injector = Governator.createInjector(Modules.override(Modules.combine(coreModules)).with(overrides));
+        Module applicationModules = combineWithExtensionModules(Modules.combine(coreModules));
+        applicationModules = combineWithConfigurationOverrides(applicationModules, overrides);
+
+        Builder<?> configurationBuilder = DefaultGovernatorConfiguration.builder().addProfile(ServerType.Read.name());
+        if (ext) {
+            configurationBuilder.addModuleListProvider(ModuleListProviders.forServiceLoader(ExtAbstractModule.class));
+        }
+        LifecycleInjector injector = Governator.createInjector(
+                configurationBuilder.build(),
+                applicationModules
+        );
+
         return injector.getInstance(EmbeddedReadServer.class);
     }
 

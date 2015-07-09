@@ -4,10 +4,12 @@ import com.google.inject.Module;
 import com.google.inject.util.Modules;
 import com.netflix.discovery.guice.EurekaModule;
 import com.netflix.eureka2.server.module.CommonEurekaServerModule;
-import com.netflix.eureka2.server.module.EurekaExtensionModule;
+import com.netflix.eureka2.server.spi.ExtAbstractModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
+import com.netflix.governator.DefaultGovernatorConfiguration;
 import com.netflix.governator.Governator;
 import com.netflix.governator.LifecycleInjector;
+import com.netflix.governator.auto.ModuleListProviders;
 import netflix.adminresources.resources.KaryonWebAdminModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,13 +39,18 @@ public class EurekaBridgeServerRunner extends EurekaServerRunner<EurekaBridgeSer
     protected LifecycleInjector createInjector() {
         Module applicationModule = Modules.combine(
                 new CommonEurekaServerModule(name),
-                new EurekaExtensionModule(ServerType.Write),
                 new EurekaBridgeServerModule(DEFAULT_CONFIG_PREFIX),
                 applyEurekaOverride(new EurekaModule()),  // eureka 1
                 new KaryonWebAdminModule()
         );
 
-        return Governator.createInjector(applyEurekaOverride(applicationModule));
+        return Governator.createInjector(
+                DefaultGovernatorConfiguration.builder()
+                        .addProfile(ServerType.Bridge.name())
+                        .addModuleListProvider(ModuleListProviders.forServiceLoader(ExtAbstractModule.class))
+                        .build(),
+                applicationModule
+        );
     }
 
     /**
