@@ -17,33 +17,22 @@
 package com.netflix.eureka2.server.spi;
 
 import com.google.inject.AbstractModule;
-import com.netflix.eureka2.server.spi.ExtensionLoader.StandardExtension;
 
 /**
- * All extensions must provide modules derived from this class to
- * be discoverable.
+ * All extensions must provide modules derived from this class to be discoverable.
  *
  * @author Tomasz Bak
  */
 public abstract class ExtAbstractModule extends AbstractModule {
 
-    public enum ServerType {Write, Read, Dashboard}
-
-    /**
-     * Module will be added to the container if it is runnable. It is up to the
-     * module implementation to decide what are the conditions for that.
-     *
-     * @param serverType running server type
+    /*
+     * Server profile constants to be used as arguments to ConditionalOnProfile annotation.
      */
-    public boolean isRunnable(ServerType serverType) {
-        return true;
-    }
 
-    /**
-     * Return {@link StandardExtension} which this module implements. For non
-     * standard extensions return {@link StandardExtension#Undefined}.
-     */
-    public StandardExtension standardExtension() {
-        return StandardExtension.Undefined;
-    }
+    public static final String WRITE_PROFILE = "Write";
+    public static final String READ_PROFILE = "Read";
+    public static final String DASHBOARD_PROFILE = "Dashboard";
+    public static final String BRIDGE_PROFILE = "Bridge";
+
+    public enum ServerType {Write, Read, Bridge, Dashboard}
 }

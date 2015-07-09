@@ -3,9 +3,9 @@ package com.netflix.eureka2.integration.client;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
+import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.integration.IntegrationTestClassSetup;
@@ -19,7 +19,6 @@ import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
-import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource.EurekaDeploymentResourceBuilder;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -29,6 +28,7 @@ import rx.Observable;
 
 import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
+import static com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource.anEurekaDeploymentResource;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -39,7 +39,7 @@ import static org.junit.Assert.assertThat;
 public class EurekaClientIntegrationTest extends IntegrationTestClassSetup {
 
     @Rule
-    public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResourceBuilder(1, 1).build();
+    public final EurekaDeploymentResource eurekaDeploymentResource = anEurekaDeploymentResource(1, 1).build();
 
     private EurekaDeployment deployment;
 

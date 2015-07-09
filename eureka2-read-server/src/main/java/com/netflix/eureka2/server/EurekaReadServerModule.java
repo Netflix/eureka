@@ -31,6 +31,7 @@ import com.netflix.eureka2.server.service.EurekaReadServerSelfInfoResolver;
 import com.netflix.eureka2.server.service.EurekaReadServerSelfRegistrationService;
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
+import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 import io.reactivex.netty.spectator.SpectatorEventsListenerFactory;
@@ -55,6 +56,8 @@ public class EurekaReadServerModule extends AbstractEurekaServerModule {
 
     @Override
     public void configureEureka() {
+        bind(ServerType.class).toInstance(ServerType.Read);
+
         if (registrationClient == null) {
             bind(EurekaRegistrationClient.class).toProvider(EurekaRegistrationClientProvider.class);
         } else {

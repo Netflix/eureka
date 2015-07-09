@@ -12,8 +12,7 @@ import com.netflix.eureka2.server.health.KaryonHealthCheckHandler;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
 import com.netflix.eureka2.server.http.HealthConnectionHandler;
 import com.netflix.eureka2.server.service.EurekaShutdownService;
-import com.netflix.governator.ConfigurationModule;
-import com.netflix.governator.configuration.ConfigurationProvider;
+import com.netflix.governator.ProvisionDebugModule;
 import netflix.karyon.health.HealthCheckHandler;
 
 /**
@@ -33,6 +32,8 @@ public class CommonEurekaServerModule extends AbstractModule {
 
     @Override
     protected void configure() {
+        install(new ProvisionDebugModule());
+        
         // configurations
         Module configurations;
         if (name != null) {
@@ -46,9 +47,7 @@ public class CommonEurekaServerModule extends AbstractModule {
             configurations = new ArchaiusModule();
         }
 
-        bind(ConfigurationProvider.class).to(Archaius2ConfigurationProvider.class);
         install(configurations);
-        install(new ConfigurationModule());
 
         // metrics
         install(new SpectatorDefaultMetricsModule());

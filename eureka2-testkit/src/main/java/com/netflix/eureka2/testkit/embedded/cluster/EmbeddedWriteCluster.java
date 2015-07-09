@@ -2,7 +2,9 @@ package com.netflix.eureka2.testkit.embedded.cluster;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+import com.google.inject.Module;
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
@@ -34,7 +36,9 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
     public static final String WRITE_SERVER_NAME = "eureka2-write";
     public static final int WRITE_SERVER_PORTS_FROM = 13000;
 
+    private final List<Class<? extends Module>> extensionModules;
     private final boolean withExt;
+    private final Map<Class<?>, Object> configurationOverrides;
     private final boolean withAdminUI;
     private final boolean ephemeralPorts;
     private final CodecType codec;
@@ -42,9 +46,13 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
 
     private int nextAvailablePort = WRITE_SERVER_PORTS_FROM;
 
-    public EmbeddedWriteCluster(boolean withExt, boolean withAdminUI, boolean ephemeralPorts, CodecType codec, NetworkRouter networkRouter) {
+    public EmbeddedWriteCluster(List<Class<? extends Module>> extensionModules, boolean withExt,
+                                Map<Class<?>, Object> configurationOverrides, boolean withAdminUI,
+                                boolean ephemeralPorts, CodecType codec, NetworkRouter networkRouter) {
         super(WRITE_SERVER_NAME);
+        this.extensionModules = extensionModules;
         this.withExt = withExt;
+        this.configurationOverrides = configurationOverrides;
         this.withAdminUI = withAdminUI;
         this.ephemeralPorts = ephemeralPorts;
         this.codec = codec;
@@ -100,6 +108,8 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
                 .withNetworkRouter(networkRouter)
                 .withAdminUI(withAdminUI)
                 .withExt(withExt)
+                .withExtensionModules(extensionModules)
+                .withConfigurationOverrides(configurationOverrides)
                 .build();
     }
 

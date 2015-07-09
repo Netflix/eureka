@@ -2,7 +2,9 @@ package com.netflix.eureka2.testkit.embedded;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+import com.google.inject.Module;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.Eurekas;
@@ -12,6 +14,7 @@ import com.netflix.eureka2.config.EurekaDashboardConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
+import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedReadCluster;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedDashboardServer;
@@ -209,7 +212,9 @@ public class EurekaDeployment {
         private boolean dashboardEnabled;
         private boolean adminUIEnabled;
         private boolean extensionsEnabled;
+        private Map<ServerType, List<Class<? extends Module>>> extensionModules;
         private boolean viewEnabled;
+        private Map<ServerType, Map<Class<?>, Object>> configurationOverrides;
 
         public EurekaDeploymentBuilder withWriteClusterSize(int size) {
             writeClusterSize = size;
@@ -251,6 +256,16 @@ public class EurekaDeployment {
             return this;
         }
 
+        public EurekaDeploymentBuilder withExtensionModules(Map<ServerType, List<Class<? extends Module>>> extensionModules) {
+            this.extensionModules = extensionModules;
+            return this;
+        }
+
+        public EurekaDeploymentBuilder withConfiguration(Map<ServerType, Map<Class<?>, Object>> configurationOverrides) {
+            this.configurationOverrides = configurationOverrides;
+            return this;
+        }
+
         public EurekaDeploymentBuilder withDeploymentView(boolean viewEnabled) {
             this.viewEnabled = viewEnabled;
             return this;
@@ -263,12 +278,20 @@ public class EurekaDeployment {
             NetworkRouter networkRouter = networkRouterEnabled ? NetworkRouters.aRouter() : null;
 
             // Write cluster
-            EmbeddedWriteCluster writeCluster = new EmbeddedWriteCluster(extensionsEnabled, adminUIEnabled, ephemeralPorts, transportConfig.getCodec(), networkRouter);
+            List<Class<? extends Module>> writeExtensions = extensionModules == null ? null : extensionModules.get(ServerType.Write);
+            Map<Class<?>, Object> writeConfigOverrides = configurationOverrides == null ? null : configurationOverrides.get(ServerType.Write);
+            EmbeddedWriteCluster writeCluster = new EmbeddedWriteCluster(writeExtensions,
+                    extensionsEnabled, writeConfigOverrides,
+                    adminUIEnabled, ephemeralPorts, transportConfig.getCodec(), networkRouter);
             writeCluster.scaleUpBy(writeClusterSize);
 
             // Read cluster
+            List<Class<? extends Module>> readExtensions = extensionModules == null ? null : extensionModules.get(ServerType.Read);
+            Map<Class<?>, Object> readConfigOverrides = configurationOverrides == null ? null : configurationOverrides.get(ServerType.Read);
             EmbeddedReadCluster readCluster = new EmbeddedReadCluster(writeCluster.registrationResolver(),
-                    writeCluster.interestResolver(), extensionsEnabled, adminUIEnabled, ephemeralPorts, transportConfig.getCodec(), networkRouter);
+                    writeCluster.interestResolver(), readExtensions, extensionsEnabled,
+                    readConfigOverrides,
+                    adminUIEnabled, ephemeralPorts, transportConfig.getCodec(), networkRouter);
             readCluster.scaleUpBy(readClusterSize);
 
             // Dashboard

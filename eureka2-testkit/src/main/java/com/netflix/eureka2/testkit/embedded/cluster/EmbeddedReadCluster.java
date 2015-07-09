@@ -2,7 +2,9 @@ package com.netflix.eureka2.testkit.embedded.cluster;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+import com.google.inject.Module;
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
@@ -14,7 +16,6 @@ import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer.ReadServer
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServerBuilder;
 import com.netflix.eureka2.testkit.netrouter.NetworkRouter;
 
-import static com.netflix.eureka2.server.config.bean.EurekaClusterDiscoveryConfigBean.anEurekaClusterDiscoveryConfig;
 import static com.netflix.eureka2.server.config.bean.EurekaInstanceInfoConfigBean.anEurekaInstanceInfoConfig;
 import static com.netflix.eureka2.server.config.bean.EurekaServerConfigBean.anEurekaServerConfig;
 import static com.netflix.eureka2.server.config.bean.EurekaServerTransportConfigBean.anEurekaServerTransportConfig;
@@ -29,7 +30,9 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
 
     private final ServerResolver registrationResolver;
     private final ServerResolver interestResolver;
+    private final List<Class<? extends Module>> extensionModules;
     private final boolean ext;
+    private final Map<Class<?>, Object> configurationOverrides;
     private final boolean adminUI;
     private final boolean ephemeralPorts;
     private final CodecType codec;
@@ -39,16 +42,21 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
 
     public EmbeddedReadCluster(ServerResolver registrationResolver,
                                ServerResolver interestResolver,
+                               List<Class<? extends Module>> extensionModules,
                                boolean ext,
+                               Map<Class<?>, Object> configurationOverrides,
                                boolean adminUI,
                                boolean ephemeralPorts,
                                NetworkRouter networkRouter) {
-        this(registrationResolver, interestResolver, ext, adminUI, ephemeralPorts, CodecType.Avro, networkRouter);
+        this(registrationResolver, interestResolver, extensionModules, ext, configurationOverrides,
+                adminUI, ephemeralPorts, CodecType.Avro, networkRouter);
     }
 
     public EmbeddedReadCluster(ServerResolver registrationResolver,
                                ServerResolver interestResolver,
+                               List<Class<? extends Module>> extensionModules,
                                boolean ext,
+                               Map<Class<?>, Object> configurationOverrides,
                                boolean adminUI,
                                boolean ephemeralPorts,
                                CodecType codec,
@@ -56,7 +64,9 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
         super(READ_SERVER_NAME);
         this.registrationResolver = registrationResolver;
         this.interestResolver = interestResolver;
+        this.extensionModules = extensionModules;
         this.ext = ext;
+        this.configurationOverrides = configurationOverrides;
         this.adminUI = adminUI;
         this.ephemeralPorts = ephemeralPorts;
         this.codec = codec;
@@ -104,6 +114,8 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
                 .withInterestResolver(interestResolver)
                 .withNetworkRouter(networkRouter)
                 .withAdminUI(adminUI)
+                .withExtensionModules(extensionModules)
+                .withConfigurationOverrides(configurationOverrides)
                 .withExt(ext)
                 .build();
     }

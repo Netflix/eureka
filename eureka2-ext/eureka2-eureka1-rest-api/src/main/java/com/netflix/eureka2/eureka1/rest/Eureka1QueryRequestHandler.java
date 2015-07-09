@@ -9,6 +9,7 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka2.eureka1.rest.codec.Eureka1DataCodec.EncodingFormat;
+import com.netflix.eureka2.eureka1.rest.config.Eureka1Configuration;
 import com.netflix.eureka2.eureka1.rest.query.Eureka2RegistryViewCache;
 import com.netflix.eureka2.server.spi.ExtensionContext;
 import io.netty.buffer.ByteBuf;

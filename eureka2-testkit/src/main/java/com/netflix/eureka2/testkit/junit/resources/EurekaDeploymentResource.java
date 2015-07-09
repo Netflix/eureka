@@ -1,8 +1,16 @@
 package com.netflix.eureka2.testkit.junit.resources;
 
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.google.inject.Module;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
+import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment.EurekaDeploymentBuilder;
 import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources.EurekaExternalResource;
@@ -19,6 +27,8 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
     private final EurekaServerTransportConfig transportConfig;
     private final boolean networkRouterEnabled;
     private final boolean extensionsEnabled;
+    private final Map<ServerType, List<Class<? extends Module>>> extensionModules;
+    private final Map<ServerType, Map<Class<?>, Object>> configurationOverrides;
 
     private EurekaDeployment eurekaDeployment;
 
@@ -40,6 +50,8 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
         this.transportConfig = transportConfig;
         this.networkRouterEnabled = false;
         this.extensionsEnabled = false;
+        this.extensionModules = null;
+        this.configurationOverrides = null;
     }
 
     private EurekaDeploymentResource(EurekaDeploymentResourceBuilder builder) {
@@ -48,6 +60,8 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
         this.transportConfig = builder.transportConfig;
         this.networkRouterEnabled = builder.networkRouterEnabled;
         this.extensionsEnabled = builder.includeExtensions;
+        this.extensionModules = builder.extensionModules;
+        this.configurationOverrides = builder.configurationOverrides;
     }
 
     public EurekaDeployment getEurekaDeployment() {
@@ -119,6 +133,8 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
                 .withTransportConfig(transportConfig)
                 .withNetworkRouter(networkRouterEnabled)
                 .withExtensions(extensionsEnabled)
+                .withConfiguration(configurationOverrides)
+                .withExtensionModules(extensionModules)
                 .build();
     }
 
@@ -142,7 +158,10 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
         private boolean networkRouterEnabled;
         private boolean includeExtensions;
 
-        public EurekaDeploymentResourceBuilder(int writeClusterSize, int readClusterSize) {
+        private final Map<ServerType, List<Class<? extends Module>>> extensionModules = new EnumMap<ServerType, List<Class<? extends Module>>>(ServerType.class);
+        private final Map<ServerType, Map<Class<?>, Object>> configurationOverrides = new EnumMap<ServerType, Map<Class<?>, Object>>(ServerType.class);
+
+        private EurekaDeploymentResourceBuilder(int writeClusterSize, int readClusterSize) {
             this.writeClusterSize = writeClusterSize;
             this.readClusterSize = readClusterSize;
         }
@@ -159,6 +178,26 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
 
         public EurekaDeploymentResourceBuilder withTransportConfig(EurekaServerTransportConfig transportConfig) {
             this.transportConfig = transportConfig;
+            return this;
+        }
+
+        public EurekaDeploymentResourceBuilder withExtensionModule(ServerType serverType, Class<? extends Module> extensionModule) {
+            List<Class<? extends Module>> modules = extensionModules.get(serverType);
+            if (modules == null) {
+                modules = new ArrayList<>();
+                extensionModules.put(serverType, modules);
+            }
+            modules.add(extensionModule);
+            return this;
+        }
+
+        public EurekaDeploymentResourceBuilder withConfiguration(ServerType serverType, Class<?> type, Object configuration) {
+            Map<Class<?>, Object> configurations = configurationOverrides.get(serverType);
+            if (configurations == null) {
+                configurations = new HashMap<>();
+                configurationOverrides.put(serverType, configurations);
+            }
+            configurations.put(type, configuration);
             return this;
         }
 

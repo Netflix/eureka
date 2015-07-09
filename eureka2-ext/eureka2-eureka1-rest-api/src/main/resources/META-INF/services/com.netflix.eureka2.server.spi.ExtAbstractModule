@@ -1,1 +1,2 @@
-com.netflix.eureka2.eureka1.rest.Eureka1RestApiModule
+com.netflix.eureka2.eureka1.rest.Eureka1RestApiWriteModule
+com.netflix.eureka2.eureka1.rest.Eureka1RestApiReadModule

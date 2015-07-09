@@ -18,7 +18,6 @@ package com.netflix.eureka2.server.spi;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Properties;
 import java.util.ServiceLoader;
 
 import com.netflix.eureka2.registry.EurekaRegistryView;
@@ -27,15 +26,11 @@ import com.netflix.eureka2.server.config.EurekaServerConfig;
 
 /**
  * Eureka extensions discovery is based on {@link ServiceLoader} mechanism.
- * For seamless configuration this class provided basic information, that should
- * be sufficient for the extension bootstrapping.
  *
  * @author Tomasz Bak
  */
 @Singleton
 public class ExtensionContext {
-
-    public static final String PROPERTY_KEYS_PREFIX = "eureka.ext";
 
     private final EurekaServerConfig config;
     private final EurekaRegistryView<InstanceInfo> localRegistryView;
@@ -44,10 +39,6 @@ public class ExtensionContext {
     protected ExtensionContext(EurekaServerConfig config, EurekaRegistryView localRegistryView) {
         this.config = config;
         this.localRegistryView = localRegistryView;
-    }
-
-    public EurekaServerConfig getConfig() {
-        return config;
     }
 
     /**
@@ -59,42 +50,5 @@ public class ExtensionContext {
 
     public EurekaRegistryView<InstanceInfo> getLocalRegistryView() {
         return localRegistryView;
-    }
-
-    public static class ExtensionContextBuilder {
-
-        private String eurekaClusterName;
-        private Properties properties;
-        private boolean addSystemProperties;
-
-        public ExtensionContextBuilder withEurekaClusterName(String eurekaClusterName) {
-            this.eurekaClusterName = eurekaClusterName;
-            return this;
-        }
-
-        public ExtensionContextBuilder withProperties(Properties properties) {
-            this.properties = properties;
-            return this;
-        }
-
-        public ExtensionContextBuilder withSystemProperties(boolean addSystemProperties) {
-            this.addSystemProperties = addSystemProperties;
-            return this;
-        }
-
-        public ExtensionContext build() {
-            Properties allProperties = new Properties(properties);
-            if (addSystemProperties) {
-                for (Object keyObj : System.getProperties().keySet()) {
-                    if (keyObj instanceof String) {
-                        String key = (String) keyObj;
-                        if (key.startsWith(PROPERTY_KEYS_PREFIX)) {
-                            allProperties.setProperty(key, System.getProperty(key));
-                        }
-                    }
-                }
-            }
-            return null;
-        }
     }
 }

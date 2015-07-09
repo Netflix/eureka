@@ -6,8 +6,12 @@ import com.google.inject.util.Modules;
 import com.netflix.eureka2.config.EurekaDashboardConfig;
 import com.netflix.eureka2.server.EurekaServerRunner;
 import com.netflix.eureka2.server.module.CommonEurekaServerModule;
+import com.netflix.eureka2.server.spi.ExtAbstractModule;
+import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
+import com.netflix.governator.DefaultGovernatorConfiguration;
 import com.netflix.governator.Governator;
 import com.netflix.governator.LifecycleInjector;
+import com.netflix.governator.auto.ModuleListProviders;
 import netflix.adminresources.resources.KaryonWebAdminModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +47,13 @@ public class EurekaDashboardRunner extends EurekaServerRunner<EurekaDashboardSer
                 new KaryonWebAdminModule()
         );
 
-        return Governator.createInjector(applicationModule);
+        return Governator.createInjector(
+                DefaultGovernatorConfiguration.builder()
+                        .addProfile(ServerType.Dashboard.name())
+                        .addModuleListProvider(ModuleListProviders.forServiceLoader(ExtAbstractModule.class))
+                        .build(),
+                applicationModule
+        );
     }
 
     public static void main(String[] args) {

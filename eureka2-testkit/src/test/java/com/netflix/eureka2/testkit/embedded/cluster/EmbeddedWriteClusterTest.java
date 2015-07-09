@@ -32,7 +32,7 @@ public class EmbeddedWriteClusterTest {
 
     @Before
     public void setUp() throws Exception {
-        writeCluster = new EmbeddedWriteCluster(false, false, false, CodecType.Avro, null) {
+        writeCluster = new EmbeddedWriteCluster(null, false, null, false, false, CodecType.Avro, null) {
             @Override
             protected EmbeddedWriteServer newServer(WriteServerConfig config) {
                 return writeServer;
