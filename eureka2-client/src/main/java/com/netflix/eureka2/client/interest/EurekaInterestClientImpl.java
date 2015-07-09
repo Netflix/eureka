@@ -13,9 +13,11 @@ import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
+import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Func2;
+import rx.schedulers.Schedulers;
 
 /**
  * Each InterestClient class contains an interest channel and handles the lifecycle and reconnect of this channel.
@@ -36,15 +38,15 @@ public class EurekaInterestClientImpl extends AbstractInterestClient {
     @Inject
     public EurekaInterestClientImpl(SourcedEurekaRegistry<InstanceInfo> registry,
                                     ChannelFactory<InterestChannel> channelFactory) {
-        this(registry, channelFactory, DEFAULT_RETRY_WAIT_MILLIS);
+        this(registry, channelFactory, DEFAULT_RETRY_WAIT_MILLIS, Schedulers.computation());
     }
 
     /* visible for testing*/ EurekaInterestClientImpl(final SourcedEurekaRegistry<InstanceInfo> registry,
                                                       ChannelFactory<InterestChannel> channelFactory,
-                                                      int retryWaitMillis) {
-        super(registry, retryWaitMillis);
+                                                      int retryWaitMillis,
+                                                      Scheduler scheduler) {
+        super(registry, retryWaitMillis, scheduler);
         this.interestTracker = new InterestTracker();
-
 
         RetryableConnectionFactory<InterestChannel> retryableConnectionFactory
                 = new RetryableConnectionFactory<>(channelFactory);

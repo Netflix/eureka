@@ -1,6 +1,5 @@
 package com.netflix.eureka2.client.interest;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.netflix.eureka2.channel.InterestChannel;
@@ -18,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Notification;
 import rx.Observable;
+import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Func1;
 import rx.functions.Func2;
@@ -36,12 +36,15 @@ public abstract class AbstractInterestClient implements EurekaInterestClient {
 
     protected final SourcedEurekaRegistry<InstanceInfo> registry;
     protected final int retryWaitMillis;
+    private final Scheduler scheduler;
     protected final AtomicBoolean isShutdown;
 
     protected AbstractInterestClient(final SourcedEurekaRegistry<InstanceInfo> registry,
-                                     int retryWaitMillis) {
+                                     int retryWaitMillis,
+                                     Scheduler scheduler) {
         this.registry = registry;
         this.retryWaitMillis = retryWaitMillis;
+        this.scheduler = scheduler;
         this.isShutdown = new AtomicBoolean(false);
     }
 
@@ -152,7 +155,7 @@ public abstract class AbstractInterestClient implements EurekaInterestClient {
     protected void lifecycleSubscribe(RetryableConnection<InterestChannel> retryableConnection) {
         // subscribe to the lifecycle to initiate the interest subscription
         retryableConnection.getRetryableLifecycle()
-                .retryWhen(new RetryStrategyFunc(retryWaitMillis, TimeUnit.MILLISECONDS))
+                .retryWhen(new RetryStrategyFunc(retryWaitMillis, scheduler))
                 .subscribe(new Subscriber<Void>() {
                     @Override
                     public void onCompleted() {

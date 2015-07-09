@@ -1,5 +1,11 @@
 package com.netflix.eureka2.server.service.replication;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.ReplicationChannel;
 import com.netflix.eureka2.channel.TestChannelFactory;
@@ -31,18 +37,17 @@ import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 import rx.subjects.ReplaySubject;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Matchers.anyObject;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author David Liu
@@ -75,11 +80,11 @@ public class ReplicationSenderTest {
     @Before
     public void setUp() throws Exception {
         registryContent = Arrays.asList(
-               SampleInstanceInfo.ZuulServer.build(),
-               SampleInstanceInfo.ZuulServer.build(),
-               SampleInstanceInfo.ZuulServer.build(),
-               SampleInstanceInfo.CliServer.build(),
-               SampleInstanceInfo.CliServer.build()
+                SampleInstanceInfo.ZuulServer.build(),
+                SampleInstanceInfo.ZuulServer.build(),
+                SampleInstanceInfo.ZuulServer.build(),
+                SampleInstanceInfo.CliServer.build(),
+                SampleInstanceInfo.CliServer.build()
         );
         registryIds = new ArrayList<>();
         for (InstanceInfo instanceInfo : registryContent) {
@@ -88,7 +93,7 @@ public class ReplicationSenderTest {
 
         mockFactory = mock(SenderReplicationChannelFactory.class);
         factory = new TestChannelFactory<>(mockFactory);
-        handler = spy(new ReplicationSenderImpl(factory, RETRY_WAIT_MILLIS, registry, SELF_INFO));
+        handler = spy(new ReplicationSenderImpl(factory, RETRY_WAIT_MILLIS, registry, SELF_INFO, testScheduler));
 
         for (InstanceInfo instanceInfo : registryContent) {
             registry.register(instanceInfo, localSource).subscribe();
@@ -223,7 +228,7 @@ public class ReplicationSenderTest {
 
         handler.startReplication();  // internally auto subscribes
 
-        factory.awaitChannels(2, RETRY_WAIT_MILLIS + 500);
+        testScheduler.advanceTimeBy(RETRY_WAIT_MILLIS, TimeUnit.MILLISECONDS);
 
         assertThat(factory.getAllChannels().size(), is(2));
         TestSenderReplicationChannel testChannel0 = (TestSenderReplicationChannel) factory.getAllChannels().get(0);
@@ -238,7 +243,7 @@ public class ReplicationSenderTest {
         assertThat(testChannel1.closeCalled, is(false));
         assertThat(testChannel1.operations.size(), is(1));
         assertThat(testChannel1.operations.iterator().next().getSource().getName(), equalTo(hello.getSource().getName()));
-        testChannel0.awaitReplicationItems(5, 100);
+
         assertThat(testChannel1.replicationItems.size(), is(5));
 
         List<String> ids = new ArrayList<>();
@@ -267,7 +272,7 @@ public class ReplicationSenderTest {
 
         handler.startReplication();  // internally auto subscribes
 
-        factory.awaitChannels(2, RETRY_WAIT_MILLIS + failTimeMillis + 500);
+        testScheduler.advanceTimeBy(RETRY_WAIT_MILLIS + failTimeMillis, TimeUnit.MILLISECONDS);
 
         assertThat(factory.getAllChannels().size(), is(2));
         TestSenderReplicationChannel testChannel0 = (TestSenderReplicationChannel) factory.getAllChannels().get(0);
@@ -275,7 +280,7 @@ public class ReplicationSenderTest {
         assertThat(testChannel0.closeCalled, is(true));
         assertThat(testChannel0.operations.size(), is(1));
         assertThat(testChannel0.operations.iterator().next().getSource().getName(), equalTo(hello.getSource().getName()));
-        testChannel0.awaitReplicationItems(5, 100);
+
         assertThat(testChannel0.replicationItems.size(), is(5));
 
         TestSenderReplicationChannel testChannel1 = (TestSenderReplicationChannel) factory.getAllChannels().get(1);
@@ -283,7 +288,7 @@ public class ReplicationSenderTest {
         assertThat(testChannel1.closeCalled, is(false));
         assertThat(testChannel1.operations.size(), is(1));
         assertThat(testChannel1.operations.iterator().next().getSource().getName(), equalTo(hello.getSource().getName()));
-        testChannel1.awaitReplicationItems(5, 100);
+
         assertThat(testChannel1.replicationItems.size(), is(5));
 
         List<String> ids = new ArrayList<>();
@@ -333,7 +338,9 @@ public class ReplicationSenderTest {
         registry.register(SampleInstanceInfo.ZuulServer.build(), localSource).subscribe();
         testScheduler.triggerActions();
 
-        assertThat(factory.awaitChannels(2, RETRY_WAIT_MILLIS + 100), is(false));
+        // Verify that no new channel is created
+        testScheduler.advanceTimeBy(RETRY_WAIT_MILLIS * 2, TimeUnit.MILLISECONDS);
+        assertThat(factory.getAllChannels().size(), is(equalTo(1)));
         assertThat(testChannel.replicationItems.size(), is(5));  // none of the new ones
     }
 
@@ -379,7 +386,7 @@ public class ReplicationSenderTest {
         return new TestSenderReplicationChannel(channel, id);
     }
 
-    private static TestSenderReplicationChannel newTimedFailChannel(Integer id, int failAfterMillis) {
+    private TestSenderReplicationChannel newTimedFailChannel(Integer id, int failAfterMillis) {
         MessageConnection messageConnection = newMockMessageConnection();
         when(messageConnection.submit(anyObject())).thenReturn(Observable.<Void>empty());
         when(messageConnection.incoming()).thenReturn(Observable.<Object>just(HELLO_REPLY));
@@ -389,7 +396,7 @@ public class ReplicationSenderTest {
 
         final ReplicationChannel channel = new SenderReplicationChannel(transportClient, mock(ReplicationChannelMetrics.class));
 
-        Observable.empty().delay(failAfterMillis, TimeUnit.MILLISECONDS).subscribe(new Subscriber<Object>() {
+        Observable.empty().delay(failAfterMillis, TimeUnit.MILLISECONDS, testScheduler).subscribe(new Subscriber<Object>() {
             @Override
             public void onCompleted() {
                 channel.close(new Exception("test: channel error"));

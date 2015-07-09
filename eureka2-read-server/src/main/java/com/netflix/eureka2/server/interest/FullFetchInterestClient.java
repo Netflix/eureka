@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Action0;
 import rx.functions.Func1;
+import rx.schedulers.Schedulers;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -56,7 +57,7 @@ public class FullFetchInterestClient extends AbstractInterestClient implements H
     /* visible for testing*/ FullFetchInterestClient(final SourcedEurekaRegistry<InstanceInfo> registry,
                                                      ChannelFactory<InterestChannel> channelFactory,
                                                      int retryWaitMillis) {
-        super(registry, retryWaitMillis);
+        super(registry, retryWaitMillis, Schedulers.computation());
 
         this.healthProvider = new FullFetchInterestClientHealth();
 

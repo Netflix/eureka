@@ -1,5 +1,8 @@
 package com.netflix.eureka2.channel;
 
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
@@ -8,9 +11,6 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
 import rx.functions.Action0;
 import rx.functions.Action1;
-
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * @author David Liu
@@ -73,31 +73,22 @@ public class TestSenderReplicationChannel extends TestChannel<ReplicationChannel
                 });
     }
 
-    // poll and wait until the number of replication items are received or the timeout is reached
-    public boolean awaitReplicationItems(int itemCount, int timeoutMillis) throws Exception {
-        long timeoutTime = System.currentTimeMillis() + timeoutMillis;
-        while(System.currentTimeMillis() < timeoutTime) {
-            if (replicationItems.size() == itemCount) {
-                return true;
-            }
-            Thread.sleep(20);
-        }
-        return false;
-    }
-
     @Override
     public Source getSource() {
         return new Source(Source.Origin.REPLICATED, "test");
     }
 
     public static class ReplicationItem {
-        public enum Type {Register, Unregister};
+        public enum Type {Register, Unregister}
+
         public final String id;
         public final Type type;
+
         public ReplicationItem(String id, Type type) {
             this.id = id;
             this.type = type;
         }
+
         @Override
         public String toString() {
             return type + ":" + id;
