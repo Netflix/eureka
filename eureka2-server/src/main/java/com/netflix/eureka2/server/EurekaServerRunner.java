@@ -1,8 +1,11 @@
 package com.netflix.eureka2.server;
 
+import com.google.inject.Module;
 import com.netflix.governator.LifecycleInjector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 /**
  * @author Tomasz Bak
@@ -54,6 +57,8 @@ public abstract class EurekaServerRunner<S extends AbstractEurekaServer> {
             logger.info("Container {} shutting down", getClass().getSimpleName());
         }
     }
+
+    protected abstract List<Module> getModules();
 
     protected abstract LifecycleInjector createInjector();
 }

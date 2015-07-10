@@ -16,8 +16,10 @@
 
 package com.netflix.eureka2.server;
 
+import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
+import com.netflix.archaius.inject.ApplicationLayer;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.module.CommonEurekaServerModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule;
@@ -29,6 +31,9 @@ import com.netflix.governator.auto.ModuleListProviders;
 import netflix.adminresources.resources.KaryonWebAdminModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
+import java.util.List;
 
 import static com.netflix.eureka2.server.config.ServerConfigurationNames.DEFAULT_CONFIG_PREFIX;
 
@@ -51,23 +56,40 @@ public class EurekaReadServerRunner extends EurekaServerRunner<EurekaReadServer>
     }
 
     @Override
-    protected LifecycleInjector createInjector() {
-        Module configModule = config == null ? EurekaReadServerConfigurationModule.fromArchaius(DEFAULT_CONFIG_PREFIX) :
-                EurekaReadServerConfigurationModule.fromConfig(config);
+    protected List<Module> getModules() {
+        Module configModule;
 
-        Module applicationModule = Modules.combine(
+        if (config == null && name == null) {
+            configModule = EurekaReadServerConfigurationModule.fromArchaius(DEFAULT_CONFIG_PREFIX);
+        } else if (config == null) {  // have name
+            configModule = Modules
+                    .override(EurekaReadServerConfigurationModule.fromArchaius(DEFAULT_CONFIG_PREFIX))
+                    .with(new AbstractModule() {
+                        @Override
+                        protected void configure() {
+                            bind(String.class).annotatedWith(ApplicationLayer.class).toInstance(name);
+                        }
+                    });
+        } else {  // have config
+            configModule = EurekaReadServerConfigurationModule.fromConfig(config);
+        }
+
+        return Arrays.asList(
                 configModule,
-                new CommonEurekaServerModule(name),
+                new CommonEurekaServerModule(),
                 new EurekaReadServerModule(),
                 new KaryonWebAdminModule()
         );
+    }
 
+    @Override
+    protected LifecycleInjector createInjector() {
         return Governator.createInjector(
                 DefaultGovernatorConfiguration.builder()
                         .addProfile(ServerType.Read.name())
                         .addModuleListProvider(ModuleListProviders.forServiceLoader(ExtAbstractModule.class))
                         .build(),
-                applicationModule
+                getModules()
         );
     }
 

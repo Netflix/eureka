@@ -22,6 +22,8 @@ public class EurekaRegistrationClientProvider implements Provider<EurekaRegistra
     private final EurekaClientMetricFactory clientMetricFactory;
     private final EurekaRegistryMetricFactory registryMetricFactory;
 
+    private volatile EurekaRegistrationClient client;
+
     @Inject
     public EurekaRegistrationClientProvider(EurekaServerTransportConfig transportConfig,
                                             EurekaRegistryConfig registryConfig,
@@ -36,13 +38,17 @@ public class EurekaRegistrationClientProvider implements Provider<EurekaRegistra
     }
 
     @Override
-    public EurekaRegistrationClient get() {
-        return Eurekas.newRegistrationClientBuilder()
-                .withTransportConfig(transportConfig)
-                .withRegistryConfig(registryConfig)
-                .withClientMetricFactory(clientMetricFactory)
-                .withRegistryMetricFactory(registryMetricFactory)
-                .withServerResolver(WriteClusterResolver.createRegistrationResolver(clusterDiscoveryConfig))
-                .build();
+    public synchronized EurekaRegistrationClient get() {
+        if (client == null) {
+            client = Eurekas.newRegistrationClientBuilder()
+                    .withTransportConfig(transportConfig)
+                    .withRegistryConfig(registryConfig)
+                    .withClientMetricFactory(clientMetricFactory)
+                    .withRegistryMetricFactory(registryMetricFactory)
+                    .withServerResolver(WriteClusterResolver.createRegistrationResolver(clusterDiscoveryConfig))
+                    .build();
+        }
+
+        return client;
     }
 }

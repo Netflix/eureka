@@ -20,9 +20,6 @@ import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.netflix.eureka2.interests.IndexRegistry;
 import com.netflix.eureka2.interests.IndexRegistryImpl;
-import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
-import com.netflix.eureka2.metric.SpectatorEurekaRegistryMetricFactory;
-import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
 import com.netflix.eureka2.metric.server.SpectatorWriteServerMetricFactory;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
 import com.netflix.eureka2.registry.EurekaRegistrationProcessor;
@@ -42,8 +39,8 @@ import com.netflix.eureka2.server.service.bootstrap.RegistryBootstrapCoordinator
 import com.netflix.eureka2.server.service.bootstrap.RegistryBootstrapService;
 import com.netflix.eureka2.server.service.replication.ReplicationService;
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
+import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.server.spi.ExtensionContext;
-import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
@@ -57,47 +54,69 @@ import static com.netflix.eureka2.Names.REGISTRATION;
 public class EurekaWriteServerModule extends AbstractEurekaServerModule {
 
     @Override
-    public void configureEureka() {
-        bind(IndexRegistry.class).to(IndexRegistryImpl.class).asEagerSingleton();
+    public void configure() {
+        bindBase();
+        bindMetricFactories();
+        bindSelfInfo();
 
-        bind(SourcedEurekaRegistry.class).annotatedWith(Names.named("delegate")).to(SourcedEurekaRegistryImpl.class).asEagerSingleton();
-        bind(EurekaRegistrationProcessor.class).annotatedWith(Names.named(com.netflix.eureka2.Names.REGISTRY)).to(SourcedEurekaRegistryImpl.class);
-        bind(SourcedEurekaRegistry.class).to(SourcedEurekaRegistryImpl.class);
-        bind(EurekaRegistryView.class).to(SourcedEurekaRegistryImpl.class);
+        bindBootstrapComponents();
 
-        bind(EurekaRegistrationProcessor.class).annotatedWith(Names.named(REGISTRATION)).toProvider(RegistrationChannelProcessorProvider.class);
-        bind(EvictionQuotaKeeper.class).to(EvictionQuotaKeeperImpl.class);
+        bindInterestComponents();
+        bindRegistrationComponents();
+        bindReplicationComponents();
 
-        bind(RegistryBootstrapCoordinator.class).asEagerSingleton();
-        bind(RegistryBootstrapService.class).to(BackupClusterBootstrapService.class);
-
-        bind(AuditServiceController.class).in(Scopes.SINGLETON);
-
-        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named(com.netflix.eureka2.Names.REGISTRATION)).toInstance(new SpectatorEventsListenerFactory("registration-rx-client-", "registration-rx-server-"));
-        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named(com.netflix.eureka2.Names.INTEREST)).toInstance(new SpectatorEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
-        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named(com.netflix.eureka2.Names.REPLICATION)).toInstance(new SpectatorEventsListenerFactory("replication-rx-client-", "replication-rx-server-"));
-        bind(TcpRegistrationServer.class).in(Scopes.SINGLETON);
-        bind(TcpInterestServer.class).in(Scopes.SINGLETON);
-        bind(TcpReplicationServer.class).in(Scopes.SINGLETON);
-
-        bind(ReplicationService.class).asEagerSingleton();
-
-        bind(ExtensionContext.class).asEagerSingleton();
+        bindRegistryComponents();
 
         // REST
         bind(WriteServerRootResource.class).asEagerSingleton();
 
-        // Metrics
-        bind(EurekaRegistryMetricFactory.class).to(SpectatorEurekaRegistryMetricFactory.class).asEagerSingleton();
-
-        bind(EurekaServerMetricFactory.class).to(SpectatorWriteServerMetricFactory.class).asEagerSingleton();
-        bind(WriteServerMetricFactory.class).to(SpectatorWriteServerMetricFactory.class).asEagerSingleton();
-
-        // Self registration
-        bind(SelfInfoResolver.class).to(EurekaWriteServerSelfInfoResolver.class);
-        bind(SelfRegistrationService.class).to(EurekaWriteServerSelfRegistrationService.class);
-
+        // write server specific stuff
+        bind(ExtensionContext.class).in(Scopes.SINGLETON);
+        bind(ServerType.class).toInstance(ServerType.Write);
         bind(AbstractEurekaServer.class).to(EurekaWriteServer.class);
+        bind(WriteServerMetricFactory.class).to(SpectatorWriteServerMetricFactory.class).asEagerSingleton();
     }
 
+    protected void bindSelfInfo() {
+        bind(SelfInfoResolver.class).to(EurekaWriteServerSelfInfoResolver.class);
+        bind(SelfRegistrationService.class).to(EurekaWriteServerSelfRegistrationService.class);
+    }
+
+    protected void bindRegistrationComponents() {
+        bind(MetricEventsListenerFactory.class)
+                .annotatedWith(Names.named(com.netflix.eureka2.Names.REGISTRATION))
+                .toInstance(new SpectatorEventsListenerFactory("registration-rx-client-", "registration-rx-server-"));
+        bind(TcpRegistrationServer.class).in(Scopes.SINGLETON);
+        bind(AuditServiceController.class).in(Scopes.SINGLETON);
+        bind(EurekaRegistrationProcessor.class)
+                .annotatedWith(Names.named(REGISTRATION))
+                .toProvider(RegistrationChannelProcessorProvider.class);
+        bind(EvictionQuotaKeeper.class).to(EvictionQuotaKeeperImpl.class);
+    }
+
+    protected void bindReplicationComponents() {
+        bind(MetricEventsListenerFactory.class)
+                .annotatedWith(Names.named(com.netflix.eureka2.Names.REPLICATION))
+                .toInstance(new SpectatorEventsListenerFactory("replication-rx-client-", "replication-rx-server-"));
+        bind(TcpReplicationServer.class).in(Scopes.SINGLETON);
+        bind(ReplicationService.class).asEagerSingleton();
+    }
+
+    protected void bindRegistryComponents() {
+        bind(IndexRegistry.class).to(IndexRegistryImpl.class).asEagerSingleton();
+
+        bind(SourcedEurekaRegistry.class)
+                .annotatedWith(Names.named(com.netflix.eureka2.Names.DELEGATE))
+                .to(SourcedEurekaRegistryImpl.class).asEagerSingleton();
+        bind(EurekaRegistrationProcessor.class)
+                .annotatedWith(Names.named(com.netflix.eureka2.Names.REGISTRY))
+                .to(SourcedEurekaRegistryImpl.class);
+        bind(SourcedEurekaRegistry.class).to(SourcedEurekaRegistryImpl.class);
+        bind(EurekaRegistryView.class).to(SourcedEurekaRegistryImpl.class);
+    }
+
+    protected void bindBootstrapComponents() {
+        bind(RegistryBootstrapCoordinator.class).asEagerSingleton();
+        bind(RegistryBootstrapService.class).to(BackupClusterBootstrapService.class);
+    }
 }

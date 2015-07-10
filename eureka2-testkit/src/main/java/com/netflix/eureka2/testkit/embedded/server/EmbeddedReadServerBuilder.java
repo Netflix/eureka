@@ -96,7 +96,7 @@ public class EmbeddedReadServerBuilder extends EmbeddedServerBuilder<EurekaServe
             coreModules.add(EurekaReadServerConfigurationModule.fromConfig(configuration));
         }
         coreModules.add(new CommonEurekaServerModule());
-        coreModules.add(new EurekaReadServerModule(registrationClient, interestClient));
+        coreModules.add(EurekaReadServerModule.withClients(registrationClient, interestClient));
         if (adminUI) {
             coreModules.add(new EmbeddedKaryonAdminModule(configuration.getEurekaTransport().getWebAdminPort()));
         }

@@ -16,15 +16,10 @@
 
 package com.netflix.eureka2.server;
 
-import com.google.inject.name.Names;
+import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
-import com.netflix.eureka2.metric.SpectatorEurekaRegistryMetricFactory;
-import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
-import com.netflix.eureka2.metric.client.SpectatorEurekaClientMetricFactory;
-import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
-import com.netflix.eureka2.metric.server.SpectatorEurekaServerMetricFactory;
 import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.server.registry.EurekaReadServerRegistryView;
 import com.netflix.eureka2.server.service.EurekaReadServerSelfInfoResolver;
@@ -32,56 +27,65 @@ import com.netflix.eureka2.server.service.EurekaReadServerSelfRegistrationServic
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
-import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
-import io.reactivex.netty.metrics.MetricEventsListenerFactory;
-import io.reactivex.netty.spectator.SpectatorEventsListenerFactory;
+import com.netflix.eureka2.server.spi.ExtensionContext;
+
+import javax.inject.Singleton;
 
 /**
  * @author Tomasz Bak
  */
 public class EurekaReadServerModule extends AbstractEurekaServerModule {
 
-    private final EurekaRegistrationClient registrationClient;
-    private final EurekaInterestClient interestClient;
-
-    public EurekaReadServerModule() {
-        this(null, null);
-    }
-
-    public EurekaReadServerModule(EurekaRegistrationClient registrationClient,
-                                  EurekaInterestClient interestClient) {
-        this.registrationClient = registrationClient;
-        this.interestClient = interestClient;
-    }
-
     @Override
-    public void configureEureka() {
+    public void configure() {
+        bindBase();
+        bindMetricFactories();
+        bindSelfInfo();
+        bindClients();
+
+        bindInterestComponents();
+
+        bindRegistryComponents();
+
+        // read servers specific stuff
+        bind(ExtensionContext.class).in(Scopes.SINGLETON);
         bind(ServerType.class).toInstance(ServerType.Read);
-
-        if (registrationClient == null) {
-            bind(EurekaRegistrationClient.class).toProvider(EurekaRegistrationClientProvider.class);
-        } else {
-            bind(EurekaRegistrationClient.class).toInstance(registrationClient);
-        }
-        if (interestClient == null) {
-            bind(EurekaInterestClient.class).toProvider(FullFetchInterestClientProvider.class);
-        } else {
-            bind(EurekaInterestClient.class).toInstance(interestClient);
-        }
-
-        bind(MetricEventsListenerFactory.class).annotatedWith(Names.named(com.netflix.eureka2.Names.INTEREST)).toInstance(new SpectatorEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
-        bind(TcpInterestServer.class).asEagerSingleton();
-
-        bind(EurekaRegistryView.class).to(EurekaReadServerRegistryView.class);
-
-        // Metrics
-        bind(EurekaClientMetricFactory.class).to(SpectatorEurekaClientMetricFactory.class).asEagerSingleton();
-        bind(EurekaServerMetricFactory.class).to(SpectatorEurekaServerMetricFactory.class).asEagerSingleton();
-        bind(EurekaRegistryMetricFactory.class).to(SpectatorEurekaRegistryMetricFactory.class).asEagerSingleton();
-
-        bind(SelfInfoResolver.class).to(EurekaReadServerSelfInfoResolver.class).asEagerSingleton();
-        bind(SelfRegistrationService.class).to(EurekaReadServerSelfRegistrationService.class).asEagerSingleton();
-
         bind(AbstractEurekaServer.class).to(EurekaReadServer.class);
+    }
+
+    protected void bindSelfInfo() {
+        bind(SelfInfoResolver.class).to(EurekaReadServerSelfInfoResolver.class);
+        bind(SelfRegistrationService.class).to(EurekaReadServerSelfRegistrationService.class);
+    }
+
+    protected void bindClients() {
+        bind(EurekaRegistrationClient.class).toProvider(EurekaRegistrationClientProvider.class);
+        bind(EurekaInterestClient.class).toProvider(EurekaInterestClientProvider.class);
+    }
+
+    protected void bindRegistryComponents() {
+        bind(EurekaRegistryView.class).to(EurekaReadServerRegistryView.class);
+    }
+
+    public static EurekaReadServerModule withClients(final EurekaRegistrationClient registrationClient, final EurekaInterestClient interestClient) {
+        return new EurekaReadServerModule() {
+
+            @Override
+            protected void bindClients() {
+                // do nothing
+            }
+
+            @Provides
+            @Singleton
+            public EurekaRegistrationClient getEurekaRegistrationClient() {
+                return registrationClient;
+            }
+
+            @Provides
+            @Singleton
+            public EurekaInterestClient getEurekaInterestClient() {
+                return interestClient;
+            }
+        };
     }
 }
