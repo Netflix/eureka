@@ -102,7 +102,10 @@ public class Applications {
             @JsonProperty("appsHashCode") String appsHashCode,
             @JsonProperty("versionDelta") Long versionDelta,
             @JsonProperty("application") List<Application> registeredApplications) {
-        this(registeredApplications);
+        this.applications = new ConcurrentLinkedQueue<Application>();
+        for(Application app: registeredApplications) {
+            this.addApplication(app);
+        }
         this.appsHashCode = appsHashCode;
         this.versionDelta = versionDelta;
     }

@@ -27,7 +27,7 @@ final class EurekaJacksonModifiers {
     private EurekaJacksonModifiers() {
     }
 
-    public static BeanDeserializerModifier createJsonDeserializerModifier(final KeyFormatter keyFormatter) {
+    public static BeanDeserializerModifier createJsonDeserializerModifier(final KeyFormatter keyFormatter, final boolean compactMode) {
         return new BeanDeserializerModifier() {
             @Override
             public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc, JsonDeserializer<?> deserializer) {
@@ -35,14 +35,14 @@ final class EurekaJacksonModifiers {
                     return new ApplicationsBeanDeserializer((BeanDeserializerBase) deserializer, keyFormatter);
                 }
                 if (beanDesc.getType().getRawClass().isAssignableFrom(InstanceInfo.class)) {
-                    return new InstanceInfoJsonBeanDeserializer((BeanDeserializerBase) deserializer);
+                    return new InstanceInfoJsonBeanDeserializer((BeanDeserializerBase) deserializer, compactMode);
                 }
                 return super.modifyDeserializer(config, beanDesc, deserializer);
             }
         };
     }
 
-    public static BeanDeserializerModifier createXmlDeserializerModifier(final KeyFormatter keyFormatter) {
+    public static BeanDeserializerModifier createXmlDeserializerModifier(final KeyFormatter keyFormatter, final boolean compactMode) {
         return new BeanDeserializerModifier() {
             @Override
             public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc, JsonDeserializer<?> deserializer) {
@@ -50,7 +50,7 @@ final class EurekaJacksonModifiers {
                     return new ApplicationsBeanDeserializer((BeanDeserializerBase) deserializer, keyFormatter);
                 }
                 if (beanDesc.getType().getRawClass().isAssignableFrom(InstanceInfo.class)) {
-                    return new InstanceInfoXmlBeanDeserializer((BeanDeserializerBase) deserializer);
+                    return new InstanceInfoXmlBeanDeserializer((BeanDeserializerBase) deserializer, compactMode);
                 }
                 return super.modifyDeserializer(config, beanDesc, deserializer);
             }

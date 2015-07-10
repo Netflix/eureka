@@ -31,6 +31,17 @@ public class CodecLoadTester {
     private final EurekaJacksonCodecNG jacksonCodecNG = new EurekaJacksonCodecNG();
     private final EurekaJacksonCodecNG jacksonCodecNgCompact = new EurekaJacksonCodecNG(KeyFormatter.defaultKeyFormatter(), true);
 
+    static class FirstHolder {
+        Applications value;
+    }
+
+    static class SecondHolder {
+        Applications value;
+    }
+
+    private FirstHolder firstHolder = new FirstHolder();
+    private SecondHolder secondHolder = new SecondHolder();
+
     public CodecLoadTester(int instanceCount, int appCount) {
         Iterator<InstanceInfo> instanceIt = InstanceInfoGenerator.newBuilder(instanceCount, appCount)
                 .withMetaData(true).build().serviceIterator();
@@ -52,6 +63,7 @@ public class CodecLoadTester {
             applications.addApplication(app);
         }
         applications.setAppsHashCode(applications.getReconcileHashCode());
+        firstHolder.value = applications;
     }
 
     public CodecLoadTester(String[] args) throws Exception {
@@ -75,6 +87,7 @@ public class CodecLoadTester {
             totalInstances += a.getInstances().size();
         }
         System.out.printf("Loaded %d applications with %d instances\n", applications.getRegisteredApplications().size(), totalInstances);
+        firstHolder.value = applications;
     }
 
     private Applications loadWithCodec(String fileName, MediaType mediaType) throws IOException {
@@ -216,7 +229,8 @@ public class CodecLoadTester {
                     codec.writeTo(object, captureStream, mediaType);
                     byte[] bytes = captureStream.toByteArray();
                     InputStream source = new ByteArrayInputStream(bytes);
-                    codec.readValue(object.getClass(), source, mediaType);
+                    Applications readValue = (Applications) codec.readValue(object.getClass(), source, mediaType);
+                    secondHolder.value = readValue;
 
                     return bytes.length;
                 } catch (IOException e) {
@@ -244,7 +258,7 @@ public class CodecLoadTester {
 
 //        runApplicationsLoadTest(loop, legacyJacksonAction);
 
-        runApplicationsLoadTest(loop, createJacksonNgAction(MediaType.APPLICATION_XML_TYPE, true));
+        runApplicationsLoadTest(loop, createJacksonNgAction(MediaType.APPLICATION_XML_TYPE, false));
 
         long executionTime = System.currentTimeMillis() - start;
         System.out.printf("Execution time: %d[ms]\n", executionTime);
@@ -266,10 +280,11 @@ public class CodecLoadTester {
     public static void main(String[] args) throws Exception {
         CodecLoadTester loadTester;
         if (args.length == 0) {
-            loadTester = new CodecLoadTester(20000, 400);
+            loadTester = new CodecLoadTester(2000, 40);
         } else {
             loadTester = new CodecLoadTester(args);
         }
         loadTester.runFullSpeed();
+        Thread.sleep(100000);
     }
 }

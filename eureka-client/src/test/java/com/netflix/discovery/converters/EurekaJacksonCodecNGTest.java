@@ -146,6 +146,39 @@ public class EurekaJacksonCodecNGTest {
     }
 
     @Test
+    public void testInstanceInfoIgnoredFieldsAreFilteredOutDuringDeserializationProcessWithJson() throws Exception {
+        doInstanceInfoIgnoredFieldsAreFilteredOutDuringDeserializationProcess(codec.getJsonMapper(), compactCodec.getJsonMapper());
+    }
+
+    @Test
+    public void testInstanceInfoIgnoredFieldsAreFilteredOutDuringDeserializationProcessWithXml() throws Exception {
+        doInstanceInfoIgnoredFieldsAreFilteredOutDuringDeserializationProcess(codec.getXmlMapper(), compactCodec.getXmlMapper());
+    }
+
+    public void doInstanceInfoIgnoredFieldsAreFilteredOutDuringDeserializationProcess(ObjectMapper fullMapper, ObjectMapper compactMapper) throws Exception {
+        InstanceInfo instanceInfo = infoIterator.next();
+
+        // We use regular codec here to have all fields serialized
+        String encodedString = fullMapper.writeValueAsString(instanceInfo);
+        InstanceInfo decodedValue = compactMapper.readValue(encodedString, InstanceInfo.class);
+
+        assertThat(decodedValue.getId(), is(equalTo(instanceInfo.getId())));
+        assertThat(decodedValue.getAppName(), is(equalTo(instanceInfo.getAppName())));
+        assertThat(decodedValue.getAppGroupName(), is(equalTo(instanceInfo.getAppGroupName())));
+        assertThat(decodedValue.getIPAddr(), is(equalTo(instanceInfo.getIPAddr())));
+        assertThat(decodedValue.getVIPAddress(), is(equalTo(instanceInfo.getVIPAddress())));
+        assertThat(decodedValue.getSecureVipAddress(), is(equalTo(instanceInfo.getSecureVipAddress())));
+        assertThat(decodedValue.getHostName(), is(equalTo(instanceInfo.getHostName())));
+        assertThat(decodedValue.getStatus(), is(equalTo(instanceInfo.getStatus())));
+        assertThat(decodedValue.getActionType(), is(equalTo(instanceInfo.getActionType())));
+        assertThat(decodedValue.getASGName(), is(equalTo(instanceInfo.getASGName())));
+
+        AmazonInfo sourceAmazonInfo = (AmazonInfo) instanceInfo.getDataCenterInfo();
+        AmazonInfo decodedAmazonInfo = (AmazonInfo) decodedValue.getDataCenterInfo();
+        assertThat(decodedAmazonInfo.get(MetaDataKey.accountId), is(equalTo(sourceAmazonInfo.get(MetaDataKey.accountId))));
+    }
+
+    @Test
     public void testApplicationEncodeDecodeWithJson() throws Exception {
         doApplicationEncodeDecode(codec.getJsonMapper());
     }

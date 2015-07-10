@@ -15,6 +15,7 @@
  */
 package com.netflix.appinfo;
 
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
@@ -147,7 +148,7 @@ public class InstanceInfo {
             @JsonProperty("overriddenstatus") InstanceStatus overriddenstatus,
             @JsonProperty("leaseInfo") LeaseInfo leaseInfo,
             @JsonProperty("isCoordinatingDiscoveryServer") Boolean isCoordinatingDiscoveryServer,
-            @JsonProperty("metadata") Map<String, String> metadata,
+            @JsonProperty("metadata") HashMap<String, String> metadata,
             @JsonProperty("lastUpdatedTimestamp") Long lastUpdatedTimestamp,
             @JsonProperty("lastDirtyTimestamp") Long lastDirtyTimestamp,
             @JsonProperty("actionType") ActionType actionType,

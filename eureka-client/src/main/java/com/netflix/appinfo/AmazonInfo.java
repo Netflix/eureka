@@ -31,8 +31,10 @@ import java.util.regex.Pattern;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.netflix.config.DynamicBooleanProperty;
 import com.netflix.config.DynamicIntProperty;
+import com.netflix.discovery.converters.jackson.StringInterningAmazonInfoBuilder;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +50,7 @@ import org.slf4j.LoggerFactory;
  * @author Karthik Ranganathan, Greg Kim
  *
  */
+@JsonDeserialize(builder = StringInterningAmazonInfoBuilder.class)
 public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
 
     private Map<String, String> metadata = new HashMap<String, String>();
@@ -267,7 +270,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
     @JsonCreator
     public AmazonInfo(
             @JsonProperty("name") String name,
-            @JsonProperty("metadata") Map<String, String> metadata) {
+            @JsonProperty("metadata") HashMap<String, String> metadata) {
         this.metadata = metadata;
     }
 

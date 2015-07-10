@@ -47,7 +47,7 @@ public class EurekaJacksonCodecNG {
         // JSON
         SimpleModule jsonModule = new SimpleModule();
         jsonModule.setSerializerModifier(EurekaJacksonModifiers.createJsonSerializerModifier(keyFormatter));
-        jsonModule.setDeserializerModifier(EurekaJacksonModifiers.createJsonDeserializerModifier(keyFormatter));
+        jsonModule.setDeserializerModifier(EurekaJacksonModifiers.createJsonDeserializerModifier(keyFormatter, compact));
         jsonMapper.registerModule(jsonModule);
         jsonMapper.setSerializationInclusion(Include.NON_NULL);
         jsonMapper.configure(SerializationFeature.WRAP_ROOT_VALUE, true);
@@ -67,7 +67,7 @@ public class EurekaJacksonCodecNG {
         xmlMapper.setSerializationInclusion(Include.NON_NULL);
         xmlMapper.addMixInAnnotations(DataCenterInfo.class, DataCenterInfoXmlMixIn.class);
         SimpleModule xmlModule = new SimpleModule();
-        xmlModule.setDeserializerModifier(EurekaJacksonModifiers.createXmlDeserializerModifier(keyFormatter));
+        xmlModule.setDeserializerModifier(EurekaJacksonModifiers.createXmlDeserializerModifier(keyFormatter, compact));
         xmlMapper.registerModule(xmlModule);
 
         if (compact) {

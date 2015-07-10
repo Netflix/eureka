@@ -1,6 +1,8 @@
 package com.netflix.discovery.converters.jackson;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
@@ -14,6 +16,7 @@ import com.netflix.appinfo.InstanceInfo;
 
 /**
  * Custom {@link InstanceInfo} deserializers that handles port/secure port according to the legacy rules.
+ * It discards also ignored fields when run in the compact mode.
  *
  * @author Tomasz Bak
  */
@@ -21,13 +24,33 @@ class InstanceInfoBeanDeserializers {
 
     abstract static class AbstractInstanceInfoDeserializer extends CustomizableBeanDeserializer {
 
-        protected AbstractInstanceInfoDeserializer(BeanDeserializerBase src) {
+        protected static final Set<String> COMPACT_FIELDS;
+
+        static {
+            Set<String> fields = new HashSet<>();
+            fields.add("app");
+            fields.add("appGroupName");
+            fields.add("ipAddr");
+            fields.add("vipAddress");
+            fields.add("secureVipAddress");
+            fields.add("dataCenterInfo");
+            fields.add("hostName");
+            fields.add("status");
+            fields.add("actionType");
+            fields.add("asgName");
+            COMPACT_FIELDS = fields;
+        }
+
+        private final boolean compactMode;
+
+        protected AbstractInstanceInfoDeserializer(BeanDeserializerBase src, boolean compactMode) {
             super(src);
+            this.compactMode = compactMode;
         }
 
         @Override
         protected boolean isCustomField(String propName) {
-            return "port".equals(propName) || "securePort".equals(propName);
+            return "port".equals(propName) || "securePort".equals(propName) || compactMode && !COMPACT_FIELDS.contains(propName);
         }
 
         @Override
@@ -38,18 +61,40 @@ class InstanceInfoBeanDeserializers {
                 isComplete = deserializePortSection(creator, buffer, jp, "port", "portEnabled");
             } else if ("securePort".equals(propName)) {
                 isComplete = deserializePortSection(creator, buffer, jp, "securePort", "securePortEnabled");
+            } else {
+                skipField(jp);
             }
             return isComplete;
         }
 
         protected abstract boolean deserializePortSection(PropertyBasedCreator creator, PropertyValueBuffer buffer, JsonParser jp,
                                                           String portProperty, String portEnabledProperty) throws IOException;
+
+        private void skipField(JsonParser jp) throws IOException {
+            JsonToken token = jp.getCurrentToken();
+            if (token == JsonToken.VALUE_STRING || token == JsonToken.VALUE_NUMBER_INT
+                    || token == JsonToken.VALUE_TRUE || token == JsonToken.VALUE_FALSE) {
+                return;
+            }
+            if (token == JsonToken.START_OBJECT) {
+                int expectedEndObjects = 1;
+                while (expectedEndObjects > 0) {
+                    switch (jp.nextToken()) {
+                        case START_OBJECT:
+                            expectedEndObjects++;
+                            break;
+                        case END_OBJECT:
+                            expectedEndObjects--;
+                    }
+                }
+            }
+        }
     }
 
     static class InstanceInfoJsonBeanDeserializer extends AbstractInstanceInfoDeserializer {
 
-        InstanceInfoJsonBeanDeserializer(BeanDeserializerBase src) {
-            super(src);
+        InstanceInfoJsonBeanDeserializer(BeanDeserializerBase src, boolean compactMode) {
+            super(src, compactMode);
         }
 
         @Override
@@ -91,8 +136,8 @@ class InstanceInfoBeanDeserializers {
 
     static class InstanceInfoXmlBeanDeserializer extends AbstractInstanceInfoDeserializer {
 
-        InstanceInfoXmlBeanDeserializer(BeanDeserializerBase src) {
-            super(src);
+        InstanceInfoXmlBeanDeserializer(BeanDeserializerBase src, boolean compactMode) {
+            super(src, compactMode);
         }
 
         @Override
