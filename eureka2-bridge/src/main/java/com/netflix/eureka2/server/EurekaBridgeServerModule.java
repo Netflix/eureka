@@ -22,8 +22,6 @@ public class EurekaBridgeServerModule extends EurekaWriteServerModule {
         bindMetricFactories();
         bindSelfInfo();
 
-        bindBootstrapComponents();
-
         bindInterestComponents();
         bindReplicationComponents();
 
