@@ -57,7 +57,7 @@ public class EurekaClientFailoverTest {
         readCluster = eurekaDeploymentResource.getEurekaDeployment().getReadCluster();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testRegistrationFailover() throws Exception {
         executeFailoverTest(new Runnable() {
             @Override
@@ -86,8 +86,7 @@ public class EurekaClientFailoverTest {
         });
     }
 
-
-    @Test
+    @Test(timeout = 60000)
     public void testInterestFailover() throws Exception {
         executeFailoverTest(new Runnable() {
             @Override

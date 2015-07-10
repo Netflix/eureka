@@ -42,7 +42,7 @@ public class EvictionInReplicationChannelTest {
      * Disconnecting a replication channel and connecting it again should leave the system in
      * clean state with no stale registrations.
      */
-    @Test
+    @Test(timeout = 60000)
     public void testRegistryEvictionOnReplicationChannelReconnect() throws Exception {
         // Fill registry content of write server 1 and verify that server 0 has it
         InstanceInfo firstTemplate = SampleInstanceInfo.WebServer.build();

@@ -1,11 +1,6 @@
 package com.netflix.eureka2.server.module;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Module;
-import com.google.inject.util.Modules;
-import com.netflix.archaius.bridge.StaticArchaiusBridgeModule;
-import com.netflix.archaius.guice.ArchaiusModule;
-import com.netflix.archaius.inject.ApplicationLayer;
 import com.netflix.eureka2.health.EurekaHealthStatusAggregator;
 import com.netflix.eureka2.server.health.EurekaHealthStatusAggregatorImpl;
 import com.netflix.eureka2.server.health.KaryonHealthCheckHandler;
@@ -20,34 +15,9 @@ import netflix.karyon.health.HealthCheckHandler;
  */
 public class CommonEurekaServerModule extends AbstractModule {
 
-    private final String name;
-
-    public CommonEurekaServerModule() {
-        this(null);
-    }
-
-    public CommonEurekaServerModule(String name) {
-        this.name = name;
-    }
-
     @Override
     protected void configure() {
         install(new ProvisionDebugModule());
-        
-        // configurations
-        Module configurations;
-        if (name != null) {
-            configurations = Modules.override(new ArchaiusModule()).with(new AbstractModule() {
-                @Override
-                protected void configure() {
-                    bind(String.class).annotatedWith(ApplicationLayer.class).toInstance(name);
-                }
-            });
-        } else {
-            configurations = new ArchaiusModule();
-        }
-
-        install(configurations);
 
         // metrics
         install(new SpectatorDefaultMetricsModule());
@@ -62,8 +32,5 @@ public class CommonEurekaServerModule extends AbstractModule {
         bind(HealthConnectionHandler.class).asEagerSingleton();
         bind(EurekaHealthStatusAggregator.class).to(EurekaHealthStatusAggregatorImpl.class).asEagerSingleton();
         install(new EurekaHealthStatusModule());
-
-        // web admin
-        install(new StaticArchaiusBridgeModule());  // required to bridge archaius1 that is still used by adminModule
     }
 }

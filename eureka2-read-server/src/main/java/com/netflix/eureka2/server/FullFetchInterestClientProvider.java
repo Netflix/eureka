@@ -32,6 +32,8 @@ public class FullFetchInterestClientProvider implements Provider<FullFetchIntere
     private final EurekaClientMetricFactory clientMetricFactory;
     private final EurekaRegistryMetricFactory registryMetricFactory;
 
+    private volatile FullFetchInterestClient client;
+
     @Inject
     public FullFetchInterestClientProvider(EurekaServerConfig config,
                                            EurekaClientMetricFactory clientMetricFactory,
@@ -41,26 +43,39 @@ public class FullFetchInterestClientProvider implements Provider<FullFetchIntere
         this.registryMetricFactory = registryMetricFactory;
     }
 
+    // for testing
+    public FullFetchInterestClientProvider(FullFetchInterestClient client) {
+        this.config = null;
+        this.clientMetricFactory = null;
+        this.registryMetricFactory = null;
+
+        this.client = client;
+    }
+
     @Override
-    public FullFetchInterestClient get() {
-        BatchingRegistry<InstanceInfo> remoteBatchingRegistry = new FullFetchBatchingRegistry<>();
-        BatchAwareIndexRegistry<InstanceInfo> indexRegistry = new BatchAwareIndexRegistry<>(
-                new IndexRegistryImpl<InstanceInfo>(), remoteBatchingRegistry);
+    public synchronized FullFetchInterestClient get() {
+        if (client == null) {
+            BatchingRegistry<InstanceInfo> remoteBatchingRegistry = new FullFetchBatchingRegistry<>();
+            BatchAwareIndexRegistry<InstanceInfo> indexRegistry = new BatchAwareIndexRegistry<>(
+                    new IndexRegistryImpl<InstanceInfo>(), remoteBatchingRegistry);
 
-        BasicEurekaTransportConfig transportConfig = new BasicEurekaTransportConfig.Builder().build();
+            BasicEurekaTransportConfig transportConfig = new BasicEurekaTransportConfig.Builder().build();
 
-        SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(indexRegistry, registryMetricFactory);
-        ServerResolver discoveryResolver = WriteClusterResolver.createInterestResolver(config.getEurekaClusterDiscovery());
+            SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(indexRegistry, registryMetricFactory);
+            ServerResolver discoveryResolver = WriteClusterResolver.createInterestResolver(config.getEurekaClusterDiscovery());
 
-        ClientChannelFactory<InterestChannel> channelFactory = new InterestChannelFactory(
-                EUREKA_READ_CLIENT_ID,
-                transportConfig,
-                discoveryResolver,
-                registry,
-                remoteBatchingRegistry,
-                clientMetricFactory
-        );
+            ClientChannelFactory<InterestChannel> channelFactory = new InterestChannelFactory(
+                    EUREKA_READ_CLIENT_ID,
+                    transportConfig,
+                    discoveryResolver,
+                    registry,
+                    remoteBatchingRegistry,
+                    clientMetricFactory
+            );
 
-        return new FullFetchInterestClient(registry, channelFactory);
+            client = new FullFetchInterestClient(registry, channelFactory);
+        }
+
+        return client;
     }
 }
