@@ -6,7 +6,6 @@ import com.netflix.eureka2.config.EurekaDashboardConfig;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.junit.categories.LongRunningTest;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
-import com.netflix.eureka2.registry.eviction.EvictionStrategyProvider.StrategyType;
 import com.netflix.eureka2.server.resolver.EurekaClusterResolvers.ResolverType;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -30,9 +29,7 @@ public class DashboardServerStartupAndShutdownIntegrationTest extends AbstractSt
         EurekaDashboardConfig config = aDashboardConfig()
                 .withRegistryConfig(
                         anEurekaServerRegistryConfig()
-                                .withEvictionStrategyType(StrategyType.PercentageDrop)
-                                .withEvictionStrategyValue("20")
-                                .withEvictionTimeoutMs(30000)
+                                .withEvictionAllowedPercentageDrop(20)
                                 .build()
                 )
                 .withInstanceInfoConfig(

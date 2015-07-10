@@ -5,7 +5,6 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 
 /**
  * Convert instance info objects from eureka 1.0 format to eureka 2.0 format
- * TODO: implement v2 to v1 conversion
  *
  * @author David Liu
  */
