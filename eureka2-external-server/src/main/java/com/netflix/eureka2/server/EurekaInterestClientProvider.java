@@ -41,6 +41,8 @@ public class EurekaInterestClientProvider implements Provider<EurekaInterestClie
     private final EurekaClientMetricFactory clientMetricFactory;
     private final EurekaRegistryMetricFactory registryMetricFactory;
 
+    private volatile EurekaInterestClient client;
+
     @Inject
     public EurekaInterestClientProvider(EurekaServerTransportConfig transportConfig,
                                         EurekaRegistryConfig registryConfig,
@@ -55,13 +57,17 @@ public class EurekaInterestClientProvider implements Provider<EurekaInterestClie
     }
 
     @Override
-    public EurekaInterestClient get() {
-        return Eurekas.newInterestClientBuilder()
-                .withTransportConfig(transportConfig)
-                .withRegistryConfig(registryConfig)
-                .withClientMetricFactory(clientMetricFactory)
-                .withRegistryMetricFactory(registryMetricFactory)
-                .withServerResolver(WriteClusterResolver.createInterestResolver(clusterDiscoveryConfig))
-                .build();
+    public synchronized EurekaInterestClient get() {
+        if (client == null) {
+            client = Eurekas.newInterestClientBuilder()
+                    .withTransportConfig(transportConfig)
+                    .withRegistryConfig(registryConfig)
+                    .withClientMetricFactory(clientMetricFactory)
+                    .withRegistryMetricFactory(registryMetricFactory)
+                    .withServerResolver(WriteClusterResolver.createInterestResolver(clusterDiscoveryConfig))
+                    .build();
+        }
+
+        return client;
     }
 }

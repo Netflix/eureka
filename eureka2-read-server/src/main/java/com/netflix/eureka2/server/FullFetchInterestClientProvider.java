@@ -43,15 +43,6 @@ public class FullFetchInterestClientProvider implements Provider<FullFetchIntere
         this.registryMetricFactory = registryMetricFactory;
     }
 
-    // for testing
-    public FullFetchInterestClientProvider(FullFetchInterestClient client) {
-        this.config = null;
-        this.clientMetricFactory = null;
-        this.registryMetricFactory = null;
-
-        this.client = client;
-    }
-
     @Override
     public synchronized FullFetchInterestClient get() {
         if (client == null) {
