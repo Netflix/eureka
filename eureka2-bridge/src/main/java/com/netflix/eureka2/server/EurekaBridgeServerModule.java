@@ -3,6 +3,8 @@ package com.netflix.eureka2.server;
 import com.google.inject.Scopes;
 import com.netflix.eureka2.metric.server.BridgeServerMetricFactory;
 import com.netflix.eureka2.metric.server.SpectatorBridgeServerMetricFactory;
+import com.netflix.eureka2.metric.server.SpectatorWriteServerMetricFactory;
+import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
 import com.netflix.eureka2.server.service.BridgeService;
 import com.netflix.eureka2.server.service.EurekaBridgeServerSelfInfoResolver;
 import com.netflix.eureka2.server.service.EurekaBridgeServerSelfRegistrationService;
@@ -33,6 +35,7 @@ public class EurekaBridgeServerModule extends EurekaWriteServerModule {
         bind(ServerType.class).toInstance(ServerType.Bridge);
         bind(AbstractEurekaServer.class).to(EurekaBridgeServer.class);
         bind(BridgeServerMetricFactory.class).to(SpectatorBridgeServerMetricFactory.class).asEagerSingleton();
+        bind(WriteServerMetricFactory.class).to(SpectatorWriteServerMetricFactory.class).asEagerSingleton();
     }
 
     @Override
