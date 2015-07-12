@@ -5,6 +5,7 @@ import com.netflix.governator.LifecycleInjector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -61,4 +62,13 @@ public abstract class EurekaServerRunner<S extends AbstractEurekaServer> {
     protected abstract List<Module> getModules();
 
     protected abstract LifecycleInjector createInjector();
+
+    protected List<Module> asList(Module... modules) {
+        List<Module> toReturn = new ArrayList<>();
+        for (Module m : modules) {
+            toReturn.add(m);
+        }
+        return toReturn;
+    }
+
 }

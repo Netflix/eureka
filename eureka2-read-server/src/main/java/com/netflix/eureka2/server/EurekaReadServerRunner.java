@@ -32,7 +32,6 @@ import netflix.adminresources.resources.KaryonWebAdminModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
 import java.util.List;
 
 import static com.netflix.eureka2.server.config.ServerConfigurationNames.DEFAULT_CONFIG_PREFIX;
@@ -74,7 +73,7 @@ public class EurekaReadServerRunner extends EurekaServerRunner<EurekaReadServer>
             configModule = EurekaReadServerConfigurationModule.fromConfig(config);
         }
 
-        return Arrays.asList(
+        return asList(
                 configModule,
                 new CommonEurekaServerModule(),
                 new EurekaReadServerModule(),
