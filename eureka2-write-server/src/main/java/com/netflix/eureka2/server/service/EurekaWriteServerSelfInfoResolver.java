@@ -39,7 +39,7 @@ public class EurekaWriteServerSelfInfoResolver implements SelfInfoResolver {
             final Provider<TcpRegistrationServer> registrationServer,
             final Provider<TcpReplicationServer> replicationServer,
             final Provider<TcpInterestServer> discoveryServer,
-            EurekaHealthStatusAggregatorImpl healthStatusAggregator) {
+            final EurekaHealthStatusAggregatorImpl healthStatusAggregator) {
         SelfInfoResolverChain resolverChain = new SelfInfoResolverChain(
                 new ConfigSelfInfoResolver(config.getEurekaInstance()),
                 new StatusInfoResolver(healthStatusAggregator),
