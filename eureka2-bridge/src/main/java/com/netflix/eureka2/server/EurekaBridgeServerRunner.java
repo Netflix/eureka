@@ -66,7 +66,7 @@ public class EurekaBridgeServerRunner extends EurekaServerRunner<EurekaBridgeSer
         return asList(
                 configModule,
                 new CommonEurekaServerModule(),
-                new EurekaWriteServerModule(),
+                new EurekaBridgeServerModule(),
                 new KaryonWebAdminModule(),
                 new EurekaModule()  // eureka1
         );
