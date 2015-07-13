@@ -58,7 +58,7 @@ public class EmbeddedDashboardServerBuilder extends EmbeddedServerBuilder<Eureka
         }
 
         coreModules.add(new CommonEurekaServerModule());
-        coreModules.add(new EurekaDashboardModule(registrationClient, interestClient));
+        coreModules.add(EurekaDashboardModule.withClients(registrationClient, interestClient));
 
         LifecycleInjector injector = Governator.createInjector(Modules.combine(coreModules));
         return injector.getInstance(EmbeddedDashboardServer.class);
