@@ -48,7 +48,7 @@ public class EurekaReadServerModule extends AbstractEurekaServerModule {
         bindRegistryComponents();
 
         // read servers specific stuff
-        bind(ExtensionContext.class).in(Scopes.SINGLETON);
+        bind(ExtensionContext.class).asEagerSingleton();
         bind(ServerType.class).toInstance(ServerType.Read);
         bind(AbstractEurekaServer.class).to(EurekaReadServer.class);
     }

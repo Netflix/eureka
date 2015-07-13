@@ -16,60 +16,66 @@
 
 package com.netflix.eureka2;
 
-import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
-import com.netflix.eureka2.metric.SpectatorEurekaRegistryMetricFactory;
-import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
-import com.netflix.eureka2.metric.client.SpectatorEurekaClientMetricFactory;
+import com.netflix.eureka2.server.AbstractEurekaServer;
+import com.netflix.eureka2.server.AbstractEurekaServerModule;
 import com.netflix.eureka2.server.EurekaInterestClientProvider;
 import com.netflix.eureka2.server.EurekaRegistrationClientProvider;
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
+import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
+
+import javax.inject.Singleton;
 
 /**
- * @author Tomasz Bak
+ * @author David Liu
  */
-public class EurekaDashboardModule extends AbstractModule {
-
-    private final EurekaRegistrationClient registrationClient;
-    private final EurekaInterestClient interestClient;
-
-    public EurekaDashboardModule() {
-        this.registrationClient = null;
-        this.interestClient = null;
-    }
-
-    public EurekaDashboardModule(EurekaRegistrationClient registrationClient,
-                                 EurekaInterestClient interestClient) {
-        this.registrationClient = registrationClient;
-        this.interestClient = interestClient;
-    }
+public class EurekaDashboardModule extends AbstractEurekaServerModule {
 
     @Override
     protected void configure() {
-        if (registrationClient == null) {
-            bind(EurekaRegistrationClient.class).toProvider(EurekaRegistrationClientProvider.class);
-        } else {
-            bind(EurekaRegistrationClient.class).toInstance(registrationClient);
-        }
-
-        if (interestClient == null) {
-            bind(EurekaInterestClient.class).toProvider(EurekaInterestClientProvider.class);
-        } else {
-            bind(EurekaInterestClient.class).toInstance(interestClient);
-        }
+        bindMetricFactories();
+        bindSelfInfo();
+        bindClients();
 
         bind(DashboardHttpServer.class).asEagerSingleton();
         bind(WebSocketServer.class).asEagerSingleton();
 
-        // Self registration
+        bind(ServerType.class).toInstance(ServerType.Dashboard);
+        bind(AbstractEurekaServer.class).to(EurekaDashboardServer.class);
+    }
+
+    protected void bindSelfInfo() {
         bind(SelfRegistrationService.class).to(DashboardServerSelfRegistrationService.class).asEagerSingleton();
         bind(SelfInfoResolver.class).to(DashboardServerSelfInfoResolver.class).asEagerSingleton();
+    }
 
-        // Metrics
-        bind(EurekaClientMetricFactory.class).to(SpectatorEurekaClientMetricFactory.class).asEagerSingleton();
-        bind(EurekaRegistryMetricFactory.class).to(SpectatorEurekaRegistryMetricFactory.class).asEagerSingleton();
+    protected void bindClients() {
+        bind(EurekaRegistrationClient.class).toProvider(EurekaRegistrationClientProvider.class);
+        bind(EurekaInterestClient.class).toProvider(EurekaInterestClientProvider.class);
+    }
+
+    public static EurekaDashboardModule withClients(final EurekaRegistrationClient registrationClient, final EurekaInterestClient interestClient) {
+        return new EurekaDashboardModule() {
+
+            @Override
+            protected void bindClients() {
+                // do nothing
+            }
+
+            @Provides
+            @Singleton
+            public EurekaRegistrationClient getEurekaRegistrationClient() {
+                return registrationClient;
+            }
+
+            @Provides
+            @Singleton
+            public EurekaInterestClient getEurekaInterestClient() {
+                return interestClient;
+            }
+        };
     }
 }

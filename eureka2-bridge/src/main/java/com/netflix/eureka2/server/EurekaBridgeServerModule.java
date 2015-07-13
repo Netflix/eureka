@@ -30,7 +30,7 @@ public class EurekaBridgeServerModule extends EurekaWriteServerModule {
         bindRegistryComponents();
 
         // bridge server specific stuff
-        bind(BridgeService.class).in(Scopes.SINGLETON);
+        bind(BridgeService.class).asEagerSingleton();
         bind(ExtensionContext.class).asEagerSingleton();
         bind(ServerType.class).toInstance(ServerType.Bridge);
         bind(AbstractEurekaServer.class).to(EurekaBridgeServer.class);
