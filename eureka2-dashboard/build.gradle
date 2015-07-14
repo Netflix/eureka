@@ -33,7 +33,7 @@ jar {
     }
 }
 
-mainClassName = "com.netflix.eureka2.EurekaDashboardServer"
+mainClassName = "com.netflix.eureka2.EurekaDashboardRunner"
 applicationDefaultJvmArgs = ["-Xms2g",
                              "-Xmx4g",
 //                             "-Dcom.sun.management.jmxremote",

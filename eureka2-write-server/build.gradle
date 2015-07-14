@@ -35,7 +35,7 @@ jar {
     }
 }
 
-mainClassName = "com.netflix.eureka2.server.EurekaWriteServer"
+mainClassName = "com.netflix.eureka2.server.EurekaWriteServerRunner"
 applicationDefaultJvmArgs = ["-Xms2g",
                              "-Xmx4g",
                              "-XX:+UseConcMarkSweepGC",

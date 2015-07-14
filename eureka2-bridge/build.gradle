@@ -36,7 +36,7 @@ jar {
     }
 }
 
-mainClassName = "com.netflix.eureka2.server.EurekaBridgeServer"
+mainClassName = "com.netflix.eureka2.server.EurekaBridgeServerRunner"
 applicationDefaultJvmArgs = ["-Xms2g",
                              "-Xmx4g",
 //                             "-Dcom.sun.management.jmxremote",

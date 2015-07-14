@@ -31,7 +31,7 @@ import com.netflix.governator.auto.annotations.ConditionalOnProfile;
  *
  * @author Tomasz Bak
  */
-@ConditionalOnProfile({ExtAbstractModule.WRITE_PROFILE, ExtAbstractModule.BRIDGE_PROFILE})
+@ConditionalOnProfile(value = {ExtAbstractModule.WRITE_PROFILE, ExtAbstractModule.BRIDGE_PROFILE}, matchAll = false)
 public class KafkaAuditServiceModule extends ExtAbstractModule {
 
     private static final TypeLiteral<StreamedDataCollector<InetSocketAddress>> STREAMED_DATA_COLLECTOR_TYPE_LITERAL =
